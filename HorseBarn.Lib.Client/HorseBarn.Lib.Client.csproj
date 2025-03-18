@@ -18,13 +18,8 @@
 	
   <ItemGroup>
     <ProjectReference Include="..\Neatoo\Neatoo.csproj" />
-    <ProjectReference Include="..\Neatoo.CodeAnalysis\Neatoo.CodeAnalysis.csproj" OutputItemType="Analyzer" />
   </ItemGroup>
 	
-  <ItemGroup>
-    <Folder Include="Generated\Neatoo.CodeAnalysis\Neatoo.CodeAnalysis.FactoryGenerator\" />
-  </ItemGroup>
-
   <Import Project="..\HorseBarn.Shared\HorseBarn.Shared.projitems" Label="Shared" />
 
 </Project>
