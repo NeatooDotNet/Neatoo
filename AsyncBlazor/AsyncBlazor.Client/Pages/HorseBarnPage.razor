@@ -1,0 +1,77 @@
+﻿@page "/horsebarn"
+@using HorseBarn.lib
+@using Neatoo
+
+<h1>HorseBarn</h1>
+
+@if (HorseBarn != null)
+{
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h3 class="accent-header">Carts</h3>
+            </div>
+            <div class="col">
+                <h3 class="accent-header">Pasture</h3>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col" style="background-color: lightblue;">
+                <div>
+                    @foreach (var cart in HorseBarn.Carts)
+                {
+                    <AsyncBlazor.Client.Components.CartComponent Cart="cart" />
+                }
+                </div>
+            </div>
+            <div class="col" style="background-color: lightgray;" @ondrop="HandleDragDrop" @ondragover="HandleDragOver">
+                <div>
+                    <AsyncBlazor.Client.Components.PastureComponent Pasture="HorseBarn.Pasture" />
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <button @onclick="Save" disabled="@(!HorseBarn.IsSavable)">Save</button>
+            </div>
+        </div>
+    </div>
+}
+<style>
+    .accent-header {
+    font-size: 40px;
+    color: var(--accent-color);
+    }
+</style>
+
+@code {
+
+[Inject]
+public IHorseBarnFactory readPortal { get; set; } = default!;
+
+public IHorseBarn HorseBarn { get; set; } = default!;
+
+protected override async Task OnInitializedAsync()
+{
+
+    HorseBarn = await readPortal.Fetch();
+
+    await base.OnInitializedAsync();
+
+}
+
+private Task HandleDragDrop(DragEventArgs e)
+{
+    throw new NotImplementedException();
+}
+
+
+private Task HandleDragOver(DragEventArgs e)
+{
+    throw new NotImplementedException();
+}
+private Task Save(MouseEventArgs e)
+{
+    throw new NotImplementedException();
+}
+}

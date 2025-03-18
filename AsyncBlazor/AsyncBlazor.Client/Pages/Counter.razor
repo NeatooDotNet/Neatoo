@@ -1,0 +1,31 @@
+﻿@page "/counter"
+@using AsyncBlazor.Client.Components
+@using HorseBarn.lib
+@using HorseBarn.lib.Horse
+@using Neatoo
+
+
+<ValidatePropertyTextBox ValidateProperty="@asyncValidate[nameof(AsyncValidate.AsyncPropertyA)]" />
+<ValidatePropertyTextBox ValidateProperty="@asyncValidate[nameof(AsyncValidate.AsyncPropertyB)]" />
+<ValidatePropertyTextBox ValidateProperty="@asyncValidate[nameof(AsyncValidate.AsyncPropertyC)]" />
+<ValidatePropertyTextBox ValidateProperty="@asyncValidate[nameof(AsyncValidate.AsyncPropertyD)]" />
+
+<label>@horse.Name</label>
+
+@code {
+
+private AsyncValidate asyncValidate = new AsyncValidate();
+
+[Inject]
+public IHorseBarnFactory ReadPortal { get; set; } = default!;
+
+public IHorseBarn HorseBarn { get; set; } = default!;
+
+public IHorse horse { get; set; } = default!;
+protected override async Task OnInitializedAsync()
+{
+    HorseBarn = await ReadPortal.Fetch();
+
+    horse = HorseBarn.Horses.First();
+}
+}

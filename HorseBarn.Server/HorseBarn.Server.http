@@ -1,0 +1,6 @@
+@HorseBarn.Server_HostAddress = http://localhost:5037
+
+GET {{HorseBarn.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

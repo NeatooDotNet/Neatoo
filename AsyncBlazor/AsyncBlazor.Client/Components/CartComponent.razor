@@ -1,0 +1,34 @@
+﻿@using HorseBarn.lib.Cart
+@using HorseBarn.lib.Horse
+@inject NavigationManager Navigation
+
+
+@if (Cart != null)
+{
+    <div>
+        <label>Name: @Cart.Name</label>
+    </div>
+    <div>
+        <label>Number of Horses: @Cart.NumberOfHorses</label>
+    </div>
+    <div class="card">
+        <div class="card-header">
+        <h4>Horses</h4>
+        </div>
+        <div class="card-body">
+                @foreach (var horse in Cart.Horses)
+            {
+                <HorseComponent Horse="horse" />
+            }
+        </div>
+    </div>
+}
+else
+{
+    <p>Loading...</p>
+}
+
+@code {
+[Parameter]
+public ICart Cart { get; set; } = default!;
+}

@@ -1,0 +1,69 @@
+﻿@using Neatoo.Core
+<h3>@ValidateProperty.Name</h3>
+
+<style>
+    .text-box {
+        margin: 5px;
+        width: 200px;
+        padding: 5px;
+    }
+
+    .text-block {
+        margin: 5px;
+        width: 200px;
+        padding: 5px;
+    }
+
+    .disabled {
+        background-color: lightgray;
+    }
+
+    .invalid {
+        background-color: red;
+    }
+</style>
+
+<InputText @bind-Value:get="@ValidateProperty.StringValue"
+@bind-Value:set="(value) => ValidateProperty.SetStringValue(value)"
+disabled="@ValidateProperty.IsBusy"
+class="@GetInputClass()"
+title="@GetErrorMessage()" />
+@code {
+
+[Parameter]
+public IValidateProperty ValidateProperty { get; set; }
+
+override protected void OnInitialized()
+{
+    base.OnInitialized();
+
+
+    ValidateProperty.PropertyChanged += (sender, e) =>
+    {
+        if (e.PropertyName == nameof(IProperty.IsBusy))
+        {
+            InvokeAsync(() => StateHasChanged());
+        }
+    };
+
+}
+
+
+private string GetInputClass()
+{
+    if (ValidateProperty.IsBusy)
+    {
+        return "text-box disabled";
+    }
+    if (!ValidateProperty.IsValid)
+    {
+        return "text-box invalid";
+    }
+    return "text-box";
+}
+
+private string GetErrorMessage()
+{
+    return ValidateProperty.ErrorMessages.Any() ? string.Join(", ", ValidateProperty.ErrorMessages) : string.Empty;
+}
+}

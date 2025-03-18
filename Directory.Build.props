@@ -1,0 +1,14 @@
+<Project>
+	<PropertyGroup>
+		<AnalysisMode>all</AnalysisMode>
+		<Authors>Keith Voels</Authors>
+		<Copyright>Copyright © 2024</Copyright>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<LangVersion>latest</LangVersion>
+		<NoWarn>CA1861,CA2007</NoWarn>
+		<!-- https://learn.microsoft.com/en-us/nuget/concepts/auditing-packages -->
+		<Nullable>enable</Nullable>
+		<TargetFramework>net9.0</TargetFramework>
+		<Version>2025.1.0-beta</Version>
+	</PropertyGroup>
+</Project>

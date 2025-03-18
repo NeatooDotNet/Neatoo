@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>fbd72f31-7672-4e0d-b3cc-f6e7c93e7a73</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>HorseBarn.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Cart\Cart.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Cart\CartList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Cart\CartNumberOfHorsesRule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Cart\CartType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Cart\ICart.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Cart\RacingChariot.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Cart\Wagon.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CustomEditBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)HorseBarn.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Horse\Breed.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Horse\HeavyHorse.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Horse\Horse.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Horse\HorseCriteria.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Horse\HorseList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Horse\HorseNameUniqueRule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Horse\IsHorseNameUnique.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Horse\LightHorse.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Pasture.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,21 @@
+﻿@using HorseBarn.lib
+
+@if (Pasture is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @foreach (var horse in Pasture.Horses)
+{
+    <HorseComponent Horse="horse" />
+}
+}
+
+@code {
+
+
+[Parameter]
+public IPasture Pasture { get; set; } = default!;
+
+}
