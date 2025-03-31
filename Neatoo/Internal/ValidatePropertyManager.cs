@@ -1,4 +1,6 @@
-﻿namespace Neatoo.Core;
+﻿using Neatoo.Rules;
+
+namespace Neatoo.Core;
 
 public interface IValidatePropertyManager<out P> : IPropertyManager<P>
     where P : IProperty
@@ -8,7 +10,7 @@ public interface IValidatePropertyManager<out P> : IPropertyManager<P>
     bool IsValid { get; }
     Task RunAllRules(CancellationToken? token = null);
 
-    IReadOnlyList<string> ErrorMessages { get; }
+    IReadOnlyCollection<IRuleMessage> RuleMessages { get; }
     void ClearAllErrors();
     void ClearSelfErrors();
 }
@@ -32,7 +34,7 @@ public class ValidatePropertyManager<P> : PropertyManager<P>, IValidatePropertyM
     public bool IsSelfValid => !PropertyBag.Any(_ => !_.Value.IsSelfValid);
     public bool IsValid => !PropertyBag.Any(_ => !_.Value.IsValid);
 
-    public IReadOnlyList<string> ErrorMessages => PropertyBag.SelectMany(_ => _.Value.ErrorMessages).ToList().AsReadOnly();
+    public IReadOnlyCollection<IRuleMessage> RuleMessages => PropertyBag.SelectMany(_ => _.Value.RuleMessages).ToList().AsReadOnly();
 
 
     public async Task RunAllRules(CancellationToken? token = null)

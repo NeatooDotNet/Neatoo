@@ -5,6 +5,7 @@ using Neatoo.Internal;
 */
 
 using Neatoo.RemoteFactory;
+using Neatoo.Rules;
 
 namespace Neatoo.Internal;
 
@@ -21,6 +22,7 @@ public interface IValidateMetaProperties : IBaseMetaProperties
     bool IsValid { get; }
     bool IsSelfValid { get; }
 
+    IReadOnlyCollection<IRuleMessage> RuleMessages { get; }
 
     Task RunAllRules(CancellationToken? token = null);
     Task RunSelfRules(CancellationToken? token = null);

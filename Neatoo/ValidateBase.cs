@@ -11,8 +11,6 @@ namespace Neatoo
 
     public interface IValidateBase : IBase, IValidateMetaProperties, INotifyPropertyChanged, INotifyNeatooPropertyChanged
     {
-        IReadOnlyList<string> BrokenRuleMessages { get; }
-
         /// <summary>
         /// Pause events, rules and ismodified
         /// Only affects the Setter method
@@ -57,6 +55,8 @@ namespace Neatoo
 
         public bool IsSelfValid => PropertyManager.IsSelfValid;
 
+        public IReadOnlyCollection<IRuleMessage> RuleMessages => PropertyManager.RuleMessages;
+
         protected (bool IsValid, bool IsSelfValid, bool IsBusy, bool IsSelfBusy) MetaState { get; private set; }
 
         protected override void CheckIfMetaPropertiesChanged(bool raiseBusy = false)
@@ -100,8 +100,6 @@ namespace Neatoo
             CheckIfMetaPropertiesChanged();
         }
 
-        public IReadOnlyList<string> BrokenRuleMessages => PropertyManager.ErrorMessages;
-
         /// <summary>
         /// Permanently mark invalid
         /// Running all rules will reset this
@@ -124,12 +122,27 @@ namespace Neatoo
 
         public bool IsPaused { get; protected set; }
 
-        public virtual void PauseAllActions()
+        private class Paused : IDisposable
+        {
+            private readonly ValidateBase<T> _validateBase;
+            public Paused(ValidateBase<T> validateBase)
+            {
+                _validateBase = validateBase;
+            }
+            public void Dispose()
+            {
+                _validateBase.ResumeAllActions();
+            }
+        }
+
+        public virtual IDisposable PauseAllActions()
         {
             if (!IsPaused)
             {
                 IsPaused = true;
             }
+
+            return new Paused(this);
         }
 
         public virtual void ResumeAllActions()

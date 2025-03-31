@@ -9,29 +9,23 @@ namespace Neatoo.UnitTest.EditBaseTests;
 public class EditListBaseTests
 {
 
-    private IServiceScope scope;
     private IEditPersonList list;
     private IEditPerson child;
 
     [TestInitialize]
     public void TestInitialize()
     {
-        scope = UnitTestServices.GetLifetimeScope();
-        var parentDto = scope.GetRequiredService<IReadOnlyList<PersonDto>>().Where(p => !p.FatherId.HasValue && !p.MotherId.HasValue).First();
+        var parentDto = PersonDto.Data().Where(p => !p.FatherId.HasValue && !p.MotherId.HasValue).First();
 
-        list = scope.GetRequiredService<IEditPersonList>();
+        list = new EditPersonList();
 
-        child = scope.GetRequiredService<IEditPerson>();
+        child = new EditPerson(new EditBaseServices<EditPerson>(null), new ShortNameRule(), new FullNameRule());
 
-        child.MarkUnmodified();
-        child.MarkOld();
-        child.MarkAsChild();
+        child.FillFromDto(parentDto);
 
         //using (((IDataMapperTarget)list).PauseAllActions())
-        {
-            list.Add(child);
-        }
-
+        list.Add(child);
+        child.MarkUnmodified();
         Assert.IsFalse(list.IsBusy);
 
     }

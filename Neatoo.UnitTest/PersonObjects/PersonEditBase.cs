@@ -29,10 +29,11 @@ public abstract class PersonEditBase<T> : EditBase<T>, IPersonBase
     [Fetch]
     public void FillFromDto(PersonDto dto)
     {
-         this[nameof(Id)].LoadValue(dto.PersonId);
+        using var paused = PauseAllActions();
+        this[nameof(Id)].LoadValue(dto.PersonId);
 
         // These will not mark IsModified to true
-        // as long as within ObjectPortal operation
+        // as long as within RemoteFactory operation
         FirstName = dto.FirstName;
         LastName = dto.LastName;
         Title = dto.Title;

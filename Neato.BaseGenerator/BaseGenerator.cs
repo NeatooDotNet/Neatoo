@@ -2,7 +2,6 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis;
 using System.Text;
-using static Neato.BaseGenerator.PartialBaseGenerator;
 
 namespace Neato.BaseGenerator
 {
@@ -36,7 +35,7 @@ namespace Neato.BaseGenerator
                     return null;
                 }
 
-                if(classDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)) && ClassOrBaseClassIsBaseClass(classNamedTypeSymbol))
+                if (classDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)) && ClassOrBaseClassIsNeatooBaseClass(classNamedTypeSymbol))
                 {
                     return (classDeclaration, context.SemanticModel);
                 }
@@ -51,15 +50,17 @@ namespace Neato.BaseGenerator
             return null;
         }
 
-        private static bool ClassOrBaseClassIsBaseClass(INamedTypeSymbol namedTypeSymbol)
+
+
+        private static bool ClassOrBaseClassIsNeatooBaseClass(INamedTypeSymbol namedTypeSymbol)
         {
-            if(namedTypeSymbol.Name == "Base" && namedTypeSymbol.ContainingNamespace.Name == "Neatoo")
+            if (namedTypeSymbol.Name == "Base" && namedTypeSymbol.ContainingNamespace.Name == "Neatoo")
             {
                 return true;
             }
             if (namedTypeSymbol.BaseType != null)
             {
-                return ClassOrBaseClassIsBaseClass(namedTypeSymbol.BaseType);
+                return ClassOrBaseClassIsNeatooBaseClass(namedTypeSymbol.BaseType);
             }
             return false;
         }
@@ -74,6 +75,7 @@ namespace Neato.BaseGenerator
             public string AccessModifier { get; set; } = "public";
             public StringBuilder PropertyDeclarations { get; set; } = new();
             public StringBuilder? InterfacePropertyDeclarations { get; set; }
+            public StringBuilder MapperMethods { get; set; } = new();
         }
 
         private static void Execute(SourceProductionContext context, ClassDeclarationSyntax classDeclarationSyntax, SemanticModel semanticModel)
@@ -96,11 +98,14 @@ namespace Neato.BaseGenerator
 
                 var targetClassName = classNamedSymbol.Name;
                 // Generate the source code for the found method
-                var namespaceName = FindNamespace(classDeclarationSyntax);
+                var namespaceName = FindNamespace(classDeclarationSyntax) ?? "MissingNamespace";
 
-                var accessModifier = partialText.AccessModifier = classNamedSymbol.DeclaredAccessibility.ToString();
+                UsingStatements(usingDirectives, partialText, namespaceName, messages);
+
+                var classDeclaration = classDeclarationSyntax.ToFullString().Substring(classDeclarationSyntax.Modifiers.FullSpan.Start - classDeclarationSyntax.FullSpan.Start, classDeclarationSyntax.Identifier.FullSpan.End - classDeclarationSyntax.Modifiers.FullSpan.Start);
 
                 AddPartialProperties(partialText);
+                AddMapModifiedToMethod(partialText, messages);
 
                 try
                 {
@@ -114,7 +119,7 @@ namespace Neato.BaseGenerator
                         }}";
                     }
 
-                        source =  $@"
+                    source = $@"
                     #nullable enable
 
                     {WithStringBuilder(usingDirectives)}
@@ -126,8 +131,9 @@ namespace Neato.BaseGenerator
                     namespace {namespaceName}
                     {{
                         {interfaceSource}
-                        {accessModifier.ToLower()} partial class {classNamedSymbol.Name} {{
+                        {classDeclaration} {{
                             {partialText.PropertyDeclarations}
+{partialText.MapperMethods}
                         }}
 
                     }}
@@ -163,27 +169,30 @@ namespace Neato.BaseGenerator
             //                    .OfType<InterfaceDeclarationSyntax>()
             //                    .Any(ids => ids.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))))
             {
-                var interfaceDeclarationSyntax = partialBaseText.InterfaceDeclarationSyntax = partialBaseText.ClassNamedSymbol.Interfaces.First(i => i.Name == $"I{partialBaseText.ClassNamedSymbol.Name}").DeclaringSyntaxReferences.First().GetSyntax() as InterfaceDeclarationSyntax;
+                var interfaceDeclarationSyntax = partialBaseText.ClassNamedSymbol.Interfaces.First(i => i.Name == $"I{partialBaseText.ClassNamedSymbol.Name}").DeclaringSyntaxReferences.First().GetSyntax() as InterfaceDeclarationSyntax;
 
                 if (interfaceDeclarationSyntax != null && interfaceDeclarationSyntax.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
                 {
+                    partialBaseText.InterfaceDeclarationSyntax = interfaceDeclarationSyntax;
                     partialBaseText.InterfacePropertyDeclarations = new StringBuilder();
                     interfaceProperties = interfaceDeclarationSyntax.Members.OfType<PropertyDeclarationSyntax>().Select(p => p.Identifier.Text).ToList();
 
                 }
             }
 
-            foreach (var property in partialBaseText.ClassDeclarationSyntax.Members.OfType<PropertyDeclarationSyntax>())
+            var properties = partialBaseText.ClassDeclarationSyntax.Members.OfType<PropertyDeclarationSyntax>().ToDictionary(p => p.Identifier.Text, p => p);
+
+            foreach (var propertyKVP in properties)
             {
+                var property = propertyKVP.Value;
                 if (property.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
                 {
                     var accessibility = property.Modifiers.First().ToString();
                     var propertyType = property.Type.ToString();
                     var propertyName = property.Identifier.Text;
 
-                    var propertySymbol = partialBaseText.SemanticModel.GetDeclaredSymbol(property) ?? throw new Exception($"Cannot get named symbol for {property}");
-
                     partialBaseText.PropertyDeclarations.AppendLine($"{accessibility} partial {propertyType} {propertyName} {{ get => Getter<{propertyType}>();  set=>Setter(value); }}");
+
                     if (partialBaseText.InterfacePropertyDeclarations != null &&
                             !interfaceProperties.Contains(propertyName))
                     {
@@ -193,6 +202,80 @@ namespace Neato.BaseGenerator
             }
         }
 
+        internal static void AddMapModifiedToMethod(PartialBaseText partialBaseText, List<string> messages)
+        {
+            var classProperties = GetPropertiesRecursive(partialBaseText.ClassNamedSymbol);
+            var classMethods = partialBaseText.ClassNamedSymbol.GetMembers().OfType<IMethodSymbol>().ToList() ?? [];
+
+            foreach (var classMethod in classMethods)
+            {
+                var methodBuilder = new StringBuilder();
+                messages.Add($"Method {classMethod.Name}");
+
+                if (classMethod.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is MethodDeclarationSyntax classSyntax)
+                {
+                    messages.Add($"MethodDeclarationSyntax {classMethod.Name}");
+
+                    var mapTo = classSyntax.Identifier.Text == "MapModifiedTo";
+                    if (mapTo && classSyntax.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
+                    {
+                        messages.Add($"Method {classMethod.Name} is a Match");
+
+                        methodBuilder.AppendLine($"{classSyntax.ToFullString().Trim().TrimEnd(';')}");
+                        methodBuilder.AppendLine("{");
+
+                        var parameterSymbol = classMethod.Parameters.SingleOrDefault();
+                        if (parameterSymbol == null)
+                        {
+                            messages.Add($"Single parameter not found for {classMethod.Name}");
+                            break;
+                        }
+                        else
+                        {
+                            messages.Add($"Parameter {parameterSymbol.Name} {parameterSymbol.Type} found for {classMethod.Name}");
+                        }
+
+                        var parameterSyntax = classSyntax.ParameterList.Parameters.First();
+                        var parameterIdentifier = parameterSyntax.Identifier.Text;
+
+                        var parameterProperties = GetPropertiesRecursive(parameterSymbol?.Type as INamedTypeSymbol);
+                        parameterProperties.ForEach(p =>
+                        {
+                            messages.Add($"Parameter Property {p.Name} {p.Type} found");
+                        });
+
+                        var propertiesMatched = false;
+
+                        foreach (var parameterProperty in parameterProperties)
+                        {
+                            var classProperty = classProperties.FirstOrDefault(p => p.Name == parameterProperty.Name);
+                            if (classProperty != null)
+                            {
+                                propertiesMatched = true;
+                                var nullException = "";
+
+                                if (classProperty.NullableAnnotation == NullableAnnotation.Annotated
+                                    && parameterProperty.NullableAnnotation != NullableAnnotation.Annotated)
+                                {
+                                    nullException = $"?? throw new NullReferenceException(\"{partialBaseText.ClassNamedSymbol?.ToDisplayString()}.{classProperty.Name}\")";
+                                }
+
+                                methodBuilder.AppendLine($"if (this[nameof({classProperty.Name})].IsModified){{");
+                                methodBuilder.AppendLine($"{parameterIdentifier}.{parameterProperty.Name} = this.{classProperty.Name}{nullException};");
+                                methodBuilder.AppendLine("}");
+                            }
+                        }
+
+                        methodBuilder.AppendLine("}");
+
+                        if (propertiesMatched)
+                        {
+                            partialBaseText.MapperMethods.Append(methodBuilder);
+                        }
+                    }
+                }
+            }
+        }
         public static string? FindNamespace(SyntaxNode syntaxNode)
         {
             if (syntaxNode.Parent is NamespaceDeclarationSyntax namespaceDeclarationSyntax)
@@ -221,6 +304,81 @@ namespace Neato.BaseGenerator
                 sb.AppendLine(s);
             }
             return sb.ToString();
+        }
+
+        public static List<IPropertySymbol> GetPropertiesRecursive(INamedTypeSymbol? classNamedSymbol)
+        {
+            var properties = classNamedSymbol?.GetMembers().OfType<IPropertySymbol>().ToList() ?? [];
+            if (classNamedSymbol?.BaseType != null)
+            {
+                properties.AddRange(GetPropertiesRecursive(classNamedSymbol.BaseType));
+            }
+            return properties;
+        }
+
+        internal static void UsingStatements(List<string> usingDirectives, PartialBaseText partialBaseText, string namespaceName, List<string> messages)
+        {
+            var parentClassDeclaration = partialBaseText.ClassDeclarationSyntax.Parent as ClassDeclarationSyntax;
+            var parentClassUsingText = "";
+
+            while (parentClassDeclaration != null)
+            {
+                messages.Add("Parent class: " + parentClassDeclaration.Identifier.Text);
+                parentClassUsingText = $"{parentClassDeclaration.Identifier.Text}.{parentClassUsingText}";
+                parentClassDeclaration = parentClassDeclaration.Parent as ClassDeclarationSyntax;
+            }
+
+            if (!string.IsNullOrEmpty(parentClassUsingText))
+            {
+                usingDirectives.Add($"using static {namespaceName}.{parentClassUsingText.TrimEnd('.')};");
+            }
+
+            var recurseClassDeclaration = partialBaseText.ClassDeclarationSyntax;
+
+            while (recurseClassDeclaration != null)
+            {
+                var compilationUnitSyntax = recurseClassDeclaration.SyntaxTree.GetCompilationUnitRoot();
+                foreach (var using_ in compilationUnitSyntax.Usings)
+                {
+                    if (!usingDirectives.Contains(using_.ToString()))
+                    {
+                        usingDirectives.Add(using_.ToString());
+                    }
+                }
+                recurseClassDeclaration = GetBaseClassDeclarationSyntax(partialBaseText.SemanticModel, recurseClassDeclaration, messages);
+            }
+        }
+
+        private static ClassDeclarationSyntax? GetBaseClassDeclarationSyntax(SemanticModel semanticModel, ClassDeclarationSyntax classDeclaration, List<string> messages)
+        {
+            try
+            {
+                var correctSemanticModel = semanticModel.Compilation.GetSemanticModel(classDeclaration.SyntaxTree);
+
+                var classSymbol = correctSemanticModel.GetDeclaredSymbol(classDeclaration) as INamedTypeSymbol;
+
+                if (classSymbol?.BaseType == null)
+                {
+                    return null;
+                }
+
+                var baseTypeSymbol = classSymbol.BaseType;
+                var baseTypeSyntaxReference = baseTypeSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+
+                if (baseTypeSyntaxReference == null)
+                {
+                    return null;
+                }
+
+                var baseTypeSyntaxNode = baseTypeSyntaxReference.GetSyntax() as ClassDeclarationSyntax;
+
+                return baseTypeSyntaxNode;
+            }
+            catch (Exception ex)
+            {
+                messages.Add(ex.Message);
+                return null;
+            }
         }
     }
 }

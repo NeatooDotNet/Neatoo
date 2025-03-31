@@ -1,8 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Neatoo.AuthorizationRules;
-using Neatoo.Internal;
-using Neatoo.RemoteFactory;
-using Neatoo.UnitTest.Demo;
+﻿using Neatoo.RemoteFactory;
 
 namespace Neatoo.UnitTest.Portal;
 
@@ -22,8 +18,25 @@ internal partial class PersonObject : EditBase<PersonObject>, IPersonObject
     public partial string FirstName { get; set; }
     public partial string LastName { get; set; }
 
+    public partial void MapTo(PersonObjectDto personDto);
+    public partial void MapFrom(PersonObjectDto personDto);
+
+    public partial void MapModifiedTo(PersonObjectDto personDto);
+
+    public void Method(PersonObjectDto dto)
+    {
+        if (this[nameof(FirstName)].IsModified)
+        {
+            dto.FirstName = this.FirstName;
+        }
+    }
 }
 
+public class PersonObjectDto
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+}
 
 public class PersonObjectTests
 {

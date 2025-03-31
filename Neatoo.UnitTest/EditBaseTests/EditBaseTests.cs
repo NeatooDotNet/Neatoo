@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neatoo.Core;
 using Neatoo.UnitTest.PersonObjects;
 using System.ComponentModel;
 
@@ -10,24 +11,18 @@ namespace Neatoo.UnitTest.EditBaseTests;
 public class EditBaseTests
 {
 
-    private IServiceScope scope;
     private IEditPerson editPerson;
 
     [TestInitialize]
     public void TestInitialize()
     {
-        scope = UnitTestServices.GetLifetimeScope();
+        var parentDto = PersonDto.Data().Where(p => !p.FatherId.HasValue && !p.MotherId.HasValue).First();
 
-        editPerson = scope.GetRequiredService<IEditPerson>();
-        var parentDto = scope.GetRequiredService<IReadOnlyList<PersonDto>>().Where(p => !p.FatherId.HasValue && !p.MotherId.HasValue).First();
+
+        editPerson = new EditPerson(new EditBaseServices<EditPerson>(null), new ShortNameRule(), new FullNameRule());
 
         editPerson.FillFromDto(parentDto);
-        editPerson.MarkOld();
-        editPerson.MarkUnmodified();
-        Assert.IsFalse(editPerson.IsModified);
-        Assert.IsFalse(editPerson.IsNew);
-        Assert.IsFalse(editPerson.IsSavable);
-        Assert.IsFalse(editPerson.IsBusy);
+
 
         editPerson.PropertyChanged += EditPersonPropertyChanged;
     }
@@ -49,6 +44,9 @@ public class EditBaseTests
     {
         Assert.IsFalse(editPerson.IsModified);
         Assert.IsFalse(editPerson.IsSelfModified);
+        Assert.IsFalse(editPerson.IsNew);
+        Assert.IsFalse(editPerson.IsSavable);
+        Assert.IsFalse(editPerson.IsBusy);
         Assert.IsFalse(editPerson.IsSavable);
     }
 

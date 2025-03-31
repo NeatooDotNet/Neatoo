@@ -2,22 +2,23 @@
 using Neatoo.RemoteFactory;
 using Neatoo.UnitTest.Objects;
 
-namespace Neatoo.UnitTest.ObjectPortal;
+namespace Neatoo.UnitTest.RemoteFactory;
 
-public class EditObject : EditBase<EditObject>, IEditObject
+public partial class EditObject : EditBase<EditObject>, IEditObject
 {
-
-    public EditObject(IEditBaseServices<EditObject> baseServices) : base(baseServices)
+    [Create]
+    public EditObject([Service] IEditBaseServices<EditObject> baseServices) : base(baseServices)
     {
-
+        GetProperty(nameof(CreateCalled)).LoadValue(true);
+        GetProperty(nameof(ID)).LoadValue(Guid.NewGuid()); // Don't run rules or mark as Modified
     }
 
-    public Guid? ID { get => Getter<Guid?>(); set => Setter(value); }
-    public Guid GuidCriteria { get => Getter<Guid>(); set => Setter(value); }
-    public int IntCriteria { get => Getter<int>(); set => Setter(value); }
-    public object[] MultipleCriteria { get => Getter<object[]>(); set => Setter(value); }
+    public partial Guid? ID { get; set; }
+    public partial Guid GuidCriteria { get; set; }
+    public partial int IntCriteria { get; set; }
+    public partial object[] MultipleCriteria { get; set; }
 
-    public bool CreateCalled { get => Getter<bool>(); set => Setter(value); }
+    public partial bool CreateCalled { get; set; }
 
     void IEditObject.MarkAsChild()
     {
@@ -42,13 +43,6 @@ public class EditObject : EditBase<EditObject>, IEditObject
     void IEditObject.MarkUnmodified()
     {
         this.MarkUnmodified();
-    }
-
-    [Create]
-    public void Create()
-    {
-        ID = Guid.NewGuid();
-        CreateCalled = true;
     }
 
     [Create]

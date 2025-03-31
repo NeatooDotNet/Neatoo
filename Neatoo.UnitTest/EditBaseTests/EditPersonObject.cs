@@ -4,13 +4,11 @@ using Neatoo.UnitTest.PersonObjects;
 namespace Neatoo.UnitTest.EditBaseTests;
 
 
-public interface IEditPerson : IPersonEdit
+public partial interface IEditPerson : IPersonEdit
 {
 
     IEditPerson Child { get; set; }
 
-    List<int> InitiallyNull { get; set; }
-    List<int> InitiallyDefined { get; set; }
     void MarkAsChild();
 
     void MarkNew();
@@ -23,20 +21,21 @@ public interface IEditPerson : IPersonEdit
 
 }
 
-public class EditPerson : PersonEditBase<EditPerson>, IEditPerson
+public partial class EditPerson : PersonEditBase<EditPerson>, IEditPerson
 {
     public EditPerson(IEditBaseServices<EditPerson> services,
         IShortNameRule shortNameRule,
         IFullNameRule fullNameRule) : base(services)
     {
+        using var paused = PauseAllActions();
         RuleManager.AddRules(shortNameRule, fullNameRule);
         InitiallyDefined = new List<int>() { 1, 2, 3 };
     }
 
-    public List<int> InitiallyNull { get => Getter<List<int>>(); set => Setter(value); }
-    public List<int> InitiallyDefined { get => Getter<List<int>>(); set => Setter(value); }
+    public partial List<int> InitiallyNull { get; set; }
+    public partial List<int> InitiallyDefined { get; set; }
 
-    public IEditPerson Child { get => Getter<IEditPerson>(); set => Setter(value); }
+    public partial IEditPerson Child { get; set; }
 
     void IEditPerson.MarkAsChild()
     {

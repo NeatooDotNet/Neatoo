@@ -29,7 +29,7 @@ public class EditBaseServices<T> : ValidateBaseServices<T>, IEditBaseServices<T>
 
     public new IPropertyManager<IProperty> PropertyManager => EditPropertyManager;
 
-    public EditBaseServices(IFactorySave<T> factory) : base() {
+    public EditBaseServices(IFactorySave<T>? factory) : base() {
 
         PropertyInfoList = new PropertyInfoList<T>((System.Reflection.PropertyInfo pi) => new PropertyInfoWrapper(pi));
 

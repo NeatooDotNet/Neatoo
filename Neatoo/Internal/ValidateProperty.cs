@@ -1,4 +1,5 @@
 ﻿using Neatoo.Internal;
+using Neatoo.Rules;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -11,9 +12,9 @@ public interface IValidateProperty : IProperty, INotifyPropertyChanged
     bool IsSelfValid { get; }
     bool IsValid { get; }
     Task RunAllRules(CancellationToken? token = null);
-    IReadOnlyList<string> ErrorMessages { get; }
-    internal void SetErrorsForRule(uint ruleIndex, IReadOnlyList<string> errorMessages);
-    internal void ClearErrorsForRule(uint ruleIndex);
+    IReadOnlyCollection<IRuleMessage> RuleMessages { get; }
+    internal void SetMessagesForRule(IReadOnlyList<IRuleMessage> ruleMessages);
+    internal void ClearMessagesForRule(uint ruleIndex);
     internal void ClearAllErrors();
     internal void ClearSelfErrors();
 }
@@ -31,61 +32,66 @@ public class ValidateProperty<T> : Property<T>, IValidateProperty<T>
     public ValidateProperty(IPropertyInfo propertyInfo) : base(propertyInfo) { }
 
     [JsonConstructor]
-    public ValidateProperty(string name, T value, string[] serializedErrorMessages, bool isReadOnly) : base(name, value, isReadOnly)
+    public ValidateProperty(string name, T value, IRuleMessage[] serializedRuleMessages, bool isReadOnly) : base(name, value, isReadOnly)
     {
-        for (int i = 0; i < serializedErrorMessages.Length; i++)
-        {
-            SetError((uint)i, new List<string> { serializedErrorMessages[i].ToString() });
-        }
+        RuleMessages = serializedRuleMessages.ToList();
     }
 
-    public bool IsSelfValid => ValueIsValidateBase != null ? true : !RuleErrorMessages.Any();
-    public bool IsValid => ValueIsValidateBase != null ? ValueIsValidateBase.IsValid : !RuleErrorMessages.Any();
+    public bool IsSelfValid => ValueIsValidateBase != null ? true : !RuleMessages.Any();
+    public bool IsValid => ValueIsValidateBase != null ? ValueIsValidateBase.IsValid : !RuleMessages.Any();
 
     public Task RunAllRules(CancellationToken? token = null) { return ValueIsValidateBase?.RunAllRules(token) ?? Task.CompletedTask; }
 
     [JsonIgnore]
-    public IReadOnlyList<string> ErrorMessages => RuleErrorMessages.SelectMany(r => r.Value).ToList().AsReadOnly();
+    IReadOnlyCollection<IRuleMessage> IValidateProperty.RuleMessages => 
+                            ValueIsValidateBase != null ? ValueIsValidateBase.RuleMessages :                                                   
+                                                                RuleMessages.AsReadOnly();
 
-    // [PortalDataMember] Ummm...ising the RuleIndex going to be different...
-    protected IDictionary<uint, List<string>> RuleErrorMessages { get; } = new ConcurrentDictionary<uint, List<string>>();
+    [JsonIgnore]
+    public List<IRuleMessage> RuleMessages { get; set; } = new List<IRuleMessage>();
 
-    public string[] SerializedErrorMessages => RuleErrorMessages.SelectMany(r => r.Value).ToArray();
+    public IRuleMessage[] SerializedRuleMessages => RuleMessages.ToArray();
 
-    protected void SetError(uint ruleIndex, IReadOnlyList<string> errorMessages)
+    [JsonIgnore]
+    private object RuleMessagesLock { get; } = new object();
+
+    protected void SetMessagesForRule(IReadOnlyList<IRuleMessage> ruleMessages)
     {
         Debug.Assert(ValueIsValidateBase == null, "If the Child is IValidateBase then it should be handling the errors");
-        RuleErrorMessages[ruleIndex] = errorMessages.ToList();
+        lock (RuleMessagesLock)
+        {
+            RuleMessages.RemoveAll(rm => ruleMessages.Any(rm2 => rm2.RuleIndex == rm.RuleIndex));
+            RuleMessages.AddRange(ruleMessages);
+        }
         OnPropertyChanged(nameof(IsValid));
-        OnPropertyChanged(nameof(ErrorMessages));
+        OnPropertyChanged(nameof(RuleMessages));
     }
 
-
-    void IValidateProperty.SetErrorsForRule(uint ruleIndex, IReadOnlyList<string> errorMessages)
+    void IValidateProperty.SetMessagesForRule(IReadOnlyList<IRuleMessage> ruleMessages)
     {
-        SetError(ruleIndex, errorMessages);
+        SetMessagesForRule(ruleMessages);
     }
 
-    void IValidateProperty.ClearErrorsForRule(uint ruleIndex)
+    void IValidateProperty.ClearMessagesForRule(uint ruleIndex)
     {
-        RuleErrorMessages.Remove(ruleIndex);
+        RuleMessages.RemoveAll(rm => rm.RuleIndex == ruleIndex);
         OnPropertyChanged(nameof(IsValid));
-        OnPropertyChanged(nameof(ErrorMessages));
+        OnPropertyChanged(nameof(RuleMessages));
     }
 
     public virtual void ClearSelfErrors()
     {
-        RuleErrorMessages.Clear();
+        RuleMessages.Clear();
         OnPropertyChanged(nameof(IsValid));
-        OnPropertyChanged(nameof(ErrorMessages));
+        OnPropertyChanged(nameof(RuleMessages));
     }
 
     public virtual void ClearAllErrors()
     {
-        RuleErrorMessages.Clear();
+        RuleMessages.Clear();
         ValueIsValidateBase?.ClearAllErrors();
 
         OnPropertyChanged(nameof(IsValid));
-        OnPropertyChanged(nameof(ErrorMessages));
+        OnPropertyChanged(nameof(RuleMessages));
     }
 }

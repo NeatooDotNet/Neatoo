@@ -17,7 +17,7 @@ public class FullNameAsyncRule : AsyncRuleBase<IPersonBase>, IFullNameAsyncRule
 
     public int RunCount { get; private set; }
 
-    public override async Task<PropertyErrors> Execute(IPersonBase target, CancellationToken? token = null)
+    public override async Task<IRuleMessages> Execute(IPersonBase target, CancellationToken? token = null)
     {
         RunCount++;
 
@@ -27,6 +27,6 @@ public class FullNameAsyncRule : AsyncRuleBase<IPersonBase>, IFullNameAsyncRule
 
         target.FullName = $"{target.Title} {target.ShortName}";
 
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 }

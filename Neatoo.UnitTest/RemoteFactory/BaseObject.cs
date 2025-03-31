@@ -2,7 +2,7 @@
 using Neatoo.RemoteFactory;
 using Neatoo.UnitTest.Objects;
 
-namespace Neatoo.UnitTest.ObjectPortal;
+namespace Neatoo.UnitTest.RemoteFactory;
 
 public interface IBaseObject : IBase
 {

@@ -1,0 +1,197 @@
+﻿@page "/"
+
+@using Neatoo.Core
+@using Person.DomainModel
+@inject IPersonModelFactory PersonModelFactory
+@inject IUser User
+
+<div class="h3">User Role:</div>
+<div class="row">
+    <div class="row">
+        <div class="col">
+            <InputRadioGroup @bind-Value="selectedRole" class="form-check-inline">
+                <div class="form-check-inline">
+                    <InputRadio id="create" class="form-check-input" Value="Role.None" />
+                    <label for="create" class="form-check-label">None</label>
+                </div>
+                <div class="form-check-inline">
+                    <InputRadio id="create" class="form-check-input" Value="Role.Create" />
+                    <label for="create" class="form-check-label">Create</label>
+                </div>
+                <div class="form-check-inline">
+                    <InputRadio id="fetch" class="form-check-input" Value="Role.Fetch" />
+                    <label for="fetch" class="form-check-label">Fetch</label>
+                </div>
+                <div class="form-check-inline">
+                    <InputRadio id="save" class="form-check-input" Value="Role.Update" />
+                    <label for="save" class="form-check-label">Update</label>
+                </div>
+                <div class="form-check-inline">
+                    <InputRadio id="delete" class="form-check-input" Value="Role.Delete" />
+                    <label for="delete" class="form-check-label">Delete</label>
+                </div>
+            </InputRadioGroup>
+        </div>
+    </div>
+</div>
+
+<div class="h3">Person</div>
+
+@if (PersonModel == null)
+{
+    <div class="h4">
+        <p>Not loaded</p>
+    </div>
+}
+else
+{
+    <EditForm Model="PersonModel" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <PersonApp.Component.EditTextBox EditProperty="@PersonModel["FirstName"]" />
+        </div>
+
+        <div class="mb-3">
+            <PersonApp.Component.EditTextBox EditProperty="@PersonModel["LastName"]" />
+        </div>
+
+        <div class="mb-3">
+            <PersonApp.Component.EditTextBox EditProperty="@PersonModel["Email"]" />
+        </div>
+
+        <div class="h4">Phone Numbers</div>
+        <button type="button" class="btn btn-primary" @onclick="AddPhone">+</button>
+        @foreach (var phone in PersonModel.PersonPhoneModelList)
+        {
+            <div class="mb-3">
+                <PersonApp.Component.EditTextBox EditProperty="@phone["PhoneNumber"]" />
+                <button type="button" class="btn btn-primary" @onclick="() => RemovePhone(phone)">-</button>
+            </div>
+        }
+
+        <div class="mb-3">
+            <PersonApp.Component.EditTextBox EditProperty="@PersonModel["Notes"]" />
+        </div>
+
+        <button type="submit" class="btn btn-primary" disabled="@(!CanUpdate || !PersonModel.IsSavable)">Update</button>
+    </EditForm>
+}
+
+<button type="button" class="btn btn-primary" @onclick="Create" disabled="@(!CanCreate)">Create</button>
+<button type="button" class="btn btn-primary" @onclick="Fetch" disabled="@(!CanFetch)">Fetch</button>
+<button type="button" class="btn btn-primary" @onclick="Delete" disabled="@(!CanDelete)">Delete</button>
+
+@code {
+
+    public IPersonModel? PersonModel { get; set; } = default!;
+
+    private bool CanCreate { get; set; }
+    private bool CanFetch { get; set; }
+    private bool CanUpdate { get; set; }
+    private bool CanDelete { get; set; }
+    private Role _selectedRole = Role.None;
+    public Role selectedRole
+    {
+        get => _selectedRole;
+        set
+        {
+            _selectedRole = value;
+            UserRoleChanged();
+        }
+    }
+
+    [Inject(Key = Neatoo.RemoteFactory.RemoteFactoryServices.HttpClientKey)]
+    private HttpClient httpClient { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // Handle the form submission, e.g., save the data to the database
+        NewPersonModel(await PersonModelFactory.Save(PersonModel!));
+    }
+
+    private async Task Fetch()
+    {
+        // Fetch the person data, e.g., from a database
+        NewPersonModel(await PersonModelFactory.Fetch());
+    }
+
+    private async Task Create()
+    {
+        NewPersonModel(await PersonModelFactory.Create());
+    }
+
+    private void NewPersonModel(IPersonModel? personModel)
+    {
+        if (PersonModel != null)
+        {
+            PersonModel.PropertyChanged -= PersonModelPropertyChanged;
+            PersonModel.NeatooPropertyChanged -= PersonModelNeatooPropertyChanged;
+        }
+
+        PersonModel = personModel;
+
+        if (PersonModel != null)
+        {
+            PersonModel.PropertyChanged += PersonModelPropertyChanged;
+            PersonModel.NeatooPropertyChanged += PersonModelNeatooPropertyChanged;
+        }
+    }
+
+    private void PersonModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        var isSavable = PersonModel!.IsSavable;
+        var messages = PersonModel!.RuleMessages;
+        if (e.PropertyName == nameof(IPersonModel.IsSavable))
+        {
+            InvokeAsync(() => StateHasChanged());
+        }
+    }
+
+    private Task PersonModelNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    {
+        var isSavable = PersonModel!.IsSavable;
+        var messages = PersonModel!.RuleMessages;
+
+        return Task.CompletedTask;
+    }
+
+    private async Task Delete()
+    {
+        this.PersonModel!.Delete();
+        await PersonModelFactory.Save(PersonModel!);
+        this.PersonModel = null;
+    }
+
+    private void UserRoleChanged()
+    {
+        httpClient.DefaultRequestHeaders.Remove("UserRoles");
+        httpClient.DefaultRequestHeaders.Add("UserRoles", selectedRole.ToString());
+        if (selectedRole == Role.None)
+        {
+            PersonModel = null;
+        }
+
+        User.Role = selectedRole;
+        CanCreate = PersonModelFactory.CanCreate();
+        CanFetch = PersonModelFactory.CanFetch();
+        CanUpdate = PersonModelFactory.CanUpdate();
+        CanDelete = PersonModelFactory.CanDelete();
+    }
+
+    private async Task AddPhone()
+    {
+        await PersonModel!.PersonPhoneModelList.AddPhoneNumber();
+    }
+
+    private void RemovePhone(IPersonPhoneModel personPhoneModel)
+    {
+        PersonModel!.PersonPhoneModelList.RemovePhoneNumber(personPhoneModel);
+    }
+}

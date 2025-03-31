@@ -119,10 +119,6 @@ public class PropertyManager<P> : IPropertyManager<P>, IJsonOnDeserialized
     {
         foreach (var p in properties.Cast<P>())
         {
-            if (PropertyBag.TryGetValue(p.Name, out var fd))
-            {
-                throw new InvalidOperationException("Property already set");
-            }
             PropertyBag[p.Name] = p;
         }
     }

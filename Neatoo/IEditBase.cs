@@ -1,5 +1,3 @@
-﻿using Neatoo.Internal;
-
-namespace Neatoo;
+﻿namespace Neatoo;
 
 

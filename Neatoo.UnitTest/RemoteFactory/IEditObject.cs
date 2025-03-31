@@ -1,11 +1,7 @@
-﻿namespace Neatoo.UnitTest.ObjectPortal;
+﻿namespace Neatoo.UnitTest.RemoteFactory;
 
-public interface IEditObject : IEditBase
+public partial interface IEditObject : IEditBase
 {
-    Guid? ID { get; set; }
-    int IntCriteria { get; }
-    Guid GuidCriteria { get; }
-    bool CreateCalled { get; set; }
     bool FetchCalled { get; set; }
     bool DeleteCalled { get; set; }
     bool UpdateCalled { get; set; }

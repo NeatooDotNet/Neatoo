@@ -13,12 +13,12 @@ public class RuleThrowsException : RuleBase<IPersonBase>, IRuleThrowsException
         AddTriggerProperties(_ => _.FirstName);
     }
 
-    public override PropertyErrors Execute(IPersonBase target)
+    public override IRuleMessages Execute(IPersonBase target)
     {
         if (target.FirstName == "Throw")
         {
             throw new Exception("Rule Failed");
         }
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 }

@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Neatoo\Neatoo.csproj" />
+    <ProjectReference Include="..\Neato.BaseGenerator\Neato.BaseGenerator.csproj" OutputItemType="Analyzer" />
   </ItemGroup>
 
 </Project>

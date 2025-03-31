@@ -10,7 +10,7 @@ internal class RecursiveRule : RuleBase<IPersonBase>, IRecursiveRule
     {
         AddTriggerProperties(_ => _.ShortName);
     }
-    public override PropertyErrors Execute(IPersonBase target)
+    public override IRuleMessages Execute(IPersonBase target)
     {
         if (target.ShortName == "Recursive")
         {
@@ -20,6 +20,6 @@ internal class RecursiveRule : RuleBase<IPersonBase>, IRecursiveRule
         {
             target.FirstName = "Error"; // trigger the ShortNameRule error
         }
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 }

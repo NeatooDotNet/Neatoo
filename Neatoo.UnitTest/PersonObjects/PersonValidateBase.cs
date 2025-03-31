@@ -48,10 +48,14 @@ public abstract class PersonValidateBase<T> : ValidateBase<T>, IPersonBase
 
     public void FillFromDto(PersonDto dto)
     {
+        PauseAllActions();
+
         this[nameof(Id)].SetValue(dto.PersonId);
 
         FirstName = dto.FirstName;
         LastName = dto.LastName;
         Title = dto.Title;
+
+        ResumeAllActions();
     }
 }

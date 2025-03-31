@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="4.13.0"></PackageReference>
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" Version="4.13.0"></PackageReference>
+		<PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" PrivateAssets="all" Version="4.13.0"></PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Person.DomainModel.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\..\Neato.BaseGenerator\Neato.BaseGenerator.csproj" OutputItemType="Analyzer" />
+	  <ProjectReference Include="..\..\..\Neatoo\Neatoo.csproj" />
+	  <ProjectReference Include="..\Person.Ef\Person.Ef.csproj" />
+	</ItemGroup>
+
+</Project>

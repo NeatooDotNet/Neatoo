@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Neatoo.UnitTest.ObjectPortal;
+using Neatoo.RemoteFactory;
 
 namespace Neatoo.UnitTest.RemoteFactory
 {
@@ -22,7 +22,7 @@ namespace Neatoo.UnitTest.RemoteFactory
         [TestMethod]
         public void EditBaseFactoryTests_IEditObjectCreateEditBaseObject()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
 
             var result = factory.Create();
 
@@ -34,7 +34,7 @@ namespace Neatoo.UnitTest.RemoteFactory
         [TestMethod]
         public async Task EditBaseFactoryTests_IEditObjectCreateEditBaseObjectInt()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
 
             var criteria = 10;
 
@@ -48,7 +48,7 @@ namespace Neatoo.UnitTest.RemoteFactory
         [TestMethod]
         public void EditBaseFactoryTests_EditBaseObjectCreateDependency()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
             var guidCriteria = Guid.NewGuid();
             var result = factory.Create(guidCriteria);
 
@@ -60,7 +60,7 @@ namespace Neatoo.UnitTest.RemoteFactory
         [TestMethod]
         public async Task EditBaseFactoryTests_EditBaseObjectCreateRemote()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
             var guidCriteria = Guid.NewGuid();
             var result = await factory.CreateRemote(guidCriteria);
 
@@ -72,19 +72,20 @@ namespace Neatoo.UnitTest.RemoteFactory
         [TestMethod]
         public void EditBaseFactoryTests_IEditObjectFetchEditBaseObject()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
 
             var result = factory.Fetch();
 
             Assert.IsNotNull(result.FetchCalled);
             Assert.IsFalse(result.IsNew);
             Assert.IsFalse(result.IsModified);
+            Assert.IsFalse(result.IsSavable);
         }
 
         [TestMethod]
         public void EditBaseFactoryTests_IEditObjectFetchEditBaseObjectGuid()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
 
             var guidCriteria = Guid.NewGuid();
 
@@ -93,12 +94,13 @@ namespace Neatoo.UnitTest.RemoteFactory
             Assert.AreEqual(guidCriteria, result.GuidCriteria);
             Assert.IsFalse(result.IsNew);
             Assert.IsFalse(result.IsModified);
+            Assert.IsFalse(result.IsSavable);
         }
 
         [TestMethod]
         public async Task EditBaseFactoryTests_FetchRemote()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
 
             var guidCriteria = Guid.NewGuid();
 
@@ -107,12 +109,13 @@ namespace Neatoo.UnitTest.RemoteFactory
             Assert.AreEqual(guidCriteria, result.GuidCriteria);
             Assert.IsFalse(result.IsNew);
             Assert.IsFalse(result.IsModified);
+            Assert.IsFalse(result.IsSavable);
         }
 
         [TestMethod]
         public async Task EditBaseFactoryTests_Save()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
 
             var result = factory.Create();
 
@@ -121,12 +124,13 @@ namespace Neatoo.UnitTest.RemoteFactory
             Assert.IsTrue(result.InsertCalled);
             Assert.IsFalse(result.IsNew);
             Assert.IsFalse(result.IsModified);
+            Assert.IsFalse(result.IsSavable);
         }
 
         [TestMethod]
         public void EditBaseFactoryTests_FetchFail()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
 
             var result = factory.FetchFail();
 
@@ -136,7 +140,7 @@ namespace Neatoo.UnitTest.RemoteFactory
         [TestMethod]
         public async Task EditBaseFactoryTests_FetchFailAsync()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
 
             var result = await factory.FetchFailAsync();
 
@@ -146,7 +150,7 @@ namespace Neatoo.UnitTest.RemoteFactory
         [TestMethod]
         public async Task EditBaseFactoryTests_FetchFailDependency()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
 
             var result = await factory.FetchFailDependency();
 
@@ -156,7 +160,7 @@ namespace Neatoo.UnitTest.RemoteFactory
         [TestMethod]
         public async Task EditBaseFactoryTests_FetchFailAsyncDependency()
         {
-            var factory = clientScope.GetRequiredService<EditObjectFactory>();
+            var factory = clientScope.GetRequiredService<IEditObjectFactory>();
 
             var result = await factory.FetchFailAsyncDependency();
 

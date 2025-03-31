@@ -74,7 +74,10 @@ public abstract class EditListBase<I> : ValidateListBase<I>, INeatooObject, IEdi
             if (!item.IsNew)
             {
                 //((IDataMapperEditTarget)item).MarkModified(); // TODO Add back
+                item.MarkModified();
             }
+
+            item.MarkAsChild();
         }
 
         base.InsertItem(index, item);
@@ -89,7 +92,6 @@ public abstract class EditListBase<I> : ValidateListBase<I>, INeatooObject, IEdi
             item.Delete();
 
             DeletedList.Add(item);
-
         }
 
         base.RemoveItem(index);

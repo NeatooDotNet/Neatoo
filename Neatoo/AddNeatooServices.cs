@@ -113,13 +113,7 @@ public static class AddNeatooServicesExtension
         services.AddTransient(typeof(IValidateBaseServices<>), typeof(ValidateBaseServices<>));
         services.AddTransient(typeof(IEditBaseServices<>), typeof(EditBaseServices<>));
 
-        services.AddTransient<IAllRequiredRulesExecuted.Factory>(cc =>
-        {
-            return (IEnumerable<IRequiredRule> rules) =>
-            {
-                return new AllRequiredRulesExecuted(rules);
-            };
-        });
+        services.AddTransient<IAllRequiredRulesExecuted, AllRequiredRulesExecuted>();
 
         if (!assemblies.Contains(typeof(AddNeatooServicesExtension).Assembly))
         {
@@ -132,8 +126,6 @@ public static class AddNeatooServicesExtension
         services.AddTransient<NeatooJsonConverterFactory, NeatooBaseJsonConverterFactory>();
         services.AddTransient(typeof(NeatooBaseJsonTypeConverter<>));
         services.AddTransient(typeof(NeatooListBaseJsonTypeConverter<>));
-
-
     }
 
     public static IServiceCollection AddTransientSelf<I, T>(this IServiceCollection services) where T : class, I where I : class
