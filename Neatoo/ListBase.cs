@@ -9,27 +9,21 @@ using System.Text.Json.Serialization;
 
 namespace Neatoo;
 
-
-public interface IReadOnlyListBase<I> : INeatooObject, INotifyCollectionChanged, INotifyPropertyChanged, IReadOnlyCollection<I>, IReadOnlyList<I>
-    where I : IBase
-{
-
-}
-
-
-public interface IListBase : INeatooObject, INotifyCollectionChanged, INotifyPropertyChanged, IEnumerable, ICollection, IList, INotifyNeatooPropertyChanged, IBaseMetaProperties
+public interface IListBase : INeatooObject, INotifyCollectionChanged, INotifyPropertyChanged, IList, INotifyNeatooPropertyChanged, IBaseMetaProperties
 {
     IBase? Parent { get; }
 }
 
-public interface IListBase<I> : IListBase, IReadOnlyListBase<I>, IEnumerable<I>, ICollection<I>, IList<I>
+public interface IListBase<I> : IList<I>, INeatooObject, INotifyCollectionChanged, INotifyPropertyChanged, INotifyNeatooPropertyChanged, IBaseMetaProperties
     where I : IBase
 {
-    new int Count { get; }
+    IBase? Parent { get; }
+
 }
 
 [Factory]
-public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, IListBase<I>, IListBase, IReadOnlyListBase<I>, ISetParent, IJsonOnDeserialized, IJsonOnDeserializing, IBaseMetaProperties
+public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, IListBase<I>, IListBase, ISetParent, IBaseMetaProperties,
+    IJsonOnDeserialized, IJsonOnDeserializing, IJsonOnSerialized, IJsonOnSerializing
     where I : IBase
 {
 
@@ -88,6 +82,7 @@ public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, ILis
 
     public virtual void OnDeserializing()
     {
+
     }
 
     public virtual void OnDeserialized()
@@ -101,6 +96,16 @@ public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, ILis
                 setParent.SetParent(this.Parent);
             }
         }
+    }
+
+    public virtual void OnSerialized()
+    {
+        
+    }
+
+    public virtual void OnSerializing()
+    {
+        
     }
 
     protected virtual Task RaiseNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
@@ -144,5 +149,5 @@ public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, ILis
             busyTask = this.FirstOrDefault(x => x.IsBusy)?.WaitForTasks();
         }
     }
-    
+
 }

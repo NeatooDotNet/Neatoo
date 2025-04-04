@@ -22,7 +22,8 @@ public class NeatooBaseJsonConverterFactory : NeatooJsonConverterFactory
         {
             return true;
         }
-        else if (typeToConvert.IsAssignableTo(typeof(IListBase)))
+        else if (typeToConvert.IsAssignableTo(typeof(IListBase)) || 
+            typeToConvert.GetInterfaces().Where(x => x.IsGenericType).Any(x => x.GetGenericTypeDefinition() == typeof(IListBase<>)))
         {
             return true;
         }
@@ -40,7 +41,8 @@ public class NeatooBaseJsonConverterFactory : NeatooJsonConverterFactory
         {
             return (JsonConverter)scope.GetRequiredService(typeof(NeatooBaseJsonTypeConverter<>).MakeGenericType(typeToConvert));
         }
-        else if (typeToConvert.IsAssignableTo(typeof(IListBase)))
+        else if (typeToConvert.IsAssignableTo(typeof(IListBase)) ||
+            typeToConvert.GetInterfaces().Where(x => x.IsGenericType).Any(x => x.GetGenericTypeDefinition() == typeof(IListBase<>)))
         {
             return (JsonConverter)scope.GetRequiredService(typeof(NeatooListBaseJsonTypeConverter<>).MakeGenericType(typeToConvert));
         }

@@ -38,6 +38,7 @@ namespace Person.Ef.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     PhoneNumber = table.Column<string>(type: "TEXT", nullable: false),
                     PersonId = table.Column<int>(type: "INTEGER", nullable: false),
+                    PhoneType = table.Column<int>(type: "INTEGER", nullable: false),
                     PersonEntityId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>

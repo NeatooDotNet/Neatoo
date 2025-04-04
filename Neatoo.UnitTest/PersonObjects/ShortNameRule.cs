@@ -14,7 +14,7 @@ public class ShortNameRule : RuleBase<IPersonBase>, IShortNameRule
         AddTriggerProperties(_ => _.LastName);
     }
 
-    public override IRuleMessages Execute(IPersonBase target)
+    protected override IRuleMessages Execute(IPersonBase target)
     {
         RunCount++;
         // System.Diagnostics.Debug.WriteLine($"Run Rule {target.FirstName} {target.LastName}");

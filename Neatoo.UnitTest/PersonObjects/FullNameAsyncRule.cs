@@ -17,7 +17,7 @@ public class FullNameAsyncRule : AsyncRuleBase<IPersonBase>, IFullNameAsyncRule
 
     public int RunCount { get; private set; }
 
-    public override async Task<IRuleMessages> Execute(IPersonBase target, CancellationToken? token = null)
+    protected override async Task<IRuleMessages> Execute(IPersonBase target, CancellationToken? token = null)
     {
         RunCount++;
 

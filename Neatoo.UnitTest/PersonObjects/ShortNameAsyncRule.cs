@@ -17,7 +17,7 @@ public class ShortNameAsyncRule : AsyncRuleBase<IPersonBase>, IShortNameAsyncRul
 
     public int RunCount { get; private set; }
 
-    public override async Task<IRuleMessages> Execute(IPersonBase target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(IPersonBase target, CancellationToken? token)
     {
         Console.WriteLine($"ShortNameAsyncRule: {UniqueId.ToString()} BEGIN");
 

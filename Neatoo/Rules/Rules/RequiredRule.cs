@@ -12,7 +12,7 @@ internal class RequiredRule<T> : RuleBase<T>, IRequiredRule
         TriggerProperties.Add(triggerProperty);
     }
 
-    public override IRuleMessages Execute(T target)
+    protected override IRuleMessages Execute(T target)
     {
         var value = ((ITriggerProperty<T>) TriggerProperties[0]).GetValue(target);
 

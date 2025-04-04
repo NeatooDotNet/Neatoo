@@ -21,7 +21,6 @@ public interface IValidateProperty : IProperty, INotifyPropertyChanged
 
 public interface IValidateProperty<T> : IValidateProperty, IProperty<T>
 {
-
 }
 
 public class ValidateProperty<T> : Property<T>, IValidateProperty<T>

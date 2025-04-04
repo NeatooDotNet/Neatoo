@@ -10,15 +10,17 @@ using System.Threading.Tasks;
 
 namespace Person.DomainModel
 {
-    public delegate Task<bool> IsUniqueName(string firstName, string lastName);
+    public delegate Task<bool> IsUniqueName(int? id, string firstName, string lastName);
 
     [Factory]
     public static class IsUniqueNameImplementation
     {
         [Execute<IsUniqueName>]
-        public static async Task<bool> IsUnique(string firstName, string lastName, [Service] IPersonContext personContext)
+        public static async Task<bool> IsUnique(int? id, string firstName, string lastName, [Service] IPersonContext personContext)
         {
-            if (await personContext.Persons.AnyAsync(x => x.FirstName == firstName && x.LastName == lastName))
+            await Task.Delay(1000); // Just for show
+
+            if (await personContext.Persons.AnyAsync(x => (id == null || x.Id != id) && x.FirstName == firstName && x.LastName == lastName))
             {
                 return false;
             }
@@ -39,9 +41,9 @@ namespace Person.DomainModel
             AddTriggerProperties(p => p.FirstName, p => p.LastName);
         }
 
-        public override async Task<IRuleMessages> Execute(IPersonModel t, CancellationToken? token = null)
+        protected override async Task<IRuleMessages> Execute(IPersonModel t, CancellationToken? token = null)
         {
-            if (!(await isUniqueName(t.FirstName!, t.LastName!)))
+            if (!(await isUniqueName(t.Id, t.FirstName!, t.LastName!)))
             {
                 return (new[]
                 {

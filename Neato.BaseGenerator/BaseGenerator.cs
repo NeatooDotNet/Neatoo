@@ -18,9 +18,7 @@ namespace Neato.BaseGenerator
                 .Where(static m => m is not null),
                 static (ctx, source) => Execute(ctx, source!.Value.classDeclaration, source.Value.semanticModel));
 
-        public static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax classDeclarationSyntax
-                     && !(classDeclarationSyntax.TypeParameterList?.Parameters.Any() ?? false || classDeclarationSyntax.Modifiers.Any(SyntaxKind.AbstractKeyword))
-                     && !(classDeclarationSyntax.AttributeLists.SelectMany(a => a.Attributes).Any(a => a.Name.ToString() == "SuppressFactory"));
+        public static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax classDeclarationSyntax;
 
         public static (ClassDeclarationSyntax classDeclaration, SemanticModel semanticModel)? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
         {
@@ -28,14 +26,14 @@ namespace Neato.BaseGenerator
             {
                 var classDeclaration = (ClassDeclarationSyntax)context.Node;
 
-                var classNamedTypeSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
+                //var classNamedTypeSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
 
-                if (classNamedTypeSymbol == null)
-                {
-                    return null;
-                }
+                //if (classNamedTypeSymbol == null)
+                //{
+                //    return null;
+                //}
 
-                if (classDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)) && ClassOrBaseClassIsNeatooBaseClass(classNamedTypeSymbol))
+                if (classDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))// && ClassOrBaseClassIsNeatooBaseClass(classNamedTypeSymbol))
                 {
                     return (classDeclaration, context.SemanticModel);
                 }
@@ -49,8 +47,6 @@ namespace Neato.BaseGenerator
 
             return null;
         }
-
-
 
         private static bool ClassOrBaseClassIsNeatooBaseClass(INamedTypeSymbol namedTypeSymbol)
         {
@@ -100,15 +96,21 @@ namespace Neato.BaseGenerator
                 // Generate the source code for the found method
                 var namespaceName = FindNamespace(classDeclarationSyntax) ?? "MissingNamespace";
 
-                UsingStatements(usingDirectives, partialText, namespaceName, messages);
-
-                var classDeclaration = classDeclarationSyntax.ToFullString().Substring(classDeclarationSyntax.Modifiers.FullSpan.Start - classDeclarationSyntax.FullSpan.Start, classDeclarationSyntax.Identifier.FullSpan.End - classDeclarationSyntax.Modifiers.FullSpan.Start);
-
-                AddPartialProperties(partialText);
-                AddMapModifiedToMethod(partialText, messages);
-
                 try
                 {
+                    UsingStatements(usingDirectives, partialText, namespaceName, messages);
+
+                    var classDeclaration = classDeclarationSyntax.ToFullString().Substring(classDeclarationSyntax.Modifiers.FullSpan.Start - classDeclarationSyntax.FullSpan.Start, classDeclarationSyntax.Identifier.FullSpan.End - classDeclarationSyntax.Modifiers.FullSpan.Start);
+
+                    if (classDeclarationSyntax.TypeParameterList != null)
+                    {
+                        classDeclaration = classDeclarationSyntax.ToFullString().Substring(classDeclarationSyntax.Modifiers.FullSpan.Start - classDeclarationSyntax.FullSpan.Start, classDeclarationSyntax.TypeParameterList.FullSpan.End - classDeclarationSyntax.Modifiers.FullSpan.Start);
+                    }
+
+                    AddPartialProperties(partialText);
+                    AddMapModifiedToMethod(partialText, messages);
+
+
                     var interfaceSource = "";
 
                     if (partialText.InterfaceDeclarationSyntax != null)
@@ -154,6 +156,8 @@ namespace Neato.BaseGenerator
             catch (Exception ex)
             {
                 source = $"// Error: {ex.Message}";
+                context.AddSource($"Error.{classDeclarationSyntax.Identifier.Text}.g.cs", source);
+
             }
         }
 
@@ -164,10 +168,6 @@ namespace Neato.BaseGenerator
             List<string> interfaceProperties = [];
 
             if (interfaceSyntax != null)
-            //&& 
-            //                    i.DeclaringSyntaxReferences
-            //                    .OfType<InterfaceDeclarationSyntax>()
-            //                    .Any(ids => ids.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))))
             {
                 var interfaceDeclarationSyntax = partialBaseText.ClassNamedSymbol.Interfaces.First(i => i.Name == $"I{partialBaseText.ClassNamedSymbol.Name}").DeclaringSyntaxReferences.First().GetSyntax() as InterfaceDeclarationSyntax;
 
@@ -180,24 +180,23 @@ namespace Neato.BaseGenerator
                 }
             }
 
-            var properties = partialBaseText.ClassDeclarationSyntax.Members.OfType<PropertyDeclarationSyntax>().ToDictionary(p => p.Identifier.Text, p => p);
+            var properties = partialBaseText.ClassDeclarationSyntax.Members.OfType<PropertyDeclarationSyntax>()
+                                .Where(p => p.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
+                                .ToDictionary(p => p.Identifier.Text, p => p);
 
             foreach (var propertyKVP in properties)
             {
                 var property = propertyKVP.Value;
-                if (property.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
+                var accessibility = property.Modifiers.First().ToString();
+                var propertyType = property.Type.ToString();
+                var propertyName = property.Identifier.Text;
+
+                partialBaseText.PropertyDeclarations.AppendLine($"{accessibility} partial {propertyType} {propertyName} {{ get => Getter<{propertyType}>();  set=>Setter(value); }}");
+
+                if (partialBaseText.InterfacePropertyDeclarations != null &&
+                        !interfaceProperties.Contains(propertyName))
                 {
-                    var accessibility = property.Modifiers.First().ToString();
-                    var propertyType = property.Type.ToString();
-                    var propertyName = property.Identifier.Text;
-
-                    partialBaseText.PropertyDeclarations.AppendLine($"{accessibility} partial {propertyType} {propertyName} {{ get => Getter<{propertyType}>();  set=>Setter(value); }}");
-
-                    if (partialBaseText.InterfacePropertyDeclarations != null &&
-                            !interfaceProperties.Contains(propertyName))
-                    {
-                        partialBaseText.InterfacePropertyDeclarations.AppendLine($"{propertyType} {propertyName} {{ get; set; }}");
-                    }
+                    partialBaseText.InterfacePropertyDeclarations.AppendLine($"{propertyType} {propertyName} {{ get; set; }}");
                 }
             }
         }

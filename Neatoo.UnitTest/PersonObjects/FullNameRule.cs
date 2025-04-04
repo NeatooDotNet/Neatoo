@@ -14,7 +14,7 @@ public class FullNameRule : RuleBase<IPersonBase>, IFullNameRule
         AddTriggerProperties(_ => _.ShortName);
     }
 
-    public override IRuleMessages Execute(IPersonBase target)
+    protected override IRuleMessages Execute(IPersonBase target)
     {
         RunCount++;
 

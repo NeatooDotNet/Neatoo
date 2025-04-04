@@ -10,7 +10,7 @@ internal class RecursiveRule : RuleBase<IPersonBase>, IRecursiveRule
     {
         AddTriggerProperties(_ => _.ShortName);
     }
-    public override IRuleMessages Execute(IPersonBase target)
+    protected override IRuleMessages Execute(IPersonBase target)
     {
         if (target.ShortName == "Recursive")
         {

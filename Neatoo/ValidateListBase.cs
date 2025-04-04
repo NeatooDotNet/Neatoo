@@ -1,5 +1,6 @@
 ﻿using Neatoo.Core;
 using Neatoo.Internal;
+using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
@@ -11,13 +12,15 @@ public interface IValidateListBase : IListBase
 
 }
 
-public interface IValidateListBase<I> : IListBase<I>, IValidateListBase, IValidateMetaProperties
+public interface IValidateListBase<I> : IListBase<I>, IValidateMetaProperties
     where I : IValidateBase
 {
 
 }
 
-public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, IValidateListBase, INotifyPropertyChanged
+public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, IValidateListBase,
+                                                        INotifyPropertyChanged,
+                                                        IFactoryOnStart, IFactoryOnComplete
     where I : IValidateBase
 {
     public ValidateListBase() : base()
@@ -117,5 +120,15 @@ public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, I
     {
         base.OnDeserialized();
         ResumeAllActions();
+    }
+
+    public virtual void FactoryStart(FactoryOperation factoryOperation)
+    {
+        IsPaused = true;
+    }
+
+    public virtual void FactoryComplete(FactoryOperation factoryOperation)
+    {
+        IsPaused = false;
     }
 }

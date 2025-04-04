@@ -90,12 +90,12 @@ namespace Neatoo
 
         protected override async Task ChildNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
         {
-            await base.ChildNeatooPropertyChanged(breadCrumbs);
-
             if (!IsPaused)
             {
                 await CheckRules(breadCrumbs.FullPropertyName);
             }
+
+            await base.ChildNeatooPropertyChanged(breadCrumbs);
 
             CheckIfMetaPropertiesChanged();
         }

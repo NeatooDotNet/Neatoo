@@ -1,11 +1,12 @@
 ﻿using System.Text.Json.Serialization;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using System.Collections.Generic;
+using System.Collections;
 
 namespace Neatoo.RemoteFactory.Internal;
 
 public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
-        where T : IListBase
 {
     private readonly IServiceProvider scope;
     private readonly IServiceAssemblies localAssemblies;
@@ -16,14 +17,14 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
         this.localAssemblies = localAssemblies;
     }
 
-    public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.StartObject)
         {
             throw new JsonException();
         }
 
-        T list = default;
+        IList? list = default;
         string id = string.Empty;
 
         while (reader.Read())
@@ -40,7 +41,7 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
                     jsonOnDeserialized.OnDeserialized();
                 }
 
-                return list;
+                return (T?) list;
             }
 
             // Get the key.
@@ -52,9 +53,9 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
             if (propertyName == "$ref")
             {
                 var refId = reader.GetString();
-                list = (T)options.ReferenceHandler.CreateResolver().ResolveReference(refId);
+                list = (IList)options.ReferenceHandler.CreateResolver().ResolveReference(refId);
                 reader.Read();
-                return list;
+                return (T) list;
             }
             else if (propertyName == "$id")
             {
@@ -64,7 +65,7 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
             {
                 var typeString = reader.GetString();
                 var type = localAssemblies.FindType(typeString);
-                list = (T)scope.GetRequiredService(type);
+                list = (IList) scope.GetRequiredService(type);
 
                 if (list is IJsonOnDeserializing jsonOnDeserializing)
                 {
@@ -110,7 +111,16 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
     }
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
-        var items = value.GetEnumerator();
+        if(!(value is IList list))
+        {
+            throw new JsonException($"{value.GetType()} is not an IList");
+        }
+
+        if (value is IJsonOnSerializing jsonOnSerializing)
+        {
+            jsonOnSerializing.OnSerializing();
+        }
+
 
         writer.WriteStartObject();
 
@@ -125,22 +135,32 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
         writer.WritePropertyName("$items");
         writer.WriteStartArray();
 
-        while (items.MoveNext())
+        void addItems(IEnumerator items)
         {
-            writer.WriteStartObject();
-
-            writer.WritePropertyName("$type");
-            writer.WriteStringValue(items.Current.GetType().FullName);
-
-            writer.WritePropertyName("$value");
-
-            JsonSerializer.Serialize(writer, items.Current, items.Current.GetType(), options);
-
-            writer.WriteEndObject();
+            while(items.MoveNext())
+            {
+                var item = items.Current;
+                writer.WriteStartObject();
+                writer.WritePropertyName("$type");
+                writer.WriteStringValue(item.GetType().FullName);
+                writer.WritePropertyName("$value");
+                JsonSerializer.Serialize(writer, item, item.GetType(), options);
+                writer.WriteEndObject();
+            }
+        }
+        addItems(list.GetEnumerator());
+        if (value is IEditListBase editList)
+        {
+            addItems(editList.DeletedList.GetEnumerator());
         }
 
         writer.WriteEndArray();
 
         writer.WriteEndObject();
+
+        if (value is IJsonOnSerialized jsonOnSerialized)
+        {
+            jsonOnSerialized.OnSerialized();
+        }
     }
 }

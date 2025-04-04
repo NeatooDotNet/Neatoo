@@ -80,7 +80,7 @@ public partial class EditObject : EditBase<EditObject>, IEditObject
 
 public interface IEditObjectList : IEditListBase<IEditObject>
 {
-
+    List<IEditObject> DeletedList { get; }
 }
 
 public class EditObjectList : EditListBase<IEditObject>, IEditObjectList
@@ -90,4 +90,5 @@ public class EditObjectList : EditListBase<IEditObject>, IEditObjectList
 
     }
 
+    List<IEditObject> IEditObjectList.DeletedList => DeletedList;
 }

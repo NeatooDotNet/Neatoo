@@ -11,7 +11,7 @@ internal class AsyncDelayRule : AsyncRuleBase<AsyncValidateObject>
         AddTriggerProperties(_ => _.AsyncDelayRuleValue);
     }
     public int RunCount { get; private set; } = 0;
-    public override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
     {
         RunCount++;
         await Task.Delay(target.AsyncDelayRuleValue!.Value);
@@ -27,7 +27,7 @@ internal class AsyncDelayUpdateChildRule : AsyncRuleBase<AsyncValidateObject>
     }
     public int RunCount { get; private set; } = 0;
 
-    public override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
     {
         RunCount++;
         await Task.Delay(2);
@@ -52,7 +52,7 @@ internal class SyncRuleA : RuleBase<AsyncValidateObject>
 
     public int RunCount { get; private set; } = 0;
 
-    public override IRuleMessages Execute(AsyncValidateObject target)
+    protected override IRuleMessages Execute(AsyncValidateObject target)
     {
         target.NestedSyncB = Guid.NewGuid().ToString();
         RunCount++;
@@ -67,7 +67,7 @@ internal class NestedSyncRuleB : RuleBase<AsyncValidateObject>
     }
     public int RunCount { get; private set; } = 0;
 
-    public override IRuleMessages Execute(AsyncValidateObject target)
+    protected override IRuleMessages Execute(AsyncValidateObject target)
     {
         RunCount++;
         return RuleMessages.None;
@@ -81,7 +81,7 @@ internal class AsyncRuleCanWait : AsyncRuleBase<AsyncValidateObject>
         AddTriggerProperties(_ => _.AsyncRulesCanWait);
     }
     public int RunCount { get; private set; } = 0;
-    public override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
     {
         RunCount++;
         await Task.Delay(2);
@@ -100,7 +100,7 @@ internal class AsyncRuleCanWaitNested : AsyncRuleBase<AsyncValidateObject>
         AddTriggerProperties(_ => _.AsyncRulesCanWait);
     }
     public int RunCount { get; private set; } = 0;
-    public override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
     {
         RunCount++;
         await Task.Delay(2);

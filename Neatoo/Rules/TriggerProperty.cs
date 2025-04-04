@@ -49,6 +49,12 @@ public class TriggerProperty<T> : ITriggerProperty<T>
             return RecurseMembers(memberExpression.Expression, properties);
         }
 
+        if(expression is MethodCallExpression methodCall)
+        {
+            // allow parent.ChildList[0].PropertyName . Maybe a better way??
+            return RecurseMembers(methodCall.Object, properties);
+        }
+
         properties.Reverse();
 
         return string.Join('.', properties);

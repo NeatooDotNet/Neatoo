@@ -14,15 +14,16 @@ public interface IRuleManager
     void AddRule<T>(IRule<T> rule) where T : IValidateBase;
     void AddRules<T>(params IRule<T>[] rules) where T : IValidateBase;
     Task RunRule(IRule r, CancellationToken? token = null);
+    Task RunRule<T>(CancellationToken? token = null) where T : IRule;
 }
 
 
 public interface IRuleManager<T> : IRuleManager
     where T : class, IValidateBase
 {
-    ActionFluentRule<T> AddAction(Action<T> func, Expression<Func<T, object?>> triggerProperty);
+    ActionFluentRule<T> AddAction(Action<T> func, params Expression<Func<T, object?>>[] triggerProperties);
     ValidationFluentRule<T> AddValidation(Func<T, string> func, Expression<Func<T, object?>> triggerProperty);
-    ActionAsyncFluentRule<T> AddActionAsync(Func<T, Task> func, Expression<Func<T, object?>> triggerProperty);
+    ActionAsyncFluentRule<T> AddActionAsync(Func<T, Task> func, params Expression<Func<T, object?>>[] triggerProperties);
     AsyncFluentRule<T> AddValidationAsync(Func<T, Task<string>> func, Expression<Func<T, object?>> triggerProperty);
 }
 
@@ -97,17 +98,28 @@ public class RuleManager<T> : IRuleManager<T>
         }
     }
 
-    public ActionAsyncFluentRule<T> AddActionAsync(Func<T, Task> func, Expression<Func<T, object?>> triggerProperty)
+    public async Task RunRule<T1>(CancellationToken? token = null) where T1 : IRule
     {
-        ActionAsyncFluentRule<T> rule = new ActionAsyncFluentRule<T>(func, triggerProperty);
+        foreach (var rule in Rules)
+        {
+            if(rule.Value is T1 r)
+            {
+                await rule.Value.RunRule(Target, token);
+            }
+        }
+    }
+
+    public ActionAsyncFluentRule<T> AddActionAsync(Func<T, Task> func, params Expression<Func<T, object?>>[] triggerProperties)
+    {
+        ActionAsyncFluentRule<T> rule = new ActionAsyncFluentRule<T>(func, triggerProperties);
         Rules.Add(ruleIndex++, rule);
         rule.OnRuleAdded(this, ruleIndex);
         return rule;
     }
 
-    public ActionFluentRule<T> AddAction(Action<T> func, Expression<Func<T, object?>> triggerProperty)
+    public ActionFluentRule<T> AddAction(Action<T> func, params Expression<Func<T, object?>>[] triggerProperties)
     {
-        ActionFluentRule<T> rule = new ActionFluentRule<T>(func, triggerProperty);
+        ActionFluentRule<T> rule = new ActionFluentRule<T>(func, triggerProperties);
         Rules.Add(ruleIndex++, rule);
         rule.OnRuleAdded(this, ruleIndex);
         return rule;

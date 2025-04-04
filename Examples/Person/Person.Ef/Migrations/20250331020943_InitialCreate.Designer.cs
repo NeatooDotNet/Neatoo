@@ -11,7 +11,7 @@ using Person.Ef;
 namespace Person.Ef.Migrations
 {
     [DbContext(typeof(PersonContext))]
-    [Migration("20250327024242_InitialCreate")]
+    [Migration("20250331020943_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -73,6 +73,9 @@ namespace Person.Ef.Migrations
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("PhoneType")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 

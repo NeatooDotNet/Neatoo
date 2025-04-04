@@ -19,7 +19,7 @@ public class FullNameDependencyRule : RuleBase<IPersonBase>, IFullNameDependency
 
     private IDisposableDependency DisposableDependency { get; }
 
-    public override IRuleMessages Execute(IPersonBase target)
+    protected override IRuleMessages Execute(IPersonBase target)
     {
 
         var dd = DisposableDependency ?? throw new ArgumentNullException(nameof(DisposableDependency));

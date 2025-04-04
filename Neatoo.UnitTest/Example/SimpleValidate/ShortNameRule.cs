@@ -12,7 +12,7 @@ internal class ShortNameRule : RuleBase<ISimpleValidateObject>, IShortNameRule
         AddTriggerProperties(_ => _.LastName);
     }
 
-    public override IRuleMessages Execute(ISimpleValidateObject target)
+    protected override IRuleMessages Execute(ISimpleValidateObject target)
     {
 
         var ruleMessages = new RuleMessages();

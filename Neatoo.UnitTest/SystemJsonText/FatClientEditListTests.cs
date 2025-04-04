@@ -152,5 +152,27 @@ public class FatClientEditListTests
         Assert.IsFalse(newTarget.IsNew);
 
     }
+
+    [TestMethod]
+    public void FatClientEditList_DeletedList()
+    {
+        var child = scope.GetRequiredService<IEditObject>();
+        target.Add(child);
+
+        child.ID = Guid.NewGuid();
+        child.Name = Guid.NewGuid().ToString();
+        child.MarkOld();
+
+        target.Remove(child);
+
+        Assert.IsTrue(child.IsDeleted);
+        Assert.IsTrue(target.DeletedList.Contains(child));
+
+        var json = Serialize(target);
+
+        var newTarget = Deserialize<IEditObjectList>(json);
+
+        Assert.IsTrue(newTarget.DeletedList.Any(d => d.ID == child.ID));
+    }
 }
 

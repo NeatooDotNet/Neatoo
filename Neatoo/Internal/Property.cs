@@ -65,12 +65,12 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
         }
     }
 
+    // TODO: This should be outside of the base class. UI Concern
     [JsonIgnore]
     public virtual string? StringValue
     {
         get
         {
-            Console.WriteLine($"Read StringValue: {Value?.ToString()}");
             return Value?.ToString();
         }
         set
@@ -81,7 +81,6 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
 
     public async Task SetStringValue(string? value)
     {
-        Console.WriteLine($"Set StringValue: {value}");
         if (value == null)
         {
             await SetValue<T?>(default);

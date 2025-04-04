@@ -14,5 +14,5 @@ public interface IPersonBase : IValidateBase
     string ShortName { get; set; }
     string Title { get; set; }
     uint? Age { get; set; }
-    void FillFromDto(PersonDto dto);
+    void FromDto(PersonDto dto);
 }

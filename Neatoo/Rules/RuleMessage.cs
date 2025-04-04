@@ -62,10 +62,60 @@ public interface IRuleMessages : IList<IRuleMessage>
 public class RuleMessages : List<IRuleMessage>, IRuleMessages
 {
 
+    public RuleMessages(params RuleMessage[] ruleMessages)
+    {
+        this.AddRange(ruleMessages);
+    }
+
     public static RuleMessages None = new RuleMessages();
 
     public void Add(string propertyName, string message)
     {
         Add(new RuleMessage(propertyName, message));
     }
+
+    public static RuleMessages If(bool expr, string propertyName, string message)
+    {
+        var result = new RuleMessages();
+
+        if (expr)
+        {
+            result.Add(propertyName, message);
+        }
+        return result;
+    }
 }
+
+public static class RuleMessagesBuilder
+{
+    public static IRuleMessages If(this IRuleMessages ruleMessages, bool expr, string propertyName, string message)
+    {
+        ArgumentNullException.ThrowIfNull(ruleMessages, nameof(ruleMessages));
+
+        if (expr)
+        {
+            ruleMessages.Add(propertyName, message);
+        }
+
+        return ruleMessages;
+    }
+
+    public static IRuleMessages ElseIf(this IRuleMessages ruleMessages, Func<bool> expr, string propertyName, string message)
+    {
+        if (ruleMessages.Any())
+        {
+            return ruleMessages;
+        }
+
+        ArgumentNullException.ThrowIfNull(ruleMessages, nameof(ruleMessages));
+
+        if (expr())
+        {
+            ruleMessages.Add(propertyName, message);
+        }
+
+        return ruleMessages;
+    }
+}
+
+

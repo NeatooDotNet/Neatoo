@@ -14,7 +14,7 @@ public class EditRule : RuleBase<EditRuleMessages>
     {
         TriggerProperties.Add(new TriggerProperty<EditRuleMessages>(t => t.Id));
     }
-    public override IRuleMessages Execute(EditRuleMessages target)
+    protected override IRuleMessages Execute(EditRuleMessages target)
     {
         if (target.Id == 2)
         {

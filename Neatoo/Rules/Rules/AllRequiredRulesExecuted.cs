@@ -26,7 +26,7 @@
             ruleManager.RunRule(this);
         }
 
-        public override IRuleMessages Execute(IValidateBase target)
+        protected override IRuleMessages Execute(IValidateBase target)
         {
             List<string> propertyNames = new List<string>();
             List<ITriggerProperty> triggerProperties = new List<ITriggerProperty>();

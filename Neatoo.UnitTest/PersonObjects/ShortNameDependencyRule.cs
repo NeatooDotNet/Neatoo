@@ -18,7 +18,7 @@ public class ShortNameDependencyRule : RuleBase<IPersonBase>, IShortNameDependen
 
     private IDisposableDependency DisposableDependency { get; }
 
-    public override IRuleMessages Execute(IPersonBase target)
+    protected override IRuleMessages Execute(IPersonBase target)
     {
 
         // System.Diagnostics.Debug.WriteLine($"Run Rule {target.FirstName} {target.LastName}");

@@ -12,7 +12,7 @@
 </style>
 
 <label for="inputText" class="form-label">@EditProperty.DisplayName</label>
-<InputText id="inputText" @bind-Value:get="@EditProperty.StringValue"
+<InputText id="@EditProperty.Name" @bind-Value:get="@EditProperty.StringValue"
            @bind-Value:set="(value) => EditProperty.SetStringValue(value)"
         disabled="@EditProperty.IsBusy"
         class="@GetInputClass()"

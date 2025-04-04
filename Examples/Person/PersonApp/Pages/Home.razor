@@ -2,6 +2,7 @@
 
 @using Neatoo.Core
 @using Person.DomainModel
+@using BlazorBootstrap
 @inject IPersonModelFactory PersonModelFactory
 @inject IUser User
 
@@ -60,13 +61,24 @@ else
         <div class="mb-3">
             <PersonApp.Component.EditTextBox EditProperty="@PersonModel["Email"]" />
         </div>
+       
+        <div class="mb-3">
+            <div class="h4">Phone Numbers</div>
+            <button type="button" class="btn btn-primary" @onclick="AddPhone">+</button>
+        </div>
 
-        <div class="h4">Phone Numbers</div>
-        <button type="button" class="btn btn-primary" @onclick="AddPhone">+</button>
         @foreach (var phone in PersonModel.PersonPhoneModelList)
         {
             <div class="mb-3">
-                <PersonApp.Component.EditTextBox EditProperty="@phone["PhoneNumber"]" />
+                <Dropdown Color="@phone.IsValid.ToDropdownColor()">
+                    <DropdownToggleButton>@(phone.PhoneType.ToString() ?? "Phone Type")</DropdownToggleButton>
+                    <DropdownMenu>
+                        <DropdownItem @onclick="() => UpdatePhoneType(phone, PhoneType.Home)" Type="DropdownItemType.Button">Home</DropdownItem>
+                        <DropdownItem @onclick="() => UpdatePhoneType(phone, PhoneType.Mobile)" Type="DropdownItemType.Button">Mobile</DropdownItem>
+                        <DropdownItem @onclick="() => UpdatePhoneType(phone, PhoneType.Work)" Type="DropdownItemType.Button">Work</DropdownItem>
+                    </DropdownMenu>
+                </Dropdown>
+                <PersonApp.Component.EditTextBox EditProperty="@phone[nameof(IPersonPhoneModel.PhoneNumber)]" />
                 <button type="button" class="btn btn-primary" @onclick="() => RemovePhone(phone)">-</button>
             </div>
         }
@@ -152,12 +164,20 @@ else
         {
             InvokeAsync(() => StateHasChanged());
         }
+
+        Console.WriteLine($"Property changed: {e.PropertyName}");
+        Console.WriteLine($"IsSavable: {isSavable}");
+        Console.WriteLine($"Messages: {string.Join(Environment.NewLine, messages.Select(m => m.Message))}");
     }
 
     private Task PersonModelNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
     {
         var isSavable = PersonModel!.IsSavable;
         var messages = PersonModel!.RuleMessages;
+
+        Console.WriteLine($"Neatoo Property changed: {breadCrumbs.FullPropertyName}");
+        Console.WriteLine($"IsSavable: {isSavable}");
+        Console.WriteLine($"Messages: {string.Join(Environment.NewLine, messages.Select(m => m.Message))}"); 
 
         return Task.CompletedTask;
     }
@@ -193,5 +213,10 @@ else
     private void RemovePhone(IPersonPhoneModel personPhoneModel)
     {
         PersonModel!.PersonPhoneModelList.RemovePhoneNumber(personPhoneModel);
+    }
+
+    private void UpdatePhoneType(IPersonPhoneModel personPhone, PhoneType phoneType)
+    {
+        personPhone.PhoneType = phoneType;
     }
 }

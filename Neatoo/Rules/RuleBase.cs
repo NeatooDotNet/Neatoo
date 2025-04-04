@@ -61,7 +61,7 @@ public abstract class AsyncRuleBase<T> : IRule<T>
         TriggerProperties.AddRange(triggerProperties);
     }
 
-    public abstract Task<IRuleMessages> Execute(T t, CancellationToken? token = null);
+    protected abstract Task<IRuleMessages> Execute(T t, CancellationToken? token = null);
 
     protected IRuleMessages? PreviousErrors { get; set; }
 
@@ -176,9 +176,9 @@ public abstract class RuleBase<T> : AsyncRuleBase<T>
     {
     }
 
-    public abstract IRuleMessages Execute(T target);
+    protected abstract IRuleMessages Execute(T target);
 
-    public sealed override Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
+    protected sealed override Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
     {
         return Task.FromResult(Execute(target));
     }
@@ -188,12 +188,12 @@ public class ActionFluentRule<T> : RuleBase<T>
 where T : class, IValidateBase
 {
     private Action<T> ExecuteFunc { get; }
-    public ActionFluentRule(Action<T> execute, Expression<Func<T, object?>> triggerProperty) : base([triggerProperty])
+    public ActionFluentRule(Action<T> execute, params Expression<Func<T, object?>>[] triggerProperties) : base(triggerProperties)
     {
         this.ExecuteFunc = execute;
     }
 
-    public override IRuleMessages Execute(T target)
+    protected override IRuleMessages Execute(T target)
     {
         ExecuteFunc(target);
         return RuleMessages.None;
@@ -201,15 +201,15 @@ where T : class, IValidateBase
 }
 
 public class ActionAsyncFluentRule<T> : AsyncRuleBase<T>
-where T : class, IValidateBase
+    where T : class, IValidateBase
 {
     private Func<T, Task> ExecuteFunc { get; }
-    public ActionAsyncFluentRule(Func<T, Task> execute, Expression<Func<T, object?>> triggerProperty) : base([triggerProperty])
+    public ActionAsyncFluentRule(Func<T, Task> execute, params Expression<Func<T, object?>>[] triggerProperties) : base(triggerProperties)
     {
         this.ExecuteFunc = execute;
     }
 
-    override public async Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
+    protected override async Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
     {
         await ExecuteFunc(target);
         return RuleMessages.None;
@@ -225,7 +225,7 @@ public class ValidationFluentRule<T> : RuleBase<T>
         this.ExecuteFunc = execute;
     }
 
-    public override IRuleMessages Execute(T target)
+    protected override IRuleMessages Execute(T target)
     {
         var result = ExecuteFunc(target);
 
@@ -250,7 +250,7 @@ where T : class, IValidateBase
         this.ExecuteFunc = execute;
     }
 
-    public override async Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
+    protected override async Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
     {
         var result = await ExecuteFunc(target);
 

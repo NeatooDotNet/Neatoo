@@ -11,7 +11,6 @@ public interface IPersonContext
 {
 	DbSet<PersonEntity> Persons { get; }
     DbSet<PersonPhoneEntity> PersonPhones { get; }
-
     Task DeleteAllPersons();
 	void DeletePerson(PersonEntity person);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
@@ -88,6 +87,7 @@ public class PersonPhoneEntity : IdPropertyChangedBase
     public string PhoneNumber { get; set; } = null!;
 
     public virtual int PersonId { get; set; }
+	public virtual int PhoneType { get; set; }
 }
 
 public abstract class IdPropertyChangedBase : INotifyPropertyChanged

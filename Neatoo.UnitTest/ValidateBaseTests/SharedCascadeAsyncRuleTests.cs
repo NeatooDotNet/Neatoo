@@ -25,7 +25,7 @@ public class SharedShortNameRule<T> : Rules.AsyncRuleBase<T>, ISharedShortNameRu
         base.AddTriggerProperties(_=> _.ShortName, _=>_.FirstName, _=>_.LastName);
     }
 
-    public override async Task<IRuleMessages> Execute(T target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(T target, CancellationToken? token)
     {
         await Task.Delay(10);
 

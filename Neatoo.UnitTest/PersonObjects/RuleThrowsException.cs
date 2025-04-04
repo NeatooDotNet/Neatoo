@@ -13,7 +13,7 @@ public class RuleThrowsException : RuleBase<IPersonBase>, IRuleThrowsException
         AddTriggerProperties(_ => _.FirstName);
     }
 
-    public override IRuleMessages Execute(IPersonBase target)
+    protected override IRuleMessages Execute(IPersonBase target)
     {
         if (target.FirstName == "Throw")
         {
