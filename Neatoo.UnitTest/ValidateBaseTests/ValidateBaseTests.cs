@@ -224,8 +224,8 @@ public class ValidateBaseTests
         validate.TestMarkInvalid(message = Guid.NewGuid().ToString());
         Assert.IsFalse(validate.IsValid);
         Assert.IsFalse(validate.IsSelfValid);
-        Assert.AreEqual(1, validate.BrokenRuleMessages.Count);
-        Assert.AreEqual(message, validate.BrokenRuleMessages.Single());
+        Assert.AreEqual(1, validate.RuleMessages.Count);
+        Assert.AreEqual(message, validate.RuleMessages.Single().Message);
     }
 
     [TestMethod]

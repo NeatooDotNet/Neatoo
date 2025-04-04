@@ -14,19 +14,19 @@ public class ShortNameRule : RuleBase<IPersonBase>, IShortNameRule
         AddTriggerProperties(_ => _.LastName);
     }
 
-    public override PropertyErrors Execute(IPersonBase target)
+    protected override IRuleMessages Execute(IPersonBase target)
     {
         RunCount++;
         // System.Diagnostics.Debug.WriteLine($"Run Rule {target.FirstName} {target.LastName}");
 
         if (target.FirstName?.StartsWith("Error") ?? false)
         {
-            return (nameof(IPersonBase.FirstName), target.FirstName);
+            return (nameof(IPersonBase.FirstName), target.FirstName).AsRuleMessages();
         }
 
         target.ShortName = $"{target.FirstName} {target.LastName}";
 
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 
 }

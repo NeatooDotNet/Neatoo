@@ -82,4 +82,24 @@ public class BaseSeralizationTests
 
         Assert.ThrowsException<PropertyReadOnlyException>(() => deserialized[nameof(IBaseObject.PrivateProperty)].SetValue(Guid.NewGuid().ToString()));
     }
+
+    public class WhatHappens
+    {
+        public WhatHappens()
+        {
+            Property = "Hello";
+        }
+        public string Property { get; set; }
+    }
+
+
+    [TestMethod]
+    public void Serialize_WhatHappens()
+    {
+        var obj = new WhatHappens();
+        obj.Property = "NotHello";
+        var json = serializer.Serialize(obj);
+        var deserialized = (WhatHappens)serializer.Deserialize(json, typeof(WhatHappens));
+        Assert.AreEqual(obj.Property, deserialized.Property);
+    }
 }

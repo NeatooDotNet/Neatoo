@@ -11,7 +11,7 @@ public interface IValidateObject : IPersonBase
     void TestMarkInvalid(string message);
 }
 
-internal class ValidateObject : PersonValidateBase<ValidateObject>, IValidateObject
+internal partial class ValidateObject : PersonValidateBase<ValidateObject>, IValidateObject
 {
     public IShortNameRule ShortNameRule { get; }
     public IFullNameRule FullNameRule { get; }
@@ -28,12 +28,13 @@ internal class ValidateObject : PersonValidateBase<ValidateObject>, IValidateObj
         FullNameRule = fullNameRule;
     }
 
-    public IValidateObject Child { get { return Getter<IValidateObject>(); } set { Setter(value); } }
+    public partial IValidateObject Child { get; set; }
+    public partial IValidateObjectList ChildList { get; set; }
 
     [Fetch]
-    public async Task Fetch(PersonDto person, [Service] ValidateObjectFactory portal, [Service] IReadOnlyList<PersonDto> personTable)
+    public async Task Fetch(PersonDto person, [Service] IValidateObjectFactory portal, [Service] IReadOnlyList<PersonDto> personTable)
     {
-        base.FillFromDto(person);
+        base.FromDto(person);
 
         var childDto = personTable.FirstOrDefault(p => p.FatherId == Id);
 

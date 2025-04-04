@@ -12,7 +12,7 @@ internal class RequiredRule<T> : RuleBase<T>, IRequiredRule
         TriggerProperties.Add(triggerProperty);
     }
 
-    public override PropertyErrors Execute(T target)
+    protected override IRuleMessages Execute(T target)
     {
         var value = ((ITriggerProperty<T>) TriggerProperties[0]).GetValue(target);
 
@@ -33,8 +33,8 @@ internal class RequiredRule<T> : RuleBase<T>, IRequiredRule
 
         if (isError)
         {
-            return new PropertyError(TriggerProperties.Single().PropertyName, $"{TriggerProperties[0].PropertyName} is required.");
+            return (TriggerProperties.Single().PropertyName, $"{TriggerProperties[0].PropertyName} is required.").AsRuleMessages();
         }
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 }

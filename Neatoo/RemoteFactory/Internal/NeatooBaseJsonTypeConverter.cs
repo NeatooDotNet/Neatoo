@@ -31,7 +31,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
 
 
 
-        T result = default;
+        T? result = default;
         string id = string.Empty;
 
         while (reader.Read())
@@ -75,7 +75,23 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             {
                 var fullName = reader.GetString();
                 var type = localAssemblies.FindType(fullName);
-                result = (T)scope.GetRequiredService(type);
+                result = (T)scope.GetService(type);
+
+                if(result == null)
+                {
+                    try
+                    {
+                        result = (T?)Activator.CreateInstance(type, []);
+                    }
+                    catch(Exception ex) {
+                        throw new JsonException($"{type.FullName} must either be registered or have a parameterless constructor");
+                    }
+                }
+
+                if(result == null)
+                {
+                    throw new JsonException($"{type.FullName} must either be registered or have a parameterless constructor");
+                }
 
                 if (result is IJsonOnDeserializing jsonOnDeserializing)
                 {

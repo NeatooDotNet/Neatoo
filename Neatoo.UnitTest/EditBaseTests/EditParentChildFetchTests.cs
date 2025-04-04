@@ -22,10 +22,10 @@ public class EditParentChildFetchTests
 
 
         parent = scope.GetRequiredService<IEditPerson>();
-        parent.FillFromDto(persons.Where(p => !p.FatherId.HasValue && !p.MotherId.HasValue).First());
+        parent.FromDto(persons.Where(p => !p.FatherId.HasValue && !p.MotherId.HasValue).First());
 
         child = scope.GetRequiredService<IEditPerson>();
-        child.FillFromDto(persons.Where(p => p.FatherId == parent.Id).First());
+        child.FromDto(persons.Where(p => p.FatherId == parent.Id).First());
         parent.Child = child;
 
         child.MarkOld();

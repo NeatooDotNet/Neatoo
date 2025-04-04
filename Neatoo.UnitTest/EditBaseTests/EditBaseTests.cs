@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neatoo.Core;
 using Neatoo.UnitTest.PersonObjects;
 using System.ComponentModel;
 
@@ -10,38 +11,39 @@ namespace Neatoo.UnitTest.EditBaseTests;
 public class EditBaseTests
 {
 
-    private IServiceScope scope;
     private IEditPerson editPerson;
+    private List<(bool isSavable, string propertyName)> neatooPropertyChanged = new List<(bool, string)>();
+    private List<(bool isSavable, string propertyName)> propertyChanged = new List<(bool, string)>();
 
     [TestInitialize]
     public void TestInitialize()
     {
-        scope = UnitTestServices.GetLifetimeScope();
+        var parentDto = PersonDto.Data().Where(p => !p.FatherId.HasValue && !p.MotherId.HasValue).First();
 
-        editPerson = scope.GetRequiredService<IEditPerson>();
-        var parentDto = scope.GetRequiredService<IReadOnlyList<PersonDto>>().Where(p => !p.FatherId.HasValue && !p.MotherId.HasValue).First();
-
-        editPerson.FillFromDto(parentDto);
-        editPerson.MarkOld();
-        editPerson.MarkUnmodified();
-        Assert.IsFalse(editPerson.IsModified);
-        Assert.IsFalse(editPerson.IsNew);
-        Assert.IsFalse(editPerson.IsSavable);
-        Assert.IsFalse(editPerson.IsBusy);
+        editPerson = new EditPerson();
+        editPerson.FromDto(parentDto);
 
         editPerson.PropertyChanged += EditPersonPropertyChanged;
+        editPerson.NeatooPropertyChanged += NeatooPropertyChanged;
     }
 
-    private List<string> editPersonPropertyChanged = new List<string>();
-    private void EditPersonPropertyChanged(object sender, PropertyChangedEventArgs e)
+    private Task NeatooPropertyChanged(Core.PropertyChangedBreadCrumbs propertyNameBreadCrumbs)
     {
-        editPersonPropertyChanged.Add(e.PropertyName);
+        neatooPropertyChanged.Add((editPerson.IsSavable, propertyNameBreadCrumbs.FullPropertyName));
+        return Task.CompletedTask;
+    }
+
+    private void EditPersonPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        propertyChanged.Add((editPerson.IsSavable, e.PropertyName!));
     }
 
     [TestCleanup]
     public void TestCleanup()
     {
         Assert.IsFalse(editPerson.IsBusy);
+        editPerson.PropertyChanged -= EditPersonPropertyChanged;
+        editPerson.NeatooPropertyChanged -= NeatooPropertyChanged;
     }
 
     [TestMethod]
@@ -49,6 +51,9 @@ public class EditBaseTests
     {
         Assert.IsFalse(editPerson.IsModified);
         Assert.IsFalse(editPerson.IsSelfModified);
+        Assert.IsFalse(editPerson.IsNew);
+        Assert.IsFalse(editPerson.IsSavable);
+        Assert.IsFalse(editPerson.IsBusy);
         Assert.IsFalse(editPerson.IsSavable);
     }
 
@@ -64,6 +69,8 @@ public class EditBaseTests
         Assert.IsTrue(editPerson.IsModified);
         Assert.IsTrue(editPerson.IsSelfModified);
         CollectionAssert.AreEquivalent(new List<string>() { nameof(IEditPerson.FullName), }, editPerson.ModifiedProperties.ToList());
+
+        var editPersonPropertyChanged = propertyChanged.Select(p => p.propertyName).ToList();
         CollectionAssert.Contains(editPersonPropertyChanged, nameof(IEditPerson.FullName));
         CollectionAssert.Contains(editPersonPropertyChanged, nameof(IEditPerson.IsModified));
         CollectionAssert.Contains(editPersonPropertyChanged, nameof(IEditPerson.IsSelfModified));
@@ -79,6 +86,8 @@ public class EditBaseTests
         Assert.IsFalse(editPerson.IsModified);
         Assert.IsFalse(editPerson.IsSelfModified);
 
+
+        var editPersonPropertyChanged = propertyChanged.Select(p => p.propertyName).ToList();
         CollectionAssert.DoesNotContain(editPersonPropertyChanged, nameof(IEditPerson.FullName));
         CollectionAssert.DoesNotContain(editPersonPropertyChanged, nameof(IEditPerson.IsModified));
         CollectionAssert.DoesNotContain(editPersonPropertyChanged, nameof(IEditPerson.IsSelfModified));
@@ -107,6 +116,7 @@ public class EditBaseTests
         Assert.IsFalse(editPerson.IsSelfModified);
         Assert.AreEqual(0, editPerson.ModifiedProperties.Count());
 
+        var editPersonPropertyChanged = propertyChanged.Select(p => p.propertyName).ToList();
         CollectionAssert.DoesNotContain(editPersonPropertyChanged, nameof(IEditPerson.FullName));
         CollectionAssert.DoesNotContain(editPersonPropertyChanged, nameof(IEditPerson.IsModified));
         CollectionAssert.DoesNotContain(editPersonPropertyChanged, nameof(IEditPerson.IsSelfModified));
@@ -148,17 +158,25 @@ public class EditBaseTests
         Assert.IsTrue(editPerson.IsSavable);
     }
 
-    //[TestMethod]
-    //public async Task EditBaseTest_Save()
-    //{
-    //    var mock = (MockDataMapper<EditPerson>)  scope.GetRequiredService<INeatooPortal<EditPerson>>();
+    [TestMethod]
+    public void EditBaseTest_AddInvalidChild_MakeValid_PropertyChanged()
+    {
+        editPerson.FirstName = Guid.NewGuid().ToString();
+        Assert.IsTrue(editPerson.IsSavable);
 
-    //    mock.MockPortal.Setup(x => x.Update((EditPerson) editPerson)).Returns(Task.FromResult((EditPerson) editPerson));
+        var child = new EditPerson();
+        child.FirstName = "Error";
+        editPerson.Child = child;
+        Assert.IsFalse(editPerson.IsSavable);
 
-    //    editPerson.FirstName = Guid.NewGuid().ToString();
-    //    await editPerson.Save();
+        propertyChanged.Clear();
+        neatooPropertyChanged.Clear();
 
-    //    mock.MockPortal.Verify(x => x.Update((EditPerson)editPerson), Times.Once);
-    //}
+        child.FirstName = Guid.NewGuid().ToString();
+
+        Assert.IsTrue(editPerson.IsSavable);
+        var propertyChangedNames = propertyChanged.Select(p => p.propertyName).ToList();
+        CollectionAssert.Contains(propertyChangedNames, nameof(IEditBase.IsSavable));
+    }
 }
 

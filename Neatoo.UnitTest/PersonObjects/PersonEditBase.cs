@@ -3,7 +3,7 @@
 namespace Neatoo.UnitTest.PersonObjects;
 
 
-public abstract class PersonEditBase<T> : EditBase<T>, IPersonBase
+public abstract partial class PersonEditBase<T> : EditBase<T>, IPersonBase
     where T : PersonEditBase<T>
 {
 
@@ -13,28 +13,32 @@ public abstract class PersonEditBase<T> : EditBase<T>, IPersonBase
 
     public Guid Id { get { return Getter<Guid>(); } }
 
-    public string FirstName { get { return Getter<string>(); } set { Setter(value); } }
+    public partial string FirstName { get; set; }
 
-    public string LastName { get { return Getter<string>(); } set { Setter(value); } }
+    public partial string LastName { get; set; }
 
-    public string ShortName { get { return Getter<string>(); } set { Setter(value); } }
+    public partial string ShortName { get; set; }
 
-    public string Title { get { return Getter<string>(); } set { Setter(value); } }
+    public partial string Title { get; set; }
 
-    public string FullName { get { return Getter<string>(); } set { Setter(value); } }
+    public partial string FullName { get; set; }
 
-    public uint? Age { get => Getter<uint?>(); set => Setter(value); }
-    string IPersonBase.FirstName { get => FirstName; set => FirstName = value; }
+    public partial uint? Age { get; set; }
+
+    //string IPersonBase.FirstName { get => FirstName; set => FirstName = value; }
+
+    public partial void MapFrom(PersonDto dto);
+
+    public void FromDto(PersonDto dto)
+    {
+        using var pause = this.PauseAllActions();
+        this[nameof(Id)].LoadValue(dto.PersonId);
+        MapFrom(dto);
+    }
 
     [Fetch]
     public void FillFromDto(PersonDto dto)
     {
-         this[nameof(Id)].LoadValue(dto.PersonId);
-
-        // These will not mark IsModified to true
-        // as long as within ObjectPortal operation
-        FirstName = dto.FirstName;
-        LastName = dto.LastName;
-        Title = dto.Title;
+        FromDto(dto);
     }
 }

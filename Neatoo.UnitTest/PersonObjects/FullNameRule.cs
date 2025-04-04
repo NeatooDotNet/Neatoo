@@ -14,12 +14,12 @@ public class FullNameRule : RuleBase<IPersonBase>, IFullNameRule
         AddTriggerProperties(_ => _.ShortName);
     }
 
-    public override PropertyErrors Execute(IPersonBase target)
+    protected override IRuleMessages Execute(IPersonBase target)
     {
         RunCount++;
 
         target.FullName = $"{target.Title} {target.ShortName}";
 
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 }

@@ -1,7 +1,6 @@
 ﻿using Neatoo.Core;
 using Neatoo.Internal;
 using Neatoo.RemoteFactory;
-using System.Text.Json.Serialization;
 
 namespace Neatoo;
 
@@ -13,6 +12,9 @@ public interface IEditBase : IValidateBase, IEditMetaProperties, IFactorySaveMet
     void UnDelete();
     Task<IEditBase> Save();
     new IEditProperty this[string propertyName] { get; }
+
+    internal void MarkModified();
+    internal void MarkAsChild();
 }
 
 [Factory]
@@ -73,56 +75,38 @@ public abstract class EditBase<T> : ValidateBase<T>, INeatooObject, IEditBase, I
 
     protected virtual void MarkAsChild()
     {
-        if (!IsPaused)
-        {
-            IsChild = true;
-        }
+        IsChild = true;
     }
 
     // TODO - Recursive set clean for all children
     protected virtual void MarkUnmodified()
     {
-        if (!IsPaused)
-        {
-            // TODO : What if busy??
-            PropertyManager.MarkSelfUnmodified();
-            IsMarkedModified = false;
-            CheckIfMetaPropertiesChanged(); // Really shouldn't be anything listening to this
-        }
+        // TODO : What if busy??
+        PropertyManager.MarkSelfUnmodified();
+        IsMarkedModified = false;
+        CheckIfMetaPropertiesChanged(); // Really shouldn't be anything listening to this
     }
 
     protected virtual void MarkModified()
     {
-        if (!IsPaused)
-        {
-            IsMarkedModified = true;
-            CheckIfMetaPropertiesChanged();
-        }
+        IsMarkedModified = true;
+        CheckIfMetaPropertiesChanged();
     }
 
     protected virtual void MarkNew()
     {
-        if (!IsPaused)
-        {
-            IsNew = true;
-        }
+        IsNew = true;
     }
 
     protected virtual void MarkOld()
     {
-        if (!IsPaused)
-        {
-            IsNew = false;
-        }
+        IsNew = false;
     }
 
     protected virtual void MarkDeleted()
     {
-        if (!IsPaused)
-        {
-            IsDeleted = true;
-            CheckIfMetaPropertiesChanged();
-        }
+        IsDeleted = true;
+        CheckIfMetaPropertiesChanged();
     }
 
     public void Delete()
@@ -132,20 +116,16 @@ public abstract class EditBase<T> : ValidateBase<T>, INeatooObject, IEditBase, I
 
     public void UnDelete()
     {
-        if (!IsPaused)
+        if (IsDeleted)
         {
-
-            if (IsDeleted)
-            {
-                IsDeleted = false;
-                CheckIfMetaPropertiesChanged();
-            }
+            IsDeleted = false;
+            CheckIfMetaPropertiesChanged();
         }
     }
 
     protected override Task ChildNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
     {
-        
+
         // TODO - if an object isn't assigned to another IBase
         // it will still consider us to be the Parent
 
@@ -185,7 +165,7 @@ public abstract class EditBase<T> : ValidateBase<T>, INeatooObject, IEditBase, I
             throw new Exception("Default Factory.Save() is not set. To use the save method [Insert], [Update] and/or [Delete] methods with no non-service parameters are required.");
         }
 
-        return (IEditBase) await Factory.Save((T)this);
+        return (IEditBase)await Factory.Save((T)this);
     }
 
     new protected IEditProperty GetProperty(string propertyName)
@@ -194,10 +174,11 @@ public abstract class EditBase<T> : ValidateBase<T>, INeatooObject, IEditBase, I
     }
     new public IEditProperty this[string propertyName] { get => GetProperty(propertyName); }
 
-    public override void PauseAllActions()
+    public override IDisposable PauseAllActions()
     {
-        base.PauseAllActions();
+        var d = base.PauseAllActions();
         PropertyManager.PauseAllActions();
+        return d;
     }
 
     public override void ResumeAllActions()
@@ -227,5 +208,17 @@ public abstract class EditBase<T> : ValidateBase<T>, INeatooObject, IEditBase, I
             default:
                 break;
         }
+
+        ResumeAllActions();
+    }
+
+    void IEditBase.MarkModified()
+    {
+        MarkModified();
+    }
+
+    void IEditBase.MarkAsChild()
+    {
+        MarkAsChild();
     }
 }

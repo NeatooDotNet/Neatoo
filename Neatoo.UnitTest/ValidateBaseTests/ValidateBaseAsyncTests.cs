@@ -173,7 +173,7 @@ public class ValidateBaseAsyncTests
         }
 
         Assert.IsTrue(validate.IsValid);
-        Assert.AreEqual(0, validate.BrokenRuleMessages.Count);
+        Assert.AreEqual(0, validate.RuleMessages.Count);
         Assert.IsTrue(propertyChanged.Contains(nameof(validate.IsValid)));
     }
 

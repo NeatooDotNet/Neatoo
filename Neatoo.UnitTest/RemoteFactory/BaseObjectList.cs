@@ -1,4 +1,4 @@
-﻿namespace Neatoo.UnitTest.ObjectPortal;
+﻿namespace Neatoo.UnitTest.RemoteFactory;
 
 /// <summary>
 /// I don't know that this is really neccessary

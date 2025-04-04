@@ -11,11 +11,11 @@ internal class AsyncDelayRule : AsyncRuleBase<AsyncValidateObject>
         AddTriggerProperties(_ => _.AsyncDelayRuleValue);
     }
     public int RunCount { get; private set; } = 0;
-    public override async Task<PropertyErrors> Execute(AsyncValidateObject target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
     {
         RunCount++;
         await Task.Delay(target.AsyncDelayRuleValue!.Value);
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 }
 
@@ -27,7 +27,7 @@ internal class AsyncDelayUpdateChildRule : AsyncRuleBase<AsyncValidateObject>
     }
     public int RunCount { get; private set; } = 0;
 
-    public override async Task<PropertyErrors> Execute(AsyncValidateObject target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
     {
         RunCount++;
         await Task.Delay(2);
@@ -52,11 +52,11 @@ internal class SyncRuleA : RuleBase<AsyncValidateObject>
 
     public int RunCount { get; private set; } = 0;
 
-    public override PropertyErrors Execute(AsyncValidateObject target)
+    protected override IRuleMessages Execute(AsyncValidateObject target)
     {
         target.NestedSyncB = Guid.NewGuid().ToString();
         RunCount++;
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 }
 internal class NestedSyncRuleB : RuleBase<AsyncValidateObject>
@@ -67,10 +67,10 @@ internal class NestedSyncRuleB : RuleBase<AsyncValidateObject>
     }
     public int RunCount { get; private set; } = 0;
 
-    public override PropertyErrors Execute(AsyncValidateObject target)
+    protected override IRuleMessages Execute(AsyncValidateObject target)
     {
         RunCount++;
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 }
 
@@ -81,7 +81,7 @@ internal class AsyncRuleCanWait : AsyncRuleBase<AsyncValidateObject>
         AddTriggerProperties(_ => _.AsyncRulesCanWait);
     }
     public int RunCount { get; private set; } = 0;
-    public override async Task<PropertyErrors> Execute(AsyncValidateObject target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
     {
         RunCount++;
         await Task.Delay(2);
@@ -89,7 +89,7 @@ internal class AsyncRuleCanWait : AsyncRuleBase<AsyncValidateObject>
         // This is how to await for a property to be set
         await target.AsyncRuleCanWaitProperty.SetValue("Value");
 
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 }
 
@@ -100,13 +100,13 @@ internal class AsyncRuleCanWaitNested : AsyncRuleBase<AsyncValidateObject>
         AddTriggerProperties(_ => _.AsyncRulesCanWait);
     }
     public int RunCount { get; private set; } = 0;
-    public override async Task<PropertyErrors> Execute(AsyncValidateObject target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
     {
         RunCount++;
         await Task.Delay(2);
         target.AsyncRulesCanWaitNested = "Ran";
         target.AsyncDelayUpdateChildRuleValue = Guid.NewGuid().ToString();
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 
 }

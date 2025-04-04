@@ -1,4 +1,12 @@
-﻿namespace Neatoo.UnitTest.ObjectPortal;
+﻿
+using Neatoo.RemoteFactory;
+
+namespace Neatoo.UnitTest.RemoteFactory;
+
+public interface IEditObjectList : IEditListBase<IEditObject>
+{
+
+}
 
 public class EditObjectList : EditListBase<IEditObject>, IEditObjectList
 {
@@ -7,4 +15,20 @@ public class EditObjectList : EditListBase<IEditObject>, IEditObjectList
     {
     }
 
+    [Fetch]
+    public void Fetch([Service] IEditObjectFactory editObjectFactory)
+    {
+        Add(editObjectFactory.Fetch());
+        Add(editObjectFactory.Fetch());
+        Add(editObjectFactory.Fetch());
+    }
+
+    [Update]
+    public void Update([Service] IEditObjectFactory editObjectFactory)
+    {
+        foreach (var item in this.Union(DeletedList))
+        {
+            editObjectFactory.Save(item);
+        }
+    }
 }

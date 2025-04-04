@@ -2,20 +2,31 @@
 {
     public interface IAllRequiredRulesExecuted : IRule<IValidateBase>
     {
-        delegate IAllRequiredRulesExecuted Factory(IEnumerable<IRequiredRule> requiredRules);
     }
 
-    internal class AllRequiredRulesExecuted : RuleBase<IValidateBase>, IAllRequiredRulesExecuted
+    public class AllRequiredRulesExecuted : RuleBase<IValidateBase>, IAllRequiredRulesExecuted
     {
-        private readonly IEnumerable<IRequiredRule> requiredRules;
+        private IEnumerable<IRequiredRule> requiredRules;
 
-        public AllRequiredRulesExecuted(IEnumerable<IRequiredRule> requiredRules) : base()
+        public AllRequiredRulesExecuted()
         {
-            requiredRules.ToList().ForEach(r => TriggerProperties.AddRange(r.TriggerProperties));
-            this.requiredRules = requiredRules;
+            RuleOrder = int.MaxValue;
         }
 
-        public override PropertyErrors Execute(IValidateBase target)
+        public override void OnRuleAdded(IRuleManager ruleManager, uint uniqueIndex)
+        {
+            base.OnRuleAdded(ruleManager, uniqueIndex);
+            requiredRules = ruleManager.Rules.OfType<IRequiredRule>();
+
+            foreach (var rule in requiredRules)
+            {
+                TriggerProperties.AddRange(rule.TriggerProperties);
+            }
+
+            ruleManager.RunRule(this);
+        }
+
+        protected override IRuleMessages Execute(IValidateBase target)
         {
             List<string> propertyNames = new List<string>();
             List<ITriggerProperty> triggerProperties = new List<ITriggerProperty>();
@@ -33,10 +44,10 @@
 
             if(propertyNames.Count > 0)
             {
-                return new PropertyError(nameof(IValidateBase.ObjectInvalid), "Required properties not set: " + string.Join(", ", propertyNames));
+                return (nameof(IValidateBase.ObjectInvalid), "Required properties not set: " + string.Join(", ", propertyNames)).AsRuleMessages();
             }
 
-            return PropertyErrors.None;
+            return RuleMessages.None;
         }
     }
 }

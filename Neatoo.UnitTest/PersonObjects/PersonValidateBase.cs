@@ -1,7 +1,6 @@
 ﻿namespace Neatoo.UnitTest.PersonObjects;
 
-
-public abstract class PersonValidateBase<T> : ValidateBase<T>, IPersonBase
+public abstract partial class PersonValidateBase<T> : ValidateBase<T>, IPersonBase
     where T : PersonValidateBase<T>
 {
 
@@ -11,47 +10,25 @@ public abstract class PersonValidateBase<T> : ValidateBase<T>, IPersonBase
 
     public Guid Id { get { return Getter<Guid>(); } }
 
-    public string FirstName
+    public partial string FirstName { get; set; }
+
+    public partial string LastName { get; set; }
+
+    public partial string ShortName { get; set; }
+
+    public partial string Title { get; set; }
+
+    public partial string FullName { get; set; }
+
+    public partial uint? Age { get; set; }
+
+    public partial void MapFrom(PersonDto dto);
+
+    public void FromDto(PersonDto dto)
     {
-        get { return Getter<string>(); }
-        set { Setter(value); }
+        using var pause = this.PauseAllActions();
+        this[nameof(Id)].LoadValue(dto.PersonId);
+        MapFrom(dto);
     }
 
-    public string LastName
-    {
-        get { return Getter<string>(); }
-        set { Setter(value); }
-    }
-
-    public string ShortName
-    {
-        get { return Getter<string>(); }
-        set { Setter(value); }
-    }
-
-    public string Title
-    {
-        get { return Getter<string>(); }
-        set { Setter(value); }
-    }
-
-    public string FullName
-    {
-        get { return Getter<string>(); }
-        set { Setter(value); }
-    }
-
-    public uint? Age
-    {
-        get => Getter<uint?>(); set => Setter(value);
-    }
-
-    public void FillFromDto(PersonDto dto)
-    {
-        this[nameof(Id)].SetValue(dto.PersonId);
-
-        FirstName = dto.FirstName;
-        LastName = dto.LastName;
-        Title = dto.Title;
-    }
 }

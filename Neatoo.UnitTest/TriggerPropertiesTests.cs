@@ -10,7 +10,6 @@ public class TriggerPropertiesTestSubject
 
 }
 
-
 public class TriggerPropertiesTestSubjectChild
 {
     public string ChildProperty { get; set; }

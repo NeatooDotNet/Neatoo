@@ -10,9 +10,8 @@ public class RequiredObject : ValidateBase<RequiredObject>
 {
     public RequiredObject() : base(new ValidateBaseServices<RequiredObject>()) 
     {
-        var allRequiredRulesExecuted = new AllRequiredRulesExecuted(RuleManager.Rules.OfType<IRequiredRule>());
+        var allRequiredRulesExecuted = new AllRequiredRulesExecuted();
         RuleManager.AddRule(allRequiredRulesExecuted);
-        allRequiredRulesExecuted.RunRule(this, CancellationToken.None).Wait();
     }
 
     [Required]

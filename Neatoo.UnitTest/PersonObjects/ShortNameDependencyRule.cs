@@ -18,7 +18,7 @@ public class ShortNameDependencyRule : RuleBase<IPersonBase>, IShortNameDependen
 
     private IDisposableDependency DisposableDependency { get; }
 
-    public override PropertyErrors Execute(IPersonBase target)
+    protected override IRuleMessages Execute(IPersonBase target)
     {
 
         // System.Diagnostics.Debug.WriteLine($"Run Rule {target.FirstName} {target.LastName}");
@@ -27,13 +27,13 @@ public class ShortNameDependencyRule : RuleBase<IPersonBase>, IShortNameDependen
 
         if (target.FirstName?.StartsWith("Error") ?? false)
         {
-            return (nameof(IPersonBase.FirstName), target.FirstName);
+            return (nameof(IPersonBase.FirstName), target.FirstName).AsRuleMessages();
         }
 
 
         target.ShortName = $"{target.FirstName} {target.LastName}";
 
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 
 }

@@ -1,42 +1,31 @@
 ﻿using Neatoo.RemoteFactory;
 using Neatoo.UnitTest.PersonObjects;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Neatoo.UnitTest.EditBaseTests;
-
-
-public interface IEditPerson : IPersonEdit
+public partial interface IEditPerson : IPersonEdit
 {
-
-    IEditPerson Child { get; set; }
-
-    List<int> InitiallyNull { get; set; }
-    List<int> InitiallyDefined { get; set; }
     void MarkAsChild();
-
     void MarkNew();
-
     void MarkOld();
-
     void MarkUnmodified();
-
     void MarkDeleted();
-
 }
 
-public class EditPerson : PersonEditBase<EditPerson>, IEditPerson
+public partial class EditPerson : PersonEditBase<EditPerson>, IEditPerson
 {
-    public EditPerson(IEditBaseServices<EditPerson> services,
-        IShortNameRule shortNameRule,
-        IFullNameRule fullNameRule) : base(services)
+    public EditPerson() : base(new EditBaseServices<EditPerson>(null))
     {
-        RuleManager.AddRules(shortNameRule, fullNameRule);
+        using var paused = PauseAllActions();
+        RuleManager.AddRules(new ShortNameRule(), new FullNameRule());
         InitiallyDefined = new List<int>() { 1, 2, 3 };
+        RuleManager.AddValidation(person => person.FirstName == "Error" ? "Error" : string.Empty, ep => ep.FirstName);
     }
 
-    public List<int> InitiallyNull { get => Getter<List<int>>(); set => Setter(value); }
-    public List<int> InitiallyDefined { get => Getter<List<int>>(); set => Setter(value); }
-
-    public IEditPerson Child { get => Getter<IEditPerson>(); set => Setter(value); }
+    public partial List<int> InitiallyNull { get; set; }
+    public partial List<int> InitiallyDefined { get; set; }
+    public partial IEditPerson Child { get; set; }
+    public partial IEditPersonList ChildList { get; set; }
 
     void IEditPerson.MarkAsChild()
     {
@@ -62,6 +51,7 @@ public class EditPerson : PersonEditBase<EditPerson>, IEditPerson
     {
         this.MarkUnmodified();
     }
+
     [Insert]
     public void Insert()
     {

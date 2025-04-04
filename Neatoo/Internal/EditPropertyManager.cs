@@ -1,4 +1,7 @@
 ﻿using Neatoo.Internal;
+using Neatoo.Rules;
+using System.ComponentModel;
+using System.Reflection;
 using System.Text.Json.Serialization;
 
 namespace Neatoo.Core;
@@ -21,6 +24,7 @@ public interface IEditProperty : IValidateProperty
     bool IsModified { get; }
     bool IsSelfModified { get; }
     void MarkSelfUnmodified();
+    string DisplayName { get; }
 }
 
 public interface IEditProperty<T> : IEditProperty, IValidateProperty<T>
@@ -33,12 +37,24 @@ public class EditProperty<T> : ValidateProperty<T>, IEditProperty<T>
 
     public EditProperty(IPropertyInfo propertyInfo) : base(propertyInfo)
     {
+        ArgumentNullException.ThrowIfNull(propertyInfo);
+
+        var dnAttribute = propertyInfo.PropertyInfo.GetCustomAttribute<DisplayNameAttribute>();
+        if(dnAttribute != null)
+        {
+            DisplayName = dnAttribute.DisplayName;
+        }
+        else
+        {
+            DisplayName = propertyInfo.Name;
+        }
     }
 
     [JsonConstructor]
-    public EditProperty(string name, T value, bool isSelfModified, string[] serializedErrorMessages, bool isReadOnly) : base(name, value, serializedErrorMessages, isReadOnly)
+    public EditProperty(string name, T value, bool isSelfModified, bool isReadOnly, string displayName, IRuleMessage[] serializedRuleMessages) : base(name, value, serializedRuleMessages, isReadOnly)
     {
         IsSelfModified = isSelfModified;
+        DisplayName = displayName; // TODO - Find a better way than serializing this
     }
 
     [JsonIgnore]
@@ -63,6 +79,8 @@ public class EditProperty<T> : ValidateProperty<T>, IEditProperty<T>
 
     public bool IsPaused { get; set; } = false;
 
+    public string DisplayName { get; init; }
+
     public void MarkSelfUnmodified()
     {
         IsSelfModified = false;
@@ -74,7 +92,6 @@ public class EditProperty<T> : ValidateProperty<T>, IEditProperty<T>
         IsSelfModified = false;
     }
 }
-
 
 public delegate IEditPropertyManager CreateEditPropertyManager(IPropertyInfoList propertyInfoList);
 

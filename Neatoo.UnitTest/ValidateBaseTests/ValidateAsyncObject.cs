@@ -43,7 +43,7 @@ internal class ValidateAsyncObject : PersonValidateBase<ValidateAsyncObject>, IV
     [Fetch]
     public async Task Fetch(PersonDto person,[Service] ValidateAsyncObjectFactory portal,[Service] IReadOnlyList<PersonDto> personTable)
     {
-        base.FillFromDto(person);
+        base.FromDto(person);
 
         var childDto = personTable.FirstOrDefault(p => p.FatherId == Id);
 

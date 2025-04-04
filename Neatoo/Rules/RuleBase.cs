@@ -6,16 +6,13 @@ namespace Neatoo.Rules;
 public interface IRule
 {
     /// <summary>
-    /// Must be unique for every rule across all types
-    /// </summary>
-    uint UniqueIndex { get; }
-
-    /// <summary>
     /// Rule has been executed at least once
     /// </summary>
     bool Executed { get; }
+    int RuleOrder { get; }
     IReadOnlyList<ITriggerProperty> TriggerProperties { get; }
-    internal Task<PropertyErrors> RunRule(IValidateBase target, CancellationToken? token = null);
+    Task<IRuleMessages> RunRule(IValidateBase target, CancellationToken? token = null);
+    void OnRuleAdded(IRuleManager ruleManager, uint uniqueIndex); // TODO: Replace with Factory Method and Constructor
 }
 
 /// <summary>
@@ -25,21 +22,7 @@ public interface IRule
 public interface IRule<T> : IRule
     where T : IValidateBase
 {
-    Task<PropertyErrors> RunRule(T target, CancellationToken? token = null);
-}
-
-// TODO - Doesn't work for serialization
-internal static class RuleIndexer
-{
-    private static uint staticIndex = 0;
-    internal static uint StaticIndex
-    {
-        get
-        {
-            staticIndex++;
-            return staticIndex;
-        }
-    }
+    Task<IRuleMessages> RunRule(T target, CancellationToken? token = null);
 }
 
 public abstract class AsyncRuleBase<T> : IRule<T>
@@ -47,8 +30,6 @@ public abstract class AsyncRuleBase<T> : IRule<T>
 {
     protected AsyncRuleBase()
     {
-        /// Must be unique for every rule across all types so Static counter is important
-        UniqueIndex = RuleIndexer.StaticIndex;
     }
 
     public AsyncRuleBase(params Expression<Func<T, object?>>[] triggerOnPropertyNames) : this(triggerOnPropertyNames.AsEnumerable()) { }
@@ -59,12 +40,12 @@ public abstract class AsyncRuleBase<T> : IRule<T>
     }
 
     /// <summary>
-    /// 
+    /// If the rule is static you'll want to set this to a unique value
     /// </summary>
-    public uint UniqueIndex { get; }
+    protected uint UniqueIndex { get; set; }
 
-    protected PropertyErrors None = PropertyErrors.None;
-
+    protected RuleMessages None = RuleMessages.None;
+    public int RuleOrder { get; protected set; } = 1;
     public bool Executed { get; protected set; }
 
     IReadOnlyList<ITriggerProperty> IRule.TriggerProperties => TriggerProperties.AsReadOnly();
@@ -80,14 +61,14 @@ public abstract class AsyncRuleBase<T> : IRule<T>
         TriggerProperties.AddRange(triggerProperties);
     }
 
-    public abstract Task<PropertyErrors> Execute(T t, CancellationToken? token = null);
+    protected abstract Task<IRuleMessages> Execute(T t, CancellationToken? token = null);
 
-    protected PropertyErrors? PreviousErrors { get; set; }
+    protected IRuleMessages? PreviousErrors { get; set; }
 
-    public virtual Task<PropertyErrors> RunRule(IValidateBase target, CancellationToken? token = null)
+    public virtual Task<IRuleMessages> RunRule(IValidateBase target, CancellationToken? token = null)
     {
         var typedTarget = target as T;
-        
+
         if (typedTarget == null)
         {
             throw new Exception($"{target.GetType().Name} is not of type {typeof(T).Name}");
@@ -96,56 +77,67 @@ public abstract class AsyncRuleBase<T> : IRule<T>
         return RunRule(typedTarget, token);
     }
 
-    public virtual async Task<PropertyErrors> RunRule(T target, CancellationToken? token = null)
+    public virtual async Task<IRuleMessages> RunRule(T target, CancellationToken? token = null)
     {
         try
         {
             Executed = true;
 
-            var propertyErrors = await Execute(target, token);
+            var ruleMessages = await Execute(target, token);
 
             var setAtLeastOneProperty = true;
 
-            foreach (var propertyError in propertyErrors)
+            foreach (var ruleMessage in ruleMessages.GroupBy(rm => rm.PropertyName).ToDictionary(g => g.Key, g => g.ToList()))
             {
-                if (target.PropertyManager.HasProperty(propertyError.Key))
+                ruleMessage.Value.ForEach(rm => rm.RuleIndex = UniqueIndex);
+
+                if (target.PropertyManager.HasProperty(ruleMessage.Key))
                 {
                     setAtLeastOneProperty = true;
-                    target[propertyError.Key].SetErrorsForRule(UniqueIndex, propertyError.Value);
+                    target[ruleMessage.Key].SetMessagesForRule(ruleMessage.Value);
                 }
             }
 
             if (PreviousErrors != null)
             {
-                PreviousErrors.Select(t => t.Key).Except(propertyErrors.Select(p => p.Key)).ToList().ForEach(p =>
+                PreviousErrors.Select(t => t.PropertyName).Except(ruleMessages.Select(p => p.PropertyName)).ToList().ForEach(p =>
                 {
                     if (target.PropertyManager.HasProperty(p))
                     {
                         var propertyValue = target[p];
-                        propertyValue.ClearErrorsForRule(UniqueIndex);
+                        propertyValue.ClearMessagesForRule(UniqueIndex);
                     }
                 });
             }
 
             Debug.Assert(setAtLeastOneProperty, "You must have at least one trigger property that is a valid property on the target");
 
-            PreviousErrors = propertyErrors;
+            PreviousErrors = ruleMessages;
 
-            return propertyErrors;
+            return ruleMessages;
         }
         catch (Exception ex)
         {
             TriggerProperties.ForEach(p =>
                 {
-                    // Allow children
-                    if(target.PropertyManager.HasProperty(p.PropertyName))
+                    // Allow children to be trigger properties
+                    if (target.PropertyManager.HasProperty(p.PropertyName))
                     {
                         var propertyValue = target[p.PropertyName];
-                        propertyValue.SetErrorsForRule(UniqueIndex, [ex.Message]);
+                        propertyValue.SetMessagesForRule(p.PropertyName.RuleMessages(ex.Message).AsReadOnly());
                     }
                 });
 
             throw;
+        }
+    }
+
+    public virtual void OnRuleAdded(IRuleManager ruleManager, uint uniqueIndex)
+    {
+        // Does this break static rules??
+        if (this.UniqueIndex == default)
+        {
+            this.UniqueIndex = uniqueIndex;
         }
     }
 
@@ -184,9 +176,9 @@ public abstract class RuleBase<T> : AsyncRuleBase<T>
     {
     }
 
-    public abstract PropertyErrors Execute(T target);
+    protected abstract IRuleMessages Execute(T target);
 
-    public sealed override Task<PropertyErrors> Execute(T target, CancellationToken? token = null)
+    protected sealed override Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
     {
         return Task.FromResult(Execute(target));
     }
@@ -196,31 +188,31 @@ public class ActionFluentRule<T> : RuleBase<T>
 where T : class, IValidateBase
 {
     private Action<T> ExecuteFunc { get; }
-    public ActionFluentRule(Action<T> execute, Expression<Func<T, object?>> triggerProperty) : base([triggerProperty])
+    public ActionFluentRule(Action<T> execute, params Expression<Func<T, object?>>[] triggerProperties) : base(triggerProperties)
     {
         this.ExecuteFunc = execute;
     }
 
-    public override PropertyErrors Execute(T target)
+    protected override IRuleMessages Execute(T target)
     {
         ExecuteFunc(target);
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 }
 
 public class ActionAsyncFluentRule<T> : AsyncRuleBase<T>
-where T : class, IValidateBase
+    where T : class, IValidateBase
 {
     private Func<T, Task> ExecuteFunc { get; }
-    public ActionAsyncFluentRule(Func<T, Task> execute, Expression<Func<T, object?>> triggerProperty) : base([triggerProperty])
+    public ActionAsyncFluentRule(Func<T, Task> execute, params Expression<Func<T, object?>>[] triggerProperties) : base(triggerProperties)
     {
         this.ExecuteFunc = execute;
     }
 
-    override public async Task<PropertyErrors> Execute(T target, CancellationToken? token = null)
+    protected override async Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
     {
         await ExecuteFunc(target);
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 }
 
@@ -233,17 +225,17 @@ public class ValidationFluentRule<T> : RuleBase<T>
         this.ExecuteFunc = execute;
     }
 
-    public override PropertyErrors Execute(T target)
+    protected override IRuleMessages Execute(T target)
     {
         var result = ExecuteFunc(target);
 
         if (string.IsNullOrWhiteSpace(result))
         {
-            return PropertyErrors.None;
+            return RuleMessages.None;
         }
         else
         {
-            return new PropertyError(TriggerProperties.Single().PropertyName, result);
+            return (TriggerProperties.Single().PropertyName, result).AsRuleMessages();
         }
     }
 }
@@ -258,69 +250,18 @@ where T : class, IValidateBase
         this.ExecuteFunc = execute;
     }
 
-    public override async Task<PropertyErrors> Execute(T target, CancellationToken? token = null)
+    protected override async Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
     {
         var result = await ExecuteFunc(target);
 
         if (string.IsNullOrWhiteSpace(result))
         {
-            return PropertyErrors.None;
+            return RuleMessages.None;
         }
         else
         {
-            return new PropertyError(TriggerProperties.Single().PropertyName, result);
+            return (TriggerProperties.Single().PropertyName, result).AsRuleMessages();
         }
     }
 }
 
-public class PropertyErrors : Dictionary<string, List<string>>
-{
-
-    public static PropertyErrors None = new PropertyErrors();
-
-    public void Add(string propertyName, string message)
-    {
-        if (TryGetValue(propertyName, out var messages))
-        {
-            messages.Add(message);
-        }
-        else
-        {
-            Add(propertyName, new List<string> { message });
-        }
-    }
-
-    public static implicit operator PropertyErrors(PropertyError error)
-    {
-        return new PropertyErrors { [error.PropertyName] = new List<string> { error.Message } };
-    }
-    public static implicit operator PropertyErrors((string name, string errorMessage) propertyError)
-    {
-        return new PropertyError(propertyError.name, propertyError.errorMessage);
-    }
-}
-
-public class PropertyError
-{
-    public string PropertyName { get; }
-    public string Message { get; }
-    public PropertyError(string propertyName, string message)
-    {
-        PropertyName = propertyName;
-        Message = message;
-    }
-
-    public static implicit operator PropertyError((string name, string errorMessage) propertyError)
-    {
-        return new PropertyError(propertyError.name, propertyError.errorMessage);
-    }
-
-}
-
-public static class PropertyErrorExtension
-{
-    public static PropertyError PropertyError(this string propertyName, string message)
-    {
-        return new PropertyError(propertyName, message);
-    }
-}

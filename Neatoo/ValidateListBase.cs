@@ -1,5 +1,7 @@
 ﻿using Neatoo.Core;
 using Neatoo.Internal;
+using Neatoo.RemoteFactory;
+using Neatoo.Rules;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
 
@@ -10,13 +12,15 @@ public interface IValidateListBase : IListBase
 
 }
 
-public interface IValidateListBase<I> : IListBase<I>, IValidateListBase, IValidateMetaProperties
+public interface IValidateListBase<I> : IListBase<I>, IValidateMetaProperties
     where I : IValidateBase
 {
 
 }
 
-public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, IValidateListBase, INotifyPropertyChanged
+public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, IValidateListBase,
+                                                        INotifyPropertyChanged,
+                                                        IFactoryOnStart, IFactoryOnComplete
     where I : IValidateBase
 {
     public ValidateListBase() : base()
@@ -31,6 +35,8 @@ public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, I
     public bool IsPaused { get; protected set; } = false;
 
     protected (bool IsValid, bool IsSelfValid, bool IsBusy, bool IsSelfBusy) MetaState { get; private set; }
+
+    public IReadOnlyCollection<IRuleMessage> RuleMessages => this.SelectMany(_ => _.RuleMessages).ToList().AsReadOnly();
 
     protected override void CheckIfMetaPropertiesChanged(bool raiseBusy = false)
     {
@@ -102,5 +108,27 @@ public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, I
             IsPaused = false;
             ResetMetaState();
         }
+    }
+
+    public override void OnDeserializing()
+    {
+        base.OnDeserializing();
+        IsPaused = true;
+    }
+
+    public override void OnDeserialized()
+    {
+        base.OnDeserialized();
+        ResumeAllActions();
+    }
+
+    public virtual void FactoryStart(FactoryOperation factoryOperation)
+    {
+        IsPaused = true;
+    }
+
+    public virtual void FactoryComplete(FactoryOperation factoryOperation)
+    {
+        IsPaused = false;
     }
 }

@@ -12,24 +12,24 @@ internal class ShortNameRule : RuleBase<ISimpleValidateObject>, IShortNameRule
         AddTriggerProperties(_ => _.LastName);
     }
 
-    public override PropertyErrors Execute(ISimpleValidateObject target)
+    protected override IRuleMessages Execute(ISimpleValidateObject target)
     {
 
-        var propertyErrors = new PropertyErrors();
+        var ruleMessages = new RuleMessages();
 
         if (string.IsNullOrWhiteSpace(target.FirstName))
         {
-            propertyErrors.Add(nameof(ISimpleValidateObject.FirstName), $"{nameof(ISimpleValidateObject.FirstName)} is required.");
+            ruleMessages.Add(nameof(ISimpleValidateObject.FirstName), $"{nameof(ISimpleValidateObject.FirstName)} is required.");
         }
 
         if (string.IsNullOrWhiteSpace(target.LastName))
         {
-            propertyErrors.Add(nameof(ISimpleValidateObject.LastName), $"{nameof(ISimpleValidateObject.LastName)} is required.");
+            ruleMessages.Add(nameof(ISimpleValidateObject.LastName), $"{nameof(ISimpleValidateObject.LastName)} is required.");
         }
 
         target.ShortName = $"{target.FirstName} {target.LastName}";
 
-        return propertyErrors;
+        return ruleMessages;
     }
 
 }

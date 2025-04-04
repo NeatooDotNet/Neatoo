@@ -19,14 +19,14 @@ public class FullNameDependencyRule : RuleBase<IPersonBase>, IFullNameDependency
 
     private IDisposableDependency DisposableDependency { get; }
 
-    public override PropertyErrors Execute(IPersonBase target)
+    protected override IRuleMessages Execute(IPersonBase target)
     {
 
         var dd = DisposableDependency ?? throw new ArgumentNullException(nameof(DisposableDependency));
 
         target.FullName = $"{target.Title} {target.ShortName}";
 
-        return PropertyErrors.None;
+        return RuleMessages.None;
 
     }
 

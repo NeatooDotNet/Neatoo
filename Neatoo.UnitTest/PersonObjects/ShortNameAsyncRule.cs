@@ -17,7 +17,7 @@ public class ShortNameAsyncRule : AsyncRuleBase<IPersonBase>, IShortNameAsyncRul
 
     public int RunCount { get; private set; }
 
-    public override async Task<PropertyErrors> Execute(IPersonBase target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(IPersonBase target, CancellationToken? token)
     {
         Console.WriteLine($"ShortNameAsyncRule: {UniqueId.ToString()} BEGIN");
 
@@ -31,7 +31,7 @@ public class ShortNameAsyncRule : AsyncRuleBase<IPersonBase>, IShortNameAsyncRul
         if (target.FirstName?.StartsWith("Error") ?? false)
         {
             Console.WriteLine($"ShortNameAsyncRule: {UniqueId.ToString()} {target.FirstName} {target.LastName} Error!!");
-            return nameof(IPersonBase.FirstName).PropertyError(target.FirstName);
+            return nameof(IPersonBase.FirstName).RuleMessages(target.FirstName);
         }
 
         Console.WriteLine($"ShortNameAsyncRule: {UniqueId.ToString()} {target.FirstName} {target.LastName}");
@@ -40,7 +40,7 @@ public class ShortNameAsyncRule : AsyncRuleBase<IPersonBase>, IShortNameAsyncRul
 
         Console.WriteLine($"ShortNameAsyncRule: {UniqueId.ToString()} Done");
 
-        return PropertyErrors.None;
+        return RuleMessages.None;
     }
 
 }

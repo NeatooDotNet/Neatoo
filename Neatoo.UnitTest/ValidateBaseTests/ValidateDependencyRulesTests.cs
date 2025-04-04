@@ -113,7 +113,7 @@ public class ValidateDependencyRulesTests
 
         Assert.IsFalse(validate.IsValid);
         Assert.IsFalse(validate[nameof(validate.FirstName)].IsValid);
-        Assert.AreEqual(1, validate.BrokenRuleMessages.Count);
+        Assert.AreEqual(1, validate.RuleMessages.Count);
     }
 
     [TestMethod]

@@ -1,4 +1,5 @@
 ﻿using Neatoo.RemoteFactory;
+using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.UnitTest.SystemTextJson.EditTests;
 
@@ -21,16 +22,19 @@ public interface IEditObject : IEditBase
 }
 
 
-public class EditObject : EditBase<EditObject>, IEditObject
+public partial class EditObject : EditBase<EditObject>, IEditObject
 {
     public EditObject(IEditBaseServices<EditObject> services) : base(services)
     {
+        Required = 1;
     }
 
-    public Guid ID { get => Getter<Guid>(); set => Setter(value); }
-    public string Name { get => Getter<string>(); set => Setter(value); }
-    public IEditObject Child { get => Getter<IEditObject>(); set => Setter(value); }
-    public IEditObjectList ChildList { get => Getter<IEditObjectList>(); set => Setter(value); }
+    public partial Guid ID { get; set; }
+    public partial string Name { get; set; }
+    public partial IEditObject Child { get; set; }
+    public partial IEditObjectList ChildList { get; set; }
+    [Required]
+    public partial int? Required { get; set; }
 
     void IEditObject.MarkAsChild()
     {
@@ -76,7 +80,7 @@ public class EditObject : EditBase<EditObject>, IEditObject
 
 public interface IEditObjectList : IEditListBase<IEditObject>
 {
-
+    List<IEditObject> DeletedList { get; }
 }
 
 public class EditObjectList : EditListBase<IEditObject>, IEditObjectList
@@ -86,4 +90,5 @@ public class EditObjectList : EditListBase<IEditObject>, IEditObjectList
 
     }
 
+    List<IEditObject> IEditObjectList.DeletedList => DeletedList;
 }

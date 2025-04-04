@@ -1,0 +1,56 @@
+﻿@using Neatoo
+@using Neatoo.Core
+
+<style>
+    .disabled {
+        background-color: lightgray;
+    }
+
+    .invalid {
+        border-color: red;
+    }
+</style>
+
+<label for="inputText" class="form-label">@EditProperty.DisplayName</label>
+<InputText id="@EditProperty.Name" @bind-Value:get="@EditProperty.StringValue"
+           @bind-Value:set="(value) => EditProperty.SetStringValue(value)"
+        disabled="@EditProperty.IsBusy"
+        class="@GetInputClass()"
+        title="@GetErrorMessage()" />
+
+@code {
+
+[Parameter]
+public IEditProperty EditProperty { get; set; }
+
+override protected void OnInitialized()
+{
+    base.OnInitialized();
+
+    EditProperty.PropertyChanged += (sender, e) =>
+    {
+        if (e.PropertyName == nameof(IProperty.IsBusy) || e.PropertyName == nameof(IEditProperty.IsValid))
+        {
+            InvokeAsync(() => StateHasChanged());
+        }
+    };
+}
+
+private string GetInputClass()
+{
+    if (EditProperty.IsBusy)
+    {
+        return "text-box disabled";
+    }
+    if (!EditProperty.IsValid)
+    {
+        return "text-box invalid";
+    }
+    return "text-box";
+}
+
+private string GetErrorMessage()
+{
+    return EditProperty.RuleMessages.Any() ? string.Join(", ", EditProperty.RuleMessages) : string.Empty;
+}
+}

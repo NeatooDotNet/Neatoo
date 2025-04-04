@@ -3,6 +3,7 @@ using System.Reflection;
 using Neatoo.UnitTest.Objects;
 using Neatoo.RemoteFactory;
 using Neatoo.UnitTest.ValidateBaseTests;
+using Neatoo.UnitTest.EditBaseTests;
 
 namespace Neatoo.UnitTest;
 
@@ -25,7 +26,8 @@ public static class UnitTestServices
                 {
                     var services = new ServiceCollection();
 
-                    services.AddNeatooServices(NeatooFactory.Local, Assembly.GetExecutingAssembly());
+                    services.AddNeatooServices(NeatooFactory.Local, typeof(IEditPerson).Assembly);
+                    services.RegisterMatchingName(typeof(IEditPerson).Assembly);
 
                     // Unit Test Library
                     //services.AddScoped<BaseTests.Authorization.IAuthorizationGrantedRule, BaseTests.Authorization.AuthorizationGrantedRule>();
@@ -40,7 +42,7 @@ public static class UnitTestServices
 
                     services.AddSingleton<IReadOnlyList<PersonObjects.PersonDto>>(cc => PersonObjects.PersonDto.Data());
 
-                    services.AutoRegisterAssemblyTypes(Assembly.GetExecutingAssembly());
+                    //services.AutoRegisterAssemblyTypes(typeof(IEditPerson).Assembly);
 
                     return services.BuildServiceProvider();
                 }

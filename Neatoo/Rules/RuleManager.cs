@@ -13,15 +13,17 @@ public interface IRuleManager
     Task CheckAllRules(CancellationToken? token = null);
     void AddRule<T>(IRule<T> rule) where T : IValidateBase;
     void AddRules<T>(params IRule<T>[] rules) where T : IValidateBase;
+    Task RunRule(IRule r, CancellationToken? token = null);
+    Task RunRule<T>(CancellationToken? token = null) where T : IRule;
 }
 
 
 public interface IRuleManager<T> : IRuleManager
     where T : class, IValidateBase
 {
-    ActionFluentRule<T> AddAction(Action<T> func, Expression<Func<T, object?>> triggerProperty);
+    ActionFluentRule<T> AddAction(Action<T> func, params Expression<Func<T, object?>>[] triggerProperties);
     ValidationFluentRule<T> AddValidation(Func<T, string> func, Expression<Func<T, object?>> triggerProperty);
-    ActionAsyncFluentRule<T> AddActionAsync(Func<T, Task> func, Expression<Func<T, object?>> triggerProperty);
+    ActionAsyncFluentRule<T> AddActionAsync(Func<T, Task> func, params Expression<Func<T, object?>>[] triggerProperties);
     AsyncFluentRule<T> AddValidationAsync(Func<T, Task<string>> func, Expression<Func<T, object?>> triggerProperty);
 }
 
@@ -54,6 +56,11 @@ public class RuleManager<T> : IRuleManager<T>
 
     IEnumerable<IRule> IRuleManager.Rules => Rules.Values;
 
+    // Index the rules for serialization
+    // So broken rules transfer correctly
+    // This does assume that the rules are added in the same order (hmmm)
+    protected uint ruleIndex = 1;
+
     private IDictionary<uint, IRule> Rules { get; } = new ConcurrentDictionary<uint, IRule>();
 
     protected virtual void AddAttributeRules(IAttributeToRule attributeToRule, IPropertyInfoList propertyInfoList)
@@ -66,7 +73,8 @@ public class RuleManager<T> : IRuleManager<T>
             {
                 var rule = attributeToRule.GetRule<T>(r, a.GetType());
                 if (rule != null) {
-                    Rules.Add(rule.UniqueIndex, rule);
+                    Rules.Add(ruleIndex++, rule);
+                    rule.OnRuleAdded(this, ruleIndex);
                 }
             }
         }
@@ -81,7 +89,8 @@ public class RuleManager<T> : IRuleManager<T>
     {
         if (typeof(T1).IsAssignableFrom(typeof(T)))
         {
-            Rules.Add(rule.UniqueIndex, rule);
+            Rules.Add(ruleIndex++, rule);
+            rule.OnRuleAdded(this, ruleIndex);
         }
         else
         {
@@ -89,37 +98,53 @@ public class RuleManager<T> : IRuleManager<T>
         }
     }
 
-    public ActionAsyncFluentRule<T> AddActionAsync(Func<T, Task> func, Expression<Func<T, object?>> triggerProperty)
+    public async Task RunRule<T1>(CancellationToken? token = null) where T1 : IRule
     {
-        ActionAsyncFluentRule<T> rule = new ActionAsyncFluentRule<T>(func, triggerProperty);
-        Rules.Add(rule.UniqueIndex, rule);
+        foreach (var rule in Rules)
+        {
+            if(rule.Value is T1 r)
+            {
+                await rule.Value.RunRule(Target, token);
+            }
+        }
+    }
+
+    public ActionAsyncFluentRule<T> AddActionAsync(Func<T, Task> func, params Expression<Func<T, object?>>[] triggerProperties)
+    {
+        ActionAsyncFluentRule<T> rule = new ActionAsyncFluentRule<T>(func, triggerProperties);
+        Rules.Add(ruleIndex++, rule);
+        rule.OnRuleAdded(this, ruleIndex);
         return rule;
     }
 
-    public ActionFluentRule<T> AddAction(Action<T> func, Expression<Func<T, object?>> triggerProperty)
+    public ActionFluentRule<T> AddAction(Action<T> func, params Expression<Func<T, object?>>[] triggerProperties)
     {
-        ActionFluentRule<T> rule = new ActionFluentRule<T>(func, triggerProperty);
-        Rules.Add(rule.UniqueIndex, rule);
+        ActionFluentRule<T> rule = new ActionFluentRule<T>(func, triggerProperties);
+        Rules.Add(ruleIndex++, rule);
+        rule.OnRuleAdded(this, ruleIndex);
         return rule;
     }
 
     public ValidationFluentRule<T> AddValidation(Func<T, string> func, Expression<Func<T, object?>> triggerProperty)
     {
         ValidationFluentRule<T> rule = new ValidationFluentRule<T>(func, triggerProperty);
-        Rules.Add(rule.UniqueIndex, rule);
+        Rules.Add(ruleIndex++, rule);
+        rule.OnRuleAdded(this, ruleIndex);
         return rule;
     }
 
     public AsyncFluentRule<T> AddValidationAsync(Func<T, Task<string>> func, Expression<Func<T, object?>> triggerProperty)
     {
         AsyncFluentRule<T> rule = new AsyncFluentRule<T>(func, triggerProperty);
-        Rules.Add(rule.UniqueIndex, rule);
+        Rules.Add(ruleIndex++, rule);
+        rule.OnRuleAdded(this, ruleIndex);
         return rule;
     }
 
     public async Task CheckRulesForProperty(string propertyName)
     {
-        foreach (var rule in Rules.Values.Where(r => r.TriggerProperties.Any(t => t.IsMatch(propertyName))).ToList())
+        foreach (var rule in Rules.Values.Where(r => r.TriggerProperties.Any(t => t.IsMatch(propertyName)))
+                                    .OrderBy(r => r.RuleOrder).ToList())
         {
             await RunRule(rule, CancellationToken.None);
         }
@@ -133,8 +158,13 @@ public class RuleManager<T> : IRuleManager<T>
         }
     }
 
-    private async Task RunRule(IRule r, CancellationToken? token = null)
+    public async Task RunRule(IRule r, CancellationToken? token = null)
     {
+        if(!Rules.Values.Contains(r))
+        {
+            throw new Exception("Rule needs to already have been added to the RuleManager");
+        }
+
         if (r is IRule rule)
         {
             await rule.RunRule(Target, token);

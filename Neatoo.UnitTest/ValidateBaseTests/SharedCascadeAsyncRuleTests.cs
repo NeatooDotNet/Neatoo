@@ -25,7 +25,7 @@ public class SharedShortNameRule<T> : Rules.AsyncRuleBase<T>, ISharedShortNameRu
         base.AddTriggerProperties(_=> _.ShortName, _=>_.FirstName, _=>_.LastName);
     }
 
-    public override async Task<PropertyErrors> Execute(T target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(T target, CancellationToken? token)
     {
         await Task.Delay(10);
 
@@ -34,7 +34,7 @@ public class SharedShortNameRule<T> : Rules.AsyncRuleBase<T>, ISharedShortNameRu
         // Prevent cascading rules or any PropertyChanged events
         LoadProperty(target, _ => _.ShortName, sn);
 
-        return PropertyErrors.None;
+        return RuleMessages.None;
 
     }
 }

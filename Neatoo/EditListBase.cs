@@ -1,5 +1,6 @@
 ﻿using Neatoo.Internal;
 using Neatoo.RemoteFactory;
+using System.Collections;
 using System.ComponentModel;
 
 namespace Neatoo;
@@ -7,9 +8,10 @@ namespace Neatoo;
 
 public interface IEditListBase : IValidateListBase, IEditMetaProperties
 {
+    internal IEnumerable DeletedList { get; }
 }
 
-public interface IEditListBase<I> : IEditListBase, IValidateListBase<I>, IEditMetaProperties
+public interface IEditListBase<I> : IValidateListBase<I>, IEditMetaProperties
     where I : IEditBase
 {
     new void RemoveAt(int index);
@@ -35,6 +37,8 @@ public abstract class EditListBase<I> : ValidateListBase<I>, INeatooObject, IEdi
     protected List<I> DeletedList { get; } = new List<I>();
 
     protected (bool IsModified, bool IsSelfModified, bool IsSavable) EditMetaState { get; private set; }
+
+    IEnumerable IEditListBase.DeletedList => DeletedList;
 
     protected override void CheckIfMetaPropertiesChanged(bool resetBusy = false)
     {
@@ -74,6 +78,17 @@ public abstract class EditListBase<I> : ValidateListBase<I>, INeatooObject, IEdi
             if (!item.IsNew)
             {
                 //((IDataMapperEditTarget)item).MarkModified(); // TODO Add back
+                item.MarkModified();
+            }
+
+            item.MarkAsChild();
+        }
+        else
+        {
+            if (item.IsDeleted)
+            {
+                DeletedList.Add(item);
+                return;
             }
         }
 
@@ -86,10 +101,11 @@ public abstract class EditListBase<I> : ValidateListBase<I>, INeatooObject, IEdi
         {
             var item = this[index];
 
-            item.Delete();
-
-            DeletedList.Add(item);
-
+            if (!item.IsNew)
+            {
+                item.Delete();
+                DeletedList.Add(item);
+            }
         }
 
         base.RemoveItem(index);
@@ -101,9 +117,17 @@ public abstract class EditListBase<I> : ValidateListBase<I>, INeatooObject, IEdi
         IsPaused = true;
     }
 
-    public override void OnDeserialized()
+    public override void OnSerializing()
     {
-        base.OnDeserialized();
-        IsPaused = false;
+        base.OnSerializing();
+    }
+
+    public override void FactoryComplete(FactoryOperation factoryOperation)
+    {
+        base.FactoryComplete(factoryOperation);
+        if(factoryOperation == FactoryOperation.Update)
+        {
+            DeletedList.Clear();
+        }
     }
 }
