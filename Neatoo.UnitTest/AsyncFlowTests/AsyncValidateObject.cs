@@ -144,12 +144,12 @@ internal class AsyncValidateObject : ValidateBase<AsyncValidateObject>
 
     public AsyncValidateObject Child { get => Getter<AsyncValidateObject>()!; set => Setter(value); }
 
-    protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
+    protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        if(breadCrumbs.FullPropertyName == nameof(AsyncRulesCanWait))
+        if(eventArgs.FullPropertyName == nameof(AsyncRulesCanWait))
         {
             await Task.Delay(2);
         }
-        await base.ChildNeatooPropertyChanged(breadCrumbs);
+        await base.ChildNeatooPropertyChanged(eventArgs);
     }
 }

@@ -186,18 +186,18 @@ else
         Console.WriteLine($"Messages: {string.Join(Environment.NewLine, messages.Select(m => m.Message))}");
     }
 
-    private Task PersonModelNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
+    private Task PersonModelNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
         var isSavable = PersonModel!.IsSavable;
         var messages = PersonModel!.PropertyMessages;
 
-        Console.WriteLine($"Neatoo Property changed: {breadCrumbs.FullPropertyName}");
+        Console.WriteLine($"Neatoo Property changed: {eventArgs.FullPropertyName}");
         Console.WriteLine($"IsSavable: {isSavable}");
         Console.WriteLine($"Messages: {string.Join(Environment.NewLine, messages.Select(m => m.Message))}");
 
-        if (breadCrumbs.OriginalEventArgs.Property != null)
+        if (eventArgs.OriginalEventArgs.Property != null)
         {
-            EditContext.NotifyFieldChanged(new FieldIdentifier(breadCrumbs.OriginalEventArgs.Property, nameof(IEditProperty.StringValue)));
+            EditContext.NotifyFieldChanged(new FieldIdentifier(eventArgs.OriginalEventArgs.Property, nameof(IEditProperty.StringValue)));
         }
 
         return Task.CompletedTask;

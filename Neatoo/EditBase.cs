@@ -125,18 +125,18 @@ public abstract class EditBase<T> : ValidateBase<T>, INeatooObject, IEditBase, I
         }
     }
 
-    protected override Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
+    protected override Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
 
         // TODO - if an object isn't assigned to another IBase
         // it will still consider us to be the Parent
 
-        if (breadCrumbs.InnerEventArgs == null && breadCrumbs.Property.Value is IEditBase child)
+        if (eventArgs.InnerEventArgs == null && eventArgs.Property.Value is IEditBase child)
         {
             child.UnDelete();
         }
 
-        return base.ChildNeatooPropertyChanged(breadCrumbs);
+        return base.ChildNeatooPropertyChanged(eventArgs);
     }
 
     public virtual async Task<IEditBase> Save()

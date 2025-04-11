@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-
+	<PropertyGroup>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+	</PropertyGroup>
+	
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="4.13.0"></PackageReference>
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" Version="4.13.0"></PackageReference>
@@ -9,6 +12,7 @@
 
 	<ItemGroup>
 		<InternalsVisibleTo Include="Person.DomainModel.Tests" />
+		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

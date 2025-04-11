@@ -93,14 +93,14 @@ namespace Person.DomainModel
             await RunRules();
         }
 
-        protected override async Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
+        protected override async Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
         {
-            await base.HandleNeatooPropertyChanged(breadCrumbs);
+            await base.HandleNeatooPropertyChanged(eventArgs);
 
-            if ((breadCrumbs.PropertyName == nameof(IPersonPhoneModel.PhoneType) ||
-                breadCrumbs.PropertyName == nameof(IPersonPhoneModel.PhoneNumber)))
+            if ((eventArgs.PropertyName == nameof(IPersonPhoneModel.PhoneType) ||
+                eventArgs.PropertyName == nameof(IPersonPhoneModel.PhoneNumber)))
             {
-                if (breadCrumbs.Source is IPersonPhoneModel personPhoneModel)
+                if (eventArgs.Source is IPersonPhoneModel personPhoneModel)
                 {
                     await Task.WhenAll(this.Except([personPhoneModel])
                         .Select(c => c.RunRules()));

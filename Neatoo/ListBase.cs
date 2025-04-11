@@ -111,16 +111,16 @@ public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, ILis
         
     }
 
-    protected virtual Task RaiseNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
+    protected virtual Task RaiseNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        return NeatooPropertyChanged?.Invoke(breadCrumbs) ?? Task.CompletedTask;
+        return NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
     }
 
-    protected virtual Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
+    protected virtual Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
         CheckIfMetaPropertiesChanged();
-        // Lists don't add to the breadcrumbs
-        return RaiseNeatooPropertyChanged(breadCrumbs);
+        // Lists don't add to the eventArgs
+        return RaiseNeatooPropertyChanged(eventArgs);
     }
 
     private Task _NeatooPropertyChanged(NeatooPropertyChangedEventArgs propertyNameBreadCrumbs)

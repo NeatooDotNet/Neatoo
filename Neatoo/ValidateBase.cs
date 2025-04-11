@@ -91,14 +91,14 @@ namespace Neatoo
             MetaState = (IsValid, IsSelfValid, IsBusy, IsSelfBusy);
         }
 
-        protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
+        protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
         {
             if (!IsPaused)
             {
-                await RunRules(breadCrumbs.FullPropertyName);
+                await RunRules(eventArgs.FullPropertyName);
             }
 
-            await base.ChildNeatooPropertyChanged(breadCrumbs);
+            await base.ChildNeatooPropertyChanged(eventArgs);
 
             CheckIfMetaPropertiesChanged();
         }

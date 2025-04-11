@@ -48,9 +48,9 @@ namespace Person.DomainModel
                 {
                     return (new[]
                     {
-                     (nameof(t.FirstName), "First and Last name combination is not unique"),
+                        (nameof(t.FirstName), "First and Last name combination is not unique"),
                         (nameof(t.LastName), "First and Last name combination is not unique")
-                }).AsRuleMessages();
+                    }).AsRuleMessages();
                 }
             }
             return None;

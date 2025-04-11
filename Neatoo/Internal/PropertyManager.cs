@@ -49,9 +49,9 @@ public class PropertyManager<P> : IPropertyManager<P>, IJsonOnDeserialized
     public event NeatooPropertyChanged? NeatooPropertyChanged;
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private Task _Property_NeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
+    private Task _Property_NeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        return NeatooPropertyChanged?.Invoke(breadCrumbs) ?? Task.CompletedTask;
+        return NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
     }
 
     public PropertyManager(IPropertyInfoList propertyInfoList, IFactory factory)

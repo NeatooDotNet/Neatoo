@@ -190,16 +190,16 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    protected virtual Task PassThruValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
+    protected virtual Task PassThruValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        return NeatooPropertyChanged?.Invoke(new NeatooPropertyChangedEventArgs(this, this.Value!, breadCrumbs)) ?? Task.CompletedTask;
+        return NeatooPropertyChanged?.Invoke(new NeatooPropertyChangedEventArgs(this, this.Value!, eventArgs)) ?? Task.CompletedTask;
     }
 
-    protected virtual async Task OnValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
+    protected virtual async Task OnValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
         // ValidateBase sticks Task into AsyncTaskSequencer for us
         // so that it will be awaited by WaitForTasks()
-        var task = NeatooPropertyChanged?.Invoke(breadCrumbs) ?? Task.CompletedTask;
+        var task = NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
 
         if (!task.IsCompleted && !IsSelfBusy)
         {
