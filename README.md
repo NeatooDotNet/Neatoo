@@ -30,5 +30,6 @@ Ideas that shaped Neatoo:
 - [Object–relational impedance mismatch](https://en.wikipedia.org/wiki/Object%E2%80%93relational_impedance_mismatch)
 - [Anemic Domain Model](https://martinfowler.com/bliki/AnemicDomainModel.html)
 - [Async Programming : Patterns for Asynchronous MVVM Applications: Data Binding](https://learn.microsoft.com/en-us/archive/msdn-magazine/2014/march/async-programming-patterns-for-asynchronous-mvvm-applications-data-binding)
+- [Extending Partial Methods](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-9.0/extending-partial-methods) and [Partial Properties](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-13.0/partial-properties)
 
 *No DTOs to get the Domain Model from the server to the client. If you use the repository pattern you may have DTOs for you DAL layer interaction.
