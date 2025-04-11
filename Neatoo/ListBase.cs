@@ -1,5 +1,4 @@
-﻿using Neatoo.Core;
-using Neatoo.Internal;
+﻿using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using System.Collections;
 using System.Collections.ObjectModel;
@@ -61,7 +60,9 @@ public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, ILis
         item.PropertyChanged += _PropertyChanged;
         item.NeatooPropertyChanged += _NeatooPropertyChanged;
 
-        RaiseNeatooPropertyChanged(new PropertyChangedBreadCrumbs(nameof(Count), this));
+        RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(Count), this));
+
+        CheckIfMetaPropertiesChanged();
     }
 
     protected override void RemoveItem(int index)
@@ -72,7 +73,9 @@ public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, ILis
 
         base.RemoveItem(index);
 
-        RaiseNeatooPropertyChanged(new PropertyChangedBreadCrumbs(nameof(Count), this));
+        RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(Count), this));
+
+        CheckIfMetaPropertiesChanged();
     }
 
     protected virtual Task PostPortalConstruct()
@@ -108,18 +111,19 @@ public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, ILis
         
     }
 
-    protected virtual Task RaiseNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    protected virtual Task RaiseNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
     {
         return NeatooPropertyChanged?.Invoke(breadCrumbs) ?? Task.CompletedTask;
     }
 
-    protected virtual Task HandleNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    protected virtual Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
     {
+        CheckIfMetaPropertiesChanged();
         // Lists don't add to the breadcrumbs
         return RaiseNeatooPropertyChanged(breadCrumbs);
     }
 
-    private Task _NeatooPropertyChanged(PropertyChangedBreadCrumbs propertyNameBreadCrumbs)
+    private Task _NeatooPropertyChanged(NeatooPropertyChangedEventArgs propertyNameBreadCrumbs)
     {
         return HandleNeatooPropertyChanged(propertyNameBreadCrumbs);
     }

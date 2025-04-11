@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Neatoo.UnitTest.RemoteFactory;
 
 namespace Neatoo.UnitTest.RemoteFactory
 {

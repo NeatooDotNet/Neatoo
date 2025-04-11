@@ -1,4 +1,4 @@
-﻿namespace Neatoo.Core;
+﻿namespace Neatoo.Internal;
 
 /// <summary>
 /// When all tasks have completed set a TaskCompletionsSource

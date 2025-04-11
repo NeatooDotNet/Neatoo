@@ -1,6 +1,4 @@
-﻿using Neatoo.Core;
-
-namespace Neatoo;
+﻿namespace Neatoo.Internal;
 
 public interface IFactory
 {

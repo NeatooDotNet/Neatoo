@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Neatoo.UnitTest.BaseTests.Objects;
-using Neatoo.Core;
 using Neatoo.RemoteFactory.Internal;
 
 namespace Neatoo.UnitTest.BaseTests;

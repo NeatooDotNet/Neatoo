@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis;
 using System.Text;
 
-namespace Neato.BaseGenerator
+namespace Neatoo.BaseGenerator
 {
 
 

@@ -1,6 +1,4 @@
-﻿using Neatoo.Core;
-using Neatoo.Internal;
-using Neatoo.RemoteFactory;
+﻿using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
@@ -36,25 +34,29 @@ public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, I
 
     protected (bool IsValid, bool IsSelfValid, bool IsBusy, bool IsSelfBusy) MetaState { get; private set; }
 
-    public IReadOnlyCollection<IRuleMessage> RuleMessages => this.SelectMany(_ => _.RuleMessages).ToList().AsReadOnly();
+    public IReadOnlyCollection<IPropertyMessage> PropertyMessages => this.SelectMany(_ => _.PropertyMessages).ToList().AsReadOnly();
 
     protected override void CheckIfMetaPropertiesChanged(bool raiseBusy = false)
     {
         if (MetaState.IsValid != IsValid)
         {
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsValid)));
+            RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsValid), this));
         }
         if (MetaState.IsSelfValid != IsSelfValid)
         {
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsSelfValid)));
+            RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSelfValid), this));
         }
         if (raiseBusy && IsSelfBusy || MetaState.IsSelfBusy != IsSelfBusy)
         {
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsSelfBusy)));
+            RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSelfBusy), this));
         }
         if (raiseBusy && IsBusy || MetaState.IsBusy != IsBusy)
         {
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsBusy)));
+            RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsBusy), this));
         }
 
         ResetMetaState();
@@ -66,38 +68,37 @@ public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, I
         MetaState = (IsValid, IsSelfValid, IsBusy, IsSelfBusy);
     }
 
-    protected override Task HandleNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    public async Task RunRules(string propertyName, CancellationToken? token = default)
     {
+        foreach (var item in this)
+        {
+            await item.RunRules(propertyName, token);
+        }
         CheckIfMetaPropertiesChanged();
-        return base.HandleNeatooPropertyChanged(breadCrumbs);
     }
 
-    public async Task RunAllRules(CancellationToken? token = default)
+    public async Task RunRules(RunRulesFlag runRules = Neatoo.RunRulesFlag.All, CancellationToken? token = default)
     {
         foreach (var item in this)
         {
-            await item.RunAllRules();
+            await item.RunRules(runRules, token);
+        }
+        CheckIfMetaPropertiesChanged();
+    }
+
+    public void ClearAllMessages()
+    {
+        foreach (var item in this)
+        {
+            item.ClearAllMessages();
         }
     }
 
-    public Task RunSelfRules(CancellationToken? token = default)
-    {
-        return Task.CompletedTask;
-    }
-
-    public void ClearAllErrors()
+    public void ClearSelfMessages()
     {
         foreach (var item in this)
         {
-            item.ClearAllErrors();
-        }
-    }
-
-    public void ClearSelfErrors()
-    {
-        foreach (var item in this)
-        {
-            item.ClearSelfErrors();
+            item.ClearSelfMessages();
         }
     }
 

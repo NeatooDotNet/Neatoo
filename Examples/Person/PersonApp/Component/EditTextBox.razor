@@ -1,56 +1,50 @@
 ﻿@using Neatoo
-@using Neatoo.Core
+@using System.Linq
+@using System.ComponentModel
 
 <style>
     .disabled {
-        background-color: lightgray;
+    background-color: lightgray;
     }
 
     .invalid {
-        border-color: red;
+    border-color: red;
     }
 </style>
 
 <label for="inputText" class="form-label">@EditProperty.DisplayName</label>
 <InputText id="@EditProperty.Name" @bind-Value:get="@EditProperty.StringValue"
-           @bind-Value:set="(value) => EditProperty.SetStringValue(value)"
-        disabled="@EditProperty.IsBusy"
-        class="@GetInputClass()"
-        title="@GetErrorMessage()" />
+@bind-Value:set="(value) => EditProperty.SetStringValue(value)"
+disabled="@EditProperty.IsBusy"
+class="@GetInputClass()"
+title="@GetErrorMessage()" />
+<ValidationMessage For="@(() => EditProperty.StringValue)" class="text-danger" />
 
 @code {
 
-[Parameter]
-public IEditProperty EditProperty { get; set; }
+    [CascadingParameter]
+    public EditContext EditContext { get; set; }
 
-override protected void OnInitialized()
-{
-    base.OnInitialized();
+    [Parameter]
+    public IEditProperty EditProperty { get; set; }
 
-    EditProperty.PropertyChanged += (sender, e) =>
+    private string GetInputClass()
     {
-        if (e.PropertyName == nameof(IProperty.IsBusy) || e.PropertyName == nameof(IEditProperty.IsValid))
+        if (EditProperty.IsBusy)
         {
-            InvokeAsync(() => StateHasChanged());
+            return "text-box disabled";
         }
-    };
-}
-
-private string GetInputClass()
-{
-    if (EditProperty.IsBusy)
-    {
-        return "text-box disabled";
+        if (!EditProperty.IsValid)
+        {
+            return "text-box invalid";
+        }
+        return "text-box";
     }
-    if (!EditProperty.IsValid)
-    {
-        return "text-box invalid";
-    }
-    return "text-box";
-}
 
-private string GetErrorMessage()
-{
-    return EditProperty.RuleMessages.Any() ? string.Join(", ", EditProperty.RuleMessages) : string.Empty;
-}
+    private string GetErrorMessage()
+    {
+        return EditProperty.PropertyMessages.Any() ? string.Join(", ", EditProperty.PropertyMessages.Select(r => r.Message)) : string.Empty;
+    }
+
+
 }

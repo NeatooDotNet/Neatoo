@@ -1,6 +1,4 @@
-﻿using Neatoo.Core;
-using Neatoo.Internal;
-using Neatoo.RemoteFactory;
+﻿using Neatoo.RemoteFactory;
 
 namespace Neatoo;
 
@@ -47,18 +45,22 @@ public abstract class EditBase<T> : ValidateBase<T>, INeatooObject, IEditBase, I
             if (EditMetaState.IsModified != IsModified)
             {
                 RaisePropertyChanged(nameof(IsModified));
+                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsModified), this));
             }
             if (EditMetaState.IsSelfModified != IsSelfModified)
             {
                 RaisePropertyChanged(nameof(IsSelfModified));
+                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSelfModified), this));
             }
             if (EditMetaState.IsSavable != IsSavable)
             {
                 RaisePropertyChanged(nameof(IsSavable));
+                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSavable), this));
             }
             if (EditMetaState.IsDeleted != IsDeleted)
             {
                 RaisePropertyChanged(nameof(IsDeleted));
+                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsDeleted), this));
             }
         }
 
@@ -123,13 +125,13 @@ public abstract class EditBase<T> : ValidateBase<T>, INeatooObject, IEditBase, I
         }
     }
 
-    protected override Task ChildNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    protected override Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
     {
 
         // TODO - if an object isn't assigned to another IBase
         // it will still consider us to be the Parent
 
-        if (breadCrumbs.PropertyName == nameof(IEditProperty.Value) && breadCrumbs.Source is IEditBase child)
+        if (breadCrumbs.InnerEventArgs == null && breadCrumbs.Property.Value is IEditBase child)
         {
             child.UnDelete();
         }

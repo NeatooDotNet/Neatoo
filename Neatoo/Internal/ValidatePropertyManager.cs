@@ -1,19 +1,6 @@
 ﻿using Neatoo.Rules;
 
-namespace Neatoo.Core;
-
-public interface IValidatePropertyManager<out P> : IPropertyManager<P>
-    where P : IProperty
-{
-    // Valid without looking at Children that are IValidateBase
-    bool IsSelfValid { get; }
-    bool IsValid { get; }
-    Task RunAllRules(CancellationToken? token = null);
-
-    IReadOnlyCollection<IRuleMessage> RuleMessages { get; }
-    void ClearAllErrors();
-    void ClearSelfErrors();
-}
+namespace Neatoo.Internal;
 
 public delegate IValidatePropertyManager<IValidateProperty> CreateValidatePropertyManager(IPropertyInfoList propertyInfoList);
 
@@ -34,18 +21,18 @@ public class ValidatePropertyManager<P> : PropertyManager<P>, IValidatePropertyM
     public bool IsSelfValid => !PropertyBag.Any(_ => !_.Value.IsSelfValid);
     public bool IsValid => !PropertyBag.Any(_ => !_.Value.IsValid);
 
-    public IReadOnlyCollection<IRuleMessage> RuleMessages => PropertyBag.SelectMany(_ => _.Value.RuleMessages).ToList().AsReadOnly();
+    public IReadOnlyCollection<IPropertyMessage> PropertyMessages => PropertyBag.SelectMany(_ => _.Value.PropertyMessages).ToList().AsReadOnly();
 
 
-    public async Task RunAllRules(CancellationToken? token = null)
+    public async Task RunRules(RunRulesFlag runRules = Neatoo.RunRulesFlag.All, CancellationToken? token = null)
     {
         foreach (var p in PropertyBag.Values)
         {
-            await p.RunAllRules(token);
+            await p.RunRules(runRules, token);
         }
     }
 
-    public void ClearSelfErrors()
+    public void ClearSelfMessages()
     {
         foreach (var p in PropertyBag)
         {
@@ -53,7 +40,7 @@ public class ValidatePropertyManager<P> : PropertyManager<P>, IValidatePropertyM
         }
     }
 
-    public void ClearAllErrors()
+    public void ClearAllMessages()
     {
         foreach (var p in PropertyBag)
         {

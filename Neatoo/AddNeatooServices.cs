@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Neatoo.Core;
+using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Neatoo.Rules;

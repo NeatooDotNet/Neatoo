@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using Neatoo.Internal;
 
 namespace Neatoo.UnitTest.AsyncFlowTests;
 
@@ -24,7 +25,7 @@ public class AsyncFlowTests
         Assert.IsFalse(asyncValidateObject.IsBusy);
     }
 
-    private async Task AsyncValidateObject_NeatooPropertyChanged(Core.PropertyChangedBreadCrumbs propertyNameBreadCrumbs)
+    private async Task AsyncValidateObject_NeatooPropertyChanged(NeatooPropertyChangedEventArgs propertyNameBreadCrumbs)
     {
         if(propertyNameBreadCrumbs.FullPropertyName == nameof(AsyncValidateObject.AsyncRulesCanWait))
         {
@@ -51,7 +52,7 @@ public class AsyncFlowTests
     public async Task AsyncFlowTests_CheckAllRules()
     {
         // Just ensure there's not a circular reference
-        await asyncValidateObject.RunAllRules(); 
+        await asyncValidateObject.RunRules(); 
 
         Assert.AreEqual(5, asyncValidateObject.AsyncDelayUpdateChildRule.RunCount);
         Assert.AreEqual(4, asyncValidateObject.Child.AsyncDelayUpdateChildRule.RunCount);

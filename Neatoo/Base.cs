@@ -1,5 +1,4 @@
-﻿using Neatoo.Core;
-using Neatoo.Internal;
+﻿using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -69,34 +68,30 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    protected virtual Task RaiseNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    protected virtual Task RaiseNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        Debug.Assert(PropertyManager.GetProperties.Any(p => p.Name == breadCrumbs.PropertyName), "Property not found");
-
-        // This is for databinding only - not other Neatoo objects
-        return NeatooPropertyChanged?.Invoke(new PropertyChangedBreadCrumbs(breadCrumbs.PropertyName, this, breadCrumbs.InnerBreadCrumb)) ?? Task.CompletedTask;
+        return NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
     }
 
-    protected virtual Task ChildNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    protected virtual Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        return RaiseNeatooPropertyChanged(breadCrumbs);
+        return RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(eventArgs.Property!, this, eventArgs.InnerEventArgs));
     }
 
-    private Task _PropertyManager_NeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    private Task _PropertyManager_NeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-
-        if (breadCrumbs.Source is IProperty property) // This can be clearer
+        if (eventArgs.Property != null && eventArgs.Property == eventArgs.Source) // One of this object's properties
         {
-            if (this[property.Name].Value is ISetParent child)
+            if (eventArgs.Property.Value is ISetParent child)
             {
                 child.SetParent(this);
             }
-
+            
             // This isn't meant to go to parent Neatoo objects, thru the tree, just immediate outside listeners
-            RaisePropertyChanged(breadCrumbs.FullPropertyName);
+            RaisePropertyChanged(eventArgs.FullPropertyName);
         }
 
-        return ChildNeatooPropertyChanged(breadCrumbs);
+        return ChildNeatooPropertyChanged(eventArgs);
     }
     private void _PropertyManager_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

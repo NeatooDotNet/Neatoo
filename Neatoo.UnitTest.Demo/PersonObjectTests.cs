@@ -1,4 +1,5 @@
-﻿using Neatoo.RemoteFactory;
+﻿using Neatoo.Internal;
+using Neatoo.RemoteFactory;
 
 namespace Neatoo.UnitTest.Portal;
 

@@ -76,8 +76,6 @@ public class PersonEntity : IdPropertyChangedBase
     public string? Email { get; set; }
 	public string? Phone { get; set; }
 	public string? Notes { get; set; }
-	public DateTime Created { get; set; }
-	public DateTime Modified { get; set; }
     public virtual ICollection<PersonPhoneEntity> Phones { get; set; } = [];
 }
 

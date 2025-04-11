@@ -173,7 +173,7 @@ public class ValidateBaseAsyncTests
         }
 
         Assert.IsTrue(validate.IsValid);
-        Assert.AreEqual(0, validate.RuleMessages.Count);
+        Assert.AreEqual(0, validate.PropertyMessages.Count);
         Assert.IsTrue(propertyChanged.Contains(nameof(validate.IsValid)));
     }
 
@@ -253,7 +253,7 @@ public class ValidateBaseAsyncTests
     [TestMethod]
     public async Task ValidateBaseAsync_RunAllRules()
     {
-        await validate.RunAllRules();
+        await validate.RunRules();
 
         Assert.AreEqual(3, validate.RuleRunCount);
         Assert.IsFalse(validate.IsBusy);

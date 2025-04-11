@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Neatoo.Rules;
-using Neatoo.UnitTest.SystemTextJson.EditTests;
 using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.UnitTest.SystemJsonText;
@@ -68,7 +68,7 @@ public class EditObjectSerializedRuleMessageTests
     {
         scope = UnitTestServices.GetLifetimeScope();
         resolver = scope.GetRequiredService<NeatooJsonSerializer>();
-        await target.RunAllRules();
+        await target.RunRules();
     }
 
     private string Serialize(object target)

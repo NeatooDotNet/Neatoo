@@ -1,5 +1,4 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Neatoo.Core;
 using Neatoo.UnitTest.BaseTests.Objects;
 
 namespace Neatoo.UnitTest.BaseTests;

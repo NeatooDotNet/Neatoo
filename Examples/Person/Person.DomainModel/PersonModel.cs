@@ -1,12 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Neatoo;
 using Neatoo.RemoteFactory;
 using Neatoo.Rules.Rules;
 using Person.Ef;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Runtime.CompilerServices;
 
 namespace Person.DomainModel;
 
@@ -23,17 +21,13 @@ internal partial class PersonModel : IdEditBase<PersonModel>, IPersonModel
         [Service] IUniqueNameRule uniqueNameRule) : base(editBaseServices)
     {
         RuleManager.AddRule(uniqueNameRule);
-        this.RuleManager.AddActionAsync(p =>
-        {
-            return p.PersonPhoneModelList.RunAllRules();
-        }, p => p.PersonPhoneModelList[0].PhoneNumber, p => p.PersonPhoneModelList[0].PhoneType, p => p.PersonPhoneModelList.Count);
     }
 
-    [DisplayName("First Name")]
+    [DisplayName("First Name*")]
     [Required(ErrorMessage = "First Name is required")]
     public partial string? FirstName { get; set; }
 
-    [DisplayName("Last Name")]
+    [DisplayName("Last Name*")]
     [Required(ErrorMessage = "Last Name is required")]
     public partial string? LastName { get; set; }
 
@@ -45,29 +39,14 @@ internal partial class PersonModel : IdEditBase<PersonModel>, IPersonModel
 
     public partial IPersonPhoneModelList PersonPhoneModelList { get; set; }
 
-    public partial DateTime Created { get; set; }
-    public partial DateTime Modified { get; set; }
-
     public partial void MapFrom(PersonEntity personEntity);
     public partial void MapTo(PersonEntity personEntity);
     public partial void MapModifiedTo(PersonEntity personEntity);
 
     [Create]
-    public async Task Create([Service] IAllRequiredRulesExecuted allRequiredRulesExecuted,
-                    [Service] IPersonPhoneModelList personPhoneModelList)
+    public void Create([Service] IPersonPhoneModelList personPhoneModelList)
     {
-        this.Created = DateTime.Now;
-        this.Modified = DateTime.Now;
-
-        // ObjectInvalid until all Required properties have been updated at least once
-        RuleManager.AddRule(allRequiredRulesExecuted);
         PersonPhoneModelList = personPhoneModelList;
-
-        var personPhoneModel = await PersonPhoneModelList.AddPhoneNumber();
-        personPhoneModel.PhoneNumber = "555-555-5555";
-
-        personPhoneModel = await PersonPhoneModelList.AddPhoneNumber();
-        personPhoneModel.PhoneNumber = "888-333-4444";
     }
 
     [Remote]
@@ -87,9 +66,16 @@ internal partial class PersonModel : IdEditBase<PersonModel>, IPersonModel
 
     [Remote]
     [Insert]
-    public async Task<PersonEntity> Insert([Service] IPersonContext personContext,
+    public async Task<PersonEntity?> Insert([Service] IPersonContext personContext,
                                     [Service] IPersonPhoneModelListFactory personPhoneModelListFactory)
     {
+        await RunRules();
+
+        if(!this.IsSavable)
+        {
+            return null;
+        }
+
         var personEntity = new PersonEntity();
         personContext.Persons.Add(personEntity);
         this.MapTo(personEntity);
@@ -103,9 +89,16 @@ internal partial class PersonModel : IdEditBase<PersonModel>, IPersonModel
 
     [Remote]
     [Update]
-    public async Task<PersonEntity> Update([Service] IPersonContext personContext,
+    public async Task<PersonEntity?> Update([Service] IPersonContext personContext,
                                     [Service] IPersonPhoneModelListFactory personPhoneModelListFactory)
     {
+        await RunRules();
+
+        if (!this.IsSavable)
+        {
+            return null;
+        }
+
         var personEntity = await personContext.Persons.FirstOrDefaultAsync(x => x.Id == this.Id);
         if (personEntity == null)
         {
@@ -122,15 +115,9 @@ internal partial class PersonModel : IdEditBase<PersonModel>, IPersonModel
 
     [Remote]
     [Delete]
-    public async Task Delete([Service] IPersonContext personContext,
-                                    [Service] IPersonPhoneModelListFactory personPhoneModelListFactory)
+    public async Task Delete([Service] IPersonContext personContext)
     {
-        var personEntity = await personContext.Persons.FirstOrDefaultAsync(x => x.Id == this.Id);
-
-        if (personEntity != null)
-        {
-            personContext.DeletePerson(personEntity);
-            await personContext.SaveChangesAsync();
-        }
+        await personContext.DeleteAllPersons();
+        await personContext.SaveChangesAsync();
     }
 }

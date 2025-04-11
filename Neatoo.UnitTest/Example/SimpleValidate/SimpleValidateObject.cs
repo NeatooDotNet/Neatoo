@@ -1,6 +1,4 @@
-﻿using Neatoo.Core;
-
-namespace Neatoo.UnitTest.Example.SimpleValidate;
+﻿namespace Neatoo.UnitTest.Example.SimpleValidate;
 
 
 public class SimpleValidateObject : ValidateBase<SimpleValidateObject>, ISimpleValidateObject

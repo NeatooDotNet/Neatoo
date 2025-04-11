@@ -161,7 +161,7 @@ public class ValidateBaseTests
     public async Task ValidateBase_RunSelfRules()
     {
         var ruleCount = validate.RuleRunCount;
-        await validate.RunSelfRules();
+        await validate.RunRules(RunRulesFlag.Self);
         Assert.AreEqual(ruleCount + 3, validate.RuleRunCount);
     }
 
@@ -170,7 +170,7 @@ public class ValidateBaseTests
     {
         var ruleCount = validate.RuleRunCount;
         validate.Age = 10;
-        await validate.RunAllRules();
+        await validate.RunRules();
         Assert.AreEqual(ruleCount + 3, validate.RuleRunCount);
     }
 
@@ -224,8 +224,8 @@ public class ValidateBaseTests
         validate.TestMarkInvalid(message = Guid.NewGuid().ToString());
         Assert.IsFalse(validate.IsValid);
         Assert.IsFalse(validate.IsSelfValid);
-        Assert.AreEqual(1, validate.RuleMessages.Count);
-        Assert.AreEqual(message, validate.RuleMessages.Single().Message);
+        Assert.AreEqual(1, validate.PropertyMessages.Count);
+        Assert.AreEqual(message, validate.PropertyMessages.Single().Message);
     }
 
     [TestMethod]

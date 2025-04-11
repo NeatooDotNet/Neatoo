@@ -1,6 +1,6 @@
 ﻿using Neatoo.RemoteFactory;
+using Neatoo.Internal;
 using Neatoo.UnitTest.PersonObjects;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Neatoo.UnitTest.EditBaseTests;
 public partial interface IEditPerson : IPersonEdit

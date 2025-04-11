@@ -1,36 +1,11 @@
-﻿using Neatoo.Internal;
-using Neatoo.Rules;
+﻿using Neatoo.Rules;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-namespace Neatoo.Core;
+namespace Neatoo.Internal;
 
-public interface IEditPropertyManager : IValidatePropertyManager<IEditProperty>
-{
-    bool IsModified { get; }
-    bool IsSelfModified { get; }
 
-    IEnumerable<string> ModifiedProperties { get; }
-    void MarkSelfUnmodified();
-
-    void PauseAllActions();
-    void ResumeAllActions();
-}
-
-public interface IEditProperty : IValidateProperty
-{
-    bool IsPaused { get; set; }
-    bool IsModified { get; }
-    bool IsSelfModified { get; }
-    void MarkSelfUnmodified();
-    string DisplayName { get; }
-}
-
-public interface IEditProperty<T> : IEditProperty, IValidateProperty<T>
-{
-
-}
 
 public class EditProperty<T> : ValidateProperty<T>, IEditProperty<T>
 {
@@ -124,8 +99,6 @@ public class EditPropertyManager : ValidatePropertyManager<IEditProperty>, IEdit
             fd.Value.MarkSelfUnmodified();
         }
     }
-
-
 
     public void PauseAllActions()
     {

@@ -1,5 +1,4 @@
-﻿using Neatoo.Internal;
-using Neatoo.RemoteFactory;
+﻿using Neatoo.RemoteFactory;
 using System.Collections;
 using System.ComponentModel;
 
@@ -47,14 +46,17 @@ public abstract class EditListBase<I> : ValidateListBase<I>, INeatooObject, IEdi
         if (EditMetaState.IsModified != IsModified)
         {
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsModified)));
+            RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsModified), this));
         }
         if (EditMetaState.IsSelfModified != IsSelfModified)
         {
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsSelfModified)));
+            RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSelfModified), this));
         }
         if (EditMetaState.IsSavable != IsSavable)
         {
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsSavable)));
+            RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSavable), this));
         }
 
         ResetMetaState();

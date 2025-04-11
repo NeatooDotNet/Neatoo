@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.Rules.Rules;
 using System.ComponentModel.DataAnnotations;
@@ -49,7 +50,7 @@ public class RequiredAttributeTests
     public async Task RequiredAttribute_InValid()
     {
 
-        await requiredObject.RunAllRules();
+        await requiredObject.RunRules();
         Assert.IsFalse(requiredObject.IsValid);
     }
 

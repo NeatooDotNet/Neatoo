@@ -1,6 +1,4 @@
-﻿using Neatoo.Core;
-using Neatoo.Internal;
-using Neatoo.RemoteFactory;
+﻿using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -8,6 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace Neatoo
 {
+
 
     public interface IValidateBase : IBase, IValidateMetaProperties, INotifyPropertyChanged, INotifyNeatooPropertyChanged
     {
@@ -55,7 +54,7 @@ namespace Neatoo
 
         public bool IsSelfValid => PropertyManager.IsSelfValid;
 
-        public IReadOnlyCollection<IRuleMessage> RuleMessages => PropertyManager.RuleMessages;
+        public IReadOnlyCollection<IPropertyMessage> PropertyMessages => PropertyManager.PropertyMessages;
 
         protected (bool IsValid, bool IsSelfValid, bool IsBusy, bool IsSelfBusy) MetaState { get; private set; }
 
@@ -66,18 +65,22 @@ namespace Neatoo
             if (MetaState.IsValid != IsValid)
             {
                 RaisePropertyChanged(nameof(IsValid));
+                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsValid), this));
             }
             if (MetaState.IsSelfValid != IsSelfValid)
             {
                 RaisePropertyChanged(nameof(IsSelfValid));
+                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSelfValid), this));
             }
             if (raiseBusy && IsSelfBusy || MetaState.IsSelfBusy != IsSelfBusy)
             {
                 RaisePropertyChanged(nameof(IsSelfBusy));
+                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSelfBusy), this));
             }
             if (raiseBusy && IsBusy || MetaState.IsBusy != IsBusy)
             {
                 RaisePropertyChanged(nameof(IsBusy));
+                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsBusy), this));
             }
 
             ResetMetaState();
@@ -88,11 +91,11 @@ namespace Neatoo
             MetaState = (IsValid, IsSelfValid, IsBusy, IsSelfBusy);
         }
 
-        protected override async Task ChildNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+        protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
         {
             if (!IsPaused)
             {
-                await CheckRules(breadCrumbs.FullPropertyName);
+                await RunRules(breadCrumbs.FullPropertyName);
             }
 
             await base.ChildNeatooPropertyChanged(breadCrumbs);
@@ -159,32 +162,31 @@ namespace Neatoo
             return Task.CompletedTask;
         }
 
-        public virtual Task CheckRules(string propertyName)
+        public virtual Task RunRules(string propertyName, CancellationToken? token = null)
         {
-            var task = RuleManager.CheckRulesForProperty(propertyName);
+            var task = RuleManager.RunRules(propertyName, token);
 
             CheckIfMetaPropertiesChanged();
 
             return task;
         }
 
-        public virtual async Task RunSelfRules(CancellationToken? token = null)
+        public virtual async Task RunRules(RunRulesFlag runRules = Neatoo.RunRulesFlag.All, CancellationToken? token = null)
         {
-            this[nameof(ObjectInvalid)].ClearAllErrors();
+            if (runRules == Neatoo.RunRulesFlag.All)
+            {
+                ClearAllMessages();
+            }
 
-            await RuleManager.CheckAllRules(token);
+            if((runRules | Neatoo.RunRulesFlag.Self) != Neatoo.RunRulesFlag.Self)
+            {
+                await PropertyManager.RunRules(runRules, token);
+            }
+
+            await RuleManager.RunRules(runRules, token);
             await AsyncTaskSequencer.AllDone;
-        }
 
-        public virtual async Task RunAllRules(CancellationToken? token = null)
-        {
-            ClearAllErrors();
-
-            await PropertyManager.RunAllRules(token);
-            await RuleManager.CheckAllRules(token);
-            await AsyncTaskSequencer.AllDone;
-
-            //this.AddAsyncMethod((t) => PropertyManager.RunAllRules(token));
+            //this.AddAsyncMethod((t) => PropertyManager.RunRules(token));
             // TODO - This isn't raising the 'IsValid' property changed event
             //await base.WaitForTasks();
             if (this.Parent == null)
@@ -193,16 +195,16 @@ namespace Neatoo
             }
         }
 
-        public virtual void ClearSelfErrors()
+        public virtual void ClearSelfMessages()
         {
             this[nameof(ObjectInvalid)].ClearAllErrors();
-            PropertyManager.ClearSelfErrors();
+            PropertyManager.ClearSelfMessages();
         }
 
-        public virtual void ClearAllErrors()
+        public virtual void ClearAllMessages()
         {
             this[nameof(ObjectInvalid)].ClearAllErrors();
-            PropertyManager.ClearAllErrors();
+            PropertyManager.ClearAllMessages();
         }
 
         IValidateProperty IValidateBase.GetProperty(string propertyName)

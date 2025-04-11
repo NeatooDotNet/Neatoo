@@ -1,4 +1,6 @@
-﻿namespace Neatoo.UnitTest.BaseTests.Objects;
+﻿using Neatoo.Internal;
+
+namespace Neatoo.UnitTest.BaseTests.Objects;
 
 public interface IA { }
 

@@ -1,10 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neatoo.Internal;
 using Neatoo.Rules;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel;
 
 namespace Neatoo.UnitTest.ValidateBaseTests.ValidateListBaseRule;
 
@@ -45,6 +42,12 @@ public class ChildObjList : ValidateListBase<ChildObj>
     {
         return Task.WhenAll(this.Select(r => r.RunUniqueRule()));
     }
+
+    public Task Remove(int index)
+    {
+        this.RemoveAt(index);
+        return RunRules();
+    }
 }
 
 public class ChildObjUniqueValue : RuleBase<ChildObj>
@@ -77,6 +80,8 @@ public class ValidateListBaseRuleTests
 {
 
     ParentObj parentObj = new ParentObj();
+    List<PropertyChangedEventArgs> propertyChangedEvents = new List<PropertyChangedEventArgs>();
+    List<NeatooPropertyChangedEventArgs> neatooPropertyChangedEvents = new List<NeatooPropertyChangedEventArgs>();
 
     [TestInitialize]
     public void TestInitialize()
@@ -84,6 +89,17 @@ public class ValidateListBaseRuleTests
         parentObj.ChildObjList.Add(new ChildObj() { UniqueValue = "A" });
         parentObj.ChildObjList.Add(new ChildObj() { UniqueValue = "B" });
         parentObj.ChildObjList.Add(new ChildObj() { UniqueValue = "C" });
+
+        parentObj.PropertyChanged += (s, e) =>
+        {
+            propertyChangedEvents.Add(e);
+        };
+
+        parentObj.NeatooPropertyChanged += (e) =>
+        {
+            neatooPropertyChangedEvents.Add(e);
+            return Task.CompletedTask;
+        };
     }
 
     [TestMethod]
@@ -125,5 +141,20 @@ public class ValidateListBaseRuleTests
         parentObj.ChildObjList[0].UniqueValue = "F";
 
         Assert.IsTrue(parentObj.IsValid);
+    }
+
+    [TestMethod]
+    public async Task ValidateListBaseRuleTests_UniqueValue_Removed_Fixed()
+    {
+        parentObj.ChildObjList[0].UniqueValue = "E";
+        parentObj.ChildObjList[1].UniqueValue = "E";
+
+        propertyChangedEvents.Clear();
+        neatooPropertyChangedEvents.Clear();
+        await parentObj.ChildObjList.Remove(1);
+
+        Assert.IsTrue(parentObj.IsValid);
+
+        Assert.AreEqual("IsValid", propertyChangedEvents[0].PropertyName);
     }
 }

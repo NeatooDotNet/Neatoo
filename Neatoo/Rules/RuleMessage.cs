@@ -25,6 +25,7 @@ public record RuleMessage : IRuleMessage
 
 }
 
+
 public static class PropertyRuleMessageExtension
 {
     public static IRuleMessage RuleMessage(this string propertyName, string message)

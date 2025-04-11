@@ -1,10 +1,17 @@
 ﻿@page "/"
 
-@using Neatoo.Core
+@using Neatoo
+@using Neatoo.Blazor
 @using Person.DomainModel
 @using BlazorBootstrap
 @inject IPersonModelFactory PersonModelFactory
 @inject IUser User
+
+<style>
+    .btn {
+    margin: 5px;
+    }
+</style>
 
 <div class="h3">User Role:</div>
 <div class="row">
@@ -44,33 +51,39 @@
         <p>Not loaded</p>
     </div>
 }
+else if (!string.IsNullOrEmpty(Message))
+{
+    <div class="h4">
+        <p>@Message</p>
+    </div>
+}
 else
 {
-    <EditForm Model="PersonModel" OnValidSubmit="HandleValidSubmit">
-        <DataAnnotationsValidator />
+    <EditForm EditContext="@EditContext" onsubmit="HandleSubmit">
+        <NeatooValidator />
         <ValidationSummary />
 
-        <div class="mb-3">
+        <div>
             <PersonApp.Component.EditTextBox EditProperty="@PersonModel["FirstName"]" />
         </div>
 
-        <div class="mb-3">
+        <div>
             <PersonApp.Component.EditTextBox EditProperty="@PersonModel["LastName"]" />
         </div>
 
-        <div class="mb-3">
+        <div>
             <PersonApp.Component.EditTextBox EditProperty="@PersonModel["Email"]" />
         </div>
-       
-        <div class="mb-3">
+
+        <div>
             <div class="h4">Phone Numbers</div>
             <button type="button" class="btn btn-primary" @onclick="AddPhone">+</button>
         </div>
 
         @foreach (var phone in PersonModel.PersonPhoneModelList)
         {
-            <div class="mb-3">
-                <Dropdown Color="@phone.IsValid.ToDropdownColor()">
+            <div>
+                <Dropdown Color="@phone[nameof(IPersonPhoneModel.PhoneType)].IsValid.ToDropdownColor()">
                     <DropdownToggleButton>@(phone.PhoneType.ToString() ?? "Phone Type")</DropdownToggleButton>
                     <DropdownMenu>
                         <DropdownItem @onclick="() => UpdatePhoneType(phone, PhoneType.Home)" Type="DropdownItemType.Button">Home</DropdownItem>
@@ -81,16 +94,18 @@ else
                 <PersonApp.Component.EditTextBox EditProperty="@phone[nameof(IPersonPhoneModel.PhoneNumber)]" />
                 <button type="button" class="btn btn-primary" @onclick="() => RemovePhone(phone)">-</button>
             </div>
+            <ValidationMessage For="@(() => @phone[nameof(IPersonPhoneModel.PhoneType)].StringValue)" class="text-danger" />
         }
 
-        <div class="mb-3">
+        <div>
             <PersonApp.Component.EditTextBox EditProperty="@PersonModel["Notes"]" />
         </div>
 
-        <button type="submit" class="btn btn-primary" disabled="@(!CanUpdate || !PersonModel.IsSavable)">Update</button>
+        <button type="submit" class="btn btn-primary" disabled="@(!CanUpdate || PersonModel.IsBusy)">Update</button>
     </EditForm>
 }
 
+<button type="button" class="btn btn-primary" @onclick="Clear">Clear</button>
 <button type="button" class="btn btn-primary" @onclick="Create" disabled="@(!CanCreate)">Create</button>
 <button type="button" class="btn btn-primary" @onclick="Fetch" disabled="@(!CanFetch)">Fetch</button>
 <button type="button" class="btn btn-primary" @onclick="Delete" disabled="@(!CanDelete)">Delete</button>
@@ -98,6 +113,8 @@ else
 @code {
 
     public IPersonModel? PersonModel { get; set; } = default!;
+    public EditContext EditContext { get; set; } = default!;
+    public string Message { get; set; } = "Not Loaded";
 
     private bool CanCreate { get; set; }
     private bool CanFetch { get; set; }
@@ -117,26 +134,23 @@ else
     [Inject(Key = Neatoo.RemoteFactory.RemoteFactoryServices.HttpClientKey)]
     private HttpClient httpClient { get; set; } = default!;
 
-    protected override void OnInitialized()
+    private void Clear()
     {
-        base.OnInitialized();
-    }
-
-    private async Task HandleValidSubmit()
-    {
-        // Handle the form submission, e.g., save the data to the database
-        NewPersonModel(await PersonModelFactory.Save(PersonModel!));
+        NewPersonModel(null);
     }
 
     private async Task Fetch()
     {
+        Message = "Fetching...";
         // Fetch the person data, e.g., from a database
         NewPersonModel(await PersonModelFactory.Fetch());
+        Message = string.Empty;
     }
 
     private async Task Create()
     {
-        NewPersonModel(await PersonModelFactory.Create());
+        NewPersonModel(PersonModelFactory.Create());
+        Message = string.Empty;
     }
 
     private void NewPersonModel(IPersonModel? personModel)
@@ -151,6 +165,7 @@ else
 
         if (PersonModel != null)
         {
+            EditContext = new EditContext(PersonModel!);
             PersonModel.PropertyChanged += PersonModelPropertyChanged;
             PersonModel.NeatooPropertyChanged += PersonModelNeatooPropertyChanged;
         }
@@ -159,10 +174,11 @@ else
     private void PersonModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         var isSavable = PersonModel!.IsSavable;
-        var messages = PersonModel!.RuleMessages;
-        if (e.PropertyName == nameof(IPersonModel.IsSavable))
+        var messages = PersonModel!.PropertyMessages;
+        if (e.PropertyName.StartsWith("Is"))
         {
             InvokeAsync(() => StateHasChanged());
+            EditContext.Validate();
         }
 
         Console.WriteLine($"Property changed: {e.PropertyName}");
@@ -170,14 +186,19 @@ else
         Console.WriteLine($"Messages: {string.Join(Environment.NewLine, messages.Select(m => m.Message))}");
     }
 
-    private Task PersonModelNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    private Task PersonModelNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
     {
         var isSavable = PersonModel!.IsSavable;
-        var messages = PersonModel!.RuleMessages;
+        var messages = PersonModel!.PropertyMessages;
 
         Console.WriteLine($"Neatoo Property changed: {breadCrumbs.FullPropertyName}");
         Console.WriteLine($"IsSavable: {isSavable}");
-        Console.WriteLine($"Messages: {string.Join(Environment.NewLine, messages.Select(m => m.Message))}"); 
+        Console.WriteLine($"Messages: {string.Join(Environment.NewLine, messages.Select(m => m.Message))}");
+
+        if (breadCrumbs.OriginalEventArgs.Property != null)
+        {
+            EditContext.NotifyFieldChanged(new FieldIdentifier(breadCrumbs.OriginalEventArgs.Property, nameof(IEditProperty.StringValue)));
+        }
 
         return Task.CompletedTask;
     }
@@ -205,18 +226,43 @@ else
         CanDelete = PersonModelFactory.CanDelete();
     }
 
-    private async Task AddPhone()
+    private void AddPhone()
     {
-        await PersonModel!.PersonPhoneModelList.AddPhoneNumber();
+        PersonModel!.PersonPhoneModelList.AddPhoneNumber();
     }
 
-    private void RemovePhone(IPersonPhoneModel personPhoneModel)
+    private Task RemovePhone(IPersonPhoneModel personPhoneModel)
     {
-        PersonModel!.PersonPhoneModelList.RemovePhoneNumber(personPhoneModel);
+        return PersonModel!.PersonPhoneModelList.RemovePhoneNumber(personPhoneModel);
     }
 
     private void UpdatePhoneType(IPersonPhoneModel personPhone, PhoneType phoneType)
     {
         personPhone.PhoneType = phoneType;
+        EditContext.NotifyFieldChanged(new FieldIdentifier(personPhone[nameof(IPersonPhoneModel.PhoneType)], nameof(IEditProperty.StringValue)));
+    }
+    private async Task HandleSubmit()
+    {
+        if (PersonModel == null || !PersonModel.IsValid)
+            return;
+
+        Message = "Saving...";
+
+        await PersonModel.WaitForTasks();
+        await PersonModel.RunRules(RunRulesFlag.NotExecuted);
+
+        EditContext.Validate();
+
+        if (PersonModel.IsSavable)
+        {
+            NewPersonModel(await PersonModelFactory.Save(PersonModel!));
+        }
+        else
+        {
+            Message = "Not Savable";
+            await Task.Delay(2000);
+        }
+
+        Message = string.Empty;
     }
 }

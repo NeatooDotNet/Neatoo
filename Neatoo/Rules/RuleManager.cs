@@ -1,5 +1,4 @@
-﻿using Neatoo.Core;
-using Neatoo.Rules.Rules;
+﻿using Neatoo.Rules.Rules;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Runtime.Serialization;
@@ -9,8 +8,8 @@ namespace Neatoo.Rules;
 public interface IRuleManager
 {
     IEnumerable<IRule> Rules { get; }
-    Task CheckRulesForProperty(string propertyName);
-    Task CheckAllRules(CancellationToken? token = null);
+    Task RunRules(string propertyName, CancellationToken? token = null);
+    Task RunRules(RunRulesFlag runRules = Neatoo.RunRulesFlag.All, CancellationToken? token = null);
     void AddRule<T>(IRule<T> rule) where T : IValidateBase;
     void AddRules<T>(params IRule<T>[] rules) where T : IValidateBase;
     Task RunRule(IRule r, CancellationToken? token = null);
@@ -71,7 +70,7 @@ public class RuleManager<T> : IRuleManager<T>
         {
             foreach (var a in r.PropertyInfo.GetCustomAttributes(true))
             {
-                var rule = attributeToRule.GetRule<T>(r, a.GetType());
+                var rule = attributeToRule.GetRule<T>(r, a);
                 if (rule != null) {
                     Rules.Add(ruleIndex++, rule);
                     rule.OnRuleAdded(this, ruleIndex);
@@ -141,20 +140,27 @@ public class RuleManager<T> : IRuleManager<T>
         return rule;
     }
 
-    public async Task CheckRulesForProperty(string propertyName)
+    public async Task RunRules(string propertyName, CancellationToken? token = null)
     {
         foreach (var rule in Rules.Values.Where(r => r.TriggerProperties.Any(t => t.IsMatch(propertyName)))
                                     .OrderBy(r => r.RuleOrder).ToList())
         {
-            await RunRule(rule, CancellationToken.None);
+            await RunRule(rule, token);
         }
     }
 
-    public async Task CheckAllRules(CancellationToken? token = null)
+    public async Task RunRules(RunRulesFlag runRules = Neatoo.RunRulesFlag.All, CancellationToken? token = null)
     {
-        foreach (var ruleIndex in Rules.ToList())
+        foreach (var rule in Rules.ToList())
         {
-            await RunRule(ruleIndex.Value, token);
+            var messages = rule.Value.Messages;
+            if(runRules == Neatoo.RunRulesFlag.All ||
+                runRules == Neatoo.RunRulesFlag.Self ||
+                ((runRules & Neatoo.RunRulesFlag.NotExecuted) == Neatoo.RunRulesFlag.NotExecuted && rule.Value.Executed == false) ||
+                ((runRules & Neatoo.RunRulesFlag.Executed) == Neatoo.RunRulesFlag.Executed && rule.Value.Executed) ||
+                ((runRules & Neatoo.RunRulesFlag.NoMessages) == Neatoo.RunRulesFlag.NoMessages && messages.Count == 0) ||
+                ((runRules & Neatoo.RunRulesFlag.Messages) == Neatoo.RunRulesFlag.Messages && messages.Count > 0))
+            await RunRule(rule.Value, token);
         }
     }
 

@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Neatoo.Core;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Neatoo.UnitTest.PersonObjects;
 using System.ComponentModel;
 
@@ -38,7 +36,7 @@ public class EditListBaseTests
         parent.NeatooPropertyChanged += Parent_NeatooPropertyChanged;
     }
 
-    private Task Parent_NeatooPropertyChanged(Core.PropertyChangedBreadCrumbs propertyNameBreadCrumbs)
+    private Task Parent_NeatooPropertyChanged(NeatooPropertyChangedEventArgs propertyNameBreadCrumbs)
     {
         propertyChangedBreadCrumbs.Add((parent.IsSavable, propertyNameBreadCrumbs.FullPropertyName));
         return Task.CompletedTask;

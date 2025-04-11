@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Neatoo.BaseGenerator\Neatoo.BaseGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false"  />
     <ProjectReference Include="..\Neatoo\Neatoo.csproj" />
-    <ProjectReference Include="..\Neato.BaseGenerator\Neato.BaseGenerator.csproj" OutputItemType="Analyzer" />
   </ItemGroup>
 
 </Project>

@@ -3,21 +3,7 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-namespace Neatoo.Core;
-
-public interface IPropertyManager<out P> : INotifyNeatooPropertyChanged, INotifyPropertyChanged
-    where P : IProperty
-{
-    bool IsBusy { get; }
-    bool IsSelfBusy { get; }
-    Task WaitForTasks();
-    bool HasProperty(string propertyName);
-    P GetProperty(string propertyName);
-    public P this[string propertyName] { get => GetProperty(propertyName); }
-    internal IPropertyInfoList PropertyInfoList { get; }
-    internal IEnumerable<P> GetProperties { get; }
-    void SetProperties(IEnumerable<IProperty> properties);
-}
+namespace Neatoo.Internal;
 
 public delegate IPropertyManager<IProperty> CreatePropertyManager(IPropertyInfoList propertyInfoList);
 
@@ -63,7 +49,7 @@ public class PropertyManager<P> : IPropertyManager<P>, IJsonOnDeserialized
     public event NeatooPropertyChanged? NeatooPropertyChanged;
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private Task _Property_NeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    private Task _Property_NeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
     {
         return NeatooPropertyChanged?.Invoke(breadCrumbs) ?? Task.CompletedTask;
     }

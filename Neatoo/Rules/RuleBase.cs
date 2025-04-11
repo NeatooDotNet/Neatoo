@@ -10,6 +10,7 @@ public interface IRule
     /// </summary>
     bool Executed { get; }
     int RuleOrder { get; }
+    IReadOnlyList<IRuleMessage> Messages { get; }
     IReadOnlyList<ITriggerProperty> TriggerProperties { get; }
     Task<IRuleMessages> RunRule(IValidateBase target, CancellationToken? token = null);
     void OnRuleAdded(IRuleManager ruleManager, uint uniqueIndex); // TODO: Replace with Factory Method and Constructor
@@ -63,7 +64,9 @@ public abstract class AsyncRuleBase<T> : IRule<T>
 
     protected abstract Task<IRuleMessages> Execute(T t, CancellationToken? token = null);
 
-    protected IRuleMessages? PreviousErrors { get; set; }
+    protected IRuleMessages? PreviousMessages { get; set; }
+
+    public IReadOnlyList<IRuleMessage> Messages => PreviousMessages?.ToList() ?? [];
 
     public virtual Task<IRuleMessages> RunRule(IValidateBase target, CancellationToken? token = null)
     {
@@ -79,13 +82,42 @@ public abstract class AsyncRuleBase<T> : IRule<T>
 
     public virtual async Task<IRuleMessages> RunRule(T target, CancellationToken? token = null)
     {
+        var uniqueExecIndex = this.UniqueIndex + Random.Shared.Next(10000, 100000);
+
         try
         {
             Executed = true;
 
-            var ruleMessages = await Execute(target, token);
+            var ruleMessageTask = Execute(target, token);
+
+            if (!ruleMessageTask.IsCompleted)
+            {
+                TriggerProperties.ForEach(p =>
+                {
+                    // Allow children to be trigger properties
+                    if (target.PropertyManager.HasProperty(p.PropertyName))
+                    {
+                        var propertyValue = target[p.PropertyName];
+                        propertyValue.AddMarkedBusy(uniqueExecIndex);
+                    }
+                });
+            }
+
+            var ruleMessages = await ruleMessageTask;
 
             var setAtLeastOneProperty = true;
+
+            if (PreviousMessages != null)
+            {
+                PreviousMessages.Select(t => t.PropertyName).Except(ruleMessages.Select(p => p.PropertyName)).ToList().ForEach(p =>
+                {
+                    if (target.PropertyManager.HasProperty(p))
+                    {
+                        var propertyValue = target[p];
+                        propertyValue.ClearMessagesForRule(UniqueIndex);
+                    }
+                });
+            }
 
             foreach (var ruleMessage in ruleMessages.GroupBy(rm => rm.PropertyName).ToDictionary(g => g.Key, g => g.ToList()))
             {
@@ -98,21 +130,10 @@ public abstract class AsyncRuleBase<T> : IRule<T>
                 }
             }
 
-            if (PreviousErrors != null)
-            {
-                PreviousErrors.Select(t => t.PropertyName).Except(ruleMessages.Select(p => p.PropertyName)).ToList().ForEach(p =>
-                {
-                    if (target.PropertyManager.HasProperty(p))
-                    {
-                        var propertyValue = target[p];
-                        propertyValue.ClearMessagesForRule(UniqueIndex);
-                    }
-                });
-            }
 
             Debug.Assert(setAtLeastOneProperty, "You must have at least one trigger property that is a valid property on the target");
 
-            PreviousErrors = ruleMessages;
+            PreviousMessages = ruleMessages;
 
             return ruleMessages;
         }
@@ -129,6 +150,18 @@ public abstract class AsyncRuleBase<T> : IRule<T>
                 });
 
             throw;
+        }
+        finally
+        {
+            TriggerProperties.ForEach(p =>
+            {
+                // Ignore non-properties to Allow children to be trigger properties
+                if (target.PropertyManager.HasProperty(p.PropertyName))
+                {
+                    var propertyValue = target[p.PropertyName];
+                    propertyValue.RemoveMarkedBusy(uniqueExecIndex);
+                }
+            });
         }
     }
 

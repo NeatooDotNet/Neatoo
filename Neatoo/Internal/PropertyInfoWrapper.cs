@@ -1,15 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Neatoo.Core;
-
-public interface IPropertyInfo
-{
-    PropertyInfo PropertyInfo { get; }
-    string Name { get; }
-    Type Type { get; }
-    string Key { get; }
-    public bool IsPrivateSetter { get; }
-}
+namespace Neatoo.Internal;
 
 public delegate IPropertyInfo CreatePropertyInfoWrapper(PropertyInfo property);
 

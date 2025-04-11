@@ -21,7 +21,7 @@ public static class TestHelper
 
 
         // Create an instance of our EnumGenerator incremental source generator
-        var generator = new Neato.BaseGenerator.PartialBaseGenerator();
+        var generator = new Neatoo.BaseGenerator.PartialBaseGenerator();
 
         // The GeneratorDriver is used to run our generator against a compilation
         GeneratorDriver driver = CSharpGeneratorDriver.Create(generator);

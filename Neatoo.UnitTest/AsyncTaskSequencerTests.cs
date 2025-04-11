@@ -1,5 +1,4 @@
 ﻿//using Microsoft.VisualStudio.TestTools.UnitTesting;
-//using Neatoo.Core;
 //using System;
 //using System.Diagnostics;
 //using System.Linq;

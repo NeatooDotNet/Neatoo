@@ -1,15 +1,20 @@
-﻿namespace Neatoo.Rules.Rules;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Neatoo.Rules.Rules;
 
 public interface IRequiredRule : IRule
 {
-
+    string ErrorMessage { get; }
 }
 
 internal class RequiredRule<T> : RuleBase<T>, IRequiredRule
     where T : class, IValidateBase
 {
-    public RequiredRule(ITriggerProperty triggerProperty) : base() {
+    public string ErrorMessage { get; }
+
+    public RequiredRule(ITriggerProperty triggerProperty, RequiredAttribute requiredAttribute) : base() {
         TriggerProperties.Add(triggerProperty);
+        ErrorMessage = requiredAttribute.ErrorMessage ?? $"{TriggerProperties[0].PropertyName} is required.";
     }
 
     protected override IRuleMessages Execute(T target)
@@ -33,7 +38,7 @@ internal class RequiredRule<T> : RuleBase<T>, IRequiredRule
 
         if (isError)
         {
-            return (TriggerProperties.Single().PropertyName, $"{TriggerProperties[0].PropertyName} is required.").AsRuleMessages();
+            return (TriggerProperties.Single().PropertyName, ErrorMessage).AsRuleMessages();
         }
         return RuleMessages.None;
     }

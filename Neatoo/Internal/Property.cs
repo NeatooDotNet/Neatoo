@@ -1,53 +1,10 @@
-﻿using System.ComponentModel;
-using System.Runtime.CompilerServices;
+﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 
-namespace Neatoo.Core;
+namespace Neatoo.Internal;
 
-public interface IProperty : INotifyPropertyChanged, INotifyNeatooPropertyChanged
-{
-    string Name { get; }
-    object? Value { get; set; }
-    string? StringValue { get; set; }
-    Task SetStringValue(string? value);
-    Task SetValue<P>(P? newValue);
-    internal Task SetPrivateValue<P>(P? newValue, bool quietly = false);
-    Task Task { get; }
-    bool IsBusy { get; }
-    bool IsSelfBusy { get; }
-    bool IsReadOnly { get; }
-    /// <summary>
-    /// Sets the value without running any rules or raising the Neatoo event. It does raise PropertyChanged
-    /// </summary>
-    /// <param name="value"></param>
-    void LoadValue(object? value);
-    Task WaitForTasks();
-    TaskAwaiter GetAwaiter() => Task.GetAwaiter();
-}
 
-public interface IProperty<T> : IProperty
-{
-    new T? Value { get; set; }
-}
-
-public class PropertyChangedBreadCrumbs
-{
-    public PropertyChangedBreadCrumbs(string propertyName, object source)
-    {
-        PropertyName = propertyName;
-        Source = source;
-    }
-
-    public PropertyChangedBreadCrumbs(string propertyName, object source, PropertyChangedBreadCrumbs? previousPropertyName) : this(propertyName, source)
-    {
-        InnerBreadCrumb = previousPropertyName;
-    }
-
-    public string PropertyName { get; private set; }
-    public object Source { get; private set; }
-    public PropertyChangedBreadCrumbs? InnerBreadCrumb { get; private set; }
-    public string FullPropertyName => PropertyName + (InnerBreadCrumb == null ? "" : "." + InnerBreadCrumb.FullPropertyName);
-}
 
 
 public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJsonOnDeserialized
@@ -65,44 +22,17 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
         }
     }
 
-    // TODO: This should be outside of the base class. UI Concern
-    [JsonIgnore]
-    public virtual string? StringValue
-    {
-        get
-        {
-            return Value?.ToString();
-        }
-        set
-        {
-            Task = SetStringValue(value);
-        }
-    }
-
-    public async Task SetStringValue(string? value)
-    {
-        if (value == null)
-        {
-            await SetValue<T?>(default);
-        }
-        else
-        {
-            var converter = TypeDescriptor.GetConverter(typeof(T));
-            if (converter != null && converter.IsValid(value))
-            {
-                await SetValue((T?)converter.ConvertFromString(value));
-            }
-        }
-    }
-
     object? IProperty.Value { get => Value; set => SetValue(value); }
+
+    [JsonIgnore]
+    public Type Type => typeof(T);
 
     [JsonIgnore]
     public Task Task { get; protected set; } = Task.CompletedTask;
 
     protected IBase? ValueAsBase => Value as IBase;
 
-    public bool IsBusy => ValueAsBase?.IsBusy ?? false || IsSelfBusy;
+    public bool IsBusy => ValueAsBase?.IsBusy ?? false || IsSelfBusy || IsMarkedBusy.Count > 0;
 
     public async Task WaitForTasks()
     {
@@ -112,9 +42,36 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
     [JsonIgnore]
     public bool IsSelfBusy { get; private set; } = false;
 
+    [JsonIgnore]
+    public List<long> IsMarkedBusy { get; } = new List<long>();
+    private readonly object _isMarkedBusyLock = new object();
+
+    public void AddMarkedBusy(long id)
+    {
+        lock (_isMarkedBusyLock)
+        {
+            if (!IsMarkedBusy.Contains(id))
+            {
+                IsMarkedBusy.Add(id);
+            }
+        }
+        OnPropertyChanged(nameof(IsMarkedBusy));
+        OnPropertyChanged(nameof(IsBusy));
+    }
+
+    public void RemoveMarkedBusy(long id)
+    {
+        lock (_isMarkedBusyLock)
+        {
+            IsMarkedBusy.Remove(id);
+        }
+        OnPropertyChanged(nameof(IsMarkedBusy));
+        OnPropertyChanged(nameof(IsBusy));
+    }
+
     public bool IsReadOnly { get; protected set; } = false;
 
-    public virtual Task SetValue<P>(P? newValue)
+    public virtual Task SetValue(object? newValue)
     {
         if (IsReadOnly)
         {
@@ -124,7 +81,7 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
         return SetPrivateValue(newValue);
     }
 
-    public virtual Task SetPrivateValue<P>(P? newValue, bool quietly = false)
+    public virtual Task SetPrivateValue(object? newValue, bool quietly = false)
     {
         if (newValue == null && _value == null) { return Task.CompletedTask; }
 
@@ -169,7 +126,7 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
         if (!quietly)
         {
             OnPropertyChanged(nameof(Value));
-            Task = OnValueNeatooPropertyChanged(new PropertyChangedBreadCrumbs(this.Name, this));
+            Task = OnValueNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(this));
         }
     }
 
@@ -224,7 +181,7 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
         {
             OnPropertyChanged(nameof(Value));
 
-            Task = OnValueNeatooPropertyChanged(new PropertyChangedBreadCrumbs(this.Name, this));
+            Task = OnValueNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(this));
         }
     }
 
@@ -233,12 +190,12 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    protected virtual Task PassThruValueNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    protected virtual Task PassThruValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
     {
-        return NeatooPropertyChanged?.Invoke(new PropertyChangedBreadCrumbs(this.Name, breadCrumbs.Source, breadCrumbs)) ?? Task.CompletedTask;
+        return NeatooPropertyChanged?.Invoke(new NeatooPropertyChangedEventArgs(this, this.Value!, breadCrumbs)) ?? Task.CompletedTask;
     }
 
-    protected virtual async Task OnValueNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    protected virtual async Task OnValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
     {
         // ValidateBase sticks Task into AsyncTaskSequencer for us
         // so that it will be awaited by WaitForTasks()
@@ -313,22 +270,4 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
             neatooPropertyChanged.NeatooPropertyChanged += PassThruValueNeatooPropertyChanged;
         }
     }
-}
-
-[Serializable]
-internal class PropertyReadOnlyException : Exception
-{
-    public PropertyReadOnlyException() { }
-    public PropertyReadOnlyException(string? message) : base(message) { }
-    public PropertyReadOnlyException(string? message, Exception? innerException) : base(message, innerException) { }
-}
-
-
-[Serializable]
-public class PropertyMissingException : Exception
-{
-    public PropertyMissingException() { }
-    public PropertyMissingException(string message) : base(message) { }
-    public PropertyMissingException(string message, Exception inner) : base(message, inner) { }
-
 }

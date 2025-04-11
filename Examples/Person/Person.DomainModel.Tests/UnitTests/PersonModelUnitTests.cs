@@ -1,9 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Moq;
 using Moq.EntityFrameworkCore;
-using Neatoo;
+using Neatoo.Internal;
 using Neatoo.Rules;
-using Neatoo.Rules.Rules;
 using Person.DomainModel;
 using Person.Ef;
 using Rocks;

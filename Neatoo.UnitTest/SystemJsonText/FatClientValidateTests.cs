@@ -153,7 +153,7 @@ public class FatClientValidateTests
 
         child = newTarget.Child;
 
-        await child.RunAllRules();
+        await child.RunRules();
 
         Assert.IsFalse(newTarget.IsValid);
 

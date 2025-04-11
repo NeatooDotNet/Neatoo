@@ -1,5 +1,4 @@
-﻿using Neatoo.Core;
-using Neatoo.RemoteFactory;
+﻿using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 
 namespace Neatoo.UnitTest.AsyncFlowTests;
@@ -145,7 +144,7 @@ internal class AsyncValidateObject : ValidateBase<AsyncValidateObject>
 
     public AsyncValidateObject Child { get => Getter<AsyncValidateObject>()!; set => Setter(value); }
 
-    protected override async Task ChildNeatooPropertyChanged(PropertyChangedBreadCrumbs breadCrumbs)
+    protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs breadCrumbs)
     {
         if(breadCrumbs.FullPropertyName == nameof(AsyncRulesCanWait))
         {
