@@ -6,6 +6,10 @@ To get started. Please see [the Person example app.](https://github.com/NeatooDo
 
 <img src="https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/NeatooPersonRules.gif" width=30% height=30%>
 
+Domain Models: [PersonModel](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/PersonModel.cs) and [PersonPhoneModel](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/PersonPhoneModel.cs)
+Rules: 
+Auto-Generated Factories: [PersonModelFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonModelFactory.g.cs) and [PersonModelPhoneFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonPhoneModelFactory.g.cs)
+
 ##  Please leave feedback!
 Thus far, this was a fun winter project. When I incorporated Roslyn source generators is when it seemed it might be something new and useful. My best most enjoyable secular project was done using CSLA. This is an attempt to re-create CSLA with a Dependency Injection and Async/Await centric approach. I highly recommend [the CSLA books](https://store.lhotka.net/).
 
