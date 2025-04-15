@@ -3,6 +3,9 @@ Neatoo is a .NET Domain Model Framework for C#  that takes full advantage of Bla
 #### Create Rich Domain Models and Data Mappers with a single controller and no DTOs*!
 #### Go beyond CRUD!!
 
+[Discord](https://discord.gg/M3dVuZkG)
+[Nuget](https://www.nuget.org/packages/Neatoo)
+
 ## Videos
 
 [![Introduction](https://img.youtube.com/vi/FeS1umd3O1Y/default.jpg)](https://youtu.be/FeS1umd3O1Y)
@@ -28,6 +31,8 @@ Thus far, this was a fun winter project. When I incorporated Roslyn source gener
 - What is missing/bad?
 
 Please be constructive.
+
+#### [Discord](https://discord.gg/M3dVuZkG)
 
 ## Recommended Reading
 
