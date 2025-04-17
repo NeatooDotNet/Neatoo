@@ -6,12 +6,29 @@ Neatoo is a .NET Domain Model Framework for C#  that takes full advantage of Bla
 [Discord](https://discord.gg/M3dVuZkG)
 [Nuget](https://www.nuget.org/packages/Neatoo)
 
-## Videos
+## Video
 
-[![Introduction](https://img.youtube.com/vi/FeS1umd3O1Y/default.jpg)](https://youtu.be/FeS1umd3O1Y)
-[![Authorization](https://img.youtube.com/vi/0oepvXmdBVM/default.jpg)](https://youtu.be/nTQUwghvy5Q)
+[![Introduction](https://img.youtube.com/vi/e9zZ6d8LKkM/default.jpg)](https://youtu.be/e9zZ6d8LKkM?si=KX1sNMtkaHF57haB)
 
 ## Example
+
+Here is the factory generated for [PersonModel](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonModelFactory.g.cs) by Neatoo using Roslyn Source Generators. It also generates the [implementation](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonModelFactory.g.cs).
+
+```csharp
+    public interface IPersonModelFactory
+    {
+        IPersonModel? Create();
+        Task<IPersonModel?> Fetch();
+        Task<IPersonModel?> Save(IPersonModel target);
+        Task<Authorized<IPersonModel>> TrySave(IPersonModel target);
+        Authorized CanCreate();
+        Authorized CanFetch();
+        Authorized CanUpdate();
+        Authorized CanDelete();
+        Authorized CanSave();
+    }
+```
+
 Please see [the Person example](https://github.com/NeatooDotNet/Neatoo/tree/main/Examples/Person) Blazor Stand-Alone Web application shown in the animation below. Click to enlarge.
 
 <img src="https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/NeatooPersonRules.gif" width=30% height=30%>
