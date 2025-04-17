@@ -6,14 +6,16 @@ public interface IPersonModelAuth
 {
 	[Authorize(AuthorizeOperation.Read | AuthorizeOperation.Write)]
 	public bool CanAccess();
-	[Authorize(AuthorizeOperation.Create)]
-	public bool CanCreate();
-	[Authorize(AuthorizeOperation.Fetch)]
-	public bool CanFetch();
-	[Authorize(AuthorizeOperation.Update)]
-	public bool CanUpdate();
-	[Authorize(AuthorizeOperation.Delete)]
-	public bool CanDelete();
+    [Authorize(AuthorizeOperation.Create)]
+    bool CanCreate();
+    [Authorize(AuthorizeOperation.Fetch)]
+    bool CanFetch();
+    [Authorize(AuthorizeOperation.Update)]
+    bool CanUpdate();
+    [Authorize(AuthorizeOperation.Insert)]
+    bool CanInsert();
+    [Authorize(AuthorizeOperation.Delete)]
+    bool CanDelete();
 }
 
 internal class PersonModelAuth : IPersonModelAuth
@@ -33,40 +35,49 @@ internal class PersonModelAuth : IPersonModelAuth
 		}
 		return false;
 	}
+    public bool CanCreate()
+    {
+        if (this.User.Role >= Role.Create)
+        {
+            return true;
+        }
+        return false;
+    }
 
-	public bool CanCreate()
-	{
-		if (this.User.Role >= Role.Create)
-		{
-			return true;
-		}
-		return false;
-	}
+    public bool CanFetch()
+    {
+        if (this.User.Role >= Role.Fetch)
+        {
+            return true;
+        }
+        return false;
+    }
 
-	public bool CanFetch()
-	{
-		if (this.User.Role >= Role.Fetch)
-		{
-			return true;
-		}
-		return false;
-	}
+    public bool CanInsert()
+    {
+        if (this.User.Role >= Role.Update)
+        {
+            return true;
+        }
+        return false;
+    }
 
-	public bool CanUpdate()
-	{
-		if (this.User.Role >= Role.Update)
-		{
-			return true;
-		}
-		return false;
-	}
 
-	public bool CanDelete()
-	{
-		if (this.User.Role >= Role.Delete)
-		{
-			return true;
-		}
-		return false;
-	}
+    public bool CanUpdate()
+    {
+        if (this.User.Role >= Role.Update)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public bool CanDelete()
+    {
+        if (this.User.Role >= Role.Delete)
+        {
+            return true;
+        }
+        return false;
+    }
 }
