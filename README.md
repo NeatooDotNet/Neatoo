@@ -8,7 +8,7 @@ Neatoo is a .NET Domain Model Framework for C#  that takes full advantage of Bla
 
 ## Video
 
-[![Introduction](https://img.youtube.com/vi/e9zZ6d8LKkM/default.jpg)](https://youtu.be/e9zZ6d8LKkM?si=KX1sNMtkaHF57haB)
+[![Introduction](https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/youtubetile.jpg)](https://youtu.be/e9zZ6d8LKkM?si=KX1sNMtkaHF57haB)
 
 ## Example
 
