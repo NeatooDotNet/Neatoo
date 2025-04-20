@@ -1,7 +1,7 @@
-Neatoo is a .NET Domain Model Framework for C#  that takes full advantage of Blazor and Roslyn. With it you can create streamlined business applications without duplicating logic on the client and server. With Neatoo's business rules, meta properties, parent/child relationships, property data binding, authorization, physical 2-tier data mapper factory and property data binding you will create Domain Models that go well beyond CRUD with less code then ever before. Better yet, instead of reflection Roslyn source generators are utilized so you can see and step thru the code generated for the Domain Model. This provides optimal performance and run time errors are now compile errors. 
+For as established and widely accepted the principals of Domain Models are I know of only one complete framework for C#: [CSLA](https://cslanet.com/). In 20 years of enterprise application development my best projects have been with CSLA. Neatoo follows the principals in CSLA. I started by recreating CSLA with DI and Async/Await. This alleviated a lot of concerns. When I switched from reflection to [Roslyn Source Generators](https://github.com/NeatooDotNet/RemoteFactory/blob/main/src/RemoteFactory.FactoryGenerator/FactoryGenerator.cs) is when it became something truly new. [Generated code](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonModelFactory.g.cs) provides **much** better performance and compile errors versus runtime errors.<br><br>
+Neatoo is a .NET Domain Model Framework for C# that takes full advantage of Blazor and Roslyn Source Generators. Neatoo provides the mechanics for Domain Model Graphs including business rules, authorization rules, meta properties, physical 2-tier data mapper factory, property data binding and more so you can focus on the business logic.
 
-#### Create Rich Domain Models and Data Mappers with a single controller and no DTOs*!
-#### Go beyond CRUD!!
+#### With Neatoo you can create a Blazor application with a rich Domain Model easier than ever before!
 
 [Discord](https://discord.gg/M3dVuZkG)
 [Nuget](https://www.nuget.org/packages/Neatoo)
@@ -39,7 +39,7 @@ Authorization: [PersonModelAuth](https://github.com/NeatooDotNet/Neatoo/blob/mai
 Roslyn Auto-Generated Factories: [PersonModelFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonModelFactory.g.cs), [PersonModelPhoneFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonPhoneModelFactory.g.cs), [PersonModelPhoneListFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonPhoneModelFactory.g.cs) and [UniqueNameRuleFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.UniqueNameFactory.g.cs) \
 
 ##  Please leave feedback!
-Thus far, this was a fun winter project. When I incorporated Roslyn source generators is when it seemed it might be something new and useful. My best most enjoyable secular project was done using CSLA. This is an attempt to re-create CSLA with a Dependency Injection and Async/Await centric approach. If there is any interest to use it I will continue to work on it. So, I need some feedback!
+Thus far, this was a fun winter project. If there is any interest to use it I will continue to work on it. So, please provide feedback!
 
 [Please let me know](https://github.com/NeatooDotNet/Neatoo/issues):
 - Does a framework like this already exists (besides [CSLA](https://cslanet.com/))?
@@ -61,4 +61,3 @@ Ideas that shaped Neatoo:
 - [Async Programming : Patterns for Asynchronous MVVM Applications: Data Binding](https://learn.microsoft.com/en-us/archive/msdn-magazine/2014/march/async-programming-patterns-for-asynchronous-mvvm-applications-data-binding)
 - [Extending Partial Methods](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-9.0/extending-partial-methods) and [Partial Properties](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-13.0/partial-properties)
 
-*No DTOs to get the Domain Model from the server to the client. If you use the repository pattern you may have DTOs for you DAL layer interaction.
