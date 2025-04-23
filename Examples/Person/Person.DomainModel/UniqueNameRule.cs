@@ -9,6 +9,8 @@ namespace Person.DomainModel;
 [Factory]
 public static partial class UniqueName
 {
+    // This is executed by resolving UniqueName.IsUniqueName - a Delegate created by the Source Generator
+    // It is ALWAYS executed Remotely on the Server (for now)
     [Execute]
     private static async Task<bool> _IsUniqueName(int? id, string firstName, string lastName, [Service] IPersonContext personContext)
     {
