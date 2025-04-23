@@ -7,8 +7,9 @@ public interface IValidateObject : IPersonBase
 {
     IValidateObject Child { get; set; }
     int RuleRunCount { get; }
-
     void TestMarkInvalid(string message);
+    IDisposable PauseAllActions();
+    void ResumeAllActions();
 }
 
 internal partial class ValidateObject : PersonValidateBase<ValidateObject>, IValidateObject

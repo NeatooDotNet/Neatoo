@@ -28,7 +28,6 @@ public class ValidateListBaseTests
     public void TestCleanup()
     {
         Assert.IsFalse(List.IsBusy);
-        Assert.IsFalse(List.IsSelfBusy);
         List.PropertyChanged -= Validate_PropertyChanged;
         Child.PropertyChanged -= ChildValidate_PropertyChanged;
     }
@@ -70,7 +69,6 @@ public class ValidateListBaseTests
         Assert.IsTrue(childPropertyChangedCalls.Contains(nameof(Child.IsSelfValid)));
         // No async rules - so never busy
         Assert.IsFalse(childPropertyChangedCalls.Contains(nameof(Child.IsBusy)));
-        Assert.IsFalse(childPropertyChangedCalls.Contains(nameof(Child.IsSelfBusy)));
     }
 
 }

@@ -32,7 +32,6 @@ public class ValidateBaseTests
     {
         await validate.WaitForTasks();
         Assert.IsFalse(validate.IsBusy);
-        Assert.IsFalse(validate.IsSelfBusy);
         validate.PropertyChanged -= Validate_PropertyChanged;
         validate.Child.PropertyChanged -= ChildValidate_PropertyChanged;
         scope.Dispose();
@@ -208,7 +207,6 @@ public class ValidateBaseTests
         //Assert.IsTrue(childPropertyChangedCalls.Contains(nameof(validate.IsSelfValid)));
         //// No async rules - so never busy
         //Assert.IsFalse(childPropertyChangedCalls.Contains(nameof(validate.IsBusy)));
-        //Assert.IsFalse(childPropertyChangedCalls.Contains(nameof(validate.IsSelfBusy)));
     }
 
     [TestMethod]
@@ -248,5 +246,17 @@ public class ValidateBaseTests
     {
         // No async fork so an exception should be thrown
         Assert.ThrowsException<AggregateException>(() => validate.FirstName = "Throw");
+    }
+
+    [TestMethod]
+    public void ValidateBase_ChildParent_Paused()
+    {
+
+        child = scope.GetRequiredService<IValidateObject>();
+        child.PauseAllActions();
+        validate.PauseAllActions();
+        validate.Child = child;
+
+        Assert.AreSame(validate, child.Parent);
     }
 }

@@ -24,6 +24,7 @@ namespace Person.DomainModel
         Task<Authorized<IPersonModel>> TrySave(IPersonModel target);
         Authorized CanCreate();
         Authorized CanFetch();
+        Authorized CanInsert();
         Authorized CanUpdate();
         Authorized CanDelete();
         Authorized CanSave();
@@ -118,6 +119,12 @@ namespace Person.DomainModel
             Authorized authorized;
             IPersonModelAuth ipersonmodelauth = ServiceProvider.GetRequiredService<IPersonModelAuth>();
             authorized = ipersonmodelauth.CanAccess();
+            if (!authorized.HasAccess)
+            {
+                return new Authorized<IPersonModel>(authorized);
+            }
+
+            authorized = ipersonmodelauth.CanInsert();
             if (!authorized.HasAccess)
             {
                 return new Authorized<IPersonModel>(authorized);
@@ -267,6 +274,30 @@ namespace Person.DomainModel
             return new Authorized(true);
         }
 
+        public virtual Authorized CanInsert()
+        {
+            return LocalCanInsert();
+        }
+
+        public Authorized LocalCanInsert()
+        {
+            Authorized authorized;
+            IPersonModelAuth ipersonmodelauth = ServiceProvider.GetRequiredService<IPersonModelAuth>();
+            authorized = ipersonmodelauth.CanAccess();
+            if (!authorized.HasAccess)
+            {
+                return authorized;
+            }
+
+            authorized = ipersonmodelauth.CanInsert();
+            if (!authorized.HasAccess)
+            {
+                return authorized;
+            }
+
+            return new Authorized(true);
+        }
+
         public virtual Authorized CanUpdate()
         {
             return LocalCanUpdate();
@@ -331,6 +362,12 @@ namespace Person.DomainModel
             }
 
             authorized = ipersonmodelauth.CanUpdate();
+            if (!authorized.HasAccess)
+            {
+                return authorized;
+            }
+
+            authorized = ipersonmodelauth.CanInsert();
             if (!authorized.HasAccess)
             {
                 return authorized;

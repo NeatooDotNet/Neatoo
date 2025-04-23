@@ -33,16 +33,15 @@ Class Property RuleManager Neatoo.Rules.IRuleManager<Person.DomainModel.PersonPh
 Class Property IsValid bool found
 Class Property IsSelfValid bool found
 Class Property PropertyMessages System.Collections.Generic.IReadOnlyCollection<Neatoo.IPropertyMessage> found
-Class Property MetaState (bool IsValid, bool IsSelfValid, bool IsBusy, bool IsSelfBusy) found
+Class Property MetaState (bool IsValid, bool IsSelfValid, bool IsBusy) found
 Class Property ObjectInvalid string? found
 Class Property this[] Neatoo.IValidateProperty found
 Class Property IsPaused bool found
-Class Property AsyncTaskSequencer Neatoo.Internal.AsyncTasks found
+Class Property RunningTasks Neatoo.Internal.AsyncTasks found
 Class Property PropertyManager Neatoo.IPropertyManager<Neatoo.IProperty> found
 Class Property Neatoo.IBase.PropertyManager Neatoo.IPropertyManager<Neatoo.IProperty> found
 Class Property Parent Neatoo.IBase? found
 Class Property this[] Neatoo.IProperty found
-Class Property IsSelfBusy bool found
 Class Property IsBusy bool found
 Method MapFrom is a Match
 Parameter personPhoneEntity Person.Ef.PersonPhoneEntity found for MapFrom

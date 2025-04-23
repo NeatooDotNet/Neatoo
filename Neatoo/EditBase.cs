@@ -38,7 +38,7 @@ public abstract class EditBase<T> : ValidateBase<T>, INeatooObject, IEditBase, I
 
     protected (bool IsModified, bool IsSelfModified, bool IsSavable, bool IsDeleted) EditMetaState { get; private set; }
 
-    protected override void CheckIfMetaPropertiesChanged(bool raiseBusy = true)
+    protected override void CheckIfMetaPropertiesChanged()
     {
         if (!IsPaused)
         {
@@ -64,7 +64,7 @@ public abstract class EditBase<T> : ValidateBase<T>, INeatooObject, IEditBase, I
             }
         }
 
-        base.CheckIfMetaPropertiesChanged(raiseBusy);
+        base.CheckIfMetaPropertiesChanged();
     }
 
     protected override void ResetMetaState()

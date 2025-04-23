@@ -35,6 +35,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neatoo.BaseGenerator", "Nea
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neatoo.Blazor", "Neatoo.Blazor\Neatoo.Blazor.csproj", "{F7EA181C-6484-45FF-A900-33A8E8B98636}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neatoo.Console", "Neatoo.Console\Neatoo.Console.csproj", "{D049D4C2-F7D0-4736-A147-21EA17BEA8F9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -81,6 +83,10 @@ Global
 		{F7EA181C-6484-45FF-A900-33A8E8B98636}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F7EA181C-6484-45FF-A900-33A8E8B98636}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7EA181C-6484-45FF-A900-33A8E8B98636}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D049D4C2-F7D0-4736-A147-21EA17BEA8F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D049D4C2-F7D0-4736-A147-21EA17BEA8F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D049D4C2-F7D0-4736-A147-21EA17BEA8F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D049D4C2-F7D0-4736-A147-21EA17BEA8F9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

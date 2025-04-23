@@ -17,6 +17,8 @@ public class AttributeToRule : IAttributeToRule
 
     }
 
+
+
     public IRule GetRule<T>(IPropertyInfo r, object? attribute) where T : class, IValidateBase
     {
         if (attribute is RequiredAttribute requiredAttribute)

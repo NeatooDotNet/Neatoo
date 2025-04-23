@@ -26,14 +26,14 @@ namespace Neatoo.BaseGenerator
             {
                 var classDeclaration = (ClassDeclarationSyntax)context.Node;
 
-                //var classNamedTypeSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
+                var classNamedTypeSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
 
-                //if (classNamedTypeSymbol == null)
-                //{
-                //    return null;
-                //}
+                if (classNamedTypeSymbol == null)
+                {
+                    return null;
+                }
 
-                if (classDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))// && ClassOrBaseClassIsNeatooBaseClass(classNamedTypeSymbol))
+                if (classDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)) && ClassOrBaseClassIsNeatooBaseClass(classNamedTypeSymbol))
                 {
                     return (classDeclaration, context.SemanticModel);
                 }

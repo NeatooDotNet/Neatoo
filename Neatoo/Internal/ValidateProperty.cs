@@ -19,8 +19,8 @@ public class ValidateProperty<T> : Property<T>, IValidateProperty<T>
         RuleMessages = serializedRuleMessages.ToList();
     }
 
-    public bool IsSelfValid => ValueIsValidateBase != null ? true : !RuleMessages.Any();
-    public bool IsValid => ValueIsValidateBase != null ? ValueIsValidateBase.IsValid : !RuleMessages.Any();
+    public bool IsSelfValid => ValueIsValidateBase != null ? true : RuleMessages.Count == 0;
+    public bool IsValid => ValueIsValidateBase != null ? ValueIsValidateBase.IsValid : RuleMessages.Count == 0;
 
     public Task RunRules(RunRulesFlag runRules = Neatoo.RunRulesFlag.All, CancellationToken? token = null) { return ValueIsValidateBase?.RunRules(runRules, token) ?? Task.CompletedTask; }
 
@@ -46,6 +46,7 @@ public class ValidateProperty<T> : Property<T>, IValidateProperty<T>
             RuleMessages.AddRange(ruleMessages);
         }
         OnPropertyChanged(nameof(IsValid));
+        OnPropertyChanged(nameof(IsSelfValid));
         OnPropertyChanged(nameof(RuleMessages));
     }
 
@@ -58,22 +59,25 @@ public class ValidateProperty<T> : Property<T>, IValidateProperty<T>
     {
         RuleMessages.RemoveAll(rm => rm.RuleIndex == ruleIndex);
         OnPropertyChanged(nameof(IsValid));
+        OnPropertyChanged(nameof(IsSelfValid));
         OnPropertyChanged(nameof(RuleMessages));
     }
 
-    public virtual void ClearSelfErrors()
+    public virtual void ClearSelfMessages()
     {
         RuleMessages.Clear();
         OnPropertyChanged(nameof(IsValid));
+        OnPropertyChanged(nameof(IsSelfValid));
         OnPropertyChanged(nameof(RuleMessages));
     }
 
-    public virtual void ClearAllErrors()
+    public virtual void ClearAllMessages()
     {
         RuleMessages.Clear();
         ValueIsValidateBase?.ClearAllMessages();
 
         OnPropertyChanged(nameof(IsValid));
+        OnPropertyChanged(nameof(IsSelfValid));
         OnPropertyChanged(nameof(RuleMessages));
     }
 }

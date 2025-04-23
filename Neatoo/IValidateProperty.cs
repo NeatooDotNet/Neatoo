@@ -11,8 +11,8 @@ public interface IValidateProperty : IProperty, INotifyPropertyChanged
     IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }
     internal void SetMessagesForRule(IReadOnlyList<IRuleMessage> ruleMessages);
     internal void ClearMessagesForRule(uint ruleIndex);
-    internal void ClearAllErrors();
-    internal void ClearSelfErrors();
+    internal void ClearAllMessages();
+    internal void ClearSelfMessages();
 }
 
 public interface IValidateProperty<T> : IValidateProperty, IProperty<T>

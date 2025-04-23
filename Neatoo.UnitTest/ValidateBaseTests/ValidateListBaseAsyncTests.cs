@@ -26,7 +26,6 @@ public class ValidateListBaseAsyncBaseAsyncTests
     public void TestCleanup()
     {
         Assert.IsFalse(List.IsBusy);
-        Assert.IsFalse(List.IsSelfBusy);
     }
 
     [TestMethod]
@@ -55,9 +54,7 @@ public class ValidateListBaseAsyncBaseAsyncTests
         Child.FirstName = "Error";
 
         Assert.IsTrue(List.IsBusy);
-        Assert.IsFalse(List.IsSelfBusy);
         Assert.IsTrue(Child.IsBusy);
-        Assert.IsTrue(Child.IsSelfBusy);
 
         await List.WaitForTasks();
 

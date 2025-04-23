@@ -142,6 +142,11 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
                 {
                     neatooPropertyChanged.NeatooPropertyChanged -= PassThruValueNeatooPropertyChanged;
                 }
+                if (_value is INotifyPropertyChanged notifyPropertyChanged)
+                {
+                    notifyPropertyChanged.PropertyChanged -= PassThruValuePropertyChanged;
+                }
+
 
                 if (_value is IBase _valueBase)
                 {
@@ -163,7 +168,10 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
                 {
                     valueNeatooPropertyChanged.NeatooPropertyChanged += PassThruValueNeatooPropertyChanged;
                 }
-
+                if (value is INotifyPropertyChanged notifyPropertyChanged)
+                {
+                    notifyPropertyChanged.PropertyChanged += PassThruValuePropertyChanged;
+                }
 
                 if (value is IBase valueBase)
                 {
@@ -195,6 +203,11 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
         return NeatooPropertyChanged?.Invoke(new NeatooPropertyChangedEventArgs(this, this.Value!, eventArgs)) ?? Task.CompletedTask;
     }
 
+    protected virtual void PassThruValuePropertyChanged(object? source, PropertyChangedEventArgs eventArgs)
+    {
+        PropertyChanged?.Invoke(this, eventArgs);
+    }
+
     protected virtual async Task OnValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
         // ValidateBase sticks Task into AsyncTaskSequencer for us
@@ -208,13 +221,11 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
             try
             {
                 OnPropertyChanged(nameof(IsBusy));
-                OnPropertyChanged(nameof(IsSelfBusy));
 
                 await task;
 
                 IsSelfBusy = false;
                 OnPropertyChanged(nameof(IsBusy));
-                OnPropertyChanged(nameof(IsSelfBusy));
             }
             finally
             {
@@ -268,6 +279,10 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
         if (Value is INotifyNeatooPropertyChanged neatooPropertyChanged)
         {
             neatooPropertyChanged.NeatooPropertyChanged += PassThruValueNeatooPropertyChanged;
+        }
+        if (Value is INotifyPropertyChanged notifyPropertyChanged)
+        {
+            notifyPropertyChanged.PropertyChanged += PassThruValuePropertyChanged;
         }
     }
 }

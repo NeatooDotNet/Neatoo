@@ -9,8 +9,10 @@ public interface IValidatePropertyManager<out P> : IPropertyManager<P>
     bool IsSelfValid { get; }
     bool IsValid { get; }
     Task RunRules(RunRulesFlag runRules = Neatoo.RunRulesFlag.All, CancellationToken? token = null);
-
     IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }
+    bool IsPaused { get; }
+    void PauseAllActions();
+    void ResumeAllActions();
     void ClearAllMessages();
     void ClearSelfMessages();
 }

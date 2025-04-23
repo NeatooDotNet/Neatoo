@@ -17,4 +17,26 @@ public class PropertyInfoWrapper : IPropertyInfo
     public Type Type => PropertyInfo.PropertyType;
     public string Key => Name;
     public bool IsPrivateSetter { get; }
+
+    private Dictionary<Type, Attribute?> customAttribute = new();
+
+    public T? GetCustomAttribute<T>() where T : Attribute
+    {
+        if(!customAttribute.ContainsKey(typeof(T)))
+        {
+            customAttribute[typeof(T)] = PropertyInfo.GetCustomAttribute<T>();
+        }
+        
+        return (T?) customAttribute[typeof(T)];
+    }
+
+    private List<Attribute>? customAttributes;
+
+    public IEnumerable<Attribute> GetCustomAttributes(){
+        if(customAttributes == null)
+        {
+            customAttributes = PropertyInfo.GetCustomAttributes().ToList();
+        }
+        return customAttributes;
+    }
 }

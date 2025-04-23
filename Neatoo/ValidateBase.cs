@@ -56,9 +56,9 @@ namespace Neatoo
 
         public IReadOnlyCollection<IPropertyMessage> PropertyMessages => PropertyManager.PropertyMessages;
 
-        protected (bool IsValid, bool IsSelfValid, bool IsBusy, bool IsSelfBusy) MetaState { get; private set; }
+        protected (bool IsValid, bool IsSelfValid, bool IsBusy) MetaState { get; private set; }
 
-        protected override void CheckIfMetaPropertiesChanged(bool raiseBusy = false)
+        protected override void CheckIfMetaPropertiesChanged()
         {
             base.CheckIfMetaPropertiesChanged();
 
@@ -72,12 +72,7 @@ namespace Neatoo
                 RaisePropertyChanged(nameof(IsSelfValid));
                 RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSelfValid), this));
             }
-            if (raiseBusy && IsSelfBusy || MetaState.IsSelfBusy != IsSelfBusy)
-            {
-                RaisePropertyChanged(nameof(IsSelfBusy));
-                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSelfBusy), this));
-            }
-            if (raiseBusy && IsBusy || MetaState.IsBusy != IsBusy)
+            if (MetaState.IsBusy != IsBusy)
             {
                 RaisePropertyChanged(nameof(IsBusy));
                 RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsBusy), this));
@@ -88,7 +83,7 @@ namespace Neatoo
 
         protected virtual void ResetMetaState()
         {
-            MetaState = (IsValid, IsSelfValid, IsBusy, IsSelfBusy);
+            MetaState = (IsValid, IsSelfValid, IsBusy);
         }
 
         protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
@@ -96,11 +91,23 @@ namespace Neatoo
             if (!IsPaused)
             {
                 await RunRules(eventArgs.FullPropertyName);
+
+                await base.ChildNeatooPropertyChanged(eventArgs);
+
+                CheckIfMetaPropertiesChanged();
             }
+            else
+            {
+                ResetMetaState();
+            }
+        }
 
-            await base.ChildNeatooPropertyChanged(eventArgs);
-
-            CheckIfMetaPropertiesChanged();
+        protected override void RaisePropertyChanged(string propertyName)
+        {
+            if (!IsPaused)
+            {
+                base.RaisePropertyChanged(propertyName);
+            }
         }
 
         /// <summary>
@@ -143,6 +150,7 @@ namespace Neatoo
             if (!IsPaused)
             {
                 IsPaused = true;
+                PropertyManager.PauseAllActions();
             }
 
             return new Paused(this);
@@ -153,6 +161,7 @@ namespace Neatoo
             if (IsPaused)
             {
                 IsPaused = false;
+                PropertyManager.ResumeAllActions();
                 ResetMetaState();
             }
         }
@@ -178,13 +187,13 @@ namespace Neatoo
                 ClearAllMessages();
             }
 
-            if((runRules | Neatoo.RunRulesFlag.Self) != Neatoo.RunRulesFlag.Self)
+            if ((runRules | Neatoo.RunRulesFlag.Self) != Neatoo.RunRulesFlag.Self)
             {
                 await PropertyManager.RunRules(runRules, token);
             }
 
             await RuleManager.RunRules(runRules, token);
-            await AsyncTaskSequencer.AllDone;
+            await RunningTasks.AllDone;
 
             //this.AddAsyncMethod((t) => PropertyManager.RunRules(token));
             // TODO - This isn't raising the 'IsValid' property changed event
@@ -197,13 +206,13 @@ namespace Neatoo
 
         public virtual void ClearSelfMessages()
         {
-            this[nameof(ObjectInvalid)].ClearAllErrors();
+            this[nameof(ObjectInvalid)].ClearAllMessages();
             PropertyManager.ClearSelfMessages();
         }
 
         public virtual void ClearAllMessages()
         {
-            this[nameof(ObjectInvalid)].ClearAllErrors();
+            this[nameof(ObjectInvalid)].ClearAllMessages();
             PropertyManager.ClearAllMessages();
         }
 

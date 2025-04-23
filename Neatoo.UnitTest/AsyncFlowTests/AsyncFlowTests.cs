@@ -74,7 +74,6 @@ public class AsyncFlowTests
         Assert.AreEqual(2, asyncValidateObject.Child.AsyncDelayUpdateChildRule.RunCount);
 
         //CollectionAssert.Contains(propertyChangedCalls, "IsBusy");
-        //CollectionAssert.Contains(propertyChangedCalls, "IsSelfBusy");
     }
 
     [TestMethod]
@@ -145,11 +144,8 @@ public class AsyncFlowTests
             await Task.Delay(10);
 
             Assert.IsTrue(asyncValidateObject.IsBusy);
-            Assert.IsTrue(asyncValidateObject.IsSelfBusy);
             CollectionAssert.Contains(propertyChangedCalls, "IsBusy");
-            CollectionAssert.Contains(propertyChangedCalls, "IsSelfBusy");
             CollectionAssert.Contains(propertyValuePropertyChangedCalls, "IsBusy");
-            CollectionAssert.Contains(propertyValuePropertyChangedCalls, "IsSelfBusy");
 
             Assert.IsTrue(asyncValidateObject.IsBusy);
             Assert.AreNotEqual("Ran", asyncValidateObject.AsyncRulesCanWaitNested);
@@ -169,9 +165,7 @@ public class AsyncFlowTests
             await Task.Delay(5);
 
             CollectionAssert.Contains(propertyChangedCalls, "IsBusy");
-            CollectionAssert.Contains(propertyChangedCalls, "IsSelfBusy");
             CollectionAssert.Contains(propertyValuePropertyChangedCalls, "IsBusy");
-            CollectionAssert.Contains(propertyValuePropertyChangedCalls, "IsSelfBusy");
 
         }
         finally

@@ -20,14 +20,13 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
     where T : Base<T>
 {
     // Fields
-    protected AsyncTasks AsyncTaskSequencer { get; private set; } = new AsyncTasks();
+    protected AsyncTasks RunningTasks { get; private set; } = new AsyncTasks();
     // Properties
     protected IPropertyManager<IProperty> PropertyManager { get; set; }
     IPropertyManager<IProperty> IBase.PropertyManager => PropertyManager;
     public IBase? Parent { get; protected set; }
     protected IProperty this[string propertyName] { get => GetProperty(propertyName); }
-    public bool IsSelfBusy => !AsyncTaskSequencer.AllDone.IsCompleted || PropertyManager.IsSelfBusy;
-    public bool IsBusy => IsSelfBusy || PropertyManager.IsBusy;
+    public bool IsBusy => RunningTasks.IsRunning || PropertyManager.IsBusy;
 
     // Constructors
     public Base(IBaseServices<T> services)
@@ -40,11 +39,12 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
             PropertyManager.PropertyChanged += _PropertyManager_PropertyChanged;
         }
 
-        AsyncTaskSequencer.OnFullSequenceComplete = () =>
+        RunningTasks.OnFullSequenceComplete = () =>
         {
-            CheckIfMetaPropertiesChanged(true);
+            CheckIfMetaPropertiesChanged();
             return Task.CompletedTask;
         };
+
     }
 
     // Methods
@@ -58,7 +58,7 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
         SetParent(parent);
     }
 
-    protected virtual void CheckIfMetaPropertiesChanged(bool raiseBusy = true)
+    protected virtual void CheckIfMetaPropertiesChanged()
     {
 
     }
@@ -114,7 +114,7 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
                 Parent.AddChildTask(task);
             }
 
-            AsyncTaskSequencer.AddTask(task);
+            RunningTasks.AddTask(task);
         }
 
         if(task.Exception != null)
@@ -136,7 +136,7 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
             Parent.AddChildTask(task);
         } 
 
-        AsyncTaskSequencer.AddTask(task);
+        RunningTasks.AddTask(task);
     }
 
     public IProperty GetProperty(string propertyName)
@@ -169,7 +169,7 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
         //}
 
         //await PropertyManager.WaitForTasks();
-        await AsyncTaskSequencer.AllDone;
+        await RunningTasks.AllDone;
 
         if (Parent == null)
         {

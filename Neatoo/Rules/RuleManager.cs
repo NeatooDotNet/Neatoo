@@ -60,7 +60,7 @@ public class RuleManager<T> : IRuleManager<T>
     // This does assume that the rules are added in the same order (hmmm)
     protected uint ruleIndex = 1;
 
-    private IDictionary<uint, IRule> Rules { get; } = new ConcurrentDictionary<uint, IRule>();
+    private IDictionary<uint, IRule> Rules { get; } = new Dictionary<uint, IRule>();
 
     protected virtual void AddAttributeRules(IAttributeToRule attributeToRule, IPropertyInfoList propertyInfoList)
     {
@@ -68,7 +68,7 @@ public class RuleManager<T> : IRuleManager<T>
 
         foreach (var r in requiredRegisteredProp)
         {
-            foreach (var a in r.PropertyInfo.GetCustomAttributes(true))
+            foreach (var a in r.GetCustomAttributes())
             {
                 var rule = attributeToRule.GetRule<T>(r, a);
                 if (rule != null) {

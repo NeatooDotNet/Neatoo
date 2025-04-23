@@ -9,6 +9,9 @@ public interface IPropertyInfo
     Type Type { get; }
     string Key { get; }
     public bool IsPrivateSetter { get; }
+
+    T? GetCustomAttribute<T>() where T : Attribute;
+    IEnumerable<Attribute> GetCustomAttributes();
 }
 
 /// <summary>

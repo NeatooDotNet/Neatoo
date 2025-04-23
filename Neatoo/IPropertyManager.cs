@@ -6,7 +6,6 @@ public interface IPropertyManager<out P> : INotifyNeatooPropertyChanged, INotify
     where P : IProperty
 {
     bool IsBusy { get; }
-    bool IsSelfBusy { get; }
     Task WaitForTasks();
     bool HasProperty(string propertyName);
     P GetProperty(string propertyName);

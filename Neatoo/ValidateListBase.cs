@@ -32,11 +32,11 @@ public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, I
     [JsonIgnore]
     public bool IsPaused { get; protected set; } = false;
 
-    protected (bool IsValid, bool IsSelfValid, bool IsBusy, bool IsSelfBusy) MetaState { get; private set; }
+    protected (bool IsValid, bool IsSelfValid, bool IsBusy) MetaState { get; private set; }
 
     public IReadOnlyCollection<IPropertyMessage> PropertyMessages => this.SelectMany(_ => _.PropertyMessages).ToList().AsReadOnly();
 
-    protected override void CheckIfMetaPropertiesChanged(bool raiseBusy = false)
+    protected override void CheckIfMetaPropertiesChanged()
     {
         if (MetaState.IsValid != IsValid)
         {
@@ -48,24 +48,19 @@ public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, I
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsSelfValid)));
             RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSelfValid), this));
         }
-        if (raiseBusy && IsSelfBusy || MetaState.IsSelfBusy != IsSelfBusy)
-        {
-            OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsSelfBusy)));
-            RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSelfBusy), this));
-        }
-        if (raiseBusy && IsBusy || MetaState.IsBusy != IsBusy)
+        if (MetaState.IsBusy != IsBusy)
         {
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsBusy)));
             RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsBusy), this));
         }
 
         ResetMetaState();
-        base.CheckIfMetaPropertiesChanged(raiseBusy);
+        base.CheckIfMetaPropertiesChanged();
     }
 
     protected virtual void ResetMetaState()
     {
-        MetaState = (IsValid, IsSelfValid, IsBusy, IsSelfBusy);
+        MetaState = (IsValid, IsSelfValid, IsBusy);
     }
 
     public async Task RunRules(string propertyName, CancellationToken? token = default)

@@ -11,7 +11,6 @@ public interface IProperty : INotifyPropertyChanged, INotifyNeatooPropertyChange
     internal Task SetPrivateValue(object? newValue, bool quietly = false);
     Task Task { get; }
     bool IsBusy { get; }
-    bool IsSelfBusy { get; }
     bool IsReadOnly { get; }
     void AddMarkedBusy(long id);
     void RemoveMarkedBusy(long id);

@@ -33,7 +33,6 @@ public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, ILis
     public IBase? Parent { get; protected set; }
 
     public bool IsBusy => this.Any(c => c.IsBusy);
-    public bool IsSelfBusy => false;
     public event NeatooPropertyChanged? NeatooPropertyChanged;
 
     void ISetParent.SetParent(IBase parent)
@@ -130,7 +129,7 @@ public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, ILis
 
     protected virtual void HandlePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        CheckIfMetaPropertiesChanged(true);
+        CheckIfMetaPropertiesChanged();
     }
 
     private void _PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -138,7 +137,7 @@ public abstract class ListBase<I> : ObservableCollection<I>, INeatooObject, ILis
         HandlePropertyChanged(sender, e);
     }
 
-    protected virtual void CheckIfMetaPropertiesChanged(bool raiseBusy = false)
+    protected virtual void CheckIfMetaPropertiesChanged()
     {
 
     }

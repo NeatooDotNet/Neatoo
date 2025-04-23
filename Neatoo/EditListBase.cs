@@ -39,9 +39,9 @@ public abstract class EditListBase<I> : ValidateListBase<I>, INeatooObject, IEdi
 
     IEnumerable IEditListBase.DeletedList => DeletedList;
 
-    protected override void CheckIfMetaPropertiesChanged(bool resetBusy = false)
+    protected override void CheckIfMetaPropertiesChanged()
     {
-        base.CheckIfMetaPropertiesChanged(resetBusy);
+        base.CheckIfMetaPropertiesChanged();
 
         if (EditMetaState.IsModified != IsModified)
         {

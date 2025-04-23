@@ -14,7 +14,7 @@ public class EditProperty<T> : ValidateProperty<T>, IEditProperty<T>
     {
         ArgumentNullException.ThrowIfNull(propertyInfo);
 
-        var dnAttribute = propertyInfo.PropertyInfo.GetCustomAttribute<DisplayNameAttribute>();
+        var dnAttribute = propertyInfo.GetCustomAttribute<DisplayNameAttribute>();
         if(dnAttribute != null)
         {
             DisplayName = dnAttribute.DisplayName;

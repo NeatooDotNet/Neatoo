@@ -49,6 +49,7 @@ public sealed class AsyncTasks
             if (allDoneCompletionSource == null || allDoneCompletionSource.Task.IsCompleted)
             {
                 allDoneCompletionSource = new TaskCompletionSource<bool>();
+                IsRunning = true;
             }
 
             var id = Guid.NewGuid();
@@ -76,6 +77,8 @@ public sealed class AsyncTasks
         }
     }
 
+    public bool IsRunning { get; protected set; }
+
 
     private async Task SequenceCompleted(Guid id, Task task)
     {
@@ -99,7 +102,7 @@ public sealed class AsyncTasks
             }
 
             this.allDoneCompletionSource = null; // What if another starts while we are finishing here? 
-
+            IsRunning = false;
         }
 
 
@@ -121,7 +124,6 @@ public sealed class AsyncTasks
             completionSource.SetResult(true);
         }
 
-        await Task.CompletedTask;
     }
 
 }

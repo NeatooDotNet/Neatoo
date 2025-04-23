@@ -29,7 +29,7 @@ internal class AsyncDelayUpdateChildRule : AsyncRuleBase<AsyncValidateObject>
     protected override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
     {
         RunCount++;
-        await Task.Delay(2);
+        await Task.Delay(50);
         if (RunCount < 3)
         {
             // Async Loop between parent and child
@@ -83,7 +83,7 @@ internal class AsyncRuleCanWait : AsyncRuleBase<AsyncValidateObject>
     protected override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
     {
         RunCount++;
-        await Task.Delay(2);
+        await Task.Delay(50);
 
         // This is how to await for a property to be set
         await target.AsyncRuleCanWaitProperty.SetValue("Value");
@@ -102,7 +102,7 @@ internal class AsyncRuleCanWaitNested : AsyncRuleBase<AsyncValidateObject>
     protected override async Task<IRuleMessages> Execute(AsyncValidateObject target, CancellationToken? token)
     {
         RunCount++;
-        await Task.Delay(2);
+        await Task.Delay(50);
         target.AsyncRulesCanWaitNested = "Ran";
         target.AsyncDelayUpdateChildRuleValue = Guid.NewGuid().ToString();
         return RuleMessages.None;
@@ -148,7 +148,7 @@ internal class AsyncValidateObject : ValidateBase<AsyncValidateObject>
     {
         if(eventArgs.FullPropertyName == nameof(AsyncRulesCanWait))
         {
-            await Task.Delay(2);
+            await Task.Delay(20);
         }
         await base.ChildNeatooPropertyChanged(eventArgs);
     }

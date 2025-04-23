@@ -18,7 +18,6 @@ public enum RunRulesFlag
 public interface IBaseMetaProperties
 {
     bool IsBusy { get; }
-    bool IsSelfBusy { get; }
     Task WaitForTasks();
 }
 

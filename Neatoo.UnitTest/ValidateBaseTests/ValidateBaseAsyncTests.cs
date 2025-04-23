@@ -5,10 +5,6 @@ using System.ComponentModel;
 
 namespace Neatoo.UnitTest.ValidateBaseTests;
 
-
-
-
-
 [TestClass]
 public class ValidateBaseAsyncTests
 {
@@ -39,14 +35,18 @@ public class ValidateBaseAsyncTests
     public void TestCleanup()
     {
         Assert.IsFalse(validate.IsBusy);
-        Assert.IsFalse(validate.IsSelfBusy);
         validate.PropertyChanged -= Validate_PropertyChanged;
     }
 
-    private List<string> propertyChanged = new List<string>();
+    private List<(bool isValid, bool isBusy, string propertyName)> propertyChanged = new();
     private void Validate_PropertyChanged(object sender, PropertyChangedEventArgs e)
     {
-        propertyChanged.Add(e.PropertyName);
+        if(e.PropertyName == "IsBusy" && propertyChanged.Any(p => p.propertyName == "IsBusy"))
+        {
+
+        }
+
+        propertyChanged.Add((validate.IsValid, validate.IsBusy, e.PropertyName!));
     }
 
     [TestMethod]
@@ -70,10 +70,8 @@ public class ValidateBaseAsyncTests
     {
         validate.FirstName = "Keith";
         Assert.IsTrue(validate.IsBusy);
-        Assert.IsTrue(validate.IsSelfBusy);
         await validate.WaitForTasks();
         Assert.IsFalse(validate.IsBusy);
-        Assert.IsFalse(validate.IsSelfBusy);
     }
 
     [TestMethod]
@@ -174,7 +172,7 @@ public class ValidateBaseAsyncTests
 
         Assert.IsTrue(validate.IsValid);
         Assert.AreEqual(0, validate.PropertyMessages.Count);
-        Assert.IsTrue(propertyChanged.Contains(nameof(validate.IsValid)));
+        Assert.IsNotNull(propertyChanged.FirstOrDefault(p => p.propertyName == nameof(validate.IsValid)));
     }
 
 
@@ -211,9 +209,10 @@ public class ValidateBaseAsyncTests
         child.FirstName = "Error";
 
         Assert.IsTrue(validate.IsBusy);
-        //Assert.IsFalse(validate.IsSelfBusy);
         Assert.IsTrue(child.IsBusy);
-        Assert.IsTrue(child.IsSelfBusy);
+
+        Assert.IsNotNull(propertyChanged.SingleOrDefault(p => p.propertyName == nameof(validate.IsBusy)));
+        propertyChanged.Clear();
 
         await validate.WaitForTasks();
 
@@ -222,6 +221,8 @@ public class ValidateBaseAsyncTests
         Assert.IsTrue(validate.IsSelfValid);
         Assert.IsFalse(child.IsValid);
         Assert.IsFalse(child.IsSelfValid);
+
+        Assert.IsNotNull(propertyChanged.SingleOrDefault(p => p.propertyName == nameof(validate.IsBusy)));
     }
 
     [TestMethod]
