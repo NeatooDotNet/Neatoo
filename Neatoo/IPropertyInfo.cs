@@ -20,7 +20,7 @@ public interface IPropertyInfo
 /// <typeparam name="T">Generic to ensure that types can only access their properties</typeparam>
 public interface IPropertyInfoList
 {
-    IPropertyInfo GetPropertyInfo(string name);
+    IPropertyInfo? GetPropertyInfo(string name);
     IEnumerable<IPropertyInfo> Properties();
     bool HasProperty(string propertyName);
 }

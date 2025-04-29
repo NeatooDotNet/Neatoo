@@ -12,14 +12,14 @@ public static partial class UniqueName
     // This is executed by resolving UniqueName.IsUniqueName - a Delegate created by the Source Generator
     // It is ALWAYS executed Remotely on the Server (for now)
     [Execute]
-    private static async Task<bool> _IsUniqueName(int? id, string firstName, string lastName, [Service] IPersonContext personContext)
+    internal static async Task<bool> _IsUniqueName(int? id, string firstName, string lastName, [Service] IPersonDbContext personContext)
     {
         if (await personContext.Persons.AnyAsync(x => (id == null || x.Id != id) && x.FirstName == firstName && x.LastName == lastName))
         {
             return false;
         }
 
-        return !(firstName == "John" && lastName == "Doe"); // Not realistic - for Demo purposes only
+        return !(firstName == "John" && lastName == "Delay"); // Not realistic - for Demo purposes only
     }
 }
 
@@ -44,7 +44,10 @@ internal class UniqueNameRule : AsyncRuleBase<IPersonModel>, IUniqueNameRule
 
         if (!string.IsNullOrEmpty(t.FirstName) && !string.IsNullOrEmpty(t.LastName))
         {
-            await Task.Delay(2000); // Just for show
+            if(t.FirstName == "Delay" || t.LastName == "Delay")
+            {
+                await Task.Delay(1000); // Just for show
+            }
 
             if (!(await isUniqueName(t.Id, t.FirstName!, t.LastName!)))
             {

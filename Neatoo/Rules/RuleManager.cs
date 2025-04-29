@@ -1,5 +1,6 @@
 ﻿using Neatoo.Rules.Rules;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Runtime.Serialization;
 
@@ -71,7 +72,8 @@ public class RuleManager<T> : IRuleManager<T>
             foreach (var a in r.GetCustomAttributes())
             {
                 var rule = attributeToRule.GetRule<T>(r, a);
-                if (rule != null) {
+                if (rule != null)
+                {
                     Rules.Add(ruleIndex++, rule);
                     rule.OnRuleAdded(this, ruleIndex);
                 }
@@ -79,9 +81,9 @@ public class RuleManager<T> : IRuleManager<T>
         }
     }
 
-    public void AddRules<T1>(params IRule<T1>[] rules) where T1: IValidateBase
+    public void AddRules<T1>(params IRule<T1>[] rules) where T1 : IValidateBase
     {
-            foreach (var r in rules) { AddRule(r); }
+        foreach (var r in rules) { AddRule(r); }
     }
 
     public void AddRule<T1>(IRule<T1> rule) where T1 : IValidateBase
@@ -101,7 +103,7 @@ public class RuleManager<T> : IRuleManager<T>
     {
         foreach (var rule in Rules)
         {
-            if(rule.Value is T1 r)
+            if (rule.Value is T1 r)
             {
                 await rule.Value.RunRule(Target, token);
             }
@@ -154,26 +156,78 @@ public class RuleManager<T> : IRuleManager<T>
         foreach (var rule in Rules.ToList())
         {
             var messages = rule.Value.Messages;
-            if(runRules == Neatoo.RunRulesFlag.All ||
+            if (runRules == Neatoo.RunRulesFlag.All ||
                 runRules == Neatoo.RunRulesFlag.Self ||
                 ((runRules & Neatoo.RunRulesFlag.NotExecuted) == Neatoo.RunRulesFlag.NotExecuted && rule.Value.Executed == false) ||
                 ((runRules & Neatoo.RunRulesFlag.Executed) == Neatoo.RunRulesFlag.Executed && rule.Value.Executed) ||
                 ((runRules & Neatoo.RunRulesFlag.NoMessages) == Neatoo.RunRulesFlag.NoMessages && messages.Count == 0) ||
                 ((runRules & Neatoo.RunRulesFlag.Messages) == Neatoo.RunRulesFlag.Messages && messages.Count > 0))
-            await RunRule(rule.Value, token);
+                await RunRule(rule.Value, token);
         }
     }
 
     public async Task RunRule(IRule r, CancellationToken? token = null)
     {
-        if(!Rules.Values.Contains(r))
+        if (!Rules.Values.Contains(r))
         {
             throw new Exception("Rule needs to already have been added to the RuleManager");
         }
 
         if (r is IRule rule)
         {
-            await rule.RunRule(Target, token);
+            var uniqueExecIndex = rule.UniqueIndex + Random.Shared.Next(10000, 100000);
+            var triggerProperties = rule.TriggerProperties;
+
+            try
+            {
+                var ruleMessageTask = r.RunRule(this.Target, token);
+
+                if (!ruleMessageTask.IsCompleted)
+                {
+                    foreach (var triggerProperty in triggerProperties)
+                    {
+                        // Allowing null trigger properties that may be on a child target 
+                        Target[triggerProperty.PropertyName]?.AddMarkedBusy(uniqueExecIndex);
+                    }
+                }
+
+                var ruleMessages = (await ruleMessageTask) ?? RuleMessages.None;
+
+                var setAtLeastOneProperty = true;
+
+                foreach (var propertyName in triggerProperties.Select(t => t.PropertyName).Except(ruleMessages.Select(p => p.PropertyName)))
+                {
+                    Target[propertyName]?.ClearMessagesForRule(rule.UniqueIndex);
+                }
+
+                foreach (var ruleMessage in ruleMessages.GroupBy(rm => rm.PropertyName).ToDictionary(g => g.Key, g => g.ToList()))
+                {
+                    ruleMessage.Value.ForEach(rm => rm.RuleIndex = rule.UniqueIndex);
+
+                    setAtLeastOneProperty = true;
+                    Target[ruleMessage.Key]?.SetMessagesForRule(ruleMessage.Value);
+                }
+
+                Debug.Assert(setAtLeastOneProperty, "You must have at least one trigger property that is a valid property on the target");
+            }
+            catch (Exception ex)
+            {
+                foreach (var triggerProperty in triggerProperties)
+                {
+                    // Allow children to be trigger properties
+                    Target[triggerProperty.PropertyName]?.SetMessagesForRule(triggerProperty.PropertyName.RuleMessages(ex.Message).AsReadOnly());
+                }
+
+                throw;
+            }
+            finally
+            {
+                foreach (var triggerProperty in triggerProperties)
+                {
+                    // Allowing null trigger properties that may be on a child target 
+                    Target[triggerProperty.PropertyName]?.RemoveMarkedBusy(uniqueExecIndex);
+                }
+            }
         }
         else
         {

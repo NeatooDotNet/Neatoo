@@ -101,14 +101,14 @@ else
             <PersonApp.Component.EditTextBox EditProperty="@PersonModel["Notes"]" />
         </div>
 
-        <button type="submit" class="btn btn-primary" disabled="@(!CanUpdate || PersonModel.IsBusy)">Update</button>
+        <button type="submit" class="btn btn-primary" disabled="@(PersonModel.IsBusy)">Update</button>
+        <button type="button" class="btn btn-primary" @onclick="Delete" disabled="@(!CanDelete)">Delete</button>
     </EditForm>
 }
 
 <button type="button" class="btn btn-primary" @onclick="Clear">Clear</button>
 <button type="button" class="btn btn-primary" @onclick="Create" disabled="@(!CanCreate)">Create</button>
 <button type="button" class="btn btn-primary" @onclick="Fetch" disabled="@(!CanFetch)">Fetch</button>
-<button type="button" class="btn btn-primary" @onclick="Delete" disabled="@(!CanDelete)">Delete</button>
 
 @code {
 

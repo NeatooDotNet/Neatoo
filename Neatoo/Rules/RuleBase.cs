@@ -10,6 +10,7 @@ public interface IRule
     /// </summary>
     bool Executed { get; }
     int RuleOrder { get; }
+    uint UniqueIndex { get; }
     IReadOnlyList<IRuleMessage> Messages { get; }
     IReadOnlyList<ITriggerProperty> TriggerProperties { get; }
     Task<IRuleMessages> RunRule(IValidateBase target, CancellationToken? token = null);
@@ -43,7 +44,7 @@ public abstract class AsyncRuleBase<T> : IRule<T>
     /// <summary>
     /// If the rule is static you'll want to set this to a unique value
     /// </summary>
-    protected uint UniqueIndex { get; set; }
+    public uint UniqueIndex { get; protected set; }
 
     protected RuleMessages None = RuleMessages.None;
     public int RuleOrder { get; protected set; } = 1;
@@ -80,89 +81,10 @@ public abstract class AsyncRuleBase<T> : IRule<T>
         return RunRule(typedTarget, token);
     }
 
-    public virtual async Task<IRuleMessages> RunRule(T target, CancellationToken? token = null)
+    public virtual Task<IRuleMessages> RunRule(T target, CancellationToken? token = null)
     {
-        var uniqueExecIndex = this.UniqueIndex + Random.Shared.Next(10000, 100000);
-
-        try
-        {
-            Executed = true;
-
-            var ruleMessageTask = Execute(target, token);
-
-            if (!ruleMessageTask.IsCompleted)
-            {
-                TriggerProperties.ForEach(p =>
-                {
-                    // Allow children to be trigger properties
-                    if (target.PropertyManager.HasProperty(p.PropertyName))
-                    {
-                        var propertyValue = target[p.PropertyName];
-                        propertyValue.AddMarkedBusy(uniqueExecIndex);
-                    }
-                });
-            }
-
-            var ruleMessages = await ruleMessageTask;
-
-            var setAtLeastOneProperty = true;
-
-            if (PreviousMessages != null)
-            {
-                PreviousMessages.Select(t => t.PropertyName).Except(ruleMessages.Select(p => p.PropertyName)).ToList().ForEach(p =>
-                {
-                    if (target.PropertyManager.HasProperty(p))
-                    {
-                        var propertyValue = target[p];
-                        propertyValue.ClearMessagesForRule(UniqueIndex);
-                    }
-                });
-            }
-
-            foreach (var ruleMessage in ruleMessages.GroupBy(rm => rm.PropertyName).ToDictionary(g => g.Key, g => g.ToList()))
-            {
-                ruleMessage.Value.ForEach(rm => rm.RuleIndex = UniqueIndex);
-
-                if (target.PropertyManager.HasProperty(ruleMessage.Key))
-                {
-                    setAtLeastOneProperty = true;
-                    target[ruleMessage.Key].SetMessagesForRule(ruleMessage.Value);
-                }
-            }
-
-
-            Debug.Assert(setAtLeastOneProperty, "You must have at least one trigger property that is a valid property on the target");
-
-            PreviousMessages = ruleMessages;
-
-            return ruleMessages;
-        }
-        catch (Exception ex)
-        {
-            TriggerProperties.ForEach(p =>
-                {
-                    // Allow children to be trigger properties
-                    if (target.PropertyManager.HasProperty(p.PropertyName))
-                    {
-                        var propertyValue = target[p.PropertyName];
-                        propertyValue.SetMessagesForRule(p.PropertyName.RuleMessages(ex.Message).AsReadOnly());
-                    }
-                });
-
-            throw;
-        }
-        finally
-        {
-            TriggerProperties.ForEach(p =>
-            {
-                // Ignore non-properties to Allow children to be trigger properties
-                if (target.PropertyManager.HasProperty(p.PropertyName))
-                {
-                    var propertyValue = target[p.PropertyName];
-                    propertyValue.RemoveMarkedBusy(uniqueExecIndex);
-                }
-            });
-        }
+        Executed = true;
+        return Execute(target, token);
     }
 
     public virtual void OnRuleAdded(IRuleManager ruleManager, uint uniqueIndex)

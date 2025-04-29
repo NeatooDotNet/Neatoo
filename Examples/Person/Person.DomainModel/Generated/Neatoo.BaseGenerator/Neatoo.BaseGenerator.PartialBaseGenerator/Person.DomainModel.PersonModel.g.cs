@@ -35,7 +35,7 @@ Parameter Property LastName string found
 Parameter Property Email string? found
 Parameter Property Phone string? found
 Parameter Property Notes string? found
-Parameter Property Phones System.Collections.Generic.ICollection<Person.Ef.PersonPhoneEntity> found
+Parameter Property Phones System.Collections.Generic.IList<Person.Ef.PersonPhoneEntity> found
 Parameter Property Id int? found
 Method Create
 MethodDeclarationSyntax Create

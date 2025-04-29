@@ -27,14 +27,14 @@ public abstract class EditBase<T> : ValidateBase<T>, INeatooObject, IEditBase, I
     }
 
     public IFactorySave<T>? Factory { get; protected set; }
-    public bool IsMarkedModified { get; protected set; } = false;
-    public bool IsModified => PropertyManager.IsModified || IsDeleted || IsNew || IsSelfModified;
-    public bool IsSelfModified { get => PropertyManager.IsSelfModified || IsDeleted || IsMarkedModified; protected set => IsMarkedModified = value; }
-    public bool IsSavable => IsModified && IsValid && !IsBusy && !IsChild;
-    public bool IsNew { get; protected set; }
-    public bool IsDeleted { get; protected set; }
-    public IEnumerable<string> ModifiedProperties => PropertyManager.ModifiedProperties;
-    public bool IsChild { get; protected set; }
+    public virtual bool IsMarkedModified { get; protected set; } = false;
+    public virtual bool IsModified => PropertyManager.IsModified || IsDeleted || IsNew || IsSelfModified;
+    public virtual bool IsSelfModified { get => PropertyManager.IsSelfModified || IsDeleted || IsMarkedModified; protected set => IsMarkedModified = value; }
+    public virtual bool IsSavable => IsModified && IsValid && !IsBusy && !IsChild;
+    public virtual bool IsNew { get; protected set; }
+    public virtual bool IsDeleted { get; protected set; }
+    public virtual IEnumerable<string> ModifiedProperties => PropertyManager.ModifiedProperties;
+    public virtual bool IsChild { get; protected set; }
 
     protected (bool IsModified, bool IsSelfModified, bool IsSavable, bool IsDeleted) EditMetaState { get; private set; }
 

@@ -66,9 +66,9 @@ public class PropertyManager<P> : IPropertyManager<P>, IJsonOnDeserialized
     }
 
     private static MethodInfo? createPropertyMethod;
-    private static Dictionary<Type, MethodInfo> createPropertyMethodPropertyType = new();
+    private static ConcurrentDictionary<Type, MethodInfo> createPropertyMethodPropertyType = new();
 
-    public virtual P GetProperty(string propertyName)
+    public virtual P? GetProperty(string propertyName)
     {
         lock (_propertyBagLock)
         {
@@ -78,6 +78,11 @@ public class PropertyManager<P> : IPropertyManager<P>, IJsonOnDeserialized
             }
 
             var propertyInfo = PropertyInfoList.GetPropertyInfo(propertyName);
+
+            if (propertyInfo == null)
+            {
+                return default;
+            }
 
             if (createPropertyMethod == null)
             {
@@ -114,7 +119,7 @@ public class PropertyManager<P> : IPropertyManager<P>, IJsonOnDeserialized
         Property_PropertyChanged(sender, e);
     }
 
-    public P this[string propertyName]
+    public P? this[string propertyName]
     {
         get => GetProperty(propertyName);
     }

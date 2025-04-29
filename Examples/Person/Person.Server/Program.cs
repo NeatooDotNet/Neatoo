@@ -8,10 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors();
 
 // Neatoo
-builder.Services.AddNeatooServices(NeatooFactory.Local, typeof(IPersonModel).Assembly);
+builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IPersonModel).Assembly);
 
 // App Specific
-builder.Services.AddScoped<IPersonContext, PersonContext>();
+builder.Services.AddScoped<IPersonDbContext, PersonDbContext>();
 builder.Services.RegisterMatchingName(typeof(IPersonModelAuth).Assembly);
 
 builder.Services.RemoveAll<IUser>();

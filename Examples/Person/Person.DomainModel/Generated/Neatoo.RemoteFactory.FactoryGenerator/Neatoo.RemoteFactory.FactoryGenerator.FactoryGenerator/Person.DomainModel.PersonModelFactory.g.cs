@@ -109,7 +109,7 @@ namespace Person.DomainModel
             }
 
             var target = ServiceProvider.GetRequiredService<PersonModel>();
-            var personContext = ServiceProvider.GetRequiredService<IPersonContext>();
+            var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
             var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneModelListFactory>();
             return new Authorized<IPersonModel>(await DoFactoryMethodCallBoolAsync(target, FactoryOperation.Fetch, () => target.Fetch(personContext, personPhoneModelListFactory)));
         }
@@ -131,7 +131,7 @@ namespace Person.DomainModel
             }
 
             var cTarget = (PersonModel)target ?? throw new Exception("IPersonModel must implement PersonModel");
-            var personContext = ServiceProvider.GetRequiredService<IPersonContext>();
+            var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
             var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneModelListFactory>();
             return new Authorized<IPersonModel>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(personContext, personPhoneModelListFactory)));
         }
@@ -153,7 +153,7 @@ namespace Person.DomainModel
             }
 
             var cTarget = (PersonModel)target ?? throw new Exception("IPersonModel must implement PersonModel");
-            var personContext = ServiceProvider.GetRequiredService<IPersonContext>();
+            var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
             var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneModelListFactory>();
             return new Authorized<IPersonModel>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update(personContext, personPhoneModelListFactory)));
         }
@@ -175,7 +175,7 @@ namespace Person.DomainModel
             }
 
             var cTarget = (PersonModel)target ?? throw new Exception("IPersonModel must implement PersonModel");
-            var personContext = ServiceProvider.GetRequiredService<IPersonContext>();
+            var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
             return new Authorized<IPersonModel>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete(personContext)));
         }
 

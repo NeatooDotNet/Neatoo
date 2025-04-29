@@ -7,32 +7,39 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Person.Ef;
 
-public interface IPersonContext
+public interface IPersonDbContext
 {
 	DbSet<PersonEntity> Persons { get; }
     DbSet<PersonPhoneEntity> PersonPhones { get; }
+	Task<PersonEntity> FindPerson(int? id = null);
+	void AddPerson(PersonEntity personEntity);
     Task DeleteAllPersons();
 	void DeletePerson(PersonEntity person);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 
-public class PersonContext : DbContext, IPersonContext
+public class PersonDbContext : DbContext, IPersonDbContext
 {
 	public virtual DbSet<PersonEntity> Persons { get; set; } = null!;
 	public virtual DbSet<PersonPhoneEntity> PersonPhones { get; set; } = null!;
 
     public string DbPath { get; }
 
-	public PersonContext()
+	public PersonDbContext()
 	{
 		var folder = Environment.SpecialFolder.LocalApplicationData;
 		var path = Environment.GetFolderPath(folder);
 		this.DbPath = System.IO.Path.Join(path, "NeatooPerson.db");
 	}
 
-	// The following configures EF to create a Sqlite database file in the
-	// special "local" folder for your platform.
-	protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+	public PersonDbContext(DbContextOptions<PersonDbContext> options)
+        : base(options)
+    {
+    }
+
+    // The following configures EF to create a Sqlite database file in the
+    // special "local" folder for your platform.
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 		 => optionsBuilder.UseSqlite($"Data Source={this.DbPath}")
 		 .UseLazyLoadingProxies();
 
@@ -53,6 +60,16 @@ public class PersonContext : DbContext, IPersonContext
 			}
 		}
 	}
+
+	public void AddPerson(PersonEntity personEntity)
+	{
+        Persons.Add(personEntity);
+    }
+
+	public Task<PersonEntity?> FindPerson(int? id = null)
+	{
+        return Persons.FirstOrDefaultAsync(_ => id == null || _.Id == id);
+    }
 
     public async Task DeleteAllPersons()
     {
@@ -76,7 +93,7 @@ public class PersonEntity : IdPropertyChangedBase
     public string? Email { get; set; }
 	public string? Phone { get; set; }
 	public string? Notes { get; set; }
-    public virtual ICollection<PersonPhoneEntity> Phones { get; set; } = [];
+    public virtual IList<PersonPhoneEntity> Phones { get; } = [];
 }
 
 public class PersonPhoneEntity : IdPropertyChangedBase

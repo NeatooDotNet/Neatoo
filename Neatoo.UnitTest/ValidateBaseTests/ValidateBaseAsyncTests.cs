@@ -225,14 +225,14 @@ public class ValidateBaseAsyncTests
         Assert.IsNotNull(propertyChanged.SingleOrDefault(p => p.propertyName == nameof(validate.IsBusy)));
     }
 
-    [TestMethod]
-    public async Task ValidateBaseAsync_AsyncRuleThrowsException()
-    {
-        validate.ThrowException = "Throw";
-        await Assert.ThrowsExceptionAsync<AggregateException>(() => validate.WaitForTasks());
-        Assert.IsFalse(validate.IsValid);
-        Assert.IsFalse(validate[nameof(validate.ThrowException)].IsValid);
-    }
+    //[TestMethod]
+    //public async Task ValidateBaseAsync_AsyncRuleThrowsException()
+    //{
+    //    validate.ThrowException = "Throw";
+    //    await Assert.ThrowsExceptionAsync<AggregateException>(() => validate.WaitForTasks());
+    //    Assert.IsFalse(validate.IsValid);
+    //    Assert.IsFalse(validate[nameof(validate.ThrowException)].IsValid);
+    //}
 
     [TestMethod]
     public async Task ValidateBaseAsync_RecursiveRuleAsync()

@@ -25,7 +25,7 @@ public static class UnitTestServices
                 {
                     var services = new ServiceCollection();
 
-                    services.AddNeatooServices(NeatooFactory.Local, typeof(IEditPerson).Assembly);
+                    services.AddNeatooServices(NeatooFactory.Server, typeof(IEditPerson).Assembly);
                     services.RegisterMatchingName(typeof(IEditPerson).Assembly);
 
                     // Unit Test Library

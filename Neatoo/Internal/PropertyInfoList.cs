@@ -75,13 +75,13 @@ public class PropertyInfoList<T> : IPropertyInfoList<T>
         }
     }
 
-    public IPropertyInfo GetPropertyInfo(string propertyName)
+    public IPropertyInfo? GetPropertyInfo(string propertyName)
     {
         RegisterProperties();
 
         if (!PropertyInfos.TryGetValue(propertyName, out var prop))
         {
-            throw new Exception($"{propertyName} missing on {typeof(T).FullName}");
+            return null;
         }
 
         return prop;

@@ -51,10 +51,10 @@ internal partial class PersonModel : IdEditBase<PersonModel>, IPersonModel
 
     [Remote]
     [Fetch]
-    public async Task<bool> Fetch([Service] IPersonContext personContext,
+    public async Task<bool> Fetch([Service] IPersonDbContext personContext,
                                     [Service] IPersonPhoneModelListFactory personPhoneModelListFactory)
     {
-        var personEntity = await personContext.Persons.FirstOrDefaultAsync();
+        var personEntity = await personContext.FindPerson();
         if (personEntity == null)
         {
             return false;
@@ -66,7 +66,7 @@ internal partial class PersonModel : IdEditBase<PersonModel>, IPersonModel
 
     [Remote]
     [Insert]
-    public async Task<PersonEntity?> Insert([Service] IPersonContext personContext,
+    public async Task<PersonEntity?> Insert([Service] IPersonDbContext personContext,
                                     [Service] IPersonPhoneModelListFactory personPhoneModelListFactory)
     {
         await RunRules();
@@ -77,7 +77,7 @@ internal partial class PersonModel : IdEditBase<PersonModel>, IPersonModel
         }
 
         var personEntity = new PersonEntity();
-        personContext.Persons.Add(personEntity);
+        personContext.AddPerson(personEntity);
         this.MapTo(personEntity);
         personPhoneModelListFactory.Save(this.PersonPhoneModelList, personEntity.Phones);
 
@@ -89,7 +89,7 @@ internal partial class PersonModel : IdEditBase<PersonModel>, IPersonModel
 
     [Remote]
     [Update]
-    public async Task<PersonEntity?> Update([Service] IPersonContext personContext,
+    public async Task<PersonEntity?> Update([Service] IPersonDbContext personContext,
                                     [Service] IPersonPhoneModelListFactory personPhoneModelListFactory)
     {
         await RunRules();
@@ -99,7 +99,7 @@ internal partial class PersonModel : IdEditBase<PersonModel>, IPersonModel
             return null;
         }
 
-        var personEntity = await personContext.Persons.FirstOrDefaultAsync(x => x.Id == this.Id);
+        var personEntity = await personContext.FindPerson(this.Id);
         if (personEntity == null)
         {
             throw new KeyNotFoundException("Person not found");
@@ -115,7 +115,7 @@ internal partial class PersonModel : IdEditBase<PersonModel>, IPersonModel
 
     [Remote]
     [Delete]
-    public async Task Delete([Service] IPersonContext personContext)
+    public async Task Delete([Service] IPersonDbContext personContext)
     {
         await personContext.DeleteAllPersons();
         await personContext.SaveChangesAsync();

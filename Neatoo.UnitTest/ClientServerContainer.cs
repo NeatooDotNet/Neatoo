@@ -71,7 +71,7 @@ namespace Neatoo.UnitTest
                     var serverCollection = new ServiceCollection();
                     var clientCollection = new ServiceCollection();
 
-                    serverCollection.AddNeatooServices(NeatooFactory.Local, Assembly.GetExecutingAssembly());
+                    serverCollection.AddNeatooServices(NeatooFactory.Server, Assembly.GetExecutingAssembly());
                     clientCollection.AddNeatooServices(NeatooFactory.Remote, Assembly.GetExecutingAssembly());
 
                     serverCollection.AutoRegisterAssemblyTypes(Assembly.GetExecutingAssembly());

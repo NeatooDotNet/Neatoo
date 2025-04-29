@@ -25,13 +25,13 @@ namespace Person.DomainModel
                 });
             }
 
-            if (remoteLocal == NeatooFactory.Local)
+            if (remoteLocal == NeatooFactory.Local || remoteLocal == NeatooFactory.Server)
             {
                 services.AddTransient<UniqueName.IsUniqueName>(cc =>
                 {
                     return (int? id, string firstName, string lastName) =>
                     {
-                        var personContext = cc.GetRequiredService<IPersonContext>();
+                        var personContext = cc.GetRequiredService<IPersonDbContext>();
                         return UniqueName._IsUniqueName(id, firstName, lastName, personContext);
                     };
                 });

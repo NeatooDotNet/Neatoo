@@ -8,7 +8,7 @@ using Person.Ef;
 
 namespace Person.Ef.Migrations
 {
-    [DbContext(typeof(PersonContext))]
+    [DbContext(typeof(PersonDbContext))]
     partial class PersonContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

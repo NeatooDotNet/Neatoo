@@ -9,7 +9,7 @@ using Person.Ef;
 
 namespace Person.Ef.Migrations
 {
-    [DbContext(typeof(PersonContext))]
+    [DbContext(typeof(PersonDbContext))]
     [Migration("20250408015700_InitialCreate")]
     partial class InitialCreate
     {
