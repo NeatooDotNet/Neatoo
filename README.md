@@ -32,7 +32,7 @@ Neatoo does not limit you to a database. Any Service can be injected to the Fact
 
 ## Example
 
-Please explore [the Person example](https://github.com/NeatooDotNet/Neatoo/tree/main/Examples/Person) Blazor Stand-Alone Web application. 
+Please explore [the Person example](https://github.com/NeatooDotNet/Neatoo/tree/main/src/Examples/Person) Blazor Stand-Alone Web application. 
 
 * Entities
   - [PersonModel](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/PersonModel.cs) and [PersonPhoneModel](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/PersonPhoneModel.cs)
