@@ -1,10 +1,30 @@
-For as established and widely accepted the principals of Domain Models are I know of only one complete framework for C#: [CSLA](https://cslanet.com/). In 20 years of enterprise application development my best projects have been with CSLA. Neatoo follows the principals in CSLA. I started by recreating CSLA with DI and Async/Await. This alleviated a lot of concerns. When I switched from reflection to [Roslyn Source Generators](https://github.com/NeatooDotNet/RemoteFactory/blob/main/src/RemoteFactory.FactoryGenerator/FactoryGenerator.cs) is when it became something truly new. [Generated code](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonModelFactory.g.cs) provides **much** better performance and compile errors versus runtime errors.<br><br>
-Neatoo is a .NET Domain Model Framework for C# that takes full advantage of Blazor and Roslyn Source Generators. Neatoo provides the mechanics for Domain Model Graphs including business rules, authorization rules, meta properties, physical 3-tier data mapper factory, property data binding and more so you can focus on the business logic.
+![Lifecycle](https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/Logo_411.png)
 
-#### With Neatoo you can create a Blazor application with a rich Domain Model easier than ever before!
+Neatoo is a DDD Aggregate Framework for C# Blazor and WPF applications. It specializes in creating bindable Aggregate Entity Graphs for Blazor and WPF Views that are re-used on the Application Service. Neatoo uniquely uses Roslyn Source Generators to create readable and performant code specific to the Entities.
+
+Neatoo provides:
+* Validation
+* Bindable Meta-properties
+* Authorization
+* Factory
+* Serialization
+
+Neatoo supports:
+* Dependency Injection
+* Async/Await 
+
+#### With Neatoo you will create Blazor Business applications with way less code!
 
 [Discord](https://discord.gg/M3dVuZkG)
 [Nuget](https://www.nuget.org/packages/Neatoo)
+
+## Neatoo Lifecycle
+
+This is a common lifecycle for a Neatoo Aggregate Entity Graph to and from the database using a 3-Tier infrastructure.
+
+![Lifecycle](https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/AggregateLifecycle_960.gif)
+
+Neatoo does not limit you to a database. Any Service can be injected to the Factory Methods on the Application Server.
 
 ## Video
 
@@ -12,31 +32,26 @@ Neatoo is a .NET Domain Model Framework for C# that takes full advantage of Blaz
 
 ## Example
 
-Here is the factory generated for [PersonModel](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonModelFactory.g.cs) by Neatoo using Roslyn Source Generators. It also generates the [implementation](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonModelFactory.g.cs).
+Please explore [the Person example](https://github.com/NeatooDotNet/Neatoo/tree/main/Examples/Person) Blazor Stand-Alone Web application. 
 
-```csharp
-    public interface IPersonModelFactory
-    {
-        IPersonModel? Create();
-        Task<IPersonModel?> Fetch();
-        Task<IPersonModel?> Save(IPersonModel target);
-        Task<Authorized<IPersonModel>> TrySave(IPersonModel target);
-        Authorized CanCreate();
-        Authorized CanFetch();
-        Authorized CanUpdate();
-        Authorized CanDelete();
-        Authorized CanSave();
-    }
-```
+* Entities
+  - [PersonModel](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/PersonModel.cs) and [PersonPhoneModel](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/PersonPhoneModel.cs)
+* Validation
+  - [UniqueNameRule](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/UniqueNameRule.cs), [UniquePhoneNumberRule](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/UniquePhoneNumberRule.cs) and [UniquePhoneTypeRule](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/UniquePhoneTypeRule.cs)
+* Bindable Meta-properties
+  - Provided by [EditBase](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Neatoo/EditBase.cs) also see [IMetaProperties](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Neatoo/IMetaProperties.cs)
+* Authorization
+  - [PersonModelAuth](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/PersonModelAuth.cs)
+* Factory
+  - These Roslyn Source Generated Factories to call [Create], [Fetch], [Insert], [Update] and [Delete] methods in [PersonModel](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/PersonModel.cs) based on it's meta-state. 
+  - [PersonModelFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonModelFactory.g.cs), [PersonModelPhoneFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonPhoneModelFactory.g.cs), [PersonModelPhoneListFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonPhoneModelFactory.g.cs) and [UniqueNameRuleFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.UniqueNameFactory.g.cs)
 
-Please see [the Person example](https://github.com/NeatooDotNet/Neatoo/tree/main/Examples/Person) Blazor Stand-Alone Web application shown in the animation below. Click to enlarge.
+* Serialization
+  - Serialized at the AggregateRoot level of PersonModel as signified by the [Remote] Attribute on the Factory Methods of [PersonModel](https://github.com/NeatooDotNet/Neatoo/blob/main/src/Examples/Person/Person.DomainModel/PersonModel.cs)
+
+This is an animation of the application in action:
 
 <img src="https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/NeatooPersonRules.gif" width=30% height=30%>
-
-Domain Models: [PersonModel](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/PersonModel.cs), [PersonPhoneModel](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/PersonPhoneModel.cs) and [PersonPhoneModelList](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/PersonPhoneModelList.cs)\
-Rules: [UniqueNameRule](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/UniqueNameRule.cs), [UniquePhoneNumberRule](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/UniquePhoneNumberRule.cs) and [UniquePhoneTypeRule](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/UniquePhoneTypeRule.cs)\
-Authorization: [PersonModelAuth](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/PersonModelAuth.cs)\
-Roslyn Auto-Generated Factories: [PersonModelFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonModelFactory.g.cs), [PersonModelPhoneFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonPhoneModelFactory.g.cs), [PersonModelPhoneListFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.PersonPhoneModelFactory.g.cs) and [UniqueNameRuleFactory](https://github.com/NeatooDotNet/Neatoo/blob/main/Examples/Person/Person.DomainModel/Generated/Neatoo.RemoteFactory.FactoryGenerator/Neatoo.RemoteFactory.FactoryGenerator.FactoryGenerator/Person.DomainModel.UniqueNameFactory.g.cs) \
 
 ##  Please leave feedback!
 Thus far, this was a fun winter project. If there is any interest to use it I will continue to work on it. So, please provide feedback!
@@ -54,10 +69,12 @@ Please be constructive.
 ## Recommended Reading
 
 Ideas that shaped Neatoo:
-- I highly recommend [the CSLA books](https://store.lhotka.net/).
-- [Patterns of Enteprise Architecture](https://www.thriftbooks.com/w/patterns-of-enterprise-application-architecture_martin-fowler_david-rice/250298/?resultid=dcd84f2b-51ab-4e22-8e24-3c3a17de30bb#edition=3682851&idiq=4316361) - Domain Model (110) & Data Mapper (165)
-- [Object–relational impedance mismatch](https://en.wikipedia.org/wiki/Object%E2%80%93relational_impedance_mismatch)
-- [Anemic Domain Model](https://martinfowler.com/bliki/AnemicDomainModel.html)
-- [Async Programming : Patterns for Asynchronous MVVM Applications: Data Binding](https://learn.microsoft.com/en-us/archive/msdn-magazine/2014/march/async-programming-patterns-for-asynchronous-mvvm-applications-data-binding)
-- [Extending Partial Methods](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-9.0/extending-partial-methods) and [Partial Properties](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-13.0/partial-properties)
+- Of course [Implementing Domain-Driven Design by Vaughn Vernon](https://www.amazon.com/Implementing-Domain-Driven-Design-Vaughn-Vernon/dp/0321834577/ref=asc_df_0321834577?mcid=2d57f9b4826b30adbc0f024ba5ffcee1&hvocijid=13025708246257480970-0321834577-&hvexpln=73&tag=hyprod-20&linkCode=df0&hvadid=721245378154&hvpos=&hvnetw=g&hvrand=13025708246257480970&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=1019976&hvtargid=pla-2281435177658&psc=1)
+- The rules engine is a replica of [CSLA by Rockford Lhotka](https://store.lhotka.net/).
+- In addition to DDD why to have Domain Model (110) & Data Mapper (165) is in [Patterns of Enteprise Architecture](https://www.thriftbooks.com/w/patterns-of-enterprise-application-architecture_martin-fowler_david-rice/250298/?resultid=dcd84f2b-51ab-4e22-8e24-3c3a17de30bb#edition=3682851&idiq=4316361) - 
+- A key idea every developer should understand is [Object–relational impedance mismatch](https://en.wikipedia.org/wiki/Object%E2%80%93relational_impedance_mismatch)
+- Everyone warns about [Anemic Domain Models](https://martinfowler.com/bliki/AnemicDomainModel.html)
+- [Async Programming : Patterns for Asynchronous MVVM Applications: Data Binding](https://learn.microsoft.com/en-us/archive/msdn-magazine/2014/march/async-programming-patterns-for-asynchronous-mvvm-applications-data-binding) is why each property has bindable meta-state
+- [Extending Partial Methods](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-9.0/extending-partial-methods) and [Partial Properties](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-13.0/partial-properties) is a key Roslyn Source Generator concept
+- The best articles I've found on [writing source generators](https://andrewlock.net/series/creating-a-source-generator/)
 
