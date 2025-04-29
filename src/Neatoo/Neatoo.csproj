@@ -16,7 +16,7 @@
 	  <PackageReleaseNotes>None yet</PackageReleaseNotes>
 	  <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 	  <PackageTags>OO Domain Modeling C# .NET Blazor WPF ASP.NET CSLA</PackageTags>
-	  <PackageVersion>9.3.1</PackageVersion>
+	  <PackageVersion>9.4.0</PackageVersion>
 	  <PublishRepositoryUrl>true</PublishRepositoryUrl>
 	  <RepositoryType>git</RepositoryType>
 	  <RepositoryUrl>https://github.com/NeatooDotNet/Neatoo</RepositoryUrl>
@@ -29,9 +29,9 @@
     <Compile Remove="bin\**" />
     <EmbeddedResource Remove="bin\**" />
     <None Remove="bin\**" />
-	  <None Include="..\README.md" Pack="true" PackagePath="" />
-	  <None Include="..\LICENSE" Pack="true" PackagePath="" />
-	  <None Include="..\neatoo_icon.png" Pack="true" PackagePath="" Visible="false" />
+	  <None Include="..\..\README.md" Pack="true" PackagePath="" />
+	  <None Include="..\..\LICENSE" Pack="true" PackagePath="" />
+	  <None Include="..\..\neatoo_icon.png" Pack="true" PackagePath="" Visible="false" />
 	  <None Include="$(OutputPath)\$(AssemblyName).BaseGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 

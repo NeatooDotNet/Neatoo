@@ -1,15 +1,8 @@
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
 using Neatoo;
-using Neatoo.Internal;
-using Neatoo.Rules;
-using Person.DomainModel;
 using Person.Ef;
-using Xunit;
 
 namespace Person.DomainModel.Tests.IntegrationTests
 {
