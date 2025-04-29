@@ -13,7 +13,7 @@ Neatoo supports:
 * Dependency Injection
 * Async/Await 
 
-#### With Neatoo you will create Blazor Business applications with way less code!
+#### With Neatoo you can create Blazor Business applications with way less code!
 
 [Discord](https://discord.gg/M3dVuZkG)
 [Nuget](https://www.nuget.org/packages/Neatoo)
@@ -73,7 +73,7 @@ Ideas that shaped Neatoo:
 - The rules engine is a replica of [CSLA by Rockford Lhotka](https://store.lhotka.net/).
 - In addition to DDD why to have Domain Model (110) & Data Mapper (165) is in [Patterns of Enteprise Architecture](https://www.thriftbooks.com/w/patterns-of-enterprise-application-architecture_martin-fowler_david-rice/250298/?resultid=dcd84f2b-51ab-4e22-8e24-3c3a17de30bb#edition=3682851&idiq=4316361) - 
 - A key idea every developer should understand is [Object–relational impedance mismatch](https://en.wikipedia.org/wiki/Object%E2%80%93relational_impedance_mismatch)
-- Everyone warns about [Anemic Domain Models](https://martinfowler.com/bliki/AnemicDomainModel.html)
+- Everyone warns about [Anemic Domain Models](https://martinfowler.com/bliki/AnemicDomainModel.html) [over](https://x.com/VaughnVernon/status/1234990953099751425?lang=en) and [over](https://www.youtube.com/watch?v=aLFMJ_frafg) and [over](https://learn.microsoft.com/en-us/dotnet/architecture/microservices/microservice-ddd-cqrs-patterns/microservice-domain-model#rich-domain-model-versus-anemic-domain-model) again
 - [Async Programming : Patterns for Asynchronous MVVM Applications: Data Binding](https://learn.microsoft.com/en-us/archive/msdn-magazine/2014/march/async-programming-patterns-for-asynchronous-mvvm-applications-data-binding) is why each property has bindable meta-state
 - [Extending Partial Methods](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-9.0/extending-partial-methods) and [Partial Properties](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-13.0/partial-properties) is a key Roslyn Source Generator concept
 - The best articles I've found on [writing source generators](https://andrewlock.net/series/creating-a-source-generator/)
