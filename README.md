@@ -1,15 +1,14 @@
 ![Lifecycle](https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/Logo_411.png)
 
-Neatoo is a DDD Aggregate Framework for .NET C#. It specializes in creating bindable Aggregate Entity Graphs for Blazor and WPF Views that are re-used on the Application Service. Neatoo uniquely uses Roslyn Source Generators to create readable and performant code specific to the Entities.
+Neatoo is a DDD Aggregate Framework for .NET C#. It specializes in creating bindable Aggregate Entity Graphs for Blazor and WPF. The goal is to define the business logic once in the Aggregate and use that logic in both the UI and the Application Service. Neatoo uniquely uses Roslyn Source Generators to create readable and performant code specific to the Entities.
 
-Neatoo provides:
+Features:
 * Validation
-* Bindable Meta-properties
 * Authorization
+* Bindable Properties
+* Bindable Meta-Properties
 * Factory
 * Serialization
-
-Neatoo supports:
 * Dependency Injection
 * Async/Await 
 
