@@ -1,10 +1,7 @@
-using System.Linq;
 using Moq;
 using Neatoo.Rules;
-using Person.DomainModel;
-using Xunit;
 
-namespace Person.DomainModel.Tests.UnitTests
+namespace DomainModel.Tests.UnitTests
 {
     public class UniquePhoneTypeRuleTests
     {
@@ -12,20 +9,20 @@ namespace Person.DomainModel.Tests.UnitTests
         public async Task Execute_ShouldReturnNone_WhenPhoneTypeIsUnique()
         {
             // Arrange
-            var mockParentPersonModel = new Mock<IPersonModel>();
-            var mockPhoneModelList = new Mock<IPersonPhoneModelList>();
+            var mockParentPerson = new Mock<IPerson>();
+            var mockPhoneModelList = new Mock<IPersonPhoneList>();
 
             mockPhoneModelList
                 .Setup(x => x.GetEnumerator())
-                .Returns((Array.Empty<IPersonPhoneModel>()).AsEnumerable().GetEnumerator());
+                .Returns((Array.Empty<IPersonPhone>()).AsEnumerable().GetEnumerator());
 
-            mockParentPersonModel
-                .SetupGet(x => x.PersonPhoneModelList)
+            mockParentPerson
+                .SetupGet(x => x.PersonPhoneList)
                 .Returns(mockPhoneModelList.Object);
 
-            var mockPhoneModel = new Mock<IPersonPhoneModel>();
+            var mockPhoneModel = new Mock<IPersonPhone>();
             mockPhoneModel.SetupGet(x => x.PhoneType).Returns(PhoneType.Mobile);
-            mockPhoneModel.SetupGet(x => x.ParentPersonModel).Returns(mockParentPersonModel.Object);
+            mockPhoneModel.SetupGet(x => x.ParentPerson).Returns(mockParentPerson.Object);
 
             var rule = new UniquePhoneTypeRule();
 
@@ -40,23 +37,23 @@ namespace Person.DomainModel.Tests.UnitTests
         public async Task Execute_ShouldReturnError_WhenPhoneTypeIsNotUnique()
         {
             // Arrange
-            var mockParentPersonModel = new Mock<IPersonModel>();
-            var mockPhoneModelList = new Mock<IPersonPhoneModelList>();
+            var mockParentPerson = new Mock<IPerson>();
+            var mockPhoneModelList = new Mock<IPersonPhoneList>();
 
-            var existingPhoneModel = new Mock<IPersonPhoneModel>();
+            var existingPhoneModel = new Mock<IPersonPhone>();
             existingPhoneModel.SetupGet(x => x.PhoneType).Returns(PhoneType.Mobile);
 
             mockPhoneModelList
                 .Setup(x => x.GetEnumerator())
                 .Returns((new[] { existingPhoneModel.Object }).AsEnumerable().GetEnumerator());
 
-            mockParentPersonModel
-                .SetupGet(x => x.PersonPhoneModelList)
+            mockParentPerson
+                .SetupGet(x => x.PersonPhoneList)
                 .Returns(mockPhoneModelList.Object);
 
-            var mockPhoneModel = new Mock<IPersonPhoneModel>();
+            var mockPhoneModel = new Mock<IPersonPhone>();
             mockPhoneModel.SetupGet(x => x.PhoneType).Returns(PhoneType.Mobile);
-            mockPhoneModel.SetupGet(x => x.ParentPersonModel).Returns(mockParentPersonModel.Object);
+            mockPhoneModel.SetupGet(x => x.ParentPerson).Returns(mockParentPerson.Object);
 
             var rule = new UniquePhoneTypeRule();
 
@@ -65,16 +62,16 @@ namespace Person.DomainModel.Tests.UnitTests
 
             // Assert
             Assert.NotEqual(RuleMessages.None, result);
-            Assert.Contains(result, r => r.PropertyName == nameof(IPersonPhoneModel.PhoneType) && r.Message == "Phone type must be unique");
+            Assert.Contains(result, r => r.PropertyName == nameof(IPersonPhone.PhoneType) && r.Message == "Phone type must be unique");
         }
 
         [Fact]
-        public async Task Execute_ShouldReturnError_WhenParentPersonModelIsNull()
+        public async Task Execute_ShouldReturnError_WhenParentPersonIsNull()
         {
             // Arrange
-            var mockPhoneModel = new Mock<IPersonPhoneModel>();
+            var mockPhoneModel = new Mock<IPersonPhone>();
             mockPhoneModel.SetupGet(x => x.PhoneType).Returns(PhoneType.Mobile);
-            mockPhoneModel.SetupGet(x => x.ParentPersonModel).Returns((IPersonModel?)null);
+            mockPhoneModel.SetupGet(x => x.ParentPerson).Returns((IPerson?)null);
 
             var rule = new UniquePhoneTypeRule();
 
@@ -83,7 +80,7 @@ namespace Person.DomainModel.Tests.UnitTests
 
             // Assert
             Assert.NotEqual(RuleMessages.None, result);
-            Assert.Contains(result, r => r.PropertyName == nameof(IPersonPhoneModel.PhoneType) && r.Message == "Parent is null");
+            Assert.Contains(result, r => r.PropertyName == nameof(IPersonPhone.PhoneType) && r.Message == "Parent is null");
         }
     }
 }

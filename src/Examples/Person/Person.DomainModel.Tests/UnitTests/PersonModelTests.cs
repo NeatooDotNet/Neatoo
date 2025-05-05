@@ -1,39 +1,36 @@
-using System.Threading.Tasks;
 using Moq;
 using Neatoo;
 using Neatoo.Internal;
 using Neatoo.Rules;
-using Person.DomainModel;
 using Person.Ef;
-using Xunit;
 
-namespace Person.DomainModel.Tests.UnitTests
+namespace DomainModel.Tests.UnitTests
 {
-    public class PersonModelTests
+    public class PersonTests
     {
         private Mock<IPersonDbContext> mockPersonDbContext;
-        private Mock<IPersonPhoneModelListFactory> mockPhoneModelListFactory;
+        private Mock<IPersonPhoneListFactory> mockPhoneModelListFactory;
         private Mock<IUniqueNameRule> mockUniqueNameRule;
-        private Mock<PersonModel> mockPersonModel;
-        private PersonModel personModel => mockPersonModel.Object;
+        private Mock<Person> mockPerson;
+        private Person personModel => mockPerson.Object;
 
-        public PersonModelTests()
+        public PersonTests()
         {
             mockPersonDbContext = new Mock<IPersonDbContext>();
-            mockPhoneModelListFactory = new Mock<IPersonPhoneModelListFactory>();
-            mockUniqueNameRule = new Mock<AsyncRuleBase<IPersonModel>>().As<IUniqueNameRule>();
+            mockPhoneModelListFactory = new Mock<IPersonPhoneListFactory>();
+            mockUniqueNameRule = new Mock<AsyncRuleBase<IPerson>>().As<IUniqueNameRule>();
             mockUniqueNameRule.CallBase = true;
 
-            mockPersonModel = new Mock<PersonModel>(new EditBaseServices<PersonModel>(null), mockUniqueNameRule.Object);
-            mockPersonModel.Setup(personModel => personModel.IsSavable).Returns(true);
-            mockPersonModel.Setup(personModel => personModel.RunRules(RunRulesFlag.All, null)).Returns(Task.CompletedTask);
-            mockPersonModel.CallBase = true;
+            mockPerson = new Mock<Person>(new EditBaseServices<Person>(null), mockUniqueNameRule.Object);
+            mockPerson.Setup(personModel => personModel.IsSavable).Returns(true);
+            mockPerson.Setup(personModel => personModel.RunRules(RunRulesFlag.All, null)).Returns(Task.CompletedTask);
+            mockPerson.CallBase = true;
         }
 
         [Fact]
         public void Adds_UniqueNameRule()
         {
-            var personModel = new PersonModel(new EditBaseServices<PersonModel>(null), mockUniqueNameRule.Object);
+            var personModel = new Person(new EditBaseServices<Person>(null), mockUniqueNameRule.Object);
 
             // Assert
             mockUniqueNameRule.Verify(x => x.OnRuleAdded(It.IsAny<IRuleManager>(), It.IsAny<uint>()), Times.Once);
@@ -46,7 +43,7 @@ namespace Person.DomainModel.Tests.UnitTests
             var personEntity = new PersonEntity { FirstName = "John", LastName = "Doe" };
             mockPersonDbContext.Setup(x => x.FindPerson(null)).ReturnsAsync(personEntity);
 
-            var mockPhoneModelList = new Mock<IPersonPhoneModelList>();
+            var mockPhoneModelList = new Mock<IPersonPhoneList>();
             mockPhoneModelListFactory.Setup(x => x.Fetch(personEntity.Phones)).Returns(mockPhoneModelList.Object);
 
             // Act
@@ -56,7 +53,7 @@ namespace Person.DomainModel.Tests.UnitTests
             Assert.True(result);
             Assert.Equal("John", personModel.FirstName);
             Assert.Equal("Doe", personModel.LastName);
-            Assert.Equal(mockPhoneModelList.Object, personModel.PersonPhoneModelList);
+            Assert.Equal(mockPhoneModelList.Object, personModel.PersonPhoneList);
         }
 
         [Fact]
@@ -65,7 +62,7 @@ namespace Person.DomainModel.Tests.UnitTests
             // Arrange
             mockPersonDbContext.Setup(x => x.FindPerson(null)).ReturnsAsync((PersonEntity?)null);
 
-            var personModel = new PersonModel(new EditBaseServices<PersonModel>(null), mockUniqueNameRule.Object);
+            var personModel = new Person(new EditBaseServices<Person>(null), mockUniqueNameRule.Object);
 
             // Act
             var result = await personModel.Fetch(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
@@ -83,8 +80,8 @@ namespace Person.DomainModel.Tests.UnitTests
             mockPersonDbContext.Setup(x => x.AddPerson(It.IsAny<PersonEntity>()));
             mockPersonDbContext.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(1);
 
-            var mockPhoneModelList = new Mock<IPersonPhoneModelList>();
-            personModel.PersonPhoneModelList = mockPhoneModelList.Object;
+            var mockPhoneModelList = new Mock<IPersonPhoneList>();
+            personModel.PersonPhoneList = mockPhoneModelList.Object;
 
             personModel.FirstName = "John";
             personModel.LastName = "Doe";
@@ -94,7 +91,7 @@ namespace Person.DomainModel.Tests.UnitTests
 
             // Assert
             Assert.NotNull(result);
-            mockPersonModel.Verify(x=> x.RunRules(RunRulesFlag.All, null), Times.Once);
+            mockPerson.Verify(x=> x.RunRules(RunRulesFlag.All, null), Times.Once);
             mockPersonDbContext.Verify(x => x.AddPerson(It.IsAny<PersonEntity>()), Times.Once);
             mockPersonDbContext.Verify(x => x.SaveChangesAsync(default), Times.Once);
         }
@@ -103,7 +100,7 @@ namespace Person.DomainModel.Tests.UnitTests
         public async Task Insert_ShouldReturnNull_WhenModelIsNotSavable()
         {
             // Arrange
-            mockPersonModel.Setup(x => x.IsSavable).Returns(false);
+            mockPerson.Setup(x => x.IsSavable).Returns(false);
 
             // Act
             var result = await personModel.Insert(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
@@ -128,7 +125,7 @@ namespace Person.DomainModel.Tests.UnitTests
         public async Task Delete_ShouldCallDeleteAllPersons()
         {
             // Arrange
-            var personModel = new PersonModel(new EditBaseServices<PersonModel>(null), mockUniqueNameRule.Object);
+            var personModel = new Person(new EditBaseServices<Person>(null), mockUniqueNameRule.Object);
 
             // Act
             await personModel.Delete(mockPersonDbContext.Object);

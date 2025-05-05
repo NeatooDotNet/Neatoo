@@ -1,21 +1,21 @@
 ﻿using Neatoo.Rules;
 
-namespace Person.DomainModel;
-internal interface IUniquePhoneNumberRule : IRule<IPersonPhoneModel> { }
+namespace DomainModel;
+internal interface IUniquePhoneNumberRule : IRule<IPersonPhone> { }
 
-internal class UniquePhoneNumberRule : RuleBase<IPersonPhoneModel>, IUniquePhoneNumberRule
+internal class UniquePhoneNumberRule : RuleBase<IPersonPhone>, IUniquePhoneNumberRule
 {
     public UniquePhoneNumberRule()
     {
         AddTriggerProperties(p => p.PhoneType, p => p.PhoneNumber);
     }
 
-    protected override IRuleMessages Execute(IPersonPhoneModel target)
+    protected override IRuleMessages Execute(IPersonPhone target)
     {
-        return RuleMessages.If(target.ParentPersonModel == null, nameof(IPersonPhoneModel.PhoneType), "Parent is null")
-            .If(target.ParentPersonModel == null, nameof(IPersonPhoneModel.PhoneNumber), "Parent is null")
-            .ElseIf(() => target.ParentPersonModel!.PersonPhoneModelList
+        return RuleMessages.If(target.ParentPerson == null, nameof(IPersonPhone.PhoneType), "Parent is null")
+            .If(target.ParentPerson == null, nameof(IPersonPhone.PhoneNumber), "Parent is null")
+            .ElseIf(() => target.ParentPerson!.PersonPhoneList
                         .Where(c => c != target)
-                        .Any(c => c.PhoneNumber == target.PhoneNumber), nameof(IPersonPhoneModel.PhoneNumber), "Phone number must be unique");
+                        .Any(c => c.PhoneNumber == target.PhoneNumber), nameof(IPersonPhone.PhoneNumber), "Phone number must be unique");
     }
 }

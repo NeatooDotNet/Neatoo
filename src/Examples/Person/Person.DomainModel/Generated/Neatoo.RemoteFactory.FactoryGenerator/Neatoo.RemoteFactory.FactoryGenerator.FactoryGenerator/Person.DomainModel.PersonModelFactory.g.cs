@@ -2,9 +2,7 @@
 using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
 using Neatoo;
-using Neatoo.Rules.Rules;
 using Person.Ef;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;

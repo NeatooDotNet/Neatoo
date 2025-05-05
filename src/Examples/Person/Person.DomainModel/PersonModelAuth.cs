@@ -1,33 +1,33 @@
 ﻿using Neatoo.RemoteFactory;
 
-namespace Person.DomainModel;
+namespace DomainModel;
 
-public interface IPersonModelAuth
+public interface IPersonAuth
 {
 	[Authorize(AuthorizeOperation.Read | AuthorizeOperation.Write)]
-	public bool CanAccess();
+	public bool HasAccess();
     [Authorize(AuthorizeOperation.Create)]
-    bool CanCreate();
+    bool HasCreate();
     [Authorize(AuthorizeOperation.Fetch)]
-    bool CanFetch();
+    bool HasFetch();
     [Authorize(AuthorizeOperation.Update)]
-    bool CanUpdate();
+    bool HasUpdate();
     [Authorize(AuthorizeOperation.Insert)]
-    bool CanInsert();
+    bool HasInsert();
     [Authorize(AuthorizeOperation.Delete)]
-    bool CanDelete();
+    bool HasDelete();
 }
 
-internal class PersonModelAuth : IPersonModelAuth
+internal class PersonAuth : IPersonAuth
 {
-	public PersonModelAuth(IUser user)
+	public PersonAuth(IUser user)
 	{
 		this.User = user;
 	}
 
 	public IUser User { get; }
 
-	public bool CanAccess()
+	public bool HasAccess()
 	{
 		if (this.User.Role > Role.None)
 		{
@@ -35,7 +35,7 @@ internal class PersonModelAuth : IPersonModelAuth
 		}
 		return false;
 	}
-    public bool CanCreate()
+    public bool HasCreate()
     {
         if (this.User.Role >= Role.Create)
         {
@@ -44,7 +44,7 @@ internal class PersonModelAuth : IPersonModelAuth
         return false;
     }
 
-    public bool CanFetch()
+    public bool HasFetch()
     {
         if (this.User.Role >= Role.Fetch)
         {
@@ -53,7 +53,7 @@ internal class PersonModelAuth : IPersonModelAuth
         return false;
     }
 
-    public bool CanInsert()
+    public bool HasInsert()
     {
         if (this.User.Role >= Role.Update)
         {
@@ -63,7 +63,7 @@ internal class PersonModelAuth : IPersonModelAuth
     }
 
 
-    public bool CanUpdate()
+    public bool HasUpdate()
     {
         if (this.User.Role >= Role.Update)
         {
@@ -72,7 +72,7 @@ internal class PersonModelAuth : IPersonModelAuth
         return false;
     }
 
-    public bool CanDelete()
+    public bool HasDelete()
     {
         if (this.User.Role >= Role.Delete)
         {

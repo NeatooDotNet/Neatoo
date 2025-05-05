@@ -1,18 +1,18 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Neatoo;
 using Neatoo.RemoteFactory;
-using Person.DomainModel;
 using Person.Ef;
+using DomainModel;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors();
 
 // Neatoo
-builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IPersonModel).Assembly);
+builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IPerson).Assembly);
 
 // App Specific
 builder.Services.AddScoped<IPersonDbContext, PersonDbContext>();
-builder.Services.RegisterMatchingName(typeof(IPersonModelAuth).Assembly);
+builder.Services.RegisterMatchingName(typeof(IPersonAuth).Assembly);
 
 builder.Services.RemoveAll<IUser>();
 builder.Services.AddScoped<IUser, User>();

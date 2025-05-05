@@ -1,11 +1,7 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using Moq;
+﻿using Moq;
 using Neatoo.Rules;
-using Person.DomainModel;
-using Xunit;
 
-namespace Person.DomainModel.Tests.UnitTests
+namespace DomainModel.Tests.UnitTests
 {
     public class UniqueNameRuleTests
     {
@@ -20,14 +16,14 @@ namespace Person.DomainModel.Tests.UnitTests
 
             var rule = new UniqueNameRule(mockIsUniqueName.Object);
 
-            var mockPersonModel = new Mock<IPersonModel>();
-            mockPersonModel.SetupGet(x => x.FirstName).Returns("Jane");
-            mockPersonModel.SetupGet(x => x.LastName).Returns("Doe");
-            mockPersonModel.Setup(x => x[It.Is<string>(s => s == nameof(mockPersonModel.Object.FirstName))].IsModified).Returns(true);
-            mockPersonModel.Setup(x => x[It.Is<string>(s => s == nameof(mockPersonModel.Object.LastName))].IsModified).Returns(true);
+            var mockPerson = new Mock<IPerson>();
+            mockPerson.SetupGet(x => x.FirstName).Returns("Jane");
+            mockPerson.SetupGet(x => x.LastName).Returns("Doe");
+            mockPerson.Setup(x => x[It.Is<string>(s => s == nameof(mockPerson.Object.FirstName))].IsModified).Returns(true);
+            mockPerson.Setup(x => x[It.Is<string>(s => s == nameof(mockPerson.Object.LastName))].IsModified).Returns(true);
 
             // Act
-            var result = await rule.RunRule(mockPersonModel.Object);
+            var result = await rule.RunRule(mockPerson.Object);
 
             // Assert
             Assert.Equal(RuleMessages.None, result);
@@ -44,19 +40,19 @@ namespace Person.DomainModel.Tests.UnitTests
 
             var rule = new UniqueNameRule(mockIsUniqueName.Object);
 
-            var mockPersonModel = new Mock<IPersonModel>();
-            mockPersonModel.SetupGet(x => x.FirstName).Returns("John");
-            mockPersonModel.SetupGet(x => x.LastName).Returns("Doe");
-            mockPersonModel.Setup(x => x[It.Is<string>(s => s == nameof(mockPersonModel.Object.FirstName))].IsModified).Returns(true);
-            mockPersonModel.Setup(x => x[It.Is<string>(s => s == nameof(mockPersonModel.Object.LastName))].IsModified).Returns(true);
+            var mockPerson = new Mock<IPerson>();
+            mockPerson.SetupGet(x => x.FirstName).Returns("John");
+            mockPerson.SetupGet(x => x.LastName).Returns("Doe");
+            mockPerson.Setup(x => x[It.Is<string>(s => s == nameof(mockPerson.Object.FirstName))].IsModified).Returns(true);
+            mockPerson.Setup(x => x[It.Is<string>(s => s == nameof(mockPerson.Object.LastName))].IsModified).Returns(true);
 
             // Act
-            var result = await rule.RunRule(mockPersonModel.Object);
+            var result = await rule.RunRule(mockPerson.Object);
 
             // Assert
             Assert.NotEqual(RuleMessages.None, result);
-            Assert.Contains(result, r => r.PropertyName == nameof(mockPersonModel.Object.FirstName) && r.Message == "First and Last name combination is not unique");
-            Assert.Contains(result, r => r.PropertyName == nameof(mockPersonModel.Object.LastName) && r.Message == "First and Last name combination is not unique");
+            Assert.Contains(result, r => r.PropertyName == nameof(mockPerson.Object.FirstName) && r.Message == "First and Last name combination is not unique");
+            Assert.Contains(result, r => r.PropertyName == nameof(mockPerson.Object.LastName) && r.Message == "First and Last name combination is not unique");
         }
 
         [Fact]
@@ -66,14 +62,14 @@ namespace Person.DomainModel.Tests.UnitTests
             var mockIsUniqueName = new Mock<UniqueName.IsUniqueName>();
             var rule = new UniqueNameRule(mockIsUniqueName.Object);
 
-            var mockPersonModel = new Mock<IPersonModel>();
-            mockPersonModel.SetupGet(x => x.FirstName).Returns("Jane");
-            mockPersonModel.SetupGet(x => x.LastName).Returns("Doe");
-            mockPersonModel.Setup(x => x[It.Is<string>(s => s == nameof(mockPersonModel.Object.FirstName))].IsModified).Returns(false);
-            mockPersonModel.Setup(x => x[It.Is<string>(s => s == nameof(mockPersonModel.Object.LastName))].IsModified).Returns(false);
+            var mockPerson = new Mock<IPerson>();
+            mockPerson.SetupGet(x => x.FirstName).Returns("Jane");
+            mockPerson.SetupGet(x => x.LastName).Returns("Doe");
+            mockPerson.Setup(x => x[It.Is<string>(s => s == nameof(mockPerson.Object.FirstName))].IsModified).Returns(false);
+            mockPerson.Setup(x => x[It.Is<string>(s => s == nameof(mockPerson.Object.LastName))].IsModified).Returns(false);
 
             // Act
-            var result = await rule.RunRule(mockPersonModel.Object);
+            var result = await rule.RunRule(mockPerson.Object);
 
             // Assert
             Assert.Equal(RuleMessages.None, result);

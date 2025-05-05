@@ -1,4 +1,4 @@
-﻿namespace Person.DomainModel;
+﻿namespace DomainModel;
 
 public enum Role
 {

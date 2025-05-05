@@ -1,10 +1,8 @@
 using Moq;
-using Person.DomainModel;
-using Xunit;
 
-namespace Person.DomainModel.Tests.UnitTests
+namespace DomainModel.Tests.UnitTests
 {
-    public class PersonModelAuthTests
+    public class PersonAuthTests
     {
         [Theory]
         [InlineData(Role.None, false)]
@@ -18,10 +16,10 @@ namespace Person.DomainModel.Tests.UnitTests
             var mockUser = new Mock<IUser>();
             mockUser.SetupGet(u => u.Role).Returns(userRole);
 
-            var auth = new PersonModelAuth(mockUser.Object);
+            var auth = new PersonAuth(mockUser.Object);
 
             // Act
-            var result = auth.CanAccess();
+            var result = auth.HasAccess();
 
             // Assert
             Assert.Equal(expectedResult, result);
@@ -39,10 +37,10 @@ namespace Person.DomainModel.Tests.UnitTests
             var mockUser = new Mock<IUser>();
             mockUser.SetupGet(u => u.Role).Returns(userRole);
 
-            var auth = new PersonModelAuth(mockUser.Object);
+            var auth = new PersonAuth(mockUser.Object);
 
             // Act
-            var result = auth.CanCreate();
+            var result = auth.HasCreate();
 
             // Assert
             Assert.Equal(expectedResult, result);
@@ -60,10 +58,10 @@ namespace Person.DomainModel.Tests.UnitTests
             var mockUser = new Mock<IUser>();
             mockUser.SetupGet(u => u.Role).Returns(userRole);
 
-            var auth = new PersonModelAuth(mockUser.Object);
+            var auth = new PersonAuth(mockUser.Object);
 
             // Act
-            var result = auth.CanFetch();
+            var result = auth.HasFetch();
 
             // Assert
             Assert.Equal(expectedResult, result);
@@ -81,10 +79,10 @@ namespace Person.DomainModel.Tests.UnitTests
             var mockUser = new Mock<IUser>();
             mockUser.SetupGet(u => u.Role).Returns(userRole);
 
-            var auth = new PersonModelAuth(mockUser.Object);
+            var auth = new PersonAuth(mockUser.Object);
 
             // Act
-            var result = auth.CanInsert();
+            var result = auth.HasInsert();
 
             // Assert
             Assert.Equal(expectedResult, result);
@@ -102,10 +100,10 @@ namespace Person.DomainModel.Tests.UnitTests
             var mockUser = new Mock<IUser>();
             mockUser.SetupGet(u => u.Role).Returns(userRole);
 
-            var auth = new PersonModelAuth(mockUser.Object);
+            var auth = new PersonAuth(mockUser.Object);
 
             // Act
-            var result = auth.CanUpdate();
+            var result = auth.HasUpdate();
 
             // Assert
             Assert.Equal(expectedResult, result);
@@ -123,10 +121,10 @@ namespace Person.DomainModel.Tests.UnitTests
             var mockUser = new Mock<IUser>();
             mockUser.SetupGet(u => u.Role).Returns(userRole);
 
-            var auth = new PersonModelAuth(mockUser.Object);
+            var auth = new PersonAuth(mockUser.Object);
 
             // Act
-            var result = auth.CanDelete();
+            var result = auth.HasDelete();
 
             // Assert
             Assert.Equal(expectedResult, result);

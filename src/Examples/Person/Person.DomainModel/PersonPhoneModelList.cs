@@ -2,32 +2,32 @@
 using Neatoo.RemoteFactory;
 using Person.Ef;
 
-namespace Person.DomainModel;
+namespace DomainModel;
 
-public interface IPersonPhoneModelList : IEditListBase<IPersonPhoneModel>
+public interface IPersonPhoneList : IEditListBase<IPersonPhone>
 {
-    IPersonPhoneModel AddPhoneNumber();
-    Task RemovePhoneNumber(IPersonPhoneModel personPhoneModel);
+    IPersonPhone AddPhoneNumber();
+    Task RemovePhoneNumber(IPersonPhone personPhoneModel);
 }
 
 [Factory]
-internal class PersonPhoneModelList : EditListBase<IPersonPhoneModel>, IPersonPhoneModelList
+internal class PersonPhoneList : EditListBase<IPersonPhone>, IPersonPhoneList
 {
-    private readonly IPersonPhoneModelFactory personPhoneModelFactory;
+    private readonly IPersonPhoneFactory personPhoneModelFactory;
 
-    public PersonPhoneModelList([Service] IPersonPhoneModelFactory personPhoneModelFactory)
+    public PersonPhoneList([Service] IPersonPhoneFactory personPhoneModelFactory)
     {
         this.personPhoneModelFactory = personPhoneModelFactory;
     }
 
-    public IPersonPhoneModel AddPhoneNumber()
+    public IPersonPhone AddPhoneNumber()
     {
         var personPhoneModel = personPhoneModelFactory.Create();
         Add(personPhoneModel);
         return personPhoneModel;
     }
 
-    public async Task RemovePhoneNumber(IPersonPhoneModel personPhoneModel)
+    public async Task RemovePhoneNumber(IPersonPhone personPhoneModel)
     {
         this.Remove(personPhoneModel);
         await RunRules();
@@ -37,10 +37,10 @@ internal class PersonPhoneModelList : EditListBase<IPersonPhoneModel>, IPersonPh
     {
         await base.HandleNeatooPropertyChanged(eventArgs);
 
-        if ((eventArgs.PropertyName == nameof(IPersonPhoneModel.PhoneType) ||
-            eventArgs.PropertyName == nameof(IPersonPhoneModel.PhoneNumber)))
+        if ((eventArgs.PropertyName == nameof(IPersonPhone.PhoneType) ||
+            eventArgs.PropertyName == nameof(IPersonPhone.PhoneNumber)))
         {
-            if (eventArgs.Source is IPersonPhoneModel personPhoneModel)
+            if (eventArgs.Source is IPersonPhone personPhoneModel)
             {
                 await Task.WhenAll(this.Except([personPhoneModel])
                     .Select(c => c.RunRules()));
@@ -50,7 +50,7 @@ internal class PersonPhoneModelList : EditListBase<IPersonPhoneModel>, IPersonPh
 
     [Fetch]
     public void Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities,
-                        [Service] IPersonPhoneModelFactory personPhoneModelFactory)
+                        [Service] IPersonPhoneFactory personPhoneModelFactory)
     {
         foreach (var personPhoneEntity in personPhoneEntities)
         {
@@ -61,7 +61,7 @@ internal class PersonPhoneModelList : EditListBase<IPersonPhoneModel>, IPersonPh
 
     [Update]
     public void Update(ICollection<PersonPhoneEntity> personPhoneEntities,
-                        [Service] IPersonPhoneModelFactory personPhoneModelFactory)
+                        [Service] IPersonPhoneFactory personPhoneModelFactory)
     {
         foreach (var personPhoneModel in this.Union(DeletedList))
         {

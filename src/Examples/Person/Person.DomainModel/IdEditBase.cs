@@ -3,7 +3,7 @@ using Person.Ef;
 using System.ComponentModel;
 using System.Diagnostics;
 
-namespace Person.DomainModel;
+namespace DomainModel;
 
 public interface IIdEditBase : IEditBase
 {

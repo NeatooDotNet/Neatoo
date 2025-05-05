@@ -3,7 +3,7 @@ using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using Person.Ef;
 
-namespace Person.DomainModel;
+namespace DomainModel;
 
 
 [Factory]
@@ -19,13 +19,13 @@ public static partial class UniqueName
             return false;
         }
 
-        return !(firstName == "John" && lastName == "Delay"); // Not realistic - for Demo purposes only
+        return !(firstName == "Fail" || lastName == "Fail"); // Not realistic - for Demo purposes only
     }
 }
 
-internal interface IUniqueNameRule : IRule<IPersonModel> { }
+internal interface IUniqueNameRule : IRule<IPerson> { }
 
-internal class UniqueNameRule : AsyncRuleBase<IPersonModel>, IUniqueNameRule
+internal class UniqueNameRule : AsyncRuleBase<IPerson>, IUniqueNameRule
 {
     private UniqueName.IsUniqueName isUniqueName;
 
@@ -35,7 +35,7 @@ internal class UniqueNameRule : AsyncRuleBase<IPersonModel>, IUniqueNameRule
         AddTriggerProperties(p => p.FirstName, p => p.LastName);
     }
 
-    protected override async Task<IRuleMessages> Execute(IPersonModel t, CancellationToken? token = null)
+    protected override async Task<IRuleMessages> Execute(IPerson t, CancellationToken? token = null)
     {
         if (!t[nameof(t.FirstName)].IsModified && !t[nameof(t.LastName)].IsModified)
         {

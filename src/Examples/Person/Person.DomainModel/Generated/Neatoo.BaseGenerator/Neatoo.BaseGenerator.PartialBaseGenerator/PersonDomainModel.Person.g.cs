@@ -18,8 +18,8 @@ Method get_Email
 Method set_Email
 Method get_Notes
 Method set_Notes
-Method get_PersonPhoneModelList
-Method set_PersonPhoneModelList
+Method get_PersonPhoneList
+Method set_PersonPhoneList
 Method MapFrom
 MethodDeclarationSyntax MapFrom
 Method MapTo
@@ -47,9 +47,9 @@ Method Delete
 MethodDeclarationSyntax Delete
 
                     */
-namespace Person.DomainModel
+namespace PersonDomainModel
 {
-    public partial interface IPersonModel
+    public partial interface IPerson
     {
         string? FirstName { get; set; }
 
@@ -59,27 +59,27 @@ namespace Person.DomainModel
 
         string? Notes { get; set; }
 
-        IPersonPhoneModelList PersonPhoneModelList { get; set; }
+        IPersonPhoneList PersonPhoneList { get; set; }
     }
 
-    internal partial class PersonModel
+    internal partial class Person
     {
         public partial string? FirstName { get => Getter<string?>(); set => Setter(value); }
         public partial string? LastName { get => Getter<string?>(); set => Setter(value); }
         public partial string? Email { get => Getter<string?>(); set => Setter(value); }
         public partial string? Notes { get => Getter<string?>(); set => Setter(value); }
-        public partial IPersonPhoneModelList PersonPhoneModelList { get => Getter<IPersonPhoneModelList>(); set => Setter(value); }
+        public partial IPersonPhoneList PersonPhoneList { get => Getter<IPersonPhoneList>(); set => Setter(value); }
 
         public partial void MapModifiedTo(PersonEntity personEntity)
         {
             if (this[nameof(FirstName)].IsModified)
             {
-                personEntity.FirstName = this.FirstName ?? throw new NullReferenceException("Person.DomainModel.PersonModel.FirstName");
+                personEntity.FirstName = this.FirstName ?? throw new NullReferenceException("PersonDomainModel.Person.FirstName");
             }
 
             if (this[nameof(LastName)].IsModified)
             {
-                personEntity.LastName = this.LastName ?? throw new NullReferenceException("Person.DomainModel.PersonModel.LastName");
+                personEntity.LastName = this.LastName ?? throw new NullReferenceException("PersonDomainModel.Person.LastName");
             }
 
             if (this[nameof(Email)].IsModified)

@@ -4,25 +4,25 @@ using Microsoft.Extensions.DependencyInjection;
 using Neatoo;
 using Person.Ef;
 
-namespace Person.DomainModel.Tests.IntegrationTests
+namespace DomainModel.Tests.IntegrationTests
 {
-    public class PersonModelIntegrationTests : IDisposable
+    public class PersonIntegrationTests : IDisposable
     {
 
         private readonly PersonDbContext personContext;
         private static IServiceCollection serviceCollection;
-        private IPersonModelFactory factory;
+        private IPersonFactory factory;
         private readonly IServiceProvider serviceProvider;
 
-        public PersonModelIntegrationTests()
+        public PersonIntegrationTests()
         {
             if (serviceCollection == null)
             {
                 serviceCollection = new ServiceCollection();
                 serviceCollection.AddDbContext<PersonDbContext>(options => options.UseSqlite(new SqliteConnection("Filename=:memory:")));
                 serviceCollection.AddScoped<IPersonDbContext>(cc => cc.GetRequiredService<PersonDbContext>());
-                serviceCollection.AddNeatooServices(Neatoo.RemoteFactory.NeatooFactory.Local, typeof(PersonModel).Assembly);
-                serviceCollection.AddTransient<IPersonModelAuth, PersonModelAuth>();
+                serviceCollection.AddNeatooServices(Neatoo.RemoteFactory.NeatooFactory.Local, typeof(Person).Assembly);
+                serviceCollection.AddTransient<IPersonAuth, PersonAuth>();
                 var user = new User();
                 user.Role = Role.Delete;
                 serviceCollection.AddTransient<IUniqueNameRule, UniqueNameRule>();
@@ -35,7 +35,7 @@ namespace Person.DomainModel.Tests.IntegrationTests
             personContext = serviceProvider.GetRequiredService<PersonDbContext>();
             personContext.Database.OpenConnection();
             personContext.Database.EnsureCreated();
-            factory = serviceProvider.GetRequiredService<IPersonModelFactory>();
+            factory = serviceProvider.GetRequiredService<IPersonFactory>();
         }
 
         public void Dispose()
@@ -43,7 +43,7 @@ namespace Person.DomainModel.Tests.IntegrationTests
             personContext.Database.CloseConnection();
         }
 
-        private IPersonModel create()
+        private IPerson create()
         {
             var personModel = factory.Create();
 
@@ -52,10 +52,10 @@ namespace Person.DomainModel.Tests.IntegrationTests
             personModel.Email = "a@a.com";
             personModel.Notes = "Some notes";
 
-            var phoneNumber = personModel.PersonPhoneModelList.AddPhoneNumber();
+            var phoneNumber = personModel.PersonPhoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Home;
             phoneNumber.PhoneNumber = "1234567890";
-            phoneNumber = personModel.PersonPhoneModelList.AddPhoneNumber();
+            phoneNumber = personModel.PersonPhoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Work;
             phoneNumber.PhoneNumber = "0987654321";
 
@@ -63,7 +63,7 @@ namespace Person.DomainModel.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task PersonModelTests_Create()
+        public async Task PersonTests_Create()
         {
             var personModel = create();
 
@@ -71,7 +71,7 @@ namespace Person.DomainModel.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task PersonModelTests_Fetch()
+        public async Task PersonTests_Fetch()
         {
             var personModel = create();
 
@@ -85,15 +85,15 @@ namespace Person.DomainModel.Tests.IntegrationTests
             Assert.Equal(personModel.LastName, result.LastName);
             Assert.Equal(personModel.Email, result.Email);
             Assert.Equal(personModel.Notes, result.Notes);
-            Assert.Equal(2, result.PersonPhoneModelList.Count);
-            Assert.Equal("1234567890", result.PersonPhoneModelList[0].PhoneNumber);
-            Assert.Equal(PhoneType.Home, (PhoneType)result.PersonPhoneModelList[0].PhoneType);
-            Assert.Equal("0987654321", result.PersonPhoneModelList[1].PhoneNumber);
-            Assert.Equal(PhoneType.Work, (PhoneType)result.PersonPhoneModelList[1].PhoneType);
+            Assert.Equal(2, result.PersonPhoneList.Count);
+            Assert.Equal("1234567890", result.PersonPhoneList[0].PhoneNumber);
+            Assert.Equal(PhoneType.Home, (PhoneType)result.PersonPhoneList[0].PhoneType);
+            Assert.Equal("0987654321", result.PersonPhoneList[1].PhoneNumber);
+            Assert.Equal(PhoneType.Work, (PhoneType)result.PersonPhoneList[1].PhoneType);
         }
 
         [Fact]
-        public async Task PersonModelTests_Insert()
+        public async Task PersonTests_Insert()
         {
             var personModel = create();
 
@@ -114,22 +114,22 @@ namespace Person.DomainModel.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task PersonModelTests_Update()
+        public async Task PersonTests_Update()
         {
             var personModel = create();
 
             // Act
-            var result = (IPersonModel) await personModel.Save();
+            var result = (IPerson) await personModel.Save();
 
             result.FirstName = "Jane";
             result.LastName = "Doe";
             result.Email = "1234567890";
-            result.PersonPhoneModelList[0].PhoneNumber = "1111111111";
-            result.PersonPhoneModelList[0].PhoneType = PhoneType.Mobile;
-            result.PersonPhoneModelList[1].Delete();
+            result.PersonPhoneList[0].PhoneNumber = "1111111111";
+            result.PersonPhoneList[0].PhoneType = PhoneType.Mobile;
+            result.PersonPhoneList[1].Delete();
             result.Notes = "Updated notes";
 
-            result = (IPersonModel)await result.Save();
+            result = (IPerson)await result.Save();
 
             // Assert
             var person = personContext.Persons.Single();
@@ -166,7 +166,7 @@ namespace Person.DomainModel.Tests.IntegrationTests
         {
             var personModel = factory.Create();
 
-            var phoneNumber = personModel.PersonPhoneModelList.AddPhoneNumber();
+            var phoneNumber = personModel.PersonPhoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Home;
             phoneNumber.PhoneNumber = "1234567890";
 
@@ -174,7 +174,7 @@ namespace Person.DomainModel.Tests.IntegrationTests
 
             Assert.True(personModel.IsValid);
 
-            phoneNumber = personModel.PersonPhoneModelList.AddPhoneNumber();
+            phoneNumber = personModel.PersonPhoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Home;
             phoneNumber.PhoneNumber = "0987654321";
 
@@ -188,7 +188,7 @@ namespace Person.DomainModel.Tests.IntegrationTests
         {
             var personModel = factory.Create();
 
-            var phoneNumber = personModel.PersonPhoneModelList.AddPhoneNumber();
+            var phoneNumber = personModel.PersonPhoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Home;
             phoneNumber.PhoneNumber = "1234567890";
 
@@ -196,7 +196,7 @@ namespace Person.DomainModel.Tests.IntegrationTests
 
             Assert.True(personModel.IsValid);
 
-            phoneNumber = personModel.PersonPhoneModelList.AddPhoneNumber();
+            phoneNumber = personModel.PersonPhoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Mobile;
             phoneNumber.PhoneNumber = "1234567890";
 
