@@ -26,6 +26,7 @@ public partial class ChildObj : ValidateBase<ChildObj>
         RuleManager.AddRule(new ChildObjUniqueValue());
     }
 
+    public partial string Identifier { get; set; }
     public partial string UniqueValue { get; set; }
 
     public ParentObj? ParentObj => this.Parent as ParentObj;
@@ -86,9 +87,9 @@ public class ValidateListBaseRuleTests
     [TestInitialize]
     public void TestInitialize()
     {
-        parentObj.ChildObjList.Add(new ChildObj() { UniqueValue = "A" });
-        parentObj.ChildObjList.Add(new ChildObj() { UniqueValue = "B" });
-        parentObj.ChildObjList.Add(new ChildObj() { UniqueValue = "C" });
+        parentObj.ChildObjList.Add(new ChildObj() { Identifier = "0", UniqueValue = "A" });
+        parentObj.ChildObjList.Add(new ChildObj() { Identifier = "1", UniqueValue = "B" });
+        parentObj.ChildObjList.Add(new ChildObj() { Identifier = "2", UniqueValue = "C" });
 
         parentObj.PropertyChanged += (s, e) =>
         {

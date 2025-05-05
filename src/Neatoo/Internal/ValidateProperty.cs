@@ -43,7 +43,7 @@ public class ValidateProperty<T> : Property<T>, IValidateProperty<T>
         lock (RuleMessagesLock)
         {
             RuleMessages.RemoveAll(rm => ruleMessages.Any(rm2 => rm2.RuleIndex == rm.RuleIndex));
-            RuleMessages.AddRange(ruleMessages);
+            RuleMessages.AddRange(ruleMessages.Where(rm => rm.Message != null));
         }
         OnPropertyChanged(nameof(IsValid));
         OnPropertyChanged(nameof(IsSelfValid));

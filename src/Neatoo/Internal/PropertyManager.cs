@@ -68,7 +68,7 @@ public class PropertyManager<P> : IPropertyManager<P>, IJsonOnDeserialized
     private static MethodInfo? createPropertyMethod;
     private static ConcurrentDictionary<Type, MethodInfo> createPropertyMethodPropertyType = new();
 
-    public virtual P? GetProperty(string propertyName)
+    public virtual P GetProperty(string propertyName)
     {
         lock (_propertyBagLock)
         {
@@ -81,7 +81,7 @@ public class PropertyManager<P> : IPropertyManager<P>, IJsonOnDeserialized
 
             if (propertyInfo == null)
             {
-                return default;
+                throw new PropertyNotFoundException($"Property '{propertyName}' not found in '{GetType().Name}'");
             }
 
             if (createPropertyMethod == null)

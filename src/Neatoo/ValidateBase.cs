@@ -22,6 +22,8 @@ namespace Neatoo
         new IValidateProperty GetProperty(string propertyName);
 
         new IValidateProperty this[string propertyName] { get => GetProperty(propertyName); }
+
+        bool TryGetProperty(string propertyName, out IValidateProperty validateProperty);
     }
 
     [Factory]
@@ -126,6 +128,17 @@ namespace Neatoo
         new public IValidateProperty GetProperty(string propertyName)
         {
             return PropertyManager[propertyName];
+        }
+
+        public bool TryGetProperty(string propertyName, out IValidateProperty validateProperty)
+        {
+            if (PropertyManager.HasProperty(propertyName))
+            {
+                validateProperty = PropertyManager[propertyName];
+                return true;
+            }
+            validateProperty = null!;
+            return false;
         }
 
         new public IValidateProperty this[string propertyName] { get => GetProperty(propertyName); }

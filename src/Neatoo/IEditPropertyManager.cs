@@ -7,7 +7,4 @@ public interface IEditPropertyManager : IValidatePropertyManager<IEditProperty>
 
     IEnumerable<string> ModifiedProperties { get; }
     void MarkSelfUnmodified();
-
-    void PauseAllActions();
-    void ResumeAllActions();
 }

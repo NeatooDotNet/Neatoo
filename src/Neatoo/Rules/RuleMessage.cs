@@ -1,17 +1,27 @@
-﻿namespace Neatoo.Rules;
+﻿using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
+
+namespace Neatoo.Rules;
 
 public interface IRuleMessage
 {
     uint RuleIndex { get; internal set; }
     string PropertyName { get; }
-    string Message { get; }
+    string? Message { get; }
 }
 
 public record RuleMessage : IRuleMessage
 {
     public uint RuleIndex { get; set; }
     public string PropertyName { get; }
-    public string Message { get; }
+    public string? Message { get; }
+
+    public RuleMessage(string propertyName)
+    {
+        PropertyName = propertyName;
+    }
+
+    [JsonConstructor]
     public RuleMessage(string propertyName, string message)
     {
         PropertyName = propertyName;
@@ -28,6 +38,11 @@ public record RuleMessage : IRuleMessage
 
 public static class PropertyRuleMessageExtension
 {
+    public static IRuleMessages ClearRuleMessageForProperty(this string propertyName)
+    {
+        return new RuleMessages(new RuleMessage(propertyName));
+    }
+
     public static IRuleMessage RuleMessage(this string propertyName, string message)
     {
         return new RuleMessage(propertyName, message);

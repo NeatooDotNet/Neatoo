@@ -105,7 +105,7 @@ public class RuleManager<T> : IRuleManager<T>
         {
             if (rule.Value is T1 r)
             {
-                await rule.Value.RunRule(Target, token);
+                await RunRule(r, token);
             }
         }
     }
@@ -186,8 +186,11 @@ public class RuleManager<T> : IRuleManager<T>
                 {
                     foreach (var triggerProperty in triggerProperties)
                     {
-                        // Allowing null trigger properties that may be on a child target 
-                        Target[triggerProperty.PropertyName]?.AddMarkedBusy(uniqueExecIndex);
+                        if(Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty))
+                        {
+                            // Allowing null trigger properties that may be on a child target 
+                            targetProperty.AddMarkedBusy(uniqueExecIndex);
+                        }
                     }
                 }
 
@@ -197,15 +200,22 @@ public class RuleManager<T> : IRuleManager<T>
 
                 foreach (var propertyName in triggerProperties.Select(t => t.PropertyName).Except(ruleMessages.Select(p => p.PropertyName)))
                 {
-                    Target[propertyName]?.ClearMessagesForRule(rule.UniqueIndex);
+                    if(Target.TryGetProperty(propertyName, out var targetProperty))
+                    {
+                        // Allowing null trigger properties that may be on a child target 
+                        targetProperty.ClearMessagesForRule(rule.UniqueIndex);
+                    }
                 }
 
                 foreach (var ruleMessage in ruleMessages.GroupBy(rm => rm.PropertyName).ToDictionary(g => g.Key, g => g.ToList()))
                 {
-                    ruleMessage.Value.ForEach(rm => rm.RuleIndex = rule.UniqueIndex);
+                    if(Target.TryGetProperty(ruleMessage.Key, out var targetProperty))
+                    {
+                        ruleMessage.Value.ForEach(rm => rm.RuleIndex = rule.UniqueIndex);
 
-                    setAtLeastOneProperty = true;
-                    Target[ruleMessage.Key]?.SetMessagesForRule(ruleMessage.Value);
+                        setAtLeastOneProperty = true;
+                        targetProperty.SetMessagesForRule(ruleMessage.Value);
+                    }
                 }
 
                 Debug.Assert(setAtLeastOneProperty, "You must have at least one trigger property that is a valid property on the target");
@@ -214,8 +224,11 @@ public class RuleManager<T> : IRuleManager<T>
             {
                 foreach (var triggerProperty in triggerProperties)
                 {
-                    // Allow children to be trigger properties
-                    Target[triggerProperty.PropertyName]?.SetMessagesForRule(triggerProperty.PropertyName.RuleMessages(ex.Message).AsReadOnly());
+                    if(Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty))
+                    {
+                        // Allow children to be trigger properties
+                        targetProperty.SetMessagesForRule(triggerProperty.PropertyName.RuleMessages(ex.Message).AsReadOnly());
+                    }
                 }
 
                 throw;
@@ -224,8 +237,11 @@ public class RuleManager<T> : IRuleManager<T>
             {
                 foreach (var triggerProperty in triggerProperties)
                 {
-                    // Allowing null trigger properties that may be on a child target 
-                    Target[triggerProperty.PropertyName]?.RemoveMarkedBusy(uniqueExecIndex);
+                    if (Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty))
+                    {
+                        // Allowing null trigger properties that may be on a child target 
+                        targetProperty.RemoveMarkedBusy(uniqueExecIndex);
+                    }
                 }
             }
         }

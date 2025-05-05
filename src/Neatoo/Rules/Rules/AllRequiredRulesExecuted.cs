@@ -47,7 +47,7 @@
                 return (nameof(IValidateBase.ObjectInvalid), "Required properties not set: " + string.Join(", ", propertyNames)).AsRuleMessages();
             }
 
-            return RuleMessages.None;
+            return nameof(IValidateBase.ObjectInvalid).ClearRuleMessageForProperty();
         }
     }
 }
