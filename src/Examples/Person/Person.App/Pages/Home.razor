@@ -1,0 +1,264 @@
+﻿@page "/"
+
+@using Neatoo
+@using Neatoo.Blazor
+@using DomainModel
+@using BlazorBootstrap
+@inject IPersonFactory PersonFactory
+@inject IUser User
+
+<div class="content">
+    <style>
+        .btn {
+            margin: 5px;
+        }
+    </style>
+
+    <div class="h3">User Role:</div>
+    <div class="row">
+        <div class="row">
+            <div class="col">
+                <InputRadioGroup @bind-Value="selectedRole" class="form-check-inline">
+                    <div class="form-check-inline">
+                        <InputRadio id="create" class="form-check-input" Value="Role.None" />
+                        <label for="create" class="form-check-label">None</label>
+                    </div>
+                    <div class="form-check-inline">
+                        <InputRadio id="create" class="form-check-input" Value="Role.Create" />
+                        <label for="create" class="form-check-label">Create</label>
+                    </div>
+                    <div class="form-check-inline">
+                        <InputRadio id="fetch" class="form-check-input" Value="Role.Fetch" />
+                        <label for="fetch" class="form-check-label">Fetch</label>
+                    </div>
+                    <div class="form-check-inline">
+                        <InputRadio id="save" class="form-check-input" Value="Role.Update" />
+                        <label for="save" class="form-check-label">Update</label>
+                    </div>
+                    <div class="form-check-inline">
+                        <InputRadio id="delete" class="form-check-input" Value="Role.Delete" />
+                        <label for="delete" class="form-check-label">Delete</label>
+                    </div>
+                </InputRadioGroup>
+            </div>
+        </div>
+    </div>
+
+    <div class="h3">Person</div>
+
+    @if (Person == null)
+    {
+        <div class="h4">
+            <p>Not loaded</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(Message))
+    {
+        <div class="h4">
+            <p>@Message</p>
+        </div>
+    }
+    else
+    {
+        <EditForm EditContext="@EditContext" onsubmit="HandleSubmit">
+            <NeatooValidator />
+            <ValidationSummary />
+
+            <div>
+                <Person.App.Component.EntityPropertyTextBox EntityProperty="@Person["FirstName"]" />
+            </div>
+
+            <div>
+                <Person.App.Component.EntityPropertyTextBox EntityProperty="@Person["LastName"]" />
+            </div>
+
+            <div>
+                <Person.App.Component.EntityPropertyTextBox EntityProperty="@Person["Email"]" />
+            </div>
+
+            <div>
+                <div class="h4">Phone Numbers</div>
+                <button type="button" class="btn btn-primary" @onclick="AddPhone">+</button>
+            </div>
+
+            @foreach (var phone in Person.PersonPhoneList)
+            {
+                <div>
+                    <Dropdown Color="@phone[nameof(IPersonPhone.PhoneType)].IsValid.ToDropdownColor()">
+                        <DropdownToggleButton>@(phone.PhoneType.ToString() ?? "Phone Type")</DropdownToggleButton>
+                        <DropdownMenu>
+                            <DropdownItem @onclick="() => UpdatePhoneType(phone, PhoneType.Home)" Type="DropdownItemType.Button">Home</DropdownItem>
+                            <DropdownItem @onclick="() => UpdatePhoneType(phone, PhoneType.Mobile)" Type="DropdownItemType.Button">Mobile</DropdownItem>
+                            <DropdownItem @onclick="() => UpdatePhoneType(phone, PhoneType.Work)" Type="DropdownItemType.Button">Work</DropdownItem>
+                        </DropdownMenu>
+                    </Dropdown>
+                    <Person.App.Component.EntityPropertyTextBox EntityProperty="@phone[nameof(IPersonPhone.PhoneNumber)]" />
+                    <button type="button" class="btn btn-primary" @onclick="() => RemovePhone(phone)">-</button>
+                </div>
+                <ValidationMessage For="@(() => @phone[nameof(IPersonPhone.PhoneType)].StringValue)" class="text-danger" />
+            }
+
+            <div>
+                <Person.App.Component.EntityPropertyTextBox EntityProperty="@Person["Notes"]" />
+            </div>
+
+            <button type="submit" class="btn btn-primary" disabled="@(Person.IsBusy)">Update</button>
+            <button type="button" class="btn btn-primary" @onclick="Delete" disabled="@(!CanDelete)">Delete</button>
+        </EditForm>
+    }
+
+    <button type="button" class="btn btn-primary" @onclick="Clear">Clear</button>
+    <button type="button" class="btn btn-primary" @onclick="Create" disabled="@(!CanCreate)">Create</button>
+    <button type="button" class="btn btn-primary" @onclick="Fetch" disabled="@(!CanFetch)">Fetch</button>
+
+</div>
+
+@code {
+
+    public IPerson? Person { get; set; } = default!;
+    public EditContext EditContext { get; set; } = default!;
+    public string Message { get; set; } = "Not Loaded";
+
+    private bool CanCreate { get; set; }
+    private bool CanFetch { get; set; }
+    private bool CanUpdate { get; set; }
+    private bool CanDelete { get; set; }
+    private Role _selectedRole = Role.None;
+    public Role selectedRole
+    {
+        get => _selectedRole;
+        set
+        {
+            _selectedRole = value;
+            UserRoleChanged();
+        }
+    }
+
+    [Inject(Key = Neatoo.RemoteFactory.RemoteFactoryServices.HttpClientKey)]
+    private HttpClient httpClient { get; set; } = default!;
+
+    private void Clear()
+    {
+        NewPerson(null);
+    }
+
+
+    private async Task Create()
+    {
+        NewPerson(PersonFactory.Create());
+        Message = string.Empty;
+    }
+
+
+    private async Task Fetch()
+    {
+        Message = "Fetching...";
+        // Fetch the person data, e.g., from a database
+        NewPerson(await PersonFactory.Fetch());
+        Message = string.Empty;
+    }
+
+    private async Task Delete()
+    {
+        this.Person!.Delete();
+        await PersonFactory.Save(Person!);
+        this.Person = null;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (Person == null || !Person.IsValid || !Person.IsModified)
+            return;
+
+        Message = "Saving...";
+
+        await Person.WaitForTasks();
+        await Person.RunRules(RunRulesFlag.NotExecuted);
+
+        EditContext.Validate();
+
+        if (Person.IsSavable)
+        {
+            NewPerson(await PersonFactory.Save(Person!));
+        }
+        else
+        {
+            Message = "Not Savable";
+            await Task.Delay(2000);
+        }
+
+        Message = string.Empty;
+    }
+
+    private void NewPerson(IPerson? personModel)
+    {
+        if (Person != null)
+        {
+            Person.PropertyChanged -= PersonPropertyChanged;
+            Person.NeatooPropertyChanged -= PersonNeatooPropertyChanged;
+        }
+
+        Person = personModel;
+
+        if (Person != null)
+        {
+            EditContext = new EditContext(Person!);
+            Person.PropertyChanged += PersonPropertyChanged;
+            Person.NeatooPropertyChanged += PersonNeatooPropertyChanged;
+        }
+    }
+
+    private void PersonPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName.StartsWith("Is"))
+        {
+            InvokeAsync(() => StateHasChanged());
+            EditContext.Validate();
+        }
+    }
+
+    private Task PersonNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+    {
+        if (eventArgs.OriginalEventArgs.Property != null)
+        {
+            EditContext.NotifyFieldChanged(new FieldIdentifier(eventArgs.OriginalEventArgs.Property, nameof(IEntityProperty.StringValue)));
+        }
+
+        return Task.CompletedTask;
+    }
+
+
+
+    private void UserRoleChanged()
+    {
+        httpClient.DefaultRequestHeaders.Remove("UserRoles");
+        httpClient.DefaultRequestHeaders.Add("UserRoles", selectedRole.ToString());
+        if (selectedRole == Role.None)
+        {
+            Person = null;
+        }
+
+        User.Role = selectedRole;
+        CanCreate = PersonFactory.CanCreate();
+        CanFetch = PersonFactory.CanFetch();
+        CanUpdate = PersonFactory.CanUpdate();
+        CanDelete = PersonFactory.CanDelete();
+    }
+
+    private void AddPhone()
+    {
+        Person!.PersonPhoneList.AddPhoneNumber();
+    }
+
+    private Task RemovePhone(IPersonPhone personPhoneModel)
+    {
+        return Person!.PersonPhoneList.RemovePhoneNumber(personPhoneModel);
+    }
+
+    private void UpdatePhoneType(IPersonPhone personPhone, PhoneType phoneType)
+    {
+        personPhone.PhoneType = phoneType;
+        EditContext.NotifyFieldChanged(new FieldIdentifier(personPhone[nameof(IPersonPhone.PhoneType)], nameof(IEntityProperty.StringValue)));
+    }
+
+}

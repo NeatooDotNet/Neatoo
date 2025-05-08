@@ -24,7 +24,7 @@ namespace Neatoo.Blazor
 
         private static void ValidateModel(EditContext editContext, ValidationMessageStore messages)
         {
-            if (editContext.Model is IEditBase model)
+            if (editContext.Model is IEntityBase model)
             {
                 // Transfer broken rules of severity Error to the ValidationMessageStore
                 messages.Clear();
@@ -39,7 +39,7 @@ namespace Neatoo.Blazor
 
         private static void ValidateField(EditContext editContext, ValidationMessageStore messages, in FieldIdentifier fieldIdentifier)
         {
-            if (fieldIdentifier.Model is IEditProperty model)
+            if (fieldIdentifier.Model is IEntityProperty model)
             {
                 messages.Clear(fieldIdentifier);
                 foreach (var ruleMessage in model.PropertyMessages.Select(rm => rm.Message).Distinct())

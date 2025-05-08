@@ -17,9 +17,9 @@ public class DefaultFactory : IFactory
     {
         return new ValidateProperty<P>(propertyInfo);
     }
-    public EditProperty<P> CreateEditProperty<P>(IPropertyInfo propertyInfo)
+    public EntityProperty<P> CreateEntityProperty<P>(IPropertyInfo propertyInfo)
     {
-        return new EditProperty<P>(propertyInfo);
+        return new EntityProperty<P>(propertyInfo);
     }
 }
 

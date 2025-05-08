@@ -47,7 +47,7 @@ namespace DomainModel
         {
             var uniquePhoneNumberRule = ServiceProvider.GetRequiredService<IUniquePhoneNumberRule>();
             var uniquePhoneTypeRule = ServiceProvider.GetRequiredService<IUniquePhoneTypeRule>();
-            var services = ServiceProvider.GetRequiredService<IEditBaseServices<PersonPhone>>();
+            var services = ServiceProvider.GetRequiredService<IEntityBaseServices<PersonPhone>>();
             return DoFactoryMethodCall(FactoryOperation.Create, () => new PersonPhone(uniquePhoneNumberRule, uniquePhoneTypeRule, services));
         }
 

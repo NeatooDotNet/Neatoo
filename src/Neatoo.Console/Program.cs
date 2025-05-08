@@ -12,19 +12,19 @@ using System.Diagnostics;
 var stopwatch = new Stopwatch();
 var serviceContainer = new ServiceCollection();
 serviceContainer.AddNeatooServices(NeatooFactory.Local, Assembly.GetExecutingAssembly());
-serviceContainer.AddScoped<NeatooEditBaseAuth>();
+serviceContainer.AddScoped<NeatooEntityBaseAuth>();
 serviceContainer.AddScoped<IPrincipal>(s => CreateDefaultClaimsPrincipal());
 var serviceProvider = serviceContainer.BuildServiceProvider();
 
-var neatooFactory = serviceProvider.GetRequiredService<INeatooEditBaseFactory>();
+var neatooFactory = serviceProvider.GetRequiredService<INeatooEntityBaseFactory>();
 stopwatch.Reset();
 stopwatch.Start();
-var neatooEdit = neatooFactory.Create();
+var neatooEntity = neatooFactory.Create();
 stopwatch.Stop();
 
 
 Console.WriteLine($"Create: {stopwatch.ElapsedMilliseconds} ms");
-Console.WriteLine($"{NeatooEditBase.TotalCount}");
+Console.WriteLine($"{NeatooEntityBase.TotalCount}");
 
 static ClaimsPrincipal CreateDefaultClaimsPrincipal()
 {

@@ -3,15 +3,15 @@ using Neatoo.RemoteFactory;
 
 namespace Neatoo.UnitTest.Portal;
 
-public partial interface IPersonObject : IEditBase
+public partial interface IPersonObject : IEntityBase
 {
     public string FirstName { get; }
 }
 
 [Factory]
-internal partial class PersonObject : EditBase<PersonObject>, IPersonObject
+internal partial class PersonObject : EntityBase<PersonObject>, IPersonObject
 {
-    public PersonObject() : base(new EditBaseServices<PersonObject>(null))
+    public PersonObject() : base(new EntityBaseServices<PersonObject>(null))
     {
         FirstName = "John";
     }

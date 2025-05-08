@@ -100,7 +100,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
 
                 do
                 {
-                    if (editBaseType.IsGenericType && editBaseType.GetGenericTypeDefinition() == typeof(EditBase<>))
+                    if (editBaseType.IsGenericType && editBaseType.GetGenericTypeDefinition() == typeof(EntityBase<>))
                     {
                         editProperties = editBaseType.GetProperties().Where(p => p.SetMethod != null).ToList();
                         break;
@@ -221,9 +221,9 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
 
             writer.WriteEndArray();
 
-            if (value is IEditMetaProperties editMetaProperties)
+            if (value is IEntityMetaProperties editMetaProperties)
             {
-                var editProperties = typeof(IEditMetaProperties).GetProperties().ToList();
+                var editProperties = typeof(IEntityMetaProperties).GetProperties().ToList();
                 editProperties.AddRange(typeof(IFactorySaveMeta).GetProperties());
 
                 foreach (var p in editProperties)

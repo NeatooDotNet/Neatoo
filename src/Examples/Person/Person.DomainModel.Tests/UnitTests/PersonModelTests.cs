@@ -21,7 +21,7 @@ namespace DomainModel.Tests.UnitTests
             mockUniqueNameRule = new Mock<AsyncRuleBase<IPerson>>().As<IUniqueNameRule>();
             mockUniqueNameRule.CallBase = true;
 
-            mockPerson = new Mock<Person>(new EditBaseServices<Person>(null), mockUniqueNameRule.Object);
+            mockPerson = new Mock<Person>(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
             mockPerson.Setup(personModel => personModel.IsSavable).Returns(true);
             mockPerson.Setup(personModel => personModel.RunRules(RunRulesFlag.All, null)).Returns(Task.CompletedTask);
             mockPerson.CallBase = true;
@@ -30,7 +30,7 @@ namespace DomainModel.Tests.UnitTests
         [Fact]
         public void Adds_UniqueNameRule()
         {
-            var personModel = new Person(new EditBaseServices<Person>(null), mockUniqueNameRule.Object);
+            var personModel = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
 
             // Assert
             mockUniqueNameRule.Verify(x => x.OnRuleAdded(It.IsAny<IRuleManager>(), It.IsAny<uint>()), Times.Once);
@@ -62,7 +62,7 @@ namespace DomainModel.Tests.UnitTests
             // Arrange
             mockPersonDbContext.Setup(x => x.FindPerson(null)).ReturnsAsync((PersonEntity?)null);
 
-            var personModel = new Person(new EditBaseServices<Person>(null), mockUniqueNameRule.Object);
+            var personModel = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
 
             // Act
             var result = await personModel.Fetch(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
@@ -125,7 +125,7 @@ namespace DomainModel.Tests.UnitTests
         public async Task Delete_ShouldCallDeleteAllPersons()
         {
             // Arrange
-            var personModel = new Person(new EditBaseServices<Person>(null), mockUniqueNameRule.Object);
+            var personModel = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
 
             // Act
             await personModel.Delete(mockPersonDbContext.Object);

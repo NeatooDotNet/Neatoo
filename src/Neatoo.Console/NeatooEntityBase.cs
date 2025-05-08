@@ -1,21 +1,16 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Neatoo;
-using Neatoo.Internal;
+﻿using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.Design;
 using System.Linq;
-using System.Net.WebSockets;
-using System.Security.Claims;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Neatoo.UnitTest.Performance
+namespace Neatoo.Console
 {
+
     [Authorize<NeatooEntityBaseAuth>]
     public partial class NeatooEntityBase : ValidateBase<NeatooEntityBase>
     {
@@ -70,42 +65,4 @@ namespace Neatoo.UnitTest.Performance
             return principal.IsInRole("Admin");
         }
     }
-
-    [TestClass]
-    public class DeepTreeTests
-    {
-        private INeatooEntityBaseFactory factory;
-
-        [TestInitialize]
-        public void Initialize()
-        {
-            var serviceContainer = new ServiceCollection();
-            serviceContainer.AddNeatooServices(NeatooFactory.Local, typeof(DeepTreeTests).Assembly);
-            serviceContainer.AddScoped<NeatooEntityBaseAuth>();
-            serviceContainer.AddScoped<IPrincipal>(s => CreateDefaultClaimsPrincipal());
-            var serviceProvider = serviceContainer.BuildServiceProvider();
-
-            factory = serviceProvider.GetRequiredService<INeatooEntityBaseFactory>();
-        }
-
-        [TestMethod]
-        public void DeepTreeTests_15()
-        {
-            var deepTree = factory.Create(1);
-            Assert.AreEqual((uint) 32767, NeatooEntityBase.TotalCount);
-        }
-
-        static ClaimsPrincipal CreateDefaultClaimsPrincipal()
-        {
-            var identity = new ClaimsIdentity(new GenericIdentity("Admin"));
-
-            identity.AddClaim(new Claim("Id", Guid.NewGuid().ToString()));
-            identity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
-
-            return new ClaimsPrincipal(identity);
-        }
-    }
-
-
-
 }

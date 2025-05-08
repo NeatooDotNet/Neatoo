@@ -82,7 +82,7 @@ public static class AddNeatooServicesExtension
         // Use delegates to construct - including this confuses ASP.NET Core DI
         //services.AddTransient<IPropertyManager<IProperty>, PropertyManager<IProperty>>();
         //services.AddTransient<IValidatePropertyManager<IValidateProperty>, ValidatePropertyManager<IValidateProperty>>();
-        //services.AddTransient<IEditPropertyManager, EditPropertyManager>();
+        //services.AddTransient<IEntityPropertyManager, EntityPropertyManager>();
 
         services.AddTransient<CreatePropertyManager>(services =>
         {
@@ -100,18 +100,18 @@ public static class AddNeatooServicesExtension
             };
         });
 
-        services.AddTransient<CreateEditPropertyManager>(services =>
+        services.AddTransient<CreateEntityPropertyManager>(services =>
         {
             return (IPropertyInfoList propertyInfoList) =>
             {
-                return new EditPropertyManager(propertyInfoList, services.GetRequiredService<IFactory>());
+                return new EntityPropertyManager(propertyInfoList, services.GetRequiredService<IFactory>());
             };
         });
 
         // Simple wrapper - Always InstancePerDependency
         services.AddTransient(typeof(IBaseServices<>), typeof(BaseServices<>));
         services.AddTransient(typeof(IValidateBaseServices<>), typeof(ValidateBaseServices<>));
-        services.AddTransient(typeof(IEditBaseServices<>), typeof(EditBaseServices<>));
+        services.AddTransient(typeof(IEntityBaseServices<>), typeof(EntityBaseServices<>));
 
         services.AddTransient<IAllRequiredRulesExecuted, AllRequiredRulesExecuted>();
 

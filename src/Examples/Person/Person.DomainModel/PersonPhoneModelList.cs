@@ -4,14 +4,14 @@ using Person.Ef;
 
 namespace DomainModel;
 
-public interface IPersonPhoneList : IEditListBase<IPersonPhone>
+public interface IPersonPhoneList : IEntityListBase<IPersonPhone>
 {
     IPersonPhone AddPhoneNumber();
     Task RemovePhoneNumber(IPersonPhone personPhoneModel);
 }
 
 [Factory]
-internal class PersonPhoneList : EditListBase<IPersonPhone>, IPersonPhoneList
+internal class PersonPhoneList : EntityListBase<IPersonPhone>, IPersonPhoneList
 {
     private readonly IPersonPhoneFactory personPhoneModelFactory;
 

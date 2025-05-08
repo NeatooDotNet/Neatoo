@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Neatoo.Rules;
 
@@ -32,9 +31,7 @@ public record RuleMessage : IRuleMessage
     {
         return new RuleMessage(ruleMessage.name, ruleMessage.errorMessage);
     }
-
 }
-
 
 public static class PropertyRuleMessageExtension
 {
@@ -77,7 +74,6 @@ public interface IRuleMessages : IList<IRuleMessage>
 
 public class RuleMessages : List<IRuleMessage>, IRuleMessages
 {
-
     public RuleMessages(params RuleMessage[] ruleMessages)
     {
         this.AddRange(ruleMessages);

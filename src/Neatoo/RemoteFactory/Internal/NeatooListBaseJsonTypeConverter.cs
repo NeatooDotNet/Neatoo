@@ -148,7 +148,7 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
             }
         }
         addItems(list.GetEnumerator());
-        if (value is IEditListBase editList)
+        if (value is IEntityListBase editList)
         {
             addItems(editList.DeletedList.GetEnumerator());
         }

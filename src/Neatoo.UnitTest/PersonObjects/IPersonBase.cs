@@ -1,6 +1,6 @@
 ﻿namespace Neatoo.UnitTest.PersonObjects;
 
-public interface IPersonEdit : IPersonBase, IEditBase
+public interface IPersonEntity : IPersonBase, IEntityBase
 {
 
 }

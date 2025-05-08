@@ -12,7 +12,7 @@ public class NeatooValidator : ComponentBase
     {
         if (CurrentEditContext == null)
         {
-            throw new ArgumentNullException(nameof(CurrentEditContext), "NeatooValidator must be used inside an EditForm component.");
+            throw new ArgumentNullException(nameof(CurrentEditContext), "NeatooValidator must be used inside an EntityForm component.");
         }
 
         CurrentEditContext.AddNeatooValidation();

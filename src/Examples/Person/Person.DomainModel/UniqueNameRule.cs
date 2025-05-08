@@ -1,27 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Neatoo.RemoteFactory;
+﻿using Neatoo.RemoteFactory;
 using Neatoo.Rules;
-using Person.Ef;
 
 namespace DomainModel;
-
-
-[Factory]
-public static partial class UniqueName
-{
-    // This is executed by resolving UniqueName.IsUniqueName - a Delegate created by the Source Generator
-    // It is ALWAYS executed Remotely on the Server (for now)
-    [Execute]
-    internal static async Task<bool> _IsUniqueName(int? id, string firstName, string lastName, [Service] IPersonDbContext personContext)
-    {
-        if (await personContext.Persons.AnyAsync(x => (id == null || x.Id != id) && x.FirstName == firstName && x.LastName == lastName))
-        {
-            return false;
-        }
-
-        return !(firstName == "Fail" || lastName == "Fail"); // Not realistic - for Demo purposes only
-    }
-}
 
 internal interface IUniqueNameRule : IRule<IPerson> { }
 
@@ -29,7 +9,7 @@ internal class UniqueNameRule : AsyncRuleBase<IPerson>, IUniqueNameRule
 {
     private UniqueName.IsUniqueName isUniqueName;
 
-    public UniqueNameRule([Service] UniqueName.IsUniqueName isUniqueName) : base()
+    public UniqueNameRule(UniqueName.IsUniqueName isUniqueName) : base()
     {
         this.isUniqueName = isUniqueName;
         AddTriggerProperties(p => p.FirstName, p => p.LastName);
@@ -46,7 +26,7 @@ internal class UniqueNameRule : AsyncRuleBase<IPerson>, IUniqueNameRule
         {
             if(t.FirstName == "Delay" || t.LastName == "Delay")
             {
-                await Task.Delay(1000); // Just for show
+                await Task.Delay(5000); // Just for show
             }
 
             if (!(await isUniqueName(t.Id, t.FirstName!, t.LastName!)))

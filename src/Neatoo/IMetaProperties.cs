@@ -19,7 +19,7 @@ public interface IValidateMetaProperties : IBaseMetaProperties
     void ClearSelfMessages();
 }
 
-public interface IEditMetaProperties : IFactorySaveMeta
+public interface IEntityMetaProperties : IFactorySaveMeta
 {
     bool IsChild { get; }
     bool IsModified { get; }
