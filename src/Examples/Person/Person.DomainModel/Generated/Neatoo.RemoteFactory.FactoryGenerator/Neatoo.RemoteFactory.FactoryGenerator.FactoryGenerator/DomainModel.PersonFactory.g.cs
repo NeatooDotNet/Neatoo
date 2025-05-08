@@ -17,7 +17,7 @@ namespace DomainModel
     public interface IPersonFactory
     {
         IPerson? Create();
-        Task<IPerson?> Fetch(int id);
+        Task<IPerson?> Fetch();
         Task<IPerson?> Save(IPerson target);
         Task<Authorized<IPerson>> TrySave(IPerson target);
         Authorized CanCreate();
@@ -33,7 +33,7 @@ namespace DomainModel
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
         // Delegates
-        public delegate Task<Authorized<IPerson>> FetchDelegate(int id);
+        public delegate Task<Authorized<IPerson>> FetchDelegate();
         public delegate Task<Authorized<IPerson>> SaveDelegate(IPerson target);
         // Delegate Properties to provide Local or Remote fork in execution
         public FetchDelegate FetchProperty { get; }
@@ -80,17 +80,17 @@ namespace DomainModel
             return new Authorized<IPerson>(DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create(personPhoneModelList)));
         }
 
-        public virtual async Task<IPerson?> Fetch(int id)
+        public virtual async Task<IPerson?> Fetch()
         {
-            return (await FetchProperty(id)).Result;
+            return (await FetchProperty()).Result;
         }
 
-        public virtual async Task<Authorized<IPerson>> RemoteFetch(int id)
+        public virtual async Task<Authorized<IPerson>> RemoteFetch()
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<Authorized<IPerson>>(typeof(FetchDelegate), [id]))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<Authorized<IPerson>>(typeof(FetchDelegate), []))!;
         }
 
-        public async Task<Authorized<IPerson>> LocalFetch(int id)
+        public async Task<Authorized<IPerson>> LocalFetch()
         {
             Authorized authorized;
             IPersonAuth ipersonauth = ServiceProvider.GetRequiredService<IPersonAuth>();
@@ -109,7 +109,7 @@ namespace DomainModel
             var target = ServiceProvider.GetRequiredService<Person>();
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
             var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
-            return new Authorized<IPerson>(await DoFactoryMethodCallBoolAsync(target, FactoryOperation.Fetch, () => target.Fetch(id, personContext, personPhoneModelListFactory)));
+            return new Authorized<IPerson>(await DoFactoryMethodCallBoolAsync(target, FactoryOperation.Fetch, () => target.Fetch(personContext, personPhoneModelListFactory)));
         }
 
         public async Task<Authorized<IPerson>> LocalInsert(IPerson target)
@@ -387,7 +387,7 @@ namespace DomainModel
             services.AddScoped<FetchDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<PersonFactory>();
-                return (int id) => factory.LocalFetch(id);
+                return () => factory.LocalFetch();
             });
             services.AddScoped<SaveDelegate>(cc =>
             {
