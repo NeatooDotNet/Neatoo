@@ -1,6 +1,8 @@
 ![Lifecycle](https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/Logo_411.png)
 
-Neatoo is a DDD Aggregate Framework for .NET C#. It specializes in creating bindable Aggregate Entity Graphs for Blazor and WPF. The goal is to define the business logic once in the Aggregate and use that logic in both the UI and the Application Service. Neatoo uniquely uses Roslyn Source Generators to create readable and performant code specific to the Entities.
+Neatoo is a DDD Aggregate Framework for .NET C#. It specializes in creating bindable and serializable Aggregate Entity Graphs for Blazor and WPF.
+The goal is to define the business logic once and reuse it in both the UI and the Application Service. 
+Neatoo uniquely uses Roslyn Source Generators to create readable and performant code specific to the Entities.
 
 Features:
 * Validation
@@ -10,9 +12,10 @@ Features:
 * Factory
 * Serialization
 * Dependency Injection
-* Async/Await 
+* Async/Await
+* Live Source Generation
 
-#### With Neatoo you can create Blazor Business applications with way less code!
+#### With Neatoo you can create Blazor Business applications with much less code!
 
 [Discord](https://discord.gg/M3dVuZkG)
 [Nuget](https://www.nuget.org/packages/Neatoo)
@@ -27,7 +30,7 @@ Neatoo does not limit you to a database. Any Service can be injected to the Fact
 
 ## Video
 
-[![Introduction](https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/youtubetile.jpg)](https://youtu.be/e9zZ6d8LKkM?si=KX1sNMtkaHF57haB)
+[![Introduction](https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/youtubetile.jpg)](https://youtu.be/hvk9FcdYydQ?si=ExSVX93Iebm2TBCz)
 
 ## Example
 
@@ -51,6 +54,18 @@ Please explore [the Person example](https://github.com/NeatooDotNet/Neatoo/tree/
 This is an animation of the application in action:
 
 <img src="https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/NeatooPersonRules.gif" width=30% height=30%>
+
+## Event-Driven Architecture
+
+Neatoo is specialized to defining Aggregate Entity Graphs in a single Bounded Context. It optimizes complex screens by reusing the business logic and validation on the client and server. However, there's no reason to limit Neatoo Aggregates to an Application UI. The Aggregates can be hydrated with incoming requests or messages, perform validation, and react in the same way as if it has been a user interacting in the UI. 
+
+A DDD principal that coincides with Event-Driven Architecture are Domain Events. A possible senario is for Neatoo Aggregate would raise a Domain Event in the Factory Operation (Insert/Update/Delete). Handling the Domain Event between Bounded Contexts can be done with any number of microservice architecture like NServiceBus.
+
+A Bounded Context without a UI application may not benefit from Neatoo. There's no data-binding UI interaction so the validation does not need to be property change driven. I still strongly encourge a well-formed Domain Model with Aggregate Entity Graphs and something like Fluent Validator.
+
+While Neatoo Aggregate Entities are distributable in that they are serializable I would caution on that approach. Sharing a library with Neatoo Aggregate Entities between applications or microservices re-introduces monolith concerns like versioning and teams waiting on teams. It may be a good POC start but a system should quickly evolve to an Event-Driven Architecture. 
+
+Side note: Do not use the database to communicate between applications. This creates numerous difficulties including performance scaling and cross-team difficulties. Changing a database schema is difficult and the difficulty grows exponetially with dependency. A sign that this is being done is one application updates a record and another application has a background job to react to record changes. Event-Drive Architecture is the optimal way to architect those cases.
 
 ##  Please leave feedback!
 Thus far, this was a fun winter project. If there is any interest to use it I will continue to work on it. So, please provide feedback!
