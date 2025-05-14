@@ -16,7 +16,7 @@ Features:
 * Async/Await
 * Live Source Generation
 
-### [Full documentation at Neatoo.net](http://neatoo.net)
+### Full documentation at [Neatoo.net](http://neatoo.net)
 
 ## Neatoo Lifecycle
 
