@@ -13,7 +13,7 @@ namespace DomainModel
 {
     public static partial class UniqueName
     {
-        public delegate Task<bool> IsUniqueName(int? id, string firstName, string lastName);
+        public delegate Task<bool> IsUniqueName(Guid? id, string firstName, string lastName);
         internal static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             if (remoteLocal == NeatooFactory.Remote)
@@ -24,11 +24,11 @@ namespace DomainModel
                 });
             }
 
-            if (remoteLocal == NeatooFactory.Local || remoteLocal == NeatooFactory.Server)
+            if (remoteLocal == NeatooFactory.StandAlone || remoteLocal == NeatooFactory.Server)
             {
                 services.AddTransient<UniqueName.IsUniqueName>(cc =>
                 {
-                    return (int? id, string firstName, string lastName) =>
+                    return (Guid? id, string firstName, string lastName) =>
                     {
                         var personContext = cc.GetRequiredService<IPersonDbContext>();
                         return UniqueName._IsUniqueName(id, firstName, lastName, personContext);

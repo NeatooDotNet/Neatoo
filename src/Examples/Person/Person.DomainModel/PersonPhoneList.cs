@@ -67,7 +67,7 @@ internal class PersonPhoneList : EntityListBase<IPersonPhone>, IPersonPhoneList
         {
             PersonPhoneEntity? personPhoneEntity = null;
 
-            if (personPhoneModel.Id.HasValue)
+            if (!personPhoneModel.IsNew)
             {
                 personPhoneEntity = personPhoneEntities.Single(x => x.Id == personPhoneModel.Id);
             }

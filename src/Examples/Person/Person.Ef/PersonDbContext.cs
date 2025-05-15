@@ -11,7 +11,7 @@ public interface IPersonDbContext
 {
 	DbSet<PersonEntity> Persons { get; }
     DbSet<PersonPhoneEntity> PersonPhones { get; }
-	Task<PersonEntity> FindPerson(int? id = null);
+	Task<PersonEntity> FindPerson(Guid? id = null);
 	void AddPerson(PersonEntity personEntity);
     Task DeleteAllPersons();
 	void DeletePerson(PersonEntity person);
@@ -30,7 +30,7 @@ public class PersonDbContext : DbContext, IPersonDbContext
 		var folder = Environment.SpecialFolder.LocalApplicationData;
 		var path = Environment.GetFolderPath(folder);
 		this.DbPath = System.IO.Path.Join(path, "NeatooPerson.db");
-	}
+    }
 
 	public PersonDbContext(DbContextOptions<PersonDbContext> options)
         : base(options)
@@ -40,33 +40,23 @@ public class PersonDbContext : DbContext, IPersonDbContext
     // The following configures EF to create a Sqlite database file in the
     // special "local" folder for your platform.
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-		 => optionsBuilder.UseSqlite($"Data Source={this.DbPath}")
-		 .UseLazyLoadingProxies();
+         => optionsBuilder.UseSqlite($"Data Source={this.DbPath}")
+                            .UseLazyLoadingProxies()
+                            .LogTo(Console.WriteLine);
 
-	protected override void OnModelCreating(ModelBuilder modelBuilder)
-	{
-		base.OnModelCreating(modelBuilder);
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
 
-		// Ef doesn't use property getter/setters by default
-		// https://stackoverflow.com/questions/47382680/entity-framework-core-property-setter-is-never-called-violation-of-encapsulat
-		foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-		{
-			if (entityType.ClrType.IsAssignableTo(typeof(IdPropertyChangedBase)))
-			{
-				var property = entityType.FindProperty(nameof(IdPropertyChangedBase.Id));
-
-				property?.SetPropertyAccessMode(PropertyAccessMode.PreferFieldDuringConstruction);
-
-			}
-		}
-	}
-
-	public void AddPerson(PersonEntity personEntity)
+        modelBuilder.Entity<PersonEntity>().Property(e => e.Id).ValueGeneratedNever();
+        modelBuilder.Entity<PersonPhoneEntity>().Property(e => e.Id).ValueGeneratedNever();
+    }
+    public void AddPerson(PersonEntity personEntity)
 	{
         Persons.Add(personEntity);
     }
 
-	public Task<PersonEntity?> FindPerson(int? id = null)
+    public Task<PersonEntity?> FindPerson(Guid? id = null)
 	{
         return Persons.FirstOrDefaultAsync(_ => id == null || _.Id == id);
     }
@@ -84,46 +74,32 @@ public class PersonDbContext : DbContext, IPersonDbContext
     }
 }
 
-public class PersonEntity : IdPropertyChangedBase
+public class PersonEntity
 {
-	[Required]
+    [Key]
+    public Guid? Id { get; set; }
+
+    [Required]
 	public string FirstName { get; set; } = null!;
     [Required]
 	public string LastName { get; set; } = null!;
     public string? Email { get; set; }
 	public string? Phone { get; set; }
 	public string? Notes { get; set; }
-    public virtual IList<PersonPhoneEntity> Phones { get; } = [];
+    public virtual ICollection<PersonPhoneEntity> Phones { get; } = [];
 }
 
-public class PersonPhoneEntity : IdPropertyChangedBase
+public class PersonPhoneEntity
 {
+	[Key]
+	public Guid? Id { get; set; }
+
     [Required]
     public string PhoneNumber { get; set; } = null!;
 
-    public virtual int PersonId { get; set; }
-	public virtual int PhoneType { get; set; }
-}
+    [Required]
+    public int PhoneType { get; set; }
 
-public abstract class IdPropertyChangedBase : INotifyPropertyChanged
-{
-	private int? _id;
+    public virtual PersonEntity PersonEntity { get; set; }
 
-	[Key]
-	[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-	public int? Id
-	{
-		get => this._id;
-		set
-		{
-			this._id = value;
-			this.OnPropertyChanged();
-		}
-	}
-
-	public event PropertyChangedEventHandler? PropertyChanged;
-	protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-	{
-		PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-	}
 }

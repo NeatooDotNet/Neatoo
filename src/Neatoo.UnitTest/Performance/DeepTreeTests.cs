@@ -80,7 +80,7 @@ namespace Neatoo.UnitTest.Performance
         public void Initialize()
         {
             var serviceContainer = new ServiceCollection();
-            serviceContainer.AddNeatooServices(NeatooFactory.Local, typeof(DeepTreeTests).Assembly);
+            serviceContainer.AddNeatooServices(NeatooFactory.StandAlone, typeof(DeepTreeTests).Assembly);
             serviceContainer.AddScoped<NeatooEntityBaseAuth>();
             serviceContainer.AddScoped<IPrincipal>(s => CreateDefaultClaimsPrincipal());
             var serviceProvider = serviceContainer.BuildServiceProvider();

@@ -252,6 +252,7 @@ namespace Neatoo.BaseGenerator
                             {
                                 propertiesMatched = true;
                                 var nullException = "";
+                                var typeCast = string.Empty;
 
                                 if (classProperty.NullableAnnotation == NullableAnnotation.Annotated
                                     && parameterProperty.NullableAnnotation != NullableAnnotation.Annotated)
@@ -259,8 +260,19 @@ namespace Neatoo.BaseGenerator
                                     nullException = $"?? throw new NullReferenceException(\"{partialBaseText.ClassNamedSymbol?.ToDisplayString()}.{classProperty.Name}\")";
                                 }
 
+                                var typesMatch = classProperty.Type.ToDisplayString().Trim('?') == parameterProperty.Type.ToDisplayString().Trim('?');
+                                if (!typesMatch)
+                                {
+                                    messages.Add($"Warning: Property {classProperty.Name}'s type of {classProperty.Type.ToDisplayString()} does not match {parameterProperty.Type.ToDisplayString()}");
+                                }
+
                                 methodBuilder.AppendLine($"if (this[nameof({classProperty.Name})].IsModified){{");
-                                methodBuilder.AppendLine($"{parameterIdentifier}.{parameterProperty.Name} = this.{classProperty.Name}{nullException};");
+                                if (!typesMatch)
+                                {
+                                    typeCast = $"({parameterProperty.Type.ToDisplayString()}{(nullException.Length > 0 ? "?" : "")}) ";
+                                }
+
+                                methodBuilder.AppendLine($"{parameterIdentifier}.{parameterProperty.Name} = {typeCast} this.{classProperty.Name}{nullException};");
                                 methodBuilder.AppendLine("}");
                             }
                         }

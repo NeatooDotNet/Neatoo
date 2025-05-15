@@ -5,7 +5,6 @@ using Neatoo.RemoteFactory;
 using Person.Ef;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 
 /*
                     DO NOT MODIFY
@@ -15,6 +14,8 @@ namespace DomainModel
 {
     public partial interface IPersonPhone
     {
+        Guid? Id { get; set; }
+
         PhoneType? PhoneType { get; set; }
 
         string? PhoneNumber { get; set; }
@@ -22,7 +23,26 @@ namespace DomainModel
 
     internal partial class PersonPhone
     {
+        public partial Guid? Id { get => Getter<Guid?>(); set => Setter(value); }
         public partial PhoneType? PhoneType { get => Getter<PhoneType?>(); set => Setter(value); }
         public partial string? PhoneNumber { get => Getter<string?>(); set => Setter(value); }
+
+        public partial void MapModifiedTo(PersonPhoneEntity personPhoneEntity)
+        {
+            if (this[nameof(Id)].IsModified)
+            {
+                personPhoneEntity.Id = this.Id;
+            }
+
+            if (this[nameof(PhoneNumber)].IsModified)
+            {
+                personPhoneEntity.PhoneNumber = this.PhoneNumber ?? throw new NullReferenceException("DomainModel.PersonPhone.PhoneNumber");
+            }
+
+            if (this[nameof(PhoneType)].IsModified)
+            {
+                personPhoneEntity.PhoneType = (int? )this.PhoneType ?? throw new NullReferenceException("DomainModel.PersonPhone.PhoneType");
+            }
+        }
     }
 }

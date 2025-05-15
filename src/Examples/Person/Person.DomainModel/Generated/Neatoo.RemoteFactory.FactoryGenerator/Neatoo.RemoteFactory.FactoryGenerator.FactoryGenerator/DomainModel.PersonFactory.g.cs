@@ -6,7 +6,6 @@ using Neatoo;
 using Person.Ef;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 
 /*
 							READONLY - DO NOT EDIT!!!!

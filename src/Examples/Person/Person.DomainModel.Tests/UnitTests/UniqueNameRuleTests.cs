@@ -11,7 +11,7 @@ namespace DomainModel.Tests.UnitTests
             // Arrange
             var mockIsUniqueName = new Mock<UniqueName.IsUniqueName>();
             mockIsUniqueName
-                .Setup(x => x(It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(x => x(It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(true);
 
             var rule = new UniqueNameRule(mockIsUniqueName.Object);
@@ -35,7 +35,7 @@ namespace DomainModel.Tests.UnitTests
             // Arrange
             var mockIsUniqueName = new Mock<UniqueName.IsUniqueName>();
             mockIsUniqueName
-                .Setup(x => x(It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(x => x(It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(false);
 
             var rule = new UniqueNameRule(mockIsUniqueName.Object);
@@ -73,7 +73,7 @@ namespace DomainModel.Tests.UnitTests
 
             // Assert
             Assert.Equal(RuleMessages.None, result);
-            mockIsUniqueName.Verify(x => x(It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            mockIsUniqueName.Verify(x => x(It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
     }
 }

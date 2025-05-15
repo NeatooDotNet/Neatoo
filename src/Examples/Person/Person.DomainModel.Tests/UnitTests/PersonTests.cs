@@ -12,7 +12,7 @@ namespace DomainModel.Tests.UnitTests
         private Mock<IPersonPhoneListFactory> mockPhoneModelListFactory;
         private Mock<IUniqueNameRule> mockUniqueNameRule;
         private Mock<Person> mockPerson;
-        private Person personModel => mockPerson.Object;
+        private Person person => mockPerson.Object;
 
         public PersonTests()
         {
@@ -22,15 +22,15 @@ namespace DomainModel.Tests.UnitTests
             mockUniqueNameRule.CallBase = true;
 
             mockPerson = new Mock<Person>(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
-            mockPerson.Setup(personModel => personModel.IsSavable).Returns(true);
-            mockPerson.Setup(personModel => personModel.RunRules(RunRulesFlag.All, null)).Returns(Task.CompletedTask);
+            mockPerson.Setup(person => person.IsSavable).Returns(true);
+            mockPerson.Setup(person => person.RunRules(RunRulesFlag.All, null)).Returns(Task.CompletedTask);
             mockPerson.CallBase = true;
         }
 
         [Fact]
         public void Adds_UniqueNameRule()
         {
-            var personModel = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
+            var person = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
 
             // Assert
             mockUniqueNameRule.Verify(x => x.OnRuleAdded(It.IsAny<IRuleManager>(), It.IsAny<uint>()), Times.Once);
@@ -47,13 +47,13 @@ namespace DomainModel.Tests.UnitTests
             mockPhoneModelListFactory.Setup(x => x.Fetch(personEntity.Phones)).Returns(mockPhoneModelList.Object);
 
             // Act
-            var result = await personModel.Fetch(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
+            var result = await person.Fetch(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
 
             // Assert
             Assert.True(result);
-            Assert.Equal("John", personModel.FirstName);
-            Assert.Equal("Doe", personModel.LastName);
-            Assert.Equal(mockPhoneModelList.Object, personModel.PersonPhoneList);
+            Assert.Equal("John", person.FirstName);
+            Assert.Equal("Doe", person.LastName);
+            Assert.Equal(mockPhoneModelList.Object, person.PersonPhoneList);
         }
 
         [Fact]
@@ -62,10 +62,10 @@ namespace DomainModel.Tests.UnitTests
             // Arrange
             mockPersonDbContext.Setup(x => x.FindPerson(null)).ReturnsAsync((PersonEntity?)null);
 
-            var personModel = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
+            var person = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
 
             // Act
-            var result = await personModel.Fetch(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
+            var result = await person.Fetch(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
 
             // Assert
             Assert.False(result);
@@ -81,13 +81,13 @@ namespace DomainModel.Tests.UnitTests
             mockPersonDbContext.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(1);
 
             var mockPhoneModelList = new Mock<IPersonPhoneList>();
-            personModel.PersonPhoneList = mockPhoneModelList.Object;
+            person.PersonPhoneList = mockPhoneModelList.Object;
 
-            personModel.FirstName = "John";
-            personModel.LastName = "Doe";
+            person.FirstName = "John";
+            person.LastName = "Doe";
 
             // Act
-            var result = await personModel.Insert(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
+            var result = await person.Insert(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
 
             // Assert
             Assert.NotNull(result);
@@ -103,7 +103,7 @@ namespace DomainModel.Tests.UnitTests
             mockPerson.Setup(x => x.IsSavable).Returns(false);
 
             // Act
-            var result = await personModel.Insert(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
+            var result = await person.Insert(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
 
             // Assert
             Assert.Null(result);
@@ -115,20 +115,20 @@ namespace DomainModel.Tests.UnitTests
         public async Task Update_ShouldThrowException_WhenPersonNotFound()
         {
             // Arrange
-            mockPersonDbContext.Setup(x => x.FindPerson(1)).ReturnsAsync((PersonEntity?)null);
+            mockPersonDbContext.Setup(x => x.FindPerson(It.IsAny<Guid?>())).ReturnsAsync((PersonEntity?)null);
 
             // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => personModel.Update(mockPersonDbContext.Object, mockPhoneModelListFactory.Object));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => person.Update(mockPersonDbContext.Object, mockPhoneModelListFactory.Object));
         }
 
         [Fact]
         public async Task Delete_ShouldCallDeleteAllPersons()
         {
             // Arrange
-            var personModel = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
+            var person = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
 
             // Act
-            await personModel.Delete(mockPersonDbContext.Object);
+            await person.Delete(mockPersonDbContext.Object);
 
             // Assert
             mockPersonDbContext.Verify(x => x.DeleteAllPersons(), Times.Once);

@@ -47,7 +47,7 @@ public static class UnitTestServices
                 }
 
                 Container = CreateContainer(null);
-                LocalPortalContainer = CreateContainer(NeatooFactory.Local);
+                LocalPortalContainer = CreateContainer(NeatooFactory.StandAlone);
 
             }
 

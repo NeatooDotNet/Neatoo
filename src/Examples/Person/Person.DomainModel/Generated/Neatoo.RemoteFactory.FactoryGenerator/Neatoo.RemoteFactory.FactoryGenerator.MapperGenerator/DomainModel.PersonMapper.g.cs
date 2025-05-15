@@ -5,7 +5,6 @@ using Neatoo.RemoteFactory;
 using Person.Ef;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 
 namespace DomainModel;
 /*
@@ -16,19 +15,19 @@ internal partial class Person
 {
     public partial void MapFrom(PersonEntity personEntity)
     {
+        this.Id = personEntity.Id;
         this.FirstName = personEntity.FirstName;
         this.LastName = personEntity.LastName;
         this.Email = personEntity.Email;
         this.Notes = personEntity.Notes;
-        this.Id = personEntity.Id;
     }
 
     public partial void MapTo(PersonEntity personEntity)
     {
+        personEntity.Id = this.Id;
         personEntity.FirstName = this.FirstName ?? throw new NullReferenceException("DomainModel.Person.FirstName");
         personEntity.LastName = this.LastName ?? throw new NullReferenceException("DomainModel.Person.LastName");
         personEntity.Email = this.Email;
         personEntity.Notes = this.Notes;
-        personEntity.Id = this.Id;
     }
 }

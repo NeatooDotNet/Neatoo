@@ -6,7 +6,6 @@ using Neatoo;
 using Person.Ef;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 
 /*
 							READONLY - DO NOT EDIT!!!!
@@ -62,13 +61,13 @@ namespace DomainModel
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(personPhoneEntity));
         }
 
-        public IPersonPhone LocalUpdate(IPersonPhone target, PersonPhoneEntity personPhoneEntity)
+        public IPersonPhone LocalInsert(IPersonPhone target, PersonPhoneEntity personPhoneEntity)
         {
             var cTarget = (PersonPhone)target ?? throw new Exception("IPersonPhone must implement PersonPhone");
-            return DoFactoryMethodCall(cTarget, FactoryOperation.Insert, () => cTarget.Update(personPhoneEntity));
+            return DoFactoryMethodCall(cTarget, FactoryOperation.Insert, () => cTarget.Insert(personPhoneEntity));
         }
 
-        public IPersonPhone LocalUpdate1(IPersonPhone target, PersonPhoneEntity personPhoneEntity)
+        public IPersonPhone LocalUpdate(IPersonPhone target, PersonPhoneEntity personPhoneEntity)
         {
             var cTarget = (PersonPhone)target ?? throw new Exception("IPersonPhone must implement PersonPhone");
             return DoFactoryMethodCall(cTarget, FactoryOperation.Update, () => cTarget.Update(personPhoneEntity));
@@ -87,11 +86,11 @@ namespace DomainModel
             }
             else if (target.IsNew)
             {
-                return LocalUpdate(target, personPhoneEntity);
+                return LocalInsert(target, personPhoneEntity);
             }
             else
             {
-                return LocalUpdate1(target, personPhoneEntity);
+                return LocalUpdate(target, personPhoneEntity);
             }
         }
 
