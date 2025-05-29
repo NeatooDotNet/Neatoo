@@ -11,7 +11,7 @@ using System.Diagnostics;
 
 var stopwatch = new Stopwatch();
 var serviceContainer = new ServiceCollection();
-serviceContainer.AddNeatooServices(NeatooFactory.StandAlone, Assembly.GetExecutingAssembly());
+serviceContainer.AddNeatooServices(NeatooFactory.Logical, Assembly.GetExecutingAssembly());
 serviceContainer.AddScoped<NeatooEntityBaseAuth>();
 serviceContainer.AddScoped<IPrincipal>(s => CreateDefaultClaimsPrincipal());
 var serviceProvider = serviceContainer.BuildServiceProvider();

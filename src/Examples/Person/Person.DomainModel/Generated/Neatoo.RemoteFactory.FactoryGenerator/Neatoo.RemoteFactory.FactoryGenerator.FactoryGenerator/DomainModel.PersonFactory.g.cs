@@ -358,13 +358,13 @@ namespace DomainModel
                 return authorized;
             }
 
-            authorized = ipersonauth.HasUpdate();
+            authorized = ipersonauth.HasInsert();
             if (!authorized.HasAccess)
             {
                 return authorized;
             }
 
-            authorized = ipersonauth.HasInsert();
+            authorized = ipersonauth.HasUpdate();
             if (!authorized.HasAccess)
             {
                 return authorized;

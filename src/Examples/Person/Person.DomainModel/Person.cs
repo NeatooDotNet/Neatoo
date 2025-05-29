@@ -12,7 +12,7 @@ public partial interface IPerson : IEntityBase
 }
 
 [Factory]
-[Authorize<IPersonAuth>]
+[AuthorizeFactory<IPersonAuth>]
 internal partial class Person : EntityBase<Person>, IPerson
 {
     public Person(IEntityBaseServices<Person> editBaseServices,

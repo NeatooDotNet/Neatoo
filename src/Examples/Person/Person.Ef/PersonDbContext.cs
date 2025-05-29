@@ -41,8 +41,7 @@ public class PersonDbContext : DbContext, IPersonDbContext
     // special "local" folder for your platform.
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
          => optionsBuilder.UseSqlite($"Data Source={this.DbPath}")
-                            .UseLazyLoadingProxies()
-                            .LogTo(Console.WriteLine);
+                            .UseLazyLoadingProxies();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -24,7 +24,7 @@ namespace DomainModel
                 });
             }
 
-            if (remoteLocal == NeatooFactory.StandAlone || remoteLocal == NeatooFactory.Server)
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
             {
                 services.AddTransient<UniqueName.IsUniqueName>(cc =>
                 {

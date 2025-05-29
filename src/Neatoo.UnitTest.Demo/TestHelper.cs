@@ -142,15 +142,15 @@ public sealed class AuthorizeAttribute<T> : Attribute
 [System.AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
 public sealed class AuthorizeAttribute : Attribute
 {
-	public AuthorizeOperation Operation { get; }
-	public AuthorizeAttribute(AuthorizeOperation operation)
+	public AuthorizeFactoryOperation Operation { get; }
+	public AuthorizeAttribute(AuthorizeFactoryOperation operation)
 	{
 		this.Operation = operation;
 	}
 }
 
 [Flags]
-public enum AuthorizeOperation
+public enum AuthorizeFactoryOperation
 {
 	Create = 1,
 	Fetch = 2,
@@ -165,12 +165,12 @@ public enum AuthorizeOperation
 public enum FactoryOperation
 {
 	None = 0,
-	Execute = AuthorizeOperation.Read,
-	Create = AuthorizeOperation.Create | AuthorizeOperation.Read,
-	Fetch = AuthorizeOperation.Fetch | AuthorizeOperation.Read,
-	Insert = AuthorizeOperation.Insert | AuthorizeOperation.Write,
-	Update = AuthorizeOperation.Update | AuthorizeOperation.Write,
-	Delete = AuthorizeOperation.Delete | AuthorizeOperation.Write
+	Execute = AuthorizeFactoryOperation.Read,
+	Create = AuthorizeFactoryOperation.Create | AuthorizeFactoryOperation.Read,
+	Fetch = AuthorizeFactoryOperation.Fetch | AuthorizeFactoryOperation.Read,
+	Insert = AuthorizeFactoryOperation.Insert | AuthorizeFactoryOperation.Write,
+	Update = AuthorizeFactoryOperation.Update | AuthorizeFactoryOperation.Write,
+	Delete = AuthorizeFactoryOperation.Delete | AuthorizeFactoryOperation.Write
 }
 
 

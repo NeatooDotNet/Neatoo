@@ -4,17 +4,17 @@ namespace DomainModel;
 
 public interface IPersonAuth
 {
-	[Authorize(AuthorizeOperation.Read | AuthorizeOperation.Write)]
+	[AuthorizeFactory(AuthorizeFactoryOperation.Read | AuthorizeFactoryOperation.Write)]
 	public bool HasAccess();
-    [Authorize(AuthorizeOperation.Create)]
+    [AuthorizeFactory(AuthorizeFactoryOperation.Create)]
     bool HasCreate();
-    [Authorize(AuthorizeOperation.Fetch)]
+    [AuthorizeFactory(AuthorizeFactoryOperation.Fetch)]
     bool HasFetch();
-    [Authorize(AuthorizeOperation.Update)]
+    [AuthorizeFactory(AuthorizeFactoryOperation.Update)]
     bool HasUpdate();
-    [Authorize(AuthorizeOperation.Insert)]
+    [AuthorizeFactory(AuthorizeFactoryOperation.Insert)]
     bool HasInsert();
-    [Authorize(AuthorizeOperation.Delete)]
+    [AuthorizeFactory(AuthorizeFactoryOperation.Delete)]
     bool HasDelete();
 }
 

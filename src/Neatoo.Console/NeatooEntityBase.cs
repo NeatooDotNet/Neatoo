@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Neatoo.Console
 {
 
-    [Authorize<NeatooEntityBaseAuth>]
+    [AuthorizeFactory<NeatooEntityBaseAuth>]
     public partial class NeatooEntityBase : ValidateBase<NeatooEntityBase>
     {
         public static uint TotalCount = 0;
@@ -59,7 +59,7 @@ namespace Neatoo.Console
             this.principal = principal;
         }
 
-        [Authorize(AuthorizeOperation.Create)]
+        [AuthorizeFactory(AuthorizeFactoryOperation.Create)]
         public bool CanCreate()
         {
             return principal.IsInRole("Admin");

@@ -22,7 +22,7 @@
 //    public int Criteria { get; set; }
 //    public bool ExecuteCreateCalled { get; set; }
 
-//    [Execute(AuthorizeOperation.Create)]
+//    [Execute(AuthorizeFactoryOperation.Create)]
 //    public async Task<AuthorizationRuleResult> ExecuteCreate()
 //    {
 //        await Task.Delay(10);
@@ -30,7 +30,7 @@
 //        return AuthorizationRuleResult.AccessGranted();
 //    }
 
-//    [Execute(AuthorizeOperation.Create)]
+//    [Execute(AuthorizeFactoryOperation.Create)]
 //    public async Task<AuthorizationRuleResult> ExecuteCreate(int criteria)
 //    {
 //        await Task.Delay(10);
@@ -41,7 +41,7 @@
 
 //    public bool ExecuteFetchCalled { get; set; }
 
-//    [Execute(AuthorizeOperation.Fetch)]
+//    [Execute(AuthorizeFactoryOperation.Fetch)]
 //    public async Task<AuthorizationRuleResult> ExecuteFetch()
 //    {
 //        await Task.Delay(10);
@@ -49,7 +49,7 @@
 //        return AuthorizationRuleResult.AccessGranted();
 //    }
 
-//    [Execute(AuthorizeOperation.Fetch)]
+//    [Execute(AuthorizeFactoryOperation.Fetch)]
 //    public async Task<AuthorizationRuleResult> ExecuteFetch(int criteria)
 //    {
 //        await Task.Delay(10);
@@ -60,7 +60,7 @@
 
 //    public bool ExecuteUpdateCalled { get; set; }
 
-//    [Execute(AuthorizeOperation.Update)]
+//    [Execute(AuthorizeFactoryOperation.Update)]
 //    public async Task<AuthorizationRuleResult> ExecuteUpdate()
 //    {
 //        await Task.Delay(10);
@@ -70,7 +70,7 @@
 
 //    public bool ExecuteDeleteCalled { get; set; }
 
-//    [Execute(AuthorizeOperation.Delete)]
+//    [Execute(AuthorizeFactoryOperation.Delete)]
 //    public async Task<AuthorizationRuleResult> ExecuteDelete()
 //    {
 //        await Task.Delay(10);

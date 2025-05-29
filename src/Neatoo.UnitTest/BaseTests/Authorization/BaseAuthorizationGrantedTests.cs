@@ -22,14 +22,14 @@
 //    public Guid? GuidCriteria { get; set; }
 //    public bool ExecuteCreateCalled { get; set; }
 
-//    [Execute(AuthorizeOperation.Create)]
+//    [Execute(AuthorizeFactoryOperation.Create)]
 //    public AuthorizationRuleResult ExecuteCreate()
 //    {
 //        ExecuteCreateCalled = true;
 //        return AuthorizationRuleResult.AccessGranted();
 //    }
 
-//    [Execute(AuthorizeOperation.Create)]
+//    [Execute(AuthorizeFactoryOperation.Create)]
 //    public AuthorizationRuleResult ExecuteCreate(int criteria)
 //    {
 //        ExecuteCreateCalled = true;
@@ -37,7 +37,7 @@
 //        return AuthorizationRuleResult.AccessGranted();
 //    }
 
-//    [Execute(AuthorizeOperation.Create)]
+//    [Execute(AuthorizeFactoryOperation.Create)]
 //    public AuthorizationRuleResult ExecuteCreate(int intCriteria, Guid? guidCriteria)
 //    {
 //        ExecuteCreateCalled = true;
@@ -47,14 +47,14 @@
 //    }
 
 //    public bool ExecuteFetchCalled { get; set; }
-//    [Execute(AuthorizeOperation.Fetch)]
+//    [Execute(AuthorizeFactoryOperation.Fetch)]
 //    public AuthorizationRuleResult ExecuteFetch()
 //    {
 //        ExecuteFetchCalled = true;
 //        return AuthorizationRuleResult.AccessGranted();
 //    }
 
-//    [Execute(AuthorizeOperation.Fetch)]
+//    [Execute(AuthorizeFactoryOperation.Fetch)]
 //    public AuthorizationRuleResult ExecuteFetch(int criteria)
 //    {
 //        ExecuteFetchCalled = true;
@@ -63,7 +63,7 @@
 //    }
 
 //    public bool ExecuteUpdateCalled { get; set; }
-//    [Execute(AuthorizeOperation.Update)]
+//    [Execute(AuthorizeFactoryOperation.Update)]
 //    public AuthorizationRuleResult ExecuteUpdate()
 //    {
 //        ExecuteUpdateCalled = true;
@@ -71,7 +71,7 @@
 //    }
 
 //    public bool ExecuteDeleteCalled { get; set; }
-//    [Execute(AuthorizeOperation.Delete)]
+//    [Execute(AuthorizeFactoryOperation.Delete)]
 //    public AuthorizationRuleResult ExecuteDelete()
 //    {
 //        ExecuteDeleteCalled = true;

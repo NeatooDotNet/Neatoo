@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Neatoo.UnitTest.Performance
 {
-    [Authorize<NeatooEntityBaseAuth>]
+    [AuthorizeFactory<NeatooEntityBaseAuth>]
     public partial class NeatooEntityBase : ValidateBase<NeatooEntityBase>
     {
         public static uint TotalCount = 0;
@@ -64,7 +64,7 @@ namespace Neatoo.UnitTest.Performance
             this.principal = principal;
         }
 
-        [Authorize(AuthorizeOperation.Create)]
+        [AuthorizeFactory(AuthorizeFactoryOperation.Create)]
         public bool CanCreate()
         {
             return principal.IsInRole("Admin");
@@ -80,7 +80,7 @@ namespace Neatoo.UnitTest.Performance
         public void Initialize()
         {
             var serviceContainer = new ServiceCollection();
-            serviceContainer.AddNeatooServices(NeatooFactory.StandAlone, typeof(DeepTreeTests).Assembly);
+            serviceContainer.AddNeatooServices(NeatooFactory.Logical, typeof(DeepTreeTests).Assembly);
             serviceContainer.AddScoped<NeatooEntityBaseAuth>();
             serviceContainer.AddScoped<IPrincipal>(s => CreateDefaultClaimsPrincipal());
             var serviceProvider = serviceContainer.BuildServiceProvider();
