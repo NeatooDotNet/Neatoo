@@ -1,20 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <IsPackable>false</IsPackable>
-	  <NoWarn>CS8602,CA2007</NoWarn>
-  </PropertyGroup>
+	<PropertyGroup>
+		<IsPackable>false</IsPackable>
+		<NoWarn>CS8602,CA2007</NoWarn>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
-    <PackageReference Include="Moq" Version="4.20.72" />
-    <PackageReference Include="MSTest.TestAdapter" Version="3.9.1" />
-    <PackageReference Include="MSTest.TestFramework" Version="3.9.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
+		<PackageReference Include="Moq" Version="4.20.72" />
+		<PackageReference Include="MSTest.TestAdapter" Version="3.9.1" />
+		<PackageReference Include="MSTest.TestFramework" Version="3.9.1" />
+		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Neatoo.BaseGenerator\Neatoo.BaseGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Neatoo\Neatoo.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Neatoo.BaseGenerator\Neatoo.BaseGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\Neatoo\Neatoo.csproj" />
+	</ItemGroup>
 
 </Project>
