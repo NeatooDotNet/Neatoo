@@ -8,6 +8,7 @@ public interface IEntityObjectList : IEntityListBase<IEntityObject>
 
 }
 
+[Factory]
 public class EntityObjectList : EntityListBase<IEntityObject>, IEntityObjectList
 {
 

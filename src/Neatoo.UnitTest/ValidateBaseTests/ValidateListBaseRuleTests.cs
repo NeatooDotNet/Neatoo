@@ -1,10 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Neatoo.Internal;
+using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System.ComponentModel;
 
 namespace Neatoo.UnitTest.ValidateBaseTests.ValidateListBaseRule;
 
+[Factory]
 public partial class ParentObj : ValidateBase<ParentObj>
 {
     public ParentObj() : base(new ValidateBaseServices<ParentObj>())
@@ -19,6 +21,7 @@ public partial class ParentObj : ValidateBase<ParentObj>
     public partial ChildObjList ChildObjList { get; set; }
 }
 
+[Factory]
 public partial class ChildObj : ValidateBase<ChildObj>
 {
     public ChildObj() : base(new ValidateBaseServices<ChildObj>())

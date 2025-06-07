@@ -1,4 +1,5 @@
 ﻿using Neatoo.Internal;
+using Neatoo.RemoteFactory;
 
 namespace Neatoo.UnitTest.BaseTests.Objects;
 
@@ -19,6 +20,7 @@ public interface IBaseObject : IBase
     IBaseObjectList? ChildList { get; set; }
 }
 
+[Factory]
 public class BaseObject : Base<BaseObject>, IBaseObject
 {
     public BaseObject() : base(new BaseServices<BaseObject>()) { }

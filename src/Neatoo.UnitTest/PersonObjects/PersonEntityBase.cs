@@ -2,7 +2,7 @@
 
 namespace Neatoo.UnitTest.PersonObjects;
 
-
+[Factory]
 public abstract partial class PersonEntityBase<T> : EntityBase<T>, IPersonBase
     where T : PersonEntityBase<T>
 {

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Person.DomainModel\Person.DomainModel.csproj" />
+    <ProjectReference Include="..\Person.Ef\Person.Ef.csproj" />
   </ItemGroup>
 
 </Project>

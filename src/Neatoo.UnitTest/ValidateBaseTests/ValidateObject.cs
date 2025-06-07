@@ -12,6 +12,7 @@ public interface IValidateObject : IPersonBase
     void ResumeAllActions();
 }
 
+[Factory]
 internal partial class ValidateObject : PersonValidateBase<ValidateObject>, IValidateObject
 {
     public IShortNameRule ShortNameRule { get; }

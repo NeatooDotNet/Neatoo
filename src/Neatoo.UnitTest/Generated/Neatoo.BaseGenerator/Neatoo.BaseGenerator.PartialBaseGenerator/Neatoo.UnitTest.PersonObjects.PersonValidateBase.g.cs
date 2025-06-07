@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using Neatoo;
 using Microsoft.Extensions.DependencyInjection;
+using Neatoo.RemoteFactory;
 
 /*
                     DO NOT MODIFY

@@ -7,11 +7,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<BlazorWebAssemblyLazyLoad Include="Microsoft.EntityFrameworkCore.dll" />
-		<BlazorWebAssemblyLazyLoad Include="Microsoft.EntityFrameworkCore.Relational.dll" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <ProjectReference Include="..\Person.DomainModel\Person.DomainModel.csproj" />
 	</ItemGroup>
 

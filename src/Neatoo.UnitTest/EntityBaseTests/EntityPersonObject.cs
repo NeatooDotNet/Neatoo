@@ -12,6 +12,7 @@ public partial interface IEntityPerson : IPersonEntity
     void MarkDeleted();
 }
 
+[Factory]
 public partial class EntityPerson : PersonEntityBase<EntityPerson>, IEntityPerson
 {
     public EntityPerson() : base(new EntityBaseServices<EntityPerson>(null))

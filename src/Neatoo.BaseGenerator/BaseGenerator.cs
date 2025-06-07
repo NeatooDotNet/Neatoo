@@ -10,21 +10,27 @@ namespace Neatoo.BaseGenerator
     [Generator(LanguageNames.CSharp)]
     public class PartialBaseGenerator : IIncrementalGenerator
     {
-        public void Initialize(IncrementalGeneratorInitializationContext context) =>
-            // Register the source output
-            context.RegisterSourceOutput(context.SyntaxProvider.CreateSyntaxProvider(
+        public void Initialize(IncrementalGeneratorInitializationContext context)
+        {
+
+            var classesToGenerate = context.SyntaxProvider.ForAttributeWithMetadataName("Neatoo.RemoteFactory.FactoryAttribute",
                 predicate: static (s, _) => IsSyntaxTargetForGeneration(s),
-                transform: static (ctx, _) => GetSemanticTargetForGeneration(ctx))
-                .Where(static m => m is not null),
+                transform: static (ctx, _) => PartialBaseGenerator.GetSemanticTargetForGeneration(ctx));
+
+            context.RegisterSourceOutput(classesToGenerate,
                 static (ctx, source) => Execute(ctx, source!.Value.classDeclaration, source.Value.semanticModel));
 
-        public static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax classDeclarationSyntax;
+        }
 
-        public static (ClassDeclarationSyntax classDeclaration, SemanticModel semanticModel)? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+        public static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax classDeclarationSyntax
+                    && classDeclarationSyntax.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword))
+                    && classDeclarationSyntax.Members.OfType<PropertyDeclarationSyntax>().Any(p => p.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)));
+
+        public static (ClassDeclarationSyntax classDeclaration, SemanticModel semanticModel)? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context)
         {
             try
             {
-                var classDeclaration = (ClassDeclarationSyntax)context.Node;
+                var classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
 
                 var classNamedTypeSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
 

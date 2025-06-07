@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 namespace Neatoo.Console
 {
 
+    [Factory]
     [AuthorizeFactory<NeatooEntityBaseAuth>]
     public partial class NeatooEntityBase : ValidateBase<NeatooEntityBase>
     {

@@ -17,6 +17,7 @@ public partial interface IEntityObject : IEntityBase
     void MarkDeleted();
 }
 
+[Factory]
 public partial class EntityObject : EntityBase<EntityObject>, IEntityObject
 {
     [Create]

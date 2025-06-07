@@ -13,6 +13,7 @@ public interface IValidateAsyncObject : IPersonBase
     List<IValidateProperty> Properties => PropertyManager.GetProperties.Cast<IValidateProperty>().ToList();
 }
 
+[Factory]
 internal class ValidateAsyncObject : PersonValidateBase<ValidateAsyncObject>, IValidateAsyncObject
 {
     public IShortNameAsyncRule ShortNameRule { get; }

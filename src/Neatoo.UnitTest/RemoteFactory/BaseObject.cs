@@ -13,6 +13,7 @@ public interface IBaseObject : IBase
     bool FetchCalled { get; set; }
 }
 
+[Factory]
 public class BaseObject : Base<BaseObject>, IBaseObject
 {
     public BaseObject(IBaseServices<BaseObject> baseServices) : base(baseServices)

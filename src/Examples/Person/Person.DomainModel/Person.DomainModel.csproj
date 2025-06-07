@@ -20,7 +20,7 @@
 	  <ProjectReference Include="..\..\..\Neatoo.BaseGenerator\Neatoo.BaseGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	  <ProjectReference Include="..\..\..\Neatoo.Blazor\Neatoo.Blazor.csproj" />
 	  <ProjectReference Include="..\..\..\Neatoo\Neatoo.csproj" />
-	  <ProjectReference Include="..\Person.Ef\Person.Ef.csproj" />
+	  <ProjectReference Include="..\Person.Ef\Person.Ef.csproj" PrivateAssets="all" />
 	</ItemGroup>
 
 </Project>

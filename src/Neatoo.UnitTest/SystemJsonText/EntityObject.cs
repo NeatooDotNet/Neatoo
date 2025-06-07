@@ -21,7 +21,7 @@ public interface IEntityObject : IEntityBase
     void MarkDeleted();
 }
 
-
+[Factory]
 public partial class EntityObject : EntityBase<EntityObject>, IEntityObject
 {
     public EntityObject(IEntityBaseServices<EntityObject> services) : base(services)

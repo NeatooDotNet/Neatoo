@@ -16,6 +16,8 @@ using System.Threading.Tasks;
 
 namespace Neatoo.UnitTest.Performance
 {
+
+    [Factory]
     [AuthorizeFactory<NeatooEntityBaseAuth>]
     public partial class NeatooEntityBase : ValidateBase<NeatooEntityBase>
     {

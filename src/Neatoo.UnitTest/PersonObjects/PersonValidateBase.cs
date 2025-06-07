@@ -1,5 +1,8 @@
-﻿namespace Neatoo.UnitTest.PersonObjects;
+﻿using Neatoo.RemoteFactory;
 
+namespace Neatoo.UnitTest.PersonObjects;
+
+[Factory]
 public abstract partial class PersonValidateBase<T> : ValidateBase<T>, IPersonBase
     where T : PersonValidateBase<T>
 {
