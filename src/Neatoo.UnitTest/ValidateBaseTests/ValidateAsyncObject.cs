@@ -41,7 +41,7 @@ internal class ValidateAsyncObject : PersonValidateBase<ValidateAsyncObject>, IV
     public string ThrowException { get => Getter<string>(); set => Setter(value); }
 
     [Fetch]
-    public async Task Fetch(PersonDto person,[Service] ValidateAsyncObjectFactory portal,[Service] IReadOnlyList<PersonDto> personTable)
+    public async Task Fetch(PersonDto person, [Service] IValidateAsyncObjectFactory portal, [Service] IReadOnlyList<PersonDto> personTable)
     {
         base.FromDto(person);
 
@@ -57,7 +57,6 @@ internal class ValidateAsyncObject : PersonValidateBase<ValidateAsyncObject>, IV
 
 }
 
-
 public interface IValidateAsyncObjectList : IValidateListBase<IValidateAsyncObject>
 {
     void Add(IValidateAsyncObject o);
@@ -65,10 +64,5 @@ public interface IValidateAsyncObjectList : IValidateListBase<IValidateAsyncObje
 
 public class ValidateAsyncObjectList : ValidateListBase<IValidateAsyncObject>, IValidateAsyncObjectList
 {
-
-    public ValidateAsyncObjectList() : base()
-    {
-
-    }
-
+    public ValidateAsyncObjectList() : base() { }
 }

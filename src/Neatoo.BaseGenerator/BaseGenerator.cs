@@ -12,14 +12,12 @@ namespace Neatoo.BaseGenerator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-
             var classesToGenerate = context.SyntaxProvider.ForAttributeWithMetadataName("Neatoo.RemoteFactory.FactoryAttribute",
                 predicate: static (s, _) => IsSyntaxTargetForGeneration(s),
                 transform: static (ctx, _) => PartialBaseGenerator.GetSemanticTargetForGeneration(ctx));
 
             context.RegisterSourceOutput(classesToGenerate,
                 static (ctx, source) => Execute(ctx, source!.Value.classDeclaration, source.Value.semanticModel));
-
         }
 
         public static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax classDeclarationSyntax
@@ -69,7 +67,6 @@ namespace Neatoo.BaseGenerator
 
         internal class PartialBaseText
         {
-
             public ClassDeclarationSyntax ClassDeclarationSyntax { get; set; } = null!;
             public INamedTypeSymbol ClassNamedSymbol { get; set; } = null!;
             public SemanticModel SemanticModel { get; set; } = null!;
@@ -115,7 +112,6 @@ namespace Neatoo.BaseGenerator
 
                     AddPartialProperties(partialText);
                     AddMapModifiedToMethod(partialText, messages);
-
 
                     var interfaceSource = "";
 
@@ -169,7 +165,6 @@ namespace Neatoo.BaseGenerator
 
         internal static void AddPartialProperties(PartialBaseText partialBaseText)
         {
-
             var interfaceSyntax = partialBaseText.ClassNamedSymbol.Interfaces.FirstOrDefault(i => i.Name == $"I{partialBaseText.ClassNamedSymbol.Name}");
             List<string> interfaceProperties = [];
 
