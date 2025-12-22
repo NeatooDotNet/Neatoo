@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using MudBlazor.Services;
 using Neatoo;
 using Neatoo.RemoteFactory;
 using DomainModel;
@@ -12,7 +13,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-builder.Services.AddBlazorBootstrap();
+builder.Services.AddMudServices();
 
 // Incorporate Neatoo (which includes RemoteFactory)
 builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IPerson).Assembly);

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "WebSearch",
+      "WebFetch(domain:mudblazor.com)",
+      "Bash(dotnet build:*)",
+      "Bash(Get-ChildItem -Path \"c:\\\\src\\\\neatoodotnet\\\\Neatoo\\\\src\\\\Neatoo.Blazor.MudNeatoo\\\\bin\\\\Release\" -Recurse -Filter \"*.nupkg\")",
+      "Bash(Select-Object FullName)"
+    ]
+  }
+}

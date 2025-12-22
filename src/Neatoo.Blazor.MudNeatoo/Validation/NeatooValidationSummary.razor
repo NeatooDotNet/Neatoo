@@ -1,0 +1,24 @@
+@using MudBlazor
+@using Neatoo
+
+@if (HasErrors)
+{
+    <MudAlert Severity="global::MudBlazor.Severity.Error"
+              Variant="@Variant"
+              Dense="@Dense"
+              Class="@Class"
+              Elevation="@Elevation">
+        @if (ShowHeader)
+        {
+            <MudText Typo="global::MudBlazor.Typo.subtitle2" Class="mb-2">@HeaderText</MudText>
+        }
+        <ul class="pl-4 mb-0" style="list-style-type: disc;">
+            @foreach (var message in ErrorMessages)
+            {
+                <li>
+                    <MudText Typo="global::MudBlazor.Typo.body2">@message</MudText>
+                </li>
+            }
+        </ul>
+    </MudAlert>
+}

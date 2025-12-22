@@ -1,123 +1,113 @@
-﻿@page "/"
+@page "/"
 
 @using Neatoo
-@using Neatoo.Blazor
 @using DomainModel
-@using BlazorBootstrap
 @inject IPersonFactory PersonFactory
 @inject IUser User
 
-<div class="content">
-    <style>
-        .btn {
-            margin: 5px;
+<MudContainer MaxWidth="MaxWidth.Medium">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">User Role:</MudText>
+
+        <MudRadioGroup @bind-Value="selectedRole">
+            <MudRadio Value="Role.None" Color="Color.Primary">None</MudRadio>
+            <MudRadio Value="Role.Create" Color="Color.Primary">Create</MudRadio>
+            <MudRadio Value="Role.Fetch" Color="Color.Primary">Fetch</MudRadio>
+            <MudRadio Value="Role.Update" Color="Color.Primary">Update</MudRadio>
+            <MudRadio Value="Role.Delete" Color="Color.Primary">Delete</MudRadio>
+        </MudRadioGroup>
+
+        <MudText Typo="Typo.h4" Class="my-4">Person</MudText>
+
+        @if (Person == null)
+        {
+            <MudText Typo="Typo.body1">Not loaded</MudText>
         }
-    </style>
+        else if (!string.IsNullOrEmpty(Message))
+        {
+            <MudText Typo="Typo.body1">@Message</MudText>
+        }
+        else
+        {
+            <MudForm @ref="form" @bind-IsValid="@formIsValid">
+                <!-- Page-Level Validation Summary -->
+                <NeatooValidationSummary Entity="@Person" Class="mb-4" />
 
-    <div class="h3">User Role:</div>
-    <div class="row">
-        <div class="row">
-            <div class="col">
-                <InputRadioGroup @bind-Value="selectedRole" class="form-check-inline">
-                    <div class="form-check-inline">
-                        <InputRadio id="create" class="form-check-input" Value="Role.None" />
-                        <label for="create" class="form-check-label">None</label>
-                    </div>
-                    <div class="form-check-inline">
-                        <InputRadio id="create" class="form-check-input" Value="Role.Create" />
-                        <label for="create" class="form-check-label">Create</label>
-                    </div>
-                    <div class="form-check-inline">
-                        <InputRadio id="fetch" class="form-check-input" Value="Role.Fetch" />
-                        <label for="fetch" class="form-check-label">Fetch</label>
-                    </div>
-                    <div class="form-check-inline">
-                        <InputRadio id="save" class="form-check-input" Value="Role.Update" />
-                        <label for="save" class="form-check-label">Update</label>
-                    </div>
-                    <div class="form-check-inline">
-                        <InputRadio id="delete" class="form-check-input" Value="Role.Delete" />
-                        <label for="delete" class="form-check-label">Delete</label>
-                    </div>
-                </InputRadioGroup>
-            </div>
-        </div>
-    </div>
+                <MudNeatooTextField T="string" EntityProperty="@Person["FirstName"]" Class="mb-3" />
 
-    <div class="h3">Person</div>
+                <MudNeatooTextField T="string" EntityProperty="@Person["LastName"]" Class="mb-3" />
 
-    @if (Person == null)
-    {
-        <div class="h4">
-            <p>Not loaded</p>
-        </div>
-    }
-    else if (!string.IsNullOrEmpty(Message))
-    {
-        <div class="h4">
-            <p>@Message</p>
-        </div>
-    }
-    else
-    {
-        <EditForm EditContext="@EditContext" onsubmit="HandleSubmit">
-            <NeatooValidator />
-            <ValidationSummary />
+                <MudNeatooTextField T="string" EntityProperty="@Person["Email"]" Class="mb-3" />
 
-            <div>
-                <Person.App.Component.EntityPropertyTextBox EntityProperty="@Person["FirstName"]" />
-            </div>
+                <MudText Typo="Typo.h5" Class="my-3">Phone Numbers</MudText>
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          OnClick="AddPhone"
+                          StartIcon="@Icons.Material.Filled.Add"
+                          Size="Size.Small"
+                          Class="mb-3">
+                    Add Phone
+                </MudButton>
 
-            <div>
-                <Person.App.Component.EntityPropertyTextBox EntityProperty="@Person["LastName"]" />
-            </div>
+                @foreach (var phone in Person.PersonPhoneList)
+                {
+                    <MudGrid Class="mb-2" Spacing="2">
+                        <MudItem xs="12" sm="4">
+                            <MudNeatooSelect T="PhoneType?"
+                                            EntityProperty="@phone[nameof(IPersonPhone.PhoneType)]"
+                                            Placeholder="Select Phone Type">
+                                <MudSelectItem Value="@((PhoneType?)PhoneType.Home)">Home</MudSelectItem>
+                                <MudSelectItem Value="@((PhoneType?)PhoneType.Mobile)">Mobile</MudSelectItem>
+                                <MudSelectItem Value="@((PhoneType?)PhoneType.Work)">Work</MudSelectItem>
+                            </MudNeatooSelect>
+                        </MudItem>
+                        <MudItem xs="10" sm="6">
+                            <MudNeatooTextField T="string" EntityProperty="@phone[nameof(IPersonPhone.PhoneNumber)]" />
+                        </MudItem>
+                        <MudItem xs="2" sm="2" Class="d-flex align-center">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                          Color="Color.Error"
+                                          Size="Size.Medium"
+                                          OnClick="() => RemovePhone(phone)" />
+                        </MudItem>
+                    </MudGrid>
+                }
 
-            <div>
-                <Person.App.Component.EntityPropertyTextBox EntityProperty="@Person["Email"]" />
-            </div>
+                <MudNeatooTextField T="string" EntityProperty="@Person["Notes"]"
+                                   Lines="3"
+                                   Class="mb-3" />
 
-            <div>
-                <div class="h4">Phone Numbers</div>
-                <button type="button" class="btn btn-primary" @onclick="AddPhone">+</button>
-            </div>
+                <MudStack Row="true" Spacing="2" Class="mt-4">
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Primary"
+                              OnClick="HandleSubmit"
+                              Disabled="@(!Person.IsSavable)">
+                        Update
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Error"
+                              OnClick="Delete"
+                              Disabled="@(!CanDelete)">
+                        Delete
+                    </MudButton>
+                </MudStack>
+            </MudForm>
+        }
 
-            @foreach (var phone in Person.PersonPhoneList)
-            {
-                <div>
-                    <Dropdown Color="@phone[nameof(IPersonPhone.PhoneType)].IsValid.ToDropdownColor()">
-                        <DropdownToggleButton>@(phone.PhoneType.ToString() ?? "Phone Type")</DropdownToggleButton>
-                        <DropdownMenu>
-                            <DropdownItem @onclick="() => UpdatePhoneType(phone, PhoneType.Home)" Type="DropdownItemType.Button">Home</DropdownItem>
-                            <DropdownItem @onclick="() => UpdatePhoneType(phone, PhoneType.Mobile)" Type="DropdownItemType.Button">Mobile</DropdownItem>
-                            <DropdownItem @onclick="() => UpdatePhoneType(phone, PhoneType.Work)" Type="DropdownItemType.Button">Work</DropdownItem>
-                        </DropdownMenu>
-                    </Dropdown>
-                    <Person.App.Component.EntityPropertyTextBox EntityProperty="@phone[nameof(IPersonPhone.PhoneNumber)]" />
-                    <button type="button" class="btn btn-primary" @onclick="() => RemovePhone(phone)">-</button>
-                </div>
-                <ValidationMessage For="@(() => @phone[nameof(IPersonPhone.PhoneType)].StringValue)" class="text-danger" />
-            }
-
-            <div>
-                <Person.App.Component.EntityPropertyTextBox EntityProperty="@Person["Notes"]" />
-            </div>
-
-            <button type="submit" class="btn btn-primary" disabled="@(Person.IsBusy)">Update</button>
-            <button type="button" class="btn btn-primary" @onclick="Delete" disabled="@(!CanDelete)">Delete</button>
-        </EditForm>
-    }
-
-    <button type="button" class="btn btn-primary" @onclick="Clear">Clear</button>
-    <button type="button" class="btn btn-primary" @onclick="Create" disabled="@(!CanCreate)">Create</button>
-    <button type="button" class="btn btn-primary" @onclick="Fetch" disabled="@(!CanFetch)">Fetch</button>
-
-</div>
+        <MudStack Row="true" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Outlined" OnClick="Clear">Clear</MudButton>
+            <MudButton Variant="Variant.Outlined" OnClick="Create" Disabled="@(!CanCreate)">Create</MudButton>
+            <MudButton Variant="Variant.Outlined" OnClick="Fetch" Disabled="@(!CanFetch)">Fetch</MudButton>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
 
 @code {
+    private MudForm? form;
 
     public IPerson? Person { get; set; } = default!;
-    public EditContext EditContext { get; set; } = default!;
     public string Message { get; set; } = "Not Loaded";
+    private bool formIsValid;
 
     private bool CanCreate { get; set; }
     private bool CanFetch { get; set; }
@@ -153,7 +143,6 @@
     private async Task Fetch()
     {
         Message = "Fetching...";
-        // Fetch the person data, e.g., from a database
         NewPerson(await PersonFactory.Fetch());
         Message = string.Empty;
     }
@@ -167,26 +156,29 @@
 
     private async Task HandleSubmit()
     {
-        if (Person == null || !Person.IsValid || !Person.IsModified)
+        if (Person == null)
             return;
 
-        Message = "Saving...";
+        // Validate all fields - this shows errors on fields user hasn't touched
+        await form!.Validate();
 
+        // Wait for any async rules to complete
         await Person.WaitForTasks();
         await Person.RunRules(RunRulesFlag.NotExecuted);
 
-        EditContext.Validate();
+        // Re-validate after async rules complete to show any new errors
+        await form!.Validate();
 
-        if (Person.IsSavable)
+        if (!Person.IsSavable)
         {
-            NewPerson(await PersonFactory.Save(Person!));
-        }
-        else
-        {
-            Message = "Not Savable";
+            Message = "Please fix the errors above";
             await Task.Delay(2000);
+            Message = string.Empty;
+            return;
         }
 
+        Message = "Saving...";
+        NewPerson(await PersonFactory.Save(Person!));
         Message = string.Empty;
     }
 
@@ -195,39 +187,23 @@
         if (Person != null)
         {
             Person.PropertyChanged -= PersonPropertyChanged;
-            Person.NeatooPropertyChanged -= PersonNeatooPropertyChanged;
         }
 
         Person = personModel;
 
         if (Person != null)
         {
-            EditContext = new EditContext(Person!);
             Person.PropertyChanged += PersonPropertyChanged;
-            Person.NeatooPropertyChanged += PersonNeatooPropertyChanged;
         }
     }
 
     private void PersonPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName.StartsWith("Is"))
+        if (e.PropertyName?.StartsWith("Is") == true)
         {
             InvokeAsync(() => StateHasChanged());
-            EditContext.Validate();
         }
     }
-
-    private Task PersonNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
-    {
-        if (eventArgs.OriginalEventArgs.Property != null)
-        {
-            EditContext.NotifyFieldChanged(new FieldIdentifier(eventArgs.OriginalEventArgs.Property, nameof(IEntityProperty.StringValue)));
-        }
-
-        return Task.CompletedTask;
-    }
-
-
 
     private void UserRoleChanged()
     {
@@ -254,11 +230,4 @@
     {
         return Person!.PersonPhoneList.RemovePhoneNumber(personPhoneModel);
     }
-
-    private void UpdatePhoneType(IPersonPhone personPhone, PhoneType phoneType)
-    {
-        personPhone.PhoneType = phoneType;
-        EditContext.NotifyFieldChanged(new FieldIdentifier(personPhone[nameof(IPersonPhone.PhoneType)], nameof(IEntityProperty.StringValue)));
-    }
-
 }

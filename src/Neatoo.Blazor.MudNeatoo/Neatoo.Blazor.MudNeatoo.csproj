@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- NuGet Package Properties -->
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Neatoo.Blazor.MudNeatoo</PackageId>
+    <PackageVersion>9.10.1</PackageVersion>
+    <Authors>Keith Voels</Authors>
+    <Company>NeatooDotNet</Company>
+    <Description>MudBlazor integration components for Neatoo domain models. Provides form controls that automatically bind to Neatoo entity properties with built-in validation display.</Description>
+    <PackageIcon>neatoo_icon.png</PackageIcon>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageProjectUrl>https://github.com/NeatooDotNet/Neatoo</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>Initial release - MudBlazor form components for Neatoo</PackageReleaseNotes>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageTags>Neatoo MudBlazor Blazor Forms Validation DDD Domain-Driven-Design</PackageTags>
+    <RepositoryUrl>https://github.com/NeatooDotNet/Neatoo</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="" />
+    <None Include="..\..\neatoo_icon.png" Pack="true" PackagePath="" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MudBlazor" Version="8.0.0" />
+    <PackageReference Include="Neatoo" Version="9.10.1" />
+  </ItemGroup>
+
+</Project>
