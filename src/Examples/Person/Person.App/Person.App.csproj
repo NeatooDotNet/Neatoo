@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
 	<ItemGroup>
-		<PackageReference Include="Blazor.Bootstrap" Version="3.3.1" />
+		<PackageReference Include="MudBlazor" Version="8.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.5" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" Version="9.0.5" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Person.DomainModel\Person.DomainModel.csproj" />
+	  <ProjectReference Include="..\..\..\Neatoo.Blazor.MudNeatoo\Neatoo.Blazor.MudNeatoo.csproj" />
 	</ItemGroup>
 
 </Project>

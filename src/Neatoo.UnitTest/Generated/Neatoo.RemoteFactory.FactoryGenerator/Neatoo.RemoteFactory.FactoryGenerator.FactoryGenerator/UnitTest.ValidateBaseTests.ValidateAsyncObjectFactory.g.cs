@@ -40,7 +40,7 @@ namespace Neatoo.UnitTest.ValidateBaseTests
         public Task<IValidateAsyncObject> LocalFetch(PersonDto person)
         {
             var target = ServiceProvider.GetRequiredService<ValidateAsyncObject>();
-            var portal = ServiceProvider.GetRequiredService<ValidateAsyncObjectFactory>();
+            var portal = ServiceProvider.GetRequiredService<IValidateAsyncObjectFactory>();
             var personTable = ServiceProvider.GetRequiredService<IReadOnlyList<PersonDto>>();
             return DoFactoryMethodCallAsync(target, FactoryOperation.Fetch, () => target.Fetch(person, portal, personTable));
         }

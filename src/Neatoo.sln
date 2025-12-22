@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.12.35527.113
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11222.15 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Neatoo", "Neatoo\Neatoo.csproj", "{91A0C8F4-8284-4E61-8F0A-3EF5F9257732}"
 EndProject
@@ -36,6 +36,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neatoo.Console", "Neatoo.Console\Neatoo.Console.csproj", "{D049D4C2-F7D0-4736-A147-21EA17BEA8F9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Person.App", "Examples\Person\Person.App\Person.App.csproj", "{FA3B7515-3F59-7872-E534-ECF3EEAB242C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Neatoo.Blazor.MudNeatoo", "Neatoo.Blazor.MudNeatoo\Neatoo.Blazor.MudNeatoo.csproj", "{06C54340-6DC8-2139-CC16-1B881B15B04C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -87,6 +89,10 @@ Global
 		{FA3B7515-3F59-7872-E534-ECF3EEAB242C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA3B7515-3F59-7872-E534-ECF3EEAB242C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FA3B7515-3F59-7872-E534-ECF3EEAB242C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06C54340-6DC8-2139-CC16-1B881B15B04C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06C54340-6DC8-2139-CC16-1B881B15B04C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06C54340-6DC8-2139-CC16-1B881B15B04C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06C54340-6DC8-2139-CC16-1B881B15B04C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

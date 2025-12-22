@@ -1,0 +1,20 @@
+@typeparam T
+@using MudBlazor
+@using Neatoo
+
+<MudSelect T="T"
+           Value="@TypedValue"
+           ValueChanged="@OnValueChanged"
+           Validation="@ValidateAsync"
+           Label="@EntityProperty.DisplayName"
+           Disabled="@EntityProperty.IsBusy"
+           ReadOnly="@EntityProperty.IsReadOnly"
+           Variant="@Variant"
+           Margin="@Margin"
+           Dense="@Dense"
+           HelperText="@HelperText"
+           Placeholder="@Placeholder"
+           Clearable="@Clearable"
+           Class="@Class">
+    @ChildContent
+</MudSelect>
