@@ -1,0 +1,23 @@
+@using MudBlazor
+@using Neatoo
+@typeparam T
+
+<div class="@Class">
+    <MudSwitch T="T"
+               Value="@TypedValue"
+               ValueChanged="@OnValueChanged"
+               Label="@DisplayLabel"
+               Disabled="@EntityProperty.IsBusy"
+               ReadOnly="@EntityProperty.IsReadOnly"
+               Color="@Color"
+               UncheckedColor="@UncheckedColor"
+               Size="@Size"
+               ThumbIcon="@ThumbIcon"
+               ThumbIconColor="@ThumbIconColor" />
+    @if (ShowValidation && HasErrors)
+    {
+        <MudText Typo="Typo.caption" Color="Color.Error" Class="mt-1">
+            @string.Join("; ", EntityProperty.PropertyMessages.Select(m => m.Message).Distinct())
+        </MudText>
+    }
+</div>

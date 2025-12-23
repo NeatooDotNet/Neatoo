@@ -1,0 +1,18 @@
+@using MudBlazor
+@using Neatoo
+@typeparam T
+
+<MudRadioGroup T="T"
+               Value="@TypedValue"
+               ValueChanged="@OnValueChanged"
+               Disabled="@EntityProperty.IsBusy"
+               ReadOnly="@EntityProperty.IsReadOnly"
+               Class="@Class">
+    @ChildContent
+</MudRadioGroup>
+@if (ShowValidation && HasErrors)
+{
+    <MudText Typo="Typo.caption" Color="Color.Error" Class="mt-1">
+        @string.Join("; ", EntityProperty.PropertyMessages.Select(m => m.Message).Distinct())
+    </MudText>
+}

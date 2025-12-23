@@ -6,7 +6,8 @@
       "WebFetch(domain:mudblazor.com)",
       "Bash(dotnet build:*)",
       "Bash(Get-ChildItem -Path \"c:\\\\src\\\\neatoodotnet\\\\Neatoo\\\\src\\\\Neatoo.Blazor.MudNeatoo\\\\bin\\\\Release\" -Recurse -Filter \"*.nupkg\")",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(Remove-Item -Recurse -Force \"c:\\\\src\\\\neatoodotnet\\\\Neatoo\\\\src\\\\Neatoo.Blazor\")"
     ]
   }
 }

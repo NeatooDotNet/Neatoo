@@ -1,0 +1,27 @@
+@using MudBlazor
+@using Neatoo
+@typeparam T
+
+<MudNumericField T="T"
+                 Value="@TypedValue"
+                 ValueChanged="@OnValueChanged"
+                 Validation="@ValidateAsync"
+                 Label="@EntityProperty.DisplayName"
+                 Disabled="@EntityProperty.IsBusy"
+                 ReadOnly="@EntityProperty.IsReadOnly"
+                 Immediate="false"
+                 Variant="@Variant"
+                 Margin="@Margin"
+                 HelperText="@HelperText"
+                 HelperTextOnFocus="@HelperTextOnFocus"
+                 Placeholder="@Placeholder"
+                 Adornment="@Adornment"
+                 AdornmentIcon="@AdornmentIcon"
+                 AdornmentText="@AdornmentText"
+                 AdornmentColor="@AdornmentColor"
+                 Format="@Format"
+                 Min="@Min"
+                 Max="@Max"
+                 Step="@Step"
+                 HideSpinButtons="@HideSpinButtons"
+                 Class="@Class" />

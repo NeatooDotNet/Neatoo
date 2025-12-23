@@ -1,0 +1,24 @@
+@using MudBlazor
+@using Neatoo
+
+<MudTimePicker Time="@TypedValue"
+               TimeChanged="@OnValueChanged"
+               Validation="@ValidateAsync"
+               Label="@EntityProperty.DisplayName"
+               Disabled="@EntityProperty.IsBusy"
+               ReadOnly="@EntityProperty.IsReadOnly"
+               Variant="@Variant"
+               Margin="@Margin"
+               HelperText="@HelperText"
+               HelperTextOnFocus="@HelperTextOnFocus"
+               Placeholder="@Placeholder"
+               TimeFormat="@TimeFormat"
+               Editable="@Editable"
+               Clearable="@Clearable"
+               AmPm="@AmPm"
+               PickerVariant="@PickerVariant"
+               Orientation="@Orientation"
+               Color="@Color"
+               AdornmentIcon="@AdornmentIcon"
+               AdornmentColor="@AdornmentColor"
+               Class="@Class" />

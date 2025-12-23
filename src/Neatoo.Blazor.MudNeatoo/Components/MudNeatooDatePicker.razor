@@ -1,0 +1,26 @@
+@using MudBlazor
+@using Neatoo
+
+<MudDatePicker Date="@TypedValue"
+               DateChanged="@OnValueChanged"
+               Validation="@ValidateAsync"
+               Label="@EntityProperty.DisplayName"
+               Disabled="@EntityProperty.IsBusy"
+               ReadOnly="@EntityProperty.IsReadOnly"
+               Variant="@Variant"
+               Margin="@Margin"
+               HelperText="@HelperText"
+               HelperTextOnFocus="@HelperTextOnFocus"
+               Placeholder="@Placeholder"
+               DateFormat="@DateFormat"
+               Editable="@Editable"
+               Clearable="@Clearable"
+               MinDate="@MinDate"
+               MaxDate="@MaxDate"
+               PickerVariant="@PickerVariant"
+               Orientation="@Orientation"
+               Color="@Color"
+               FirstDayOfWeek="@FirstDayOfWeek"
+               AdornmentIcon="@AdornmentIcon"
+               AdornmentColor="@AdornmentColor"
+               Class="@Class" />

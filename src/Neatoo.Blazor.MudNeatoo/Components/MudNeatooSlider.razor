@@ -1,0 +1,33 @@
+@using MudBlazor
+@using Neatoo
+@using System.Numerics
+@typeparam T where T : struct, INumber<T>
+
+<div class="@Class">
+    @if (!string.IsNullOrEmpty(DisplayLabel))
+    {
+        <MudText Typo="Typo.body2" Class="mb-1">@DisplayLabel</MudText>
+    }
+    <MudSlider T="T"
+               Value="@TypedValue"
+               ValueChanged="@OnValueChanged"
+               Disabled="@EntityProperty.IsBusy"
+               Min="@Min"
+               Max="@Max"
+               Step="@Step"
+               Variant="@Variant"
+               Color="@Color"
+               Size="@Size"
+               Immediate="@Immediate"
+               TickMarks="@TickMarks"
+               TickMarkLabels="@TickMarkLabels"
+               ValueLabel="@ValueLabel">
+        @ChildContent
+    </MudSlider>
+    @if (ShowValidation && HasErrors)
+    {
+        <MudText Typo="Typo.caption" Color="Color.Error" Class="mt-1">
+            @string.Join("; ", EntityProperty.PropertyMessages.Select(m => m.Message).Distinct())
+        </MudText>
+    }
+</div>
