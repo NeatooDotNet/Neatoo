@@ -1,72 +1,33 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Neatoo.UnitTest.Objects;
-using Neatoo.RemoteFactory;
-using Neatoo.UnitTest.ValidateBaseTests;
-using Neatoo.UnitTest.EntityBaseTests;
+using Neatoo.UnitTest.TestInfrastructure.ServiceProviders;
 
 namespace Neatoo.UnitTest;
 
-
+/// <summary>
+/// Legacy service provider for backwards compatibility.
+/// New tests should use TestServiceProvider from TestInfrastructure.ServiceProviders.
+/// </summary>
 public static class UnitTestServices
 {
-    private static IServiceProvider Container;
-    private static IServiceProvider LocalPortalContainer;
-    private static object lockContainer = new object();
-
+    /// <summary>
+    /// Gets a service scope for testing. Delegates to TestServiceProvider.
+    /// </summary>
     public static IServiceScope GetLifetimeScope(bool localPortal = false)
     {
-
-        lock (lockContainer)
-        {
-            if (Container == null)
-            {
-
-                IServiceProvider CreateContainer(NeatooFactory? portal)
-                {
-                    var services = new ServiceCollection();
-
-                    services.AddNeatooServices(NeatooFactory.Server, typeof(IEntityPerson).Assembly);
-                    services.RegisterMatchingName(typeof(IEntityPerson).Assembly);
-
-                    // Unit Test Library
-                    //services.AddScoped<BaseTests.Authorization.IAuthorizationGrantedRule, BaseTests.Authorization.AuthorizationGrantedRule>();
-                    //services.AddScoped<BaseTests.Authorization.IAuthorizationGrantedAsyncRule, BaseTests.Authorization.AuthorizationGrantedAsyncRule>();
-                    //services.AddScoped<BaseTests.Authorization.IAuthorizationGrantedDependencyRule, BaseTests.Authorization.AuthorizationGrantedDependencyRule>();
-
-                    services.AddTransient(typeof(ISharedShortNameRule<>), typeof(SharedShortNameRule<>));
-                    services.AddTransient<Func<IDisposableDependency>>(cc => () => cc.GetRequiredService<IDisposableDependency>());
-
-                    services.AddTransient<Objects.IDisposableDependency, Objects.DisposableDependency>();
-                    services.AddScoped<Objects.DisposableDependencyList>();
-
-                    services.AddSingleton<IReadOnlyList<PersonObjects.PersonDto>>(cc => PersonObjects.PersonDto.Data());
-
-                    //services.AutoRegisterAssemblyTypes(typeof(IEntityPerson).Assembly);
-
-                    return services.BuildServiceProvider();
-                }
-
-                Container = CreateContainer(null);
-                LocalPortalContainer = CreateContainer(NeatooFactory.Logical);
-
-            }
-
-            if (!localPortal)
-            {
-                return Container.CreateScope();
-            }
-            else
-            {
-                return LocalPortalContainer.CreateScope();
-            }
-        }
+        return TestServiceProvider.CreateScope(localPortal);
     }
 }
 
-public static class  ServiceScopeProviderExtension
+/// <summary>
+/// Extension methods for IServiceScope to simplify service resolution in tests.
+/// </summary>
+public static class ServiceScopeProviderExtension
 {
-    public static T GetRequiredService<T>(this IServiceScope service)
+    /// <summary>
+    /// Gets a required service from the service scope.
+    /// </summary>
+    public static T GetRequiredService<T>(this IServiceScope scope) where T : notnull
     {
-        return service.ServiceProvider.GetRequiredService<T>();
+        return scope.ServiceProvider.GetRequiredService<T>();
     }
 }

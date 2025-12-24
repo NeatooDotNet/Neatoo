@@ -1,0 +1,25 @@
+using Neatoo.Rules;
+
+namespace Neatoo.UnitTest.Integration.Aggregates.Person;
+
+public interface IFullNameRule : IRule<IPersonBase> { int RunCount { get; } }
+
+public class FullNameRule : RuleBase<IPersonBase>, IFullNameRule
+{
+    public int RunCount { get; private set; } = 0;
+
+    public FullNameRule() : base()
+    {
+        AddTriggerProperties(_ => _.Title);
+        AddTriggerProperties(_ => _.ShortName);
+    }
+
+    protected override IRuleMessages Execute(IPersonBase target)
+    {
+        RunCount++;
+
+        target.FullName = $"{target.Title} {target.ShortName}";
+
+        return RuleMessages.None;
+    }
+}

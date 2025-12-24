@@ -7,7 +7,15 @@
       "Bash(dotnet build:*)",
       "Bash(Get-ChildItem -Path \"c:\\\\src\\\\neatoodotnet\\\\Neatoo\\\\src\\\\Neatoo.Blazor.MudNeatoo\\\\bin\\\\Release\" -Recurse -Filter \"*.nupkg\")",
       "Bash(Select-Object FullName)",
-      "Bash(Remove-Item -Recurse -Force \"c:\\\\src\\\\neatoodotnet\\\\Neatoo\\\\src\\\\Neatoo.Blazor\")"
+      "Bash(Remove-Item -Recurse -Force \"c:\\\\src\\\\neatoodotnet\\\\Neatoo\\\\src\\\\Neatoo.Blazor\")",
+      "Bash(mkdir:*)",
+      "Bash(dotnet test:*)",
+      "Bash(findstr:*)",
+      "Bash(Get-ChildItem -Directory -Recurse)",
+      "Bash(Where-Object { $_FullName -notmatch '\\\\\\\\\\(bin|obj|Generated\\)\\\\\\\\' })",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(powershell -Command \"Get-ChildItem -Directory -Recurse | Where-Object { $_.FullName -notmatch ''\\\\\\\\\\\\\\(bin|obj|Generated\\)\\\\\\\\'' } | Select-Object -ExpandProperty FullName | Sort-Object\")"
     ]
   }
 }

@@ -1,0 +1,86 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neatoo.Rules;
+using Neatoo.UnitTest.Integration.Aggregates.Person;
+
+namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase;
+
+
+public interface ISharedShortNameRuleTarget : IValidateBase
+{
+    string ShortName { get; set; }
+    string FirstName { get; set; }
+    string LastName { get; set; }
+}
+
+public interface ISharedShortNameRule<T> : IRule<T> where T : class, ISharedShortNameRuleTarget
+{
+}
+
+public class SharedShortNameRule<T> : Rules.AsyncRuleBase<T>, ISharedShortNameRule<T> where T : class, ISharedShortNameRuleTarget
+{
+
+    public SharedShortNameRule() : base()
+    {
+        base.AddTriggerProperties(_=> _.ShortName, _=>_.FirstName, _=>_.LastName);
+    }
+
+    protected override async Task<IRuleMessages> Execute(T target, CancellationToken? token)
+    {
+        await Task.Delay(10);
+
+        var sn = $"{target.FirstName} {target.LastName}";
+
+        // Prevent cascading rules or any PropertyChanged events
+        LoadProperty(target, _ => _.ShortName, sn);
+
+        return RuleMessages.None;
+
+    }
+}
+
+public interface ISharedAsyncRuleObject : IPersonBase { }
+
+public class SharedAsyncRuleObject : PersonValidateBase<SharedAsyncRuleObject>, ISharedAsyncRuleObject, ISharedShortNameRuleTarget
+{
+    public SharedAsyncRuleObject(IValidateBaseServices<SharedAsyncRuleObject> services,
+                    ISharedShortNameRule<SharedAsyncRuleObject> sharedRule) : base(services)
+    {
+        RuleManager.AddRule(sharedRule);
+    }
+}
+
+[TestClass]
+public class SharedAsyncRuleTests
+{
+
+    private IServiceScope scope;
+    private ISharedAsyncRuleObject target;
+
+    [TestInitialize]
+    public void TestInitialize()
+    {
+        scope = UnitTestServices.GetLifetimeScope();
+        target = scope.GetRequiredService<ISharedAsyncRuleObject>();
+
+    }
+
+
+    [TestCleanup]
+    public void TestCleanup()
+    {
+        scope.Dispose();
+    }
+
+    [TestMethod]
+    public async Task SharedAsyncRuleTests_ShortName()
+    {
+        target.FirstName = "John";
+        target.LastName = "Smith";
+
+        await target.WaitForTasks();
+
+        Assert.AreEqual("John Smith", target.ShortName);
+
+    }
+}

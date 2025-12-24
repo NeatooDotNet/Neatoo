@@ -1,0 +1,32 @@
+using Neatoo.Rules;
+
+namespace Neatoo.UnitTest.Integration.Aggregates.Person;
+
+
+public interface IFullNameAsyncRule : IRule<IPersonBase> { int RunCount { get; } }
+
+public class FullNameAsyncRule : AsyncRuleBase<IPersonBase>, IFullNameAsyncRule
+{
+
+    public FullNameAsyncRule() : base()
+    {
+
+        AddTriggerProperties(_ => _.FirstName);
+        AddTriggerProperties(_ => _.ShortName);
+    }
+
+    public int RunCount { get; private set; }
+
+    protected override async Task<IRuleMessages> Execute(IPersonBase target, CancellationToken? token = null)
+    {
+        RunCount++;
+
+        await Task.Delay(10);
+
+        // System.Diagnostics.Debug.WriteLine($"FullNameAsyncRule {target.Title} {target.ShortName}");
+
+        target.FullName = $"{target.Title} {target.ShortName}";
+
+        return RuleMessages.None;
+    }
+}
