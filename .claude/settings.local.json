@@ -15,7 +15,9 @@
       "Bash(Where-Object { $_FullName -notmatch '\\\\\\\\\\(bin|obj|Generated\\)\\\\\\\\' })",
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(Sort-Object)",
-      "Bash(powershell -Command \"Get-ChildItem -Directory -Recurse | Where-Object { $_.FullName -notmatch ''\\\\\\\\\\\\\\(bin|obj|Generated\\)\\\\\\\\'' } | Select-Object -ExpandProperty FullName | Sort-Object\")"
+      "Bash(powershell -Command \"Get-ChildItem -Directory -Recurse | Where-Object { $_.FullName -notmatch ''\\\\\\\\\\\\\\(bin|obj|Generated\\)\\\\\\\\'' } | Select-Object -ExpandProperty FullName | Sort-Object\")",
+      "Bash(powershell -Command \"Set-Location ''c:\\\\src\\\\neatoodotnet\\\\Neatoo''; dotnet build --verbosity quiet\")",
+      "Bash(powershell -Command:*)"
     ]
   }
 }

@@ -29,7 +29,7 @@ internal class RequiredRule<T> : RuleBase<T>, IRequiredRule
         }
         else if (value?.GetType().IsValueType ?? false)
         {
-            isError = value == Activator.CreateInstance(value.GetType());
+            isError = value.Equals(Activator.CreateInstance(value.GetType()));
         }
         else
         {
