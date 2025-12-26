@@ -8,17 +8,15 @@ public sealed class AsyncTasks
 {
     // TODO: Add cancellation token
 
-    private readonly object lockObject = new object();
-    //private SequencedAsyncFunction? lastTask;
-    private TaskCompletionSource<bool>? allDoneCompletionSource;
+    private readonly object _lockObject = new object();
+    private TaskCompletionSource<bool>? _allDoneCompletionSource;
+    private Dictionary<Guid, Task> _tasks = new Dictionary<Guid, Task>();
+    private List<Exception> _exceptions = new List<Exception>();
 
     /// <summary>
     /// Function to be called when the full sequence is complete.
     /// </summary>
     public Func<Task> OnFullSequenceComplete { get; set; } = () => Task.CompletedTask;
-
-    private Dictionary<Guid, Task> tasks = new Dictionary<Guid, Task>();
-    private List<Exception> Exceptions = new List<Exception>();
     /// <summary>
     /// Adds a new task to the sequence.
     /// </summary>
@@ -27,12 +25,12 @@ public sealed class AsyncTasks
     /// <returns>A task representing the added task.</returns>
     public Task AddTask(Task task, bool runOnException = false)
     {
-        lock (lockObject)
+        lock (this._lockObject)
         {
             // If the sequencer is faulted, return the faulted task.
-            if (allDoneCompletionSource != null && allDoneCompletionSource.Task.IsFaulted)
+            if (this._allDoneCompletionSource != null && this._allDoneCompletionSource.Task.IsFaulted)
             {
-                return allDoneCompletionSource.Task;
+                return this._allDoneCompletionSource.Task;
             }
 
             if (task.Exception != null)
@@ -46,19 +44,19 @@ public sealed class AsyncTasks
             }
 
             // If the sequencer is not running or has completed, start a new sequence.
-            if (allDoneCompletionSource == null || allDoneCompletionSource.Task.IsCompleted)
+            if (this._allDoneCompletionSource == null || this._allDoneCompletionSource.Task.IsCompleted)
             {
-                allDoneCompletionSource = new TaskCompletionSource<bool>();
-                IsRunning = true;
+                this._allDoneCompletionSource = new TaskCompletionSource<bool>();
+                this.IsRunning = true;
             }
 
             var id = Guid.NewGuid();
 
-            tasks.Add(id, task);
+            this._tasks.Add(id, task);
 
             return task.ContinueWith((completedTask) =>
             {
-                return SequenceCompleted(id, completedTask);
+                return this.SequenceCompleted(id, completedTask);
             });
         }
     }
@@ -70,9 +68,9 @@ public sealed class AsyncTasks
     {
         get
         {
-            lock (lockObject)
+            lock (this._lockObject)
             {
-                return allDoneCompletionSource?.Task ?? Task.CompletedTask;
+                return this._allDoneCompletionSource?.Task ?? Task.CompletedTask;
             }
         }
     }
@@ -82,48 +80,46 @@ public sealed class AsyncTasks
 
     private async Task SequenceCompleted(Guid id, Task task)
     {
-        var completionSource = this.allDoneCompletionSource ?? throw new ArgumentNullException($"{nameof(allDoneCompletionSource)} should not be null");
+        var completionSource = this._allDoneCompletionSource ?? throw new ArgumentNullException($"{nameof(this._allDoneCompletionSource)} should not be null");
 
-        lock (lockObject)
+        lock (this._lockObject)
         {
             if (task.Exception != null)
             {
-                Exceptions.AddRange(task.Exception.InnerExceptions);
+                this._exceptions.AddRange(task.Exception.InnerExceptions);
             }
 
-            if (!tasks.Remove(id))
+            if (!this._tasks.Remove(id))
             {
-                throw new Exception("Very unexpected");
+                throw new InvalidOperationException("Task was not found in the task collection. This indicates an internal state inconsistency.");
             }
 
-            if (tasks.Count > 0)
+            if (this._tasks.Count > 0)
             {
                 return;
             }
 
-            this.allDoneCompletionSource = null; // What if another starts while we are finishing here? 
-            IsRunning = false;
+            this._allDoneCompletionSource = null; // What if another starts while we are finishing here?
+            this.IsRunning = false;
         }
-
 
         try
         {
-            await OnFullSequenceComplete();
+            await this.OnFullSequenceComplete();
         }
         catch (AggregateException ex)
         {
-            Exceptions.AddRange(ex.InnerExceptions);
+            this._exceptions.AddRange(ex.InnerExceptions);
         }
 
-        if (Exceptions.Count > 0)
+        if (this._exceptions.Count > 0)
         {
-            completionSource.SetException(new AggregateException(Exceptions));
+            completionSource.SetException(new AggregateException(this._exceptions));
         }
         else
         {
             completionSource.SetResult(true);
         }
-
     }
 
 }

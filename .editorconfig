@@ -1,4 +1,277 @@
-﻿[*.{cs,vb}]
+# EditorConfig - Neatoo Coding Standards
+# https://editorconfig.org
 
-# IDE0003: Remove qualification
+root = true
+
+# All files
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# C# files
+[*.cs]
+indent_style = tab
+indent_size = 3
+tab_width = 3
+
+# Expression-bodied members (All enforced as errors)
+csharp_style_expression_bodied_accessors = true:error
+csharp_style_expression_bodied_constructors = true:error
+csharp_style_expression_bodied_indexers = true:error
+csharp_style_expression_bodied_local_functions = true:error
+csharp_style_expression_bodied_methods = true:error
+csharp_style_expression_bodied_operators = true:error
+csharp_style_expression_bodied_properties = true:error
+
+# Var usage (Enforced as errors - always use var)
+csharp_style_var_elsewhere = true:error
+csharp_style_var_for_built_in_types = true:error
+csharp_style_var_when_type_is_apparent = true:error
+
+# Namespace style - File-scoped namespaces required
+csharp_style_namespace_declarations = file_scoped:error
+
+# This qualification (Enforced as errors - this. required)
+dotnet_style_qualification_for_event = true:error
+dotnet_style_qualification_for_field = true:error
+dotnet_style_qualification_for_method = true:error
+dotnet_style_qualification_for_property = true:error
+
+# Pattern matching (Enforced as errors)
+csharp_style_pattern_matching_over_as_with_null_check = true:error
+csharp_style_pattern_matching_over_is_with_cast_check = true:error
+csharp_style_throw_expression = true:error
+csharp_style_inlined_variable_declaration = true:error
+csharp_style_conditional_delegate_call = true:error
+
+# Collection and object initialization
+dotnet_style_collection_initializer = true:error
+dotnet_style_object_initializer = true:error
+dotnet_style_explicit_tuple_names = true:error
+dotnet_style_null_propagation = true:error
+dotnet_style_predefined_type_for_locals_parameters_members = true:error
+
+# Prefer modern language features
+csharp_prefer_simple_default_expression = true:suggestion
+csharp_style_prefer_index_operator = true:suggestion
+csharp_style_prefer_range_operator = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+
+# Private field naming - underscore prefix required (_fieldName)
+dotnet_naming_rule.private_fields_should_have_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_should_have_underscore.style = underscore_prefix_style
+dotnet_naming_rule.private_fields_should_have_underscore.severity = error
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.underscore_prefix_style.capitalization = camel_case
+dotnet_naming_style.underscore_prefix_style.required_prefix = _
+
+# Using directive organization
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# Async method naming - NOT enforced (exception to Microsoft standard)
+# Rationale: Async suffix adds noise in modern codebases where async is pervasive
+dotnet_naming_rule.async_methods_end_in_async.severity = none
+
+# IDE0003: Remove qualification - disabled (we require this. qualification)
 dotnet_diagnostic.IDE0003.severity = none
+
+# CA1002: Do not expose generic lists
+# TODO: Gradually replace List<T> with IReadOnlyList<T> or ICollection<T>
+dotnet_diagnostic.CA1002.severity = none
+
+# CA1014: Mark assemblies with CLSCompliant
+dotnet_diagnostic.CA1014.severity = none
+
+# CA1030: Use events where appropriate
+dotnet_diagnostic.CA1030.severity = none
+
+# CA1303: Do not pass literals as localized parameters
+dotnet_diagnostic.CA1303.severity = none
+
+# CA1515: Consider making public types internal
+dotnet_diagnostic.CA1515.severity = none
+
+# CA1812: Internal class never instantiated (Program class issue)
+dotnet_diagnostic.CA1812.severity = none
+
+# CA1000: Do not declare static members on generic types
+dotnet_diagnostic.CA1000.severity = none
+
+# CA1033: Interface methods should be callable by child types
+dotnet_diagnostic.CA1033.severity = none
+
+# CA1034: Nested types should not be visible
+dotnet_diagnostic.CA1034.severity = none
+
+# CA1040: Avoid empty interfaces
+dotnet_diagnostic.CA1040.severity = none
+
+# CA1051: Do not declare visible instance fields
+dotnet_diagnostic.CA1051.severity = none
+
+# CA1062: Validate arguments of public methods - too many violations currently
+dotnet_diagnostic.CA1062.severity = none
+
+# CA1063: Implement IDisposable correctly
+dotnet_diagnostic.CA1063.severity = none
+
+# CA1307: Specify StringComparison for clarity
+dotnet_diagnostic.CA1307.severity = none
+
+# CA1309: Use ordinal string comparison
+dotnet_diagnostic.CA1309.severity = none
+
+# CA1707: Identifiers should not contain underscores
+dotnet_diagnostic.CA1707.severity = none
+
+# CA1715: Identifiers should have correct prefix
+dotnet_diagnostic.CA1715.severity = none
+
+# CA1716: Identifiers should not match keywords
+dotnet_diagnostic.CA1716.severity = none
+
+# CA1724: Type names should not match namespaces
+dotnet_diagnostic.CA1724.severity = none
+
+# CA1819: Properties should not return arrays
+dotnet_diagnostic.CA1819.severity = none
+
+# CA2007: Consider calling ConfigureAwait - intentionally not enforced
+dotnet_diagnostic.CA2007.severity = none
+
+# CA2201: Exception type is not sufficiently specific
+dotnet_diagnostic.CA2201.severity = none
+
+# CA2214: Do not call overridable methods in constructors
+dotnet_diagnostic.CA2214.severity = none
+
+# CA1012: Abstract types should not have public constructors
+dotnet_diagnostic.CA1012.severity = none
+
+# CA1310: Specify StringComparison for correctness
+dotnet_diagnostic.CA1310.severity = none
+
+# CA1725: Parameter names should match base declaration
+dotnet_diagnostic.CA1725.severity = none
+
+# CA1805: Do not initialize unnecessarily
+dotnet_diagnostic.CA1805.severity = none
+
+# CA1816: Call GC.SuppressFinalize correctly
+dotnet_diagnostic.CA1816.severity = none
+
+# CA1860: Prefer comparing Count to 0 over Any()
+dotnet_diagnostic.CA1860.severity = none
+
+# CA2008: Do not create tasks without TaskScheduler
+dotnet_diagnostic.CA2008.severity = none
+
+# CA2208: Instantiate argument exceptions correctly
+dotnet_diagnostic.CA2208.severity = none
+
+# CA2211: Non-constant fields should not be visible
+dotnet_diagnostic.CA2211.severity = none
+
+# CA2225: Operator overloads have named alternates
+dotnet_diagnostic.CA2225.severity = none
+
+# CA2227: Collection properties should be read only
+dotnet_diagnostic.CA2227.severity = none
+
+# CA5394: Random is insecure - acceptable for non-security uses
+dotnet_diagnostic.CA5394.severity = none
+
+# CA1003: Use generic EventHandler
+dotnet_diagnostic.CA1003.severity = none
+
+# CA1010: Collections should implement generic interface
+dotnet_diagnostic.CA1010.severity = none
+
+# CA1064: Exceptions should be public
+dotnet_diagnostic.CA1064.severity = none
+
+# CA1711: Identifiers should not have incorrect suffix
+dotnet_diagnostic.CA1711.severity = none
+
+# CA1852: Type can be sealed
+dotnet_diagnostic.CA1852.severity = none
+
+# RS1024: Compare symbols correctly (Source generator specific)
+dotnet_diagnostic.RS1024.severity = none
+
+# IDE0055: Formatting rule (VS 2022 Preview issue)
+dotnet_diagnostic.IDE0055.severity = none
+
+# IDE0130: Namespace doesn't match folder structure
+dotnet_diagnostic.IDE0130.severity = none
+
+# NUnit Analyzers - All elevated to error
+dotnet_diagnostic.NUnit2001.severity = error
+dotnet_diagnostic.NUnit2002.severity = error
+dotnet_diagnostic.NUnit2003.severity = error
+dotnet_diagnostic.NUnit2004.severity = error
+dotnet_diagnostic.NUnit2005.severity = error
+dotnet_diagnostic.NUnit2006.severity = error
+dotnet_diagnostic.NUnit2007.severity = error
+dotnet_diagnostic.NUnit2008.severity = error
+dotnet_diagnostic.NUnit2009.severity = error
+dotnet_diagnostic.NUnit2010.severity = error
+dotnet_diagnostic.NUnit2011.severity = error
+dotnet_diagnostic.NUnit2012.severity = error
+dotnet_diagnostic.NUnit2013.severity = error
+dotnet_diagnostic.NUnit2014.severity = error
+dotnet_diagnostic.NUnit2015.severity = error
+dotnet_diagnostic.NUnit2016.severity = error
+dotnet_diagnostic.NUnit2017.severity = error
+dotnet_diagnostic.NUnit2018.severity = error
+dotnet_diagnostic.NUnit2019.severity = error
+dotnet_diagnostic.NUnit2020.severity = error
+dotnet_diagnostic.NUnit2021.severity = error
+dotnet_diagnostic.NUnit2022.severity = error
+dotnet_diagnostic.NUnit2023.severity = error
+dotnet_diagnostic.NUnit2024.severity = error
+dotnet_diagnostic.NUnit2025.severity = error
+dotnet_diagnostic.NUnit2026.severity = error
+dotnet_diagnostic.NUnit2027.severity = error
+dotnet_diagnostic.NUnit2028.severity = error
+dotnet_diagnostic.NUnit2029.severity = error
+dotnet_diagnostic.NUnit2030.severity = error
+dotnet_diagnostic.NUnit2031.severity = error
+dotnet_diagnostic.NUnit2032.severity = error
+dotnet_diagnostic.NUnit2033.severity = error
+dotnet_diagnostic.NUnit2034.severity = error
+dotnet_diagnostic.NUnit2035.severity = error
+dotnet_diagnostic.NUnit2036.severity = error
+dotnet_diagnostic.NUnit2037.severity = error
+dotnet_diagnostic.NUnit2038.severity = error
+dotnet_diagnostic.NUnit2039.severity = error
+dotnet_diagnostic.NUnit2040.severity = error
+dotnet_diagnostic.NUnit2041.severity = error
+dotnet_diagnostic.NUnit2042.severity = error
+dotnet_diagnostic.NUnit2043.severity = error
+
+# XML and project files
+[*.{xml,csproj,props,targets}]
+indent_style = tab
+indent_size = 2
+
+# JSON files
+[*.json]
+indent_style = space
+indent_size = 2
+
+# YAML files
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# Markdown files
+[*.md]
+trim_trailing_whitespace = false

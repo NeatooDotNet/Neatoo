@@ -59,21 +59,21 @@ public partial class NeatooValidationSummary : ComponentBase, IDisposable
     [Parameter]
     public bool IncludePropertyNames { get; set; } = true;
 
-    private bool HasErrors => ErrorMessages.Any();
+    private bool HasErrors => this.ErrorMessages.Any();
 
     private IEnumerable<string> ErrorMessages
     {
         get
         {
-            if (IncludePropertyNames)
+            if (this.IncludePropertyNames)
             {
-                return Entity.PropertyMessages
-                    .Select(m => $"{GetDisplayName(m.Property)}: {m.Message}")
+                return this.Entity.PropertyMessages
+                    .Select(m => $"{this.GetDisplayName(m.Property)}: {m.Message}")
                     .Distinct();
             }
             else
             {
-                return Entity.PropertyMessages
+                return this.Entity.PropertyMessages
                     .Select(m => m.Message)
                     .Distinct();
             }
@@ -91,13 +91,13 @@ public partial class NeatooValidationSummary : ComponentBase, IDisposable
 
     protected override void OnInitialized()
     {
-        if (Entity is INotifyPropertyChanged notifyPropertyChanged)
+        if (this.Entity is INotifyPropertyChanged notifyPropertyChanged)
         {
-            notifyPropertyChanged.PropertyChanged += OnPropertyChanged;
+            notifyPropertyChanged.PropertyChanged += this.OnPropertyChanged;
         }
-        if (Entity is INotifyNeatooPropertyChanged neatooNotify)
+        if (this.Entity is INotifyNeatooPropertyChanged neatooNotify)
         {
-            neatooNotify.NeatooPropertyChanged += OnNeatooPropertyChanged;
+            neatooNotify.NeatooPropertyChanged += this.OnNeatooPropertyChanged;
         }
     }
 
@@ -108,26 +108,26 @@ public partial class NeatooValidationSummary : ComponentBase, IDisposable
             e.PropertyName == nameof(IValidateMetaProperties.IsSelfValid) ||
             e.PropertyName?.StartsWith("Is") == true)
         {
-            InvokeAsync(StateHasChanged);
+            this.InvokeAsync(this.StateHasChanged);
         }
     }
 
     private Task OnNeatooPropertyChanged(NeatooPropertyChangedEventArgs e)
     {
         // Re-render on any Neatoo property change to catch validation updates
-        InvokeAsync(StateHasChanged);
+        this.InvokeAsync(this.StateHasChanged);
         return Task.CompletedTask;
     }
 
     public void Dispose()
     {
-        if (Entity is INotifyPropertyChanged notifyPropertyChanged)
+        if (this.Entity is INotifyPropertyChanged notifyPropertyChanged)
         {
-            notifyPropertyChanged.PropertyChanged -= OnPropertyChanged;
+            notifyPropertyChanged.PropertyChanged -= this.OnPropertyChanged;
         }
-        if (Entity is INotifyNeatooPropertyChanged neatooNotify)
+        if (this.Entity is INotifyNeatooPropertyChanged neatooNotify)
         {
-            neatooNotify.NeatooPropertyChanged -= OnNeatooPropertyChanged;
+            neatooNotify.NeatooPropertyChanged -= this.OnNeatooPropertyChanged;
         }
     }
 }

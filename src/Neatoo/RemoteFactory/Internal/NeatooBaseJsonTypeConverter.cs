@@ -29,7 +29,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
 
 
         T? result = default;
-        string id = string.Empty;
+        var id = string.Empty;
 
         while (reader.Read())
         {
@@ -51,7 +51,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             // Get the key.
             if (reader.TokenType != JsonTokenType.PropertyName) { throw new JsonException(); }
 
-            string propertyName = reader.GetString();
+            var propertyName = reader.GetString();
             reader.Read();
 
             if (propertyName == "$ref")
@@ -71,8 +71,8 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             else if (propertyName == "$type")
             {
                 var fullName = reader.GetString();
-                var type = localAssemblies.FindType(fullName);
-                result = (T)scope.GetService(type);
+                var type = this.localAssemblies.FindType(fullName);
+                result = (T)this.scope.GetService(type);
 
                 if(result == null)
                 {
@@ -114,7 +114,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             else if (propertyName == "PropertyManager")
             {
 
-                List<IProperty> list = new List<IProperty>();
+                var list = new List<IProperty>();
 
                 if (reader.TokenType != JsonTokenType.StartArray) { throw new JsonException(); }
 
@@ -144,7 +144,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                             var typeFullName = reader.GetString();
 
                             // Assume a Property<T> of some derivation
-                            var pType = localAssemblies.FindType(typeFullName);
+                            var pType = this.localAssemblies.FindType(typeFullName);
                             propertyType = pType.MakeGenericType(propertyType);
 
                         }

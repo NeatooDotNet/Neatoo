@@ -24,7 +24,7 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
         }
 
         IList? list = default;
-        string id = string.Empty;
+        var id = string.Empty;
 
         while (reader.Read())
         {
@@ -46,7 +46,7 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
             // Get the key.
             if (reader.TokenType != JsonTokenType.PropertyName) { throw new JsonException(); }
 
-            string propertyName = reader.GetString();
+            var propertyName = reader.GetString();
             reader.Read();
 
             if (propertyName == "$ref")
@@ -63,8 +63,8 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
             else if (propertyName == "$type")
             {
                 var typeString = reader.GetString();
-                var type = localAssemblies.FindType(typeString);
-                list = (IList) scope.GetRequiredService(type);
+                var type = this.localAssemblies.FindType(typeString);
+                list = (IList)this.scope.GetRequiredService(type);
 
                 if (list is IJsonOnDeserializing jsonOnDeserializing)
                 {
@@ -92,7 +92,7 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
                         if (propertyName == "$type")
                         {
                             var typeString = reader.GetString();
-                            type = localAssemblies.FindType(typeString);
+                            type = this.localAssemblies.FindType(typeString);
                         }
                         else if (propertyName == "$value")
                         {

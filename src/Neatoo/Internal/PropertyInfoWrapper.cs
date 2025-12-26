@@ -9,34 +9,34 @@ public class PropertyInfoWrapper : IPropertyInfo
     public PropertyInfoWrapper(PropertyInfo propertyInfo)
     {
         this.PropertyInfo = propertyInfo;
-        IsPrivateSetter = !propertyInfo.CanWrite || propertyInfo.SetMethod?.IsPrivate == true;
+        this.IsPrivateSetter = !propertyInfo.CanWrite || propertyInfo.SetMethod?.IsPrivate == true;
     }
 
     public PropertyInfo PropertyInfo { get; }
-    public string Name => PropertyInfo.Name;
-    public Type Type => PropertyInfo.PropertyType;
-    public string Key => Name;
+    public string Name => this.PropertyInfo.Name;
+    public Type Type => this.PropertyInfo.PropertyType;
+    public string Key => this.Name;
     public bool IsPrivateSetter { get; }
 
     private Dictionary<Type, Attribute?> customAttribute = new();
 
     public T? GetCustomAttribute<T>() where T : Attribute
     {
-        if(!customAttribute.ContainsKey(typeof(T)))
+        if(!this.customAttribute.ContainsKey(typeof(T)))
         {
-            customAttribute[typeof(T)] = PropertyInfo.GetCustomAttribute<T>();
+            this.customAttribute[typeof(T)] = this.PropertyInfo.GetCustomAttribute<T>();
         }
-        
-        return (T?) customAttribute[typeof(T)];
+
+        return (T?) this.customAttribute[typeof(T)];
     }
 
     private List<Attribute>? customAttributes;
 
     public IEnumerable<Attribute> GetCustomAttributes(){
-        if(customAttributes == null)
+        if(this.customAttributes == null)
         {
-            customAttributes = PropertyInfo.GetCustomAttributes().ToList();
+            this.customAttributes = this.PropertyInfo.GetCustomAttributes().ToList();
         }
-        return customAttributes;
+        return this.customAttributes;
     }
 }

@@ -119,22 +119,22 @@ public partial class MudNeatooDatePicker : ComponentBase, IDisposable
     [Parameter]
     public string? Class { get; set; }
 
-    private DateTime? TypedValue => (DateTime?)EntityProperty.Value;
+    private DateTime? TypedValue => (DateTime?)this.EntityProperty.Value;
 
     protected override void OnInitialized()
     {
-        EntityProperty.PropertyChanged += OnPropertyChanged;
+        this.EntityProperty.PropertyChanged += this.OnPropertyChanged;
     }
 
     private async Task OnValueChanged(DateTime? value)
     {
-        await EntityProperty.SetValue(value);
+        await this.EntityProperty.SetValue(value);
     }
 
     private async Task<IEnumerable<string>> ValidateAsync(DateTime? value)
     {
-        await EntityProperty.WaitForTasks();
-        return EntityProperty.PropertyMessages.Select(m => m.Message).Distinct();
+        await this.EntityProperty.WaitForTasks();
+        return this.EntityProperty.PropertyMessages.Select(m => m.Message).Distinct();
     }
 
     private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -145,12 +145,12 @@ public partial class MudNeatooDatePicker : ComponentBase, IDisposable
             e.PropertyName == nameof(IProperty.IsReadOnly) ||
             e.PropertyName == nameof(IProperty.Value))
         {
-            InvokeAsync(StateHasChanged);
+            this.InvokeAsync(this.StateHasChanged);
         }
     }
 
     public void Dispose()
     {
-        EntityProperty.PropertyChanged -= OnPropertyChanged;
+        this.EntityProperty.PropertyChanged -= this.OnPropertyChanged;
     }
 }

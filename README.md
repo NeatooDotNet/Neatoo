@@ -46,6 +46,13 @@ Now many runtime errors are compile errors and there is code you can see and ste
 * Async/Await
 * Live Source Generation
 
+## Documentation
+
+Additional documentation can be found in the [docs](docs/) folder:
+
+* [Lazy Loading Pattern](docs/lazy-loading-pattern.md) - Planned pattern for on-demand child object loading
+* [Lazy Loading Analysis](docs/lazy-loading-analysis.md) - Technical analysis of lazy loading infrastructure
+
 [Discord](https://discord.gg/M3dVuZkG)
 [Nuget](https://www.nuget.org/packages/Neatoo)
 

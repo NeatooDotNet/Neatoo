@@ -12,10 +12,11 @@ This document provides comprehensive coding standards for the Neatoo.RemoteFacto
 4. [Suppressed Warnings and Exceptions](#suppressed-warnings-and-exceptions)
 5. [Project-Specific Configurations](#project-specific-configurations)
 6. [Project Structure Patterns](#project-structure-patterns)
-7. [Naming Conventions](#naming-conventions)
-8. [Code Patterns and Best Practices](#code-patterns-and-best-practices)
-9. [Areas for Improvement](#areas-for-improvement)
-10. [Applying These Standards to New Projects](#applying-these-standards-to-new-projects)
+7. [Member Ordering](#member-ordering)
+8. [Naming Conventions](#naming-conventions)
+9. [Code Patterns and Best Practices](#code-patterns-and-best-practices)
+10. [Areas for Improvement](#areas-for-improvement)
+11. [Applying These Standards to New Projects](#applying-these-standards-to-new-projects)
 
 ---
 
@@ -113,6 +114,31 @@ dotnet_style_qualification_for_property = true:error
 ```
 
 **Standard:** `this.` prefix is REQUIRED for all member access.
+
+### Private Field Naming (Enforced as Errors)
+
+```ini
+dotnet_naming_rule.private_fields_should_have_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_should_have_underscore.style = underscore_prefix_style
+dotnet_naming_rule.private_fields_should_have_underscore.severity = error
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.underscore_prefix_style.capitalization = camel_case
+dotnet_naming_style.underscore_prefix_style.required_prefix = _
+```
+
+**Standard:** Private fields MUST use underscore prefix with camelCase (e.g., `_fieldName`).
+
+### Using Directive Organization
+
+```ini
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+```
+
+**Standard:** System namespaces should be sorted first in using directives.
 
 ### Pattern Matching (Enforced as Errors)
 
@@ -346,11 +372,125 @@ RemoteFactory/
 
 ---
 
+## Member Ordering
+
+Class members should be organized in the following order for consistency and readability:
+
+### Standard Member Order
+
+1. **Constants** (public, protected, private)
+2. **Static fields** (public, protected, private)
+3. **Instance fields** (private with `_` prefix, then protected)
+4. **Constructors** (public, protected, private)
+5. **Properties** (public, protected, private)
+6. **Methods** (public, protected, private)
+7. **Events**
+8. **Nested types**
+9. **Explicit interface implementations** (at end)
+
+### Example
+
+```csharp
+public class ExampleClass : IDisposable
+{
+    // 1. Constants
+    public const int MaxItems = 100;
+    private const string DefaultName = "Unknown";
+
+    // 2. Static fields
+    private static readonly object _staticLock = new object();
+
+    // 3. Instance fields (private with underscore prefix)
+    private readonly object _lock = new object();
+    private string _name;
+    private int _count;
+
+    // 4. Constructors
+    public ExampleClass()
+    {
+        this._name = DefaultName;
+    }
+
+    public ExampleClass(string name)
+    {
+        this._name = name;
+    }
+
+    // 5. Properties
+    public string Name
+    {
+        get => this._name;
+        set => this._name = value;
+    }
+
+    public int Count => this._count;
+
+    // 6. Methods (public first, then protected, then private)
+    public void DoSomething()
+    {
+        this.InternalProcess();
+    }
+
+    protected virtual void OnChanged()
+    {
+        this.Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void InternalProcess()
+    {
+        lock (this._lock)
+        {
+            this._count++;
+        }
+    }
+
+    // 7. Events
+    public event EventHandler? Changed;
+
+    // 8. Nested types
+    private class InternalHelper { }
+
+    // 9. Explicit interface implementations
+    void IDisposable.Dispose() => this._count = 0;
+}
+```
+
+### Rationale
+
+- **Fields before constructors**: Fields are initialized before constructor bodies run; having them first reflects execution order
+- **Constructors before methods**: Constructors define how objects are created; readers see initialization before behavior
+- **Public before private**: Most consumers care about the public API; internal implementation details come later
+- **Events near the end**: Events are typically less frequently accessed than properties/methods
+- **Explicit interface implementations last**: These are implementation details rarely accessed directly
+
+---
+
 ## Naming Conventions
 
-### Observed in Code
+### Private Fields (Enforced)
 
-#### Classes and Interfaces
+Private fields MUST use underscore prefix with camelCase:
+
+```csharp
+// Correct - underscore prefix with camelCase
+private readonly object _lock = new object();
+private string _name;
+private int _itemCount;
+private Dictionary<string, int> _cache = new Dictionary<string, int>();
+
+// Incorrect - DO NOT USE
+private readonly object lock = new object();      // No underscore
+private string Name;                              // PascalCase
+private int itemCount;                            // No underscore
+```
+
+This convention:
+- Distinguishes fields from local variables and parameters
+- Makes field access immediately visible in code
+- Prevents naming conflicts with properties
+- Is enforced via `.editorconfig` at error severity
+
+### Classes and Interfaces
 
 ```csharp
 // Interface with I prefix
@@ -669,9 +809,11 @@ The Neatoo.RemoteFactory solution employs a strict, modern C# coding standard ch
 2. **Modern C# Features** - Preview language features, .NET 9.0, nullable reference types
 3. **Consistent Style** - File-scoped namespaces, expression-bodied members, `var` everywhere
 4. **Explicit Self-Reference** - `this.` prefix required for all member access
-5. **Async Suffix NOT Enforced** - Exception to Microsoft standard (see IDE1006 in NoWarn)
-6. **Central Package Management** - Coordinated dependency versions
-7. **Security Focused** - NuGet package auditing enabled
-8. **Test Quality** - NUnit rules elevated to errors
+5. **Private Field Naming** - Underscore prefix required (`_fieldName`)
+6. **Member Ordering** - Consistent order: fields → constructors → properties → methods → events
+7. **Async Suffix NOT Enforced** - Exception to Microsoft standard (see IDE1006 in NoWarn)
+8. **Central Package Management** - Coordinated dependency versions
+9. **Security Focused** - NuGet package auditing enabled
+10. **Test Quality** - NUnit rules elevated to errors
 
 The standards balance strictness with pragmatism, acknowledging certain suppressions as intentional trade-offs while maintaining high overall code quality.

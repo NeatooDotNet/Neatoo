@@ -78,25 +78,25 @@ public partial class MudNeatooTextField<T> : ComponentBase, IDisposable
     [Parameter]
     public string? Class { get; set; }
 
-    private T? TypedValue => (T?)EntityProperty.Value;
+    private T? TypedValue => (T?)this.EntityProperty.Value;
 
     protected override void OnInitialized()
     {
-        EntityProperty.PropertyChanged += OnPropertyChanged;
+        this.EntityProperty.PropertyChanged += this.OnPropertyChanged;
     }
 
     private async Task OnValueChanged(T? value)
     {
         // With Immediate="false", this only fires on blur
         // Sync to Neatoo - this triggers business rules
-        await EntityProperty.SetValue(value);
+        await this.EntityProperty.SetValue(value);
     }
 
     private async Task<IEnumerable<string>> ValidateAsync(T? value)
     {
         // Wait for any async rules to complete before returning validation messages
-        await EntityProperty.WaitForTasks();
-        return EntityProperty.PropertyMessages.Select(m => m.Message).Distinct();
+        await this.EntityProperty.WaitForTasks();
+        return this.EntityProperty.PropertyMessages.Select(m => m.Message).Distinct();
     }
 
     private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -107,12 +107,12 @@ public partial class MudNeatooTextField<T> : ComponentBase, IDisposable
             e.PropertyName == nameof(IProperty.IsBusy) ||
             e.PropertyName == nameof(IProperty.IsReadOnly))
         {
-            InvokeAsync(StateHasChanged);
+            this.InvokeAsync(this.StateHasChanged);
         }
     }
 
     public void Dispose()
     {
-        EntityProperty.PropertyChanged -= OnPropertyChanged;
+        this.EntityProperty.PropertyChanged -= this.OnPropertyChanged;
     }
 }

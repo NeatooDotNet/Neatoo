@@ -43,7 +43,7 @@ public static class AddNeatooServicesExtension
 
                     if (implementationType == null)
                     {
-                        throw new Exception($"Type {type.FullName} not registered");
+                        throw new TypeNotRegisteredException(type);
                     };
 
                     type = implementationType;

@@ -4,237 +4,10 @@ using System.Text.Json.Serialization;
 
 namespace Neatoo.Internal;
 
-
-
-
 public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJsonOnDeserialized
 {
-    public string Name { get; }
-
     protected T? _value = default;
-
-    public virtual T? Value
-    {
-        get => _value;
-        set
-        {
-            SetValue(value);
-        }
-    }
-
-    object? IProperty.Value { get => Value; set => SetValue(value); }
-
-    [JsonIgnore]
-    public Type Type => typeof(T);
-
-    [JsonIgnore]
-    public Task Task { get; protected set; } = Task.CompletedTask;
-
-    protected IBase? ValueAsBase => Value as IBase;
-
-    public bool IsBusy => ValueAsBase?.IsBusy ?? false || IsSelfBusy || IsMarkedBusy.Count > 0;
-
-    public async Task WaitForTasks()
-    {
-        await (ValueAsBase?.WaitForTasks() ?? Task.CompletedTask);
-    }
-
-    [JsonIgnore]
-    public bool IsSelfBusy { get; private set; } = false;
-
-    [JsonIgnore]
-    public List<long> IsMarkedBusy { get; } = new List<long>();
     private readonly object _isMarkedBusyLock = new object();
-
-    public void AddMarkedBusy(long id)
-    {
-        lock (_isMarkedBusyLock)
-        {
-            if (!IsMarkedBusy.Contains(id))
-            {
-                IsMarkedBusy.Add(id);
-            }
-        }
-        OnPropertyChanged(nameof(IsMarkedBusy));
-        OnPropertyChanged(nameof(IsBusy));
-    }
-
-    public void RemoveMarkedBusy(long id)
-    {
-        lock (_isMarkedBusyLock)
-        {
-            IsMarkedBusy.Remove(id);
-        }
-        OnPropertyChanged(nameof(IsMarkedBusy));
-        OnPropertyChanged(nameof(IsBusy));
-    }
-
-    public bool IsReadOnly { get; protected set; } = false;
-
-    public virtual Task SetValue(object? newValue)
-    {
-        if (IsReadOnly)
-        {
-            throw new PropertyReadOnlyException();
-        }
-
-        return SetPrivateValue(newValue);
-    }
-
-    public virtual Task SetPrivateValue(object? newValue, bool quietly = false)
-    {
-        if (newValue == null && _value == null) { return Task.CompletedTask; }
-
-        Task = Task.CompletedTask;
-
-        if (newValue == null)
-        {
-            HandleNullValue(quietly);
-        }
-        else if (newValue is T value)
-        {
-            HandleNonNullValue(value, quietly);
-        }
-        else
-        {
-            throw new PropertyTypeMismatchException($"Type {newValue.GetType()} is not type {typeof(T).FullName}");
-        }
-
-        if (Task.Exception != null)
-        {
-            throw Task.Exception;
-        }
-
-        return Task;
-    }
-
-    public virtual void LoadValue(object? value)
-    {
-        SetPrivateValue((T?)value, true);
-        _value = (T?)value;
-    }
-
-    protected virtual void HandleNullValue(bool quietly = false)
-    {
-        if (_value is INotifyNeatooPropertyChanged neatooPropertyChanged)
-        {
-            neatooPropertyChanged.NeatooPropertyChanged -= PassThruValueNeatooPropertyChanged;
-        }
-
-        _value = default;
-
-        if (!quietly)
-        {
-            OnPropertyChanged(nameof(Value));
-            Task = OnValueNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(this));
-        }
-    }
-
-    protected virtual void HandleNonNullValue(T value, bool quietly = false)
-    {
-        var isDiff = !AreSame(_value, value);
-
-        if (isDiff)
-        {
-            if (_value != null)
-            {
-                if (_value is INotifyNeatooPropertyChanged neatooPropertyChanged)
-                {
-                    neatooPropertyChanged.NeatooPropertyChanged -= PassThruValueNeatooPropertyChanged;
-                }
-                if (_value is INotifyPropertyChanged notifyPropertyChanged)
-                {
-                    notifyPropertyChanged.PropertyChanged -= PassThruValuePropertyChanged;
-                }
-
-
-                if (_value is IBase _valueBase)
-                {
-                    if (_valueBase.IsBusy)
-                    {
-                        throw new Exception("Cannot remove a child that is busy");
-                    }
-                }
-
-                if (_value is ISetParent _valueSetParent)
-                {
-                    _valueSetParent.SetParent(null);
-                }
-            }
-
-            if (value != null)
-            {
-                if (value is INotifyNeatooPropertyChanged valueNeatooPropertyChanged)
-                {
-                    valueNeatooPropertyChanged.NeatooPropertyChanged += PassThruValueNeatooPropertyChanged;
-                }
-                if (value is INotifyPropertyChanged notifyPropertyChanged)
-                {
-                    notifyPropertyChanged.PropertyChanged += PassThruValuePropertyChanged;
-                }
-
-                if (value is IBase valueBase)
-                {
-                    if (valueBase.IsBusy)
-                    {
-                        throw new Exception("Cannot add a child that is busy");
-                    }
-                }
-            }
-        }
-
-        _value = value;
-
-        if (isDiff && !quietly)
-        {
-            OnPropertyChanged(nameof(Value));
-
-            Task = OnValueNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(this));
-        }
-    }
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    protected virtual Task PassThruValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
-    {
-        return NeatooPropertyChanged?.Invoke(new NeatooPropertyChangedEventArgs(this, this.Value!, eventArgs)) ?? Task.CompletedTask;
-    }
-
-    protected virtual void PassThruValuePropertyChanged(object? source, PropertyChangedEventArgs eventArgs)
-    {
-        PropertyChanged?.Invoke(this, eventArgs);
-    }
-
-    protected virtual async Task OnValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
-    {
-        // ValidateBase sticks Task into AsyncTaskSequencer for us
-        // so that it will be awaited by WaitForTasks()
-        var task = NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
-
-        if (!task.IsCompleted && !IsSelfBusy)
-        {
-            IsSelfBusy = true;
-
-            try
-            {
-                OnPropertyChanged(nameof(IsBusy));
-
-                await task;
-
-                IsSelfBusy = false;
-                OnPropertyChanged(nameof(IsBusy));
-            }
-            finally
-            {
-                IsSelfBusy = false;
-            }
-        }
-
-        await task;
-    }
 
     public Property(IPropertyInfo propertyInfo)
     {
@@ -248,6 +21,230 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
         this.Name = name;
         this._value = value;
         this.IsReadOnly = isReadOnly;
+    }
+
+    public string Name { get; }
+
+    public virtual T? Value
+    {
+        get => this._value;
+        set
+        {
+            this.SetValue(value);
+        }
+    }
+
+    object? IProperty.Value { get => this.Value; set => this.SetValue(value); }
+
+    [JsonIgnore]
+    public Type Type => typeof(T);
+
+    [JsonIgnore]
+    public Task Task { get; protected set; } = Task.CompletedTask;
+
+    protected IBase? ValueAsBase => this.Value as IBase;
+
+    public bool IsBusy => this.ValueAsBase?.IsBusy ?? false || this.IsSelfBusy || this.IsMarkedBusy.Count > 0;
+
+    public async Task WaitForTasks()
+    {
+        await (this.ValueAsBase?.WaitForTasks() ?? Task.CompletedTask);
+    }
+
+    [JsonIgnore]
+    public bool IsSelfBusy { get; private set; } = false;
+
+    [JsonIgnore]
+    public List<long> IsMarkedBusy { get; } = new List<long>();
+
+    public void AddMarkedBusy(long id)
+    {
+        lock (this._isMarkedBusyLock)
+        {
+            if (!this.IsMarkedBusy.Contains(id))
+            {
+                this.IsMarkedBusy.Add(id);
+            }
+        }
+        this.OnPropertyChanged(nameof(IsMarkedBusy));
+        this.OnPropertyChanged(nameof(IsBusy));
+    }
+
+    public void RemoveMarkedBusy(long id)
+    {
+        lock (this._isMarkedBusyLock)
+        {
+            this.IsMarkedBusy.Remove(id);
+        }
+        this.OnPropertyChanged(nameof(IsMarkedBusy));
+        this.OnPropertyChanged(nameof(IsBusy));
+    }
+
+    public bool IsReadOnly { get; protected set; } = false;
+
+    public virtual Task SetValue(object? newValue)
+    {
+        if (this.IsReadOnly)
+        {
+            throw new PropertyReadOnlyException();
+        }
+
+        return this.SetPrivateValue(newValue);
+    }
+
+    public virtual Task SetPrivateValue(object? newValue, bool quietly = false)
+    {
+        if (newValue == null && this._value == null) { return Task.CompletedTask; }
+
+        this.Task = Task.CompletedTask;
+
+        if (newValue == null)
+        {
+            this.HandleNullValue(quietly);
+        }
+        else if (newValue is T value)
+        {
+            this.HandleNonNullValue(value, quietly);
+        }
+        else
+        {
+            throw new PropertyTypeMismatchException($"Type {newValue.GetType()} is not type {typeof(T).FullName}");
+        }
+
+        if (this.Task.Exception != null)
+        {
+            throw this.Task.Exception;
+        }
+
+        return this.Task;
+    }
+
+    public virtual void LoadValue(object? value)
+    {
+        this.SetPrivateValue((T?)value, true);
+        this._value = (T?)value;
+    }
+
+    protected virtual void HandleNullValue(bool quietly = false)
+    {
+        if (this._value is INotifyNeatooPropertyChanged neatooPropertyChanged)
+        {
+            neatooPropertyChanged.NeatooPropertyChanged -= this.PassThruValueNeatooPropertyChanged;
+        }
+
+        this._value = default;
+
+        if (!quietly)
+        {
+            this.OnPropertyChanged(nameof(Value));
+            this.Task = this.OnValueNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(this));
+        }
+    }
+
+    protected virtual void HandleNonNullValue(T value, bool quietly = false)
+    {
+        var isDiff = !this.AreSame(this._value, value);
+
+        if (isDiff)
+        {
+            if (this._value != null)
+            {
+                if (this._value is INotifyNeatooPropertyChanged neatooPropertyChanged)
+                {
+                    neatooPropertyChanged.NeatooPropertyChanged -= this.PassThruValueNeatooPropertyChanged;
+                }
+                if (this._value is INotifyPropertyChanged notifyPropertyChanged)
+                {
+                    notifyPropertyChanged.PropertyChanged -= this.PassThruValuePropertyChanged;
+                }
+
+
+                if (this._value is IBase _valueBase)
+                {
+                    if (_valueBase.IsBusy)
+                    {
+                        throw new ChildObjectBusyException(isAddOperation: false);
+                    }
+                }
+
+                if (this._value is ISetParent _valueSetParent)
+                {
+                    _valueSetParent.SetParent(null);
+                }
+            }
+
+            if (value != null)
+            {
+                if (value is INotifyNeatooPropertyChanged valueNeatooPropertyChanged)
+                {
+                    valueNeatooPropertyChanged.NeatooPropertyChanged += this.PassThruValueNeatooPropertyChanged;
+                }
+                if (value is INotifyPropertyChanged notifyPropertyChanged)
+                {
+                    notifyPropertyChanged.PropertyChanged += this.PassThruValuePropertyChanged;
+                }
+
+                if (value is IBase valueBase)
+                {
+                    if (valueBase.IsBusy)
+                    {
+                        throw new ChildObjectBusyException(isAddOperation: true);
+                    }
+                }
+            }
+        }
+
+        this._value = value;
+
+        if (isDiff && !quietly)
+        {
+            this.OnPropertyChanged(nameof(Value));
+
+            this.Task = this.OnValueNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(this));
+        }
+    }
+
+    protected virtual void OnPropertyChanged(string propertyName)
+    {
+        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    protected virtual Task PassThruValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+    {
+        return this.NeatooPropertyChanged?.Invoke(new NeatooPropertyChangedEventArgs(this, this.Value!, eventArgs)) ?? Task.CompletedTask;
+    }
+
+    protected virtual void PassThruValuePropertyChanged(object? source, PropertyChangedEventArgs eventArgs)
+    {
+        this.PropertyChanged?.Invoke(this, eventArgs);
+    }
+
+    protected virtual async Task OnValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+    {
+        // ValidateBase sticks Task into AsyncTaskSequencer for us
+        // so that it will be awaited by WaitForTasks()
+        var task = this.NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
+
+        if (!task.IsCompleted && !this.IsSelfBusy)
+        {
+            this.IsSelfBusy = true;
+
+            try
+            {
+                this.OnPropertyChanged(nameof(IsBusy));
+
+                await task;
+
+                this.IsSelfBusy = false;
+                this.OnPropertyChanged(nameof(IsBusy));
+            }
+            finally
+            {
+                this.IsSelfBusy = false;
+            }
+        }
+
+        await task;
     }
 
     protected virtual bool AreSame<P>(P? oldValue, P? newValue)
@@ -276,13 +273,13 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
 
     public void OnDeserialized()
     {
-        if (Value is INotifyNeatooPropertyChanged neatooPropertyChanged)
+        if (this.Value is INotifyNeatooPropertyChanged neatooPropertyChanged)
         {
-            neatooPropertyChanged.NeatooPropertyChanged += PassThruValueNeatooPropertyChanged;
+            neatooPropertyChanged.NeatooPropertyChanged += this.PassThruValueNeatooPropertyChanged;
         }
-        if (Value is INotifyPropertyChanged notifyPropertyChanged)
+        if (this.Value is INotifyPropertyChanged notifyPropertyChanged)
         {
-            notifyPropertyChanged.PropertyChanged += PassThruValuePropertyChanged;
+            notifyPropertyChanged.PropertyChanged += this.PassThruValuePropertyChanged;
         }
     }
 }

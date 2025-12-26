@@ -14,7 +14,7 @@ public class ValidatePropertyManager<P> : PropertyManager<P>, IValidatePropertyM
 
     protected new IProperty CreateProperty<PV>(IPropertyInfo propertyInfo)
     {
-        return Factory.CreateValidateProperty<PV>(propertyInfo);
+        return this.Factory.CreateValidateProperty<PV>(propertyInfo);
     }
 
 
@@ -25,11 +25,11 @@ public class ValidatePropertyManager<P> : PropertyManager<P>, IValidatePropertyM
     [JsonIgnore]
     public bool IsPaused { get; protected set; }
 
-    public IReadOnlyCollection<IPropertyMessage> PropertyMessages => PropertyBag.SelectMany(_ => _.Value.PropertyMessages).ToList().AsReadOnly();
+    public IReadOnlyCollection<IPropertyMessage> PropertyMessages => this.PropertyBag.SelectMany(_ => _.Value.PropertyMessages).ToList().AsReadOnly();
 
     public async Task RunRules(RunRulesFlag runRules = Neatoo.RunRulesFlag.All, CancellationToken? token = null)
     {
-        foreach (var p in PropertyBag)
+        foreach (var p in this.PropertyBag)
         {
             await p.Value.RunRules(runRules, token);
         }
@@ -37,35 +37,35 @@ public class ValidatePropertyManager<P> : PropertyManager<P>, IValidatePropertyM
 
     protected override void Property_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (IsPaused)
+        if (this.IsPaused)
         {
             return;
         }
 
         if (sender is IValidateProperty property)
         {
-            bool raiseIsValid = IsValid;
+            var raiseIsValid = this.IsValid;
 
             if (e.PropertyName == nameof(IValidateProperty.IsValid)
                     || e.PropertyName == nameof(IValidateProperty.Value))
             {
-                IsValid = !PropertyBag.Any(p => !p.Value.IsValid);
+                this.IsValid = !this.PropertyBag.Any(p => !p.Value.IsValid);
             }
 
-            if (raiseIsValid != IsValid)
+            if (raiseIsValid != this.IsValid)
             {
                 base.Property_PropertyChanged(this, new PropertyChangedEventArgs(nameof(IsValid)));
             }
 
-            bool raiseIsSelfValid = IsSelfValid;
+            var raiseIsSelfValid = this.IsSelfValid;
 
             if (e.PropertyName == nameof(IValidateProperty.IsSelfValid)
                     || e.PropertyName == nameof(IValidateProperty.Value))
             {
-                IsSelfValid = !PropertyBag.Any(p => !p.Value.IsSelfValid);
+                this.IsSelfValid = !this.PropertyBag.Any(p => !p.Value.IsSelfValid);
             }
 
-            if (raiseIsSelfValid != IsSelfValid)
+            if (raiseIsSelfValid != this.IsSelfValid)
             {
                 base.Property_PropertyChanged(this, new PropertyChangedEventArgs(nameof(IsSelfValid)));
             }
@@ -77,13 +77,13 @@ public class ValidatePropertyManager<P> : PropertyManager<P>, IValidatePropertyM
     public override void OnDeserialized()
     {
         base.OnDeserialized();
-        IsValid = !PropertyBag.Any(p => !p.Value.IsValid);
-        IsSelfValid = !PropertyBag.Any(p => !p.Value.IsSelfValid);
+        this.IsValid = !this.PropertyBag.Any(p => !p.Value.IsValid);
+        this.IsSelfValid = !this.PropertyBag.Any(p => !p.Value.IsSelfValid);
     }
 
     public void ClearSelfMessages()
     {
-        foreach (var p in PropertyBag)
+        foreach (var p in this.PropertyBag)
         {
             p.Value.ClearSelfMessages();
         }
@@ -91,7 +91,7 @@ public class ValidatePropertyManager<P> : PropertyManager<P>, IValidatePropertyM
 
     public void ClearAllMessages()
     {
-        foreach (var p in PropertyBag)
+        foreach (var p in this.PropertyBag)
         {
             p.Value.ClearAllMessages();
         }
@@ -99,27 +99,29 @@ public class ValidatePropertyManager<P> : PropertyManager<P>, IValidatePropertyM
 
     public virtual void PauseAllActions()
     {
-        if (!IsPaused)
+        if (!this.IsPaused)
         {
-            IsPaused = true;
+            this.IsPaused = true;
         }
     }
 
     public virtual void ResumeAllActions()
     {
-        if (IsPaused)
+        if (this.IsPaused)
         {
-            IsPaused = false;
+            this.IsPaused = false;
         }
     }
 }
 
 
+/// <summary>
+/// Exception thrown when a child object's data type is incompatible in a validation context.
+/// </summary>
 [Serializable]
-public class PropertyValidateChildDataWrongTypeException : Exception
+public class PropertyValidateChildDataWrongTypeException : PropertyException
 {
     public PropertyValidateChildDataWrongTypeException() { }
     public PropertyValidateChildDataWrongTypeException(string message) : base(message) { }
     public PropertyValidateChildDataWrongTypeException(string message, Exception inner) : base(message, inner) { }
-
 }

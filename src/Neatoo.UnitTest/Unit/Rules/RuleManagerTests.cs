@@ -464,7 +464,7 @@ public class RuleManagerRunRuleTests
         // Note: Not adding the rule to the manager
 
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<Exception>(async () =>
+        await Assert.ThrowsExceptionAsync<RuleNotAddedException>(async () =>
             await ruleManager.RunRule(rule));
     }
 

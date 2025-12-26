@@ -16,24 +16,24 @@ public class EntityBaseServices<T> : ValidateBaseServices<T>, IEntityBaseService
 
     public EntityBaseServices(IFactorySave<T>? factory) : base() {
 
-        PropertyInfoList = new PropertyInfoList<T>((System.Reflection.PropertyInfo pi) => new PropertyInfoWrapper(pi));
+        this.PropertyInfoList = new PropertyInfoList<T>((System.Reflection.PropertyInfo pi) => new PropertyInfoWrapper(pi));
 
-        EntityPropertyManager = new EntityPropertyManager(PropertyInfoList, new DefaultFactory());
-        Factory = factory;
+        this.EntityPropertyManager = new EntityPropertyManager(this.PropertyInfoList, new DefaultFactory());
+        this.Factory = factory;
     }
     public EntityBaseServices(CreateEntityPropertyManager propertyManager, IPropertyInfoList<T> propertyInfoList, RuleManagerFactory<T> ruleManager)
     {
-        PropertyInfoList = propertyInfoList;
+        this.PropertyInfoList = propertyInfoList;
         this.ruleManagerFactory = ruleManager;
-        EntityPropertyManager = propertyManager(propertyInfoList);
+        this.EntityPropertyManager = propertyManager(propertyInfoList);
     }
 
     public EntityBaseServices(CreateEntityPropertyManager propertyManager, IPropertyInfoList<T> propertyInfoList, RuleManagerFactory<T> ruleManager, IFactorySave<T> factory)
     {
-        PropertyInfoList = propertyInfoList;
+        this.PropertyInfoList = propertyInfoList;
         this.ruleManagerFactory = ruleManager;
-        EntityPropertyManager = propertyManager(propertyInfoList);
-        Factory = factory;
+        this.EntityPropertyManager = propertyManager(propertyInfoList);
+        this.Factory = factory;
     }
 
 }

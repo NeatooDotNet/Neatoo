@@ -2,129 +2,353 @@
 
 namespace Neatoo;
 
+/// <summary>
+/// Defines the interface for Neatoo entity objects that support persistence, modification tracking, and validation.
+/// </summary>
+/// <remarks>
+/// <see cref="IEntityBase"/> extends <see cref="IValidateBase"/> with entity-specific capabilities
+/// for Domain-Driven Design (DDD) scenarios, including modification tracking, deletion handling,
+/// and save operations. Entity objects can be persisted through a factory pattern.
+/// </remarks>
 public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySaveMeta
 {
+    /// <summary>
+    /// Gets the collection of property names that have been modified since the last save.
+    /// </summary>
+    /// <value>An enumerable collection of modified property names.</value>
     IEnumerable<string> ModifiedProperties { get; }
 
+    /// <summary>
+    /// Marks the entity for deletion. The entity will be deleted when <see cref="Save"/> is called.
+    /// </summary>
     void Delete();
+
+    /// <summary>
+    /// Reverses a previous call to <see cref="Delete"/>, removing the deletion mark from the entity.
+    /// </summary>
     void UnDelete();
+
+    /// <summary>
+    /// Persists the entity asynchronously using the configured factory.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous save operation. The task result contains the saved entity.</returns>
     Task<IEntityBase> Save();
+
+    /// <summary>
+    /// Gets the entity property with the specified name using indexer syntax.
+    /// </summary>
+    /// <param name="propertyName">The name of the property to retrieve.</param>
+    /// <returns>The <see cref="IEntityProperty"/> instance for the specified property.</returns>
     new IEntityProperty this[string propertyName] { get; }
 
+    /// <summary>
+    /// Marks the entity as modified, even if no properties have changed.
+    /// </summary>
     internal void MarkModified();
+
+    /// <summary>
+    /// Marks the entity as a child entity within an aggregate.
+    /// </summary>
+    /// <remarks>
+    /// Child entities are saved as part of their parent aggregate and cannot be saved independently.
+    /// </remarks>
     internal void MarkAsChild();
 }
 
+/// <summary>
+/// Abstract base class for Neatoo entity objects that support persistence, modification tracking, and validation.
+/// </summary>
+/// <typeparam name="T">The concrete type deriving from this base class, used for the curiously recurring template pattern (CRTP).</typeparam>
+/// <remarks>
+/// <para>
+/// <see cref="EntityBase{T}"/> extends <see cref="ValidateBase{T}"/> with entity-specific capabilities
+/// for Domain-Driven Design (DDD) scenarios:
+/// </para>
+/// <list type="bullet">
+/// <item><description>Modification tracking via <see cref="IsModified"/> and <see cref="ModifiedProperties"/></description></item>
+/// <item><description>New/existing state tracking via <see cref="IsNew"/></description></item>
+/// <item><description>Soft delete support via <see cref="Delete"/> and <see cref="IsDeleted"/></description></item>
+/// <item><description>Savability determination via <see cref="IsSavable"/></description></item>
+/// <item><description>Child entity support for aggregate patterns via <see cref="IsChild"/></description></item>
+/// </list>
+/// <para>
+/// Entity objects can be persisted through the factory pattern. The <see cref="Save"/> method
+/// delegates to the appropriate Insert, Update, or Delete factory method based on the entity state.
+/// </para>
+/// </remarks>
+/// <example>
+/// <code>
+/// public class Customer : EntityBase&lt;Customer&gt;
+/// {
+///     public string Name { get =&gt; Getter&lt;string&gt;(); set =&gt; Setter(value); }
+///
+///     public Customer(IEntityBaseServices&lt;Customer&gt; services) : base(services) { }
+///
+///     [Insert]
+///     public async Task Insert([Service] ICustomerRepository repo)
+///     {
+///         await repo.InsertAsync(this);
+///     }
+/// }
+/// </code>
+/// </example>
 [Factory]
 public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBase, IEntityMetaProperties
     where T : EntityBase<T>
 {
+    /// <summary>
+    /// Gets the property manager with entity-specific capabilities including modification tracking.
+    /// </summary>
+    /// <remarks>
+    /// This property shadows the base class PropertyManager to provide access to entity-specific features.
+    /// </remarks>
     protected new IEntityPropertyManager PropertyManager => (IEntityPropertyManager)base.PropertyManager;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EntityBase{T}"/> class.
+    /// </summary>
+    /// <param name="services">The entity services containing the property manager, rule manager factory, and save factory.</param>
     public EntityBase(IEntityBaseServices<T> services) : base(services)
     {
         this.Factory = services.Factory;
     }
 
+    /// <summary>
+    /// Gets or sets the factory used to save this entity.
+    /// </summary>
+    /// <value>The save factory, or <c>null</c> if no default save operation is configured.</value>
     public IFactorySave<T>? Factory { get; protected set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this entity has been explicitly marked as modified.
+    /// </summary>
+    /// <value><c>true</c> if explicitly marked modified; otherwise, <c>false</c>.</value>
     public virtual bool IsMarkedModified { get; protected set; } = false;
-    public virtual bool IsModified => PropertyManager.IsModified || IsDeleted || IsNew || IsSelfModified;
-    public virtual bool IsSelfModified { get => PropertyManager.IsSelfModified || IsDeleted || IsMarkedModified; protected set => IsMarkedModified = value; }
-    public virtual bool IsSavable => IsModified && IsValid && !IsBusy && !IsChild;
+
+    /// <summary>
+    /// Gets a value indicating whether this entity or any child entities have been modified.
+    /// </summary>
+    /// <value><c>true</c> if any property has changed, the entity is new, deleted, or explicitly marked modified; otherwise, <c>false</c>.</value>
+    public virtual bool IsModified => this.PropertyManager.IsModified || this.IsDeleted || this.IsNew || this.IsSelfModified;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this entity's own properties have been modified.
+    /// </summary>
+    /// <value><c>true</c> if any direct property has changed, the entity is deleted, or explicitly marked modified; otherwise, <c>false</c>.</value>
+    public virtual bool IsSelfModified { get => this.PropertyManager.IsSelfModified || this.IsDeleted || this.IsMarkedModified; protected set => this.IsMarkedModified = value; }
+
+    /// <summary>
+    /// Gets a value indicating whether this entity can be saved.
+    /// </summary>
+    /// <value><c>true</c> if the entity is modified, valid, not busy, and not a child entity; otherwise, <c>false</c>.</value>
+    /// <remarks>
+    /// Child entities cannot be saved independently; they must be saved through their parent aggregate root.
+    /// </remarks>
+    public virtual bool IsSavable => this.IsModified && this.IsValid && !this.IsBusy && !this.IsChild;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this is a new entity that has not been persisted.
+    /// </summary>
+    /// <value><c>true</c> if the entity is new; otherwise, <c>false</c>.</value>
     public virtual bool IsNew { get; protected set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this entity has been marked for deletion.
+    /// </summary>
+    /// <value><c>true</c> if the entity is marked for deletion; otherwise, <c>false</c>.</value>
     public virtual bool IsDeleted { get; protected set; }
-    public virtual IEnumerable<string> ModifiedProperties => PropertyManager.ModifiedProperties;
+
+    /// <summary>
+    /// Gets the collection of property names that have been modified since the last save.
+    /// </summary>
+    /// <value>An enumerable collection of modified property names.</value>
+    public virtual IEnumerable<string> ModifiedProperties => this.PropertyManager.ModifiedProperties;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this entity is a child within an aggregate.
+    /// </summary>
+    /// <value><c>true</c> if this is a child entity; otherwise, <c>false</c>.</value>
+    /// <remarks>
+    /// Child entities are saved as part of their parent aggregate and cannot call <see cref="Save"/> directly.
+    /// </remarks>
     public virtual bool IsChild { get; protected set; }
 
+    /// <summary>
+    /// Gets or sets the cached entity meta property state for change detection.
+    /// </summary>
+    /// <remarks>
+    /// Used internally to track changes to entity meta properties (IsModified, IsSelfModified, IsSavable, IsDeleted)
+    /// and raise appropriate property changed notifications.
+    /// </remarks>
     protected (bool IsModified, bool IsSelfModified, bool IsSavable, bool IsDeleted) EntityMetaState { get; private set; }
 
+    /// <summary>
+    /// Checks if entity-specific meta properties have changed and raises notifications.
+    /// </summary>
+    /// <remarks>
+    /// This method extends the base implementation to track changes to IsModified, IsSelfModified,
+    /// IsSavable, and IsDeleted. It automatically raises PropertyChanged events when these values change.
+    /// </remarks>
     protected override void CheckIfMetaPropertiesChanged()
     {
-        if (!IsPaused)
+        if (!this.IsPaused)
         {
-            if (EntityMetaState.IsModified != IsModified)
+            if (this.EntityMetaState.IsModified != this.IsModified)
             {
-                RaisePropertyChanged(nameof(IsModified));
-                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsModified), this));
+                this.RaisePropertyChanged(nameof(this.IsModified));
+                this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsModified), this));
             }
-            if (EntityMetaState.IsSelfModified != IsSelfModified)
+            if (this.EntityMetaState.IsSelfModified != this.IsSelfModified)
             {
-                RaisePropertyChanged(nameof(IsSelfModified));
-                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSelfModified), this));
+                this.RaisePropertyChanged(nameof(this.IsSelfModified));
+                this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsSelfModified), this));
             }
-            if (EntityMetaState.IsSavable != IsSavable)
+            if (this.EntityMetaState.IsSavable != this.IsSavable)
             {
-                RaisePropertyChanged(nameof(IsSavable));
-                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsSavable), this));
+                this.RaisePropertyChanged(nameof(this.IsSavable));
+                this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsSavable), this));
             }
-            if (EntityMetaState.IsDeleted != IsDeleted)
+            if (this.EntityMetaState.IsDeleted != this.IsDeleted)
             {
-                RaisePropertyChanged(nameof(IsDeleted));
-                RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(IsDeleted), this));
+                this.RaisePropertyChanged(nameof(this.IsDeleted));
+                this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsDeleted), this));
             }
         }
 
         base.CheckIfMetaPropertiesChanged();
     }
 
+    /// <summary>
+    /// Resets the cached entity meta property state to current values.
+    /// </summary>
+    /// <remarks>
+    /// Called after meta property notifications are raised to prepare for the next change detection cycle.
+    /// </remarks>
     protected override void ResetMetaState()
     {
         base.ResetMetaState();
-        EntityMetaState = (IsModified, IsSelfModified, IsSavable, IsDeleted);
+        this.EntityMetaState = (this.IsModified, this.IsSelfModified, this.IsSavable, this.IsDeleted);
     }
 
-    bool IEntityMetaProperties.IsMarkedModified => IsMarkedModified;
+    /// <summary>
+    /// Gets a value indicating whether this entity has been explicitly marked as modified for interface implementation.
+    /// </summary>
+    bool IEntityMetaProperties.IsMarkedModified => this.IsMarkedModified;
 
+    /// <summary>
+    /// Marks this entity as a child entity within an aggregate.
+    /// </summary>
+    /// <remarks>
+    /// Child entities cannot be saved independently; they are persisted through their parent aggregate root.
+    /// This method is typically called by list containers when an entity is added.
+    /// </remarks>
     protected virtual void MarkAsChild()
     {
-        IsChild = true;
+        this.IsChild = true;
     }
 
-    // TODO - Recursive set clean for all children
+    /// <summary>
+    /// Marks this entity as unmodified, clearing all modification tracking.
+    /// </summary>
+    /// <remarks>
+    /// This method clears the IsSelfModified state for this entity's direct properties
+    /// and resets the IsMarkedModified flag. Typically called after a successful save operation.
+    /// </remarks>
     protected virtual void MarkUnmodified()
     {
         // TODO : What if busy??
-        PropertyManager.MarkSelfUnmodified();
-        IsMarkedModified = false;
-        CheckIfMetaPropertiesChanged(); // Really shouldn't be anything listening to this
+        this.PropertyManager.MarkSelfUnmodified();
+        this.IsMarkedModified = false;
+        this.CheckIfMetaPropertiesChanged(); // Really shouldn't be anything listening to this
     }
 
+    /// <summary>
+    /// Explicitly marks this entity as modified.
+    /// </summary>
+    /// <remarks>
+    /// Use this method to force the entity to be considered modified even if no properties have changed.
+    /// This is useful for scenarios where external state changes require the entity to be re-saved.
+    /// </remarks>
     protected virtual void MarkModified()
     {
-        IsMarkedModified = true;
-        CheckIfMetaPropertiesChanged();
+        this.IsMarkedModified = true;
+        this.CheckIfMetaPropertiesChanged();
     }
 
+    /// <summary>
+    /// Marks this entity as new (not yet persisted).
+    /// </summary>
+    /// <remarks>
+    /// New entities will trigger an Insert operation when saved.
+    /// This is typically called automatically after a Create factory operation.
+    /// </remarks>
     protected virtual void MarkNew()
     {
-        IsNew = true;
+        this.IsNew = true;
     }
 
+    /// <summary>
+    /// Marks this entity as existing (already persisted).
+    /// </summary>
+    /// <remarks>
+    /// Existing entities will trigger an Update operation when saved.
+    /// This is typically called automatically after Insert or Fetch factory operations.
+    /// </remarks>
     protected virtual void MarkOld()
     {
-        IsNew = false;
+        this.IsNew = false;
     }
 
+    /// <summary>
+    /// Marks this entity for deletion.
+    /// </summary>
+    /// <remarks>
+    /// Deleted entities will trigger a Delete operation when saved.
+    /// Use <see cref="UnDelete"/> to reverse this operation.
+    /// </remarks>
     protected virtual void MarkDeleted()
     {
-        IsDeleted = true;
-        CheckIfMetaPropertiesChanged();
+        this.IsDeleted = true;
+        this.CheckIfMetaPropertiesChanged();
     }
 
+    /// <summary>
+    /// Marks this entity for deletion.
+    /// </summary>
+    /// <remarks>
+    /// The entity will be deleted from persistent storage when <see cref="Save"/> is called.
+    /// Use <see cref="UnDelete"/> to reverse this operation before saving.
+    /// </remarks>
     public void Delete()
     {
-        MarkDeleted();
+        this.MarkDeleted();
     }
 
+    /// <summary>
+    /// Removes the deletion mark from this entity.
+    /// </summary>
+    /// <remarks>
+    /// This method reverses a previous call to <see cref="Delete"/>.
+    /// If the entity was not marked for deletion, this method has no effect.
+    /// </remarks>
     public void UnDelete()
     {
-        if (IsDeleted)
+        if (this.IsDeleted)
         {
-            IsDeleted = false;
-            CheckIfMetaPropertiesChanged();
+            this.IsDeleted = false;
+            this.CheckIfMetaPropertiesChanged();
         }
     }
 
+    /// <summary>
+    /// Handles property change notifications from child objects.
+    /// </summary>
+    /// <param name="eventArgs">The event arguments containing the child property change details.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// When a child entity property is set (not a nested change), this method automatically
+    /// un-deletes the child if it was previously marked for deletion.
+    /// </remarks>
     protected override Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
 
@@ -139,56 +363,114 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
         return base.ChildNeatooPropertyChanged(eventArgs);
     }
 
+    /// <summary>
+    /// Persists this entity asynchronously using the configured factory.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous save operation. The task result contains the saved entity.</returns>
+    /// <exception cref="Exception">Thrown when the entity is not savable, is a child entity, is invalid, not modified, or is busy.</exception>
+    /// <remarks>
+    /// <para>
+    /// The save operation delegates to the appropriate factory method based on the entity state:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>If <see cref="IsNew"/> is <c>true</c>, calls the Insert method</description></item>
+    /// <item><description>If <see cref="IsDeleted"/> is <c>true</c>, calls the Delete method</description></item>
+    /// <item><description>Otherwise, calls the Update method</description></item>
+    /// </list>
+    /// <para>
+    /// Child entities cannot be saved directly; they must be saved through their parent aggregate root.
+    /// </para>
+    /// </remarks>
     public virtual async Task<IEntityBase> Save()
     {
-        if (!IsSavable)
+        if (!this.IsSavable)
         {
-            if (IsChild)
+            if (this.IsChild)
             {
-                throw new Exception("Child objects cannot be saved");
+                throw new SaveOperationException(SaveFailureReason.IsChildObject);
             }
-            if (!IsValid)
+            if (!this.IsValid)
             {
-                throw new Exception("Object is not valid and cannot be saved.");
+                throw new SaveOperationException(SaveFailureReason.IsInvalid);
             }
-            if (!(IsModified || IsSelfModified))
+            if (!(this.IsModified || this.IsSelfModified))
             {
-                throw new Exception("Object has not been modified.");
+                throw new SaveOperationException(SaveFailureReason.NotModified);
             }
-            if (IsBusy)
+            if (this.IsBusy)
             {
                 // TODO await this.WaitForTasks(); ??
-                throw new Exception("Object is busy and cannot be saved.");
+                throw new SaveOperationException(SaveFailureReason.IsBusy);
             }
         }
 
-        if (Factory == null)
+        if (this.Factory == null)
         {
-            throw new Exception("Default Factory.Save() is not set. To use the save method [Insert], [Update] and/or [Delete] methods with no non-service parameters are required.");
+            throw new SaveOperationException(SaveFailureReason.NoFactoryMethod);
         }
 
-        return (IEntityBase)await Factory.Save((T)this);
+        return (IEntityBase)await this.Factory.Save((T)this);
     }
 
+    /// <summary>
+    /// Gets the entity property with the specified name.
+    /// </summary>
+    /// <param name="propertyName">The name of the property to retrieve.</param>
+    /// <returns>The <see cref="IEntityProperty"/> instance for the specified property.</returns>
     new protected IEntityProperty GetProperty(string propertyName)
     {
-        return PropertyManager[propertyName];
+        return this.PropertyManager[propertyName];
     }
-    new public IEntityProperty this[string propertyName] { get => GetProperty(propertyName); }
 
+    /// <summary>
+    /// Gets the entity property with the specified name using indexer syntax.
+    /// </summary>
+    /// <param name="propertyName">The name of the property to retrieve.</param>
+    /// <returns>The <see cref="IEntityProperty"/> instance for the specified property.</returns>
+    new public IEntityProperty this[string propertyName] { get => this.GetProperty(propertyName); }
+
+    /// <summary>
+    /// Pauses all property change events, rule execution, and modification tracking.
+    /// </summary>
+    /// <returns>An <see cref="IDisposable"/> that will resume actions when disposed.</returns>
+    /// <remarks>
+    /// This method extends the base implementation to also pause modification tracking
+    /// on the entity property manager.
+    /// </remarks>
     public override IDisposable PauseAllActions()
     {
         var d = base.PauseAllActions();
-        PropertyManager.PauseAllActions();
+        this.PropertyManager.PauseAllActions();
         return d;
     }
 
+    /// <summary>
+    /// Resumes property change events, rule execution, and modification tracking.
+    /// </summary>
+    /// <remarks>
+    /// This method extends the base implementation to also resume modification tracking
+    /// on the entity property manager.
+    /// </remarks>
     public override void ResumeAllActions()
     {
         base.ResumeAllActions();
-        PropertyManager.ResumeAllActions();
+        this.PropertyManager.ResumeAllActions();
     }
 
+    /// <summary>
+    /// Called when a factory operation completes to update entity state based on the operation type.
+    /// </summary>
+    /// <param name="factoryOperation">The type of factory operation that completed.</param>
+    /// <remarks>
+    /// <para>
+    /// This method updates the entity state based on the completed operation:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description><see cref="FactoryOperation.Create"/>: Marks the entity as new</description></item>
+    /// <item><description><see cref="FactoryOperation.Insert"/> or <see cref="FactoryOperation.Update"/>: Marks the entity as unmodified and old (existing)</description></item>
+    /// <item><description><see cref="FactoryOperation.Fetch"/> and <see cref="FactoryOperation.Delete"/>: No state changes</description></item>
+    /// </list>
+    /// </remarks>
     public override void FactoryComplete(FactoryOperation factoryOperation)
     {
         base.FactoryComplete(factoryOperation);
@@ -196,7 +478,7 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
         switch (factoryOperation)
         {
             case FactoryOperation.Create:
-                MarkNew();
+                this.MarkNew();
                 break;
             case FactoryOperation.Fetch:
                 break;
@@ -204,23 +486,29 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
                 break;
             case FactoryOperation.Insert:
             case FactoryOperation.Update:
-                MarkUnmodified();
-                MarkOld();
+                this.MarkUnmodified();
+                this.MarkOld();
                 break;
             default:
                 break;
         }
 
-        ResumeAllActions();
+        this.ResumeAllActions();
     }
 
+    /// <summary>
+    /// Explicit interface implementation for marking the entity as modified.
+    /// </summary>
     void IEntityBase.MarkModified()
     {
-        MarkModified();
+        this.MarkModified();
     }
 
+    /// <summary>
+    /// Explicit interface implementation for marking the entity as a child.
+    /// </summary>
     void IEntityBase.MarkAsChild()
     {
-        MarkAsChild();
+        this.MarkAsChild();
     }
 }

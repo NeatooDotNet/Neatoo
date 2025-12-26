@@ -13,8 +13,8 @@ public record PropertyMessage : IPropertyMessage
     public string Message { get; set; }
     public PropertyMessage(IProperty property, string message)
     {
-        Property = property;
-        Message = message;
+        this.Property = property;
+        this.Message = message;
     }
 }
 

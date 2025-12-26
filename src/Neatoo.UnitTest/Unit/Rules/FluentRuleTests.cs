@@ -220,7 +220,7 @@ public class ActionFluentRuleTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(Exception))]
+    [ExpectedException(typeof(InvalidTargetTypeException))]
     public async Task RunRule_WithInvalidTargetType_ThrowsException()
     {
         // Arrange
@@ -1081,7 +1081,7 @@ public class ActionAsyncFluentRuleTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(Exception))]
+    [ExpectedException(typeof(InvalidTargetTypeException))]
     public async Task RunRule_WithInvalidTargetType_ThrowsException()
     {
         // Arrange

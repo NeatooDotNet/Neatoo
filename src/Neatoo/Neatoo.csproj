@@ -1,12 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Only enable CI build optimizations when running in CI environment -->
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true' or '$(TF_BUILD)' == 'true' or '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <DebugType>embedded</DebugType>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 	  <Description>A .NET Domain Models framework for Blazor and WPF powered by Roslyn source generators.</Description>
 	  <EmbedUntrackedSources>true</EmbedUntrackedSources>
 	  <EnforceExtendedAnalyzerRules>false</EnforceExtendedAnalyzerRules>
-	  <GenerateDocumentationFile>false</GenerateDocumentationFile>
+	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
 	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	  <PackageId>Neatoo</PackageId>
 	  <PackageIcon>neatoo_icon.png</PackageIcon>
@@ -36,9 +40,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
-    <PackageReference Include="Neatoo.RemoteFactory" Version="9.19.1" />
-    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />	  
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Neatoo.RemoteFactory" />
+    <PackageReference Include="System.ComponentModel.Annotations" />
   </ItemGroup>
 
 	<ItemGroup>

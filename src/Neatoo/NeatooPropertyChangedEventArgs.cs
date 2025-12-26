@@ -1,6 +1,6 @@
 ﻿namespace Neatoo;
 
-public class NeatooPropertyChangedEventArgs
+public record NeatooPropertyChangedEventArgs
 {
     public NeatooPropertyChangedEventArgs(string propertyName, object source)
     {
@@ -22,17 +22,17 @@ public class NeatooPropertyChangedEventArgs
     {
         ArgumentNullException.ThrowIfNull(property, nameof(property));
         ArgumentNullException.ThrowIfNull(source, nameof(source));
-        PropertyName = property.Name;
-        Property = property;
-        Source = source;
-        InnerEventArgs = previous;
-        OriginalEventArgs = previous?.OriginalEventArgs ?? this;
+        this.PropertyName = property.Name;
+        this.Property = property;
+        this.Source = source;
+        this.InnerEventArgs = previous;
+        this.OriginalEventArgs = previous?.OriginalEventArgs ?? this;
     }
 
-    public string PropertyName { get; }
-    public IProperty? Property { get; private set; }
-    public object? Source { get; private set; }
-    public NeatooPropertyChangedEventArgs OriginalEventArgs { get; private set; }
-    public NeatooPropertyChangedEventArgs? InnerEventArgs { get; private set; }
-    public string FullPropertyName => PropertyName + (InnerEventArgs == null ? "" : "." + InnerEventArgs.FullPropertyName);
+    public string PropertyName { get; init; }
+    public IProperty? Property { get; init; }
+    public object? Source { get; init; }
+    public NeatooPropertyChangedEventArgs OriginalEventArgs { get; init; }
+    public NeatooPropertyChangedEventArgs? InnerEventArgs { get; init; }
+    public string FullPropertyName => this.PropertyName + (this.InnerEventArgs == null ? "" : "." + this.InnerEventArgs.FullPropertyName);
 }

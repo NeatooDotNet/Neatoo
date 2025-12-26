@@ -22,12 +22,12 @@ public class NeatooBaseJsonConverterFactory : NeatooJsonConverterFactory
         {
             return true;
         }
-        else if (typeToConvert.IsAssignableTo(typeof(IListBase)) || 
+        else if (typeToConvert.IsAssignableTo(typeof(IListBase)) ||
             typeToConvert.GetInterfaces().Where(x => x.IsGenericType).Any(x => x.GetGenericTypeDefinition() == typeof(IListBase<>)))
         {
             return true;
         }
-        else if ((typeToConvert.IsInterface || typeToConvert.IsAbstract) && !typeToConvert.IsGenericType && serviceAssemblies.HasType(typeToConvert))
+        else if ((typeToConvert.IsInterface || typeToConvert.IsAbstract) && !typeToConvert.IsGenericType && this.serviceAssemblies.HasType(typeToConvert))
         {
             return true;
         }
@@ -39,16 +39,16 @@ public class NeatooBaseJsonConverterFactory : NeatooJsonConverterFactory
     {
         if (typeToConvert.IsAssignableTo(typeof(IBase)))
         {
-            return (JsonConverter)scope.GetRequiredService(typeof(NeatooBaseJsonTypeConverter<>).MakeGenericType(typeToConvert));
+            return (JsonConverter)this.scope.GetRequiredService(typeof(NeatooBaseJsonTypeConverter<>).MakeGenericType(typeToConvert));
         }
         else if (typeToConvert.IsAssignableTo(typeof(IListBase)) ||
             typeToConvert.GetInterfaces().Where(x => x.IsGenericType).Any(x => x.GetGenericTypeDefinition() == typeof(IListBase<>)))
         {
-            return (JsonConverter)scope.GetRequiredService(typeof(NeatooListBaseJsonTypeConverter<>).MakeGenericType(typeToConvert));
+            return (JsonConverter)this.scope.GetRequiredService(typeof(NeatooListBaseJsonTypeConverter<>).MakeGenericType(typeToConvert));
         }
         else if (typeToConvert.IsInterface || typeToConvert.IsAbstract)
         {
-            return (JsonConverter)scope.GetRequiredService(typeof(NeatooInterfaceJsonTypeConverter<>).MakeGenericType(typeToConvert));
+            return (JsonConverter)this.scope.GetRequiredService(typeof(NeatooInterfaceJsonTypeConverter<>).MakeGenericType(typeToConvert));
         }
 
         return null;

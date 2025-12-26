@@ -13,15 +13,15 @@ internal class RequiredRule<T> : RuleBase<T>, IRequiredRule
     public string ErrorMessage { get; }
 
     public RequiredRule(ITriggerProperty triggerProperty, RequiredAttribute requiredAttribute) : base() {
-        TriggerProperties.Add(triggerProperty);
-        ErrorMessage = requiredAttribute.ErrorMessage ?? $"{TriggerProperties[0].PropertyName} is required.";
+        this.TriggerProperties.Add(triggerProperty);
+        this.ErrorMessage = requiredAttribute.ErrorMessage ?? $"{this.TriggerProperties[0].PropertyName} is required.";
     }
 
     protected override IRuleMessages Execute(T target)
     {
-        var value = ((ITriggerProperty<T>) TriggerProperties[0]).GetValue(target);
+        var value = ((ITriggerProperty<T>) this.TriggerProperties[0]).GetValue(target);
 
-        bool isError = false;
+        var isError = false;
 
         if (value is string s)
         {
@@ -38,7 +38,7 @@ internal class RequiredRule<T> : RuleBase<T>, IRequiredRule
 
         if (isError)
         {
-            return (TriggerProperties.Single().PropertyName, ErrorMessage).AsRuleMessages();
+            return (this.TriggerProperties.Single().PropertyName, this.ErrorMessage).AsRuleMessages();
         }
         return RuleMessages.None;
     }

@@ -10,17 +10,17 @@
 
         public AllRequiredRulesExecuted()
         {
-            RuleOrder = int.MaxValue;
+            this.RuleOrder = int.MaxValue;
         }
 
         public override void OnRuleAdded(IRuleManager ruleManager, uint uniqueIndex)
         {
             base.OnRuleAdded(ruleManager, uniqueIndex);
-            requiredRules = ruleManager.Rules.OfType<IRequiredRule>();
+            this.requiredRules = ruleManager.Rules.OfType<IRequiredRule>();
 
-            foreach (var rule in requiredRules)
+            foreach (var rule in this.requiredRules)
             {
-                TriggerProperties.AddRange(rule.TriggerProperties);
+                this.TriggerProperties.AddRange(rule.TriggerProperties);
             }
 
             ruleManager.RunRule(this);
@@ -28,9 +28,9 @@
 
         protected override IRuleMessages Execute(IValidateBase target)
         {
-            List<string> propertyNames = new List<string>();
-            List<ITriggerProperty> triggerProperties = new List<ITriggerProperty>();
-            foreach (var rule in requiredRules)
+            var propertyNames = new List<string>();
+            var triggerProperties = new List<ITriggerProperty>();
+            foreach (var rule in this.requiredRules)
             {
                 if (rule is IRequiredRule requiredRule)
                 {

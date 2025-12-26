@@ -5,6 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
+    <!-- Library Project Properties -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Only enable CI build optimizations when running in CI environment -->
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true' or '$(TF_BUILD)' == 'true' or '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <DebugType>embedded</DebugType>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
     <!-- NuGet Package Properties -->
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Neatoo.Blazor.MudNeatoo</PackageId>
@@ -31,8 +38,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MudBlazor" Version="8.0.0" />
-    <PackageReference Include="Neatoo" Version="9.10.1" />
+    <PackageReference Include="MudBlazor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Neatoo\Neatoo.csproj" />
   </ItemGroup>
 
 </Project>

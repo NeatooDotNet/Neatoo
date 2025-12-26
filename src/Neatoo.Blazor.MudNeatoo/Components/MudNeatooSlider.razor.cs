@@ -104,20 +104,20 @@ public partial class MudNeatooSlider<T> : ComponentBase, IDisposable where T : s
     [Parameter]
     public string? Class { get; set; }
 
-    private string? DisplayLabel => Label ?? EntityProperty.DisplayName;
+    private string? DisplayLabel => this.Label ?? this.EntityProperty.DisplayName;
 
-    private T TypedValue => EntityProperty.Value is T val ? val : default;
+    private T TypedValue => this.EntityProperty.Value is T val ? val : default;
 
-    private bool HasErrors => EntityProperty.PropertyMessages.Any();
+    private bool HasErrors => this.EntityProperty.PropertyMessages.Any();
 
     protected override void OnInitialized()
     {
-        EntityProperty.PropertyChanged += OnPropertyChanged;
+        this.EntityProperty.PropertyChanged += this.OnPropertyChanged;
     }
 
     private async Task OnValueChanged(T value)
     {
-        await EntityProperty.SetValue(value);
+        await this.EntityProperty.SetValue(value);
     }
 
     private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -128,12 +128,12 @@ public partial class MudNeatooSlider<T> : ComponentBase, IDisposable where T : s
             e.PropertyName == nameof(IProperty.IsReadOnly) ||
             e.PropertyName == nameof(IProperty.Value))
         {
-            InvokeAsync(StateHasChanged);
+            this.InvokeAsync(this.StateHasChanged);
         }
     }
 
     public void Dispose()
     {
-        EntityProperty.PropertyChanged -= OnPropertyChanged;
+        this.EntityProperty.PropertyChanged -= this.OnPropertyChanged;
     }
 }

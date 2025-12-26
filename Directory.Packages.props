@@ -1,0 +1,53 @@
+<Project>
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Analyzers -->
+		<PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+		<PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0" />
+
+		<!-- Roslyn / Source Generators -->
+		<PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+		<PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
+		<PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="4.14.0" />
+
+		<!-- Microsoft Extensions -->
+		<PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
+
+		<!-- ASP.NET Core / Blazor -->
+		<PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.5" />
+		<PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.5" />
+
+		<!-- Entity Framework Core -->
+		<PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.5" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.5" />
+		<PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.5" />
+
+		<!-- UI Libraries -->
+		<PackageVersion Include="MudBlazor" Version="8.0.0" />
+
+		<!-- Neatoo Dependencies -->
+		<PackageVersion Include="Neatoo" Version="9.10.1" />
+		<PackageVersion Include="Neatoo.RemoteFactory" Version="9.19.1" />
+		<PackageVersion Include="System.ComponentModel.Annotations" Version="5.0.0" />
+
+		<!-- Testing - MSTest -->
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+		<PackageVersion Include="MSTest.TestAdapter" Version="3.9.1" />
+		<PackageVersion Include="MSTest.TestFramework" Version="3.9.1" />
+
+		<!-- Testing - xUnit -->
+		<PackageVersion Include="xunit.v3" Version="2.0.3" />
+		<PackageVersion Include="xunit.runner.visualstudio" Version="3.1.1" />
+
+		<!-- Testing - Mocking -->
+		<PackageVersion Include="Moq" Version="4.20.72" />
+		<PackageVersion Include="Moq.EntityFrameworkCore" Version="9.0.0.5" />
+
+		<!-- Testing - Coverage -->
+		<PackageVersion Include="coverlet.collector" Version="6.0.4" />
+	</ItemGroup>
+</Project>

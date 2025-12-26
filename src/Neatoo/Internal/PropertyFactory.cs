@@ -23,8 +23,11 @@ public class DefaultFactory : IFactory
     }
 }
 
+/// <summary>
+/// Exception thrown when there is an error with the global factory configuration.
+/// </summary>
 [Serializable]
-public class GlobalFactoryException : Exception
+public class GlobalFactoryException : ConfigurationException
 {
     public GlobalFactoryException() { }
     public GlobalFactoryException(string message) : base(message) { }

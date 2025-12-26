@@ -114,22 +114,22 @@ public partial class MudNeatooDateRangePicker : ComponentBase, IDisposable
     [Parameter]
     public string? Class { get; set; }
 
-    private DateRange? TypedValue => (DateRange?)EntityProperty.Value;
+    private DateRange? TypedValue => (DateRange?)this.EntityProperty.Value;
 
     protected override void OnInitialized()
     {
-        EntityProperty.PropertyChanged += OnPropertyChanged;
+        this.EntityProperty.PropertyChanged += this.OnPropertyChanged;
     }
 
     private async Task OnValueChanged(DateRange? value)
     {
-        await EntityProperty.SetValue(value);
+        await this.EntityProperty.SetValue(value);
     }
 
     private async Task<IEnumerable<string>> ValidateAsync(DateRange? value)
     {
-        await EntityProperty.WaitForTasks();
-        return EntityProperty.PropertyMessages.Select(m => m.Message).Distinct();
+        await this.EntityProperty.WaitForTasks();
+        return this.EntityProperty.PropertyMessages.Select(m => m.Message).Distinct();
     }
 
     private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -140,12 +140,12 @@ public partial class MudNeatooDateRangePicker : ComponentBase, IDisposable
             e.PropertyName == nameof(IProperty.IsReadOnly) ||
             e.PropertyName == nameof(IProperty.Value))
         {
-            InvokeAsync(StateHasChanged);
+            this.InvokeAsync(this.StateHasChanged);
         }
     }
 
     public void Dispose()
     {
-        EntityProperty.PropertyChanged -= OnPropertyChanged;
+        this.EntityProperty.PropertyChanged -= this.OnPropertyChanged;
     }
 }

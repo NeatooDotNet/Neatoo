@@ -54,14 +54,15 @@ public class ExceptionTests
     }
 
     [TestMethod]
-    public void PropertyMissingException_InheritsFromException_True()
+    public void PropertyMissingException_InheritsFromPropertyException_True()
     {
         // Arrange & Act
         var exception = new PropertyMissingException();
 
         // Assert
-        Assert.IsTrue(exception is Exception);
-        Assert.AreEqual(typeof(Exception), typeof(PropertyMissingException).BaseType);
+        Assert.IsTrue(exception is PropertyException);
+        Assert.IsTrue(exception is NeatooException);
+        Assert.AreEqual(typeof(PropertyException), typeof(PropertyMissingException).BaseType);
     }
 
     [TestMethod]
@@ -118,14 +119,15 @@ public class ExceptionTests
     }
 
     [TestMethod]
-    public void PropertyTypeMismatchException_InheritsFromException_True()
+    public void PropertyTypeMismatchException_InheritsFromPropertyException_True()
     {
         // Arrange & Act
         var exception = new PropertyTypeMismatchException();
 
         // Assert
-        Assert.IsTrue(exception is Exception);
-        Assert.AreEqual(typeof(Exception), typeof(PropertyTypeMismatchException).BaseType);
+        Assert.IsTrue(exception is PropertyException);
+        Assert.IsTrue(exception is NeatooException);
+        Assert.AreEqual(typeof(PropertyException), typeof(PropertyTypeMismatchException).BaseType);
     }
 
     [TestMethod]
@@ -182,14 +184,15 @@ public class ExceptionTests
     }
 
     [TestMethod]
-    public void PropertyNotFoundException_InheritsFromException_True()
+    public void PropertyNotFoundException_InheritsFromPropertyException_True()
     {
         // Arrange & Act
         var exception = new PropertyNotFoundException();
 
         // Assert
-        Assert.IsTrue(exception is Exception);
-        Assert.AreEqual(typeof(Exception), typeof(PropertyNotFoundException).BaseType);
+        Assert.IsTrue(exception is PropertyException);
+        Assert.IsTrue(exception is NeatooException);
+        Assert.AreEqual(typeof(PropertyException), typeof(PropertyNotFoundException).BaseType);
     }
 
     [TestMethod]
@@ -246,14 +249,15 @@ public class ExceptionTests
     }
 
     [TestMethod]
-    public void GlobalFactoryException_InheritsFromException_True()
+    public void GlobalFactoryException_InheritsFromConfigurationException_True()
     {
         // Arrange & Act
         var exception = new GlobalFactoryException();
 
         // Assert
-        Assert.IsTrue(exception is Exception);
-        Assert.AreEqual(typeof(Exception), typeof(GlobalFactoryException).BaseType);
+        Assert.IsTrue(exception is ConfigurationException);
+        Assert.IsTrue(exception is NeatooException);
+        Assert.AreEqual(typeof(ConfigurationException), typeof(GlobalFactoryException).BaseType);
     }
 
     [TestMethod]
@@ -310,14 +314,15 @@ public class ExceptionTests
     }
 
     [TestMethod]
-    public void PropertyInfoEntityChildDataWrongTypeException_InheritsFromException_True()
+    public void PropertyInfoEntityChildDataWrongTypeException_InheritsFromPropertyException_True()
     {
         // Arrange & Act
         var exception = new PropertyInfoEntityChildDataWrongTypeException();
 
         // Assert
-        Assert.IsTrue(exception is Exception);
-        Assert.AreEqual(typeof(Exception), typeof(PropertyInfoEntityChildDataWrongTypeException).BaseType);
+        Assert.IsTrue(exception is PropertyException);
+        Assert.IsTrue(exception is NeatooException);
+        Assert.AreEqual(typeof(PropertyException), typeof(PropertyInfoEntityChildDataWrongTypeException).BaseType);
     }
 
     [TestMethod]
@@ -374,14 +379,15 @@ public class ExceptionTests
     }
 
     [TestMethod]
-    public void PropertyValidateChildDataWrongTypeException_InheritsFromException_True()
+    public void PropertyValidateChildDataWrongTypeException_InheritsFromPropertyException_True()
     {
         // Arrange & Act
         var exception = new PropertyValidateChildDataWrongTypeException();
 
         // Assert
-        Assert.IsTrue(exception is Exception);
-        Assert.AreEqual(typeof(Exception), typeof(PropertyValidateChildDataWrongTypeException).BaseType);
+        Assert.IsTrue(exception is PropertyException);
+        Assert.IsTrue(exception is NeatooException);
+        Assert.AreEqual(typeof(PropertyException), typeof(PropertyValidateChildDataWrongTypeException).BaseType);
     }
 
     [TestMethod]
@@ -438,14 +444,15 @@ public class ExceptionTests
     }
 
     [TestMethod]
-    public void TargetRulePropertyChangeException_InheritsFromException_True()
+    public void TargetRulePropertyChangeException_InheritsFromRuleException_True()
     {
         // Arrange & Act
         var exception = new TargetRulePropertyChangeException();
 
         // Assert
-        Assert.IsTrue(exception is Exception);
-        Assert.AreEqual(typeof(Exception), typeof(TargetRulePropertyChangeException).BaseType);
+        Assert.IsTrue(exception is RuleException);
+        Assert.IsTrue(exception is NeatooException);
+        Assert.AreEqual(typeof(RuleException), typeof(TargetRulePropertyChangeException).BaseType);
     }
 
     [TestMethod]
@@ -502,14 +509,15 @@ public class ExceptionTests
     }
 
     [TestMethod]
-    public void InvalidRuleTypeException_InheritsFromException_True()
+    public void InvalidRuleTypeException_InheritsFromRuleException_True()
     {
         // Arrange & Act
         var exception = new InvalidRuleTypeException();
 
         // Assert
-        Assert.IsTrue(exception is Exception);
-        Assert.AreEqual(typeof(Exception), typeof(InvalidRuleTypeException).BaseType);
+        Assert.IsTrue(exception is RuleException);
+        Assert.IsTrue(exception is NeatooException);
+        Assert.AreEqual(typeof(RuleException), typeof(InvalidRuleTypeException).BaseType);
     }
 
     [TestMethod]
@@ -566,14 +574,15 @@ public class ExceptionTests
     }
 
     [TestMethod]
-    public void InvalidTargetTypeException_InheritsFromException_True()
+    public void InvalidTargetTypeException_InheritsFromRuleException_True()
     {
         // Arrange & Act
         var exception = new InvalidTargetTypeException();
 
         // Assert
-        Assert.IsTrue(exception is Exception);
-        Assert.AreEqual(typeof(Exception), typeof(InvalidTargetTypeException).BaseType);
+        Assert.IsTrue(exception is RuleException);
+        Assert.IsTrue(exception is NeatooException);
+        Assert.AreEqual(typeof(RuleException), typeof(InvalidTargetTypeException).BaseType);
     }
 
     [TestMethod]
@@ -630,14 +639,15 @@ public class ExceptionTests
     }
 
     [TestMethod]
-    public void TargetIsNullException_InheritsFromException_True()
+    public void TargetIsNullException_InheritsFromRuleException_True()
     {
         // Arrange & Act
         var exception = new TargetIsNullException();
 
         // Assert
-        Assert.IsTrue(exception is Exception);
-        Assert.AreEqual(typeof(Exception), typeof(TargetIsNullException).BaseType);
+        Assert.IsTrue(exception is RuleException);
+        Assert.IsTrue(exception is NeatooException);
+        Assert.AreEqual(typeof(RuleException), typeof(TargetIsNullException).BaseType);
     }
 
     [TestMethod]
@@ -705,14 +715,15 @@ public class ExceptionTests
     }
 
     [TestMethod]
-    public void AddRulesNotDefinedException_InheritsFromException_True()
+    public void AddRulesNotDefinedException_InheritsFromConfigurationException_True()
     {
         // Arrange & Act
         var exception = new AddRulesNotDefinedException<string>();
 
         // Assert
-        Assert.IsTrue(exception is Exception);
-        Assert.AreEqual(typeof(Exception), typeof(AddRulesNotDefinedException<string>).BaseType);
+        Assert.IsTrue(exception is ConfigurationException);
+        Assert.IsTrue(exception is NeatooException);
+        Assert.AreEqual(typeof(ConfigurationException), typeof(AddRulesNotDefinedException<string>).BaseType);
     }
 
     [TestMethod]

@@ -16,9 +16,9 @@ public class PropertyInfoList<T> : IPropertyInfoList<T>
     public PropertyInfoList(CreatePropertyInfoWrapper createPropertyInfoWrapper)
     {
 
-        CreatePropertyInfo = createPropertyInfoWrapper;
+        this.CreatePropertyInfo = createPropertyInfoWrapper;
 
-        RegisterProperties();
+        this.RegisterProperties();
     }
 
 
@@ -48,7 +48,7 @@ public class PropertyInfoList<T> : IPropertyInfoList<T>
 
                 foreach (var p in properties)
                 {
-                    var prop = CreatePropertyInfo(p);
+                    var prop = this.CreatePropertyInfo(p);
                     if (!PropertyInfos.ContainsKey(p.Name))
                     {
                         PropertyInfos.Add(p.Name, prop);
@@ -65,7 +65,7 @@ public class PropertyInfoList<T> : IPropertyInfoList<T>
 
                 if (objProp != null)
                 {
-                    PropertyInfos.Add(nameof(IValidateBase.ObjectInvalid), CreatePropertyInfo(objProp));
+                    PropertyInfos.Add(nameof(IValidateBase.ObjectInvalid), this.CreatePropertyInfo(objProp));
                     break;
                 }
 
@@ -77,7 +77,7 @@ public class PropertyInfoList<T> : IPropertyInfoList<T>
 
     public IPropertyInfo? GetPropertyInfo(string propertyName)
     {
-        RegisterProperties();
+        this.RegisterProperties();
 
         if (!PropertyInfos.TryGetValue(propertyName, out var prop))
         {
@@ -89,13 +89,13 @@ public class PropertyInfoList<T> : IPropertyInfoList<T>
 
     public IEnumerable<IPropertyInfo> Properties()
     {
-        RegisterProperties();
+        this.RegisterProperties();
         return PropertyInfos.Select(p => p.Value);
     }
 
     public bool HasProperty(string propertyName)
     {
-        RegisterProperties();
+        this.RegisterProperties();
         return PropertyInfos.ContainsKey(propertyName);
     }
 }
