@@ -1,0 +1,105 @@
+# Neatoo Framework Documentation
+
+Neatoo is a DDD Aggregate Framework for .NET that provides bindable, serializable Aggregate Entity Graphs for Blazor and WPF applications.
+
+## Documentation Index
+
+### Getting Started
+
+- [Quick Start](quick-start.md) - Get up and running in 10 minutes
+- [Installation](installation.md) - NuGet packages and project setup
+
+### Core Concepts
+
+- [Aggregates and Entities](aggregates-and-entities.md) - Creating domain model classes with EntityBase
+- [Validation and Rules](validation-and-rules.md) - Business rule implementation with RuleBase
+- [Factory Operations](factory-operations.md) - Create, Fetch, Insert, Update, Delete lifecycle
+- [Property System](property-system.md) - Getter/Setter, IProperty, meta-properties
+
+### Collections
+
+- [Entity Collections](collections.md) - EntityListBase for child entity collections
+
+### UI Integration
+
+- [Blazor Binding](blazor-binding.md) - Data binding and MudNeatoo components
+- [Meta-Properties Reference](meta-properties.md) - IsBusy, IsValid, IsModified, IsSavable
+
+### Advanced Topics
+
+- [Remote Factory Pattern](remote-factory.md) - Client-server state transfer
+- [Mapper Methods](mapper-methods.md) - MapFrom, MapTo, MapModifiedTo
+
+### Architecture
+
+- [DDD Analysis](DDD-Analysis.md) - How Neatoo aligns with Domain-Driven Design
+
+---
+
+## Class Hierarchy
+
+```
+Base<T>                      - Property management, parent-child relationships
+    |
+ValidateBase<T>              - Validation rules, property messages, validity tracking
+    |
+EntityBase<T>                - Identity, modification tracking, persistence lifecycle
+
+
+ListBase<I>                  - Observable collection, parent-child relationships
+    |
+ValidateListBase<I>          - Aggregated validation across items
+    |
+EntityListBase<I>            - Deleted item tracking, modification state
+```
+
+## Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Bindable Properties** | INotifyPropertyChanged for UI binding |
+| **Meta-Properties** | IsBusy, IsValid, IsModified, IsSavable |
+| **Validation Rules** | Sync and async business rules |
+| **3-Tier Factory** | Source-generated factories for client-server transfer |
+| **Mapper Methods** | Auto-generated MapFrom/MapTo/MapModifiedTo |
+| **Authorization** | Declarative authorization via attributes |
+
+## Quick Example
+
+```csharp
+// Define interface (required for factory generation)
+public partial interface ICustomer : IEntityBase { }
+
+// Define aggregate root
+[Factory]
+internal partial class Customer : EntityBase<Customer>, ICustomer
+{
+    public Customer(IEntityBaseServices<Customer> services) : base(services) { }
+
+    // Partial properties - Neatoo generates backing code
+    public partial string? Name { get; set; }
+    public partial string? Email { get; set; }
+
+    // Factory operations
+    [Remote]
+    [Fetch]
+    public async Task Fetch(int id, [Service] IDbContext db)
+    {
+        var entity = await db.Customers.FindAsync(id);
+        MapFrom(entity);
+    }
+
+    [Remote]
+    [Insert]
+    public async Task Insert([Service] IDbContext db)
+    {
+        await RunRules();
+        if (!IsSavable) return;
+
+        var entity = new CustomerEntity();
+        MapTo(entity);
+        db.Customers.Add(entity);
+        await db.SaveChangesAsync();
+    }
+}
+```

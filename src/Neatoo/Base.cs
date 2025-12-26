@@ -1,4 +1,4 @@
-﻿using Neatoo.Internal;
+using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -42,7 +42,7 @@ public interface IBase : INeatooObject, INotifyPropertyChanged, INotifyNeatooPro
     /// </summary>
     /// <param name="propertyName">The name of the property to retrieve.</param>
     /// <returns>The <see cref="IProperty"/> instance for the specified property.</returns>
-    internal IProperty this[string propertyName] { get => GetProperty(propertyName); }
+    internal IProperty this[string propertyName] => this.GetProperty(propertyName);
 
     /// <summary>
     /// Gets the property manager responsible for managing all properties on this object.
