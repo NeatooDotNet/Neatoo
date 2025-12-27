@@ -38,20 +38,24 @@ Neatoo is a DDD Aggregate Framework for .NET that provides bindable, serializabl
 
 ## Class Hierarchy
 
+Neatoo provides a class hierarchy for building domain models. Users typically inherit from `ValidateBase<T>` or `EntityBase<T>`:
+
 ```
-Base<T>                      - Property management, parent-child relationships
+Base<T>                      - Internal base class (property management, parent-child relationships)
     |
-ValidateBase<T>              - Validation rules, property messages, validity tracking
+ValidateBase<T>              - For non-persisted validated objects (criteria, filters, form input)
     |
-EntityBase<T>                - Identity, modification tracking, persistence lifecycle
+EntityBase<T>                - For entities with identity, modification tracking, persistence
 
 
-ListBase<I>                  - Observable collection, parent-child relationships
+ListBase<I>                  - Internal base class (observable collection, parent-child relationships)
     |
-ValidateListBase<I>          - Aggregated validation across items
+ValidateListBase<I>          - For lists of validated non-persisted objects
     |
-EntityListBase<I>            - Deleted item tracking, modification state
+EntityListBase<I>            - For child entity collections with deleted item tracking
 ```
+
+**Note:** Value Objects in Neatoo are simple POCO classes with `[Factory]` attribute - they do not inherit from any Neatoo base class. See [Aggregates and Entities](aggregates-and-entities.md) for details.
 
 ## Key Features
 

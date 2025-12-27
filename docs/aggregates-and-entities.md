@@ -4,25 +4,30 @@ This document covers creating domain model classes using Neatoo's base classes.
 
 ## Class Hierarchy Overview
 
+Users typically inherit from `ValidateBase<T>` or `EntityBase<T>`:
+
 ```
-Base<T>                      - Property management, parent-child relationships
+Base<T>                      - Internal base class (not for direct use)
     |
-ValidateBase<T>              - Validation rules, property messages, validity tracking
+ValidateBase<T>              - For non-persisted validated objects (criteria, filters)
     |
-EntityBase<T>                - Identity, modification tracking, persistence lifecycle
+EntityBase<T>                - For entities with identity, modification tracking, persistence
 ```
 
-## Entities vs Value Objects
+**Note:** Value Objects are simple POCO classes with `[Factory]` attribute - they do not inherit from any Neatoo base class.
 
-> **Note:** Neatoo works with [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) to provide a complete DDD framework. While Neatoo's `Base<T>` can be used for read-only objects, comprehensive DDD Value Object support (including fetching and factory operations) is provided by RemoteFactory. See the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for complete Value Object implementation guidance.
+## DDD Concepts in Neatoo
 
 In DDD terms, Neatoo maps to:
 
-| DDD Concept | Neatoo Base Class | Characteristics |
-|-------------|-------------------|-----------------|
+| DDD Concept | Neatoo Implementation | Characteristics |
+|-------------|----------------------|-----------------|
 | **Entity** | `EntityBase<T>` | Has identity, mutable, tracks modifications, persisted |
-| **Value Object** | `Base<T>` | No identity, read-only after creation, immutable |
-| **Validated Value Object** | `ValidateBase<T>` | Value object with validation rules |
+| **Aggregate Root** | `EntityBase<T>` with `[Remote]` operations | Top-level entity that coordinates persistence |
+| **Value Object** | Simple POCO class with `[Factory]` | No identity, immutable, fetched via RemoteFactory |
+| **Criteria/Filter Object** | `ValidateBase<T>` | Non-persisted object with validation rules |
+
+> **Note:** Value Objects in Neatoo are simple POCO classes with the `[Factory]` attribute. They are handled by [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) for fetching operations. See the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for complete Value Object implementation guidance.
 
 ### Entities (EntityBase)
 
@@ -43,21 +48,21 @@ internal partial class Order : EntityBase<Order>, IOrder
 }
 ```
 
-### Value Objects (Base)
+### Value Objects (Simple POCO)
 
-Use `Base<T>` for domain objects that:
-- Are defined by their attributes, not identity
-- Are read-only after creation (fetch only)
-- Do not track modifications
-- Represent lookup data, reference data, or immutable snapshots
+Value Objects are simple classes that don't inherit from any Neatoo base class. They are:
+- Defined by their attributes, not identity
+- Immutable after creation (fetch only)
+- Handled by RemoteFactory for factory operations
+- Used for lookup data, reference data, or immutable snapshots
 
 ```csharp
-// Value Object - read-only, no modification tracking
+// Value Object - simple POCO class, no Neatoo base class
 [Factory]
-internal partial class StateProvince : Base<StateProvince>, IStateProvince
+internal partial class StateProvince : IStateProvince
 {
-    public partial string Code { get; set; }       // Set during Fetch only
-    public partial string Name { get; set; }       // Set during Fetch only
+    public string Code { get; set; }
+    public string Name { get; set; }
 
     [Fetch]
     public void Fetch(StateProvinceEntity entity)
@@ -70,28 +75,37 @@ internal partial class StateProvince : Base<StateProvince>, IStateProvince
 }
 ```
 
-### Validated Value Objects (ValidateBase)
+### Validated Non-Persisted Objects (ValidateBase)
 
-Use `ValidateBase<T>` when you need validation on a value object:
+Use `ValidateBase<T>` for objects that need validation but are NOT persisted. Common use cases include:
+- **Criteria objects** for search/filter operations
+- **Form input objects** that validate user input before creating entities
+- **Configuration objects** that need validation
 
 ```csharp
-// Validated Value Object - has validation but no persistence tracking
+// Criteria object - has validation but no persistence
 [Factory]
-internal partial class Address : ValidateBase<Address>, IAddress
+internal partial class PersonSearchCriteria : ValidateBase<PersonSearchCriteria>, IPersonSearchCriteria
 {
-    [Required]
-    public partial string Street { get; set; }
+    [Required(ErrorMessage = "At least one search term required")]
+    public partial string? SearchTerm { get; set; }
 
-    [Required]
-    public partial string City { get; set; }
+    public partial DateTime? FromDate { get; set; }
+    public partial DateTime? ToDate { get; set; }
 
-    public partial IStateProvince State { get; set; }
+    // Custom validation rule
+    public PersonSearchCriteria(IValidateBaseServices<PersonSearchCriteria> services) : base(services)
+    {
+        RuleManager.AddValidation(
+            t => t.FromDate > t.ToDate ? "From date must be before To date" : "",
+            t => t.FromDate, t => t.ToDate);
+    }
 }
 ```
 
 ## Hierarchy Constraints
 
-**Critical Rule:** You cannot nest an Entity under a Value Object.
+**Critical Rule:** Entities must maintain a proper parent-child hierarchy for modification tracking to work correctly.
 
 The hierarchy must maintain persistence tracking from root to leaves:
 
@@ -103,23 +117,20 @@ EntityBase (Aggregate Root)
             └── EntityBase (Grandchild Entity)
 
 EntityBase (Aggregate Root)
-    └── Base (Value Object child - leaf only)
-
-Base (Value Object Root)
-    └── Base (Value Object child)
+    └── Value Object (simple POCO - leaf only, no modification tracking)
 
 
 ❌ INVALID HIERARCHY:
 
 EntityBase (Aggregate Root)
-    └── Base (Value Object)
+    └── ValidateBase (non-persisted object)
             └── EntityBase  ← NOT ALLOWED!
 ```
 
 ### Why This Constraint Exists
 
-- `Base<T>` does not track modifications or manage persistence lifecycle
-- If an `EntityBase<T>` is nested under `Base<T>`, its changes cannot propagate up
+- `ValidateBase<T>` does not track modifications or manage persistence lifecycle
+- If an `EntityBase<T>` is nested under a non-Entity, its changes cannot propagate up
 - The aggregate root would not know the grandchild entity was modified
 - The `IsSavable` and `IsModified` state would be incorrect
 
@@ -133,19 +144,19 @@ internal partial class Order : EntityBase<Order>, IOrder
     public partial IOrderLineItemList LineItems { get; set; }  // EntityListBase
 }
 
-// ✅ CORRECT: Entity contains Value Object (leaf)
+// ✅ CORRECT: Entity references Value Object (simple POCO)
 [Factory]
 internal partial class Order : EntityBase<Order>, IOrder
 {
-    public partial IShippingInfo ShippingInfo { get; set; }  // Base - read-only
+    public partial IShippingInfo ShippingInfo { get; set; }  // Simple POCO - read-only
 }
 
-// ❌ WRONG: Value Object containing Entity
+// ✅ CORRECT: ValidateBase for search criteria (not persisted)
 [Factory]
-internal partial class ShippingInfo : Base<ShippingInfo>, IShippingInfo
+internal partial class OrderSearchCriteria : ValidateBase<OrderSearchCriteria>, IOrderSearchCriteria
 {
-    // DON'T DO THIS - Entity under Value Object breaks modification tracking
-    public partial IAddress Address { get; set; }  // If Address is EntityBase, this is wrong!
+    public partial string? CustomerName { get; set; }
+    public partial DateTime? OrderDate { get; set; }
 }
 ```
 
@@ -153,10 +164,10 @@ internal partial class ShippingInfo : Base<ShippingInfo>, IShippingInfo
 
 | Scenario | Pattern |
 |----------|---------|
-| Editable child data | `EntityBase` under `EntityBase` |
-| Reference/lookup data | `Base` as leaf under `EntityBase` |
-| Read-only snapshot | `Base` under `Base` |
-| Editable with validation only | `ValidateBase` (no persistence tracking) |
+| Editable child data that persists | `EntityBase` under `EntityBase` |
+| Reference/lookup data | Value Object (simple POCO) |
+| Search/filter criteria with validation | `ValidateBase` (no persistence tracking) |
+| Form input validation before entity creation | `ValidateBase` |
 
 ## Defining an Aggregate Root
 

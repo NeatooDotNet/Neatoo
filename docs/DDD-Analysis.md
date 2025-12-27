@@ -17,16 +17,17 @@ Neatoo is a sophisticated Domain-Driven Design aggregate framework for .NET that
 Neatoo provides excellent aggregate pattern support through its class hierarchy:
 
 ```
-Base<T>           - Basic property management, parent-child relationships
+Base<T>           - Internal base class (property management, parent-child relationships)
     |
-ValidateBase<T>   - Validation rules, property messages, validity tracking
+ValidateBase<T>   - For non-persisted validated objects (criteria, filters, form input)
     |
-EntityBase<T>     - Identity, modification tracking, persistence lifecycle
+EntityBase<T>     - For entities with identity, modification tracking, persistence
 ```
 
 This hierarchy maps cleanly to DDD concepts:
 - `EntityBase<T>` represents domain entities with identity
-- `ValidateBase<T>` supports business invariants
+- `ValidateBase<T>` supports validated non-persisted objects (like search criteria)
+- Value Objects are simple POCOs with `[Factory]` attribute (handled by RemoteFactory)
 - Lists (`EntityListBase<I>`) support child collections within aggregates
 
 #### 1.2 Rich Domain Model Support
@@ -226,15 +227,32 @@ public async Task<PersonEntity?> Insert([Service] IPersonDbContext personContext
 
 **Verdict:** Pragmatic for simple cases; may need architectural guidance for complex aggregates.
 
-### 3.4 Deviation: No Explicit Value Objects
+### 3.4 Value Objects as Simple POCOs
 
 **Traditional DDD Norm:** Immutable value objects for domain concepts without identity.
 
-**Neatoo Approach:** Neatoo itself does not include a built-in value object base class. However, [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) provides Value Object support including factory operations for fetching value objects.
+**Neatoo Approach:** Value Objects are implemented as simple POCO classes with the `[Factory]` attribute. They do not inherit from any Neatoo base class. [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) handles factory operations for fetching value objects.
 
-**Analysis:** For applications using RemoteFactory alongside Neatoo (which is the standard configuration), value object capabilities are available. Value objects can be used as property types within Neatoo entities, and RemoteFactory handles the factory operations.
+**Example:**
+```csharp
+[Factory]
+internal partial class StateProvince : IStateProvince
+{
+    public string Code { get; set; }
+    public string Name { get; set; }
 
-**Verdict:** Addressed through RemoteFactory integration. See the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for implementation guidance.
+    [Fetch]
+    public void Fetch(StateProvinceEntity entity)
+    {
+        Code = entity.Code;
+        Name = entity.Name;
+    }
+}
+```
+
+**Analysis:** This approach is clean and aligns with DDD principles - value objects are simple, immutable (after fetch), and focused on their attributes rather than identity. RemoteFactory handles the factory generation.
+
+**Verdict:** Good alignment with DDD. See the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for implementation guidance.
 
 ---
 
@@ -378,11 +396,11 @@ Neatoo appears inspired by CSLA (particularly Rocky Lhotka's work). Key differen
 
 ## 6. Improvement Opportunities
 
-### 6.1 Value Object Support
+### 6.1 Value Object Pattern
 
-**Current State:** Neatoo's core library does not include a `ValueObject<T>` base class. However, [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) provides value object fetching and factory operations.
+**Current State:** Value Objects in Neatoo are simple POCO classes with the `[Factory]` attribute. They don't inherit from any Neatoo base class. [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) handles factory generation and fetching operations.
 
-**Recommendation:** For applications requiring DDD value objects, leverage RemoteFactory's value object support. See the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for patterns and examples.
+**Recommendation:** This is the correct approach for DDD value objects. They should be simple, immutable classes focused on their attributes. See the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for patterns and examples.
 
 ### 6.2 Rule Dependency Declaration
 
@@ -460,10 +478,9 @@ Neatoo is a well-designed framework that solves real problems for enterprise LOB
 5. Authorization model (via RemoteFactory integration)
 
 **Areas for Improvement:**
-1. Explicit value object support
-2. Domain event mechanism
-3. Testing utilities/documentation
-4. Guidance for complex aggregate scenarios
+1. Domain event mechanism
+2. Testing utilities/documentation
+3. Guidance for complex aggregate scenarios
 
 ### Recommendation
 
@@ -498,7 +515,7 @@ For new teams adopting Neatoo, recommended approach:
 |-------------|----------------|
 | Aggregates | Excellent |
 | Entities | Excellent |
-| Value Objects | Via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) |
+| Value Objects | Simple POCOs with `[Factory]` (via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs)) |
 | Domain Events | Not built-in |
 | Repositories | Factory pattern instead |
 | Business Rules | Excellent |

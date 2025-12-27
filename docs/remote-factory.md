@@ -76,7 +76,7 @@ internal partial class Person : EntityBase<Person>, IPerson
 |----------|---------------|
 | Aggregate root operations | Yes |
 | Child entity operations | No - saved through parent |
-| Value object fetch | Yes (via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs)) |
+| Value Object fetch (simple POCO) | Yes (via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs)) |
 | Methods needing database access | Yes |
 
 ### Child Entities
