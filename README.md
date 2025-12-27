@@ -5,7 +5,7 @@ With Neatoo you define the business logic once and reuse it in both the UI and t
 Allowing you to do more with less code while maintaining consistency. 
 
 Neatoo is for applications with complex business logic. 
-A robust user experience is delivered by the bindable properties, property messages and authorization check methods.
+A robust user experience is delivered by the bindable properties, property messages and authorization check methods (via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) integration).
 The user knows exactly what they can do, what they need to do to save and that the save will succeed!
 
 **Write complex Aggregate Entity Graphs with no DTOs and only one controller!**
@@ -28,7 +28,7 @@ All that needs to be transferred is the Entity data.
 
 Neatoo uniquely uses Roslyn Source Generators to create a readable and performant Factory *specific* to each Entity. 
 The 3-Tier Factories transfers the Entity Data for you. 
-Authorization is implemented within the Factory.
+Authorization is implemented within the Factory (via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory)).
 Before Source Generators frameworks had to rely on reflection.
 The end result wasn't known until execution.
 Now many runtime errors are compile errors and there is code you can see and step thru!
@@ -36,7 +36,7 @@ Now many runtime errors are compile errors and there is code you can see and ste
 # Features
 
 * Validation
-* Authorization
+* Authorization (via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory))
 * Bindable Properties
 * Bindable Meta-Properties
 * 3-Tier Factory

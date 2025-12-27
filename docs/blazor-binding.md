@@ -320,6 +320,8 @@ For more detailed change information:
 
 ## Authorization UI
 
+> **Note:** Authorization is provided by [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory). For comprehensive documentation, see the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs).
+
 Show/hide UI based on factory authorization:
 
 ```razor

@@ -159,14 +159,14 @@ The framework properly tracks busy state during async validation (`IsBusy`, `Add
 
 #### 2.5 Authorization Integration
 
-Authorization is declarative and integrated into the factory pattern:
+Authorization is provided through [RemoteFactory's](https://github.com/NeatooDotNet/RemoteFactory) integration with Neatoo. The declarative authorization pattern integrates into the factory:
 
 ```csharp
-[AuthorizeFactory<IPersonAuth>]
+[AuthorizeFactory<IPersonAuth>]  // RemoteFactory attribute
 internal partial class Person : EntityBase<Person>, IPerson { }
 ```
 
-This generates authorization checks for all factory operations, with `CanCreate()`, `CanFetch()`, etc. methods available for UI permission display.
+This generates authorization checks for all factory operations, with `CanCreate()`, `CanFetch()`, etc. methods available for UI permission display. For comprehensive authorization documentation, see the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs).
 
 ---
 
@@ -230,11 +230,11 @@ public async Task<PersonEntity?> Insert([Service] IPersonDbContext personContext
 
 **Traditional DDD Norm:** Immutable value objects for domain concepts without identity.
 
-**Neatoo Approach:** No built-in value object base class. `PhoneType` enum is the closest example.
+**Neatoo Approach:** Neatoo itself does not include a built-in value object base class. However, [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) provides Value Object support including factory operations for fetching value objects.
 
-**Analysis:** Value objects can still be used as property types within Neatoo entities. The framework's property system will track changes to value object properties. However, there is no `ValueObject<T>` base class providing equality semantics.
+**Analysis:** For applications using RemoteFactory alongside Neatoo (which is the standard configuration), value object capabilities are available. Value objects can be used as property types within Neatoo entities, and RemoteFactory handles the factory operations.
 
-**Verdict:** Minor gap - could be addressed with documentation or a lightweight base class.
+**Verdict:** Addressed through RemoteFactory integration. See the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for implementation guidance.
 
 ---
 
@@ -380,18 +380,9 @@ Neatoo appears inspired by CSLA (particularly Rocky Lhotka's work). Key differen
 
 ### 6.1 Value Object Support
 
-**Recommendation:** Add a `ValueObject<T>` base class or guidance for immutable value types:
+**Current State:** Neatoo's core library does not include a `ValueObject<T>` base class. However, [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) provides value object fetching and factory operations.
 
-```csharp
-// Suggested addition
-public abstract class ValueObject<T> where T : ValueObject<T>
-{
-    protected abstract IEnumerable<object> GetEqualityComponents();
-
-    public override bool Equals(object? obj) { /* ... */ }
-    public override int GetHashCode() { /* ... */ }
-}
-```
+**Recommendation:** For applications requiring DDD value objects, leverage RemoteFactory's value object support. See the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for patterns and examples.
 
 ### 6.2 Rule Dependency Declaration
 
@@ -466,7 +457,7 @@ Neatoo is a well-designed framework that solves real problems for enterprise LOB
 2. First-class async validation support
 3. Source generators reduce boilerplate while maintaining debuggability
 4. Strong testability of business rules
-5. Integrated authorization model
+5. Authorization model (via RemoteFactory integration)
 
 **Areas for Improvement:**
 1. Explicit value object support
@@ -507,7 +498,7 @@ For new teams adopting Neatoo, recommended approach:
 |-------------|----------------|
 | Aggregates | Excellent |
 | Entities | Excellent |
-| Value Objects | Manual (no base class) |
+| Value Objects | Via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) |
 | Domain Events | Not built-in |
 | Repositories | Factory pattern instead |
 | Business Rules | Excellent |

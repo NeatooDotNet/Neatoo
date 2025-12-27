@@ -2,6 +2,8 @@
 
 Neatoo's Remote Factory enables client-server state transfer for Blazor WebAssembly applications. The domain model code executes on both client and server, with factory operations routing to the server when needed.
 
+> **About RemoteFactory:** Neatoo depends on [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory), a companion library that provides factory generation, client-server state transfer, authorization, and value object support. Together, Neatoo and RemoteFactory form a complete DDD framework. For detailed RemoteFactory documentation, see the [RemoteFactory GitHub repository](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs).
+
 ## Overview
 
 ```
@@ -74,7 +76,7 @@ internal partial class Person : EntityBase<Person>, IPerson
 |----------|---------------|
 | Aggregate root operations | Yes |
 | Child entity operations | No - saved through parent |
-| Value object fetch | Yes |
+| Value object fetch | Yes (via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs)) |
 | Methods needing database access | Yes |
 
 ### Child Entities
@@ -310,6 +312,8 @@ if (!person.IsValid)
 ```
 
 ## Authorization
+
+> **Note:** Authorization is provided by RemoteFactory. For comprehensive documentation, see the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs).
 
 Authorization is checked on the server:
 

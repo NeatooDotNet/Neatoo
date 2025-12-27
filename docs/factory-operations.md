@@ -268,6 +268,8 @@ Console.WriteLine(person.Id);  // May be null/0
 
 ## Authorization Methods
 
+> **Note:** Authorization is provided by [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory). For comprehensive documentation, see the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs).
+
 Factories include authorization check methods:
 
 ```csharp

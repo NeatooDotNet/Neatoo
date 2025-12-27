@@ -1,6 +1,8 @@
-# Neatoo.RemoteFactory Coding Standards Documentation
+# Neatoo Coding Standards Documentation
 
-This document provides comprehensive coding standards for the Neatoo.RemoteFactory solution, derived from analysis of configuration files, project structures, and actual code patterns.
+This document provides comprehensive coding standards for the Neatoo framework and its companion library [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory). These standards apply to both repositories, which together form a complete DDD framework for .NET.
+
+> **Note:** Neatoo depends on RemoteFactory for factory generation, client-server state transfer, authorization, and value object support. The coding standards are shared between both projects.
 
 ---
 
@@ -803,7 +805,7 @@ Copy the full `.editorconfig` from `src/.editorconfig`, which includes:
 
 ## Summary
 
-The Neatoo.RemoteFactory solution employs a strict, modern C# coding standard characterized by:
+The Neatoo and RemoteFactory projects employ a strict, modern C# coding standard characterized by:
 
 1. **Strict Quality Enforcement** - All warnings as errors, comprehensive analysis
 2. **Modern C# Features** - Preview language features, .NET 9.0, nullable reference types

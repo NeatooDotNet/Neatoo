@@ -62,7 +62,7 @@ EntityListBase<I>            - Deleted item tracking, modification state
 | **Validation Rules** | Sync and async business rules |
 | **3-Tier Factory** | Source-generated factories for client-server transfer |
 | **Mapper Methods** | Auto-generated MapFrom/MapTo/MapModifiedTo |
-| **Authorization** | Declarative authorization via attributes |
+| **Authorization** | Declarative authorization via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) |
 
 ## Quick Example
 

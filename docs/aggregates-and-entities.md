@@ -14,6 +14,8 @@ EntityBase<T>                - Identity, modification tracking, persistence life
 
 ## Entities vs Value Objects
 
+> **Note:** Neatoo works with [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) to provide a complete DDD framework. While Neatoo's `Base<T>` can be used for read-only objects, comprehensive DDD Value Object support (including fetching and factory operations) is provided by RemoteFactory. See the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for complete Value Object implementation guidance.
+
 In DDD terms, Neatoo maps to:
 
 | DDD Concept | Neatoo Base Class | Characteristics |
@@ -298,6 +300,8 @@ public partial string? Email { get; set; }
 Neatoo converts these to validation rules automatically.
 
 ## Authorization
+
+> **Note:** Authorization is provided by [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory). For comprehensive authorization patterns and configuration, see the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs).
 
 Use `[AuthorizeFactory<T>]` to add authorization checks:
 
