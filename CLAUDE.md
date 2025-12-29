@@ -1,5 +1,10 @@
 # Claude Code Guidelines for Neatoo
 
+## Environment
+
+- **Platform:** Windows 11
+- **Shell:** PowerShell / cmd
+
 ## Critical: Business Rules Architecture
 
 ### Where Business Rules Belong

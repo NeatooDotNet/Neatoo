@@ -142,6 +142,53 @@ person = await personFactory.Save(person);
 // person now has server-generated ID, validation state, etc.
 ```
 
+### Object Identity After Remote Operations
+
+When using Remote Factory, understand that **remote operations return new object instances**:
+
+```csharp
+var person = await personFactory.Create();
+var originalReference = person;
+
+person = await personFactory.Save(person);
+
+// These are DIFFERENT objects
+Console.WriteLine(ReferenceEquals(originalReference, person));  // false
+```
+
+This occurs because:
+1. The object is serialized (converted to data)
+2. Transmitted to the server
+3. A new instance is created on the server
+4. Server performs the operation
+5. The result is serialized back
+6. A **new instance** is deserialized on the client
+
+#### Implications
+
+| Operation | Returns New Instance? | Must Reassign? |
+|-----------|----------------------|----------------|
+| `Create()` | Yes | Yes (to variable) |
+| `Fetch()` | Yes | Yes (to variable) |
+| `Save()` | Yes | **Yes - Critical!** |
+| `Delete()` | N/A | N/A |
+
+Always treat remote factory operations as returning fresh instances that must be captured.
+
+#### Common Mistake
+
+```csharp
+// WRONG - discards the new instance
+await personFactory.Save(person);
+// person is still the OLD pre-save instance!
+
+// CORRECT - captures the new instance
+person = await personFactory.Save(person);
+// person is now the updated post-save instance
+```
+
+See [Factory Operations](factory-operations.md#critical-always-reassign-after-save) for detailed guidance.
+
 ## Client-Side Business Rules
 
 Rules execute on both client and server:

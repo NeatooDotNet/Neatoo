@@ -223,6 +223,71 @@ Standard save button with all state checks:
 }
 ```
 
+### Critical: Reassign After Save() in Blazor Components
+
+In Blazor, failing to reassign after `Save()` causes the UI to display stale data. This is because `Save()` serializes the object to the server and returns a **completely new deserialized instance**.
+
+```csharp
+@code {
+    private IPerson? Person { get; set; }
+
+    private async Task HandleSave()
+    {
+        if (Person is null || !Person.IsSavable) return;
+
+        // CRITICAL: Reassign to get the new deserialized instance
+        Person = await PersonFactory.Save(Person);
+
+        // The UI will now show:
+        // - Database-generated ID
+        // - Server-computed values
+        // - Reset modification state (IsModified = false)
+    }
+}
+```
+
+#### Why This Matters for Blazor
+
+When `Save()` completes, a **completely new object instance** is returned. If you don't reassign:
+
+1. **UI shows stale data** - The bound `Person` object has old values
+2. **ID fields are wrong** - Database-generated IDs won't appear
+3. **State is incorrect** - `IsModified`, `IsDirty` reflect pre-save state
+4. **Subsequent saves may fail** - Concurrency tokens are outdated
+5. **Navigation breaks** - Routes using `Person.Id` will have empty/zero IDs
+
+#### Common Mistake Pattern
+
+```csharp
+// DON'T DO THIS
+private async Task HandleSave()
+{
+    await Person.Save();  // Return value discarded!
+
+    // Person still shows:
+    // - Id = Guid.Empty (if new)
+    // - IsModified = true (should be false)
+    // - Old property values if server modified them
+
+    NavigationManager.NavigateTo($"/person/{Person.Id}");  // Navigates to empty GUID!
+}
+```
+
+#### Correct Pattern
+
+```csharp
+// DO THIS
+private async Task HandleSave()
+{
+    Person = await Person.Save();  // Capture new instance
+
+    // Person now shows correct state
+    NavigationManager.NavigateTo($"/person/{Person.Id}");  // Works correctly
+}
+```
+
+See [Factory Operations](factory-operations.md#critical-always-reassign-after-save) for a detailed explanation of why this happens.
+
 ## Collection Binding
 
 Bind child collections:

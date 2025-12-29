@@ -351,6 +351,57 @@ See [Database-Dependent Validation](database-dependent-validation.md) for comple
    await personFactory.Save(person);
    ```
 
+### Stale Data After Save / UI Not Updating
+
+**Symptoms:**
+- Database-generated ID is still empty/zero after save
+- UI shows old values after save completes
+- `IsModified` is still `true` when it should be `false`
+- Navigation to `/{id}` routes fails with empty ID
+- Subsequent saves fail with concurrency errors
+
+**Cause:** You forgot to reassign the return value from `Save()`:
+
+```csharp
+// WRONG - person is now stale
+await person.Save();
+// person still has old state - it's the PRE-save instance
+
+// CORRECT - person has new state
+person = await person.Save();
+// person is now the POST-save instance with updated values
+```
+
+**Why This Happens:**
+
+`Save()` uses the Remote Factory pattern which serializes your object to the server and deserializes a **new instance** back. The original object in memory is unchanged - it's a completely different object from what the server returns.
+
+Think of it like mailing a document:
+1. You write a document (your aggregate)
+2. You mail it (serialize to server)
+3. Someone adds information and mails it back (server persistence + serialize back)
+4. You receive a **new document** (deserialized instance)
+5. Your original draft is still on your desk unchanged (original object)
+
+**Solution:**
+
+Always capture the return value:
+
+```csharp
+// In a Blazor component
+this.Person = await this.Person.Save();
+
+// In a service/handler
+var savedPerson = await person.Save();
+return savedPerson;
+
+// Chained operations
+person = await person.Save();
+var id = person.Id;  // Now has the database-generated ID
+```
+
+See [Factory Operations](factory-operations.md#critical-always-reassign-after-save) and [Blazor Binding](blazor-binding.md#critical-reassign-after-save-in-blazor-components) for more details.
+
 ### Child Entities Not Saving
 
 **Symptoms:**

@@ -268,19 +268,44 @@ public async Task<IPerson> Save(IPerson person)
 }
 ```
 
-### Important: Capture Return Value
+### Critical: Always Reassign After Save()
 
-Always capture the return value from Save():
+When you call `Save()`, the aggregate is **serialized to the server**, persisted, and a **new instance is returned** via deserialization. You MUST capture this return value:
 
 ```csharp
-// Correct - captures updated entity
+// CORRECT - captures the new deserialized instance
 person = await personFactory.Save(person);
 Console.WriteLine(person.Id);  // Has database-generated ID
-
-// Incorrect - loses updated state
-await personFactory.Save(person);
-Console.WriteLine(person.Id);  // May be null/0
 ```
+
+```csharp
+// WRONG - original object is now stale!
+await personFactory.Save(person);
+Console.WriteLine(person.Id);  // Still empty/0 - you have the PRE-save instance
+```
+
+#### Why This Happens
+
+The Remote Factory pattern transfers your object across the client-server boundary:
+
+1. **Client**: Your aggregate is serialized to JSON/binary
+2. **Server**: A new instance is created from that data, persistence runs
+3. **Server**: The updated aggregate is serialized back
+4. **Client**: A **new instance** is deserialized and returned
+
+The object you started with is **not the same object** that comes back. They are two different instances in memory.
+
+#### Consequences of Forgetting
+
+| What You Lose | Example |
+|---------------|---------|
+| Database-generated IDs | `person.Id` remains `Guid.Empty` or `0` |
+| Server-computed values | Timestamps, calculated fields |
+| Updated validation state | `IsValid`, `IsSavable` reflect old state |
+| Property modification flags | `IsModified` doesn't reflect saved state |
+| Concurrency tokens | RowVersion/ETag for optimistic concurrency |
+
+This applies to Blazor components as well - if you don't reassign, the UI will show stale data and subsequent operations may fail. See [Blazor Binding](blazor-binding.md#critical-reassign-after-save-in-blazor-components) for UI-specific guidance.
 
 ## Authorization Methods
 
