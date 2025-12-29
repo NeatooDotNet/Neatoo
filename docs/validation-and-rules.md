@@ -2,6 +2,19 @@
 
 Neatoo provides a powerful rules engine for implementing business logic and validation. Rules execute automatically when trigger properties change and provide immediate UI feedback.
 
+## Quick Reference: Where to Put Validation
+
+| Validation Type | Where | Example |
+|-----------------|-------|---------|
+| Required fields | `[Required]` attribute | `[Required] public string Name` |
+| Format validation | `[RegularExpression]`, `[EmailAddress]` | `[EmailAddress] public string Email` |
+| Range/length checks | `[Range]`, `[StringLength]` | `[Range(0, 150)] public int Age` |
+| Cross-property rules | `RuleBase<T>` | Start date before end date |
+| Database lookups | `AsyncRuleBase<T>` + Command | Uniqueness, overlap detection |
+| **Never in factories** | ~~`[Insert]`/`[Update]`~~ | See warning below |
+
+> **Important**: Database-dependent validation (uniqueness checks, overlap detection, etc.) belongs in `AsyncRuleBase<T>`, not in factory methods. See [Database-Dependent Validation](database-dependent-validation.md) for the correct pattern.
+
 ## Rule Types
 
 ### Synchronous Rules (RuleBase)
@@ -57,6 +70,12 @@ public class UniqueEmailRule : AsyncRuleBase<IPerson>, IUniqueEmailRule
     }
 }
 ```
+
+> **Why AsyncRuleBase instead of factory validation?**
+>
+> Async rules run during editing, providing immediate feedback. If you put this check in a factory method, users only see the error after clicking Save.
+>
+> For database-dependent validation requiring server-side services, use the Command pattern with `AsyncRuleBase<T>`. See [Database-Dependent Validation](database-dependent-validation.md) for complete examples.
 
 ## Registering Rules
 
@@ -186,21 +205,190 @@ RuleManager.AddActionAsync(
 
 ## Data Annotations
 
-Standard validation attributes are converted to rules automatically:
+Standard `System.ComponentModel.DataAnnotations` attributes are automatically converted to Neatoo rules. They execute when the property changes and integrate with the validation UI.
+
+### Supported Attributes
+
+#### Required
+
+Validates that a value is not null, empty, or whitespace (for strings). For value types, checks that the value is not the default.
 
 ```csharp
-[Required(ErrorMessage = "First Name is required")]
+[Required]
 public partial string? FirstName { get; set; }
 
-[EmailAddress(ErrorMessage = "Invalid email format")]
-public partial string? Email { get; set; }
+[Required(ErrorMessage = "Customer name is required")]
+public partial string? CustomerName { get; set; }
+```
 
-[StringLength(100, MinimumLength = 2, ErrorMessage = "Name must be 2-100 characters")]
+**Behavior:**
+- Strings: fails for `null`, `""`, or whitespace-only
+- Value types (int, DateTime, Guid): fails for default value (0, DateTime.MinValue, Guid.Empty)
+- Nullable types: fails for `null`
+- Reference types: fails for `null`
+
+#### StringLength
+
+Validates string length is within a range.
+
+```csharp
+// Maximum length only
+[StringLength(100)]
+public partial string? Description { get; set; }
+
+// Minimum and maximum
+[StringLength(100, MinimumLength = 2)]
+public partial string? Username { get; set; }
+
+// Custom message
+[StringLength(50, MinimumLength = 5, ErrorMessage = "Name must be 5-50 characters")]
 public partial string? Name { get; set; }
+```
 
+**Behavior:**
+- Null or empty strings pass (use `[Required]` for null checks)
+- Only validates string properties
+
+#### MinLength / MaxLength
+
+Validates minimum or maximum length of strings or collections.
+
+```csharp
+// String minimum length
+[MinLength(3)]
+public partial string? Code { get; set; }
+
+// String maximum length
+[MaxLength(500)]
+public partial string? Notes { get; set; }
+
+// Collection minimum count
+[MinLength(1, ErrorMessage = "At least one item required")]
+public partial List<string>? Tags { get; set; }
+
+// Array maximum count
+[MaxLength(10)]
+public partial string[]? Categories { get; set; }
+```
+
+**Behavior:**
+- Works with strings (character count)
+- Works with collections and arrays (item count)
+- Null values pass (use `[Required]` for null checks)
+
+#### Range
+
+Validates numeric values fall within a range. Supports integers, decimals, doubles, and dates.
+
+```csharp
+// Integer range
+[Range(1, 100)]
+public partial int Quantity { get; set; }
+
+// Double range
+[Range(0.0, 100.0)]
+public partial double Percentage { get; set; }
+
+// Decimal range (use type-based constructor)
+[Range(typeof(decimal), "0.01", "999.99")]
+public partial decimal Price { get; set; }
+
+// Date range
+[Range(typeof(DateTime), "2020-01-01", "2030-12-31")]
+public partial DateTime AppointmentDate { get; set; }
+
+// Custom message
 [Range(0, 150, ErrorMessage = "Age must be between 0 and 150")]
 public partial int Age { get; set; }
 ```
+
+**Behavior:**
+- Null values pass (use `[Required]` for null checks)
+- Inclusive bounds (min and max values are valid)
+- Date strings parsed using invariant culture
+
+#### RegularExpression
+
+Validates string matches a regex pattern.
+
+```csharp
+// Code format: 2 letters + 4 digits
+[RegularExpression(@"^[A-Z]{2}\d{4}$")]
+public partial string? ProductCode { get; set; }
+
+// Phone format
+[RegularExpression(@"^\d{3}-\d{3}-\d{4}$", ErrorMessage = "Format: 555-123-4567")]
+public partial string? Phone { get; set; }
+
+// Alphanumeric only
+[RegularExpression(@"^[a-zA-Z0-9]+$", ErrorMessage = "Letters and numbers only")]
+public partial string? Username { get; set; }
+```
+
+**Behavior:**
+- Null or empty strings pass (use `[Required]` for null checks)
+- Pattern must match the entire string
+- Uses compiled regex for performance
+
+#### EmailAddress
+
+Validates email address format.
+
+```csharp
+[EmailAddress]
+public partial string? Email { get; set; }
+
+[EmailAddress(ErrorMessage = "Please enter a valid email")]
+public partial string? ContactEmail { get; set; }
+```
+
+**Behavior:**
+- Uses `MailAddress.TryCreate()` for RFC-compliant validation
+- Null or empty strings pass (use `[Required]` for null checks)
+- Rejects display name format like `"John <john@example.com>"`
+- Accepts technically valid addresses like `user@localhost` (per RFC)
+
+### Combining Attributes
+
+Attributes can be combined for comprehensive validation:
+
+```csharp
+[Required(ErrorMessage = "Email is required")]
+[EmailAddress(ErrorMessage = "Invalid email format")]
+[StringLength(254, ErrorMessage = "Email too long")]
+public partial string? Email { get; set; }
+
+[Required]
+[Range(1, 1000)]
+public partial int Quantity { get; set; }
+
+[StringLength(100, MinimumLength = 2)]
+[RegularExpression(@"^[a-zA-Z\s]+$", ErrorMessage = "Letters only")]
+public partial string? FullName { get; set; }
+```
+
+### Custom Error Messages
+
+All attributes support custom error messages:
+
+```csharp
+// Default message: "PropertyName is required."
+[Required]
+public partial string? Name { get; set; }
+
+// Custom message
+[Required(ErrorMessage = "Please enter your full name")]
+public partial string? Name { get; set; }
+```
+
+### Attribute vs Rule Comparison
+
+| Use Attribute When | Use RuleBase/AsyncRuleBase When |
+|--------------------|--------------------------------|
+| Simple format validation | Cross-property validation |
+| Standard patterns (email, range) | Complex business logic |
+| No external dependencies | Database lookups required |
+| Single property scope | Multiple properties involved |
 
 ## Running Rules
 
@@ -438,8 +626,67 @@ public class UniqueNameRule : AsyncRuleBase<IPerson>, IUniqueNameRule
 }
 ```
 
+## Common Mistakes
+
+### Putting Validation in Factory Methods
+
+**Wrong:**
+```csharp
+[Insert]
+public async Task Insert([Service] IUserRepository repo)
+{
+    await RunRules();
+    if (!IsSavable) return;
+
+    // DON'T DO THIS - validation too late!
+    if (await repo.EmailExistsAsync(Email))
+        throw new InvalidOperationException("Email in use");
+
+    // ... persistence
+}
+```
+
+**Right:**
+```csharp
+// Use AsyncRuleBase instead - runs during editing
+public class UniqueEmailRule : AsyncRuleBase<IUser>, IUniqueEmailRule
+{
+    protected override async Task<IRuleMessages> Execute(IUser target, ...)
+    {
+        if (await _checkEmail.IsInUse(target.Email, target.Id))
+            return (nameof(target.Email), "Email in use").AsRuleMessages();
+        return None;
+    }
+}
+```
+
+See [Database-Dependent Validation](database-dependent-validation.md) for complete guidance.
+
+### Throwing Exceptions for Validation
+
+Validation failures should return `IRuleMessages`, not throw exceptions. Exceptions:
+- Don't integrate with UI validation display
+- Return HTTP 500 errors
+- Break the expected user flow
+
+### Forgetting to Check IsModified
+
+For expensive async rules, check if the property was actually modified:
+
+```csharp
+protected override async Task<IRuleMessages> Execute(IUser target, ...)
+{
+    // Skip expensive check if email hasn't changed
+    if (!target[nameof(target.Email)].IsModified)
+        return None;
+
+    // ... expensive database check
+}
+```
+
 ## See Also
 
+- [Database-Dependent Validation](database-dependent-validation.md) - Async validation with Commands
 - [Property System](property-system.md) - Property meta-properties and IsBusy
 - [Blazor Binding](blazor-binding.md) - Displaying validation in UI
 - [Meta-Properties Reference](meta-properties.md) - IsValid, IsBusy details

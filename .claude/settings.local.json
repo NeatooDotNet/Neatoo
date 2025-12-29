@@ -25,7 +25,8 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:www.npgsql.org)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(cmd /c \"echo %USERPROFILE%\")"
     ]
   }
 }

@@ -71,6 +71,44 @@ This guide covers common issues and solutions when working with Neatoo.
 
 ## Validation Issues
 
+### Validation Errors Only Appear After Clicking Save
+
+**Symptoms:**
+- Users don't see validation errors while editing
+- Errors only show after attempting to save
+- Exception thrown instead of inline validation message
+
+**Cause:** Business validation logic is in factory methods (`[Insert]`/`[Update]`) instead of the rule system.
+
+**Solution:** Move validation to `AsyncRuleBase<T>` with a Command:
+
+```csharp
+// WRONG - in factory method
+[Insert]
+public async Task Insert([Service] IUserRepository repo)
+{
+    await RunRules();
+    if (!IsSavable) return;
+
+    // DON'T DO THIS!
+    if (await repo.EmailExistsAsync(Email))
+        throw new InvalidOperationException("Email in use");
+}
+
+// RIGHT - in async rule
+public class UniqueEmailRule : AsyncRuleBase<IUser>, IUniqueEmailRule
+{
+    protected override async Task<IRuleMessages> Execute(IUser target, ...)
+    {
+        if (await _checkUnique.EmailExists(target.Email, target.Id))
+            return (nameof(target.Email), "Email in use").AsRuleMessages();
+        return None;
+    }
+}
+```
+
+See [Database-Dependent Validation](database-dependent-validation.md) for complete guidance.
+
 ### Rules Not Executing
 
 **Symptoms:**
@@ -552,6 +590,7 @@ void DiagnoseEntity(IEntityBase entity)
 
 ## See Also
 
+- [Database-Dependent Validation](database-dependent-validation.md) - Async validation pattern
 - [Exceptions](exceptions.md) - Exception handling guide
 - [Installation](installation.md) - Setup and configuration
 - [Factory Operations](factory-operations.md) - Factory lifecycle

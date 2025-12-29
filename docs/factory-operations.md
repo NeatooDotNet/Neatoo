@@ -146,6 +146,20 @@ public async Task Insert([Service] IDbContext db, [Service] IChildListFactory ch
 4. **Save children** - Cascade to child collections
 5. **SaveChanges** - Commit to database
 
+> **Warning: Do NOT Add Validation Logic Here**
+>
+> Even though services are available via `[Service]`, do not add business validation in factory methods. Validation here only runs at save time, providing poor user experience.
+>
+> ```csharp
+> // BAD - Don't do this!
+> if (await repository.EmailExistsAsync(Email))
+>     throw new InvalidOperationException("Email in use");
+> ```
+>
+> Instead, use `AsyncRuleBase<T>` with a Command for database-dependent validation. This provides immediate feedback during editing.
+>
+> See [Database-Dependent Validation](database-dependent-validation.md) for the correct pattern.
+
 ## Update Operation
 
 Called when saving an existing entity (`IsNew = false`, `IsDeleted = false`):
@@ -186,6 +200,8 @@ public partial void MapModifiedTo(PersonEntity entity)
     // ...
 }
 ```
+
+> **Warning**: The same anti-pattern warning applies to Update operations. Do not add validation logic after `RunRules()`. See [Database-Dependent Validation](database-dependent-validation.md).
 
 ## Delete Operation
 
@@ -486,6 +502,7 @@ internal partial class Order : EntityBase<Order>, IOrder
 
 ## See Also
 
+- [Database-Dependent Validation](database-dependent-validation.md) - Async validation pattern
 - [Remote Factory Pattern](remote-factory.md) - Client-server state transfer
 - [Mapper Methods](mapper-methods.md) - MapFrom, MapTo details
 - [Collections](collections.md) - Child list factories
