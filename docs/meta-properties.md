@@ -100,6 +100,31 @@ bool IsSelfValid { get; }
 - All direct properties pass validation
 - Does not consider child object validity
 
+### IsValid vs IsSelfValid Example
+
+```csharp
+// Parent with valid properties but invalid child
+var person = personFactory.Create();
+person.FirstName = "John";        // Valid
+person.LastName = "Doe";          // Valid
+
+var phone = person.PersonPhoneList.AddPhoneNumber();
+phone.PhoneNumber = "";           // Invalid - required
+
+// Results:
+person.IsSelfValid     // true  - person's own properties are valid
+person.IsValid         // false - child phone is invalid
+
+phone.IsSelfValid      // false - phone's properties are invalid
+phone.IsValid          // false - same as IsSelfValid (no children)
+
+// After fixing the child:
+phone.PhoneNumber = "555-1234";
+
+person.IsSelfValid     // true
+person.IsValid         // true  - now all children are valid too
+```
+
 ### PropertyMessages
 
 All validation messages for the object.
@@ -126,14 +151,27 @@ Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token
 ```
 
 **Flags:**
-| Flag | Description |
-|------|-------------|
-| `All` | Run all rules, clear messages first |
-| `Self` | Run only this object's rules |
-| `NotExecuted` | Run rules that haven't executed |
-| `Executed` | Re-run previously executed rules |
-| `NoMessages` | Run rules with no current messages |
-| `Messages` | Run rules with current messages |
+| Flag | Value | Description |
+|------|-------|-------------|
+| `None` | 0 | No rules |
+| `NoMessages` | 1 | Rules with no current messages |
+| `Messages` | 2 | Rules with current messages |
+| `NotExecuted` | 4 | Rules that haven't executed yet |
+| `Executed` | 8 | Re-run previously executed rules |
+| `Self` | 16 | Only this object's rules (exclude children) |
+| `All` | 31 | All flags combined |
+
+**Flags can be combined:**
+```csharp
+// Run only unexecuted rules on this object
+await entity.RunRules(RunRulesFlag.NotExecuted | RunRulesFlag.Self);
+
+// Run rules with messages (re-validate failed rules)
+await entity.RunRules(RunRulesFlag.Messages | RunRulesFlag.Executed);
+
+// Default - run all rules
+await entity.RunRules();  // Same as RunRulesFlag.All
+```
 
 **Usage:**
 ```csharp
@@ -202,13 +240,45 @@ bool IsSelfModified { get; }
 
 ### IsMarkedModified
 
-Explicitly marked as modified.
+Explicitly marked as modified via `MarkModified()`.
 
 ```csharp
 bool IsMarkedModified { get; }
 ```
 
-Use `MarkModified()` to force save even without property changes.
+### MarkModified()
+
+Forces the entity to be considered modified even without property changes.
+
+```csharp
+void MarkModified();
+```
+
+**Use cases:**
+- Force save when external state changed
+- Re-save after related data updated
+- Trigger update when calculated fields change
+
+**Example:**
+```csharp
+// Entity with no property changes
+person.IsModified;        // false
+person.IsSavable;         // false - nothing to save
+
+// Force modification
+person.MarkModified();
+
+person.IsMarkedModified;  // true
+person.IsSelfModified;    // true
+person.IsModified;        // true
+person.IsSavable;         // true - now savable
+
+// After save, IsMarkedModified resets
+person = await factory.Save(person);
+person.IsMarkedModified;  // false
+```
+
+> **Note:** `MarkModified()` is available via the `IEntityBase` interface. For child entities added to a collection, the framework automatically calls `MarkModified()` if the item is not new.
 
 ### IsDeleted
 

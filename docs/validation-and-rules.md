@@ -212,6 +212,44 @@ Rules run automatically when trigger properties change through the `Setter`:
 person.FirstName = "John";  // Rules triggered automatically
 ```
 
+### When Rules DON'T Trigger
+
+Rules do **not** execute in these scenarios:
+
+| Scenario | Why | How to Run Rules |
+|----------|-----|------------------|
+| Using `LoadValue()` | Silent load, no events | Call `RunRules()` after |
+| During `PauseAllActions()` | Explicitly paused | Rules run on resume |
+| During factory operations | Paused via `FactoryStart()` | Rules run on `FactoryComplete()` |
+| During JSON deserialization | Paused via `OnDeserializing()` | Rules run on `OnDeserialized()` |
+| Property set to same value | No change detected | N/A |
+
+**Example - LoadValue doesn't trigger:**
+```csharp
+// Setter - triggers rules
+person.FirstName = "John";          // Rules execute
+
+// LoadValue - no rules
+person[nameof(IPerson.FirstName)].LoadValue("John");  // No rules
+
+// MapFrom uses LoadValue internally
+MapFrom(entity);                     // No rules during mapping
+
+// Manually run rules after bulk load
+await RunRules();
+```
+
+**Example - PauseAllActions:**
+```csharp
+using (person.PauseAllActions())
+{
+    person.FirstName = "John";      // No rules yet
+    person.LastName = "Doe";        // No rules yet
+    person.Email = "john@doe.com";  // No rules yet
+}
+// All rules run now when disposed
+```
+
 ### Manual Execution
 
 Run rules explicitly before save operations:

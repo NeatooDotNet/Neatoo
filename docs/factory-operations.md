@@ -467,6 +467,9 @@ internal partial class Order : EntityBase<Order>, IOrder
         if (!IsSavable) return;
 
         var entity = await db.Orders.FindAsync(Id);
+        if (entity == null)
+            throw new KeyNotFoundException("Order not found");
+
         MapModifiedTo(entity);
         lineItemFactory.Save(LineItems, entity.LineItems);
         await db.SaveChangesAsync();

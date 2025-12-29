@@ -21,7 +21,11 @@
       "Bash(cat:*)",
       "Bash(git stash:*)",
       "Bash(dotnet clean:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.npgsql.org)",
+      "Bash(wc:*)"
     ]
   }
 }

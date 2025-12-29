@@ -20,7 +20,7 @@
 	  <PackageReleaseNotes>None yet</PackageReleaseNotes>
 	  <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 	  <PackageTags>OO Domain Modeling C# .NET Blazor WPF ASP.NET CSLA</PackageTags>
-	  <PackageVersion>9.10.1</PackageVersion>
+	  <PackageVersion>9.20.0</PackageVersion>
 	  <PublishRepositoryUrl>true</PublishRepositoryUrl>
 	  <RepositoryType>git</RepositoryType>
 	  <RepositoryUrl>https://github.com/NeatooDotNet/Neatoo</RepositoryUrl>

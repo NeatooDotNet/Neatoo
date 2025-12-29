@@ -1,5 +1,9 @@
 # Lazy Loading Analysis for Neatoo
 
+> **Document Type: Technical Analysis**
+>
+> This is an internal technical analysis document exploring the feasibility of adding lazy loading to Neatoo. Lazy loading is **not currently implemented**. See [lazy-loading-pattern.md](lazy-loading-pattern.md) for the proposed design.
+
 ## Current State: No Lazy Loading Exists
 
 The codebase has **no built-in lazy loading** for child objects. The `Getter<P>()` in `Base.cs:242-245` is synchronous and returns values directly from `PropertyManager`:

@@ -127,6 +127,9 @@ public async Task Update([Service] IDbContext db)
     if (!IsSavable) return;
 
     var entity = await db.Persons.FindAsync(Id);
+    if (entity == null)
+        throw new KeyNotFoundException("Person not found");
+
     MapModifiedTo(entity);  // Only changed properties
     await db.SaveChangesAsync();
 }
@@ -302,6 +305,9 @@ public string? Name { get; set; }          // Won't auto-map
 public async Task Update([Service] IDbContext db)
 {
     var entity = await db.Persons.FindAsync(Id);
+    if (entity == null)
+        throw new KeyNotFoundException("Person not found");
+
     MapModifiedTo(entity);  // Only modified properties
     await db.SaveChangesAsync();
 }

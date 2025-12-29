@@ -1,6 +1,8 @@
 # Lazy Loading Pattern for Neatoo
 
-## Status: Planned (Not Yet Implemented)
+> **Status: PLANNED - NOT YET IMPLEMENTED**
+>
+> This document describes a **proposed future feature**. The lazy loading pattern described here does not exist in the current version of Neatoo. This is a design document for a feature that may be implemented in a future release.
 
 This document describes the planned lazy loading pattern for child objects in Neatoo, designed to work with Blazor's synchronous binding model.
 

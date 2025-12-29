@@ -1,6 +1,38 @@
 # Neatoo Framework Documentation
 
-Neatoo is a DDD Aggregate Framework for .NET that provides bindable, serializable Aggregate Entity Graphs for Blazor and WPF applications.
+Neatoo is a DDD Aggregate Framework for .NET that provides bindable, serializable Aggregate Entity Graphs for UI applications. The framework implements `INotifyPropertyChanged` for seamless data binding with any XAML-based UI technology.
+
+> **Primary UI Integration:** Blazor (with optional MudNeatoo component library)
+>
+> **WPF Support:** The core framework works with WPF through standard `INotifyPropertyChanged` binding. See [Blazor Binding](blazor-binding.md) for patterns that apply to WPF with standard XAML bindings.
+
+---
+
+## Quick Navigation
+
+| Section | Description |
+|---------|-------------|
+| [Documentation Index](#documentation-index) | All documentation pages organized by topic |
+| [Class Hierarchy](#class-hierarchy) | Base classes and when to use each |
+| [Key Features](#key-features) | Feature overview table |
+| [Quick Example](#quick-example) | Complete aggregate root example |
+
+---
+
+## I Want To...
+
+| Task | Go To |
+|------|-------|
+| **Get started quickly** | [Quick Start](quick-start.md) |
+| **Create a domain entity** | [Aggregates and Entities](aggregates-and-entities.md) |
+| **Add validation rules** | [Validation and Rules](validation-and-rules.md) |
+| **Load/save data** | [Factory Operations](factory-operations.md) |
+| **Bind to Blazor UI** | [Blazor Binding](blazor-binding.md) |
+| **Create child collections** | [Entity Collections](collections.md) |
+| **Set up client-server** | [Remote Factory](remote-factory.md) |
+| **Debug an issue** | [Troubleshooting](troubleshooting.md) |
+
+---
 
 ## Documentation Index
 
@@ -29,6 +61,11 @@ Neatoo is a DDD Aggregate Framework for .NET that provides bindable, serializabl
 
 - [Remote Factory Pattern](remote-factory.md) - Client-server state transfer
 - [Mapper Methods](mapper-methods.md) - MapFrom, MapTo, MapModifiedTo
+
+### Reference
+
+- [Exceptions](exceptions.md) - Exception handling guide
+- [Troubleshooting](troubleshooting.md) - Common issues and solutions
 
 ### Architecture
 
@@ -90,7 +127,10 @@ internal partial class Customer : EntityBase<Customer>, ICustomer
     public async Task Fetch(int id, [Service] IDbContext db)
     {
         var entity = await db.Customers.FindAsync(id);
-        MapFrom(entity);
+        if (entity != null)
+        {
+            MapFrom(entity);
+        }
     }
 
     [Remote]
