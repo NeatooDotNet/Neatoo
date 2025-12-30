@@ -1,0 +1,178 @@
+name: Build, Test & Publish
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish_nuget:
+        description: 'Publish to NuGet.org'
+        required: false
+        type: boolean
+        default: false
+      nuget_version_suffix:
+        description: 'Version suffix (e.g., beta1, rc1). Leave empty for release version.'
+        required: false
+        type: string
+        default: ''
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for versioning
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore src/Neatoo.sln
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(grep -oP '(?<=<Version>)[^<]+' Directory.Build.props)
+          SUFFIX="${{ inputs.nuget_version_suffix }}"
+          if [ -n "$SUFFIX" ]; then
+            FULL_VERSION="${VERSION}-${SUFFIX}"
+          else
+            FULL_VERSION="${VERSION}"
+          fi
+          echo "version=${FULL_VERSION}" >> $GITHUB_OUTPUT
+          echo "Detected version: ${FULL_VERSION}"
+
+      - name: Build
+        run: |
+          dotnet build src/Neatoo.sln \
+            --configuration Release \
+            --no-restore \
+            -p:ContinuousIntegrationBuild=true
+
+      - name: Test
+        run: |
+          dotnet test src/Neatoo.sln \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=test-results.trx" \
+            --results-directory ./test-results
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: ./test-results/*.trx
+          retention-days: 7
+
+      - name: Pack NuGet packages
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          # Pack with version suffix if provided
+          SUFFIX="${{ inputs.nuget_version_suffix }}"
+          if [ -n "$SUFFIX" ]; then
+            VERSION_ARGS="--version-suffix ${SUFFIX}"
+          else
+            VERSION_ARGS=""
+          fi
+
+          dotnet pack src/Neatoo/Neatoo.csproj \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts \
+            $VERSION_ARGS
+
+          dotnet pack src/Neatoo.Blazor.MudNeatoo/Neatoo.Blazor.MudNeatoo.csproj \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts \
+            $VERSION_ARGS
+
+      - name: Upload NuGet artifacts
+        uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        with:
+          name: nuget-packages
+          path: ./artifacts/*.nupkg
+          retention-days: 30
+
+  publish:
+    name: Publish to NuGet
+    needs: build
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish_nuget == true)
+
+    permissions:
+      contents: write  # Required to create GitHub releases
+
+    environment:
+      name: nuget
+      url: https://www.nuget.org/packages/Neatoo
+
+    steps:
+      - name: Download NuGet artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: List packages to publish
+        run: |
+          echo "Packages to publish:"
+          ls -la ./artifacts/*.nupkg
+
+      - name: Publish to NuGet.org
+        run: |
+          for package in ./artifacts/*.nupkg; do
+            echo "Publishing $package..."
+            dotnet nuget push "$package" \
+              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./artifacts/*.nupkg
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -15,7 +15,6 @@
     <!-- NuGet Package Properties -->
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Neatoo.Blazor.MudNeatoo</PackageId>
-    <PackageVersion>9.20.0</PackageVersion>
     <Authors>Keith Voels</Authors>
     <Company>NeatooDotNet</Company>
     <Description>MudBlazor integration components for Neatoo domain models. Provides form controls that automatically bind to Neatoo entity properties with built-in validation display.</Description>
