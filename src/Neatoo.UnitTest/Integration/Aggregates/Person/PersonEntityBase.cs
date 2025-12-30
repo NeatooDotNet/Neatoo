@@ -27,7 +27,12 @@ public abstract partial class PersonEntityBase<T> : EntityBase<T>, IPersonBase
 
     //string IPersonBase.FirstName { get => FirstName; set => FirstName = value; }
 
-    public partial void MapFrom(PersonDto dto);
+    public void MapFrom(PersonDto dto)
+    {
+        this.Title = dto.Title;
+        this.FirstName = dto.FirstName;
+        this.LastName = dto.LastName;
+    }
 
     public void FromDto(PersonDto dto)
     {

@@ -25,7 +25,12 @@ public abstract partial class PersonValidateBase<T> : ValidateBase<T>, IPersonBa
 
     public partial uint? Age { get; set; }
 
-    public partial void MapFrom(PersonDto dto);
+    public void MapFrom(PersonDto dto)
+    {
+        this.Title = dto.Title;
+        this.FirstName = dto.FirstName;
+        this.LastName = dto.LastName;
+    }
 
     public void FromDto(PersonDto dto)
     {

@@ -154,9 +154,13 @@ person[nameof(Name)].LoadValue("John");
 ```
 
 Use `LoadValue` when:
-- Loading data from database (in Fetch)
-- Setting values in rules without triggering more rules
-- Initializing default values
+- Setting values in rules without triggering cascading rules (use `LoadProperty()` helper)
+- Explicitly loading values outside factory operations without triggering rules
+- Setting identity fields that should never be marked as modified
+
+> **Note:** You generally don't need `LoadValue` in `[Fetch]`, `[Create]`, or other factory methods.
+> Rules are automatically paused during factory operations via `FactoryStart()`.
+> Regular property setters work fine in these contexts.
 
 ### Check Modification
 

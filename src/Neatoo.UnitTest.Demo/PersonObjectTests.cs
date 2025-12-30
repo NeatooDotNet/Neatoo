@@ -19,8 +19,17 @@ internal partial class PersonObject : EntityBase<PersonObject>, IPersonObject
     public partial string FirstName { get; set; }
     public partial string LastName { get; set; }
 
-    public partial void MapTo(PersonObjectDto personDto);
-    public partial void MapFrom(PersonObjectDto personDto);
+    public void MapTo(PersonObjectDto personDto)
+    {
+        personDto.FirstName = this.FirstName;
+        personDto.LastName = this.LastName;
+    }
+
+    public void MapFrom(PersonObjectDto personDto)
+    {
+        this.FirstName = personDto.FirstName;
+        this.LastName = personDto.LastName;
+    }
 
     public partial void MapModifiedTo(PersonObjectDto personDto);
 

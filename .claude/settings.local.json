@@ -26,7 +26,11 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:www.npgsql.org)",
       "Bash(wc:*)",
-      "Bash(cmd /c \"echo %USERPROFILE%\")"
+      "Bash(cmd /c \"echo %USERPROFILE%\")",
+      "WebFetch(domain:playwright.dev)",
+      "Bash(dotnet list:*)",
+      "Bash(dotnet package search:*)",
+      "Bash(dotnet restore:*)"
     ]
   }
 }

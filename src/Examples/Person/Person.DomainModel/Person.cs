@@ -39,8 +39,24 @@ internal partial class Person : EntityBase<Person>, IPerson
 
     public partial IPersonPhoneList PersonPhoneList { get; set; }
 
-    public partial void MapFrom(PersonEntity personEntity);
-    public partial void MapTo(PersonEntity personEntity);
+    public void MapFrom(PersonEntity personEntity)
+    {
+        this.Id = personEntity.Id;
+        this.FirstName = personEntity.FirstName;
+        this.LastName = personEntity.LastName;
+        this.Email = personEntity.Email;
+        this.Notes = personEntity.Notes;
+    }
+
+    public void MapTo(PersonEntity personEntity)
+    {
+        personEntity.Id = this.Id;
+        personEntity.FirstName = this.FirstName ?? throw new NullReferenceException("Person.FirstName");
+        personEntity.LastName = this.LastName ?? throw new NullReferenceException("Person.LastName");
+        personEntity.Email = this.Email;
+        personEntity.Notes = this.Notes;
+    }
+
     public partial void MapModifiedTo(PersonEntity personEntity);
 
     [Create]

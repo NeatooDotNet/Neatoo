@@ -180,3 +180,23 @@ Tests are organized into:
 - `TestInfrastructure/UnitTestBase.cs` - Base class for unit tests
 - Use MSTest with `[TestClass]` and `[TestMethod]`
 - Naming convention: `MethodName_Scenario_ExpectedResult`
+
+## Dependency Tracking: RemoteFactory
+
+Neatoo depends on **RemoteFactory** (`C:\src\neatoodotnet\RemoteFactory`) for source generation of factory methods. Track analyzed commits to catch breaking changes.
+
+### Last Analyzed Commit
+
+| Date | Commit | Description | Breaking? | Plan |
+|------|--------|-------------|-----------|------|
+| 2025-12-30 | `9e62dda` | Remove Mapper Functionality | **YES** | `docs/todos/remotefactory-mapper-removal-plan.md` |
+
+### Current Version
+
+**Neatoo.RemoteFactory 9.20.1** (updated 2025-12-30)
+
+### Breaking Change Notes
+
+**Mapper Removal (9e62dda)**: RemoteFactory removed the MapperGenerator that auto-generated `MapTo`/`MapFrom` partial method implementations. Neatoo domain objects using these partial methods need manual implementations. See plan document for migration steps. **Status: MIGRATED**
+
+**FactoryHintNameLength (9.20.1)**: New version enforces 50-character limit on fully qualified type names. Added `[assembly: FactoryHintNameLength(100)]` to `Neatoo.UnitTest/AssemblyAttributes.cs` to accommodate long namespace paths.

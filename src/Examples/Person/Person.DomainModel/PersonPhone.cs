@@ -42,8 +42,20 @@ internal partial class PersonPhone : EntityBase<PersonPhone>, IPersonPhone
 
     public IPerson? ParentPerson => this.Parent as IPerson;
 
-    public partial void MapFrom(PersonPhoneEntity personPhoneEntity);
-    public partial void MapTo(PersonPhoneEntity personPhoneEntity);
+    public void MapFrom(PersonPhoneEntity personPhoneEntity)
+    {
+        this.Id = personPhoneEntity.Id;
+        this.PhoneNumber = personPhoneEntity.PhoneNumber;
+        this.PhoneType = (PhoneType?)personPhoneEntity.PhoneType;
+    }
+
+    public void MapTo(PersonPhoneEntity personPhoneEntity)
+    {
+        personPhoneEntity.Id = this.Id;
+        personPhoneEntity.PhoneNumber = this.PhoneNumber ?? throw new NullReferenceException("PersonPhone.PhoneNumber");
+        personPhoneEntity.PhoneType = (int?)this.PhoneType ?? throw new NullReferenceException("PersonPhone.PhoneType");
+    }
+
     public partial void MapModifiedTo(PersonPhoneEntity personPhoneEntity);
 
     [Fetch]

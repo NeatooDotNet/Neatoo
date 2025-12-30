@@ -414,18 +414,25 @@ Rules do **not** execute in these scenarios:
 
 **Example - LoadValue doesn't trigger:**
 ```csharp
-// Setter - triggers rules
+// Setter - triggers rules (outside factory operations)
 person.FirstName = "John";          // Rules execute
 
-// LoadValue - no rules
+// LoadValue - no rules, no modification tracking
 person[nameof(IPerson.FirstName)].LoadValue("John");  // No rules
-
-// MapFrom uses LoadValue internally
-MapFrom(entity);                     // No rules during mapping
-
-// Manually run rules after bulk load
-await RunRules();
 ```
+
+> **Note:** In `[Fetch]`, `[Create]`, and other factory methods, you don't need `LoadValue`.
+> Rules are automatically paused via `FactoryStart()`, so regular setters work fine:
+> ```csharp
+> [Fetch]
+> public async Task<bool> Fetch([Service] IPersonDbContext context)
+> {
+>     var entity = await context.FindPerson();
+>     this.FirstName = entity.FirstName;  // OK - rules paused automatically
+>     this.LastName = entity.LastName;    // OK - no modification tracking during fetch
+>     return true;
+> }
+> ```
 
 **Example - PauseAllActions:**
 ```csharp
