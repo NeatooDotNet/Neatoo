@@ -521,7 +521,7 @@ public class AllRequiredRulesExecutedRuleOrderTests
         // Arrange
         var allRequiredRule = new AllRequiredRulesExecuted();
         var triggerProperty = new TriggerProperty<AllRequiredRulesTestTarget>(t => t.RequiredString);
-        var requiredRule = new RequiredRule<AllRequiredRulesTestTarget>(triggerProperty, new RequiredAttribute());
+        var requiredRule = new RequiredRule<AllRequiredRulesTestTarget>(triggerProperty, new RequiredAttribute(), typeof(string));
 
         // Assert - AllRequiredRulesExecuted should have higher RuleOrder
         Assert.IsTrue(allRequiredRule.RuleOrder > requiredRule.RuleOrder);

@@ -32,6 +32,25 @@ public class RequiredRuleTestTarget : ValidateBase<RequiredRuleTestTarget>
     public List<string>? ListProperty { get => Getter<List<string>>(); set => Setter(value); }
 }
 
+/// <summary>
+/// Helper class for creating RequiredRule instances with proper property type information.
+/// </summary>
+internal static class RequiredRuleTestHelper
+{
+    /// <summary>
+    /// Creates a RequiredRule with the property type inferred from the trigger property expression.
+    /// </summary>
+    public static RequiredRule<T> CreateRequiredRule<T>(
+        TriggerProperty<T> triggerProperty,
+        RequiredAttribute requiredAttribute) where T : class, IValidateBase
+    {
+        // Get the property type from the expression
+        var propertyType = typeof(T).GetProperty(triggerProperty.PropertyName)?.PropertyType
+            ?? typeof(object);
+        return new RequiredRule<T>(triggerProperty, requiredAttribute, propertyType);
+    }
+}
+
 #endregion
 
 #region Constructor Tests
@@ -50,7 +69,7 @@ public class RequiredRuleConstructorTests
         var requiredAttribute = new RequiredAttribute();
 
         // Act
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, requiredAttribute);
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, requiredAttribute);
 
         // Assert
         Assert.AreEqual(1, ((IRule)rule).TriggerProperties.Count);
@@ -65,7 +84,7 @@ public class RequiredRuleConstructorTests
         var requiredAttribute = new RequiredAttribute();
 
         // Act
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, requiredAttribute);
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, requiredAttribute);
 
         // Assert
         Assert.AreEqual("StringProperty is required.", rule.ErrorMessage);
@@ -79,7 +98,7 @@ public class RequiredRuleConstructorTests
         var requiredAttribute = new RequiredAttribute { ErrorMessage = "Please provide a string value." };
 
         // Act
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, requiredAttribute);
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, requiredAttribute);
 
         // Assert
         Assert.AreEqual("Please provide a string value.", rule.ErrorMessage);
@@ -94,9 +113,9 @@ public class RequiredRuleConstructorTests
         var triggerPropertyObject = new TriggerProperty<RequiredRuleTestTarget>(t => t.ObjectProperty);
 
         // Act
-        var ruleInt = new RequiredRule<RequiredRuleTestTarget>(triggerPropertyInt, new RequiredAttribute());
-        var ruleNullable = new RequiredRule<RequiredRuleTestTarget>(triggerPropertyNullable, new RequiredAttribute());
-        var ruleObject = new RequiredRule<RequiredRuleTestTarget>(triggerPropertyObject, new RequiredAttribute());
+        var ruleInt = RequiredRuleTestHelper.CreateRequiredRule(triggerPropertyInt, new RequiredAttribute());
+        var ruleNullable = RequiredRuleTestHelper.CreateRequiredRule(triggerPropertyNullable, new RequiredAttribute());
+        var ruleObject = RequiredRuleTestHelper.CreateRequiredRule(triggerPropertyObject, new RequiredAttribute());
 
         // Assert
         Assert.AreEqual("IntProperty is required.", ruleInt.ErrorMessage);
@@ -131,7 +150,7 @@ public class RequiredRuleStringValidationTests
         _target.StringProperty = null;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -149,7 +168,7 @@ public class RequiredRuleStringValidationTests
         _target.StringProperty = string.Empty;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -166,7 +185,7 @@ public class RequiredRuleStringValidationTests
         _target.StringProperty = "   ";
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -183,7 +202,7 @@ public class RequiredRuleStringValidationTests
         _target.StringProperty = "\t\n\r  ";
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -199,7 +218,7 @@ public class RequiredRuleStringValidationTests
         _target.StringProperty = "Valid Value";
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -215,7 +234,7 @@ public class RequiredRuleStringValidationTests
         _target.StringProperty = "A";
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -231,7 +250,7 @@ public class RequiredRuleStringValidationTests
         _target.StringProperty = "  Valid";
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -268,7 +287,7 @@ public class RequiredRuleValueTypeValidationTests
         _target.IntProperty = 0; // default value for int
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.IntProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -287,7 +306,7 @@ public class RequiredRuleValueTypeValidationTests
         _target.IntProperty = 42;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.IntProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -303,7 +322,7 @@ public class RequiredRuleValueTypeValidationTests
         _target.IntProperty = -1;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.IntProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -319,7 +338,7 @@ public class RequiredRuleValueTypeValidationTests
         _target.DoubleProperty = 0.0; // default value for double
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.DoubleProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -336,7 +355,7 @@ public class RequiredRuleValueTypeValidationTests
         _target.DoubleProperty = 3.14;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.DoubleProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -352,7 +371,7 @@ public class RequiredRuleValueTypeValidationTests
         _target.BoolProperty = false; // default value for bool
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.BoolProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -369,7 +388,7 @@ public class RequiredRuleValueTypeValidationTests
         _target.BoolProperty = true;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.BoolProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -385,7 +404,7 @@ public class RequiredRuleValueTypeValidationTests
         _target.DateTimeProperty = default; // DateTime.MinValue
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.DateTimeProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -402,7 +421,7 @@ public class RequiredRuleValueTypeValidationTests
         _target.DateTimeProperty = DateTime.Now;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.DateTimeProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -418,7 +437,7 @@ public class RequiredRuleValueTypeValidationTests
         _target.GuidProperty = Guid.Empty; // default value for Guid
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.GuidProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -435,7 +454,7 @@ public class RequiredRuleValueTypeValidationTests
         _target.GuidProperty = Guid.NewGuid();
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.GuidProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -471,7 +490,7 @@ public class RequiredRuleNullableValueTypeValidationTests
         _target.NullableIntProperty = null;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.NullableIntProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -482,21 +501,21 @@ public class RequiredRuleNullableValueTypeValidationTests
     }
 
     [TestMethod]
-    public async Task RunRule_NullableIntDefaultValue_ReturnsErrorMessage()
+    public async Task RunRule_NullableIntDefaultValue_ReturnsNoMessages()
     {
         // Arrange
         _target.NullableIntProperty = 0;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.NullableIntProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
 
         // Assert
-        // When the nullable has a value of 0, the RequiredRule checks if it equals default(int)
-        Assert.AreEqual(1, result.Count);
-        Assert.AreEqual("NullableIntProperty is required.", result[0].Message);
+        // For nullable types, only null is considered "not set"
+        // A value of 0 means the user explicitly chose zero, which is a valid value
+        Assert.AreEqual(0, result.Count);
     }
 
     [TestMethod]
@@ -506,7 +525,7 @@ public class RequiredRuleNullableValueTypeValidationTests
         _target.NullableIntProperty = 42;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.NullableIntProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -542,7 +561,7 @@ public class RequiredRuleObjectValidationTests
         _target.ObjectProperty = null;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.ObjectProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -559,7 +578,7 @@ public class RequiredRuleObjectValidationTests
         _target.ObjectProperty = new object();
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.ObjectProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -575,7 +594,7 @@ public class RequiredRuleObjectValidationTests
         _target.ListProperty = null;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.ListProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -591,7 +610,7 @@ public class RequiredRuleObjectValidationTests
         _target.ListProperty = new List<string>(); // Empty but not null
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.ListProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -607,7 +626,7 @@ public class RequiredRuleObjectValidationTests
         _target.ListProperty = new List<string> { "Item1", "Item2" };
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.ListProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -647,7 +666,7 @@ public class RequiredRuleCustomErrorMessageTests
         {
             ErrorMessage = "The string value cannot be empty!"
         };
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, requiredAttribute);
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, requiredAttribute);
 
         // Act
         var result = await rule.RunRule(_target);
@@ -668,7 +687,7 @@ public class RequiredRuleCustomErrorMessageTests
         {
             ErrorMessage = "Please enter a valid ObjectProperty value."
         };
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, requiredAttribute);
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, requiredAttribute);
 
         // Act
         var result = await rule.RunRule(_target);
@@ -687,7 +706,7 @@ public class RequiredRuleCustomErrorMessageTests
         var requiredAttribute = new RequiredAttribute { ErrorMessage = customMessage };
 
         // Act
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, requiredAttribute);
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, requiredAttribute);
 
         // Assert
         Assert.AreEqual(customMessage, rule.ErrorMessage);
@@ -701,7 +720,7 @@ public class RequiredRuleCustomErrorMessageTests
         var requiredAttribute = new RequiredAttribute();
 
         // Act
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, requiredAttribute);
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, requiredAttribute);
 
         // Assert
         Assert.AreEqual("StringProperty is required.", rule.ErrorMessage);
@@ -723,7 +742,7 @@ public class RequiredRuleInterfaceTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Assert
         Assert.IsInstanceOfType(rule, typeof(IRequiredRule));
@@ -734,7 +753,7 @@ public class RequiredRuleInterfaceTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Assert
         Assert.IsInstanceOfType(rule, typeof(IRule));
@@ -746,7 +765,7 @@ public class RequiredRuleInterfaceTests
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
         var requiredAttribute = new RequiredAttribute { ErrorMessage = "Test Error" };
-        IRequiredRule rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, requiredAttribute);
+        IRequiredRule rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, requiredAttribute);
 
         // Act
         var errorMessage = rule.ErrorMessage;
@@ -771,7 +790,7 @@ public class RequiredRuleTriggerPropertiesTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var properties = ((IRule)rule).TriggerProperties;
@@ -786,7 +805,7 @@ public class RequiredRuleTriggerPropertiesTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var isMatch = ((IRule)rule).TriggerProperties[0].IsMatch("StringProperty");
@@ -800,7 +819,7 @@ public class RequiredRuleTriggerPropertiesTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var isMatch = ((IRule)rule).TriggerProperties[0].IsMatch("IntProperty");
@@ -814,7 +833,7 @@ public class RequiredRuleTriggerPropertiesTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var properties = ((IRule)rule).TriggerProperties;
@@ -848,7 +867,7 @@ public class RequiredRuleExecutedFlagTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Assert
         Assert.IsFalse(rule.Executed);
@@ -861,7 +880,7 @@ public class RequiredRuleExecutedFlagTests
         _target.StringProperty = "Valid";
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         await rule.RunRule(_target);
@@ -877,7 +896,7 @@ public class RequiredRuleExecutedFlagTests
         _target.StringProperty = null;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         await rule.RunRule(_target);
@@ -891,7 +910,7 @@ public class RequiredRuleExecutedFlagTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         _target.StringProperty = null;
@@ -932,7 +951,7 @@ public class RequiredRuleRuleMessagesNoneTests
         _target.StringProperty = "Valid";
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -949,7 +968,7 @@ public class RequiredRuleRuleMessagesNoneTests
         _target.IntProperty = 1;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.IntProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -966,7 +985,7 @@ public class RequiredRuleRuleMessagesNoneTests
         _target.ObjectProperty = new { Value = 1 };
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.ObjectProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -1001,7 +1020,7 @@ public class RequiredRuleEdgeCasesTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act & Assert - First execution with null
         _target.StringProperty = null;
@@ -1026,7 +1045,7 @@ public class RequiredRuleEdgeCasesTests
         _target.StringProperty = null;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        IRule rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        IRule rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -1040,7 +1059,7 @@ public class RequiredRuleEdgeCasesTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Assert
         Assert.AreEqual(0u, rule.UniqueIndex);
@@ -1051,7 +1070,7 @@ public class RequiredRuleEdgeCasesTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Assert
         Assert.AreEqual(1, rule.RuleOrder);
@@ -1062,7 +1081,7 @@ public class RequiredRuleEdgeCasesTests
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var messages = rule.Messages;
@@ -1099,7 +1118,7 @@ public class RequiredRulePropertyNameInMessageTests
         _target.StringProperty = null;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -1115,7 +1134,7 @@ public class RequiredRulePropertyNameInMessageTests
         _target.NullableIntProperty = null;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.NullableIntProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);
@@ -1131,7 +1150,7 @@ public class RequiredRulePropertyNameInMessageTests
         _target.ObjectProperty = null;
 
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.ObjectProperty);
-        var rule = new RequiredRule<RequiredRuleTestTarget>(triggerProperty, new RequiredAttribute());
+        var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Act
         var result = await rule.RunRule(_target);

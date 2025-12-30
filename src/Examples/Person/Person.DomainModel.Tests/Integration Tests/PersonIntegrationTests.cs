@@ -56,7 +56,7 @@ namespace DomainModel.Tests.IntegrationTests
             this.factory = scope.ServiceProvider.GetRequiredService<IPersonFactory>();
         }
 
-        private IPerson create()
+        private async Task<IPerson> CreateAsync()
         {
             var person = factory.Create()!;
 
@@ -71,6 +71,8 @@ namespace DomainModel.Tests.IntegrationTests
             phoneNumber = person.PersonPhoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Work;
             phoneNumber.PhoneNumber = "0987654321";
+
+            await person.WaitForTasks();
 
             return person;
         }
@@ -89,9 +91,10 @@ namespace DomainModel.Tests.IntegrationTests
                 Assert.False(personPhone?.IsValid ?? false);
             }
 
-            void CheckValid()
+            async Task CheckValid()
             {
                 Assert.NotNull(person);
+                await person.WaitForTasks();
                 Assert.True(person.IsValid);
                 Assert.True(personPhone?.IsValid ?? true);
             }
@@ -104,7 +107,7 @@ namespace DomainModel.Tests.IntegrationTests
             person.LastName = this.lastName;
             person.Email = "a@a.com";
             person.Notes = "Some notes";
-            CheckValid();
+            await CheckValid();
 
             // Check phone number required fields
             personPhone = person.PersonPhoneList.AddPhoneNumber();
@@ -113,7 +116,7 @@ namespace DomainModel.Tests.IntegrationTests
 
             personPhone.PhoneType = PhoneType.Home;
             personPhone.PhoneNumber = "1";
-            CheckValid();
+            await CheckValid();
 
             // Add another phone number with a duplicate phone type
             personPhone = person.PersonPhoneList.AddPhoneNumber();
@@ -124,7 +127,7 @@ namespace DomainModel.Tests.IntegrationTests
             await CheckInvalid();
 
             personPhone.PhoneType = PhoneType.Work;
-            CheckValid();
+            await CheckValid();
 
             // Add another phone number with a duplicate phone number
             personPhone = person.PersonPhoneList.AddPhoneNumber();
@@ -135,7 +138,7 @@ namespace DomainModel.Tests.IntegrationTests
             await CheckInvalid();
 
             personPhone.PhoneNumber = "2";
-            CheckValid();
+            await CheckValid();
 
             // Check duplicate name rule
             await person.Save(); // Need a record in the database to check for duplicates
@@ -146,13 +149,14 @@ namespace DomainModel.Tests.IntegrationTests
             person.FirstName = this.firstName; // Duplicate name
             person.LastName = this.lastName;
 
+            await person.WaitForTasks();
             Assert.False(person.IsValid);
         }
 
         [Fact]
         public async Task PersonTests_Create()
         {
-            var person = create();
+            var person = await CreateAsync();
 
             Assert.True(person.IsValid);
         }
@@ -160,7 +164,7 @@ namespace DomainModel.Tests.IntegrationTests
         [Fact]
         public async Task PersonTests_Fetch()
         {
-            var person = create();
+            var person = await CreateAsync();
 
             // Act
             var saved = await person.Save();
@@ -182,7 +186,7 @@ namespace DomainModel.Tests.IntegrationTests
         [Fact]
         public async Task PersonTests_Insert()
         {
-            var person = create();
+            var person = await CreateAsync();
 
             // Act
             var result = await person.Save();
@@ -204,7 +208,7 @@ namespace DomainModel.Tests.IntegrationTests
         [Fact]
         public async Task PersonTests_Update()
         {
-            var person = create();
+            var person = await CreateAsync();
 
             // Act
             var result = (IPerson)await person.Save();
@@ -217,6 +221,7 @@ namespace DomainModel.Tests.IntegrationTests
             result.PersonPhoneList[1].Delete();
             result.Notes = "Updated notes";
 
+            await result.WaitForTasks();
             result = (IPerson)await result.Save();
 
             // Assert
@@ -254,6 +259,8 @@ namespace DomainModel.Tests.IntegrationTests
         public async Task UniquePhoneTypeRule_ShouldReturnError_WhenPhoneTypeIsNotUnique()
         {
             var person = factory.Create();
+            person.FirstName = this.firstName;
+            person.LastName = this.lastName;
 
             var phoneNumber = person.PersonPhoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Home;
@@ -267,6 +274,8 @@ namespace DomainModel.Tests.IntegrationTests
             phoneNumber.PhoneType = PhoneType.Home;
             phoneNumber.PhoneNumber = "0987654321";
 
+            await person.WaitForTasks();
+
             Assert.False(person.IsValid);
 
             Assert.Contains("Phone type must be unique", person.PropertyMessages.Select(m => m.Message));
@@ -276,6 +285,8 @@ namespace DomainModel.Tests.IntegrationTests
         public async Task UniquePhoneNumberRule_ShouldReturnError_WhenPhoneNumberIsNotUnique()
         {
             var person = factory.Create();
+            person.FirstName = this.firstName;
+            person.LastName = this.lastName;
 
             var phoneNumber = person.PersonPhoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Home;
@@ -288,6 +299,8 @@ namespace DomainModel.Tests.IntegrationTests
             phoneNumber = person.PersonPhoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Mobile;
             phoneNumber.PhoneNumber = "1234567890";
+
+            await person.WaitForTasks();
 
             Assert.False(person.IsValid);
 

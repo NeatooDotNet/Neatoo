@@ -21,7 +21,7 @@ public class AttributeToRule : IAttributeToRule
 
         return attribute switch
         {
-            RequiredAttribute requiredAttribute => new RequiredRule<T>(triggerProperty, requiredAttribute),
+            RequiredAttribute requiredAttribute => new RequiredRule<T>(triggerProperty, requiredAttribute, r.Type),
             StringLengthAttribute stringLengthAttribute => new StringLengthRule<T>(triggerProperty, stringLengthAttribute),
             MinLengthAttribute minLengthAttribute => new MinLengthRule<T>(triggerProperty, minLengthAttribute),
             MaxLengthAttribute maxLengthAttribute => new MaxLengthRule<T>(triggerProperty, maxLengthAttribute),
