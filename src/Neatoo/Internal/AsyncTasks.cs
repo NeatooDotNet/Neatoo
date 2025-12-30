@@ -80,10 +80,13 @@ public sealed class AsyncTasks
 
     private async Task SequenceCompleted(Guid id, Task task)
     {
-        var completionSource = this._allDoneCompletionSource ?? throw new ArgumentNullException($"{nameof(this._allDoneCompletionSource)} should not be null");
+        TaskCompletionSource<bool> completionSource;
+        List<Exception> exceptionsToReport;
 
         lock (this._lockObject)
         {
+            completionSource = this._allDoneCompletionSource ?? throw new ArgumentNullException($"{nameof(this._allDoneCompletionSource)} should not be null");
+
             if (task.Exception != null)
             {
                 this._exceptions.AddRange(task.Exception.InnerExceptions);
@@ -99,7 +102,13 @@ public sealed class AsyncTasks
                 return;
             }
 
-            this._allDoneCompletionSource = null; // What if another starts while we are finishing here?
+            // Capture exceptions before exiting lock, as a new sequence could start
+            exceptionsToReport = new List<Exception>(this._exceptions);
+            this._exceptions.Clear();
+
+            // Note: We intentionally do NOT set _allDoneCompletionSource to null here.
+            // It will be set to null when the next sequence starts (line 47-50).
+            // This ensures AllDone returns the correct task until result/exception is set.
             this.IsRunning = false;
         }
 
@@ -109,12 +118,12 @@ public sealed class AsyncTasks
         }
         catch (AggregateException ex)
         {
-            this._exceptions.AddRange(ex.InnerExceptions);
+            exceptionsToReport.AddRange(ex.InnerExceptions);
         }
 
-        if (this._exceptions.Count > 0)
+        if (exceptionsToReport.Count > 0)
         {
-            completionSource.SetException(new AggregateException(this._exceptions));
+            completionSource.SetException(new AggregateException(exceptionsToReport));
         }
         else
         {

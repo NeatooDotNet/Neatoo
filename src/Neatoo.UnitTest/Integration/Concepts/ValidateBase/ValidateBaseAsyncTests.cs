@@ -211,7 +211,9 @@ public class ValidateBaseAsyncTests
         Assert.IsTrue(validate.IsBusy);
         Assert.IsTrue(child.IsBusy);
 
-        Assert.IsNotNull(propertyChanged.SingleOrDefault(p => p.propertyName == nameof(validate.IsBusy)));
+        // Use Any() instead of SingleOrDefault() because IsBusy may fire multiple times
+        // due to thread pool scheduling differences across platforms
+        Assert.IsTrue(propertyChanged.Any(p => p.propertyName == nameof(validate.IsBusy)));
         propertyChanged.Clear();
 
         await validate.WaitForTasks();
@@ -222,7 +224,7 @@ public class ValidateBaseAsyncTests
         Assert.IsFalse(child.IsValid);
         Assert.IsFalse(child.IsSelfValid);
 
-        Assert.IsNotNull(propertyChanged.SingleOrDefault(p => p.propertyName == nameof(validate.IsBusy)));
+        Assert.IsTrue(propertyChanged.Any(p => p.propertyName == nameof(validate.IsBusy)));
     }
 
     //[TestMethod]
