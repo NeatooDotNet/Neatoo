@@ -157,7 +157,7 @@ public class AttributeToRuleTests
     }
 
     [TestMethod]
-    public void GetRule_StringLengthAttribute_ReturnsNull()
+    public void GetRule_StringLengthAttribute_ReturnsStringLengthRule()
     {
         // Arrange
         var propertyInfo = new MockPropertyInfo("StringProperty", typeof(string));
@@ -167,11 +167,13 @@ public class AttributeToRuleTests
         var rule = _attributeToRule.GetRule<TestValidateObject>(propertyInfo, stringLengthAttribute);
 
         // Assert
-        Assert.IsNull(rule);
+        Assert.IsNotNull(rule);
+        Assert.AreEqual(1, rule.TriggerProperties.Count);
+        Assert.AreEqual("StringProperty", rule.TriggerProperties[0].PropertyName);
     }
 
     [TestMethod]
-    public void GetRule_RangeAttribute_ReturnsNull()
+    public void GetRule_RangeAttribute_ReturnsRangeRule()
     {
         // Arrange
         var propertyInfo = new MockPropertyInfo("IntProperty", typeof(int));
@@ -181,11 +183,13 @@ public class AttributeToRuleTests
         var rule = _attributeToRule.GetRule<TestValidateObject>(propertyInfo, rangeAttribute);
 
         // Assert
-        Assert.IsNull(rule);
+        Assert.IsNotNull(rule);
+        Assert.AreEqual(1, rule.TriggerProperties.Count);
+        Assert.AreEqual("IntProperty", rule.TriggerProperties[0].PropertyName);
     }
 
     [TestMethod]
-    public void GetRule_EmailAddressAttribute_ReturnsNull()
+    public void GetRule_EmailAddressAttribute_ReturnsEmailAddressRule()
     {
         // Arrange
         var propertyInfo = new MockPropertyInfo("StringProperty", typeof(string));
@@ -195,11 +199,13 @@ public class AttributeToRuleTests
         var rule = _attributeToRule.GetRule<TestValidateObject>(propertyInfo, emailAttribute);
 
         // Assert
-        Assert.IsNull(rule);
+        Assert.IsNotNull(rule);
+        Assert.AreEqual(1, rule.TriggerProperties.Count);
+        Assert.AreEqual("StringProperty", rule.TriggerProperties[0].PropertyName);
     }
 
     [TestMethod]
-    public void GetRule_RegularExpressionAttribute_ReturnsNull()
+    public void GetRule_RegularExpressionAttribute_ReturnsRegularExpressionRule()
     {
         // Arrange
         var propertyInfo = new MockPropertyInfo("StringProperty", typeof(string));
@@ -209,11 +215,13 @@ public class AttributeToRuleTests
         var rule = _attributeToRule.GetRule<TestValidateObject>(propertyInfo, regexAttribute);
 
         // Assert
-        Assert.IsNull(rule);
+        Assert.IsNotNull(rule);
+        Assert.AreEqual(1, rule.TriggerProperties.Count);
+        Assert.AreEqual("StringProperty", rule.TriggerProperties[0].PropertyName);
     }
 
     [TestMethod]
-    public void GetRule_MaxLengthAttribute_ReturnsNull()
+    public void GetRule_MaxLengthAttribute_ReturnsMaxLengthRule()
     {
         // Arrange
         var propertyInfo = new MockPropertyInfo("StringProperty", typeof(string));
@@ -223,11 +231,13 @@ public class AttributeToRuleTests
         var rule = _attributeToRule.GetRule<TestValidateObject>(propertyInfo, maxLengthAttribute);
 
         // Assert
-        Assert.IsNull(rule);
+        Assert.IsNotNull(rule);
+        Assert.AreEqual(1, rule.TriggerProperties.Count);
+        Assert.AreEqual("StringProperty", rule.TriggerProperties[0].PropertyName);
     }
 
     [TestMethod]
-    public void GetRule_MinLengthAttribute_ReturnsNull()
+    public void GetRule_MinLengthAttribute_ReturnsMinLengthRule()
     {
         // Arrange
         var propertyInfo = new MockPropertyInfo("StringProperty", typeof(string));
@@ -237,7 +247,9 @@ public class AttributeToRuleTests
         var rule = _attributeToRule.GetRule<TestValidateObject>(propertyInfo, minLengthAttribute);
 
         // Assert
-        Assert.IsNull(rule);
+        Assert.IsNotNull(rule);
+        Assert.AreEqual(1, rule.TriggerProperties.Count);
+        Assert.AreEqual("StringProperty", rule.TriggerProperties[0].PropertyName);
     }
 
     [TestMethod]
@@ -561,7 +573,7 @@ public class AttributeToRuleTests
     #region Multiple Attribute Types Tests
 
     [TestMethod]
-    public void GetRule_MultipleDifferentAttributes_OnlyRequiredReturnsRule()
+    public void GetRule_MultipleDifferentAttributes_AllSupportedAttributesReturnRules()
     {
         // Arrange
         var propertyInfo = new MockPropertyInfo("StringProperty", typeof(string));
@@ -574,18 +586,18 @@ public class AttributeToRuleTests
         var stringLengthRule = _attributeToRule.GetRule<TestValidateObject>(propertyInfo, stringLengthAttribute);
         var emailRule = _attributeToRule.GetRule<TestValidateObject>(propertyInfo, emailAttribute);
 
-        // Assert
+        // Assert - All supported validation attributes return rules
         Assert.IsNotNull(requiredRule);
-        Assert.IsNull(stringLengthRule);
-        Assert.IsNull(emailRule);
+        Assert.IsNotNull(stringLengthRule);
+        Assert.IsNotNull(emailRule);
     }
 
     [TestMethod]
     public void GetRule_CompareAttribute_ReturnsNull()
     {
-        // Arrange
-        var propertyInfo = new MockPropertyInfo("Password", typeof(string));
-        var compareAttribute = new CompareAttribute("ConfirmPassword");
+        // Arrange - Use existing property on TestValidateObject
+        var propertyInfo = new MockPropertyInfo("StringProperty", typeof(string));
+        var compareAttribute = new CompareAttribute("IntProperty");
 
         // Act
         var rule = _attributeToRule.GetRule<TestValidateObject>(propertyInfo, compareAttribute);
@@ -597,8 +609,8 @@ public class AttributeToRuleTests
     [TestMethod]
     public void GetRule_PhoneAttribute_ReturnsNull()
     {
-        // Arrange
-        var propertyInfo = new MockPropertyInfo("PhoneNumber", typeof(string));
+        // Arrange - Use existing property on TestValidateObject
+        var propertyInfo = new MockPropertyInfo("StringProperty", typeof(string));
         var phoneAttribute = new PhoneAttribute();
 
         // Act
@@ -611,8 +623,8 @@ public class AttributeToRuleTests
     [TestMethod]
     public void GetRule_UrlAttribute_ReturnsNull()
     {
-        // Arrange
-        var propertyInfo = new MockPropertyInfo("Website", typeof(string));
+        // Arrange - Use existing property on TestValidateObject
+        var propertyInfo = new MockPropertyInfo("StringProperty", typeof(string));
         var urlAttribute = new UrlAttribute();
 
         // Act
@@ -625,8 +637,8 @@ public class AttributeToRuleTests
     [TestMethod]
     public void GetRule_CreditCardAttribute_ReturnsNull()
     {
-        // Arrange
-        var propertyInfo = new MockPropertyInfo("CreditCardNumber", typeof(string));
+        // Arrange - Use existing property on TestValidateObject
+        var propertyInfo = new MockPropertyInfo("StringProperty", typeof(string));
         var creditCardAttribute = new CreditCardAttribute();
 
         // Act
@@ -698,10 +710,10 @@ public class AttributeToRuleTests
         // Arrange
         IAttributeToRule attributeToRule = new AttributeToRule();
         var propertyInfo = new MockPropertyInfo("StringProperty", typeof(string));
-        var stringLengthAttribute = new StringLengthAttribute(100);
+        var phoneAttribute = new PhoneAttribute();  // Phone is not supported
 
         // Act
-        var rule = attributeToRule.GetRule<TestValidateObject>(propertyInfo, stringLengthAttribute);
+        var rule = attributeToRule.GetRule<TestValidateObject>(propertyInfo, phoneAttribute);
 
         // Assert
         Assert.IsNull(rule);
