@@ -12,7 +12,7 @@
 		<!-- Package Metadata -->
 		<Authors>Keith Voels</Authors>
 		<Copyright>Copyright © 2025</Copyright>
-		<Version>2025.1.0-beta</Version>
+		<Version>9.21.0</Version>
 
 		<!-- NuGet Security Auditing -->
 		<!-- https://learn.microsoft.com/en-us/nuget/concepts/auditing-packages -->
