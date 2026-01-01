@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<!-- Test projects stay single-target - override Directory.Build.props -->
+		<TargetFrameworks></TargetFrameworks>
+		<TargetFramework>net9.0</TargetFramework>
 		<IsPackable>false</IsPackable>
 		<IsTestProject>true</IsTestProject>
 		<AnalysisMode>default</AnalysisMode>

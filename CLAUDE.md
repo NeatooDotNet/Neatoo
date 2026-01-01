@@ -189,13 +189,16 @@ Neatoo depends on **RemoteFactory** (`C:\src\neatoodotnet\RemoteFactory`) for so
 
 | Date | Commit | Description | Breaking? | Plan |
 |------|--------|-------------|-----------|------|
+| 2025-12-31 | `b90ba4d` | Multi-target .NET 8.0, 9.0, 10.0 | No | N/A |
 | 2025-12-30 | `9e62dda` | Remove Mapper Functionality | **YES** | `docs/todos/remotefactory-mapper-removal-plan.md` |
 
 ### Current Version
 
-**Neatoo.RemoteFactory 9.20.1** (updated 2025-12-30)
+**Neatoo.RemoteFactory 10.0.1** (updated 2025-12-31)
 
 ### Breaking Change Notes
+
+**Multi-Targeting (10.0.1)**: RemoteFactory now supports .NET 8.0, 9.0, and 10.0. No breaking changes for Neatoo (uses net9.0). Consider adopting multi-targeting for Neatoo in future.
 
 **Mapper Removal (9e62dda)**: RemoteFactory removed the MapperGenerator that auto-generated `MapTo`/`MapFrom` partial method implementations. Neatoo domain objects using these partial methods need manual implementations. See plan document for migration steps. **Status: MIGRATED**
 

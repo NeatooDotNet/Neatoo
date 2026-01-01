@@ -5,14 +5,15 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<LangVersion>preview</LangVersion>
 		<Nullable>enable</Nullable>
-		<TargetFramework>net9.0</TargetFramework>
+		<!-- Multi-targeting: .NET 8.0 (LTS), 9.0 (Current), 10.0 (Preview) -->
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
 		<TreatWarningsAsErrors>True</TreatWarningsAsErrors>
 		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 
 		<!-- Package Metadata -->
 		<Authors>Keith Voels</Authors>
 		<Copyright>Copyright © 2025</Copyright>
-		<Version>9.21.0</Version>
+		<Version>10.0.1</Version>
 
 		<!-- NuGet Security Auditing -->
 		<!-- https://learn.microsoft.com/en-us/nuget/concepts/auditing-packages -->
@@ -26,6 +27,7 @@
 		<!-- CS1591: Missing XML comment (documentation added incrementally) -->
 		<!-- IDE warnings: Code style (some conflict with our style choices) -->
 		<!-- SYSLIB warnings: .NET runtime obsolete APIs -->
-		<NoWarn>CA1861,CA1865,CA1510,IDE0021,IDE0022,IDE0023,IDE1006,CA1050,CA1822,CA2007,CS8600,CS8602,CS8603,CS8604,CS8613,CS8618,CS8619,CS8620,CS8621,CS8625,CS8634,CS8765,CS8766,CS8767,CS8769,CS8974,CS0618,CS0108,CS0114,CS0168,CS0628,CS1574,CS1587,CS1591,CS1956,SYSLIB0051</NoWarn>
+		<!-- MSB3277: Assembly version conflicts expected with multi-targeting -->
+		<NoWarn>CA1861,CA1865,CA1510,IDE0021,IDE0022,IDE0023,IDE1006,CA1050,CA1822,CA2007,CS8600,CS8602,CS8603,CS8604,CS8613,CS8618,CS8619,CS8620,CS8621,CS8625,CS8634,CS8765,CS8766,CS8767,CS8769,CS8974,CS0618,CS0108,CS0114,CS0168,CS0628,CS1574,CS1587,CS1591,CS1956,SYSLIB0051,MSB3277</NoWarn>
 	</PropertyGroup>
 </Project>
