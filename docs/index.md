@@ -1,6 +1,6 @@
 # Neatoo Framework Documentation
 
-Neatoo is a DDD Aggregate Framework for .NET that provides bindable, serializable Aggregate Entity Graphs for UI applications. The framework implements `INotifyPropertyChanged` for seamless data binding with any XAML-based UI technology.
+Neatoo provides bindable, serializable domain objects for Blazor and WPF applications with shared business logic across client and server. Define validation rules and domain behavior once - they execute identically in the browser and on the server.
 
 > **Primary UI Integration:** Blazor (with optional MudNeatoo component library)
 >

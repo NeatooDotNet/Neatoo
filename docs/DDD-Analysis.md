@@ -1,5 +1,7 @@
 # Comprehensive DDD Analysis of the Neatoo Framework
 
+> **Note:** This document is a historical analysis for internal reference. It is not intended as user-facing documentation. For implementation guidance, see the [Aggregates and Entities](aggregates-and-entities.md) documentation.
+
 *Analysis Date: December 2024*
 
 ## Executive Summary

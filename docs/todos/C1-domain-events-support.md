@@ -70,7 +70,9 @@ public interface IDomainEventHandler<in TEvent> where TEvent : IDomainEvent
 }
 ```
 
-### 4. Usage Pattern
+### 4. Integration with Neatoo Factory Operations
+
+Events are raised in `[Insert]`, `[Update]`, `[Delete]` methods and dispatched after successful `SaveChangesAsync()`. Events are NOT serialized across the RemoteFactory client-server boundary; they execute only on the server.
 
 ```csharp
 // Define an event
@@ -80,27 +82,35 @@ public record OrderPlacedEvent : DomainEventBase
     public decimal TotalAmount { get; init; }
 }
 
-// Raise in entity
+// Raise in entity factory method (server-side only)
+[Remote]
 [Insert]
 public async Task Insert([Service] IDbContext db, [Service] IDomainEventDispatcher dispatcher)
 {
     await RunRules();
     if (!IsSavable) return;
 
+    // Raise event before persistence
     AddDomainEvent(new OrderPlacedEvent
     {
         OrderId = Id,
         TotalAmount = Total
     });
 
-    // Persistence...
+    // Persistence
     await db.SaveChangesAsync();
 
-    // Dispatch after successful save
+    // Dispatch after successful save (server-side only)
     await dispatcher.DispatchAsync(DomainEvents);
     ClearDomainEvents();
 }
 ```
+
+**Key Points:**
+- Events are raised only in `[Remote]` factory operations (server-side)
+- Dispatch occurs after `SaveChangesAsync()` succeeds
+- Events are not serialized to the client via RemoteFactory
+- Handlers execute in the same server process
 
 ---
 

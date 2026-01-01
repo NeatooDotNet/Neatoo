@@ -34,20 +34,16 @@ Add a marker interface to indicate aggregate roots:
 namespace Neatoo;
 
 /// <summary>
-/// Marker interface for Aggregate Roots.
-/// Aggregate Roots are the entry points for aggregate access and
-/// are the only entities that should be directly persisted.
+/// Marker interface for aggregate roots in the domain model.
 /// </summary>
 /// <remarks>
 /// <para>
-/// In Domain-Driven Design, an Aggregate Root:
+/// Classes implementing <see cref="IAggregateRoot"/> should have <c>[Remote]</c> on their
+/// factory operations (<c>[Fetch]</c>, <c>[Insert]</c>, <c>[Update]</c>, <c>[Delete]</c>).
 /// </para>
-/// <list type="bullet">
-/// <item>Controls access to all entities within the aggregate</item>
-/// <item>Ensures consistency rules are enforced within the aggregate</item>
-/// <item>Is the only entity that outside objects can reference</item>
-/// <item>Is the unit of persistence (saved/loaded as a whole)</item>
-/// </list>
+/// <para>
+/// Child entities within the aggregate should NOT implement this interface.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -55,7 +51,10 @@ namespace Neatoo;
 /// internal partial class Order : EntityBase&lt;Order&gt;, IAggregateRoot, IOrder
 /// {
 ///     public partial IOrderLineList Lines { get; set; }
-///     // Order is the root, OrderLines are children
+///
+///     [Remote]
+///     [Fetch]
+///     public async Task Fetch(int id, [Service] IDbContext db) { ... }
 /// }
 /// </code>
 /// </example>

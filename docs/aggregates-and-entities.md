@@ -16,48 +16,42 @@ EntityBase<T>                - For entities with identity, modification tracking
 
 **Note:** Value Objects are simple POCO classes with `[Factory]` attribute - they do not inherit from any Neatoo base class.
 
-## DDD Concepts in Neatoo
+## Base Class Selection
 
-In DDD terms, Neatoo maps to:
+| Use Case | Neatoo Base Class |
+|----------|------------------|
+| Aggregate root with persistence | `EntityBase<T>` + `[Remote]` operations |
+| Child entity within aggregate | `EntityBase<T>` (no `[Remote]`) |
+| Value object / lookup data | Simple POCO + `[Factory]` |
+| Search criteria / form input | `ValidateBase<T>` |
 
-| DDD Concept | Neatoo Implementation | Characteristics |
-|-------------|----------------------|-----------------|
-| **Entity** | `EntityBase<T>` | Has identity, mutable, tracks modifications, persisted |
-| **Aggregate Root** | `EntityBase<T>` with `[Remote]` operations | Top-level entity that coordinates persistence |
-| **Value Object** | Simple POCO class with `[Factory]` | No identity, immutable, fetched via RemoteFactory |
-| **Criteria/Filter Object** | `ValidateBase<T>` | Non-persisted object with validation rules |
+> **Note:** Value Objects are simple POCO classes with `[Factory]`. [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) generates fetch operations. See the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for implementation guidance.
 
-> **Note:** Value Objects in Neatoo are simple POCO classes with the `[Factory]` attribute. They are handled by [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) for fetching operations. See the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for complete Value Object implementation guidance.
+### EntityBase&lt;T&gt;
 
-### Entities (EntityBase)
-
-Use `EntityBase<T>` for domain objects that:
-- Have a unique identity (Id)
-- Can be modified after creation
-- Track their own modification state
-- Are persisted to a database
+Provides:
+- Modification tracking (`IsModified`, `IsSelfModified`)
+- Persistence lifecycle (`IsNew`, `IsDeleted`)
+- Savability state (`IsSavable`)
+- Child entity support (`IsChild`, automatic parent tracking)
 
 ```csharp
-// Entity - has identity, editable, tracks changes
 [Factory]
 internal partial class Order : EntityBase<Order>, IOrder
 {
-    public partial Guid Id { get; set; }           // Identity
-    public partial string Status { get; set; }     // Mutable - IsModified tracked
-    public partial decimal Total { get; set; }     // Mutable - IsModified tracked
+    public partial Guid Id { get; set; }
+    public partial string Status { get; set; }     // IsModified tracked automatically
+    public partial decimal Total { get; set; }     // IsSavable updated on change
 }
 ```
 
-### Value Objects (Simple POCO)
+### Value Objects (POCO + `[Factory]`)
 
-Value Objects are simple classes that don't inherit from any Neatoo base class. They are:
-- Defined by their attributes, not identity
-- Immutable after creation (fetch only)
-- Handled by RemoteFactory for factory operations
-- Used for lookup data, reference data, or immutable snapshots
+Simple classes without Neatoo base class inheritance. RemoteFactory generates fetch operations via `[Fetch]` methods. No Insert/Update/Delete operations.
+
+**Typical Use:** Lookup data, dropdown options, reference data.
 
 ```csharp
-// Value Object - simple POCO class, no Neatoo base class
 [Factory]
 internal partial class StateProvince : IStateProvince
 {
@@ -70,8 +64,6 @@ internal partial class StateProvince : IStateProvince
         Code = entity.Code;
         Name = entity.Name;
     }
-
-    // No Insert, Update, Delete - read-only
 }
 ```
 

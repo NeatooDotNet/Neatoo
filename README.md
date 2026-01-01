@@ -14,24 +14,20 @@ The user knows exactly what they can do, what they need to do to save and that t
 
 # Why is Neatoo New?
 
-Neatoo uses established DDD principles and implements them with two game changing technologies: Blazor WebAssembly and Roslyn Live Source Generation.
+Neatoo leverages Blazor WebAssembly and Roslyn Source Generators to deliver shared business logic across client and server with no DTO layer.
 
 ## Blazor and WebAssembly
 
-WebAssembly means having our .NET libraries with their defined Entities and their behavior *in the browser*.
-This was not possible with a Javascript SPA application with a C# backend.
-Now there's no longer the need to define individual endpoints for each behavior.
-The client already has the Entities with their behavior.
-All that needs to be transferred is the Entity data.
+With WebAssembly, your .NET domain objects with their validation rules and business logic run *in the browser*.
+No need to define individual endpoints for each behavior - the client already has the complete domain model.
+RemoteFactory transfers only the entity data; business logic executes locally for immediate validation feedback.
 
 ## Roslyn Source Generators
 
-Neatoo uniquely uses Roslyn Source Generators to create a readable and performant Factory *specific* to each Entity. 
-The 3-Tier Factories transfers the Entity Data for you. 
-Authorization is implemented within the Factory (via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory)).
-Before Source Generators frameworks had to rely on reflection.
-The end result wasn't known until execution.
-Now many runtime errors are compile errors and there is code you can see and step thru!
+Neatoo uses Roslyn Source Generators to create readable, performant factories specific to each entity.
+The 3-Tier Factories handle client-server serialization automatically.
+Authorization is integrated within the Factory (via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory)).
+Source generators mean compile-time errors instead of runtime surprises - debuggable, visible code.
 
 # Features
 
