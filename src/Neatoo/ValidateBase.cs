@@ -438,14 +438,6 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, INotifyPropertyC
 
 		await this.RuleManager.RunRules(runRules, token);
 		await this.RunningTasks.AllDone;
-
-		//this.AddAsyncMethod((t) => PropertyManager.RunRules(token));
-		// TODO - This isn't raising the 'IsValid' property changed event
-		//await base.WaitForTasks();
-		if (this.Parent == null)
-		{
-			Debug.Assert(!this.IsBusy, "Should not be busy after running all rules");
-		}
 	}
 
 	/// <summary>

@@ -8,6 +8,7 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
 {
     protected T? _value = default;
     private readonly object _isMarkedBusyLock = new object();
+    private readonly List<long> _isMarkedBusy = new List<long>();
 
     public Property(IPropertyInfo propertyInfo)
     {
@@ -44,7 +45,16 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
 
     protected IBase? ValueAsBase => this.Value as IBase;
 
-    public bool IsBusy => this.ValueAsBase?.IsBusy ?? false || this.IsSelfBusy || this.IsMarkedBusy.Count > 0;
+    public bool IsBusy
+    {
+        get
+        {
+            lock (this._isMarkedBusyLock)
+            {
+                return this.ValueAsBase?.IsBusy ?? false || this.IsSelfBusy || this._isMarkedBusy.Count > 0;
+            }
+        }
+    }
 
     public async Task WaitForTasks()
     {
@@ -54,16 +64,33 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
     [JsonIgnore]
     public bool IsSelfBusy { get; private set; } = false;
 
+    /// <summary>
+    /// Gets a thread-safe snapshot of the busy operation identifiers.
+    /// </summary>
+    /// <remarks>
+    /// Returns a copy of the internal list to ensure thread safety. Each access
+    /// returns a new snapshot that is safe to enumerate without risk of
+    /// <see cref="InvalidOperationException"/> from concurrent modifications.
+    /// </remarks>
     [JsonIgnore]
-    public List<long> IsMarkedBusy { get; } = new List<long>();
+    public IReadOnlyList<long> IsMarkedBusy
+    {
+        get
+        {
+            lock (this._isMarkedBusyLock)
+            {
+                return this._isMarkedBusy.ToList().AsReadOnly();
+            }
+        }
+    }
 
     public void AddMarkedBusy(long id)
     {
         lock (this._isMarkedBusyLock)
         {
-            if (!this.IsMarkedBusy.Contains(id))
+            if (!this._isMarkedBusy.Contains(id))
             {
-                this.IsMarkedBusy.Add(id);
+                this._isMarkedBusy.Add(id);
             }
         }
         this.OnPropertyChanged(nameof(IsMarkedBusy));
@@ -74,7 +101,7 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
     {
         lock (this._isMarkedBusyLock)
         {
-            this.IsMarkedBusy.Remove(id);
+            this._isMarkedBusy.Remove(id);
         }
         this.OnPropertyChanged(nameof(IsMarkedBusy));
         this.OnPropertyChanged(nameof(IsBusy));

@@ -365,21 +365,7 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
         //    await AsyncTaskSequencer.AllDone;
         //}
 
-        //await PropertyManager.WaitForTasks();
         await this.RunningTasks.AllDone;
-
-        if (this.Parent == null)
-        {
-            if (this.IsBusy)
-            {
-
-                var busyProperty = this.PropertyManager.GetProperties.FirstOrDefault(p => p.IsBusy);
-
-            }
-
-            // Raise Errors
-            Debug.Assert(!this.IsBusy, "Should not be busy after running all rules");
-        }
     }
 
     /// <summary>

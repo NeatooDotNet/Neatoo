@@ -2,10 +2,71 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis;
 using System.Text;
+using Neatoo.BaseGenerator.Diagnostics;
 
 namespace Neatoo.BaseGenerator
 {
+    /// <summary>
+    /// Result type for semantic target generation that can carry error information.
+    /// </summary>
+    internal readonly struct SemanticTargetResult : IEquatable<SemanticTargetResult>
+    {
+        public ClassDeclarationSyntax? ClassDeclaration { get; }
+        public SemanticModel? SemanticModel { get; }
+        public string? ErrorMessage { get; }
+        public string? StackTrace { get; }
+        public string? ClassName { get; }
 
+        public bool IsSuccess => ClassDeclaration != null && SemanticModel != null && ErrorMessage == null;
+        public bool IsError => ErrorMessage != null;
+        public bool IsEmpty => !IsSuccess && !IsError;
+
+        private SemanticTargetResult(
+            ClassDeclarationSyntax? classDeclaration,
+            SemanticModel? semanticModel,
+            string? errorMessage,
+            string? stackTrace,
+            string? className)
+        {
+            ClassDeclaration = classDeclaration;
+            SemanticModel = semanticModel;
+            ErrorMessage = errorMessage;
+            StackTrace = stackTrace;
+            ClassName = className;
+        }
+
+        public static SemanticTargetResult Success(ClassDeclarationSyntax classDeclaration, SemanticModel semanticModel)
+            => new(classDeclaration, semanticModel, null, null, classDeclaration.Identifier.Text);
+
+        public static SemanticTargetResult Error(string className, string errorMessage, string? stackTrace = null)
+            => new(null, null, errorMessage, stackTrace, className);
+
+        public static SemanticTargetResult Empty => new(null, null, null, null, null);
+
+        public bool Equals(SemanticTargetResult other)
+        {
+            // For incremental generator caching purposes
+            return ReferenceEquals(ClassDeclaration, other.ClassDeclaration)
+                && ReferenceEquals(SemanticModel, other.SemanticModel)
+                && ErrorMessage == other.ErrorMessage
+                && ClassName == other.ClassName;
+        }
+
+        public override bool Equals(object? obj) => obj is SemanticTargetResult other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = 17;
+                hash = hash * 31 + (ClassDeclaration?.GetHashCode() ?? 0);
+                hash = hash * 31 + (SemanticModel?.GetHashCode() ?? 0);
+                hash = hash * 31 + (ErrorMessage?.GetHashCode() ?? 0);
+                hash = hash * 31 + (ClassName?.GetHashCode() ?? 0);
+                return hash;
+            }
+        }
+    }
 
     [Generator(LanguageNames.CSharp)]
     public class PartialBaseGenerator : IIncrementalGenerator
@@ -17,39 +78,46 @@ namespace Neatoo.BaseGenerator
                 transform: static (ctx, _) => PartialBaseGenerator.GetSemanticTargetForGeneration(ctx));
 
             context.RegisterSourceOutput(classesToGenerate,
-                static (ctx, source) => Execute(ctx, source!.Value.classDeclaration, source.Value.semanticModel));
+                static (ctx, source) => Execute(ctx, source));
         }
 
         public static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax classDeclarationSyntax
                     && classDeclarationSyntax.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword))
                     && classDeclarationSyntax.Members.OfType<PropertyDeclarationSyntax>().Any(p => p.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)));
 
-        public static (ClassDeclarationSyntax classDeclaration, SemanticModel semanticModel)? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context)
+        internal static SemanticTargetResult GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context)
         {
+            var classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
+            var className = classDeclaration.Identifier.Text;
+
             try
             {
-                var classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
-
                 var classNamedTypeSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
 
                 if (classNamedTypeSymbol == null)
                 {
-                    return null;
+                    return SemanticTargetResult.Empty;
                 }
 
                 if (classDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)) && ClassOrBaseClassIsNeatooBaseClass(classNamedTypeSymbol))
                 {
-                    return (classDeclaration, context.SemanticModel);
+                    return SemanticTargetResult.Success(classDeclaration, context.SemanticModel);
                 }
 
-                return null;
+                return SemanticTargetResult.Empty;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                return SemanticTargetResult.Error(
+                    className,
+                    ex.Message,
+#if DEBUG
+                    ex.StackTrace
+#else
+                    null
+#endif
+                );
             }
-
-            return null;
         }
 
         private static bool ClassOrBaseClassIsNeatooBaseClass(INamedTypeSymbol namedTypeSymbol)
@@ -77,8 +145,38 @@ namespace Neatoo.BaseGenerator
             public StringBuilder MapperMethods { get; set; } = new();
         }
 
-        private static void Execute(SourceProductionContext context, ClassDeclarationSyntax classDeclarationSyntax, SemanticModel semanticModel)
+        private static void Execute(SourceProductionContext context, SemanticTargetResult result)
         {
+            // Handle error results from the transform phase
+            if (result.IsError)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    GeneratorDiagnostics.SemanticTargetException,
+                    Location.None,
+                    result.ClassName ?? "Unknown",
+                    result.ErrorMessage));
+
+#if DEBUG
+                if (!string.IsNullOrWhiteSpace(result.StackTrace))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        GeneratorDiagnostics.GeneratorStackTrace,
+                        Location.None,
+                        result.StackTrace));
+                }
+#endif
+                return;
+            }
+
+            // Skip empty results (class didn't match criteria)
+            if (result.IsEmpty || result.ClassDeclaration == null || result.SemanticModel == null)
+            {
+                return;
+            }
+
+            var classDeclarationSyntax = result.ClassDeclaration;
+            var semanticModel = result.SemanticModel;
+
             var messages = new List<string>();
             string source;
 
@@ -150,6 +248,15 @@ namespace Neatoo.BaseGenerator
                 }
                 catch (Exception ex)
                 {
+                    // Report the exception as a diagnostic warning
+                    GeneratorDiagnostics.ReportExceptionWithStackTrace(
+                        context,
+                        GeneratorDiagnostics.GeneratorException,
+                        ex,
+                        classDeclarationSyntax.GetLocation(),
+                        $"{namespaceName}.{targetClassName}");
+
+                    // Still include error info in generated source for debugging
                     source = @$"/* Error: {ex.GetType().FullName} {ex.Message} */";
                 }
 
@@ -157,9 +264,17 @@ namespace Neatoo.BaseGenerator
             }
             catch (Exception ex)
             {
+                // Report the exception as a diagnostic warning
+                GeneratorDiagnostics.ReportExceptionWithStackTrace(
+                    context,
+                    GeneratorDiagnostics.GeneratorException,
+                    ex,
+                    classDeclarationSyntax.GetLocation(),
+                    classDeclarationSyntax.Identifier.Text);
+
+                // Still include error info in generated source for debugging
                 source = $"// Error: {ex.Message}";
                 context.AddSource($"Error.{classDeclarationSyntax.Identifier.Text}.g.cs", source);
-
             }
         }
 

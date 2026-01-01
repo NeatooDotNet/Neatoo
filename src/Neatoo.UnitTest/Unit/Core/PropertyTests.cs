@@ -1229,6 +1229,64 @@ public class PropertyTests
         Assert.AreEqual(0, property.IsMarkedBusy.Count);
     }
 
+    [TestMethod]
+    public async Task IsMarkedBusy_ConcurrentReadWrite_NoException()
+    {
+        // Arrange
+        var property = new Property<string>(_stringPropertyInfo);
+        var tasks = new List<Task>();
+        var cts = new CancellationTokenSource();
+
+        // Act - Concurrent writes
+        for (int i = 0; i < 100; i++)
+        {
+            var id = i;
+            tasks.Add(Task.Run(() => property.AddMarkedBusy(id)));
+        }
+
+        // Concurrent reads while writing
+        for (int i = 0; i < 100; i++)
+        {
+            tasks.Add(Task.Run(() =>
+            {
+                var snapshot = property.IsMarkedBusy;
+                // Enumerate the snapshot - should not throw InvalidOperationException
+                foreach (var item in snapshot) { _ = item; }
+                return snapshot.Count;
+            }));
+        }
+
+        // Should not throw InvalidOperationException from concurrent modification
+        await Task.WhenAll(tasks);
+
+        // Assert - All 100 unique IDs should be present
+        Assert.AreEqual(100, property.IsMarkedBusy.Count);
+    }
+
+    [TestMethod]
+    public void IsMarkedBusy_ReturnsSnapshot_NotLiveReference()
+    {
+        // Arrange
+        var property = new Property<string>(_stringPropertyInfo);
+        property.AddMarkedBusy(1);
+        property.AddMarkedBusy(2);
+
+        // Act - Get a snapshot
+        var snapshot1 = property.IsMarkedBusy;
+
+        // Modify the property
+        property.AddMarkedBusy(3);
+
+        // Get another snapshot
+        var snapshot2 = property.IsMarkedBusy;
+
+        // Assert - First snapshot should not include the new ID
+        Assert.AreEqual(2, snapshot1.Count);
+        Assert.AreEqual(3, snapshot2.Count);
+        Assert.IsFalse(snapshot1.Contains(3));
+        Assert.IsTrue(snapshot2.Contains(3));
+    }
+
     #endregion
 }
 

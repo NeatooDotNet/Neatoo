@@ -30,7 +30,10 @@
       "WebFetch(domain:playwright.dev)",
       "Bash(dotnet list:*)",
       "Bash(dotnet package search:*)",
-      "Bash(dotnet restore:*)"
+      "Bash(dotnet restore:*)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\KeithVoels\\\\.claude\\\\skills\" -Recurse)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Format-Table -AutoSize)"
     ]
   }
 }

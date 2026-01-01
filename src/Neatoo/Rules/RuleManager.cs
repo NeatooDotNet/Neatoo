@@ -348,13 +348,10 @@ public class RuleManager<T> : IRuleManager<T>
 
                 var ruleMessages = (await ruleMessageTask) ?? RuleMessages.None;
 
-                var setAtLeastOneProperty = true;
-
                 foreach (var propertyName in triggerProperties.Select(t => t.PropertyName).Except(ruleMessages.Select(p => p.PropertyName)))
                 {
                     if(this.Target.TryGetProperty(propertyName, out var targetProperty))
                     {
-                        // Allowing null trigger properties that may be on a child target
                         targetProperty.ClearMessagesForRule(rule.UniqueIndex);
                     }
                 }
@@ -364,13 +361,9 @@ public class RuleManager<T> : IRuleManager<T>
                     if(this.Target.TryGetProperty(ruleMessage.Key, out var targetProperty))
                     {
                         ruleMessage.Value.ForEach(rm => rm.RuleIndex = rule.UniqueIndex);
-
-                        setAtLeastOneProperty = true;
                         targetProperty.SetMessagesForRule(ruleMessage.Value);
                     }
                 }
-
-                Debug.Assert(setAtLeastOneProperty, "You must have at least one trigger property that is a valid property on the target");
             }
             catch (Exception ex)
             {
