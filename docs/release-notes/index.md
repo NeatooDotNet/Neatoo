@@ -6,23 +6,31 @@
 
 ---
 
-## Release History
+## Highlights
 
-| Version | Date | Type | Highlights |
-|---------|------|------|------------|
-| [10.1.1](v10.1.1.md) | 2026-01-01 | Feature | Record support, RemoteFactory 10.1.1 |
+New features, breaking changes, and significant bug fixes.
+
+| Version | Date | Type | Summary |
+|---------|------|------|---------|
+| [10.1.1](v10.1.1.md) | 2026-01-01 | Feature | Record support for Value Objects |
+
+---
+
+## All Releases
+
+| Version | Date |
+|---------|------|
+| [10.1.1](v10.1.1.md) | 2026-01-01 |
 
 ---
 
 ## Version Naming
 
-Neatoo follows [Semantic Versioning](https://semver.org/) (SemVer):
-
-| Change Type | Version Bump | Example |
-|-------------|--------------|---------|
-| Breaking changes | Major | 10.x → 11.0 |
-| New features (non-breaking) | Minor | 10.1 → 10.2 |
-| Bug fixes | Patch | 10.1.0 → 10.1.1 |
+| Change Type | Version Bump |
+|-------------|--------------|
+| Breaking changes | Major (10.x → 11.0) |
+| New features | Minor (10.1 → 10.2) |
+| Bug fixes | Patch (10.1.0 → 10.1.1) |
 
 ---
 
@@ -30,4 +38,3 @@ Neatoo follows [Semantic Versioning](https://semver.org/) (SemVer):
 
 - [NuGet Package](https://www.nuget.org/packages/Neatoo)
 - [GitHub Repository](https://github.com/NeatooDotNet/Neatoo)
-- [Documentation](../index.md)
