@@ -66,6 +66,10 @@ Full documentation can be found in the [docs](docs/) folder:
 * [Mapper Methods](docs/mapper-methods.md) - MapFrom, MapTo, MapModifiedTo
 * [DDD Analysis](docs/DDD-Analysis.md) - How Neatoo aligns with Domain-Driven Design
 
+### Reference
+* [Release Notes](docs/release-notes/index.md) - Version history and changelog
+* [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
+
 ### Planned Features
 * [Lazy Loading Pattern](docs/lazy-loading-pattern.md) - Planned pattern for on-demand child object loading
 * [Lazy Loading Analysis](docs/lazy-loading-analysis.md) - Technical analysis of lazy loading infrastructure

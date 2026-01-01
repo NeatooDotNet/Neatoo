@@ -66,6 +66,7 @@ Neatoo provides bindable, serializable domain objects for Blazor and WPF applica
 
 - [Exceptions](exceptions.md) - Exception handling guide
 - [Troubleshooting](troubleshooting.md) - Common issues and solutions
+- [Release Notes](release-notes/index.md) - Version history and changelog
 
 ### Architecture
 

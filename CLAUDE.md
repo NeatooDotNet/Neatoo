@@ -204,3 +204,38 @@ Neatoo depends on **RemoteFactory** (`C:\src\neatoodotnet\RemoteFactory`) for so
 **Mapper Removal (9e62dda)**: RemoteFactory removed the MapperGenerator that auto-generated `MapTo`/`MapFrom` partial method implementations. Neatoo domain objects using these partial methods need manual implementations. See plan document for migration steps. **Status: MIGRATED**
 
 **FactoryHintNameLength (9.20.1)**: New version enforces 50-character limit on fully qualified type names. Added `[assembly: FactoryHintNameLength(100)]` to `Neatoo.UnitTest/AssemblyAttributes.cs` to accommodate long namespace paths.
+
+## Release Notes
+
+Maintain release notes in `docs/release-notes/` for each version.
+
+### When Releasing a New Version
+
+1. **Create release notes file**: `docs/release-notes/vX.Y.Z.md`
+2. **Update release index**: `docs/release-notes/index.md`
+3. **Update version**: `Directory.Build.props`
+4. **Update PackageReleaseNotes**: In `.csproj` files (brief summary)
+
+### Release Notes Template
+
+Each release file (`docs/releases/vX.Y.Z.md`) should include:
+
+- Release date and type (Feature/Bugfix/Breaking)
+- Summary of changes (1-2 sentences)
+- New features with code examples
+- Bug fixes
+- Dependency updates
+- Migration guide (if breaking changes)
+- Links to related documentation
+
+### Version Types
+
+| Type | Version Bump | When to Use |
+|------|--------------|-------------|
+| Breaking | Major (10.x → 11.0) | API changes that break existing code |
+| Feature | Minor (10.1 → 10.2) | New features, non-breaking additions |
+| Bugfix | Patch (10.1.0 → 10.1.1) | Bug fixes, documentation updates |
+
+### Current Release
+
+See [docs/release-notes/index.md](docs/release-notes/index.md) for version history.
