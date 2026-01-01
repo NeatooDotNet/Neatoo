@@ -492,12 +492,15 @@ public class AsyncTasksTests
     {
         // Arrange
         var asyncTasks = new AsyncTasks();
+        var tcsKeeper = new TaskCompletionSource<bool>(); // Keeps the sequence running
         var tcs1 = new TaskCompletionSource<bool>();
         var tcs2 = new TaskCompletionSource<bool>();
 
+        // Add a "keeper" task first to ensure the sequence stays running
+        asyncTasks.AddTask(tcsKeeper.Task);
         asyncTasks.AddTask(tcs1.Task);
 
-        // Fault the first task but keep it pending by not completing the sequence
+        // Fault tcs1 - the sequence stays running because tcsKeeper is still pending
         tcs1.SetException(new InvalidOperationException("First failure"));
 
         // Add a second task while the sequencer still has tasks pending
@@ -509,6 +512,7 @@ public class AsyncTasksTests
 
         // Cleanup
         tcs2.SetResult(true);
+        tcsKeeper.SetResult(true);
         try { await asyncTasks.AllDone; } catch (AggregateException) { }
     }
 
