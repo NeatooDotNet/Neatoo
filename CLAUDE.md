@@ -189,12 +189,13 @@ Neatoo depends on **RemoteFactory** (`C:\src\neatoodotnet\RemoteFactory`) for so
 
 | Date | Commit | Description | Breaking? | Plan |
 |------|--------|-------------|-----------|------|
+| 2026-01-01 | `27760f8` | 10.1.1 - Record Support | No | `docs/todos/remotefactory-record-support-update.md` |
 | 2025-12-31 | `b90ba4d` | Multi-target .NET 8.0, 9.0, 10.0 | No | N/A |
 | 2025-12-30 | `9e62dda` | Remove Mapper Functionality | **YES** | `docs/todos/remotefactory-mapper-removal-plan.md` |
 
 ### Current Version
 
-**Neatoo.RemoteFactory 10.0.1** (updated 2025-12-31)
+**Neatoo.RemoteFactory 10.1.1** (updated 2026-01-01)
 
 ### Breaking Change Notes
 
