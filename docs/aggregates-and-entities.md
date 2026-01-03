@@ -250,6 +250,72 @@ public partial interface ICustomerAddress : IEntityBase { }
 4. **`partial` properties** - Required for state tracking and serialization
 5. **Constructor with services** - DI provides the entity services
 
+## Dependency Injection Patterns
+
+### Constructor Injection - For Ongoing Use
+
+Constructor-inject dependencies needed throughout the entity's lifetime:
+
+```csharp
+public Person(
+    IEntityBaseServices<Person> services,
+    IEmailValidator emailValidator) : base(services)
+{
+    _emailValidator = emailValidator;
+
+    // Validator used in rules - needed throughout lifetime
+    RuleManager.AddRule(new EmailValidationRule(_emailValidator));
+}
+```
+
+```csharp
+// List needs factory for repeated AddItem() calls
+public PhoneList([Service] IPhoneFactory phoneFactory)
+{
+    _phoneFactory = phoneFactory;
+}
+
+public IPhone AddPhoneNumber()
+{
+    var phone = _phoneFactory.Create();  // Called multiple times
+    Add(phone);
+    return phone;
+}
+```
+
+### [Service] Injection - For Factory Methods
+
+Use `[Service]` for dependencies only needed during `[Create]`, `[Fetch]`, etc.:
+
+```csharp
+public Person(IEntityBaseServices<Person> services) : base(services)
+{
+    // No child list factory - only needed once in Create
+}
+
+[Create]
+public void Create([Service] IPersonPhoneListFactory phoneListFactory)
+{
+    PersonPhoneList = phoneListFactory.Create();  // One-time initialization
+}
+```
+
+### Anti-Pattern: Factory as Method Parameter
+
+Never require callers to provide factories as method parameters:
+
+```csharp
+// WRONG - forces caller to inject and pass factory
+public IOrderLine AddLine(IOrderLineFactory lineFactory)
+{
+    var line = lineFactory.Create();
+    Add(line);
+    return line;
+}
+```
+
+Services should be constructor-injected into the class, not passed by callers.
+
 ## Partial Properties
 
 Properties must be declared as `partial` for Neatoo to generate backing code:

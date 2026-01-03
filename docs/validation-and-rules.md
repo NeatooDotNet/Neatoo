@@ -716,18 +716,45 @@ internal partial class ParentContact : EntityBase<ParentContact>, IParentContact
 ```
 <!-- /snippet -->
 
-## Loading Property Values Without Triggering Rules
+## Cascading Rules - A Key Feature
 
-Use `LoadProperty` to set values without triggering rules (e.g., in rule side effects):
+When a rule sets a property, dependent rules run automatically. **This cascading behavior is intentional** and essential for maintaining domain consistency.
 
 ```csharp
-protected override IRuleMessages Execute(IPerson target)
+public class OrderTotalRule : RuleBase<IOrder>
 {
-    // Set FullName without triggering any FullName rules
-    LoadProperty(target, t => t.FullName, $"{target.FirstName} {target.LastName}");
+    public OrderTotalRule() : base(o => o.Lines) { }
+
+    protected override IRuleMessages Execute(IOrder target)
+    {
+        var total = target.Lines?.Sum(l => l.Quantity * l.UnitPrice) ?? 0;
+
+        // Property setter triggers any rules that depend on Total - this is correct!
+        target.Total = total;
+
+        return None;
+    }
+}
+```
+
+If `Total` has dependent rules (e.g., discount calculation, credit limit check), they run automatically. This is the expected behavior.
+
+### LoadProperty - Rare Use Cases Only
+
+Use `LoadProperty()` **only** to prevent circular references:
+
+```csharp
+protected override IRuleMessages Execute(IOrder target)
+{
+    // Rule A triggers Rule B which triggers Rule A - break the cycle
+    LoadProperty(target, t => t.InternalValue, calculated);
     return None;
 }
 ```
+
+**Do NOT use LoadProperty for:**
+- Factory methods (`[Fetch]`, `[Create]`, etc.) - rules are already paused
+- Normal rule execution - cascading is the correct behavior
 
 ## Busy State During Async Rules
 
