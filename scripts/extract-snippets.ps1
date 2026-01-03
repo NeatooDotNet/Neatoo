@@ -54,7 +54,7 @@ $regionPattern = '#region\s+docs:([^:\s]+):([^\s]+)'
 
 # Find all C# and Razor files in samples
 $sourceFiles = Get-ChildItem -Path $SamplesFullPath -Recurse -Include "*.cs", "*.razor" |
-    Where-Object { $_.FullName -notmatch '\\(obj|bin|Generated)\\' }
+    Where-Object { $_.FullName -notmatch '[\\/](obj|bin|Generated)[\\/]' }
 
 $snippets = @{}
 $errors = @()
@@ -129,7 +129,71 @@ if ($errors.Count -gt 0) {
 
 if ($Verify) {
     Write-Host ""
-    Write-Host "Verification complete. All snippets are valid." -ForegroundColor Green
+    Write-Host "Verifying documentation is in sync with samples..." -ForegroundColor Yellow
+
+    $outOfSync = @()
+    $orphanSnippets = @()
+    $verifiedCount = 0
+
+    foreach ($group in $byDocFile) {
+        $docFileName = "$($group.Name).md"
+        $docFilePath = Join-Path $DocsFullPath $docFileName
+
+        if (-not (Test-Path $docFilePath)) {
+            Write-Host "  Warning: Doc file not found: $docFileName" -ForegroundColor Yellow
+            continue
+        }
+
+        $docContent = Get-Content $docFilePath -Raw
+
+        foreach ($snippet in $group.Group) {
+            $snippetId = $snippet.Value.SnippetId
+            $expectedContent = $snippet.Value.Content
+
+            # Pattern to extract current content from docs
+            $markerPattern = "<!--\s*snippet:\s*docs:$($group.Name):$snippetId\s*-->\s*\r?\n``````(?:csharp|razor)?\r?\n([\s\S]*?)``````\s*\r?\n<!--\s*/snippet\s*-->"
+
+            if ($docContent -match $markerPattern) {
+                $currentContent = $Matches[1].Trim()
+                $expectedTrimmed = $expectedContent.Trim()
+
+                # Normalize line endings for comparison
+                $currentNormalized = $currentContent -replace '\r\n', "`n"
+                $expectedNormalized = $expectedTrimmed -replace '\r\n', "`n"
+
+                if ($currentNormalized -ne $expectedNormalized) {
+                    $outOfSync += "  - ${docFileName}: ${snippetId}"
+                } else {
+                    $verifiedCount++
+                }
+            } else {
+                # Snippet exists in samples but no marker in docs - track as orphan (warning only)
+                $orphanSnippets += "  - ${docFileName}: ${snippetId}"
+            }
+        }
+    }
+
+    if ($orphanSnippets.Count -gt 0) {
+        Write-Host ""
+        Write-Host "Orphan snippets (in samples but not in docs):" -ForegroundColor Yellow
+        foreach ($item in $orphanSnippets) {
+            Write-Host $item -ForegroundColor Yellow
+        }
+    }
+
+    if ($outOfSync.Count -gt 0) {
+        Write-Host ""
+        Write-Host "Documentation out of sync with samples:" -ForegroundColor Red
+        foreach ($item in $outOfSync) {
+            Write-Host $item -ForegroundColor Red
+        }
+        Write-Host ""
+        Write-Host "Run '.\scripts\extract-snippets.ps1 -Update' to sync documentation." -ForegroundColor Yellow
+        exit 1
+    }
+
+    Write-Host ""
+    Write-Host "Verification complete. $verifiedCount snippets verified, $($orphanSnippets.Count) orphan snippets." -ForegroundColor Green
     exit 0
 }
 
@@ -164,7 +228,7 @@ if ($Update) {
             # ```
             # <!-- /snippet -->
 
-            $markerPattern = "<!--\s*snippet:\s*docs:$($group.Name):$snippetId\s*-->\s*\r?\n```(?:csharp|razor)?\r?\n([\s\S]*?)```\s*\r?\n<!--\s*/snippet\s*-->"
+            $markerPattern = "<!--\s*snippet:\s*docs:$($group.Name):$snippetId\s*-->\s*\r?\n``````(?:csharp|razor)?\r?\n([\s\S]*?)``````\s*\r?\n<!--\s*/snippet\s*-->"
 
             if ($docContent -match $markerPattern) {
                 $replacement = "<!-- snippet: docs:$($group.Name):$snippetId -->`n``````csharp`n$snippetContent`n```````n<!-- /snippet -->"

@@ -24,40 +24,61 @@ Choose based on requirements:
 
 ### Interface
 
+<!-- snippet: docs:collections:interface-definition -->
 ```csharp
-public interface IOrderLineItemList : IEntityListBase<IOrderLineItem>
+/// <summary>
+/// Collection interface with domain-specific methods.
+/// </summary>
+public interface IPhoneList : IEntityListBase<IPhone>
 {
-    IOrderLineItem AddItem();
-    void RemoveItem(IOrderLineItem item);
+    IPhone AddPhoneNumber();
+    void RemovePhoneNumber(IPhone phone);
 }
 ```
+<!-- /snippet -->
 
 ### Implementation
 
+<!-- snippet: docs:collections:list-implementation -->
 ```csharp
+/// <summary>
+/// EntityListBase implementation with factory injection.
+/// </summary>
 [Factory]
-internal class OrderLineItemList : EntityListBase<IOrderLineItem>, IOrderLineItemList
+internal class PhoneList : EntityListBase<IPhone>, IPhoneList
 {
-    private readonly IOrderLineItemFactory _itemFactory;
+    private readonly IPhoneFactory _phoneFactory;
 
-    public OrderLineItemList([Service] IOrderLineItemFactory itemFactory)
+    public PhoneList([Service] IPhoneFactory phoneFactory)
     {
-        _itemFactory = itemFactory;
+        _phoneFactory = phoneFactory;
     }
 
-    public IOrderLineItem AddItem()
+    public IPhone AddPhoneNumber()
     {
-        var item = _itemFactory.Create();
-        Add(item);  // Marks as child, sets parent
-        return item;
+        var phone = _phoneFactory.Create();
+        Add(phone);  // Marks as child, sets parent
+        return phone;
     }
 
-    public void RemoveItem(IOrderLineItem item)
+    public void RemovePhoneNumber(IPhone phone)
     {
-        Remove(item);  // Marks for deletion if not new
+        Remove(phone);  // Marks for deletion if not new
     }
-}
+
+    #region docs:collections:fetch-operation
+    [Fetch]
+    public void Fetch(IEnumerable<PhoneEntity> entities,
+                      [Service] IPhoneFactory phoneFactory)
+    {
+        foreach (var entity in entities)
+        {
+            var phone = phoneFactory.Fetch(entity);
+            Add(phone);
+        }
+    }
 ```
+<!-- /snippet -->
 
 ## Adding Items
 
@@ -141,58 +162,62 @@ foreach (var item in lineItems.Union(lineItems.DeletedList))
 
 ## Fetch Operation
 
+<!-- snippet: docs:collections:fetch-operation -->
 ```csharp
 [Fetch]
-public void Fetch(IEnumerable<LineItemEntity> entities,
-                  [Service] IOrderLineItemFactory itemFactory)
-{
-    foreach (var entity in entities)
+    public void Fetch(IEnumerable<PhoneEntity> entities,
+                      [Service] IPhoneFactory phoneFactory)
     {
-        var item = itemFactory.Fetch(entity);
-        Add(item);
+        foreach (var entity in entities)
+        {
+            var phone = phoneFactory.Fetch(entity);
+            Add(phone);
+        }
     }
-}
 ```
+<!-- /snippet -->
 
 ## Save Operation
 
 Handle inserts, updates, and deletes:
 
+<!-- snippet: docs:collections:update-operation -->
 ```csharp
 [Update]
-public void Update(ICollection<LineItemEntity> entities,
-                   [Service] IOrderLineItemFactory itemFactory)
-{
-    // Process all items including deleted ones
-    foreach (var item in this.Union(DeletedList))
+    public void Update(ICollection<PhoneEntity> entities,
+                       [Service] IPhoneFactory phoneFactory)
     {
-        LineItemEntity entity;
+        // Process all items including deleted ones
+        foreach (var phone in this.Union(DeletedList))
+        {
+            PhoneEntity entity;
 
-        if (item.IsNew)
-        {
-            // Create new EF entity
-            entity = new LineItemEntity();
-            entities.Add(entity);
-        }
-        else
-        {
-            // Find existing EF entity
-            entity = entities.Single(e => e.Id == item.Id);
-        }
+            if (phone.IsNew)
+            {
+                // Create new EF entity
+                entity = new PhoneEntity();
+                entities.Add(entity);
+            }
+            else
+            {
+                // Find existing EF entity
+                entity = entities.Single(e => e.Id == phone.Id);
+            }
 
-        if (item.IsDeleted)
-        {
-            // Remove from EF collection
-            entities.Remove(entity);
-        }
-        else
-        {
-            // Save the item (insert or update)
-            itemFactory.Save(item, entity);
+            if (phone.IsDeleted)
+            {
+                // Remove from EF collection
+                entities.Remove(entity);
+            }
+            else
+            {
+                // Save the item (insert or update)
+                phoneFactory.Save(phone, entity);
+            }
         }
     }
-}
 ```
+<!-- /snippet -->
 
 ## Validation Across Items
 
@@ -210,24 +235,58 @@ await lineItems.RunRules();
 
 Handle property changes that affect sibling validation:
 
+<!-- snippet: docs:collections:cross-item-validation -->
 ```csharp
-protected override async Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+/// <summary>
+/// List that re-validates siblings when properties change.
+/// </summary>
+public interface IContactPhoneList : IEntityListBase<IContactPhone>
 {
-    await base.HandleNeatooPropertyChanged(eventArgs);
+    IContactPhone AddPhone();
+}
 
-    // When PhoneType changes, re-validate all other items for uniqueness
-    if (eventArgs.PropertyName == nameof(IPersonPhone.PhoneType))
+[Factory]
+internal class ContactPhoneList : EntityListBase<IContactPhone>, IContactPhoneList
+{
+    private readonly IContactPhoneFactory _phoneFactory;
+
+    public ContactPhoneList([Service] IContactPhoneFactory phoneFactory)
     {
-        if (eventArgs.Source is IPersonPhone changedPhone)
+        _phoneFactory = phoneFactory;
+    }
+
+    public IContactPhone AddPhone()
+    {
+        var phone = _phoneFactory.Create();
+        Add(phone);
+        return phone;
+    }
+
+    /// <summary>
+    /// Re-validate siblings when PhoneType changes to enforce uniqueness.
+    /// </summary>
+    protected override async Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+    {
+        await base.HandleNeatooPropertyChanged(eventArgs);
+
+        // When PhoneType changes, re-validate all other items for uniqueness
+        if (eventArgs.PropertyName == nameof(IContactPhone.PhoneType))
         {
-            // Re-run rules on all OTHER items
-            await Task.WhenAll(
-                this.Except([changedPhone])
-                    .Select(phone => phone.RunRules()));
+            if (eventArgs.Source is IContactPhone changedPhone)
+            {
+                // Re-run rules on all OTHER items
+                await Task.WhenAll(
+                    this.Except([changedPhone])
+                        .Select(phone => phone.RunRules()));
+            }
         }
     }
+
+    [Create]
+    public void Create() { }
 }
 ```
+<!-- /snippet -->
 
 ## Custom Add Methods
 

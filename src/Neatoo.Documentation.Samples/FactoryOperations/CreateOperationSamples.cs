@@ -1,10 +1,11 @@
 /// <summary>
 /// Code samples for docs/factory-operations.md - Create operation section
 ///
-/// Snippets in this file:
-/// - docs:factory-operations:create-basic
+/// Snippets injected into docs:
 /// - docs:factory-operations:create-with-service
-/// - docs:factory-operations:create-usage
+///
+/// Compile-time validation only (simpler create pattern):
+/// - docs:factory-operations:create-basic
 ///
 /// Corresponding tests: CreateOperationSamplesTests.cs
 /// </summary>

@@ -48,15 +48,66 @@ Aggregate roots typically have `[Remote]` on their operations. Child entities om
 
 Called when creating a new entity instance:
 
+<!-- snippet: docs:factory-operations:create-with-service -->
 ```csharp
-[Create]
-public void Create([Service] IChildListFactory childFactory)
+/// <summary>
+/// Entity with Create operation using service injection.
+/// </summary>
+public partial interface IProjectWithTasks : IEntityBase
 {
-    Id = Guid.NewGuid();
-    CreatedDate = DateTime.UtcNow;
-    ChildItems = childFactory.Create();  // Initialize child collection
+    Guid Id { get; }
+    string? Name { get; set; }
+    IProjectTaskList Tasks { get; }
+}
+
+public partial interface IProjectTask : IEntityBase
+{
+    Guid Id { get; }
+    string? Title { get; set; }
+}
+
+public interface IProjectTaskList : IEntityListBase<IProjectTask> { }
+
+[Factory]
+internal partial class ProjectTask : EntityBase<ProjectTask>, IProjectTask
+{
+    public ProjectTask(IEntityBaseServices<ProjectTask> services) : base(services) { }
+
+    public partial Guid Id { get; set; }
+    public partial string? Title { get; set; }
+
+    [Create]
+    public void Create()
+    {
+        Id = Guid.NewGuid();
+    }
+}
+
+[Factory]
+internal class ProjectTaskList : EntityListBase<IProjectTask>, IProjectTaskList
+{
+    [Create]
+    public void Create() { }
+}
+
+[Factory]
+internal partial class ProjectWithTasks : EntityBase<ProjectWithTasks>, IProjectWithTasks
+{
+    public ProjectWithTasks(IEntityBaseServices<ProjectWithTasks> services) : base(services) { }
+
+    public partial Guid Id { get; set; }
+    public partial string? Name { get; set; }
+    public partial IProjectTaskList Tasks { get; set; }
+
+    [Create]
+    public void Create([Service] IProjectTaskListFactory taskListFactory)
+    {
+        Id = Guid.NewGuid();
+        Tasks = taskListFactory.Create();
+    }
 }
 ```
+<!-- /snippet -->
 
 ### Usage
 
@@ -70,21 +121,45 @@ var person = personFactory.Create();
 
 Called to load an entity from a data source:
 
+<!-- snippet: docs:factory-operations:fetch-basic -->
 ```csharp
-[Remote]
-[Fetch]
-public async Task<bool> Fetch(int id, [Service] IDbContext db,
-                               [Service] IChildListFactory childFactory)
+/// <summary>
+/// Entity with basic Fetch operation.
+/// </summary>
+public partial interface IFetchableProduct : IEntityBase
 {
-    var entity = await db.Persons.Include(p => p.Children).FirstOrDefaultAsync(p => p.Id == id);
-    if (entity == null)
-        return false;
+    int Id { get; }
+    string? Name { get; set; }
+    decimal Price { get; set; }
+}
 
-    MapFrom(entity);
-    ChildItems = childFactory.Fetch(entity.Children);
-    return true;
+[Factory]
+internal partial class FetchableProduct : EntityBase<FetchableProduct>, IFetchableProduct
+{
+    public FetchableProduct(IEntityBaseServices<FetchableProduct> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string? Name { get; set; }
+    public partial decimal Price { get; set; }
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public bool Fetch(int id, [Service] IProductRepository repo)
+    {
+        var data = repo.FindById(id);
+        if (data == null)
+            return false;
+
+        Id = data.Id;
+        Name = data.Name;
+        Price = data.Price;
+        return true;
+    }
 }
 ```
+<!-- /snippet -->
 
 ### Usage
 
@@ -98,15 +173,70 @@ var person = await personFactory.Fetch(42);
 
 Define multiple fetch methods with different parameters:
 
+<!-- snippet: docs:factory-operations:fetch-multiple-overloads -->
 ```csharp
-[Remote]
-[Fetch]
-public async Task Fetch(int id, [Service] IDbContext db) { }
+/// <summary>
+/// Entity with multiple Fetch overloads for different lookup methods.
+/// </summary>
+public partial interface IProductWithMultipleFetch : IEntityBase
+{
+    int Id { get; }
+    string? Name { get; set; }
+    string? Sku { get; set; }
+    decimal Price { get; set; }
+}
 
-[Remote]
-[Fetch]
-public async Task Fetch(string email, [Service] IDbContext db) { }
+[Factory]
+internal partial class ProductWithMultipleFetch : EntityBase<ProductWithMultipleFetch>, IProductWithMultipleFetch
+{
+    public ProductWithMultipleFetch(IEntityBaseServices<ProductWithMultipleFetch> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string? Name { get; set; }
+    public partial string? Sku { get; set; }
+    public partial decimal Price { get; set; }
+
+    [Create]
+    public void Create() { }
+
+    /// <summary>
+    /// Fetch by ID.
+    /// </summary>
+    [Fetch]
+    public bool Fetch(int id, [Service] IProductRepository repo)
+    {
+        var data = repo.FindById(id);
+        if (data == null)
+            return false;
+
+        MapFromData(data);
+        return true;
+    }
+
+    /// <summary>
+    /// Fetch by SKU.
+    /// </summary>
+    [Fetch]
+    public bool Fetch(string sku, [Service] IProductRepository repo)
+    {
+        var data = repo.FindBySku(sku);
+        if (data == null)
+            return false;
+
+        MapFromData(data);
+        return true;
+    }
+
+    private void MapFromData(ProductData data)
+    {
+        Id = data.Id;
+        Name = data.Name;
+        Sku = data.Sku;
+        Price = data.Price;
+    }
+}
 ```
+<!-- /snippet -->
 
 Generated factory:
 ```csharp
@@ -118,25 +248,69 @@ Task<IPerson> Fetch(string email);
 
 Called when saving a new entity (`IsNew = true`):
 
+<!-- snippet: docs:factory-operations:insert-operation -->
 ```csharp
-[Remote]
-[Insert]
-public async Task Insert([Service] IDbContext db, [Service] IChildListFactory childFactory)
+/// <summary>
+/// Entity demonstrating Insert operation pattern.
+/// </summary>
+public partial interface IInventoryItem : IEntityBase
 {
-    await RunRules();
-    if (!IsSavable)
-        return;
-
-    var entity = new PersonEntity();
-    MapTo(entity);
-    db.Persons.Add(entity);
-
-    // Save children
-    childFactory.Save(ChildItems, entity.Children);
-
-    await db.SaveChangesAsync();
+    Guid Id { get; }
+    string? Name { get; set; }
+    int Quantity { get; set; }
+    DateTime LastUpdated { get; }
 }
+
+[Factory]
+internal partial class InventoryItem : EntityBase<InventoryItem>, IInventoryItem
+{
+    public InventoryItem(IEntityBaseServices<InventoryItem> services) : base(services) { }
+
+    public partial Guid Id { get; set; }
+
+    [Required(ErrorMessage = "Name is required")]
+    public partial string? Name { get; set; }
+
+    public partial int Quantity { get; set; }
+    public partial DateTime LastUpdated { get; set; }
+
+    [Create]
+    public void Create()
+    {
+        Id = Guid.NewGuid();
+        LastUpdated = DateTime.UtcNow;
+    }
+
+    [Fetch]
+    public void Fetch(InventoryItemEntity entity)
+    {
+        Id = entity.Id;
+        Name = entity.Name;
+        Quantity = entity.Quantity;
+        LastUpdated = entity.LastUpdated;
+    }
+
+    [Insert]
+    public async Task Insert([Service] IInventoryDb db)
+    {
+        await RunRules();
+        if (!IsSavable)
+            return;
+
+        var entity = new InventoryItemEntity
+        {
+            Id = Id,
+            Name = Name ?? "",
+            Quantity = Quantity,
+            LastUpdated = DateTime.UtcNow
+        };
+        db.Add(entity);
+        await db.SaveChangesAsync();
+
+        LastUpdated = entity.LastUpdated;
+    }
 ```
+<!-- /snippet -->
 
 ### Key Points
 
@@ -164,26 +338,32 @@ public async Task Insert([Service] IDbContext db, [Service] IChildListFactory ch
 
 Called when saving an existing entity (`IsNew = false`, `IsDeleted = false`):
 
+<!-- snippet: docs:factory-operations:update-operation -->
 ```csharp
-[Remote]
 [Update]
-public async Task Update([Service] IDbContext db, [Service] IChildListFactory childFactory)
-{
-    await RunRules();
-    if (!IsSavable)
-        return;
+    public async Task Update([Service] IInventoryDb db)
+    {
+        await RunRules();
+        if (!IsSavable)
+            return;
 
-    var entity = await db.Persons.FindAsync(Id);
-    if (entity == null)
-        throw new KeyNotFoundException("Person not found");
+        var entity = db.Find(Id);
+        if (entity == null)
+            throw new KeyNotFoundException("Item not found");
 
-    MapModifiedTo(entity);  // Only modified properties
+        // Only update modified properties
+        if (this[nameof(Name)].IsModified)
+            entity.Name = Name ?? "";
+        if (this[nameof(Quantity)].IsModified)
+            entity.Quantity = Quantity;
 
-    childFactory.Save(ChildItems, entity.Children);
+        entity.LastUpdated = DateTime.UtcNow;
+        await db.SaveChangesAsync();
 
-    await db.SaveChangesAsync();
-}
+        LastUpdated = entity.LastUpdated;
+    }
 ```
+<!-- /snippet -->
 
 ### MapModifiedTo
 
@@ -207,19 +387,20 @@ public partial void MapModifiedTo(PersonEntity entity)
 
 Called when saving a deleted entity (`IsDeleted = true`):
 
+<!-- snippet: docs:factory-operations:delete-operation -->
 ```csharp
-[Remote]
 [Delete]
-public async Task Delete([Service] IDbContext db)
-{
-    var entity = await db.Persons.FindAsync(Id);
-    if (entity != null)
+    public async Task Delete([Service] IInventoryDb db)
     {
-        db.Persons.Remove(entity);
-        await db.SaveChangesAsync();
+        var entity = db.Find(Id);
+        if (entity != null)
+        {
+            db.Remove(entity);
+            await db.SaveChangesAsync();
+        }
     }
-}
 ```
+<!-- /snippet -->
 
 ### Marking for Deletion
 
@@ -337,81 +518,135 @@ public bool CanDelete();
 
 Child entities don't have `[Remote]` since they're managed through the parent:
 
+<!-- snippet: docs:factory-operations:child-entity -->
 ```csharp
-[Factory]
-internal partial class PersonPhone : EntityBase<PersonPhone>, IPersonPhone
+/// <summary>
+/// Child entity - no [Remote] since managed through parent.
+/// </summary>
+public partial interface IInvoiceLine : IEntityBase
 {
-    // No [Remote] - called by parent factory
-    [Fetch]
-    public void Fetch(PersonPhoneEntity entity)
-    {
-        MapFrom(entity);
-    }
+    Guid Id { get; }
+    string? Description { get; set; }
+    decimal Amount { get; set; }
+}
 
-    [Insert]
-    public void Insert(PersonPhoneEntity entity)
+[Factory]
+internal partial class InvoiceLine : EntityBase<InvoiceLine>, IInvoiceLine
+{
+    public InvoiceLine(IEntityBaseServices<InvoiceLine> services) : base(services) { }
+
+    public partial Guid Id { get; set; }
+    public partial string? Description { get; set; }
+    public partial decimal Amount { get; set; }
+
+    [Create]
+    public void Create()
     {
         Id = Guid.NewGuid();
-        MapTo(entity);
     }
 
-    [Update]
-    public void Update(PersonPhoneEntity entity)
+    /// <summary>
+    /// No [Remote] - called by parent factory.
+    /// </summary>
+    [Fetch]
+    public void Fetch(InvoiceLineEntity entity)
     {
-        MapModifiedTo(entity);
+        Id = entity.Id;
+        Description = entity.Description;
+        Amount = entity.Amount;
+    }
+
+    /// <summary>
+    /// Insert populates the EF entity for parent to save.
+    /// </summary>
+    [Insert]
+    public void Insert(InvoiceLineEntity entity)
+    {
+        entity.Id = Id;
+        entity.Description = Description ?? "";
+        entity.Amount = Amount;
+    }
+
+    /// <summary>
+    /// Update only transfers modified properties.
+    /// </summary>
+    [Update]
+    public void Update(InvoiceLineEntity entity)
+    {
+        if (this[nameof(Description)].IsModified)
+            entity.Description = Description ?? "";
+        if (this[nameof(Amount)].IsModified)
+            entity.Amount = Amount;
     }
 }
 ```
+<!-- /snippet -->
 
 ## List Factory Operations
 
 List factories provide Save method that handles the collection:
 
+<!-- snippet: docs:factory-operations:list-factory -->
 ```csharp
+/// <summary>
+/// List factory handles collection of child entities.
+/// </summary>
+public interface IInvoiceLineList : IEntityListBase<IInvoiceLine> { }
+
 [Factory]
-internal class PersonPhoneList : EntityListBase<IPersonPhone>, IPersonPhoneList
+internal class InvoiceLineList : EntityListBase<IInvoiceLine>, IInvoiceLineList
 {
+    [Create]
+    public void Create() { }
+
+    /// <summary>
+    /// Fetch populates list from EF entities.
+    /// </summary>
     [Fetch]
-    public void Fetch(IEnumerable<PersonPhoneEntity> entities,
-                      [Service] IPersonPhoneFactory phoneFactory)
+    public void Fetch(IEnumerable<InvoiceLineEntity> entities,
+                      [Service] IInvoiceLineFactory lineFactory)
     {
         foreach (var entity in entities)
         {
-            var phone = phoneFactory.Fetch(entity);
-            Add(phone);
+            var line = lineFactory.Fetch(entity);
+            Add(line);
         }
     }
 
+    /// <summary>
+    /// Save handles insert/update/delete for all items.
+    /// </summary>
     [Update]
-    public void Update(ICollection<PersonPhoneEntity> entities,
-                       [Service] IPersonPhoneFactory phoneFactory)
+    public void Update(ICollection<InvoiceLineEntity> entities,
+                       [Service] IInvoiceLineFactory lineFactory)
     {
-        foreach (var phone in this.Union(DeletedList))
+        foreach (var line in this.Union(DeletedList))
         {
-            PersonPhoneEntity entity;
+            InvoiceLineEntity entity;
 
-            if (phone.IsNew)
+            if (line.IsNew)
             {
-                entity = new PersonPhoneEntity();
+                entity = new InvoiceLineEntity();
                 entities.Add(entity);
             }
             else
             {
-                entity = entities.Single(e => e.Id == phone.Id);
+                entity = entities.Single(e => e.Id == line.Id);
             }
 
-            if (phone.IsDeleted)
+            if (line.IsDeleted)
             {
                 entities.Remove(entity);
             }
             else
             {
-                phoneFactory.Save(phone, entity);
+                lineFactory.Save(line, entity);
             }
         }
     }
 }
 ```
+<!-- /snippet -->
 
 ## Mapper Methods
 

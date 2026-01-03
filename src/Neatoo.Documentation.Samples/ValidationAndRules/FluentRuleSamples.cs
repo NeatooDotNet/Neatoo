@@ -1,11 +1,13 @@
 /// <summary>
 /// Code samples for docs/validation-and-rules.md - Fluent Rules section
 ///
-/// Snippets in this file:
+/// Snippets injected into docs:
 /// - docs:validation-and-rules:fluent-validation
 /// - docs:validation-and-rules:fluent-validation-async
 /// - docs:validation-and-rules:fluent-action
-/// - docs:validation-and-rules:fluent-action-async
+///
+/// Compile-time validation only (supporting entity for above snippets):
+/// - docs:validation-and-rules:fluent-rules-person
 ///
 /// Corresponding tests: FluentRuleSamplesTests.cs
 /// </summary>

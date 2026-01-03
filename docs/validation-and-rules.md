@@ -21,8 +21,11 @@ Neatoo provides a powerful rules engine for implementing business logic and vali
 
 For validation logic that doesn't require async operations:
 
+<!-- snippet: docs:validation-and-rules:age-validation-rule -->
 ```csharp
-public class AgeValidationRule : RuleBase<IPerson>
+public interface IAgeValidationRule : IRule<IPerson> { }
+
+public class AgeValidationRule : RuleBase<IPerson>, IAgeValidationRule
 {
     public AgeValidationRule() : base(p => p.Age) { }
 
@@ -40,11 +43,13 @@ public class AgeValidationRule : RuleBase<IPerson>
     }
 }
 ```
+<!-- /snippet -->
 
 ### Asynchronous Rules (AsyncRuleBase)
 
 For validation that requires database lookups, API calls, or other async operations:
 
+<!-- snippet: docs:validation-and-rules:unique-email-rule -->
 ```csharp
 public interface IUniqueEmailRule : IRule<IPerson> { }
 
@@ -70,6 +75,7 @@ public class UniqueEmailRule : AsyncRuleBase<IPerson>, IUniqueEmailRule
     }
 }
 ```
+<!-- /snippet -->
 
 > **Why AsyncRuleBase instead of factory validation?**
 >
@@ -79,46 +85,101 @@ public class UniqueEmailRule : AsyncRuleBase<IPerson>, IUniqueEmailRule
 
 ## Registering Rules
 
-Rules are registered in the entity constructor:
+Rules are registered in the entity constructor and in DI:
 
+<!-- snippet: docs:validation-and-rules:rule-registration -->
 ```csharp
-[Factory]
-internal partial class Person : EntityBase<Person>, IPerson
+/// <summary>
+/// Demonstrates rule registration in entity constructor and DI setup.
+/// </summary>
+public partial interface IRuleRegistrationPerson : IValidateBase
 {
-    public Person(IEntityBaseServices<Person> services,
-                  IUniqueNameRule uniqueNameRule,
-                  IAgeValidationRule ageRule) : base(services)
+    string? FirstName { get; set; }
+    string? LastName { get; set; }
+    int Age { get; set; }
+}
+
+// Rule interfaces
+public interface IAgeValidationRule : IRule<IRuleRegistrationPerson> { }
+public interface IUniqueNameValidationRule : IRule<IRuleRegistrationPerson> { }
+
+// Entity with rule registration
+[Factory]
+internal partial class RuleRegistrationPerson : ValidateBase<RuleRegistrationPerson>, IRuleRegistrationPerson
+{
+    public RuleRegistrationPerson(
+        IValidateBaseServices<RuleRegistrationPerson> services,
+        IUniqueNameValidationRule uniqueNameRule,
+        IAgeValidationRule ageRule) : base(services)
     {
         RuleManager.AddRule(uniqueNameRule);
         RuleManager.AddRule(ageRule);
     }
+
+    public partial string? FirstName { get; set; }
+    public partial string? LastName { get; set; }
+    public partial int Age { get; set; }
+
+    [Create]
+    public void Create() { }
 }
+
+// Rule implementations
+public class AgeValidationRuleImpl : RuleBase<IRuleRegistrationPerson>, IAgeValidationRule
+{
+    public AgeValidationRuleImpl() : base(p => p.Age) { }
+
+    protected override IRuleMessages Execute(IRuleRegistrationPerson target)
+    {
+        if (target.Age < 0)
+            return (nameof(target.Age), "Age cannot be negative").AsRuleMessages();
+        return None;
+    }
+}
+
+public class UniqueNameValidationRuleImpl : RuleBase<IRuleRegistrationPerson>, IUniqueNameValidationRule
+{
+    public UniqueNameValidationRuleImpl() : base(p => p.FirstName, p => p.LastName) { }
+
+    protected override IRuleMessages Execute(IRuleRegistrationPerson target)
+    {
+        // Simplified - real implementation would check database
+        return None;
+    }
+}
+
+// DI Registration example (shown in comments - actual registration in test setup)
+// builder.Services.AddScoped<IUniqueNameValidationRule, UniqueNameValidationRuleImpl>();
+// builder.Services.AddScoped<IAgeValidationRule, AgeValidationRuleImpl>();
 ```
-
-### DI Registration
-
-Rules must be registered in your DI container:
-
-```csharp
-// Server and Client
-builder.Services.AddScoped<IUniqueNameRule, UniqueNameRule>();
-builder.Services.AddScoped<IAgeValidationRule, AgeValidationRule>();
-```
+<!-- /snippet -->
 
 ## Trigger Properties
 
 Specify which properties trigger the rule:
 
+<!-- snippet: docs:validation-and-rules:trigger-properties -->
 ```csharp
-// Constructor approach
-public UniqueNameRule() : base(p => p.FirstName, p => p.LastName) { }
-
-// Or AddTriggerProperties method
-public UniqueNameRule()
+public class TriggerPropertiesConstructorExample : RuleBase<IPerson>
 {
-    AddTriggerProperties(p => p.FirstName, p => p.LastName);
+    // Constructor approach - pass trigger properties to base
+    public TriggerPropertiesConstructorExample() : base(p => p.FirstName, p => p.LastName) { }
+
+    protected override IRuleMessages Execute(IPerson target) => None;
+}
+
+public class TriggerPropertiesMethodExample : RuleBase<IPerson>
+{
+    // Or use AddTriggerProperties method
+    public TriggerPropertiesMethodExample()
+    {
+        AddTriggerProperties(p => p.FirstName, p => p.LastName);
+    }
+
+    protected override IRuleMessages Execute(IPerson target) => None;
 }
 ```
+<!-- /snippet -->
 
 When any trigger property changes, the rule executes automatically.
 
@@ -126,41 +187,83 @@ When any trigger property changes, the rule executes automatically.
 
 ### Single Message
 
+<!-- snippet: docs:validation-and-rules:returning-messages-single -->
 ```csharp
-return (nameof(target.Email), "Invalid email format").AsRuleMessages();
+public class SingleMessageExample : RuleBase<IPerson>
+{
+    public SingleMessageExample() : base(p => p.Email) { }
+
+    protected override IRuleMessages Execute(IPerson target)
+    {
+        // Return a single validation message
+        return (nameof(target.Email), "Invalid email format").AsRuleMessages();
+    }
+}
 ```
+<!-- /snippet -->
 
 ### Multiple Messages
 
+<!-- snippet: docs:validation-and-rules:returning-messages-multiple -->
 ```csharp
-return (new[]
+public class MultipleMessagesExample : RuleBase<IPerson>
 {
-    (nameof(target.FirstName), "First and Last name combination is not unique"),
-    (nameof(target.LastName), "First and Last name combination is not unique")
-}).AsRuleMessages();
+    public MultipleMessagesExample() : base(p => p.FirstName, p => p.LastName) { }
+
+    protected override IRuleMessages Execute(IPerson target)
+    {
+        // Return multiple validation messages
+        return (new[]
+        {
+            (nameof(target.FirstName), "First and Last name combination is not unique"),
+            (nameof(target.LastName), "First and Last name combination is not unique")
+        }).AsRuleMessages();
+    }
+}
 ```
+<!-- /snippet -->
 
 ### Conditional Messages
 
+<!-- snippet: docs:validation-and-rules:returning-messages-conditional -->
 ```csharp
-return RuleMessages.If(
-    target.Age < 0,
-    nameof(target.Age),
-    "Age cannot be negative");
+public class ConditionalMessageExample : RuleBase<IPerson>
+{
+    public ConditionalMessageExample() : base(p => p.Age) { }
+
+    protected override IRuleMessages Execute(IPerson target)
+    {
+        // Conditional message using RuleMessages.If
+        return RuleMessages.If(
+            target.Age < 0,
+            nameof(target.Age),
+            "Age cannot be negative");
+    }
+}
 ```
+<!-- /snippet -->
 
 ### Chained Conditions
 
+<!-- snippet: docs:validation-and-rules:returning-messages-chained -->
 ```csharp
-return RuleMessages.If(string.IsNullOrEmpty(target.Name), nameof(target.Name), "Name is required")
-    .ElseIf(() => target.Name.Length < 2, nameof(target.Name), "Name must be at least 2 characters");
+public class ChainedConditionsExample : RuleBase<IPerson>
+{
+    public ChainedConditionsExample() : base(p => p.FirstName) { }
+
+    protected override IRuleMessages Execute(IPerson target)
+    {
+        // Chained conditions with ElseIf
+        return RuleMessages.If(string.IsNullOrEmpty(target.FirstName), nameof(target.FirstName), "Name is required")
+            .ElseIf(() => target.FirstName!.Length < 2, nameof(target.FirstName), "Name must be at least 2 characters");
+    }
+}
 ```
+<!-- /snippet -->
 
 ### No Errors
 
-```csharp
-return None;  // or RuleMessages.None
-```
+Return `None` (or `RuleMessages.None`) when validation passes.
 
 ## Fluent Rules
 
@@ -168,32 +271,37 @@ For simple validation logic, use fluent rules directly in the constructor:
 
 ### Validation Rule
 
+<!-- snippet: docs:validation-and-rules:fluent-validation -->
 ```csharp
-public Person(IEntityBaseServices<Person> services) : base(services)
-{
-    RuleManager.AddValidation(
-        target => string.IsNullOrEmpty(target.Name) ? "Name is required" : "",
-        t => t.Name);
-}
+// Inline validation rule
+        RuleManager.AddValidation(
+            target => string.IsNullOrEmpty(target.Name) ? "Name is required" : "",
+            t => t.Name);
 ```
+<!-- /snippet -->
 
 ### Async Validation Rule
 
+<!-- snippet: docs:validation-and-rules:fluent-validation-async -->
 ```csharp
-RuleManager.AddValidationAsync(
-    async target => await emailService.ExistsAsync(target.Email) ? "Email in use" : "",
-    t => t.Email);
+// Async validation rule
+        RuleManager.AddValidationAsync(
+            async target => await emailService.EmailExistsAsync(target.Email!) ? "Email in use" : "",
+            t => t.Email);
 ```
+<!-- /snippet -->
 
 ### Action Rule (Side Effects)
 
+<!-- snippet: docs:validation-and-rules:fluent-action -->
 ```csharp
-// Calculate derived values
-RuleManager.AddAction(
-    target => target.FullName = $"{target.FirstName} {target.LastName}",
-    t => t.FirstName,
-    t => t.LastName);
+// Action rule for calculated values
+        RuleManager.AddAction(
+            target => target.FullName = $"{target.FirstName} {target.LastName}",
+            t => t.FirstName,
+            t => t.LastName);
 ```
+<!-- /snippet -->
 
 ### Async Action Rule
 
@@ -213,13 +321,15 @@ Standard `System.ComponentModel.DataAnnotations` attributes are automatically co
 
 Validates that a value is not null, empty, or whitespace (for strings). For value types, checks that the value is not the default.
 
+<!-- snippet: docs:validation-and-rules:required-attribute -->
 ```csharp
 [Required]
-public partial string? FirstName { get; set; }
+    public partial string? FirstName { get; set; }
 
-[Required(ErrorMessage = "Customer name is required")]
-public partial string? CustomerName { get; set; }
+    [Required(ErrorMessage = "Customer name is required")]
+    public partial string? CustomerName { get; set; }
 ```
+<!-- /snippet -->
 
 **Behavior:**
 - Strings: fails for `null`, `""`, or whitespace-only
@@ -231,19 +341,21 @@ public partial string? CustomerName { get; set; }
 
 Validates string length is within a range.
 
+<!-- snippet: docs:validation-and-rules:stringlength-attribute -->
 ```csharp
 // Maximum length only
-[StringLength(100)]
-public partial string? Description { get; set; }
+    [StringLength(100)]
+    public partial string? Description { get; set; }
 
-// Minimum and maximum
-[StringLength(100, MinimumLength = 2)]
-public partial string? Username { get; set; }
+    // Minimum and maximum
+    [StringLength(100, MinimumLength = 2)]
+    public partial string? Username { get; set; }
 
-// Custom message
-[StringLength(50, MinimumLength = 5, ErrorMessage = "Name must be 5-50 characters")]
-public partial string? Name { get; set; }
+    // Custom message
+    [StringLength(50, MinimumLength = 5, ErrorMessage = "Name must be 5-50 characters")]
+    public partial string? NameWithLength { get; set; }
 ```
+<!-- /snippet -->
 
 **Behavior:**
 - Null or empty strings pass (use `[Required]` for null checks)
@@ -253,23 +365,25 @@ public partial string? Name { get; set; }
 
 Validates minimum or maximum length of strings or collections.
 
+<!-- snippet: docs:validation-and-rules:minmaxlength-attribute -->
 ```csharp
 // String minimum length
-[MinLength(3)]
-public partial string? Code { get; set; }
+    [MinLength(3)]
+    public partial string? Code { get; set; }
 
-// String maximum length
-[MaxLength(500)]
-public partial string? Notes { get; set; }
+    // String maximum length
+    [MaxLength(500)]
+    public partial string? Notes { get; set; }
 
-// Collection minimum count
-[MinLength(1, ErrorMessage = "At least one item required")]
-public partial List<string>? Tags { get; set; }
+    // Collection minimum count
+    [MinLength(1, ErrorMessage = "At least one item required")]
+    public partial List<string>? Tags { get; set; }
 
-// Array maximum count
-[MaxLength(10)]
-public partial string[]? Categories { get; set; }
+    // Array maximum count
+    [MaxLength(10)]
+    public partial string[]? Categories { get; set; }
 ```
+<!-- /snippet -->
 
 **Behavior:**
 - Works with strings (character count)
@@ -280,27 +394,29 @@ public partial string[]? Categories { get; set; }
 
 Validates numeric values fall within a range. Supports integers, decimals, doubles, and dates.
 
+<!-- snippet: docs:validation-and-rules:range-attribute -->
 ```csharp
 // Integer range
-[Range(1, 100)]
-public partial int Quantity { get; set; }
+    [Range(1, 100)]
+    public partial int Quantity { get; set; }
 
-// Double range
-[Range(0.0, 100.0)]
-public partial double Percentage { get; set; }
+    // Double range
+    [Range(0.0, 100.0)]
+    public partial double Percentage { get; set; }
 
-// Decimal range (use type-based constructor)
-[Range(typeof(decimal), "0.01", "999.99")]
-public partial decimal Price { get; set; }
+    // Decimal range (use type-based constructor)
+    [Range(typeof(decimal), "0.01", "999.99")]
+    public partial decimal Price { get; set; }
 
-// Date range
-[Range(typeof(DateTime), "2020-01-01", "2030-12-31")]
-public partial DateTime AppointmentDate { get; set; }
+    // Date range
+    [Range(typeof(DateTime), "2020-01-01", "2030-12-31")]
+    public partial DateTime AppointmentDate { get; set; }
 
-// Custom message
-[Range(0, 150, ErrorMessage = "Age must be between 0 and 150")]
-public partial int Age { get; set; }
+    // Custom message
+    [Range(0, 150, ErrorMessage = "Age must be between 0 and 150")]
+    public partial int Age { get; set; }
 ```
+<!-- /snippet -->
 
 **Behavior:**
 - Null values pass (use `[Required]` for null checks)
@@ -311,19 +427,21 @@ public partial int Age { get; set; }
 
 Validates string matches a regex pattern.
 
+<!-- snippet: docs:validation-and-rules:regularexpression-attribute -->
 ```csharp
 // Code format: 2 letters + 4 digits
-[RegularExpression(@"^[A-Z]{2}\d{4}$")]
-public partial string? ProductCode { get; set; }
+    [RegularExpression(@"^[A-Z]{2}\d{4}$")]
+    public partial string? ProductCode { get; set; }
 
-// Phone format
-[RegularExpression(@"^\d{3}-\d{3}-\d{4}$", ErrorMessage = "Format: 555-123-4567")]
-public partial string? Phone { get; set; }
+    // Phone format
+    [RegularExpression(@"^\d{3}-\d{3}-\d{4}$", ErrorMessage = "Format: 555-123-4567")]
+    public partial string? Phone { get; set; }
 
-// Alphanumeric only
-[RegularExpression(@"^[a-zA-Z0-9]+$", ErrorMessage = "Letters and numbers only")]
-public partial string? Username { get; set; }
+    // Alphanumeric only
+    [RegularExpression(@"^[a-zA-Z0-9]+$", ErrorMessage = "Letters and numbers only")]
+    public partial string? UsernameAlphanumeric { get; set; }
 ```
+<!-- /snippet -->
 
 **Behavior:**
 - Null or empty strings pass (use `[Required]` for null checks)
@@ -334,13 +452,15 @@ public partial string? Username { get; set; }
 
 Validates email address format.
 
+<!-- snippet: docs:validation-and-rules:emailaddress-attribute -->
 ```csharp
 [EmailAddress]
-public partial string? Email { get; set; }
+    public partial string? Email { get; set; }
 
-[EmailAddress(ErrorMessage = "Please enter a valid email")]
-public partial string? ContactEmail { get; set; }
+    [EmailAddress(ErrorMessage = "Please enter a valid email")]
+    public partial string? ContactEmail { get; set; }
 ```
+<!-- /snippet -->
 
 **Behavior:**
 - Uses `MailAddress.TryCreate()` for RFC-compliant validation
@@ -352,20 +472,22 @@ public partial string? ContactEmail { get; set; }
 
 Attributes can be combined for comprehensive validation:
 
+<!-- snippet: docs:validation-and-rules:combining-attributes -->
 ```csharp
 [Required(ErrorMessage = "Email is required")]
-[EmailAddress(ErrorMessage = "Invalid email format")]
-[StringLength(254, ErrorMessage = "Email too long")]
-public partial string? Email { get; set; }
+    [EmailAddress(ErrorMessage = "Invalid email format")]
+    [StringLength(254, ErrorMessage = "Email too long")]
+    public partial string? CombinedEmail { get; set; }
 
-[Required]
-[Range(1, 1000)]
-public partial int Quantity { get; set; }
+    [Required]
+    [Range(1, 1000)]
+    public partial int CombinedQuantity { get; set; }
 
-[StringLength(100, MinimumLength = 2)]
-[RegularExpression(@"^[a-zA-Z\s]+$", ErrorMessage = "Letters only")]
-public partial string? FullName { get; set; }
+    [StringLength(100, MinimumLength = 2)]
+    [RegularExpression(@"^[a-zA-Z\s]+$", ErrorMessage = "Letters only")]
+    public partial string? FullName { get; set; }
 ```
+<!-- /snippet -->
 
 ### Custom Error Messages
 
@@ -480,8 +602,11 @@ await RunRules(RunRulesFlag.NotExecuted);   // Only rules that haven't run
 
 Rules can check multiple properties:
 
+<!-- snippet: docs:validation-and-rules:date-range-rule -->
 ```csharp
-public class DateRangeRule : RuleBase<IEvent>
+public interface IDateRangeRule : IRule<IEvent> { }
+
+public class DateRangeRule : RuleBase<IEvent>, IDateRangeRule
 {
     public DateRangeRule() : base(e => e.StartDate, e => e.EndDate) { }
 
@@ -499,22 +624,45 @@ public class DateRangeRule : RuleBase<IEvent>
     }
 }
 ```
+<!-- /snippet -->
 
 ## Parent-Child Validation
 
 Access parent entity from child validation:
 
+<!-- snippet: docs:validation-and-rules:parent-child-validation -->
 ```csharp
-public class UniquePhoneTypeRule : RuleBase<IPersonPhone>
+/// <summary>
+/// Demonstrates accessing parent entity from child validation rules.
+/// </summary>
+public partial interface IParentContact : IEntityBase
+{
+    IContactPhoneList PhoneList { get; }
+}
+
+public partial interface IContactPhone : IEntityBase
+{
+    PhoneType? PhoneType { get; set; }
+    string? Number { get; set; }
+    IParentContact? ParentContact { get; }
+}
+
+public partial interface IContactPhoneList : IEntityListBase<IContactPhone> { }
+
+public enum PhoneType { Home, Work, Mobile }
+
+public interface IUniquePhoneTypeRule : IRule<IContactPhone> { }
+
+public class UniquePhoneTypeRule : RuleBase<IContactPhone>, IUniquePhoneTypeRule
 {
     public UniquePhoneTypeRule() : base(p => p.PhoneType) { }
 
-    protected override IRuleMessages Execute(IPersonPhone target)
+    protected override IRuleMessages Execute(IContactPhone target)
     {
-        if (target.ParentPerson == null)
+        if (target.ParentContact == null)
             return None;
 
-        var hasDuplicate = target.ParentPerson.PersonPhoneList
+        var hasDuplicate = target.ParentContact.PhoneList
             .Where(p => p != target)
             .Any(p => p.PhoneType == target.PhoneType);
 
@@ -525,7 +673,48 @@ public class UniquePhoneTypeRule : RuleBase<IPersonPhone>
         return None;
     }
 }
+
+[Factory]
+internal partial class ContactPhone : EntityBase<ContactPhone>, IContactPhone
+{
+    public ContactPhone(
+        IEntityBaseServices<ContactPhone> services,
+        IUniquePhoneTypeRule uniquePhoneTypeRule) : base(services)
+    {
+        RuleManager.AddRule(uniquePhoneTypeRule);
+    }
+
+    public partial PhoneType? PhoneType { get; set; }
+    public partial string? Number { get; set; }
+
+    public IParentContact? ParentContact => Parent as IParentContact;
+
+    [Create]
+    public void Create() { }
+}
+
+[Factory]
+internal class ContactPhoneList : EntityListBase<IContactPhone>, IContactPhoneList
+{
+    [Create]
+    public void Create() { }
+}
+
+[Factory]
+internal partial class ParentContact : EntityBase<ParentContact>, IParentContact
+{
+    public ParentContact(IEntityBaseServices<ParentContact> services) : base(services) { }
+
+    public partial IContactPhoneList PhoneList { get; set; }
+
+    [Create]
+    public void Create([Service] IContactPhoneListFactory phoneListFactory)
+    {
+        PhoneList = phoneListFactory.Create();
+    }
+}
 ```
+<!-- /snippet -->
 
 ## Loading Property Values Without Triggering Rules
 
@@ -590,6 +779,7 @@ person[nameof(IPerson.Email)].ClearAllMessages();
 
 ## Complete Rule Example
 
+<!-- snippet: docs:validation-and-rules:complete-rule-example -->
 ```csharp
 public interface IUniqueNameRule : IRule<IPerson> { }
 
@@ -632,42 +822,13 @@ public class UniqueNameRule : AsyncRuleBase<IPerson>, IUniqueNameRule
     }
 }
 ```
+<!-- /snippet -->
 
 ## Common Mistakes
 
 ### Putting Validation in Factory Methods
 
-**Wrong:**
-```csharp
-[Insert]
-public async Task Insert([Service] IUserRepository repo)
-{
-    await RunRules();
-    if (!IsSavable) return;
-
-    // DON'T DO THIS - validation too late!
-    if (await repo.EmailExistsAsync(Email))
-        throw new InvalidOperationException("Email in use");
-
-    // ... persistence
-}
-```
-
-**Right:**
-```csharp
-// Use AsyncRuleBase instead - runs during editing
-public class UniqueEmailRule : AsyncRuleBase<IUser>, IUniqueEmailRule
-{
-    protected override async Task<IRuleMessages> Execute(IUser target, ...)
-    {
-        if (await _checkEmail.IsInUse(target.Email, target.Id))
-            return (nameof(target.Email), "Email in use").AsRuleMessages();
-        return None;
-    }
-}
-```
-
-See [Database-Dependent Validation](database-dependent-validation.md) for complete guidance.
+Never put business validation in `[Insert]` or `[Update]` methods. Validation should run during editing via rules, not at save time. See [Database-Dependent Validation](database-dependent-validation.md) for the correct pattern using `AsyncRuleBase` with Commands.
 
 ### Throwing Exceptions for Validation
 

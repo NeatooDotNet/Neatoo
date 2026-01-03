@@ -1,7 +1,7 @@
 /// <summary>
 /// Code samples for docs/validation-and-rules.md - Data Annotations section
 ///
-/// Snippets in this file:
+/// Snippets injected into docs:
 /// - docs:validation-and-rules:required-attribute
 /// - docs:validation-and-rules:stringlength-attribute
 /// - docs:validation-and-rules:minmaxlength-attribute
@@ -9,6 +9,9 @@
 /// - docs:validation-and-rules:regularexpression-attribute
 /// - docs:validation-and-rules:emailaddress-attribute
 /// - docs:validation-and-rules:combining-attributes
+///
+/// Compile-time validation only (wrapper entity for attribute snippets):
+/// - docs:validation-and-rules:data-annotations-entity
 ///
 /// Corresponding tests: DataAnnotationSamplesTests.cs
 /// </summary>

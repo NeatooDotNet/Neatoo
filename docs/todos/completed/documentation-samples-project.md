@@ -1,6 +1,6 @@
 # Documentation Samples Project
 
-**Status:** In Progress (Phases 1-4 Complete, Phase 5 Pending)
+**Status:** Complete
 **Priority:** High
 **Created:** 2026-01-02
 
@@ -220,11 +220,11 @@ public abstract class SamplesTestBase
 - Developer runs extraction script locally, commits updated docs
 
 - [x] Create `scripts/extract-snippets.ps1`
-- [ ] Add verification step to GitHub Actions workflow
+- [x] Add verification step to GitHub Actions workflow
 
-### Phase 5: Add Snippet Markers to Docs (Not Started)
+### Phase 5: Add Snippet Markers to Docs ✅
 
-Replace existing code blocks in docs with snippet markers so `extract-snippets.ps1 -Update` can inject compiled code.
+Replaced existing code blocks in docs with snippet markers so `extract-snippets.ps1 -Update` can inject compiled code.
 
 **Marker format:**
 ```markdown
@@ -235,28 +235,30 @@ Replace existing code blocks in docs with snippet markers so `extract-snippets.p
 <!-- /snippet -->
 ```
 
-**Files to update:**
+**Files updated:**
 
-| Document | Snippets to Mark |
-|----------|------------------|
-| validation-and-rules.md | 21 |
-| aggregates-and-entities.md | 11 |
-| factory-operations.md | 10 |
-| collections.md | 6 |
+| Document | Snippets Marked |
+|----------|-----------------|
+| validation-and-rules.md | 19 |
+| aggregates-and-entities.md | 10 |
+| factory-operations.md | 8 |
+| collections.md | 5 |
 | property-system.md | 5 |
 | database-dependent-validation.md | 3 |
 | mapper-methods.md | 6 |
 
+**Total: 56 snippets injected into 7 documentation files**
+
 **Steps:**
-1. [ ] Add markers to validation-and-rules.md
-2. [ ] Add markers to aggregates-and-entities.md
-3. [ ] Add markers to factory-operations.md
-4. [ ] Add markers to collections.md
-5. [ ] Add markers to property-system.md
-6. [ ] Add markers to database-dependent-validation.md
-7. [ ] Add markers to mapper-methods.md
-8. [ ] Run `.\scripts\extract-snippets.ps1 -Update` to inject snippets
-9. [ ] Verify docs render correctly
+1. [x] Add markers to validation-and-rules.md
+2. [x] Add markers to aggregates-and-entities.md
+3. [x] Add markers to factory-operations.md
+4. [x] Add markers to collections.md
+5. [x] Add markers to property-system.md
+6. [x] Add markers to database-dependent-validation.md
+7. [x] Add markers to mapper-methods.md
+8. [x] Run `.\scripts\extract-snippets.ps1 -Update` to inject snippets
+9. [x] Verify docs render correctly
 
 ---
 
@@ -283,5 +285,5 @@ Replace existing code blocks in docs with snippet markers so `extract-snippets.p
 
 1. ✅ All documentation code snippets compile without errors (62 snippets)
 2. ✅ All snippets have corresponding unit tests (122 tests passing)
-3. ⏳ CI fails if snippet tests fail (script ready, CI integration pending)
-4. ⏳ Easy workflow to update docs from samples (Phase 5 - add markers to docs)
+3. ✅ CI fails if snippets out of sync (verification step in GitHub Actions)
+4. ✅ Easy workflow to update docs from samples (56 snippets auto-injected into 7 docs)

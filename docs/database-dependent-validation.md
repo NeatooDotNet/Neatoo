@@ -74,76 +74,70 @@ When some rules run during editing and others only at save time, users can't pre
 
 Commands are `[Factory]` classes with `[Execute]` methods that run on the server:
 
+<!-- snippet: docs:database-dependent-validation:command-pattern -->
 ```csharp
+/// <summary>
+/// Command for checking email uniqueness.
+/// The source generator creates a delegate that can be injected and executed remotely.
+/// </summary>
 [Factory]
-public static partial class CheckShiftOverlap
+public static partial class CheckEmailUnique
 {
     [Execute]
-    internal static async Task<bool> _HasOverlap(
-        Guid employeeId,
-        DateTime start,
-        DateTime? end,
-        Guid? excludeShiftId,
-        [Service] IShiftRepository repository)
+    internal static async Task<bool> _IsUnique(
+        string email,
+        Guid? excludeId,
+        [Service] IUserRepository repo)
     {
-        return await repository.HasOverlappingShiftAsync(
-            employeeId, start, end, excludeShiftId);
+        return !await repo.EmailExistsAsync(email, excludeId);
     }
 }
 ```
+<!-- /snippet -->
 
 The source generator creates a delegate `CheckShiftOverlap.HasOverlap` that can be injected and executed remotely.
 
 ### Step 2: Create an Async Rule
 
+<!-- snippet: docs:database-dependent-validation:async-rule -->
 ```csharp
-public interface IShiftOverlapRule : IRule<IShiftEdit> { }
+/// <summary>
+/// Async rule that validates email uniqueness using the command.
+/// </summary>
+public interface IAsyncUniqueEmailRule : IRule<IUserWithEmail> { }
 
-public class ShiftOverlapRule : AsyncRuleBase<IShiftEdit>, IShiftOverlapRule
+public class AsyncUniqueEmailRule : AsyncRuleBase<IUserWithEmail>, IAsyncUniqueEmailRule
 {
-    private readonly CheckShiftOverlap.HasOverlap _hasOverlap;
+    private readonly CheckEmailUnique.IsUnique _isUnique;
 
-    public ShiftOverlapRule(CheckShiftOverlap.HasOverlap hasOverlap)
+    public AsyncUniqueEmailRule(CheckEmailUnique.IsUnique isUnique)
     {
-        _hasOverlap = hasOverlap;
-
-        // Rule triggers when these properties change
-        AddTriggerProperties(s => s.EmployeeId, s => s.Start, s => s.End);
+        _isUnique = isUnique;
+        AddTriggerProperties(u => u.Email);
     }
 
     protected override async Task<IRuleMessages> Execute(
-        IShiftEdit target,
-        CancellationToken? token = null)
+        IUserWithEmail target, CancellationToken? token = null)
     {
-        // Skip if required values missing
-        if (target.EmployeeId == Guid.Empty || !target.Start.HasValue)
+        if (string.IsNullOrEmpty(target.Email))
             return None;
 
-        // Optimization: only check if relevant properties modified
-        if (!target.IsNew)
+        // Skip if property not modified (optimization)
+        if (!target.IsNew && !target[nameof(target.Email)].IsModified)
+            return None;
+
+        var excludeId = target.IsNew ? null : (Guid?)target.Id;
+
+        if (!await _isUnique(target.Email, excludeId))
         {
-            var employeeModified = target[nameof(target.EmployeeId)].IsModified;
-            var startModified = target[nameof(target.Start)].IsModified;
-            var endModified = target[nameof(target.End)].IsModified;
-
-            if (!employeeModified && !startModified && !endModified)
-                return None;
-        }
-
-        var excludeShiftId = target.IsNew ? null : (Guid?)target.ShiftId;
-
-        if (await _hasOverlap(
-            target.EmployeeId, target.Start.Value, target.End, excludeShiftId))
-        {
-            return (nameof(target.Start),
-                "This shift overlaps with an existing shift for this employee.")
-                .AsRuleMessages();
+            return (nameof(target.Email), "Email already in use").AsRuleMessages();
         }
 
         return None;
     }
 }
 ```
+<!-- /snippet -->
 
 ### Step 3: Register the Rule
 
@@ -164,22 +158,49 @@ builder.Services.AddScoped<IShiftOverlapRule, ShiftOverlapRule>();
 
 Factory methods should contain **only** persistence logic:
 
+<!-- snippet: docs:database-dependent-validation:clean-factory -->
 ```csharp
-[Insert]
-[Remote]
-public async Task Insert([Service] IShiftRepository repository)
+/// <summary>
+/// Entity with clean factory methods - validation is in rules, not here.
+/// </summary>
+[Factory]
+internal partial class UserWithEmail : EntityBase<UserWithEmail>, IUserWithEmail
 {
-    await RunRules();
-    if (!IsSavable)
-        return;
+    public UserWithEmail(
+        IEntityBaseServices<UserWithEmail> services,
+        IAsyncUniqueEmailRule uniqueEmailRule) : base(services)
+    {
+        // Register the async validation rule
+        RuleManager.AddRule(uniqueEmailRule);
+    }
 
-    // Only persistence - validation already handled by rules
-    var entity = new ShiftEntity { ShiftId = Guid.NewGuid() };
-    MapTo(entity);
-    await repository.InsertAsync(entity);
-    ShiftId = entity.ShiftId;
+    public partial Guid Id { get; set; }
+    public partial string? Email { get; set; }
+    public partial string? Name { get; set; }
+
+    [Create]
+    public void Create()
+    {
+        Id = Guid.NewGuid();
+    }
+
+    /// <summary>
+    /// Clean Insert - only persistence logic, no validation.
+    /// Validation is handled by rules during editing.
+    /// </summary>
+    [Insert]
+    public async Task Insert()
+    {
+        await RunRules();
+        if (!IsSavable)
+            return;
+
+        // Only persistence - validation already handled by rules
+        // In real code: await repository.InsertAsync(entity);
+    }
 }
 ```
+<!-- /snippet -->
 
 ## Benefits Comparison
 
@@ -196,52 +217,7 @@ public async Task Insert([Service] IShiftRepository repository)
 
 ### Uniqueness Check
 
-```csharp
-// Command
-[Factory]
-public static partial class CheckEmailUnique
-{
-    [Execute]
-    internal static async Task<bool> _IsUnique(
-        string email,
-        Guid? excludeId,
-        [Service] IUserRepository repo)
-    {
-        return !await repo.EmailExistsAsync(email, excludeId);
-    }
-}
-
-// Rule
-public class UniqueEmailRule : AsyncRuleBase<IUser>, IUniqueEmailRule
-{
-    private readonly CheckEmailUnique.IsUnique _isUnique;
-
-    public UniqueEmailRule(CheckEmailUnique.IsUnique isUnique)
-    {
-        _isUnique = isUnique;
-        AddTriggerProperties(u => u.Email);
-    }
-
-    protected override async Task<IRuleMessages> Execute(
-        IUser target, CancellationToken? token = null)
-    {
-        if (string.IsNullOrEmpty(target.Email))
-            return None;
-
-        if (!target[nameof(target.Email)].IsModified)
-            return None;
-
-        var excludeId = target.IsNew ? null : (Guid?)target.Id;
-
-        if (!await _isUnique(target.Email, excludeId))
-        {
-            return (nameof(target.Email), "Email already in use").AsRuleMessages();
-        }
-
-        return None;
-    }
-}
-```
+See the complete example above (Steps 1-4) for email uniqueness validation.
 
 ### Date Range Overlap
 

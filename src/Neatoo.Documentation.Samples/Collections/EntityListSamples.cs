@@ -1,12 +1,14 @@
 /// <summary>
 /// Code samples for docs/collections.md - EntityListBase section
 ///
-/// Snippets in this file:
+/// Snippets injected into docs:
 /// - docs:collections:interface-definition
 /// - docs:collections:list-implementation
-/// - docs:collections:custom-add-methods
 /// - docs:collections:fetch-operation
 /// - docs:collections:update-operation
+///
+/// Compile-time validation only (child entity for list samples):
+/// - docs:collections:child-item
 ///
 /// Corresponding tests: EntityListSamplesTests.cs
 /// </summary>

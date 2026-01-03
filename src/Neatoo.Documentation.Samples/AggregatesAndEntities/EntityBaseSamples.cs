@@ -107,11 +107,13 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     public partial string? FirstName { get; set; }
     public partial string? LastName { get; set; }
 
+    #region docs:aggregates-and-entities:non-partial-properties
     // Calculated property - not tracked, not serialized
     public string FullName => $"{FirstName} {LastName}";
 
     // UI-only property - not transferred to server
     public bool IsExpanded { get; set; }
+    #endregion
 
     [Create]
     public void Create() { }

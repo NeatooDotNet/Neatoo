@@ -1,10 +1,8 @@
 /// <summary>
 /// Code samples for docs/factory-operations.md - Factory.Save() usage section
 ///
-/// Snippets in this file:
-/// - docs:factory-operations:save-reassign-correct
-/// - docs:factory-operations:save-reassign-wrong
-/// - docs:factory-operations:delete-usage
+/// Compile-time validation only (docs use inline examples):
+/// - docs:factory-operations:save-usage-examples
 ///
 /// Corresponding tests: SaveUsageSamplesTests.cs
 /// </summary>

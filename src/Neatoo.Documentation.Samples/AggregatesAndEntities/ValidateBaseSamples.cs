@@ -1,8 +1,10 @@
 /// <summary>
 /// Code samples for docs/aggregates-and-entities.md - ValidateBase section
 ///
-/// Snippets in this file:
+/// Snippets injected into docs:
 /// - docs:aggregates-and-entities:validatebase-criteria
+///
+/// Compile-time validation only (alternate criteria example):
 /// - docs:aggregates-and-entities:validatebase-order-criteria
 ///
 /// Corresponding tests: ValidateBaseSamplesTests.cs

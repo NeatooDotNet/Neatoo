@@ -33,7 +33,8 @@
       "Bash(dotnet restore:*)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\KeithVoels\\\\.claude\\\\skills\" -Recurse)",
       "Bash(Select-Object FullName, PSIsContainer)",
-      "Bash(Format-Table -AutoSize)"
+      "Bash(Format-Table -AutoSize)",
+      "Skill(release-notes)"
     ]
   }
 }

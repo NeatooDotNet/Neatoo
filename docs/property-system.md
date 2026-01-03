@@ -52,15 +52,35 @@ The setter:
 
 Access property wrappers through the indexer:
 
+<!-- snippet: docs:property-system:property-access -->
 ```csharp
-// Get the Name property wrapper
-IEntityProperty nameProperty = person[nameof(IPerson.Name)];
+/// <summary>
+/// Entity demonstrating property access patterns.
+/// </summary>
+public partial interface IPropertyAccessDemo : IEntityBase
+{
+    string? Name { get; set; }
+    string? Email { get; set; }
+    int Age { get; set; }
+}
 
-// Access property metadata
-string value = (string)nameProperty.Value;
-bool isModified = nameProperty.IsModified;
-bool isBusy = nameProperty.IsBusy;
+[Factory]
+internal partial class PropertyAccessDemo : EntityBase<PropertyAccessDemo>, IPropertyAccessDemo
+{
+    public PropertyAccessDemo(IEntityBaseServices<PropertyAccessDemo> services) : base(services) { }
+
+    public partial string? Name { get; set; }
+
+    [EmailAddress(ErrorMessage = "Invalid email format")]
+    public partial string? Email { get; set; }
+
+    public partial int Age { get; set; }
+
+    [Create]
+    public void Create() { }
+}
 ```
+<!-- /snippet -->
 
 ## IProperty Interface
 
@@ -145,13 +165,51 @@ string label = entityProp.DisplayName;
 
 ### SetValue vs LoadValue
 
+<!-- snippet: docs:property-system:setvalue-loadvalue -->
 ```csharp
-// SetValue - triggers rules and marks modified
-await person[nameof(Name)].SetValue("John");
+/// <summary>
+/// Entity demonstrating SetValue vs LoadValue.
+/// </summary>
+public partial interface ILoadValueDemo : IEntityBase
+{
+    Guid Id { get; }
+    string? Name { get; set; }
+    DateTime? LastModified { get; set; }
 
-// LoadValue - silent set, no rules or modification tracking
-person[nameof(Name)].LoadValue("John");
+    /// <summary>
+    /// Load data from database using LoadValue (no modification tracking).
+    /// </summary>
+    void LoadFromDatabase(Guid id, string name, DateTime lastModified);
+}
+
+[Factory]
+internal partial class LoadValueDemo : EntityBase<LoadValueDemo>, ILoadValueDemo
+{
+    public LoadValueDemo(IEntityBaseServices<LoadValueDemo> services) : base(services) { }
+
+    public partial Guid Id { get; set; }
+    public partial string? Name { get; set; }
+    public partial DateTime? LastModified { get; set; }
+
+    [Create]
+    public void Create()
+    {
+        Id = Guid.NewGuid();
+    }
+
+    /// <summary>
+    /// Demonstrates using LoadValue for identity fields.
+    /// </summary>
+    public void LoadFromDatabase(Guid id, string name, DateTime lastModified)
+    {
+        // LoadValue - silent set, no rules or modification tracking
+        this[nameof(Id)].LoadValue(id);
+        this[nameof(Name)].LoadValue(name);
+        this[nameof(LastModified)].LoadValue(lastModified);
+    }
+}
 ```
+<!-- /snippet -->
 
 Use `LoadValue` when:
 - Setting values in rules without triggering cascading rules (use `LoadProperty()` helper)
@@ -245,13 +303,39 @@ await person.WaitForTasks();
 
 Properties can have display names from `[DisplayName]`:
 
+<!-- snippet: docs:property-system:display-name -->
 ```csharp
-[DisplayName("First Name*")]
-public partial string? FirstName { get; set; }
+/// <summary>
+/// Entity demonstrating DisplayName attribute.
+/// </summary>
+public partial interface IDisplayNameDemo : IEntityBase
+{
+    string? FirstName { get; set; }
+    string? LastName { get; set; }
+    string? EmailAddress { get; set; }
+}
 
-// Access display name
-string label = person[nameof(FirstName)].DisplayName;  // "First Name*"
+[Factory]
+internal partial class DisplayNameDemo : EntityBase<DisplayNameDemo>, IDisplayNameDemo
+{
+    public DisplayNameDemo(IEntityBaseServices<DisplayNameDemo> services) : base(services) { }
+
+    [DisplayName("First Name*")]
+    [Required]
+    public partial string? FirstName { get; set; }
+
+    [DisplayName("Last Name*")]
+    [Required]
+    public partial string? LastName { get; set; }
+
+    [DisplayName("Email Address")]
+    public partial string? EmailAddress { get; set; }
+
+    [Create]
+    public void Create() { }
+}
 ```
+<!-- /snippet -->
 
 ## Read-Only State
 
@@ -287,16 +371,41 @@ bool isSelfModified = PropertyManager.IsSelfModified;
 
 During bulk operations, pause property tracking to improve performance and avoid intermediate validation states. The `PauseAllActions()` method returns an `IDisposable` that automatically resumes when disposed.
 
+<!-- snippet: docs:property-system:pause-actions -->
 ```csharp
-using (person.PauseAllActions())
+/// <summary>
+/// Entity demonstrating PauseAllActions pattern.
+/// </summary>
+public partial interface IBulkUpdateDemo : IEntityBase
 {
-    person.FirstName = "John";
-    person.LastName = "Doe";
-    person.Email = "john@example.com";
+    string? FirstName { get; set; }
+    string? LastName { get; set; }
+    string? Email { get; set; }
+    int Age { get; set; }
 }
-// Meta-state recalculated when disposed
-// You can then call RunRules() if validation is needed
+
+[Factory]
+internal partial class BulkUpdateDemo : EntityBase<BulkUpdateDemo>, IBulkUpdateDemo
+{
+    public BulkUpdateDemo(IEntityBaseServices<BulkUpdateDemo> services) : base(services) { }
+
+    [Required]
+    public partial string? FirstName { get; set; }
+
+    [Required]
+    public partial string? LastName { get; set; }
+
+    [EmailAddress]
+    public partial string? Email { get; set; }
+
+    [Range(0, 150)]
+    public partial int Age { get; set; }
+
+    [Create]
+    public void Create() { }
+}
 ```
+<!-- /snippet -->
 
 ### What Gets Paused
 
@@ -344,40 +453,65 @@ public virtual void FactoryComplete(FactoryOperation factoryOperation)
 
 #### Bulk Property Updates
 
+<!-- snippet: docs:property-system:bulk-updates -->
 ```csharp
-// Without pause: 3 rule executions, 3 PropertyChanged events
-person.FirstName = "John";
-person.LastName = "Doe";
-person.Age = 30;
-
-// With pause: 0 rule executions during block, meta-state recalculated once
-using (person.PauseAllActions())
+/// <summary>
+/// Examples demonstrating bulk update patterns with PauseAllActions.
+/// Note: PauseAllActions is on the concrete base class, not the interface.
+/// </summary>
+internal static class BulkUpdateExamples
 {
-    person.FirstName = "John";
-    person.LastName = "Doe";
-    person.Age = 30;
+    /// <summary>
+    /// Update multiple properties with pausing for efficiency.
+    /// Without pause: 4 rule executions, 4 PropertyChanged events.
+    /// With pause: 0 rule executions during block, meta-state recalculated once.
+    /// </summary>
+    public static async Task PerformBulkUpdate(BulkUpdateDemo person)
+    {
+        using (person.PauseAllActions())
+        {
+            person.FirstName = "John";
+            person.LastName = "Doe";
+            person.Email = "john@example.com";
+            person.Age = 30;
+        }
+        // Meta-state recalculated when disposed
+        // Now run rules once after all changes
+        await person.RunRules();
+    }
+
+    /// <summary>
+    /// Load data from external source with pause.
+    /// </summary>
+    public static async Task LoadExternalData(
+        BulkUpdateDemo customer,
+        ExternalData externalData)
+    {
+        using (customer.PauseAllActions())
+        {
+            // Load data from external source without triggering validation
+            customer.FirstName = externalData.FirstName;
+            customer.LastName = externalData.LastName;
+            customer.Email = externalData.Email;
+            customer.Age = externalData.Age;
+        }
+        // Validate everything once at the end
+        await customer.RunRules();
+    }
 }
-await person.RunRules();  // Run rules once after all changes
+
+/// <summary>
+/// Mock external data for demo.
+/// </summary>
+public class ExternalData
+{
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Email { get; set; }
+    public int Age { get; set; }
+}
 ```
-
-#### Loading External Data
-
-```csharp
-using (customer.PauseAllActions())
-{
-    // Load data from external source without triggering validation
-    customer.Name = externalData.Name;
-    customer.Email = externalData.Email;
-    customer.Phone = externalData.Phone;
-    customer.Address = externalData.Address;
-}
-// Validate everything once at the end
-await customer.RunRules();
-if (!customer.IsValid)
-{
-    // Handle validation errors
-}
-```
+<!-- /snippet -->
 
 #### Bulk Collection Operations
 

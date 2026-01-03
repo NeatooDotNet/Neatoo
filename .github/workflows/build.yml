@@ -93,6 +93,10 @@ jobs:
           path: ./test-results/*.trx
           retention-days: 7
 
+      - name: Verify documentation snippets
+        shell: pwsh
+        run: ./scripts/extract-snippets.ps1 -Verify
+
       - name: Pack NuGet packages
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
