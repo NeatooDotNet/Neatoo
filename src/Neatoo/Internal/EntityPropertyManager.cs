@@ -23,10 +23,11 @@ public class EntityProperty<T> : ValidateProperty<T>, IEntityProperty<T>
     }
 
     [JsonConstructor]
-    public EntityProperty(string name, T value, bool isSelfModified, bool isReadOnly, string displayName, IRuleMessage[] serializedRuleMessages) : base(name, value, serializedRuleMessages, isReadOnly)
+    public EntityProperty(string name, T value, bool isSelfModified, bool isReadOnly, IRuleMessage[] serializedRuleMessages) : base(name, value, serializedRuleMessages, isReadOnly)
     {
         this.IsSelfModified = isSelfModified;
-        this.DisplayName = displayName; // TODO - Find a better way than serializing this
+        // DisplayName is restored from reflection metadata in OnDeserialized via ApplyPropertyInfo
+        this.DisplayName = name;
     }
 
     [JsonIgnore]
@@ -51,7 +52,14 @@ public class EntityProperty<T> : ValidateProperty<T>, IEntityProperty<T>
 
     public bool IsPaused { get; set; } = false;
 
-    public string DisplayName { get; init; }
+    [JsonIgnore]
+    public string DisplayName { get; private set; }
+
+    public void ApplyPropertyInfo(IPropertyInfo propertyInfo)
+    {
+        var dnAttribute = propertyInfo.GetCustomAttribute<DisplayNameAttribute>();
+        DisplayName = dnAttribute?.DisplayName ?? propertyInfo.Name;
+    }
 
     public void MarkSelfUnmodified()
     {
@@ -109,6 +117,21 @@ public class EntityPropertyManager : ValidatePropertyManager<IEntityProperty>, I
         foreach (var fd in this.PropertyBag)
         {
             fd.Value.IsPaused = false;
+        }
+    }
+
+    public override void OnDeserialized()
+    {
+        base.OnDeserialized();
+
+        // Restore DisplayName from reflection metadata for each property
+        foreach (var kvp in PropertyBag)
+        {
+            var propertyInfo = PropertyInfoList.GetPropertyInfo(kvp.Key);
+            if (propertyInfo != null)
+            {
+                kvp.Value.ApplyPropertyInfo(propertyInfo);
+            }
         }
     }
 }

@@ -162,7 +162,7 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Error message") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act & Assert
         Assert.IsFalse(property.IsSelfValid);
@@ -178,10 +178,10 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Error message") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
-        property.ClearSelfMessages();
+        ((IValidatePropertyInternal)property).ClearSelfMessages();
 
         // Assert
         Assert.IsTrue(property.IsSelfValid);
@@ -228,7 +228,7 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Validation error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act & Assert
         Assert.IsFalse(property.IsValid);
@@ -281,7 +281,7 @@ public class ValidatePropertyTests
         };
 
         // Act
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Assert
         Assert.IsFalse(property.IsValid);
@@ -302,7 +302,7 @@ public class ValidatePropertyTests
         };
 
         // Act
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Assert
         Assert.AreEqual(3, property.RuleMessages.Count);
@@ -318,7 +318,7 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Initial error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(initialMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(initialMessages);
 
         var replacementMessages = new List<IRuleMessage>
         {
@@ -326,7 +326,7 @@ public class ValidatePropertyTests
         };
 
         // Act
-        ((IValidateProperty)property).SetMessagesForRule(replacementMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(replacementMessages);
 
         // Assert
         Assert.AreEqual(1, property.RuleMessages.Count);
@@ -343,7 +343,7 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Rule 1 error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(rule1Messages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(rule1Messages);
 
         var rule2Messages = new List<IRuleMessage>
         {
@@ -351,7 +351,7 @@ public class ValidatePropertyTests
         };
 
         // Act
-        ((IValidateProperty)property).SetMessagesForRule(rule2Messages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(rule2Messages);
 
         // Assert
         Assert.AreEqual(2, property.RuleMessages.Count);
@@ -371,7 +371,7 @@ public class ValidatePropertyTests
         };
 
         // Act
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Assert
         Assert.AreEqual(0, property.RuleMessages.Count);
@@ -393,7 +393,7 @@ public class ValidatePropertyTests
         };
 
         // Act
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Assert
         Assert.IsTrue(changedProperties.Contains("IsValid"));
@@ -414,7 +414,7 @@ public class ValidatePropertyTests
         };
 
         // Act
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Assert
         Assert.IsTrue(changedProperties.Contains("IsSelfValid"));
@@ -435,7 +435,7 @@ public class ValidatePropertyTests
         };
 
         // Act
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Assert
         Assert.IsTrue(changedProperties.Contains("RuleMessages"));
@@ -456,10 +456,10 @@ public class ValidatePropertyTests
             new RuleMessage("Name", "Rule 1 error") { RuleIndex = 1 },
             new RuleMessage("Name", "Rule 2 error") { RuleIndex = 2 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
-        ((IValidateProperty)property).ClearMessagesForRule(1);
+        ((IValidatePropertyInternal)property).ClearMessagesForRule(1);
 
         // Assert
         Assert.AreEqual(1, property.RuleMessages.Count);
@@ -478,10 +478,10 @@ public class ValidatePropertyTests
             new RuleMessage("Name", "Error 2") { RuleIndex = 2 },
             new RuleMessage("Name", "Error 3") { RuleIndex = 3 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
-        ((IValidateProperty)property).ClearMessagesForRule(2);
+        ((IValidatePropertyInternal)property).ClearMessagesForRule(2);
 
         // Assert
         Assert.AreEqual(2, property.RuleMessages.Count);
@@ -500,10 +500,10 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
-        ((IValidateProperty)property).ClearMessagesForRule(999);
+        ((IValidatePropertyInternal)property).ClearMessagesForRule(999);
 
         // Assert
         Assert.AreEqual(1, property.RuleMessages.Count);
@@ -519,11 +519,11 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Only error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
         Assert.IsFalse(property.IsValid);
 
         // Act
-        ((IValidateProperty)property).ClearMessagesForRule(1);
+        ((IValidatePropertyInternal)property).ClearMessagesForRule(1);
 
         // Assert
         Assert.IsTrue(property.IsValid);
@@ -539,13 +539,13 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         var changedProperties = new List<string>();
         property.PropertyChanged += (sender, e) => changedProperties.Add(e.PropertyName!);
 
         // Act
-        ((IValidateProperty)property).ClearMessagesForRule(1);
+        ((IValidatePropertyInternal)property).ClearMessagesForRule(1);
 
         // Assert
         Assert.IsTrue(changedProperties.Contains("IsValid"));
@@ -561,13 +561,13 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         var changedProperties = new List<string>();
         property.PropertyChanged += (sender, e) => changedProperties.Add(e.PropertyName!);
 
         // Act
-        ((IValidateProperty)property).ClearMessagesForRule(1);
+        ((IValidatePropertyInternal)property).ClearMessagesForRule(1);
 
         // Assert
         Assert.IsTrue(changedProperties.Contains("IsSelfValid"));
@@ -583,13 +583,13 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         var changedProperties = new List<string>();
         property.PropertyChanged += (sender, e) => changedProperties.Add(e.PropertyName!);
 
         // Act
-        ((IValidateProperty)property).ClearMessagesForRule(1);
+        ((IValidatePropertyInternal)property).ClearMessagesForRule(1);
 
         // Assert
         Assert.IsTrue(changedProperties.Contains("RuleMessages"));
@@ -610,10 +610,10 @@ public class ValidatePropertyTests
             new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
             new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
-        property.ClearSelfMessages();
+        ((IValidatePropertyInternal)property).ClearSelfMessages();
 
         // Assert
         Assert.AreEqual(0, property.RuleMessages.Count);
@@ -630,13 +630,13 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         var changedProperties = new List<string>();
         property.PropertyChanged += (sender, e) => changedProperties.Add(e.PropertyName!);
 
         // Act
-        property.ClearSelfMessages();
+        ((IValidatePropertyInternal)property).ClearSelfMessages();
 
         // Assert
         Assert.IsTrue(changedProperties.Contains("IsValid"));
@@ -650,7 +650,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
 
         // Act & Assert (should not throw)
-        property.ClearSelfMessages();
+        ((IValidatePropertyInternal)property).ClearSelfMessages();
         Assert.AreEqual(0, property.RuleMessages.Count);
     }
 
@@ -669,10 +669,10 @@ public class ValidatePropertyTests
             new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
             new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
-        property.ClearAllMessages();
+        ((IValidatePropertyInternal)property).ClearAllMessages();
 
         // Assert
         Assert.AreEqual(0, property.RuleMessages.Count);
@@ -693,7 +693,7 @@ public class ValidatePropertyTests
         property.LoadValue(childValidate);
 
         // Act
-        property.ClearAllMessages();
+        ((IValidatePropertyInternal)property).ClearAllMessages();
 
         // Resume actions to allow the property manager to update its IsValid state
         childValidate.ResumeAllActions();
@@ -713,13 +713,13 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         var changedProperties = new List<string>();
         property.PropertyChanged += (sender, e) => changedProperties.Add(e.PropertyName!);
 
         // Act
-        property.ClearAllMessages();
+        ((IValidatePropertyInternal)property).ClearAllMessages();
 
         // Assert
         Assert.IsTrue(changedProperties.Contains("IsValid"));
@@ -735,13 +735,13 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         var changedProperties = new List<string>();
         property.PropertyChanged += (sender, e) => changedProperties.Add(e.PropertyName!);
 
         // Act
-        property.ClearAllMessages();
+        ((IValidatePropertyInternal)property).ClearAllMessages();
 
         // Assert
         Assert.IsTrue(changedProperties.Contains("IsSelfValid"));
@@ -757,13 +757,13 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         var changedProperties = new List<string>();
         property.PropertyChanged += (sender, e) => changedProperties.Add(e.PropertyName!);
 
         // Act
-        property.ClearAllMessages();
+        ((IValidatePropertyInternal)property).ClearAllMessages();
 
         // Assert
         Assert.IsTrue(changedProperties.Contains("RuleMessages"));
@@ -784,7 +784,7 @@ public class ValidatePropertyTests
             new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
             new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
         var serialized = property.SerializedRuleMessages;
@@ -820,7 +820,7 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Specific error message") { RuleIndex = 42 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
         var serialized = property.SerializedRuleMessages;
@@ -898,7 +898,7 @@ public class ValidatePropertyTests
             new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
             new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
         var propertyMessages = property.PropertyMessages;
@@ -917,7 +917,7 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Test error message") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
         var propertyMessages = property.PropertyMessages;
@@ -938,7 +938,7 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
         var propertyMessages = property.PropertyMessages;
@@ -1289,7 +1289,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
 
         // Act & Assert (should not throw)
-        ((IValidateProperty)property).SetMessagesForRule(new List<IRuleMessage>());
+        ((IValidatePropertyInternal)property).SetMessagesForRule(new List<IRuleMessage>());
         Assert.AreEqual(0, property.RuleMessages.Count);
     }
 
@@ -1311,7 +1311,7 @@ public class ValidatePropertyTests
                 {
                     new RuleMessage("Name", $"Error {ruleIndex}") { RuleIndex = ruleIndex }
                 };
-                ((IValidateProperty)property).SetMessagesForRule(messages);
+                ((IValidatePropertyInternal)property).SetMessagesForRule(messages);
             }));
         }
 
@@ -1333,7 +1333,7 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "First error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(firstMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(firstMessages);
 
         // Second set of messages with same RuleIndex 1
         var secondMessages = new List<IRuleMessage>
@@ -1342,7 +1342,7 @@ public class ValidatePropertyTests
         };
 
         // Act
-        ((IValidateProperty)property).SetMessagesForRule(secondMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(secondMessages);
 
         // Assert
         Assert.AreEqual(1, property.RuleMessages.Count);
@@ -1361,7 +1361,7 @@ public class ValidatePropertyTests
         {
             new RuleMessage("Name", "Initial") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(initialMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(initialMessages);
 
         // New messages with same RuleIndex but multiple entries
         var newMessages = new List<IRuleMessage>
@@ -1371,7 +1371,7 @@ public class ValidatePropertyTests
         };
 
         // Act
-        ((IValidateProperty)property).SetMessagesForRule(newMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(newMessages);
 
         // Assert - both new messages should be added
         Assert.AreEqual(2, property.RuleMessages.Count);

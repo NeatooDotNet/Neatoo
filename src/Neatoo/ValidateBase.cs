@@ -27,24 +27,18 @@ public interface IValidateBase : IBase, IValidateMetaProperties, INotifyProperty
 	bool IsPaused { get; }
 
 	/// <summary>
-	/// Gets an object-level validation error message, if any.
-	/// </summary>
-	/// <value>The validation error message, or <c>null</c> if the object is valid.</value>
-	internal string? ObjectInvalid { get; }
-
-	/// <summary>
 	/// Gets the validation property with the specified name.
 	/// </summary>
 	/// <param name="propertyName">The name of the property to retrieve.</param>
 	/// <returns>The <see cref="IValidateProperty"/> instance for the specified property.</returns>
-	new IValidateProperty GetProperty(string propertyName);
+	IValidateProperty GetProperty(string propertyName);
 
 	/// <summary>
 	/// Gets the validation property with the specified name using indexer syntax.
 	/// </summary>
 	/// <param name="propertyName">The name of the property to retrieve.</param>
 	/// <returns>The <see cref="IValidateProperty"/> instance for the specified property.</returns>
-	new IValidateProperty this[string propertyName] { get => GetProperty(propertyName); }
+	IValidateProperty this[string propertyName] { get => GetProperty(propertyName); }
 
 	/// <summary>
 	/// Attempts to get the validation property with the specified name.
@@ -89,7 +83,7 @@ public interface IValidateBase : IBase, IValidateMetaProperties, INotifyProperty
 /// </code>
 /// </example>
 [Factory]
-public abstract class ValidateBase<T> : Base<T>, IValidateBase, INotifyPropertyChanged, IJsonOnDeserializing, IJsonOnDeserialized, IFactoryOnStart, IFactoryOnComplete
+public abstract class ValidateBase<T> : Base<T>, IValidateBase, IValidateBaseInternal, INotifyPropertyChanged, IJsonOnDeserializing, IJsonOnDeserialized, IFactoryOnStart, IFactoryOnComplete
 	where T : ValidateBase<T>
 {
 	/// <summary>
@@ -265,6 +259,11 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, INotifyPropertyC
 	/// </summary>
 	/// <value>The error message, or <c>null</c> if the object is valid at the object level.</value>
 	public string? ObjectInvalid { get => this.Getter<string>(); protected set => this.Setter(value); }
+
+	/// <summary>
+	/// Explicit interface implementation for IValidateBaseInternal.ObjectInvalid.
+	/// </summary>
+	string? IValidateBaseInternal.ObjectInvalid => this.ObjectInvalid;
 
 	/// <summary>
 	/// Gets the validation property with the specified name.
@@ -449,7 +448,11 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, INotifyPropertyC
 	/// </remarks>
 	public virtual void ClearSelfMessages()
 	{
-		this[nameof(this.ObjectInvalid)].ClearAllMessages();
+		// Cast to internal interface to call ClearAllMessages
+		if (this[nameof(this.ObjectInvalid)] is IValidatePropertyInternal vpInternal)
+		{
+			vpInternal.ClearAllMessages();
+		}
 		this.PropertyManager.ClearSelfMessages();
 	}
 
@@ -461,7 +464,11 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, INotifyPropertyC
 	/// </remarks>
 	public virtual void ClearAllMessages()
 	{
-		this[nameof(this.ObjectInvalid)].ClearAllMessages();
+		// Cast to internal interface to call ClearAllMessages
+		if (this[nameof(this.ObjectInvalid)] is IValidatePropertyInternal vpInternal)
+		{
+			vpInternal.ClearAllMessages();
+		}
 		this.PropertyManager.ClearAllMessages();
 	}
 

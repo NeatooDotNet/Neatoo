@@ -61,11 +61,11 @@ public class PropertyInfoList<T> : IPropertyInfoList<T>
 
             do
             {
-                var objProp = type.GetProperty(nameof(IValidateBase.ObjectInvalid), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | BindingFlags.DeclaredOnly);
+                var objProp = type.GetProperty(nameof(IValidateBaseInternal.ObjectInvalid), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | BindingFlags.DeclaredOnly);
 
                 if (objProp != null)
                 {
-                    PropertyInfos.Add(nameof(IValidateBase.ObjectInvalid), this.CreatePropertyInfo(objProp));
+                    PropertyInfos.Add(nameof(IValidateBaseInternal.ObjectInvalid), this.CreatePropertyInfo(objProp));
                     break;
                 }
 

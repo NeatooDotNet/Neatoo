@@ -45,6 +45,16 @@ public interface IEntityProperty : IValidateProperty
     /// </summary>
     /// <value>The human-readable display name for the property.</value>
     string DisplayName { get; }
+
+    /// <summary>
+    /// Applies property metadata from reflection after deserialization.
+    /// </summary>
+    /// <param name="propertyInfo">The property metadata containing display name and other attributes.</param>
+    /// <remarks>
+    /// Called during <see cref="IJsonOnDeserialized.OnDeserialized"/> to restore metadata that is not serialized,
+    /// such as DisplayName from <see cref="System.ComponentModel.DisplayNameAttribute"/>.
+    /// </remarks>
+    void ApplyPropertyInfo(IPropertyInfo propertyInfo);
 }
 
 /// <summary>

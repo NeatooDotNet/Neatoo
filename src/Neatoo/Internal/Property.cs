@@ -1,10 +1,11 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
+using Neatoo;
 
 namespace Neatoo.Internal;
 
-public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJsonOnDeserialized
+public class Property<T> : IProperty<T>, IProperty, IPropertyInternal, INotifyPropertyChanged, IJsonOnDeserialized
 {
     protected T? _value = default;
     private readonly object _isMarkedBusyLock = new object();
@@ -119,6 +120,7 @@ public class Property<T> : IProperty<T>, IProperty, INotifyPropertyChanged, IJso
         return this.SetPrivateValue(newValue);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2119:SealMethodsThatSatisfyPrivateInterfaces", Justification = "Method intentionally virtual for derived class overrides")]
     public virtual Task SetPrivateValue(object? newValue, bool quietly = false)
     {
         if (newValue == null && this._value == null) { return Task.CompletedTask; }

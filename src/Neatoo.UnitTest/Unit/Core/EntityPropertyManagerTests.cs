@@ -861,7 +861,7 @@ public class EntityPropertyManagerTests
         {
             new RuleMessage("Name", "Test error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
         Assert.IsFalse(property.IsValid);
 
         // Act
@@ -882,11 +882,11 @@ public class EntityPropertyManagerTests
         var nameProperty = entity["Name"];
         var ageProperty = entity["Age"];
 
-        ((IValidateProperty)nameProperty).SetMessagesForRule(new List<IRuleMessage>
+        ((IValidatePropertyInternal)nameProperty).SetMessagesForRule(new List<IRuleMessage>
         {
             new RuleMessage("Name", "Name error") { RuleIndex = 1 }
         });
-        ((IValidateProperty)ageProperty).SetMessagesForRule(new List<IRuleMessage>
+        ((IValidatePropertyInternal)ageProperty).SetMessagesForRule(new List<IRuleMessage>
         {
             new RuleMessage("Age", "Age error") { RuleIndex = 2 }
         });
@@ -1254,7 +1254,7 @@ public class EntityPropertyManagerTests
         _ = entity.Amount;
 
         // Act
-        var properties = ((IPropertyManager<IEntityProperty>)entity.PropertyManager).GetProperties.ToList();
+        var properties = ((IPropertyManagerInternal<IEntityProperty>)entity.PropertyManager).GetProperties.ToList();
 
         // Assert
         Assert.IsTrue(properties.Count >= 3);

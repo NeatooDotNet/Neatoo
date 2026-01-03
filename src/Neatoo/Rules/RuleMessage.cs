@@ -12,10 +12,10 @@ namespace Neatoo.Rules;
 public interface IRuleMessage
 {
     /// <summary>
-    /// Gets or sets the unique index of the rule that produced this message.
+    /// Gets the unique index of the rule that produced this message.
     /// Used internally to track which rule owns this message for proper cleanup.
     /// </summary>
-    uint RuleIndex { get; internal set; }
+    uint RuleIndex { get; }
 
     /// <summary>
     /// Gets the name of the property this message is associated with.
@@ -50,10 +50,15 @@ public interface IRuleMessage
 /// return (nameof(Person.Name), "Name is required").AsRuleMessages();
 /// </code>
 /// </example>
-public record RuleMessage : IRuleMessage
+public record RuleMessage : IRuleMessage, IRuleMessageInternal
 {
     /// <inheritdoc />
     public uint RuleIndex { get; set; }
+
+    /// <summary>
+    /// Explicit interface implementation for setting RuleIndex.
+    /// </summary>
+    uint IRuleMessageInternal.RuleIndex { set => this.RuleIndex = value; }
 
     /// <inheritdoc />
     public string PropertyName { get; }

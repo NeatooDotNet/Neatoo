@@ -13,7 +13,7 @@ public interface IValidateObject : IValidateBase
     IEnumerable<IRule> Rules { get; }
     void MarkInvalid(string message);
 
-    new string ObjectInvalid { get; }
+    string ObjectInvalid { get; }
 
     //new IValidateProperty this[string propertyName] { get => GetProperty(propertyName); }
 }

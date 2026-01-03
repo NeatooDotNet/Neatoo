@@ -7,14 +7,10 @@ namespace Neatoo;
 
 /// <summary>
 /// Non-generic interface for a Neatoo entity list that supports persistence tracking.
-/// Provides access to deleted items and entity meta properties.
+/// Provides access to entity meta properties.
 /// </summary>
 public interface IEntityListBase : IValidateListBase, IEntityMetaProperties
 {
-    /// <summary>
-    /// Gets the collection of items that have been marked as deleted but not yet persisted.
-    /// </summary>
-    internal IEnumerable DeletedList { get; }
 }
 
 /// <summary>
@@ -38,7 +34,7 @@ public interface IEntityListBase<I> : IValidateListBase<I>, IEntityMetaPropertie
 /// </summary>
 /// <typeparam name="I">The type of items in the list, must implement <see cref="IEntityBase"/>.</typeparam>
 [Factory]
-public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IEntityListBase<I>, IEntityListBase
+public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IEntityListBase<I>, IEntityListBase, IEntityListBaseInternal
     where I : IEntityBase
 {
 
@@ -105,7 +101,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// <summary>
     /// Gets the deleted list for internal access by the framework.
     /// </summary>
-    IEnumerable IEntityListBase.DeletedList => this.DeletedList;
+    IEnumerable IEntityListBaseInternal.DeletedList => this.DeletedList;
 
     /// <summary>
     /// Checks if any entity meta properties have changed and raises appropriate property change notifications.
@@ -160,13 +156,16 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
                 item.UnDelete();
             }
 
-            if (!item.IsNew)
+            // Cast to internal interface to call MarkModified and MarkAsChild
+            if (item is IEntityBaseInternal itemInternal)
             {
-                //((IDataMapperEntityTarget)item).MarkModified(); // TODO Add back
-                item.MarkModified();
-            }
+                if (!item.IsNew)
+                {
+                    itemInternal.MarkModified();
+                }
 
-            item.MarkAsChild();
+                itemInternal.MarkAsChild();
+            }
         }
         else
         {

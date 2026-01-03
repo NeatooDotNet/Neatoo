@@ -148,9 +148,10 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
             }
         }
         addItems(list.GetEnumerator());
-        if (value is IEntityListBase editList)
+        // Cast to internal interface to access DeletedList
+        if (value is IEntityListBaseInternal editListInternal)
         {
-            addItems(editList.DeletedList.GetEnumerator());
+            addItems(editListInternal.DeletedList.GetEnumerator());
         }
 
         writer.WriteEndArray();

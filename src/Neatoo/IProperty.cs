@@ -31,14 +31,6 @@ public interface IProperty : INotifyPropertyChanged, INotifyNeatooPropertyChange
     Task SetValue(object? newValue);
 
     /// <summary>
-    /// Sets the value of the property internally with optional quiet mode.
-    /// </summary>
-    /// <param name="newValue">The new value to set.</param>
-    /// <param name="quietly">If <c>true</c>, suppresses change notifications.</param>
-    /// <returns>A task that represents the asynchronous set operation.</returns>
-    internal Task SetPrivateValue(object? newValue, bool quietly = false);
-
-    /// <summary>
     /// Gets the task representing any pending asynchronous operations on this property.
     /// </summary>
     Task Task { get; }

@@ -38,28 +38,6 @@ public interface IValidateProperty : IProperty, INotifyPropertyChanged
     /// </summary>
     /// <value>A read-only collection of <see cref="IPropertyMessage"/> instances.</value>
     IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }
-
-    /// <summary>
-    /// Sets the validation messages produced by a specific rule.
-    /// </summary>
-    /// <param name="ruleMessages">The messages to set for the rule.</param>
-    internal void SetMessagesForRule(IReadOnlyList<IRuleMessage> ruleMessages);
-
-    /// <summary>
-    /// Clears all validation messages produced by the specified rule.
-    /// </summary>
-    /// <param name="ruleIndex">The index of the rule whose messages should be cleared.</param>
-    internal void ClearMessagesForRule(uint ruleIndex);
-
-    /// <summary>
-    /// Clears all validation messages from this property, including child object messages.
-    /// </summary>
-    internal void ClearAllMessages();
-
-    /// <summary>
-    /// Clears validation messages that apply directly to this property, excluding child object messages.
-    /// </summary>
-    internal void ClearSelfMessages();
 }
 
 /// <summary>

@@ -50,16 +50,6 @@ public interface IPropertyManager<out P> : INotifyNeatooPropertyChanged, INotify
     public P this[string propertyName] { get => GetProperty(propertyName); }
 
     /// <summary>
-    /// Gets the property info list containing metadata for all properties.
-    /// </summary>
-    internal IPropertyInfoList PropertyInfoList { get; }
-
-    /// <summary>
-    /// Gets an enumerable of all properties managed by this instance.
-    /// </summary>
-    internal IEnumerable<P> GetProperties { get; }
-
-    /// <summary>
     /// Sets the properties managed by this instance.
     /// </summary>
     /// <param name="properties">The collection of properties to manage.</param>

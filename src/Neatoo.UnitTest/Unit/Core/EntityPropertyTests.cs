@@ -164,14 +164,15 @@ public class EntityPropertyTests
         };
 
         // Act
-        var property = new EntityProperty<string>("PropertyName", "TestValue", true, false, "Display Name", ruleMessages);
+        var property = new EntityProperty<string>("PropertyName", "TestValue", true, false, ruleMessages);
 
         // Assert
         Assert.AreEqual("PropertyName", property.Name);
         Assert.AreEqual("TestValue", property.Value);
         Assert.IsTrue(property.IsSelfModified);
         Assert.IsFalse(property.IsReadOnly);
-        Assert.AreEqual("Display Name", property.DisplayName);
+        // DisplayName defaults to property name in JSON constructor; restored from reflection in OnDeserialized
+        Assert.AreEqual("PropertyName", property.DisplayName);
         Assert.AreEqual(1, property.RuleMessages.Count);
     }
 
@@ -182,7 +183,7 @@ public class EntityPropertyTests
         var ruleMessages = Array.Empty<IRuleMessage>();
 
         // Act
-        var property = new EntityProperty<int>("IntProperty", 42, false, true, "Int Display", ruleMessages);
+        var property = new EntityProperty<int>("IntProperty", 42, false, true, ruleMessages);
 
         // Assert
         Assert.IsTrue(property.IsReadOnly);
@@ -756,7 +757,7 @@ public class EntityPropertyTests
         {
             new RuleMessage("Name", "Error message") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act & Assert
         Assert.IsFalse(property.IsSelfValid);
@@ -783,7 +784,7 @@ public class EntityPropertyTests
         {
             new RuleMessage("Name", "Validation error") { RuleIndex = 1 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act & Assert
         Assert.IsFalse(property.IsValid);
@@ -800,10 +801,10 @@ public class EntityPropertyTests
             new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
             new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
-        property.ClearSelfMessages();
+        ((IValidatePropertyInternal)property).ClearSelfMessages();
 
         // Assert
         Assert.AreEqual(0, property.RuleMessages.Count);
@@ -836,7 +837,7 @@ public class EntityPropertyTests
             new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
             new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
         };
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Act
         var propertyMessages = property.PropertyMessages;
@@ -1267,7 +1268,7 @@ public class EntityPropertyTests
         };
 
         // Act
-        ((IValidateProperty)property).SetMessagesForRule(ruleMessages);
+        ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
         // Assert
         Assert.IsTrue(changedProperties.Contains("IsValid"));
@@ -1381,7 +1382,7 @@ public class EntityPropertyTests
         var ruleMessages = Array.Empty<IRuleMessage>();
 
         // Act
-        var property = new EntityProperty<string>("TestProp", "Value", false, false, "Display", ruleMessages);
+        var property = new EntityProperty<string>("TestProp", "Value", false, false, ruleMessages);
 
         // Assert
         Assert.IsTrue(property.IsValid);

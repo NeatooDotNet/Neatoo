@@ -7,14 +7,14 @@ namespace Neatoo.Internal;
 
 public delegate IPropertyManager<IProperty> CreatePropertyManager(IPropertyInfoList propertyInfoList);
 
-public class PropertyManager<P> : IPropertyManager<P>, IJsonOnDeserialized
+public class PropertyManager<P> : IPropertyManager<P>, IPropertyManagerInternal<P>, IJsonOnDeserialized
     where P : IProperty
 {
     protected IFactory Factory { get; }
 
     protected readonly IPropertyInfoList PropertyInfoList;
 
-    IPropertyInfoList IPropertyManager<P>.PropertyInfoList => this.PropertyInfoList;
+    IPropertyInfoList IPropertyManagerInternal<P>.PropertyInfoList => this.PropertyInfoList;
 
     public bool IsBusy { get; protected set; }
     public bool HasProperty(string propertyName)
@@ -146,7 +146,7 @@ public class PropertyManager<P> : IPropertyManager<P>, IJsonOnDeserialized
         this.OnDeserialized();
     }
 
-    IEnumerable<P> IPropertyManager<P>.GetProperties => this.PropertyBag.Select(p => p.Value);
+    IEnumerable<P> IPropertyManagerInternal<P>.GetProperties => this.PropertyBag.Select(p => p.Value);
 }
 
 /// <summary>

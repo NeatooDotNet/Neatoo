@@ -17,13 +17,15 @@ This directory contains detailed action items from the comprehensive framework r
 | [M1](M1-extract-metaproperty-helper.md) | Medium | Extract Meta-Property Change Helper | Low | Not Started |
 | [M2](M2-value-object-base.md) | Medium | Add Value Object Base Type | Medium | Not Started |
 | [M3](M3-document-propertychanged-events.md) | Medium | Document PropertyChanged vs NeatooPropertyChanged | Low | Not Started |
-| [M4](M4-resolve-todo-comments.md) | Medium | Resolve TODO Comments | Varies | Not Started |
+| [M4](M4-resolve-todo-comments.md) | Medium | Resolve TODO Comments | Low | Not Started |
+| [M4a](M4a-displayname-serialization.md) | Medium | Remove DisplayName from Serialization | Medium | **Completed** |
 | [M5](M5-aggregate-root-marker.md) | Medium | Add IAggregateRoot Marker Interface | Low | Not Started |
 | [M6](completed/multi-targeting-net8-9-10.md) | Medium | Multi-Target .NET 8.0/9.0/10.0 | Medium | **Completed** |
 | [L1](L1-naming-consistency.md) | Low | Naming Consistency Fixes | Low | Not Started |
 | [L2](L2-duplicate-event-subscriptions.md) | Low | Guard Against Duplicate Event Subscriptions | Low | Not Started |
 | [L3](completed/L3-fix-waitfortasks-assert.md) | Low | Fix Debug.Assert in WaitForTasks | Low | **Completed** |
 | [L4](L4-specification-pattern.md) | Low | Specification Pattern Support | High | Evaluation |
+| [M7](M7-analyze-documentation-patterns.md) | Medium | Analyze Documentation Sample Patterns | Low | Not Started |
 
 ---
 
@@ -50,6 +52,8 @@ This directory contains detailed action items from the comprehensive framework r
 ### Code Quality
 - [M1](M1-extract-metaproperty-helper.md) - Meta-Property Change Helper
 - [M4](M4-resolve-todo-comments.md) - TODO Comments
+- ~~[M4a](M4a-displayname-serialization.md) - DisplayName Serialization Performance~~ **DONE**
+- [M7](M7-analyze-documentation-patterns.md) - Analyze Documentation Sample Patterns
 - [L1](L1-naming-consistency.md) - Naming Consistency
 
 ### Infrastructure
@@ -64,6 +68,7 @@ This directory contains detailed action items from the comprehensive framework r
 - ~~[H3](completed/H3-add-generator-diagnostics.md) - Add generator diagnostics (Low effort)~~ **DONE**
 - ~~[H4](completed/H4-thread-safe-ismarkedbusy.md) - Thread-safe IsMarkedBusy (Low effort)~~ **DONE**
 - [M4](M4-resolve-todo-comments.md) - Resolve TODO comments (Decision items)
+- [M7](M7-analyze-documentation-patterns.md) - Analyze patterns from doc samples (Low effort)
 
 ### Sprint 2 (Documentation)
 - [C2](C2-beginner-tutorials.md) - Beginner tutorials (Reduces adoption barrier)

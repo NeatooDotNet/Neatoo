@@ -83,7 +83,8 @@ public class BaseObjectTests
     public void PrivateProperty_WhenAccessedViaIndexer_ThrowsPropertyReadOnlyException()
     {
         // Arrange & Act & Assert
+        // Cast to IBaseInternal to access the internal indexer
         Assert.ThrowsException<PropertyReadOnlyException>(
-            () => _sut[nameof(IBaseObject.PrivateProperty)].SetValue(Guid.NewGuid().ToString()));
+            () => ((IBaseInternal)_sut)[nameof(IBaseObject.PrivateProperty)].SetValue(Guid.NewGuid().ToString()));
     }
 }

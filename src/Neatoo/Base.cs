@@ -23,31 +23,6 @@ public interface IBase : INeatooObject, INotifyPropertyChanged, INotifyNeatooPro
     /// The parent <see cref="IBase"/> object, or <c>null</c> if this is a root object.
     /// </value>
     IBase? Parent { get; }
-
-    /// <summary>
-    /// Adds a child task to be tracked for completion.
-    /// </summary>
-    /// <param name="task">The task to track.</param>
-    internal void AddChildTask(Task task);
-
-    /// <summary>
-    /// Gets the property with the specified name.
-    /// </summary>
-    /// <param name="propertyName">The name of the property to retrieve.</param>
-    /// <returns>The <see cref="IProperty"/> instance for the specified property.</returns>
-    internal IProperty GetProperty(string propertyName);
-
-    /// <summary>
-    /// Gets the property with the specified name using indexer syntax.
-    /// </summary>
-    /// <param name="propertyName">The name of the property to retrieve.</param>
-    /// <returns>The <see cref="IProperty"/> instance for the specified property.</returns>
-    internal IProperty this[string propertyName] => this.GetProperty(propertyName);
-
-    /// <summary>
-    /// Gets the property manager responsible for managing all properties on this object.
-    /// </summary>
-    internal IPropertyManager<IProperty> PropertyManager { get; }
 }
 
 /// <summary>
@@ -70,7 +45,7 @@ public interface IBase : INeatooObject, INotifyPropertyChanged, INotifyNeatooPro
 /// </para>
 /// </remarks>
 [Factory]
-public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeserialized
+public abstract class Base<T> : INeatooObject, IBase, IBaseInternal, ISetParent, IJsonOnDeserialized
     where T : Base<T>
 {
     /// <summary>
@@ -91,9 +66,24 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
     protected IPropertyManager<IProperty> PropertyManager { get; set; }
 
     /// <summary>
-    /// Gets the property manager for interface implementation.
+    /// Gets the property manager for internal interface implementation.
     /// </summary>
-    IPropertyManager<IProperty> IBase.PropertyManager => this.PropertyManager;
+    IPropertyManager<IProperty> IBaseInternal.PropertyManager => this.PropertyManager;
+
+    /// <summary>
+    /// Gets the property with the specified name for internal interface implementation.
+    /// </summary>
+    IProperty IBaseInternal.GetProperty(string propertyName) => this.GetProperty(propertyName);
+
+    /// <summary>
+    /// Gets the property with the specified name using indexer syntax for internal interface implementation.
+    /// </summary>
+    IProperty IBaseInternal.this[string propertyName] => this.GetProperty(propertyName);
+
+    /// <summary>
+    /// Adds a child task for internal interface implementation.
+    /// </summary>
+    void IBaseInternal.AddChildTask(Task task) => this.AddChildTask(task);
 
     /// <summary>
     /// Gets the parent object in the object graph hierarchy.
@@ -268,13 +258,26 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
     /// </example>
     protected virtual void Setter<P>(P? value, [System.Runtime.CompilerServices.CallerMemberName] string propertyName = "")
     {
-        var task = this.PropertyManager[propertyName].SetPrivateValue(value);
+        var property = this.PropertyManager[propertyName];
+
+        // Cast to internal interface to call SetPrivateValue
+        Task task;
+        if (property is IPropertyInternal propertyInternal)
+        {
+            task = propertyInternal.SetPrivateValue(value);
+        }
+        else
+        {
+            // Fallback for stubs that may not implement IPropertyInternal
+            task = property.SetValue(value);
+        }
 
         if (!task.IsCompleted)
         {
-            if (this.Parent != null)
+            // Cast to internal interface to call AddChildTask
+            if (this.Parent is IBaseInternal parentInternal)
             {
-                this.Parent.AddChildTask(task);
+                parentInternal.AddChildTask(task);
             }
 
             this.RunningTasks.AddTask(task);
@@ -302,9 +305,10 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
         //AsyncTaskSequencer.AddTask((t) => task);
         //Parent?.AddChildTask(task);
 
-        if (this.Parent != null)
+        // Cast to internal interface to call AddChildTask on parent
+        if (this.Parent is IBaseInternal parentInternal)
         {
-            this.Parent.AddChildTask(task);
+            parentInternal.AddChildTask(task);
         }
 
         this.RunningTasks.AddTask(task);
@@ -332,12 +336,15 @@ public abstract class Base<T> : INeatooObject, IBase, ISetParent, IJsonOnDeseria
         this.PropertyManager.NeatooPropertyChanged += this._PropertyManager_NeatooPropertyChanged;
         this.PropertyManager.PropertyChanged += this._PropertyManager_PropertyChanged;
 
-
-        foreach (var property in this.PropertyManager.GetProperties)
+        // Cast to internal interface to access GetProperties
+        if (this.PropertyManager is IPropertyManagerInternal<IProperty> pmInternal)
         {
-            if (property.Value is ISetParent setParent)
+            foreach (var property in pmInternal.GetProperties)
             {
-                setParent.SetParent(this);
+                if (property.Value is ISetParent setParent)
+                {
+                    setParent.SetParent(this);
+                }
             }
         }
     }

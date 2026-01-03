@@ -10,7 +10,7 @@ public interface IValidateAsyncObject : IPersonBase
     int RuleRunCount { get; }
     string ThrowException { get; set; }
 
-    List<IValidateProperty> Properties => PropertyManager.GetProperties.Cast<IValidateProperty>().ToList();
+    List<IValidateProperty> Properties { get; }
 }
 
 [Factory]
@@ -54,6 +54,8 @@ internal class ValidateAsyncObject : PersonValidateBase<ValidateAsyncObject>, IV
     }
 
     public int RuleRunCount => ShortNameRule.RunCount + FullNameRule.RunCount;
+
+    public List<IValidateProperty> Properties => ((IPropertyManagerInternal<IValidateProperty>)PropertyManager).GetProperties.ToList();
 
 }
 

@@ -6,7 +6,8 @@ namespace Neatoo.Internal;
 
 
 
-public class ValidateProperty<T> : Property<T>, IValidateProperty<T>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2119:SealMethodsThatSatisfyPrivateInterfaces", Justification = "Class intentionally non-sealed for inheritance by EntityProperty")]
+public class ValidateProperty<T> : Property<T>, IValidateProperty<T>, IValidatePropertyInternal
 {
     [JsonIgnore]
     public virtual IValidateMetaProperties? ValueIsValidateBase => this.Value as IValidateMetaProperties;
@@ -50,12 +51,12 @@ public class ValidateProperty<T> : Property<T>, IValidateProperty<T>
         this.OnPropertyChanged(nameof(RuleMessages));
     }
 
-    void IValidateProperty.SetMessagesForRule(IReadOnlyList<IRuleMessage> ruleMessages)
+    void IValidatePropertyInternal.SetMessagesForRule(IReadOnlyList<IRuleMessage> ruleMessages)
     {
         this.SetMessagesForRule(ruleMessages);
     }
 
-    void IValidateProperty.ClearMessagesForRule(uint ruleIndex)
+    void IValidatePropertyInternal.ClearMessagesForRule(uint ruleIndex)
     {
         this.RuleMessages.RemoveAll(rm => rm.RuleIndex == ruleIndex);
         this.OnPropertyChanged(nameof(IsValid));
@@ -63,7 +64,7 @@ public class ValidateProperty<T> : Property<T>, IValidateProperty<T>
         this.OnPropertyChanged(nameof(RuleMessages));
     }
 
-    public virtual void ClearSelfMessages()
+    void IValidatePropertyInternal.ClearSelfMessages()
     {
         this.RuleMessages.Clear();
         this.OnPropertyChanged(nameof(IsValid));
@@ -71,7 +72,7 @@ public class ValidateProperty<T> : Property<T>, IValidateProperty<T>
         this.OnPropertyChanged(nameof(RuleMessages));
     }
 
-    public virtual void ClearAllMessages()
+    void IValidatePropertyInternal.ClearAllMessages()
     {
         this.RuleMessages.Clear();
         this.ValueIsValidateBase?.ClearAllMessages();

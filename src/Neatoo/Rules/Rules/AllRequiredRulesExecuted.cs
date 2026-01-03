@@ -44,10 +44,10 @@
 
             if(propertyNames.Count > 0)
             {
-                return (nameof(IValidateBase.ObjectInvalid), "Required properties not set: " + string.Join(", ", propertyNames)).AsRuleMessages();
+                return (nameof(IValidateBaseInternal.ObjectInvalid), "Required properties not set: " + string.Join(", ", propertyNames)).AsRuleMessages();
             }
 
-            return nameof(IValidateBase.ObjectInvalid).ClearRuleMessageForProperty();
+            return nameof(IValidateBaseInternal.ObjectInvalid).ClearRuleMessageForProperty();
         }
     }
 }

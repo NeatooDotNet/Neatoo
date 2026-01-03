@@ -82,7 +82,8 @@ public class BaseSerializationTests
 
         var deserialized = (IBaseObject)serializer.Deserialize(json, typeof(IBaseObject));
 
-        Assert.ThrowsException<PropertyReadOnlyException>(() => deserialized[nameof(IBaseObject.PrivateProperty)].SetValue(Guid.NewGuid().ToString()));
+        // Cast to IBaseInternal to access the internal indexer
+        Assert.ThrowsException<PropertyReadOnlyException>(() => ((IBaseInternal)deserialized)[nameof(IBaseObject.PrivateProperty)].SetValue(Guid.NewGuid().ToString()));
     }
 
     public class WhatHappens

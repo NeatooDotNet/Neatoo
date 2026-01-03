@@ -89,45 +89,21 @@ await entity.Save();
 
 ---
 
-### 3. EntityPropertyManager.cs Line 29 - DisplayName Serialization
-
-**Location:** `src/Neatoo/EntityPropertyManager.cs:29`
-
-```csharp
-[JsonConstructor]
-public EntityProperty(..., string displayName, ...)
-{
-    this.DisplayName = displayName; // TODO - Find a better way than serializing this
-}
-```
-
-**Issue:** `DisplayName` is serialized but could be derived from metadata.
-
-**Options:**
-1. Keep serializing (simple, works)
-2. Derive from `[Display]` attribute on deserialization
-3. Use a display name resolver service
-
-**Recommendation:** Keep serializing for now. The overhead is minimal and it ensures consistent behavior. Add a note explaining why:
-
-```csharp
-// DisplayName is serialized to ensure consistent display across client/server
-// even if metadata/resources differ between environments
-this.DisplayName = displayName;
-```
-
----
-
 ## Implementation Tasks
 
 - [ ] Decide on MarkUnmodified busy behavior (TODO #1)
 - [ ] Implement chosen solution for #1
 - [ ] Decide on Save auto-wait behavior (TODO #2)
 - [ ] Implement chosen solution for #2
-- [ ] Document DisplayName serialization decision (TODO #3)
 - [ ] Search for any other TODO comments
 - [ ] Add tests for new behavior
 - [ ] Remove TODO comments once resolved
+
+---
+
+## Moved to Separate Plans
+
+- **DisplayName serialization** (TODO #3) → [M4a-displayname-serialization.md](M4a-displayname-serialization.md)
 
 ---
 
@@ -149,7 +125,7 @@ Get-ChildItem -Path "src/Neatoo" -Recurse -Include "*.cs" |
 |------|-----------|----------|--------|
 | MarkUnmodified busy | EntityBase.cs:259 | Throw if busy | Pending |
 | WaitForTasks in Save | EntityBase.cs:402 | Keep throwing, improve message | Pending |
-| DisplayName serialization | EntityPropertyManager.cs:29 | Keep, add comment | Pending |
+| DisplayName serialization | EntityPropertyManager.cs:29 | Remove from serialization | Moved → [M4a](M4a-displayname-serialization.md) |
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 10.1.1** (2026-01-01)
+**Neatoo 10.2.0** (2026-01-02)
 
 ---
 
@@ -12,6 +12,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [10.2.0](v10.2.0.md) | 2026-01-02 | Feature | Stubbable public interfaces |
 | [10.1.1](v10.1.1.md) | 2026-01-01 | Feature | Record support for Value Objects |
 
 ---
@@ -20,6 +21,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [10.2.0](v10.2.0.md) | 2026-01-02 |
 | [10.1.1](v10.1.1.md) | 2026-01-01 |
 
 ---

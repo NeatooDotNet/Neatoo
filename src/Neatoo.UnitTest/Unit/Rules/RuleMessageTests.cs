@@ -664,15 +664,15 @@ public class IRuleMessageInterfaceTests
     }
 
     [TestMethod]
-    public void IRuleMessage_RuleIndex_CanBeSetViaInterface()
+    public void IRuleMessage_RuleIndex_CanBeSetViaInternalInterface()
     {
         // Arrange
-        IRuleMessage ruleMessage = new RuleMessage("Prop", "Error");
+        var ruleMessage = new RuleMessage("Prop", "Error");
 
-        // Act
-        ruleMessage.RuleIndex = 100u;
+        // Act - RuleIndex setter is on the internal interface
+        ((IRuleMessageInternal)ruleMessage).RuleIndex = 100u;
 
-        // Assert
+        // Assert - RuleIndex getter is on the public interface
         Assert.AreEqual(100u, ruleMessage.RuleIndex);
     }
 }

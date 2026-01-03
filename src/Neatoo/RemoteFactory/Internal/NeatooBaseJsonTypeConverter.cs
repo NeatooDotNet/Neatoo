@@ -156,11 +156,15 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                     }
                 }
 
-                result.PropertyManager.SetProperties(list);
-
-                if (result.PropertyManager is IJsonOnDeserialized jsonOnDeserialized)
+                // Cast to internal interface to access PropertyManager
+                if (result is IBaseInternal resultInternal)
                 {
-                    jsonOnDeserialized.OnDeserialized();
+                    resultInternal.PropertyManager.SetProperties(list);
+
+                    if (resultInternal.PropertyManager is IJsonOnDeserialized jsonOnDeserialized)
+                    {
+                        jsonOnDeserialized.OnDeserialized();
+                    }
                 }
 
             }
@@ -176,7 +180,11 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
     }
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
-        var properties = value.PropertyManager.GetProperties.ToList();
+        // Cast to internal interface to access GetProperties
+        var properties = ((value is IBaseInternal baseInternal)
+            && baseInternal.PropertyManager is IPropertyManagerInternal<IProperty> pmInternal)
+            ? pmInternal.GetProperties.ToList()
+            : new List<IProperty>();
 
         var reference = options.ReferenceHandler.CreateResolver().GetReference(value, out var alreadyExists);
 

@@ -85,7 +85,11 @@ public class ValidatePropertyManager<P> : PropertyManager<P>, IValidatePropertyM
     {
         foreach (var p in this.PropertyBag)
         {
-            p.Value.ClearSelfMessages();
+            // Cast to internal interface to call ClearSelfMessages
+            if (p.Value is IValidatePropertyInternal vpInternal)
+            {
+                vpInternal.ClearSelfMessages();
+            }
         }
     }
 
@@ -93,7 +97,11 @@ public class ValidatePropertyManager<P> : PropertyManager<P>, IValidatePropertyM
     {
         foreach (var p in this.PropertyBag)
         {
-            p.Value.ClearAllMessages();
+            // Cast to internal interface to call ClearAllMessages
+            if (p.Value is IValidatePropertyInternal vpInternal)
+            {
+                vpInternal.ClearAllMessages();
+            }
         }
     }
 

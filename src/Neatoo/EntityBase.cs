@@ -40,19 +40,6 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
     /// <param name="propertyName">The name of the property to retrieve.</param>
     /// <returns>The <see cref="IEntityProperty"/> instance for the specified property.</returns>
     new IEntityProperty this[string propertyName] { get; }
-
-    /// <summary>
-    /// Marks the entity as modified, even if no properties have changed.
-    /// </summary>
-    internal void MarkModified();
-
-    /// <summary>
-    /// Marks the entity as a child entity within an aggregate.
-    /// </summary>
-    /// <remarks>
-    /// Child entities are saved as part of their parent aggregate and cannot be saved independently.
-    /// </remarks>
-    internal void MarkAsChild();
 }
 
 /// <summary>
@@ -93,7 +80,7 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
 /// </code>
 /// </example>
 [Factory]
-public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBase, IEntityMetaProperties
+public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBase, IEntityBaseInternal, IEntityMetaProperties
     where T : EntityBase<T>
 {
     /// <summary>
@@ -499,7 +486,7 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     /// <summary>
     /// Explicit interface implementation for marking the entity as modified.
     /// </summary>
-    void IEntityBase.MarkModified()
+    void IEntityBaseInternal.MarkModified()
     {
         this.MarkModified();
     }
@@ -507,7 +494,7 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     /// <summary>
     /// Explicit interface implementation for marking the entity as a child.
     /// </summary>
-    void IEntityBase.MarkAsChild()
+    void IEntityBaseInternal.MarkAsChild()
     {
         this.MarkAsChild();
     }

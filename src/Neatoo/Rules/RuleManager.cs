@@ -352,7 +352,11 @@ public class RuleManager<T> : IRuleManager<T>
                 {
                     if(this.Target.TryGetProperty(propertyName, out var targetProperty))
                     {
-                        targetProperty.ClearMessagesForRule(rule.UniqueIndex);
+                        // Cast to internal interface to call ClearMessagesForRule
+                        if (targetProperty is IValidatePropertyInternal vpInternal)
+                        {
+                            vpInternal.ClearMessagesForRule(rule.UniqueIndex);
+                        }
                     }
                 }
 
@@ -360,8 +364,20 @@ public class RuleManager<T> : IRuleManager<T>
                 {
                     if(this.Target.TryGetProperty(ruleMessage.Key, out var targetProperty))
                     {
-                        ruleMessage.Value.ForEach(rm => rm.RuleIndex = rule.UniqueIndex);
-                        targetProperty.SetMessagesForRule(ruleMessage.Value);
+                        // Cast to internal interface to set RuleIndex
+                        ruleMessage.Value.ForEach(rm =>
+                        {
+                            if (rm is IRuleMessageInternal rmInternal)
+                            {
+                                rmInternal.RuleIndex = rule.UniqueIndex;
+                            }
+                        });
+
+                        // Cast to internal interface to call SetMessagesForRule
+                        if (targetProperty is IValidatePropertyInternal vpInternal)
+                        {
+                            vpInternal.SetMessagesForRule(ruleMessage.Value);
+                        }
                     }
                 }
             }
@@ -371,8 +387,12 @@ public class RuleManager<T> : IRuleManager<T>
                 {
                     if(this.Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty))
                     {
-                        // Allow children to be trigger properties
-                        targetProperty.SetMessagesForRule(triggerProperty.PropertyName.RuleMessages(ex.Message).AsReadOnly());
+                        // Cast to internal interface to call SetMessagesForRule
+                        if (targetProperty is IValidatePropertyInternal vpInternal)
+                        {
+                            // Allow children to be trigger properties
+                            vpInternal.SetMessagesForRule(triggerProperty.PropertyName.RuleMessages(ex.Message).AsReadOnly());
+                        }
                     }
                 }
 
