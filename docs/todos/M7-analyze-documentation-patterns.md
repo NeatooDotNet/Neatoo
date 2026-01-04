@@ -42,19 +42,26 @@ During the documentation samples migration, several framework behaviors were dis
 
 ---
 
-### 3. [Required] Allows Empty String on Nullable Properties
+### 3. ~~[Required] Allows Empty String on Nullable Properties~~ **RESOLVED**
 
-**Observed:** `[Required]` attribute on `string?` properties validates null but allows empty string `""`.
+**Original Observation:** `[Required]` attribute on `string?` properties validates null but allows empty string `""`.
 
-**Current Workaround:** Tests use null values, not empty strings, for Required validation.
+**Investigation (2026-01-03):** This was **incorrect**. Neatoo's `RequiredRule` uses `string.IsNullOrWhiteSpace()` which is **stricter** than standard .NET:
 
-**Questions:**
-- Is this standard .NET DataAnnotations behavior? (Yes, `AllowEmptyStrings = true` by default)
-- Should Neatoo override this default?
-- Should documentation mention this explicitly?
-- Consider adding `[Required(AllowEmptyStrings = false)]` examples to docs.
+| Input | Standard .NET `[Required]` | Neatoo `RequiredRule` |
+|-------|---------------------------|----------------------|
+| `null` | ❌ Error | ❌ Error |
+| `""` (empty) | ❌ Error (default) | ❌ Error |
+| `"   "` (whitespace) | ✅ Valid | ❌ **Error** |
 
-**Location:** Standard .NET behavior, but affects all Neatoo validation
+**Evidence:**
+- `RequiredRule.cs:33`: `isError = string.IsNullOrWhiteSpace(s);`
+- Unit test `RunRule_EmptyString_ReturnsErrorMessage` confirms empty strings are caught
+- Unit test `RunRule_WhitespaceOnlyString_ReturnsErrorMessage` confirms whitespace is caught
+
+**Status:** No action needed. Neatoo's behavior is intentionally stricter than standard .NET.
+
+**Location:** `src/Neatoo/Rules/Rules/RequiredRule.cs`
 
 ---
 

@@ -1,6 +1,32 @@
 # Validation and Rules
 
-Neatoo provides a powerful rules engine for implementing business logic and validation. Rules execute automatically when trigger properties change and provide immediate UI feedback.
+Neatoo provides a rules engine for business logic and validation. Rules execute automatically when trigger properties change.
+
+## Contents
+
+| Section | Description |
+|---------|-------------|
+| [Rule Categories](#rule-categories) | Data annotations, inline rules, RuleBase, AsyncRuleBase |
+| [Running Rules](#running-rules) | Automatic execution, manual execution, when rules don't trigger |
+| [Trigger Properties](#trigger-properties) | Specifying which properties trigger a rule |
+| [Returning Messages](#returning-rule-messages) | Single, multiple, conditional, chained messages |
+| [Data Annotations](#data-annotations) | Standard validation attributes |
+| [Cross-Property Validation](#cross-property-validation) | Rules checking multiple properties |
+| [Parent-Child Validation](#parent-child-validation) | Accessing parent from child rules |
+| [Action Rules](#action-rules-transformations) | Using rules for computed values and transformations |
+
+---
+
+## Rule Categories
+
+| Category | When to Use | Example |
+|----------|-------------|---------|
+| **Data Annotations** | Required, format, range | `[Required]`, `[EmailAddress]` |
+| **Inline Rules** | Simple logic in constructor | `RuleManager.AddValidation(...)` |
+| **RuleBase<T>** | Cross-property, reusable rules | Start date before end date |
+| **AsyncRuleBase<T>** | Database lookups, API calls | Uniqueness checks |
+
+> **Important**: Database-dependent validation belongs in `AsyncRuleBase<T>`, not in factory methods. See [Database-Dependent Validation](database-dependent-validation.md).
 
 ## Quick Reference: Where to Put Validation
 
@@ -85,74 +111,49 @@ public class UniqueEmailRule : AsyncRuleBase<IPerson>, IUniqueEmailRule
 
 ## Registering Rules
 
-Rules are registered in the entity constructor and in DI:
+Rules are registered in the entity constructor and in DI.
 
-<!-- snippet: docs:validation-and-rules:rule-registration -->
+### Define Rule Interfaces
+
+<!-- snippet: docs:validation-and-rules:rule-interface-definition -->
 ```csharp
-/// <summary>
-/// Demonstrates rule registration in entity constructor and DI setup.
-/// </summary>
-public partial interface IRuleRegistrationPerson : IValidateBase
-{
-    string? FirstName { get; set; }
-    string? LastName { get; set; }
-    int Age { get; set; }
-}
-
 // Rule interfaces
 public interface IAgeValidationRule : IRule<IRuleRegistrationPerson> { }
 public interface IUniqueNameValidationRule : IRule<IRuleRegistrationPerson> { }
+```
+<!-- /snippet -->
 
-// Entity with rule registration
-[Factory]
-internal partial class RuleRegistrationPerson : ValidateBase<RuleRegistrationPerson>, IRuleRegistrationPerson
-{
-    public RuleRegistrationPerson(
+### Inject and Register in Constructor
+
+<!-- snippet: docs:validation-and-rules:entity-rule-injection -->
+```csharp
+public RuleRegistrationPerson(
         IValidateBaseServices<RuleRegistrationPerson> services,
         IUniqueNameValidationRule uniqueNameRule,
         IAgeValidationRule ageRule) : base(services)
     {
+        #region docs:validation-and-rules:rule-manager-addrule
         RuleManager.AddRule(uniqueNameRule);
         RuleManager.AddRule(ageRule);
-    }
-
-    public partial string? FirstName { get; set; }
-    public partial string? LastName { get; set; }
-    public partial int Age { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-
-// Rule implementations
-public class AgeValidationRuleImpl : RuleBase<IRuleRegistrationPerson>, IAgeValidationRule
-{
-    public AgeValidationRuleImpl() : base(p => p.Age) { }
-
-    protected override IRuleMessages Execute(IRuleRegistrationPerson target)
-    {
-        if (target.Age < 0)
-            return (nameof(target.Age), "Age cannot be negative").AsRuleMessages();
-        return None;
-    }
-}
-
-public class UniqueNameValidationRuleImpl : RuleBase<IRuleRegistrationPerson>, IUniqueNameValidationRule
-{
-    public UniqueNameValidationRuleImpl() : base(p => p.FirstName, p => p.LastName) { }
-
-    protected override IRuleMessages Execute(IRuleRegistrationPerson target)
-    {
-        // Simplified - real implementation would check database
-        return None;
-    }
-}
-
-// DI Registration example (shown in comments - actual registration in test setup)
-// builder.Services.AddScoped<IUniqueNameValidationRule, UniqueNameValidationRuleImpl>();
-// builder.Services.AddScoped<IAgeValidationRule, AgeValidationRuleImpl>();
 ```
 <!-- /snippet -->
+
+The key pattern:
+
+<!-- snippet: docs:validation-and-rules:rule-manager-addrule -->
+```csharp
+RuleManager.AddRule(uniqueNameRule);
+        RuleManager.AddRule(ageRule);
+```
+<!-- /snippet -->
+
+### DI Registration
+
+```csharp
+// In DI setup
+builder.Services.AddScoped<IUniqueNameValidationRule, UniqueNameValidationRuleImpl>();
+builder.Services.AddScoped<IAgeValidationRule, AgeValidationRuleImpl>();
+```
 
 ## Trigger Properties
 
@@ -223,7 +224,7 @@ public class MultipleMessagesExample : RuleBase<IPerson>
 ```
 <!-- /snippet -->
 
-### Conditional Messages
+### Conditional Messages (Fluent API)
 
 <!-- snippet: docs:validation-and-rules:returning-messages-conditional -->
 ```csharp
@@ -265,11 +266,11 @@ public class ChainedConditionsExample : RuleBase<IPerson>
 
 Return `None` (or `RuleMessages.None`) when validation passes.
 
-## Fluent Rules
+## Inline Rules
 
-For simple validation logic, use fluent rules directly in the constructor:
+Define simple rules directly in the constructor without creating separate rule classes:
 
-### Validation Rule
+### Inline Validation
 
 <!-- snippet: docs:validation-and-rules:fluent-validation -->
 ```csharp
@@ -291,7 +292,11 @@ For simple validation logic, use fluent rules directly in the constructor:
 ```
 <!-- /snippet -->
 
-### Action Rule (Side Effects)
+## Action Rules (Transformations)
+
+Action rules compute derived values or transform data when trigger properties change. Unlike validation rules, they don't return error messages.
+
+### Computed Values
 
 <!-- snippet: docs:validation-and-rules:fluent-action -->
 ```csharp
@@ -303,19 +308,31 @@ For simple validation logic, use fluent rules directly in the constructor:
 ```
 <!-- /snippet -->
 
-### Async Action Rule
+### Async Transformations
 
 ```csharp
+// Lookup and transform on property change
 RuleManager.AddActionAsync(
     async target => target.TaxRate = await taxService.GetRateAsync(target.ZipCode),
     t => t.ZipCode);
 ```
 
+### Use Cases
+
+| Scenario | Example |
+|----------|---------|
+| Calculated fields | `FullName` from `FirstName` + `LastName` |
+| Format normalization | Uppercase product codes, trim whitespace |
+| Derived totals | `LineTotal` from `Quantity * UnitPrice` |
+| Async lookups | Tax rate from ZIP code, address validation |
+
 ## Data Annotations
 
-Standard `System.ComponentModel.DataAnnotations` attributes are automatically converted to Neatoo rules. They execute when the property changes and integrate with the validation UI.
+Standard `System.ComponentModel.DataAnnotations` attributes are automatically converted to Neatoo rules.
 
 ### Supported Attributes
+
+For detailed examples of each attribute, see [Data Annotations Reference](data-annotations-reference.md).
 
 #### Required
 
@@ -628,31 +645,12 @@ public class DateRangeRule : RuleBase<IEvent>, IDateRangeRule
 
 ## Parent-Child Validation
 
-Access parent entity from child validation:
+Access parent entity from child validation rules. This enables cross-item validation within collections.
 
-<!-- snippet: docs:validation-and-rules:parent-child-validation -->
+### Rule Class with Parent Access
+
+<!-- snippet: docs:validation-and-rules:parent-child-rule-class -->
 ```csharp
-/// <summary>
-/// Demonstrates accessing parent entity from child validation rules.
-/// </summary>
-public partial interface IParentContact : IEntityBase
-{
-    IContactPhoneList PhoneList { get; }
-}
-
-public partial interface IContactPhone : IEntityBase
-{
-    PhoneType? PhoneType { get; set; }
-    string? Number { get; set; }
-    IParentContact? ParentContact { get; }
-}
-
-public partial interface IContactPhoneList : IEntityListBase<IContactPhone> { }
-
-public enum PhoneType { Home, Work, Mobile }
-
-public interface IUniquePhoneTypeRule : IRule<IContactPhone> { }
-
 public class UniquePhoneTypeRule : RuleBase<IContactPhone>, IUniquePhoneTypeRule
 {
     public UniquePhoneTypeRule() : base(p => p.PhoneType) { }
@@ -662,59 +660,34 @@ public class UniquePhoneTypeRule : RuleBase<IContactPhone>, IUniquePhoneTypeRule
         if (target.ParentContact == null)
             return None;
 
+        #region docs:validation-and-rules:parent-access-in-rule
         var hasDuplicate = target.ParentContact.PhoneList
             .Where(p => p != target)
             .Any(p => p.PhoneType == target.PhoneType);
-
-        if (hasDuplicate)
-        {
-            return (nameof(target.PhoneType), "Phone type must be unique").AsRuleMessages();
-        }
-        return None;
-    }
-}
-
-[Factory]
-internal partial class ContactPhone : EntityBase<ContactPhone>, IContactPhone
-{
-    public ContactPhone(
-        IEntityBaseServices<ContactPhone> services,
-        IUniquePhoneTypeRule uniquePhoneTypeRule) : base(services)
-    {
-        RuleManager.AddRule(uniquePhoneTypeRule);
-    }
-
-    public partial PhoneType? PhoneType { get; set; }
-    public partial string? Number { get; set; }
-
-    public IParentContact? ParentContact => Parent as IParentContact;
-
-    [Create]
-    public void Create() { }
-}
-
-[Factory]
-internal class ContactPhoneList : EntityListBase<IContactPhone>, IContactPhoneList
-{
-    [Create]
-    public void Create() { }
-}
-
-[Factory]
-internal partial class ParentContact : EntityBase<ParentContact>, IParentContact
-{
-    public ParentContact(IEntityBaseServices<ParentContact> services) : base(services) { }
-
-    public partial IContactPhoneList PhoneList { get; set; }
-
-    [Create]
-    public void Create([Service] IContactPhoneListFactory phoneListFactory)
-    {
-        PhoneList = phoneListFactory.Create();
-    }
-}
 ```
 <!-- /snippet -->
+
+### Accessing Parent's Collection
+
+The key pattern - access siblings through parent:
+
+<!-- snippet: docs:validation-and-rules:parent-access-in-rule -->
+```csharp
+var hasDuplicate = target.ParentContact.PhoneList
+            .Where(p => p != target)
+            .Any(p => p.PhoneType == target.PhoneType);
+```
+<!-- /snippet -->
+
+### Child Entity Setup
+
+The child entity exposes its parent through a property:
+
+```csharp
+public IParentContact? ParentContact => Parent as IParentContact;
+```
+
+This works because `Parent` is set automatically when the child is added to a parent collection.
 
 ## Cascading Rules - A Key Feature
 

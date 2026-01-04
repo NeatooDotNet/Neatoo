@@ -6,6 +6,17 @@ Neatoo provides bindable, serializable domain objects for Blazor and WPF applica
 >
 > **WPF Support:** The core framework works with WPF through standard `INotifyPropertyChanged` binding. See [Blazor Binding](blazor-binding.md) for patterns that apply to WPF with standard XAML bindings.
 
+## Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Bindable Properties** | INotifyPropertyChanged for UI binding |
+| **Meta-Properties** | IsBusy, IsValid, IsModified, IsSavable |
+| **Validation Rules** | Sync and async business rules |
+| **3-Tier Factory** | Source-generated factories for client-server transfer |
+| **Mapper Methods** | MapModifiedTo auto-generated; MapFrom/MapTo manually implemented |
+| **Authorization** | Declarative authorization via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) |
+
 ---
 
 ## Quick Navigation
@@ -14,7 +25,6 @@ Neatoo provides bindable, serializable domain objects for Blazor and WPF applica
 |---------|-------------|
 | [Documentation Index](#documentation-index) | All documentation pages organized by topic |
 | [Class Hierarchy](#class-hierarchy) | Base classes and when to use each |
-| [Key Features](#key-features) | Feature overview table |
 | [Quick Example](#quick-example) | Complete aggregate root example |
 
 ---
@@ -95,17 +105,6 @@ EntityListBase<I>            - For child entity collections with deleted item tr
 
 **Note:** Value Objects in Neatoo are simple POCO classes with `[Factory]` attribute - they do not inherit from any Neatoo base class. See [Aggregates and Entities](aggregates-and-entities.md) for details.
 
-## Key Features
-
-| Feature | Description |
-|---------|-------------|
-| **Bindable Properties** | INotifyPropertyChanged for UI binding |
-| **Meta-Properties** | IsBusy, IsValid, IsModified, IsSavable |
-| **Validation Rules** | Sync and async business rules |
-| **3-Tier Factory** | Source-generated factories for client-server transfer |
-| **Mapper Methods** | Auto-generated MapFrom/MapTo/MapModifiedTo |
-| **Authorization** | Declarative authorization via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) |
-
 ## Quick Example
 
 ```csharp
@@ -116,11 +115,34 @@ public partial interface ICustomer : IEntityBase { }
 [Factory]
 internal partial class Customer : EntityBase<Customer>, ICustomer
 {
-    public Customer(IEntityBaseServices<Customer> services) : base(services) { }
+    public Customer(IEntityBaseServices<Customer> services) : base(services)
+    {
+        // Inline validation rule
+        RuleManager.AddValidation(
+            t => t.Email?.Contains("@company.com") == false ? "Must use company email" : "",
+            t => t.Email);
+    }
 
     // Partial properties - Neatoo generates backing code
+    [Required]
     public partial string? Name { get; set; }
+
+    [Required]
+    [EmailAddress]
     public partial string? Email { get; set; }
+
+    // Mapper methods - manually implemented
+    public void MapFrom(CustomerEntity entity)
+    {
+        Name = entity.Name;
+        Email = entity.Email;
+    }
+
+    public void MapTo(CustomerEntity entity)
+    {
+        entity.Name = Name;
+        entity.Email = Email;
+    }
 
     // Factory operations
     [Remote]

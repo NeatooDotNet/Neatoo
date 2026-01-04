@@ -1,9 +1,16 @@
 /// <summary>
 /// Code samples for docs/validation-and-rules.md - Rule usage patterns
 ///
-/// Snippets injected into docs:
+/// Full snippets (for complete examples):
 /// - docs:validation-and-rules:rule-registration
 /// - docs:validation-and-rules:parent-child-validation
+///
+/// Micro-snippets (for focused inline examples):
+/// - docs:validation-and-rules:rule-interface-definition
+/// - docs:validation-and-rules:entity-rule-injection
+/// - docs:validation-and-rules:rule-manager-addrule
+/// - docs:validation-and-rules:parent-child-rule-class
+/// - docs:validation-and-rules:parent-access-in-rule
 ///
 /// Compile-time validation only (docs use short inline examples):
 /// - docs:validation-and-rules:async-action-rule
@@ -31,22 +38,28 @@ public partial interface IRuleRegistrationPerson : IValidateBase
     int Age { get; set; }
 }
 
+#region docs:validation-and-rules:rule-interface-definition
 // Rule interfaces
 public interface IAgeValidationRule : IRule<IRuleRegistrationPerson> { }
 public interface IUniqueNameValidationRule : IRule<IRuleRegistrationPerson> { }
+#endregion
 
 // Entity with rule registration
 [Factory]
 internal partial class RuleRegistrationPerson : ValidateBase<RuleRegistrationPerson>, IRuleRegistrationPerson
 {
+    #region docs:validation-and-rules:entity-rule-injection
     public RuleRegistrationPerson(
         IValidateBaseServices<RuleRegistrationPerson> services,
         IUniqueNameValidationRule uniqueNameRule,
         IAgeValidationRule ageRule) : base(services)
     {
+        #region docs:validation-and-rules:rule-manager-addrule
         RuleManager.AddRule(uniqueNameRule);
         RuleManager.AddRule(ageRule);
+        #endregion
     }
+    #endregion
 
     public partial string? FirstName { get; set; }
     public partial string? LastName { get; set; }
@@ -226,6 +239,7 @@ public enum PhoneType { Home, Work, Mobile }
 
 public interface IUniquePhoneTypeRule : IRule<IContactPhone> { }
 
+#region docs:validation-and-rules:parent-child-rule-class
 public class UniquePhoneTypeRule : RuleBase<IContactPhone>, IUniquePhoneTypeRule
 {
     public UniquePhoneTypeRule() : base(p => p.PhoneType) { }
@@ -235,9 +249,11 @@ public class UniquePhoneTypeRule : RuleBase<IContactPhone>, IUniquePhoneTypeRule
         if (target.ParentContact == null)
             return None;
 
+        #region docs:validation-and-rules:parent-access-in-rule
         var hasDuplicate = target.ParentContact.PhoneList
             .Where(p => p != target)
             .Any(p => p.PhoneType == target.PhoneType);
+        #endregion
 
         if (hasDuplicate)
         {
@@ -246,6 +262,7 @@ public class UniquePhoneTypeRule : RuleBase<IContactPhone>, IUniquePhoneTypeRule
         return None;
     }
 }
+#endregion
 
 [Factory]
 internal partial class ContactPhone : EntityBase<ContactPhone>, IContactPhone

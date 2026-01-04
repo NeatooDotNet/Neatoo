@@ -11,6 +11,13 @@ namespace Neatoo;
 /// </summary>
 public interface IEntityListBase : IValidateListBase, IEntityMetaProperties
 {
+    /// <summary>
+    /// Gets the aggregate root of the object graph this list belongs to.
+    /// </summary>
+    /// <value>
+    /// The aggregate root, or <c>null</c> if this list is not yet part of an aggregate.
+    /// </value>
+    IBase? Root { get; }
 }
 
 /// <summary>
@@ -88,6 +95,19 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     public bool IsChild => false;
 
     /// <summary>
+    /// Gets the aggregate root of the object graph this list belongs to.
+    /// </summary>
+    /// <value>
+    /// The aggregate root, or <c>null</c> if this list is not yet part of an aggregate.
+    /// </value>
+    /// <remarks>
+    /// For entity lists, the Root is computed by checking if the Parent implements <see cref="IEntityBase"/>
+    /// and returning its Root. If the Parent has no Root (meaning Parent is the aggregate root),
+    /// then Parent itself is returned.
+    /// </remarks>
+    public IBase? Root => (Parent as IEntityBase)?.Root ?? Parent;
+
+    /// <summary>
     /// Gets the collection of items that have been removed from the list but need to be deleted during persistence.
     /// </summary>
     protected List<I> DeletedList { get; } = new List<I>();
@@ -151,6 +171,15 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     {
         if (!this.IsPaused)
         {
+            // Prevent adding items from a different aggregate
+            if (item.Root != null && item.Root != this.Root)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot add {item.GetType().Name} to list: " +
+                    $"item belongs to aggregate '{item.Root.GetType().Name}', " +
+                    $"but this list belongs to aggregate '{this.Root?.GetType().Name ?? "none"}'.");
+            }
+
             if (item.IsDeleted)
             {
                 item.UnDelete();

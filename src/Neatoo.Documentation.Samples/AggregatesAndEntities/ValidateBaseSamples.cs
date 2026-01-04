@@ -1,11 +1,14 @@
 /// <summary>
 /// Code samples for docs/aggregates-and-entities.md - ValidateBase section
 ///
-/// Snippets injected into docs:
+/// Full snippets (for complete examples):
 /// - docs:aggregates-and-entities:validatebase-criteria
-///
-/// Compile-time validation only (alternate criteria example):
 /// - docs:aggregates-and-entities:validatebase-order-criteria
+///
+/// Micro-snippets (for focused inline examples):
+/// - docs:aggregates-and-entities:validatebase-declaration
+/// - docs:aggregates-and-entities:criteria-inline-rule
+/// - docs:aggregates-and-entities:criteria-date-properties
 ///
 /// Corresponding tests: ValidateBaseSamplesTests.cs
 /// </summary>
@@ -47,21 +50,34 @@ public partial interface IPersonSearchCriteria : IValidateBase
     DateTime? ToDate { get; set; }
 }
 
+#region docs:aggregates-and-entities:validatebase-declaration
 [Factory]
 internal partial class PersonSearchCriteria : ValidateBase<PersonSearchCriteria>, IPersonSearchCriteria
+#endregion
 {
-    public PersonSearchCriteria(IValidateBaseServices<PersonSearchCriteria> services,
-                                 IDateRangeSearchRule dateRangeRule) : base(services)
+    public PersonSearchCriteria(IValidateBaseServices<PersonSearchCriteria> services) : base(services)
     {
-        // Add custom date range validation rule
-        RuleManager.AddRule(dateRangeRule);
+        #region docs:aggregates-and-entities:criteria-inline-rule
+        // Inline date range validation - validates when either date changes
+        RuleManager.AddValidation(
+            t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate
+                ? "From date must be before To date" : "",
+            t => t.FromDate);
+
+        RuleManager.AddValidation(
+            t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate
+                ? "To date must be after From date" : "",
+            t => t.ToDate);
+        #endregion
     }
 
     [Required(ErrorMessage = "At least one search term required")]
     public partial string? SearchTerm { get; set; }
 
+    #region docs:aggregates-and-entities:criteria-date-properties
     public partial DateTime? FromDate { get; set; }
     public partial DateTime? ToDate { get; set; }
+    #endregion
 
     [Create]
     public void Create() { }

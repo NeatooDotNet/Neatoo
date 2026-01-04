@@ -11,10 +11,11 @@ This guide gets you from zero to a working Neatoo aggregate in 10 minutes.
 
 ```bash
 dotnet add package Neatoo
-dotnet add package Neatoo.RemoteFactory
 ```
 
-For Blazor with MudBlazor:
+> **Note:** Neatoo includes RemoteFactory as a dependency—no separate install needed.
+
+For Blazor with MudBlazor components:
 ```bash
 dotnet add package Neatoo.Blazor.MudNeatoo
 ```
@@ -32,6 +33,8 @@ public partial interface IOrder : IEntityBase
 }
 ```
 
+> **Learn more:** [Aggregates and Entities](aggregates-and-entities.md) - Interface pattern, base class selection
+
 ## Step 2: Create the Aggregate Root
 
 ```csharp
@@ -48,6 +51,26 @@ internal partial class Order : EntityBase<Order>, IOrder
     public partial string? CustomerName { get; set; }
     public partial decimal Total { get; set; }
     public partial DateTime OrderDate { get; set; }
+
+    // Mapper methods - manually implemented
+    public void MapFrom(OrderEntity entity)
+    {
+        Id = entity.Id;
+        CustomerName = entity.CustomerName;
+        Total = entity.Total;
+        OrderDate = entity.OrderDate;
+    }
+
+    public void MapTo(OrderEntity entity)
+    {
+        entity.Id = Id ?? 0;
+        entity.CustomerName = CustomerName;
+        entity.Total = Total;
+        entity.OrderDate = OrderDate;
+    }
+
+    // MapModifiedTo - source-generated, only copies modified properties
+    public partial void MapModifiedTo(OrderEntity entity);
 
     // Create operation - called when factory creates a new instance
     [Create]
@@ -97,13 +120,10 @@ internal partial class Order : EntityBase<Order>, IOrder
         MapModifiedTo(entity);
         await db.SaveChangesAsync();
     }
-
-    // Mapper methods - source-generated implementations
-    public partial void MapFrom(OrderEntity entity);
-    public partial void MapTo(OrderEntity entity);
-    public partial void MapModifiedTo(OrderEntity entity);
 }
 ```
+
+> **Learn more:** [Factory Operations](factory-operations.md) - Create, Fetch, Insert, Update, Delete lifecycle | [Mapper Methods](mapper-methods.md) - MapFrom, MapTo, MapModifiedTo
 
 ## Step 3: Register Services
 
@@ -126,6 +146,8 @@ builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IOrder).Assembly
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:5001") });
 ```
 
+> **Learn more:** [Remote Factory Pattern](remote-factory.md) - Client-server setup, NeatooFactory enum
+
 ## Step 4: Use the Factory
 
 ```csharp
@@ -147,6 +169,8 @@ var existingOrder = await OrderFactory.Fetch(orderId);
 existingOrder.Total = 175.00m;
 existingOrder = await OrderFactory.Save(existingOrder);
 ```
+
+> **Learn more:** [Factory Operations](factory-operations.md) - Factory methods and save patterns
 
 ## Step 5: Bind to Blazor UI
 
@@ -180,48 +204,7 @@ existingOrder = await OrderFactory.Save(existingOrder);
 }
 ```
 
-## Key Concepts
-
-### Partial Properties
-
-Properties must be declared as `partial` for Neatoo to generate the backing code that enables:
-- Change tracking (IsModified)
-- Validation rule triggering
-- State serialization for client-server transfer
-
-```csharp
-// Correct - Neatoo generates implementation
-public partial string? Name { get; set; }
-
-// Incorrect - no state tracking
-public string? Name { get; set; }
-```
-
-### Factory Attributes
-
-| Attribute | Purpose |
-|-----------|---------|
-| `[Factory]` | Marks class for factory generation |
-| `[Create]` | Called when factory creates new instance |
-| `[Fetch]` | Called when factory loads from data source |
-| `[Insert]` | Called when saving a new (IsNew) entity |
-| `[Update]` | Called when saving an existing entity |
-| `[Delete]` | Called when saving a deleted entity |
-| `[Remote]` | Method is callable from client via RemoteFactory |
-| `[Service]` | Parameter is injected from DI container |
-
-### Meta-Properties
-
-Neatoo entities expose bindable meta-properties:
-
-| Property | Description |
-|----------|-------------|
-| `IsNew` | Entity has not been persisted |
-| `IsModified` | Entity or children have changes |
-| `IsValid` | All validation rules pass |
-| `IsSavable` | Modified, valid, not busy, not child |
-| `IsBusy` | Async operations in progress |
-| `IsDeleted` | Entity is marked for deletion |
+> **Learn more:** [Blazor Binding](blazor-binding.md) - MudNeatoo components, meta-properties (IsBusy, IsSavable, IsValid)
 
 ## Next Steps
 

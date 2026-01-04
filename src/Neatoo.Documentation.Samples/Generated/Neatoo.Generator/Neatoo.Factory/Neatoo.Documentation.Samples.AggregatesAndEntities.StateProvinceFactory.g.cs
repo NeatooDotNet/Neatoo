@@ -11,7 +11,7 @@ namespace Neatoo.Documentation.Samples.AggregatesAndEntities
 {
     public interface IStateProvinceFactory
     {
-        IStateProvince Fetch(StateProvinceDto dto);
+        IStateProvince Fetch(string code, string name);
     }
 
     internal class StateProvinceFactory : FactoryBase<IStateProvince>, IStateProvinceFactory
@@ -31,15 +31,15 @@ namespace Neatoo.Documentation.Samples.AggregatesAndEntities
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IStateProvince Fetch(StateProvinceDto dto)
+        public virtual IStateProvince Fetch(string code, string name)
         {
-            return LocalFetch(dto);
+            return LocalFetch(code, name);
         }
 
-        public IStateProvince LocalFetch(StateProvinceDto dto)
+        public IStateProvince LocalFetch(string code, string name)
         {
             var target = ServiceProvider.GetRequiredService<StateProvince>();
-            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(dto));
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(code, name));
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)

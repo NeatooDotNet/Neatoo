@@ -48,6 +48,8 @@ This directory contains detailed action items from the comprehensive framework r
 - [C2](C2-beginner-tutorials.md) - Beginner Tutorials
 - [H2](H2-document-async-validation-patterns.md) - Async Validation Patterns
 - [M3](M3-document-propertychanged-events.md) - PropertyChanged Events
+- [Snippet Refactoring](snippet-refactoring-plan.md) - Refactor full examples to focused micro-snippets
+- ~~[Documentation Feedback Review](completed/documentation-feedback-review.md) - Inline feedback cleanup~~ **DONE**
 
 ### Code Quality
 - [M1](M1-extract-metaproperty-helper.md) - Meta-Property Change Helper

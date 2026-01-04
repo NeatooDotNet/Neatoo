@@ -25,6 +25,8 @@ IEntityMetaProperties
     - IsSavable
     - IsNew (EntityBase only)
     - IsDeleted (EntityBase only)
+    - Parent (IBase?)
+    - Root (IBase?)
 ```
 
 ## Base Meta-Properties
@@ -312,6 +314,74 @@ bool IsChild { get; }
 **Effect:**
 - `IsSavable` is always false for children
 - Children are saved through parent's operations
+
+### Parent
+
+Immediate parent in the object graph.
+
+```csharp
+IBase? Parent { get; }
+```
+
+**Value:**
+- Set when entity is added to a collection
+- Points to the collection's parent (not the collection itself)
+- `null` for aggregate roots or standalone entities
+
+**Usage:**
+```csharp
+// Access typed parent
+public IOrder? ParentOrder => Parent as IOrder;
+
+// Check if entity is in an aggregate
+if (entity.Parent != null)
+{
+    // Entity is part of a hierarchy
+}
+```
+
+### Root
+
+Aggregate root of the object graph.
+
+```csharp
+IBase? Root { get; }
+```
+
+**Value:**
+- `null` if this entity IS the aggregate root (or standalone)
+- Returns the aggregate root for child entities at any depth
+
+**Computation:**
+- If `Parent` is null → `Root` is null (this is the root)
+- If `Parent.Root` exists → return it
+- If `Parent.Root` is null → Parent is the root → return `Parent`
+
+**Usage:**
+```csharp
+var order = await orderFactory.Create();
+var line = await order.Lines.AddLine();
+var detail = await line.Details.AddDetail();
+
+order.Root     // null (it IS the root)
+line.Root      // order
+detail.Root    // order (not line)
+
+// Access typed root
+public IOrder? OrderRoot => Root as IOrder;
+```
+
+**Cross-Aggregate Enforcement:**
+
+Adding an entity to a different aggregate throws `InvalidOperationException`:
+
+```csharp
+var order1 = await orderFactory.Create();
+var order2 = await orderFactory.Create();
+
+var line = order1.Lines.AddLine();
+order2.Lines.Add(line);  // THROWS - line belongs to order1
+```
 
 ### IsSavable
 

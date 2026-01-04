@@ -1,10 +1,16 @@
 /// <summary>
 /// Code samples for docs/aggregates-and-entities.md - Child Entity section
 ///
-/// Snippets in this file:
+/// Full snippets (for complete examples):
 /// - docs:aggregates-and-entities:child-entity
 /// - docs:aggregates-and-entities:aggregate-root-pattern
 /// - docs:aggregates-and-entities:child-entity-pattern
+///
+/// Micro-snippets (for focused inline examples):
+/// - docs:aggregates-and-entities:parent-access-property
+/// - docs:aggregates-and-entities:remote-fetch
+/// - docs:aggregates-and-entities:remote-insert
+/// - docs:aggregates-and-entities:child-fetch-no-remote
 ///
 /// Corresponding tests: ChildEntitySamplesTests.cs
 /// </summary>
@@ -43,8 +49,10 @@ internal partial class PhoneNumber : EntityBase<PhoneNumber>, IPhoneNumber
     public partial PhoneType? PhoneType { get; set; }
     public partial string? Number { get; set; }
 
+    #region docs:aggregates-and-entities:parent-access-property
     // Access parent through the Parent property
     public IContact? ParentContact => Parent as IContact;
+    #endregion
 
     [Create]
     public void Create()
@@ -84,10 +92,12 @@ internal partial class SalesOrder : EntityBase<SalesOrder>, ISalesOrder
         LineItems = lineItems;
     }
 
+    #region docs:aggregates-and-entities:remote-fetch
     // [Remote] - Called from UI
     [Remote]
     [Fetch]
     public void Fetch(Guid id)
+    #endregion
     {
         // In real implementation:
         // var entity = await db.Orders.Include(o => o.LineItems).FirstOrDefaultAsync(o => o.Id == id);
@@ -96,9 +106,11 @@ internal partial class SalesOrder : EntityBase<SalesOrder>, ISalesOrder
         Id = id;
     }
 
+    #region docs:aggregates-and-entities:remote-insert
     [Remote]
     [Insert]
     public async Task Insert()
+    #endregion
     {
         await RunRules();
         if (!IsSavable) return;
@@ -144,9 +156,11 @@ internal partial class OrderLineItem : EntityBase<OrderLineItem>, IOrderLineItem
         Id = Guid.NewGuid();
     }
 
+    #region docs:aggregates-and-entities:child-fetch-no-remote
     // No [Remote] - called internally by parent
     [Fetch]
     public void Fetch(OrderLineItemDto dto)
+    #endregion
     {
         Id = dto.Id;
         ProductName = dto.ProductName;

@@ -1,8 +1,13 @@
 /// <summary>
 /// Code samples for docs/aggregates-and-entities.md - Value Objects section
 ///
-/// Snippets in this file:
+/// Full snippets (for complete examples):
 /// - docs:aggregates-and-entities:value-object
+///
+/// Micro-snippets (for focused inline examples):
+/// - docs:aggregates-and-entities:value-object-declaration
+/// - docs:aggregates-and-entities:value-object-properties
+/// - docs:aggregates-and-entities:value-object-fetch
 ///
 /// Corresponding tests: ValueObjectSamplesTests.cs
 /// </summary>
@@ -19,28 +24,27 @@ namespace Neatoo.Documentation.Samples.AggregatesAndEntities;
 /// </summary>
 public interface IStateProvince
 {
-    string? Code { get; set; }
-    string? Name { get; set; }
+    string Code { get; }
+    string Name { get; }
 }
 
+#region docs:aggregates-and-entities:value-object-declaration
 [Factory]
 internal partial class StateProvince : IStateProvince
+#endregion
 {
-    public string? Code { get; set; }
-    public string? Name { get; set; }
+    #region docs:aggregates-and-entities:value-object-properties
+    public string Code { get; private set; } = string.Empty;
+    public string Name { get; private set; } = string.Empty;
+    #endregion
 
+    #region docs:aggregates-and-entities:value-object-fetch
     [Fetch]
-    public void Fetch(StateProvinceDto dto)
+    public void Fetch(string code, string name)
     {
-        Code = dto.Code;
-        Name = dto.Name;
+        Code = code;
+        Name = name;
     }
-}
-
-// DTO for demonstration
-public class StateProvinceDto
-{
-    public string? Code { get; set; }
-    public string? Name { get; set; }
+    #endregion
 }
 #endregion

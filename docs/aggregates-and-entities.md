@@ -29,40 +29,39 @@ EntityBase<T>                - For entities with identity, modification tracking
 
 ### EntityBase&lt;T&gt;
 
-Provides:
-- Modification tracking (`IsModified`, `IsSelfModified`)
-- Persistence lifecycle (`IsNew`, `IsDeleted`)
-- Savability state (`IsSavable`)
-- Child entity support (`IsChild`, automatic parent tracking)
+EntityBase provides properties for tracking entity lifecycle. All are bindable for UI:
 
-<!-- snippet: docs:aggregates-and-entities:entitybase-basic -->
+| Property | Type | Description |
+|----------|------|-------------|
+| `IsNew` | bool | Entity has not been persisted (triggers Insert) |
+| `IsModified` | bool | Entity or any child has changes |
+| `IsSelfModified` | bool | This entity's properties changed |
+| `IsDeleted` | bool | Entity is marked for deletion |
+| `IsChild` | bool | Entity is part of a parent aggregate |
+| `IsSavable` | bool | Can be saved (modified, valid, not busy, not child) |
+| `IsValid` | bool | All validation rules pass |
+| `IsBusy` | bool | Async operations in progress |
+| `Parent` | IBase? | Immediate parent in object graph |
+| `Root` | IBase? | Aggregate root (null if this IS the root) |
+
+State tracking is automatic for `partial` properties:
+
+<!-- snippet: docs:aggregates-and-entities:state-tracking-properties -->
 ```csharp
-/// <summary>
-/// Basic EntityBase example showing automatic state tracking.
-/// </summary>
-public partial interface IOrder : IEntityBase
-{
-    Guid Id { get; set; }
-    string? Status { get; set; }
-    decimal Total { get; set; }
-}
-
-[Factory]
-internal partial class Order : EntityBase<Order>, IOrder
-{
-    public Order(IEntityBaseServices<Order> services) : base(services) { }
-
-    public partial Guid Id { get; set; }
+public partial Guid Id { get; set; }
     public partial string? Status { get; set; }     // IsModified tracked automatically
     public partial decimal Total { get; set; }      // IsSavable updated on change
+```
+<!-- /snippet -->
 
-    [Create]
-    public void Create()
-    {
-        Id = Guid.NewGuid();
-        Status = "New";
-    }
-}
+Inline validation rules can be added in the constructor:
+
+<!-- snippet: docs:aggregates-and-entities:inline-validation-rule -->
+```csharp
+// Inline validation rule - Total must be positive
+        RuleManager.AddValidation(
+            t => t.Total <= 0 ? "Total must be greater than zero" : "",
+            t => t.Total);
 ```
 <!-- /snippet -->
 
@@ -72,39 +71,34 @@ Simple classes without Neatoo base class inheritance. RemoteFactory generates fe
 
 **Typical Use:** Lookup data, dropdown options, reference data.
 
-<!-- snippet: docs:aggregates-and-entities:value-object -->
-```csharp
-/// <summary>
-/// Value Object - simple POCO class with [Factory] attribute.
-/// No Neatoo base class inheritance. RemoteFactory generates fetch operations.
-/// Typical Use: Lookup data, dropdown options, reference data.
-/// </summary>
-public interface IStateProvince
-{
-    string? Code { get; set; }
-    string? Name { get; set; }
-}
+Class declaration - no Neatoo base class:
 
+<!-- snippet: docs:aggregates-and-entities:value-object-declaration -->
+```csharp
 [Factory]
 internal partial class StateProvince : IStateProvince
-{
-    public string? Code { get; set; }
-    public string? Name { get; set; }
+```
+<!-- /snippet -->
 
-    [Fetch]
-    public void Fetch(StateProvinceDto dto)
+Standard properties (no `partial` keyword needed):
+
+<!-- snippet: docs:aggregates-and-entities:value-object-properties -->
+```csharp
+public string Code { get; private set; } = string.Empty;
+    public string Name { get; private set; } = string.Empty;
+```
+<!-- /snippet -->
+
+Fetch method populates the object:
+
+<!-- snippet: docs:aggregates-and-entities:value-object-fetch -->
+```csharp
+[Fetch]
+    public void Fetch(string code, string name)
     {
-        Code = dto.Code;
-        Name = dto.Name;
+        Code = code;
+        Name = name;
     }
-}
-
-// DTO for demonstration
-public class StateProvinceDto
-{
-    public string? Code { get; set; }
-    public string? Name { get; set; }
-}
 ```
 <!-- /snippet -->
 
@@ -115,38 +109,29 @@ Use `ValidateBase<T>` for objects that need validation but are NOT persisted. Co
 - **Form input objects** that validate user input before creating entities
 - **Configuration objects** that need validation
 
-<!-- snippet: docs:aggregates-and-entities:validatebase-criteria -->
-```csharp
-/// <summary>
-/// Criteria object - has validation but no persistence.
-/// Use ValidateBase for objects that need validation but are NOT persisted.
-/// </summary>
-public partial interface IPersonSearchCriteria : IValidateBase
-{
-    string? SearchTerm { get; set; }
-    DateTime? FromDate { get; set; }
-    DateTime? ToDate { get; set; }
-}
+Class declaration inherits from `ValidateBase<T>`:
 
+<!-- snippet: docs:aggregates-and-entities:validatebase-declaration -->
+```csharp
 [Factory]
 internal partial class PersonSearchCriteria : ValidateBase<PersonSearchCriteria>, IPersonSearchCriteria
-{
-    public PersonSearchCriteria(IValidateBaseServices<PersonSearchCriteria> services,
-                                 IDateRangeSearchRule dateRangeRule) : base(services)
-    {
-        // Add custom date range validation rule
-        RuleManager.AddRule(dateRangeRule);
-    }
+```
+<!-- /snippet -->
 
-    [Required(ErrorMessage = "At least one search term required")]
-    public partial string? SearchTerm { get; set; }
+Cross-property validation using inline rules:
 
-    public partial DateTime? FromDate { get; set; }
-    public partial DateTime? ToDate { get; set; }
+<!-- snippet: docs:aggregates-and-entities:criteria-inline-rule -->
+```csharp
+// Inline date range validation - validates when either date changes
+        RuleManager.AddValidation(
+            t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate
+                ? "From date must be before To date" : "",
+            t => t.FromDate);
 
-    [Create]
-    public void Create() { }
-}
+        RuleManager.AddValidation(
+            t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate
+                ? "To date must be after From date" : "",
+            t => t.ToDate);
 ```
 <!-- /snippet -->
 
@@ -192,9 +177,13 @@ EntityBase (Aggregate Root)
 
 ## Defining an Aggregate Root
 
-### Interface Requirement
+### Interface Pattern
 
-Every aggregate requires a public interface. This enables factory generation and client-server transfer:
+Interfaces are strongly recommended for Neatoo aggregates. While RemoteFactory supports concrete classes, interfaces provide:
+
+- **Unit testability** - Mock dependencies and test entities in isolation
+- **Client-server transfer** - Public interface enables factory generation
+- **Minimal overhead** - Interface members are auto-generated from partial properties
 
 <!-- snippet: docs:aggregates-and-entities:interface-requirement -->
 ```csharp
@@ -210,35 +199,20 @@ public partial interface ICustomer : IEntityBase
 
 ### Aggregate Root Class
 
-<!-- snippet: docs:aggregates-and-entities:aggregate-root-class -->
+Class declaration with `[Factory]` attribute:
+
+<!-- snippet: docs:aggregates-and-entities:class-declaration -->
 ```csharp
-/// <summary>
-/// Complete aggregate root class pattern.
-/// </summary>
 [Factory]
 internal partial class Customer : EntityBase<Customer>, ICustomer
-{
-    public Customer(IEntityBaseServices<Customer> services) : base(services) { }
+```
+<!-- /snippet -->
 
-    // Properties
-    public partial Guid? Id { get; set; }
-    public partial string? FirstName { get; set; }
-    public partial string? LastName { get; set; }
-    public partial string? Email { get; set; }
+Constructor pattern - DI provides entity services:
 
-    // Child collection
-    public partial ICustomerAddressList? AddressList { get; set; }
-
-    [Create]
-    public void Create()
-    {
-        Id = Guid.NewGuid();
-    }
-}
-
-// Placeholder interface for child collection
-public partial interface ICustomerAddressList : IEntityListBase<ICustomerAddress> { }
-public partial interface ICustomerAddress : IEntityBase { }
+<!-- snippet: docs:aggregates-and-entities:entity-constructor -->
+```csharp
+public Customer(IEntityBaseServices<Customer> services) : base(services) { }
 ```
 <!-- /snippet -->
 
@@ -251,6 +225,13 @@ public partial interface ICustomerAddress : IEntityBase { }
 5. **Constructor with services** - DI provides the entity services
 
 ## Dependency Injection Patterns
+
+Neatoo entities support two DI patterns, and choosing correctly affects memory usage and serialization. The key decision: **will this dependency be used more than once?**
+
+| Pattern | When to Use | Why |
+|---------|-------------|-----|
+| Constructor injection | Dependency used repeatedly (rules, add methods) | Stored in field for reuse |
+| `[Service]` parameter | Dependency used once in factory method | Not stored; cleaner serialization |
 
 ### Constructor Injection - For Ongoing Use
 
@@ -285,12 +266,12 @@ public IPhone AddPhoneNumber()
 
 ### [Service] Injection - For Factory Methods
 
-Use `[Service]` for dependencies only needed during `[Create]`, `[Fetch]`, etc.:
+Use `[Service]` for dependencies only needed during `[Create]`, `[Fetch]`, etc. This keeps the entity lighter—dependencies aren't stored as fields and don't need to be serialized during client-server transfer.
 
 ```csharp
 public Person(IEntityBaseServices<Person> services) : base(services)
 {
-    // No child list factory - only needed once in Create
+    // No child list factory stored - only needed once in Create
 }
 
 [Create]
@@ -300,54 +281,37 @@ public void Create([Service] IPersonPhoneListFactory phoneListFactory)
 }
 ```
 
-### Anti-Pattern: Factory as Method Parameter
+### Preferred Pattern: Inject into Class, Not Method Parameters
 
-Never require callers to provide factories as method parameters:
+Avoid requiring callers to provide factories as method parameters. DI handles this automatically:
 
 ```csharp
-// WRONG - forces caller to inject and pass factory
+// Avoid - forces caller to inject and pass factory
 public IOrderLine AddLine(IOrderLineFactory lineFactory)
 {
     var line = lineFactory.Create();
     Add(line);
     return line;
 }
-```
 
-Services should be constructor-injected into the class, not passed by callers.
+// Preferred - constructor-injected factory
+public IOrderLine AddLine()
+{
+    var line = _lineFactory.Create();  // _lineFactory from constructor
+    Add(line);
+    return line;
+}
+```
 
 ## Partial Properties
 
 Properties must be declared as `partial` for Neatoo to generate backing code:
 
-<!-- snippet: docs:aggregates-and-entities:partial-properties -->
+<!-- snippet: docs:aggregates-and-entities:partial-property-declaration -->
 ```csharp
-/// <summary>
-/// Demonstrates partial vs non-partial properties.
-/// </summary>
-public partial interface IEmployee : IEntityBase
-{
-    string? FirstName { get; set; }
-    string? LastName { get; set; }
-    string FullName { get; }
-    bool IsExpanded { get; set; }
-}
-
-[Factory]
-internal partial class Employee : EntityBase<Employee>, IEmployee
-{
-    public Employee(IEntityBaseServices<Employee> services) : base(services) { }
-
-    // Correct - generates backing field with change tracking
+// Correct - generates backing field with change tracking
     public partial string? FirstName { get; set; }
     public partial string? LastName { get; set; }
-
-    #region docs:aggregates-and-entities:non-partial-properties
-    // Calculated property - not tracked, not serialized
-    public string FullName => $"{FirstName} {LastName}";
-
-    // UI-only property - not transferred to server
-    public bool IsExpanded { get; set; }
 ```
 <!-- /snippet -->
 
@@ -360,10 +324,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
 
 ### Non-Partial Properties
 
-Use regular properties for:
-- Calculated/derived values
-- UI-only properties
-- Server-only properties
+Use regular properties for calculated, UI-only, or server-only values:
 
 <!-- snippet: docs:aggregates-and-entities:non-partial-properties -->
 ```csharp
@@ -377,48 +338,14 @@ Use regular properties for:
 
 ## Child Entities
 
-Child entities within an aggregate are marked as children automatically when added to a parent:
+Child entities within an aggregate are marked as children automatically when added to a parent.
 
-<!-- snippet: docs:aggregates-and-entities:child-entity -->
+Access the parent aggregate from a child entity:
+
+<!-- snippet: docs:aggregates-and-entities:parent-access-property -->
 ```csharp
-/// <summary>
-/// Child entity that belongs to a parent aggregate.
-/// </summary>
-public partial interface IPhoneNumber : IEntityBase
-{
-    Guid? Id { get; set; }
-    PhoneType? PhoneType { get; set; }
-    string? Number { get; set; }
-
-    // Access to parent through the Parent property
-    internal IContact? ParentContact { get; }
-}
-
-public enum PhoneType
-{
-    Home,
-    Work,
-    Mobile
-}
-
-[Factory]
-internal partial class PhoneNumber : EntityBase<PhoneNumber>, IPhoneNumber
-{
-    public PhoneNumber(IEntityBaseServices<PhoneNumber> services) : base(services) { }
-
-    public partial Guid? Id { get; set; }
-    public partial PhoneType? PhoneType { get; set; }
-    public partial string? Number { get; set; }
-
-    // Access parent through the Parent property
+// Access parent through the Parent property
     public IContact? ParentContact => Parent as IContact;
-
-    [Create]
-    public void Create()
-    {
-        Id = Guid.NewGuid();
-    }
-}
 ```
 <!-- /snippet -->
 
@@ -428,52 +355,58 @@ internal partial class PhoneNumber : EntityBase<PhoneNumber>, IPhoneNumber
 - **Cannot save independently** - `IsSavable` is always false for children
 - **Saved through aggregate root** - Parent's Insert/Update handles children
 
-## Entity State Properties
+### Root Property and Aggregate Boundaries
 
-EntityBase provides properties for tracking entity lifecycle:
+The `Root` property identifies the aggregate root for any entity in the hierarchy:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `IsNew` | bool | Entity has not been persisted (triggers Insert) |
-| `IsModified` | bool | Entity or any child has changes |
-| `IsSelfModified` | bool | This entity's properties changed |
-| `IsDeleted` | bool | Entity is marked for deletion |
-| `IsChild` | bool | Entity is part of a parent aggregate |
-| `IsSavable` | bool | Can be saved (modified, valid, not busy, not child) |
-| `IsValid` | bool | All validation rules pass |
-| `IsBusy` | bool | Async operations in progress |
+```csharp
+var order = await orderFactory.Create();
+var line = await order.Lines.AddLine();
+
+order.Root    // null (it IS the root)
+line.Root     // order
+line.Parent   // order (immediate parent)
+```
+
+**Cross-Aggregate Enforcement:** Neatoo prevents adding an entity from one aggregate to another:
+
+```csharp
+var order1 = await orderFactory.Create();
+var order2 = await orderFactory.Create();
+
+var line = await order1.Lines.AddLine();
+
+// Attempt to add to different aggregate
+order2.Lines.Add(line);  // THROWS InvalidOperationException
+```
+
+| Scenario | item.Root | list.Root | Result |
+|----------|-----------|-----------|--------|
+| Add brand new item | null | Order | Allowed |
+| Add from same aggregate | Order | Order | Allowed |
+| Add from different aggregate | Order1 | Order2 | **Throws** |
 
 ## Data Annotations
 
-Use standard data annotations for display and basic validation:
+Data annotations provide display metadata and basic validation. For comprehensive coverage, see [Validation and Rules](validation-and-rules.md).
 
-<!-- snippet: docs:aggregates-and-entities:data-annotations -->
+Combine `[DisplayName]` and `[Required]` for labeled required fields:
+
+<!-- snippet: docs:aggregates-and-entities:displayname-required -->
 ```csharp
-/// <summary>
-/// Using data annotations for display and validation.
-/// </summary>
-public partial interface IContact : IEntityBase
-{
-    string? FirstName { get; set; }
-    string? Email { get; set; }
-}
-
-[Factory]
-internal partial class Contact : EntityBase<Contact>, IContact
-{
-    public Contact(IEntityBaseServices<Contact> services) : base(services) { }
-
-    [DisplayName("First Name*")]
+[DisplayName("First Name*")]
     [Required(ErrorMessage = "First Name is required")]
     public partial string? FirstName { get; set; }
+```
+<!-- /snippet -->
 
-    [DisplayName("Email Address")]
+Format validation with `[EmailAddress]`:
+
+<!-- snippet: docs:aggregates-and-entities:emailaddress-validation -->
+```csharp
+[DisplayName("Email Address")]
     [EmailAddress(ErrorMessage = "Invalid email format")]
     public partial string? Email { get; set; }
-
-    [Create]
-    public void Create() { }
-}
 ```
 <!-- /snippet -->
 
@@ -483,150 +416,45 @@ Neatoo converts these to validation rules automatically.
 
 > **Note:** Authorization is provided by [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory). See the [RemoteFactory authorization documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs) for `[AuthorizeFactory<T>]` patterns and configuration.
 
-## Aggregate Root vs Child Entity Pattern
+## The [Remote] Attribute
 
-### Aggregate Root
+The `[Remote]` attribute determines whether a factory operation executes on the server or locally:
 
-<!-- snippet: docs:aggregates-and-entities:aggregate-root-pattern -->
+| Entity Type | Factory Methods | Why |
+|-------------|-----------------|-----|
+| **Aggregate Root** | `[Remote] [Fetch]`, `[Remote] [Insert]`, etc. | Called from UI, executes on server |
+| **Child Entity** | `[Fetch]`, `[Insert]`, etc. (no `[Remote]`) | Called by parent, parent handles server communication |
+
+Aggregate root - `[Remote]` operations called from UI:
+
+<!-- snippet: docs:aggregates-and-entities:remote-fetch -->
 ```csharp
-/// <summary>
-/// Aggregate root with [Remote] operations - called from UI.
-/// </summary>
-public partial interface ISalesOrder : IEntityBase
-{
-    Guid? Id { get; set; }
-    string? CustomerName { get; set; }
-    DateTime OrderDate { get; set; }
-    IOrderLineItemList? LineItems { get; set; }
-}
-
-[Factory]
-internal partial class SalesOrder : EntityBase<SalesOrder>, ISalesOrder
-{
-    public SalesOrder(IEntityBaseServices<SalesOrder> services) : base(services) { }
-
-    public partial Guid? Id { get; set; }
-    public partial string? CustomerName { get; set; }
-    public partial DateTime OrderDate { get; set; }
-    public partial IOrderLineItemList? LineItems { get; set; }
-
-    [Create]
-    public void Create([Service] IOrderLineItemList lineItems)
-    {
-        Id = Guid.NewGuid();
-        OrderDate = DateTime.Today;
-        LineItems = lineItems;
-    }
-
-    // [Remote] - Called from UI
+// [Remote] - Called from UI
     [Remote]
     [Fetch]
     public void Fetch(Guid id)
-    {
-        // In real implementation:
-        // var entity = await db.Orders.Include(o => o.LineItems).FirstOrDefaultAsync(o => o.Id == id);
-        // MapFrom(entity);
-        // LineItems = lineItemListFactory.Fetch(entity.LineItems);
-        Id = id;
-    }
+```
+<!-- /snippet -->
 
-    [Remote]
+<!-- snippet: docs:aggregates-and-entities:remote-insert -->
+```csharp
+[Remote]
     [Insert]
     public async Task Insert()
-    {
-        await RunRules();
-        if (!IsSavable) return;
-
-        // In real implementation:
-        // var entity = new OrderEntity();
-        // MapTo(entity);
-        // lineItemListFactory.Save(LineItems, entity.LineItems);
-        // db.Orders.Add(entity);
-        // await db.SaveChangesAsync();
-    }
-}
 ```
 <!-- /snippet -->
 
-### Child Entity
+Child entity - no `[Remote]`, parent calls internally:
 
-<!-- snippet: docs:aggregates-and-entities:child-entity-pattern -->
+<!-- snippet: docs:aggregates-and-entities:child-fetch-no-remote -->
 ```csharp
-/// <summary>
-/// Child entity - no [Remote], called internally by parent.
-/// </summary>
-public partial interface IOrderLineItem : IEntityBase
-{
-    Guid? Id { get; set; }
-    string? ProductName { get; set; }
-    int Quantity { get; set; }
-    decimal UnitPrice { get; set; }
-    decimal LineTotal { get; }
-}
-
-[Factory]
-internal partial class OrderLineItem : EntityBase<OrderLineItem>, IOrderLineItem
-{
-    public OrderLineItem(IEntityBaseServices<OrderLineItem> services) : base(services) { }
-
-    public partial Guid? Id { get; set; }
-    public partial string? ProductName { get; set; }
-    public partial int Quantity { get; set; }
-    public partial decimal UnitPrice { get; set; }
-
-    public decimal LineTotal => Quantity * UnitPrice;
-
-    [Create]
-    public void Create()
-    {
-        Id = Guid.NewGuid();
-    }
-
-    // No [Remote] - called internally by parent
+// No [Remote] - called internally by parent
     [Fetch]
     public void Fetch(OrderLineItemDto dto)
-    {
-        Id = dto.Id;
-        ProductName = dto.ProductName;
-        Quantity = dto.Quantity;
-        UnitPrice = dto.UnitPrice;
-    }
-
-    [Insert]
-    public OrderLineItemDto Insert()
-    {
-        return new OrderLineItemDto
-        {
-            Id = Id,
-            ProductName = ProductName,
-            Quantity = Quantity,
-            UnitPrice = UnitPrice
-        };
-    }
-
-    [Update]
-    public void Update(OrderLineItemDto dto)
-    {
-        // MapModifiedTo would be used in real implementation
-        dto.ProductName = ProductName;
-        dto.Quantity = Quantity;
-        dto.UnitPrice = UnitPrice;
-    }
-}
-
-// DTO for demonstration
-public class OrderLineItemDto
-{
-    public Guid? Id { get; set; }
-    public string? ProductName { get; set; }
-    public int Quantity { get; set; }
-    public decimal UnitPrice { get; set; }
-}
-
-// List interface for child collection
-public partial interface IOrderLineItemList : IEntityListBase<IOrderLineItem> { }
 ```
 <!-- /snippet -->
+
+The aggregate root's `[Remote]` methods handle all database operations, including saving child entities.
 
 ## Complete Example
 
