@@ -40,6 +40,7 @@ Neatoo provides bindable, serializable domain objects for Blazor and WPF applica
 | **Bind to Blazor UI** | [Blazor Binding](blazor-binding.md) |
 | **Create child collections** | [Entity Collections](collections.md) |
 | **Set up client-server** | [Remote Factory](remote-factory.md) |
+| **Test rules and entities** | [Testing](testing.md) |
 | **Debug an issue** | [Troubleshooting](troubleshooting.md) |
 
 ---
@@ -71,6 +72,10 @@ Neatoo provides bindable, serializable domain objects for Blazor and WPF applica
 
 - [Remote Factory Pattern](remote-factory.md) - Client-server state transfer
 - [Mapper Methods](mapper-methods.md) - MapFrom, MapTo, MapModifiedTo
+
+### Testing
+
+- [Testing](testing.md) - Unit testing rules and domain objects
 
 ### Reference
 

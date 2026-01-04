@@ -854,6 +854,7 @@ protected override async Task<IRuleMessages> Execute(IUser target, ...)
 
 ## See Also
 
+- [Testing](testing.md) - Unit testing rules with `RunRule`
 - [Database-Dependent Validation](database-dependent-validation.md) - Async validation with Commands
 - [Property System](property-system.md) - Property meta-properties and IsBusy
 - [Blazor Binding](blazor-binding.md) - Displaying validation in UI
