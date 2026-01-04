@@ -169,6 +169,16 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     public virtual bool IsChild { get; protected set; }
 
     /// <summary>
+    /// Gets or sets the list that contains this entity.
+    /// </summary>
+    /// <remarks>
+    /// Used internally for Delete/Remove consistency and intra-aggregate moves.
+    /// Stays set when the entity is removed from the list (pending deletion) and
+    /// is cleared only after the save operation completes.
+    /// </remarks>
+    protected IEntityListBase? ContainingList { get; set; }
+
+    /// <summary>
     /// Gets the aggregate root of the object graph this entity belongs to.
     /// </summary>
     /// <value>
@@ -329,11 +339,24 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     /// Marks this entity for deletion.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// If the entity is in a list, this method delegates to the list's Remove method,
+    /// ensuring consistent behavior between <c>entity.Delete()</c> and <c>list.Remove(entity)</c>.
+    /// </para>
+    /// <para>
     /// The entity will be deleted from persistent storage when <see cref="Save"/> is called.
     /// Use <see cref="UnDelete"/> to reverse this operation before saving.
+    /// </para>
     /// </remarks>
     public void Delete()
     {
+        if (this.ContainingList != null)
+        {
+            // Delegate to the list's Remove method for consistency
+            this.ContainingList.Remove(this);
+            return;
+        }
+
         this.MarkDeleted();
     }
 
@@ -523,5 +546,28 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     void IEntityBaseInternal.MarkAsChild()
     {
         this.MarkAsChild();
+    }
+
+    /// <summary>
+    /// Explicit interface implementation for marking the entity as deleted.
+    /// Used by EntityListBase.RemoveItem to avoid recursion with Delete().
+    /// </summary>
+    void IEntityBaseInternal.MarkDeleted()
+    {
+        this.MarkDeleted();
+    }
+
+    /// <summary>
+    /// Explicit interface implementation for getting the containing list.
+    /// </summary>
+    IEntityListBase? IEntityBaseInternal.ContainingList => this.ContainingList;
+
+    /// <summary>
+    /// Sets the containing list for this entity.
+    /// </summary>
+    /// <param name="list">The list that contains this entity, or null to clear.</param>
+    void IEntityBaseInternal.SetContainingList(IEntityListBase? list)
+    {
+        this.ContainingList = list;
     }
 }

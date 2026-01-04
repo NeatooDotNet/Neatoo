@@ -117,6 +117,22 @@ else
 }
 ```
 
+### Delete/Remove Consistency
+
+Calling `entity.Delete()` on an entity in a list is equivalent to calling `list.Remove(entity)`. Both operations:
+
+1. Remove the entity from the list
+2. Mark it as deleted (`IsDeleted = true`)
+3. Add it to the `DeletedList` (if not new)
+
+```csharp
+// These are equivalent:
+order.LineItems.Remove(item);
+item.Delete();
+```
+
+For standalone entities (not in a list), `Delete()` simply sets `IsDeleted = true`.
+
 ### DeletedList
 
 The `DeletedList` contains items marked for deletion during save:
@@ -131,6 +147,39 @@ foreach (var item in lineItems.Union(lineItems.DeletedList))
     }
     // ...
 }
+```
+
+### Intra-Aggregate Moves
+
+Entities can be moved between lists within the same aggregate (same `Root`). When an entity is added to a new list after being removed from another list in the same aggregate:
+
+1. Entity is removed from the old list's `DeletedList`
+2. Entity is undeleted (`IsDeleted = false`)
+3. Entity is added to the new list
+
+```csharp
+// Company aggregate with two departments
+var project = dept1.Projects[0];
+
+// Remove from Dept1's projects
+dept1.Projects.Remove(project);
+// project.IsDeleted = true
+// project in dept1.Projects.DeletedList
+
+// Add to Dept2's projects (same aggregate)
+dept2.Projects.Add(project);
+// project removed from dept1.Projects.DeletedList
+// project.IsDeleted = false
+// project now in dept2.Projects
+```
+
+**Cross-aggregate moves are not allowed:**
+
+```csharp
+var project = company1.Dept.Projects[0];
+
+// Attempt to move to different aggregate
+company2.Dept.Projects.Add(project);  // THROWS InvalidOperationException
 ```
 
 ## Collection Properties

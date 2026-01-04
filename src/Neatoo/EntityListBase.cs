@@ -124,6 +124,16 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     IEnumerable IEntityListBaseInternal.DeletedList => this.DeletedList;
 
     /// <summary>
+    /// Removes an item from the deleted list.
+    /// Called during intra-aggregate moves.
+    /// </summary>
+    /// <param name="item">The entity to remove from the deleted list.</param>
+    void IEntityListBaseInternal.RemoveFromDeletedList(IEntityBase item)
+    {
+        this.DeletedList.Remove((I)item);
+    }
+
+    /// <summary>
     /// Checks if any entity meta properties have changed and raises appropriate property change notifications.
     /// Compares current values against cached <see cref="EntityMetaState"/> and notifies on differences.
     /// </summary>
@@ -163,7 +173,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// <summary>
     /// Inserts an item into the collection at the specified index.
     /// When not paused, handles entity state management including undeleting previously deleted items,
-    /// marking existing items as modified, and setting child status.
+    /// marking existing items as modified, setting child status, and managing ContainingList.
     /// </summary>
     /// <param name="index">The zero-based index at which to insert the item.</param>
     /// <param name="item">The entity item to insert into the collection.</param>
@@ -180,21 +190,30 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
                     $"but this list belongs to aggregate '{this.Root?.GetType().Name ?? "none"}'.");
             }
 
+            // Cast to internal interface for ContainingList access
+            var itemInternal = (IEntityBaseInternal)item;
+
+            // Handle intra-aggregate move (item coming from a different list in the same aggregate)
+            if (itemInternal.ContainingList != null && itemInternal.ContainingList != this)
+            {
+                var oldList = (IEntityListBaseInternal)itemInternal.ContainingList;
+                oldList.RemoveFromDeletedList(item);
+            }
+
             if (item.IsDeleted)
             {
                 item.UnDelete();
             }
 
-            // Cast to internal interface to call MarkModified and MarkAsChild
-            if (item is IEntityBaseInternal itemInternal)
+            if (!item.IsNew)
             {
-                if (!item.IsNew)
-                {
-                    itemInternal.MarkModified();
-                }
-
-                itemInternal.MarkAsChild();
+                itemInternal.MarkModified();
             }
+
+            itemInternal.MarkAsChild();
+
+            // Set ContainingList to this list
+            itemInternal.SetContainingList(this);
         }
         else
         {
@@ -211,7 +230,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// <summary>
     /// Removes the item at the specified index from the collection.
     /// When not paused, marks non-new items as deleted and adds them to the <see cref="DeletedList"/>
-    /// for persistence during save operations.
+    /// for persistence during save operations. ContainingList stays set to track ownership.
     /// </summary>
     /// <param name="index">The zero-based index of the item to remove.</param>
     protected override void RemoveItem(int index)
@@ -222,9 +241,13 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
 
             if (!item.IsNew)
             {
-                item.Delete();
+                // Use MarkDeleted via internal interface to avoid recursion with Delete()
+                ((IEntityBaseInternal)item).MarkDeleted();
                 this.DeletedList.Add(item);
             }
+
+            // NOTE: ContainingList stays set - item is still "owned" by this list for persistence.
+            // ContainingList is cleared only after save in FactoryComplete.
         }
 
         base.RemoveItem(index);
@@ -252,6 +275,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// <summary>
     /// Called when a factory operation is complete.
     /// Clears the <see cref="DeletedList"/> after an update operation since deleted items have been persisted.
+    /// Also clears ContainingList on deleted items since deletion is now persisted.
     /// </summary>
     /// <param name="factoryOperation">The type of factory operation that was performed.</param>
     public override void FactoryComplete(FactoryOperation factoryOperation)
@@ -259,6 +283,12 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
         base.FactoryComplete(factoryOperation);
         if (factoryOperation == FactoryOperation.Update)
         {
+            // Clear ContainingList on deleted items - deletion is now persisted
+            foreach (var item in this.DeletedList)
+            {
+                ((IEntityBaseInternal)item).SetContainingList(null);
+            }
+
             this.DeletedList.Clear();
         }
     }

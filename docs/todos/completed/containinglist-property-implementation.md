@@ -1,6 +1,6 @@
 # ContainingList Property Implementation
 
-## Status: Planning
+## Status: Complete
 
 Add a `ContainingList` property to entities that tracks which list contains them, enabling consistent Delete/Remove behavior and intra-aggregate moves.
 
@@ -255,27 +255,27 @@ Could happen if list was garbage collected. The reference would be invalid.
 ## Task List
 
 ### Implementation
-- [ ] Add `ContainingList` property to `IEntityBaseInternal` (internal, not public)
-- [ ] Add `SetContainingList()` to `IEntityBaseInternal`
-- [ ] Implement both in `EntityBase`
-- [ ] Add `RemoveFromDeletedList()` to `IEntityListBaseInternal`
-- [ ] Implement in `EntityListBase`
-- [ ] Update `InsertItem()`: set ContainingList
-- [ ] Update `InsertItem()`: handle intra-aggregate moves
-- [ ] Update `RemoveItem()`: keep ContainingList set (don't clear)
-- [ ] Update `FactoryComplete()`: clear ContainingList when DeletedList purged
-- [ ] Update `Delete()`: delegate to ContainingList.Remove()
+- [x] Add `ContainingList` property to `IEntityBaseInternal` (internal, not public)
+- [x] Add `SetContainingList()` to `IEntityBaseInternal`
+- [x] Implement both in `EntityBase`
+- [x] Add `RemoveFromDeletedList()` to `IEntityListBaseInternal`
+- [x] Implement in `EntityListBase`
+- [x] Update `InsertItem()`: set ContainingList
+- [x] Update `InsertItem()`: handle intra-aggregate moves
+- [x] Update `RemoveItem()`: keep ContainingList set (don't clear)
+- [x] Update `FactoryComplete()`: clear ContainingList when DeletedList purged
+- [x] Update `Delete()`: delegate to ContainingList.Remove()
 
 ### Testing
-- [ ] Unit test: ContainingList set on Add
-- [ ] Unit test: ContainingList stays set on Remove
-- [ ] Unit test: ContainingList cleared after save
-- [ ] Unit test: Delete() removes from list
-- [ ] Unit test: Delete() on standalone entity works
-- [ ] Unit test: Intra-aggregate move cleans up DeletedList
-- [ ] Unit test: Move new item between lists (no DeletedList involvement)
+- [x] Unit test: ContainingList set on Add
+- [x] Unit test: ContainingList stays set on Remove
+- [x] Unit test: ContainingList cleared after save
+- [x] Unit test: Delete() removes from list
+- [x] Unit test: Delete() on standalone entity works
+- [x] Unit test: Intra-aggregate move cleans up DeletedList
+- [x] Unit test: Move new item between lists (no DeletedList involvement)
 
 ### Documentation
-- [ ] Update API documentation for ContainingList property
-- [ ] Add examples showing Delete/Remove consistency
-- [ ] Add examples showing intra-aggregate moves
+- [x] Update API documentation for ContainingList property
+- [x] Add examples showing Delete/Remove consistency
+- [x] Add examples showing intra-aggregate moves

@@ -76,6 +76,25 @@ internal interface IEntityBaseInternal : IValidateBaseInternal
     /// Called by EntityListBase when items are added.
     /// </summary>
     void MarkAsChild();
+
+    /// <summary>
+    /// Marks the entity for deletion without triggering list removal.
+    /// Called by EntityListBase.RemoveItem to avoid recursion with Delete().
+    /// </summary>
+    void MarkDeleted();
+
+    /// <summary>
+    /// Gets the list that contains this entity.
+    /// Used for Delete/Remove consistency and intra-aggregate moves.
+    /// </summary>
+    IEntityListBase? ContainingList { get; }
+
+    /// <summary>
+    /// Sets the containing list for this entity.
+    /// Called by EntityListBase during InsertItem and FactoryComplete.
+    /// </summary>
+    /// <param name="list">The list that now contains this entity, or null to clear.</param>
+    void SetContainingList(IEntityListBase? list);
 }
 
 /// <summary>
@@ -170,6 +189,13 @@ internal interface IEntityListBaseInternal
     /// Used during save operations.
     /// </summary>
     IEnumerable DeletedList { get; }
+
+    /// <summary>
+    /// Removes an item from the deleted list.
+    /// Called during intra-aggregate moves when an entity is added to a different list.
+    /// </summary>
+    /// <param name="item">The entity to remove from the deleted list.</param>
+    void RemoveFromDeletedList(IEntityBase item);
 }
 
 /// <summary>

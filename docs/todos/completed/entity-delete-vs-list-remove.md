@@ -1,6 +1,8 @@
 # Entity.Delete() vs List.Remove() Inconsistency
 
-## Status: Planning
+## Status: Complete
+
+**Solution implemented:** Option B (Entity Tracks Its List via `ContainingList` property). See [containinglist-property-implementation.md](./containinglist-property-implementation.md) for implementation details.
 
 Investigate and resolve the inconsistency between calling `Delete()` on an entity vs removing it from its containing list.
 

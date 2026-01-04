@@ -90,6 +90,13 @@ This directory contains detailed action items from the comprehensive framework r
 
 ---
 
+### Entity List Enhancements
+- ~~[ContainingList Property](completed/containinglist-property-implementation.md) - Track entity's containing list~~ **DONE**
+- ~~[Delete/Remove Consistency](completed/entity-delete-vs-list-remove.md) - entity.Delete() and list.Remove() now consistent~~ **DONE**
+- [EntityListBase Add Use Cases](entitylistbase-add-use-cases.md) - Add item use case analysis
+
+---
+
 ## Related Documents
 
 - [Comprehensive Framework Review](completed/comprehensive-framework-review.md) - Full analysis (completed)

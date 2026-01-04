@@ -12,6 +12,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [10.3.0](v10.3.0.md) | TBD | Feature | Root property, ContainingList, Delete/Remove consistency |
 | [10.2.0](v10.2.0.md) | 2026-01-02 | Feature | Stubbable public interfaces |
 | [10.1.1](v10.1.1.md) | 2026-01-01 | Feature | Record support for Value Objects |
 
@@ -21,6 +22,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [10.3.0](v10.3.0.md) | TBD |
 | [10.2.0](v10.2.0.md) | 2026-01-02 |
 | [10.1.1](v10.1.1.md) | 2026-01-01 |
 
