@@ -10,6 +10,12 @@ public partial interface IEntityPerson : IPersonEntity
     void MarkOld();
     void MarkUnmodified();
     void MarkDeleted();
+
+    /// <summary>
+    /// Test helper: Makes the entity busy by adding a pending task.
+    /// Call the returned action to release the busy state.
+    /// </summary>
+    Action MarkBusyForTest();
 }
 
 [Factory]
@@ -51,6 +57,13 @@ public partial class EntityPerson : PersonEntityBase<EntityPerson>, IEntityPerso
     void IEntityPerson.MarkUnmodified()
     {
         this.MarkUnmodified();
+    }
+
+    Action IEntityPerson.MarkBusyForTest()
+    {
+        var tcs = new TaskCompletionSource<bool>();
+        this.RunningTasks.AddTask(tcs.Task);
+        return () => tcs.SetResult(true);
     }
 
     [Insert]

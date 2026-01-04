@@ -386,6 +386,55 @@ order2.Lines.Add(line);  // THROWS InvalidOperationException
 | Add from same aggregate | Order | Order | Allowed |
 | Add from different aggregate | Order1 | Order2 | **Throws** |
 
+### Adding Items to Entity Lists
+
+When adding items to an `EntityListBase<T>`, Neatoo enforces constraints and manages state automatically.
+
+**Constraints (throws `InvalidOperationException`):**
+
+| Constraint | Reason |
+|------------|--------|
+| Null item | `ArgumentNullException` - null items not allowed |
+| Duplicate item | Item already in this list |
+| Busy item | Item has async rules running (`IsBusy = true`) |
+| Cross-aggregate | Item belongs to a different aggregate root |
+
+**State Changes on Add:**
+
+| State | Behavior |
+|-------|----------|
+| `Parent` | Set to list's parent (aggregate root) |
+| `IsChild` | Set to `true` |
+| `IsDeleted` | If `true`, `UnDelete()` called automatically |
+| `IsModified` | Existing items (`IsNew = false`) marked modified |
+| `ContainingList` | Set to this list (internal tracking) |
+
+**Intra-Aggregate Moves:**
+
+Items can be moved between lists within the same aggregate:
+
+```csharp
+var order = await orderFactory.Create();
+var line = await order.ActiveLines.AddLine();
+
+// Move to a different list in the same aggregate
+order.ActiveLines.Remove(line);
+order.ArchivedLines.Add(line);  // Allowed - same Root
+```
+
+When an existing item is re-added (after removal), Neatoo automatically:
+1. Removes it from the previous list's `DeletedList`
+2. Clears the `IsDeleted` flag via `UnDelete()`
+3. Updates `ContainingList` to the new list
+
+**Paused Mode (Deserialization):**
+
+During factory operations (`FactoryStart`/`FactoryComplete`), constraints are relaxed:
+- Duplicate check skipped (trusted source)
+- Busy check skipped
+- Cross-aggregate check skipped
+- `IsChild` not set (factory handles this)
+
 ## Data Annotations
 
 Data annotations provide display metadata and basic validation. For comprehensive coverage, see [Validation and Rules](validation-and-rules.md).

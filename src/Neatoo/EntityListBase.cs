@@ -179,8 +179,24 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// <param name="item">The entity item to insert into the collection.</param>
     protected override void InsertItem(int index, I item)
     {
+        ArgumentNullException.ThrowIfNull(item);
+
         if (!this.IsPaused)
         {
+            // Prevent adding the same item twice
+            if (this.Contains(item))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot add {item.GetType().Name} to list: item is already in this list.");
+            }
+
+            // Prevent adding busy items (async rules running)
+            if (item.IsBusy)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot add {item.GetType().Name} to list: item is busy (async rules running).");
+            }
+
             // Prevent adding items from a different aggregate
             if (item.Root != null && item.Root != this.Root)
             {
@@ -193,8 +209,8 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
             // Cast to internal interface for ContainingList access
             var itemInternal = (IEntityBaseInternal)item;
 
-            // Handle intra-aggregate move (item coming from a different list in the same aggregate)
-            if (itemInternal.ContainingList != null && itemInternal.ContainingList != this)
+            // Handle re-add or intra-aggregate move
+            if (itemInternal.ContainingList != null)
             {
                 var oldList = (IEntityListBaseInternal)itemInternal.ContainingList;
                 oldList.RemoveFromDeletedList(item);

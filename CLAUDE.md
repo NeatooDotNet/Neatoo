@@ -329,3 +329,27 @@ Example: `#region docs:validation-and-rules:required-attribute`
 3. Run `dotnet test` to verify
 4. Run `.\scripts\extract-snippets.ps1 -Verbose` to confirm extraction
 5. Run `.\scripts\extract-snippets.ps1 -Update` to update docs
+
+## Completing Plans
+
+When finishing work tracked in a `docs/todos/` plan file, ensure all related artifacts are updated:
+
+### Completion Checklist
+
+| Artifact | Location | When to Update |
+|----------|----------|----------------|
+| Documentation | `docs/` | New features, API changes, pattern updates |
+| Release notes | `docs/release-notes/` | Every version release |
+| Neatoo skill | `~/.claude/skills/neatoo/` | API changes, new patterns, usage guidance |
+| Plan file | `docs/todos/completed/` | Move completed plans here |
+
+### Neatoo Skill Updates
+
+The Neatoo skill (`C:\Users\KeithVoels\.claude\skills\neatoo\`) provides Claude Code with Neatoo-specific knowledge. Update it when:
+
+- New base classes or attributes are added
+- Existing patterns change
+- Common mistakes or anti-patterns are discovered
+- Validation/rules patterns evolve
+
+Keep skill content aligned with `docs/` but focused on "how to use" rather than reference material.

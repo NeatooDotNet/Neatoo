@@ -303,23 +303,39 @@ This approach solves multiple problems with one mechanism:
 ## Task List
 
 ### Phase 1: Investigate Current Behavior
-- [ ] Test what happens on save when `item.IsDeleted=true` but item still in list
-- [ ] Test `UnDelete()` behavior on items in DeletedList
-- [ ] Review factory/save code for how IsDeleted is handled
-- [ ] Document current behavior
+- [x] Test what happens on save when `item.IsDeleted=true` but item still in list
+- [x] Test `UnDelete()` behavior on items in DeletedList
+- [x] Review factory/save code for how IsDeleted is handled
+- [x] Document current behavior
 
 ### Phase 2: Design Decision
-- [ ] Review options with stakeholder
-- [ ] Decide on approach
-- [ ] Document decision rationale
+- [x] Review options with stakeholder
+- [x] Decide on approach → **Option B: Entity Tracks Its List**
+- [x] Document decision rationale
 
-### Phase 3: Implementation (TBD)
-- [ ] _[Depends on chosen approach]_
+### Phase 3: Implementation
+- [x] Add `ContainingList` property to `IEntityBaseInternal`
+- [x] Update `InsertItem()` to set ContainingList
+- [x] Update `RemoveItem()` to keep ContainingList set
+- [x] Update `FactoryComplete()` to clear ContainingList when DeletedList purged
+- [x] Update `Delete()` to delegate to ContainingList.Remove()
+- [x] Update `InsertItem()` to handle intra-aggregate moves
 
 ### Phase 4: Testing
-- [ ] Unit tests for chosen behavior
-- [ ] Integration tests for save scenarios
+- [x] Unit tests for Delete/Remove consistency
+- [x] Unit tests for intra-aggregate moves
+- [x] Unit tests for ContainingList lifecycle
 
 ### Phase 5: Documentation
-- [ ] Update API documentation
-- [ ] Add examples showing correct usage
+- [x] Update API documentation (meta-properties.md, aggregates-and-entities.md)
+- [x] Add examples showing Delete/Remove consistency
+
+## Implementation Notes
+
+### Files Modified
+- `src/Neatoo/EntityBase.cs` - Added ContainingList, updated Delete()
+- `src/Neatoo/EntityListBase.cs` - Updated InsertItem(), RemoveItem(), FactoryComplete()
+- `src/Neatoo/InternalInterfaces.cs` - Added IEntityBaseInternal.ContainingList
+
+### Test File
+- `src/Neatoo.UnitTest/Integration/Concepts/EntityBase/ContainingListTests.cs` - 12 tests
