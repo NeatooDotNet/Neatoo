@@ -5,9 +5,7 @@ Neatoo provides list base classes for managing child entity collections within a
 ## Class Hierarchy
 
 ```
-ListBase<I>                  - Observable collection, parent-child relationships
-    |
-ValidateListBase<I>          - Aggregated validation across items
+ValidateListBase<I>          - Observable collection, parent-child, aggregated validation
     |
 EntityListBase<I>            - Deleted item tracking, modification state
 ```
@@ -16,7 +14,6 @@ Choose based on requirements:
 
 | Base Class | Use Case |
 |------------|----------|
-| `ListBase<I>` | Read-only collections |
 | `ValidateListBase<I>` | Collections with validation |
 | `EntityListBase<I>` | Full entity collections with persistence |
 
@@ -201,7 +198,7 @@ company2.Dept.Projects.Add(project);  // THROWS InvalidOperationException
 | `PropertyMessages` | Aggregated messages from all items |
 | `IsPaused` | Rule execution is paused |
 
-### From ListBase
+### From ValidateListBase (base properties)
 
 | Property | Description |
 |----------|-------------|

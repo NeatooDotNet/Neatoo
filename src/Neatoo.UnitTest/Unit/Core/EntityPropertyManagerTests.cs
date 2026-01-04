@@ -1254,7 +1254,7 @@ public class EntityPropertyManagerTests
         _ = entity.Amount;
 
         // Act
-        var properties = ((IPropertyManagerInternal<IEntityProperty>)entity.PropertyManager).GetProperties.ToList();
+        var properties = ((IValidatePropertyManagerInternal<IEntityProperty>)entity.PropertyManager).GetProperties.ToList();
 
         // Assert
         Assert.IsTrue(properties.Count >= 3);

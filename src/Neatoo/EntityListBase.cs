@@ -17,7 +17,7 @@ public interface IEntityListBase : IValidateListBase, IEntityMetaProperties
     /// <value>
     /// The aggregate root, or <c>null</c> if this list is not yet part of an aggregate.
     /// </value>
-    IBase? Root { get; }
+    IValidateBase? Root { get; }
 }
 
 /// <summary>
@@ -105,7 +105,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// and returning its Root. If the Parent has no Root (meaning Parent is the aggregate root),
     /// then Parent itself is returned.
     /// </remarks>
-    public IBase? Root => (Parent as IEntityBase)?.Root ?? Parent;
+    public IValidateBase? Root => (Parent as IEntityBase)?.Root ?? Parent;
 
     /// <summary>
     /// Gets the collection of items that have been removed from the list but need to be deleted during persistence.

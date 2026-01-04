@@ -90,9 +90,9 @@ public partial class MudNeatooSelect<T> : ComponentBase, IDisposable
         // Re-render when validation state, busy state, or read-only changes
         if (e.PropertyName == nameof(IValidateProperty.PropertyMessages) ||
             e.PropertyName == nameof(IValidateProperty.IsValid) ||
-            e.PropertyName == nameof(IProperty.IsBusy) ||
-            e.PropertyName == nameof(IProperty.IsReadOnly) ||
-            e.PropertyName == nameof(IProperty.Value))
+            e.PropertyName == nameof(IValidateProperty.IsBusy) ||
+            e.PropertyName == nameof(IValidateProperty.IsReadOnly) ||
+            e.PropertyName == nameof(IValidateProperty.Value))
         {
             this.InvokeAsync(this.StateHasChanged);
         }

@@ -7,9 +7,7 @@ This document covers creating domain model classes using Neatoo's base classes.
 Users typically inherit from `ValidateBase<T>` or `EntityBase<T>`:
 
 ```
-Base<T>                      - Internal base class (not for direct use)
-    |
-ValidateBase<T>              - For non-persisted validated objects (criteria, filters)
+ValidateBase<T>              - Foundation for validated objects (criteria, filters)
     |
 EntityBase<T>                - For entities with identity, modification tracking, persistence
 ```
@@ -41,8 +39,8 @@ EntityBase provides properties for tracking entity lifecycle. All are bindable f
 | `IsSavable` | bool | Can be saved (modified, valid, not busy, not child) |
 | `IsValid` | bool | All validation rules pass |
 | `IsBusy` | bool | Async operations in progress |
-| `Parent` | IBase? | Immediate parent in object graph |
-| `Root` | IBase? | Aggregate root (null if this IS the root) |
+| `Parent` | IValidateBase? | Immediate parent in object graph |
+| `Root` | IValidateBase? | Aggregate root (null if this IS the root) |
 
 State tracking is automatic for `partial` properties:
 

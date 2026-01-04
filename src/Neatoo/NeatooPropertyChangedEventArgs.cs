@@ -9,7 +9,7 @@ public record NeatooPropertyChangedEventArgs
         this.OriginalEventArgs = this;
     }
 
-    public NeatooPropertyChangedEventArgs(IProperty property)
+    public NeatooPropertyChangedEventArgs(IValidateProperty property)
     {
         ArgumentNullException.ThrowIfNull(property, nameof(property));
         this.PropertyName = property.Name;
@@ -18,7 +18,7 @@ public record NeatooPropertyChangedEventArgs
         this.OriginalEventArgs = this;
     }
 
-    public NeatooPropertyChangedEventArgs(IProperty property, object source, NeatooPropertyChangedEventArgs? previous)
+    public NeatooPropertyChangedEventArgs(IValidateProperty property, object source, NeatooPropertyChangedEventArgs? previous)
     {
         ArgumentNullException.ThrowIfNull(property, nameof(property));
         ArgumentNullException.ThrowIfNull(source, nameof(source));
@@ -30,7 +30,7 @@ public record NeatooPropertyChangedEventArgs
     }
 
     public string PropertyName { get; init; }
-    public IProperty? Property { get; init; }
+    public IValidateProperty? Property { get; init; }
     public object? Source { get; init; }
     public NeatooPropertyChangedEventArgs OriginalEventArgs { get; init; }
     public NeatooPropertyChangedEventArgs? InnerEventArgs { get; init; }

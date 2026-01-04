@@ -800,7 +800,7 @@ public class ValidatePropertyManagerTests
         var testObject = new ValidatePropertyManagerTestObject();
 
         // Act
-        var hasProperty = ((IPropertyManagerInternal<IValidateProperty>)testObject.PropertyManager).PropertyInfoList.HasProperty("Name");
+        var hasProperty = ((IValidatePropertyManagerInternal<IValidateProperty>)testObject.PropertyManager).PropertyInfoList.HasProperty("Name");
 
         // Assert
         Assert.IsTrue(hasProperty);
@@ -813,7 +813,7 @@ public class ValidatePropertyManagerTests
         var testObject = new ValidatePropertyManagerTestObject();
 
         // Act
-        var hasProperty = ((IPropertyManagerInternal<IValidateProperty>)testObject.PropertyManager).PropertyInfoList.HasProperty("NonExistent");
+        var hasProperty = ((IValidatePropertyManagerInternal<IValidateProperty>)testObject.PropertyManager).PropertyInfoList.HasProperty("NonExistent");
 
         // Assert
         Assert.IsFalse(hasProperty);
@@ -1015,7 +1015,7 @@ public class ValidatePropertyManagerTests
         var testObject = new ValidatePropertyManagerTestObject();
 
         // Assert
-        Assert.IsInstanceOfType<IPropertyManager<IValidateProperty>>(testObject.PropertyManager);
+        Assert.IsInstanceOfType<IValidatePropertyManager<IValidateProperty>>(testObject.PropertyManager);
     }
 
     #endregion

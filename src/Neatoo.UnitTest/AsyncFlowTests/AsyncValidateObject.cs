@@ -135,7 +135,7 @@ internal class AsyncValidateObject : ValidateBase<AsyncValidateObject>
 
     public string? AsyncDelayUpdateChildRuleValue { get => Getter<string>(); set => Setter(value); }
 
-    public IProperty AsyncRuleCanWaitProperty => this[nameof(AsyncRulesCanWait)];
+    public IValidateProperty AsyncRuleCanWaitProperty => this[nameof(AsyncRulesCanWait)];
 
     public string? AsyncRulesCanWait { get => Getter<string>(); set => Setter(value); }
     public string? AsyncRulesCanWaitNested { get => Getter<string>(); set => Setter(value); }

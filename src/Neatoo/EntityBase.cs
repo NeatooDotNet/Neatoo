@@ -18,7 +18,7 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
     /// <value>
     /// The aggregate root, or <c>null</c> if this entity is the root or not yet part of an aggregate.
     /// </value>
-    IBase? Root { get; }
+    IValidateBase? Root { get; }
 
     /// <summary>
     /// Gets the collection of property names that have been modified since the last save.
@@ -194,7 +194,7 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     /// <item><description>If Parent has no Root, Parent itself is the root, so return Parent</description></item>
     /// </list>
     /// </remarks>
-    public IBase? Root => Parent == null ? null : ((Parent as IEntityBase)?.Root ?? Parent);
+    public IValidateBase? Root => Parent == null ? null : ((Parent as IEntityBase)?.Root ?? Parent);
 
     /// <summary>
     /// Gets or sets the cached entity meta property state for change detection.

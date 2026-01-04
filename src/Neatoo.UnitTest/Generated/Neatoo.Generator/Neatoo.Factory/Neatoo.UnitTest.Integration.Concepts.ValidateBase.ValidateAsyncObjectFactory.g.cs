@@ -2,6 +2,7 @@
 using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Microsoft.Extensions.DependencyInjection;
+using Neatoo.Internal;
 using Neatoo.UnitTest.Integration.Aggregates.Person;
 
 /*

@@ -59,20 +59,20 @@ public class NeatooPropertyChangedEventArgsTests
     #region Helper Methods
 
     /// <summary>
-    /// Creates a real Property instance for the specified property name on TestPoco.
+    /// Creates a real ValidateProperty instance for the specified property name on a POCO type.
     /// </summary>
-    private static Property<T> CreateProperty<T>(string propertyName, Type pocoType)
+    private static ValidateProperty<T> CreateProperty<T>(string propertyName, Type pocoType)
     {
         var propertyInfo = pocoType.GetProperty(propertyName)
             ?? throw new ArgumentException($"Property '{propertyName}' not found on type '{pocoType.Name}'");
         var wrapper = new PropertyInfoWrapper(propertyInfo);
-        return new Property<T>(wrapper);
+        return new ValidateProperty<T>(wrapper);
     }
 
     /// <summary>
-    /// Creates a real Property instance for TestPoco with the given property name.
+    /// Creates a real ValidateProperty instance for TestPoco with the given property name.
     /// </summary>
-    private static Property<string> CreateStringProperty(string propertyName)
+    private static ValidateProperty<string> CreateStringProperty(string propertyName)
     {
         return CreateProperty<string>(propertyName, typeof(TestPoco));
     }
@@ -256,7 +256,7 @@ public class NeatooPropertyChangedEventArgsTests
     {
         // Arrange, Act & Assert
         var exception = Assert.ThrowsException<ArgumentNullException>(
-            () => new NeatooPropertyChangedEventArgs((IProperty)null!));
+            () => new NeatooPropertyChangedEventArgs((IValidateProperty)null!));
 
         Assert.AreEqual("property", exception.ParamName);
     }

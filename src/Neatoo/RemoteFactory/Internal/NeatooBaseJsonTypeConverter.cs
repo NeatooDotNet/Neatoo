@@ -1,11 +1,12 @@
 ﻿using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Reflection;
+using Neatoo.Internal;
 
 namespace Neatoo.RemoteFactory.Internal;
 
 public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
-        where T : IBase
+        where T : IValidateBase
 {
     private readonly IServiceProvider scope;
     private readonly IServiceAssemblies localAssemblies;
@@ -114,7 +115,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             else if (propertyName == "PropertyManager")
             {
 
-                var list = new List<IProperty>();
+                var list = new List<IValidateProperty>();
 
                 if (reader.TokenType != JsonTokenType.StartArray) { throw new JsonException(); }
 
@@ -143,7 +144,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                         {
                             var typeFullName = reader.GetString();
 
-                            // Assume a Property<T> of some derivation
+                            // Assume a ValidateProperty<T> of some derivation
                             var pType = this.localAssemblies.FindType(typeFullName);
                             propertyType = pType.MakeGenericType(propertyType);
 
@@ -151,13 +152,13 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                         else if (propertyName == "$value")
                         {
                             var property = JsonSerializer.Deserialize(ref reader, propertyType, options);
-                            list.Add((IProperty)property);
+                            list.Add((IValidateProperty)property);
                         }
                     }
                 }
 
                 // Cast to internal interface to access PropertyManager
-                if (result is IBaseInternal resultInternal)
+                if (result is IValidateBaseInternal resultInternal)
                 {
                     resultInternal.PropertyManager.SetProperties(list);
 
@@ -181,10 +182,10 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
         // Cast to internal interface to access GetProperties
-        var properties = ((value is IBaseInternal baseInternal)
-            && baseInternal.PropertyManager is IPropertyManagerInternal<IProperty> pmInternal)
+        var properties = ((value is IValidateBaseInternal baseInternal)
+            && baseInternal.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
             ? pmInternal.GetProperties.ToList()
-            : new List<IProperty>();
+            : new List<IValidateProperty>();
 
         var reference = options.ReferenceHandler.CreateResolver().GetReference(value, out var alreadyExists);
 

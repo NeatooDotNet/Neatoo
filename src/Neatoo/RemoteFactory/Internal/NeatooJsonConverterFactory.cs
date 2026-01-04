@@ -17,13 +17,13 @@ public class NeatooBaseJsonConverterFactory : NeatooJsonConverterFactory
 
     public override bool CanConvert(Type typeToConvert)
     {
-        if (typeToConvert.IsAssignableTo(typeof(IBase))
-                || typeToConvert.IsGenericType && typeToConvert.GetGenericTypeDefinition() == typeof(Base<>))
+        if (typeToConvert.IsAssignableTo(typeof(IValidateBase))
+                || typeToConvert.IsGenericType && typeToConvert.GetGenericTypeDefinition() == typeof(ValidateBase<>))
         {
             return true;
         }
-        else if (typeToConvert.IsAssignableTo(typeof(IListBase)) ||
-            typeToConvert.GetInterfaces().Where(x => x.IsGenericType).Any(x => x.GetGenericTypeDefinition() == typeof(IListBase<>)))
+        else if (typeToConvert.IsAssignableTo(typeof(IValidateListBase)) ||
+            typeToConvert.GetInterfaces().Where(x => x.IsGenericType).Any(x => x.GetGenericTypeDefinition() == typeof(IValidateListBase<>)))
         {
             return true;
         }
@@ -37,12 +37,12 @@ public class NeatooBaseJsonConverterFactory : NeatooJsonConverterFactory
 
     public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
     {
-        if (typeToConvert.IsAssignableTo(typeof(IBase)))
+        if (typeToConvert.IsAssignableTo(typeof(IValidateBase)))
         {
             return (JsonConverter)this.scope.GetRequiredService(typeof(NeatooBaseJsonTypeConverter<>).MakeGenericType(typeToConvert));
         }
-        else if (typeToConvert.IsAssignableTo(typeof(IListBase)) ||
-            typeToConvert.GetInterfaces().Where(x => x.IsGenericType).Any(x => x.GetGenericTypeDefinition() == typeof(IListBase<>)))
+        else if (typeToConvert.IsAssignableTo(typeof(IValidateListBase)) ||
+            typeToConvert.GetInterfaces().Where(x => x.IsGenericType).Any(x => x.GetGenericTypeDefinition() == typeof(IValidateListBase<>)))
         {
             return (JsonConverter)this.scope.GetRequiredService(typeof(NeatooListBaseJsonTypeConverter<>).MakeGenericType(typeToConvert));
         }

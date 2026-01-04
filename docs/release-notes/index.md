@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 10.2.0** (2026-01-02)
+**Neatoo 10.4.0** (2026-01-04)
 
 ---
 
@@ -12,7 +12,8 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
-| [10.3.0](v10.3.0.md) | TBD | Feature | Root property, ContainingList, Delete/Remove consistency |
+| [10.4.0](v10.4.0.md) | 2026-01-04 | Feature | Collapse Base layer - simplified inheritance hierarchy |
+| [10.3.0](v10.3.0.md) | 2026-01-03 | Feature | Root property, ContainingList, Delete/Remove consistency |
 | [10.2.0](v10.2.0.md) | 2026-01-02 | Feature | Stubbable public interfaces |
 | [10.1.1](v10.1.1.md) | 2026-01-01 | Feature | Record support for Value Objects |
 
@@ -22,7 +23,8 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
-| [10.3.0](v10.3.0.md) | TBD |
+| [10.4.0](v10.4.0.md) | 2026-01-04 |
+| [10.3.0](v10.3.0.md) | 2026-01-03 |
 | [10.2.0](v10.2.0.md) | 2026-01-02 |
 | [10.1.1](v10.1.1.md) | 2026-01-01 |
 

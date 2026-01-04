@@ -1261,7 +1261,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
 
         // Assert
-        Assert.IsInstanceOfType(property, typeof(IProperty));
+        Assert.IsInstanceOfType(property, typeof(IValidateProperty));
     }
 
     [TestMethod]
@@ -1274,7 +1274,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
 
         // Assert
-        Assert.IsInstanceOfType(property, typeof(IProperty<string>));
+        Assert.IsInstanceOfType(property, typeof(IValidateProperty<string>));
     }
 
     #endregion

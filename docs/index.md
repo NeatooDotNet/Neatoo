@@ -89,16 +89,12 @@ Neatoo provides bindable, serializable domain objects for Blazor and WPF applica
 Neatoo provides a class hierarchy for building domain models. Users typically inherit from `ValidateBase<T>` or `EntityBase<T>`:
 
 ```
-Base<T>                      - Internal base class (property management, parent-child relationships)
-    |
-ValidateBase<T>              - For non-persisted validated objects (criteria, filters, form input)
+ValidateBase<T>              - Foundation for validated objects (criteria, filters, form input)
     |
 EntityBase<T>                - For entities with identity, modification tracking, persistence
 
 
-ListBase<I>                  - Internal base class (observable collection, parent-child relationships)
-    |
-ValidateListBase<I>          - For lists of validated non-persisted objects
+ValidateListBase<I>          - Foundation for lists of validated objects
     |
 EntityListBase<I>            - For child entity collections with deleted item tracking
 ```

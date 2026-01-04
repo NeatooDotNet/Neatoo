@@ -4,14 +4,14 @@ using Neatoo.Rules;
 namespace Neatoo;
 
 /// <summary>
-/// Internal interface for framework coordination within <see cref="IBase"/> implementations.
+/// Internal interface for framework coordination within <see cref="IValidateBase"/> implementations.
 /// </summary>
 /// <remarks>
-/// This interface exposes members used only by framework code (e.g., property managers, serializers).
+/// This interface exposes members used only by framework code (e.g., property managers, serializers, rule manager).
 /// External consumers should not implement or depend on this interface.
 /// Cast a base object to this interface when you need internal framework access.
 /// </remarks>
-internal interface IBaseInternal
+internal interface IValidateBaseInternal
 {
     /// <summary>
     /// Adds a child task to be tracked for completion.
@@ -24,31 +24,21 @@ internal interface IBaseInternal
     /// Gets a property by name. Framework-internal access.
     /// </summary>
     /// <param name="propertyName">The name of the property to retrieve.</param>
-    /// <returns>The <see cref="IProperty"/> instance for the specified property.</returns>
-    IProperty GetProperty(string propertyName);
+    /// <returns>The <see cref="IValidateProperty"/> instance for the specified property.</returns>
+    IValidateProperty GetProperty(string propertyName);
 
     /// <summary>
     /// Gets the property with the specified name using indexer syntax.
     /// </summary>
     /// <param name="propertyName">The name of the property to retrieve.</param>
-    /// <returns>The <see cref="IProperty"/> instance for the specified property.</returns>
-    IProperty this[string propertyName] { get; }
+    /// <returns>The <see cref="IValidateProperty"/> instance for the specified property.</returns>
+    IValidateProperty this[string propertyName] { get; }
 
     /// <summary>
     /// Gets the property manager. Used by serialization and rules.
     /// </summary>
-    IPropertyManager<IProperty> PropertyManager { get; }
-}
+    IValidatePropertyManager<IValidateProperty> PropertyManager { get; }
 
-/// <summary>
-/// Internal interface for framework coordination within <see cref="IValidateBase"/> implementations.
-/// </summary>
-/// <remarks>
-/// This interface exposes members used only by framework code (e.g., rule manager).
-/// External consumers should not implement or depend on this interface.
-/// </remarks>
-internal interface IValidateBaseInternal : IBaseInternal
-{
     /// <summary>
     /// Object-level validation error message set via MarkInvalid().
     /// Read by RuleManager for object-level validation.
@@ -98,33 +88,23 @@ internal interface IEntityBaseInternal : IValidateBaseInternal
 }
 
 /// <summary>
-/// Internal interface for framework coordination within <see cref="IProperty"/> implementations.
-/// </summary>
-/// <remarks>
-/// This interface exposes members used only by framework code (e.g., Base{T}.Setter).
-/// External consumers should not implement or depend on this interface.
-/// </remarks>
-internal interface IPropertyInternal
-{
-    /// <summary>
-    /// Sets value bypassing IsReadOnly checks.
-    /// Called by Base{T}.Setter. The "quietly" param suppresses events during init/deserialization.
-    /// </summary>
-    /// <param name="newValue">The new value to set.</param>
-    /// <param name="quietly">If <c>true</c>, suppresses change notifications.</param>
-    /// <returns>A task that represents the asynchronous set operation.</returns>
-    Task SetPrivateValue(object? newValue, bool quietly = false);
-}
-
-/// <summary>
 /// Internal interface for framework coordination within <see cref="IValidateProperty"/> implementations.
 /// </summary>
 /// <remarks>
 /// This interface exposes members used only by framework code (e.g., RuleManager, ValidateBase).
 /// External consumers should not implement or depend on this interface.
 /// </remarks>
-internal interface IValidatePropertyInternal : IPropertyInternal
+internal interface IValidatePropertyInternal
 {
+    /// <summary>
+    /// Sets value bypassing IsReadOnly checks.
+    /// Called by ValidateBase{T}.Setter. The "quietly" param suppresses events during init/deserialization.
+    /// </summary>
+    /// <param name="newValue">The new value to set.</param>
+    /// <param name="quietly">If <c>true</c>, suppresses change notifications.</param>
+    /// <returns>A task that represents the asynchronous set operation.</returns>
+    Task SetPrivateValue(object? newValue, bool quietly = false);
+
     /// <summary>
     /// Sets validation messages produced by a specific rule.
     /// Called exclusively by RuleManager during rule execution.
@@ -150,29 +130,6 @@ internal interface IValidatePropertyInternal : IPropertyInternal
     /// Called by ValidateBase.ClearSelfMessages().
     /// </summary>
     void ClearSelfMessages();
-}
-
-/// <summary>
-/// Internal interface for framework coordination within <see cref="IPropertyManager{P}"/> implementations.
-/// </summary>
-/// <typeparam name="P">The type of property managed.</typeparam>
-/// <remarks>
-/// This interface exposes members used only by framework code (e.g., serialization, deserialization).
-/// External consumers should not implement or depend on this interface.
-/// </remarks>
-internal interface IPropertyManagerInternal<out P> where P : IProperty
-{
-    /// <summary>
-    /// Gets metadata about all registered properties.
-    /// Used during deserialization and rule setup.
-    /// </summary>
-    IPropertyInfoList PropertyInfoList { get; }
-
-    /// <summary>
-    /// Gets all instantiated properties.
-    /// Used during serialization and deserialization.
-    /// </summary>
-    IEnumerable<P> GetProperties { get; }
 }
 
 /// <summary>

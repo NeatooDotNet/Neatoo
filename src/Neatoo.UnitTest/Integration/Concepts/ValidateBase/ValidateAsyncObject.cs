@@ -1,3 +1,4 @@
+using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.UnitTest.Integration.Aggregates.Person;
 
@@ -55,7 +56,7 @@ internal class ValidateAsyncObject : PersonValidateBase<ValidateAsyncObject>, IV
 
     public int RuleRunCount => ShortNameRule.RunCount + FullNameRule.RunCount;
 
-    public List<IValidateProperty> Properties => ((IPropertyManagerInternal<IValidateProperty>)PropertyManager).GetProperties.ToList();
+    public List<IValidateProperty> Properties => ((IValidatePropertyManagerInternal<IValidateProperty>)PropertyManager).GetProperties.ToList();
 
 }
 

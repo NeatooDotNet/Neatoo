@@ -3,14 +3,14 @@
 namespace Neatoo;
 
 /// <summary>
-/// Provides base meta-properties for tracking asynchronous operation state on Neatoo objects.
+/// Provides meta-properties for tracking validation state on Neatoo objects.
 /// </summary>
 /// <remarks>
-/// <see cref="IBaseMetaProperties"/> defines the fundamental state properties that all Neatoo objects
-/// expose for tracking pending asynchronous operations. These properties enable UI binding and
-/// workflow coordination when async operations are in progress.
+/// <see cref="IValidateMetaProperties"/> defines the fundamental state properties that all Neatoo objects
+/// expose for tracking pending asynchronous operations, validation state, and rule execution.
+/// These properties enable UI binding and workflow coordination.
 /// </remarks>
-public interface IBaseMetaProperties
+public interface IValidateMetaProperties
 {
     /// <summary>
     /// Gets a value indicating whether the object has pending asynchronous operations.
@@ -23,18 +23,7 @@ public interface IBaseMetaProperties
     /// </summary>
     /// <returns>A task that completes when all pending operations are finished.</returns>
     Task WaitForTasks();
-}
 
-/// <summary>
-/// Provides meta-properties for tracking validation state on Neatoo objects.
-/// </summary>
-/// <remarks>
-/// <see cref="IValidateMetaProperties"/> extends <see cref="IBaseMetaProperties"/> with validation-related
-/// state properties. Objects implementing this interface can track validity, execute rules, and
-/// provide validation messages for UI binding.
-/// </remarks>
-public interface IValidateMetaProperties : IBaseMetaProperties
-{
     /// <summary>
     /// Gets a value indicating whether the object and all its children are valid.
     /// </summary>

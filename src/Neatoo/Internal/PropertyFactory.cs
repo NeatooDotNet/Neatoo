@@ -9,10 +9,6 @@ public class DefaultFactory : IFactory
 {
     public DefaultFactory() { }
 
-    public Property<P> CreateProperty<P>(IPropertyInfo propertyInfo)
-    {
-        return new Property<P>(propertyInfo);
-    }
     public ValidateProperty<P> CreateValidateProperty<P>(IPropertyInfo propertyInfo)
     {
         return new ValidateProperty<P>(propertyInfo);

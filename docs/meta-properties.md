@@ -5,11 +5,9 @@ Neatoo entities expose bindable meta-properties that track state. These properti
 ## Property Hierarchy
 
 ```
-IBaseMetaProperties
+IValidateMetaProperties
     - IsBusy
     - WaitForTasks()
-
-IValidateMetaProperties : IBaseMetaProperties
     - IsValid
     - IsSelfValid
     - PropertyMessages
@@ -25,11 +23,11 @@ IEntityMetaProperties
     - IsSavable
     - IsNew (EntityBase only)
     - IsDeleted (EntityBase only)
-    - Parent (IBase?)
-    - Root (IBase?)
+    - Parent (IValidateBase?)
+    - Root (IValidateBase?)
 ```
 
-## Base Meta-Properties
+## Validate Meta-Properties
 
 ### IsBusy
 
@@ -320,7 +318,7 @@ bool IsChild { get; }
 Immediate parent in the object graph.
 
 ```csharp
-IBase? Parent { get; }
+IValidateBase? Parent { get; }
 ```
 
 **Value:**
@@ -345,7 +343,7 @@ if (entity.Parent != null)
 Aggregate root of the object graph.
 
 ```csharp
-IBase? Root { get; }
+IValidateBase? Root { get; }
 ```
 
 **Value:**
@@ -404,7 +402,7 @@ bool IsSavable { get; }
 
 ## Property-Level Meta-Properties
 
-### IProperty
+### IValidateProperty (base)
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -412,11 +410,6 @@ bool IsSavable { get; }
 | `Value` | object? | Current value |
 | `IsBusy` | bool | Async operations running |
 | `IsReadOnly` | bool | Cannot be edited |
-
-### IValidateProperty
-
-| Property | Type | Description |
-|----------|------|-------------|
 | `IsValid` | bool | Validation passes |
 | `PropertyMessages` | collection | Validation messages |
 
@@ -442,7 +435,7 @@ entity.PropertyChanged += (s, e) =>
         case nameof(IValidateBase.IsValid):
             // Update validation UI
             break;
-        case nameof(IBase.IsBusy):
+        case nameof(IValidateBase.IsBusy):
             // Show/hide loading indicator
             break;
     }

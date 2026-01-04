@@ -22,7 +22,7 @@ public class PropertyInfoList<T> : IPropertyInfoList<T>
     }
 
 
-    private static Type[] neatooTypes = new Type[] { typeof(Base<>), typeof(ListBase<>), typeof(ValidateBase<>), typeof(ValidateListBase<>), typeof(EntityBase<>), typeof(EntityListBase<>) };
+    private static Type[] neatooTypes = new Type[] { typeof(ValidateBase<>), typeof(ValidateListBase<>), typeof(EntityBase<>), typeof(EntityListBase<>) };
 
     protected void RegisterProperties()
     {

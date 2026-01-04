@@ -122,7 +122,7 @@ namespace Neatoo.BaseGenerator
 
         private static bool ClassOrBaseClassIsNeatooBaseClass(INamedTypeSymbol namedTypeSymbol)
         {
-            if (namedTypeSymbol.Name == "Base" && namedTypeSymbol.ContainingNamespace.Name == "Neatoo")
+            if (namedTypeSymbol.Name == "ValidateBase" && namedTypeSymbol.ContainingNamespace.Name == "Neatoo")
             {
                 return true;
             }

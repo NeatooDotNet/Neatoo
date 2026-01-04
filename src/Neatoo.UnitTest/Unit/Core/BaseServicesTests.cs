@@ -97,15 +97,6 @@ public class ValidateBaseServicesConstructorTests
         Assert.IsNotNull(services.ruleManagerFactory);
     }
 
-    [TestMethod]
-    public void DefaultConstructor_PropertyManagerReturnsValidatePropertyManager()
-    {
-        // Arrange & Act
-        var services = new ValidateBaseServices<ValidateServicesTestTarget>();
-
-        // Assert
-        Assert.AreSame(services.ValidatePropertyManager, services.PropertyManager);
-    }
 }
 
 #endregion
@@ -276,16 +267,6 @@ public class EntityBaseServicesConstructorTests
 
         // Assert
         Assert.AreSame(services.EntityPropertyManager, services.ValidatePropertyManager);
-    }
-
-    [TestMethod]
-    public void Constructor_PropertyManagerReturnsEntityPropertyManager()
-    {
-        // Arrange & Act
-        var services = new EntityBaseServices<EntityServicesTestTarget>(null);
-
-        // Assert
-        Assert.AreSame(services.EntityPropertyManager, services.PropertyManager);
     }
 
     [TestMethod]

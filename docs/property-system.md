@@ -82,12 +82,12 @@ internal partial class PropertyAccessDemo : EntityBase<PropertyAccessDemo>, IPro
 ```
 <!-- /snippet -->
 
-## IProperty Interface
+## IValidateProperty Interface
 
 Base property interface available on all Neatoo objects:
 
 ```csharp
-public interface IProperty : INotifyPropertyChanged, INotifyNeatooPropertyChanged
+public interface IValidateProperty : INotifyPropertyChanged, INotifyNeatooPropertyChanged
 {
     string Name { get; }
     object? Value { get; set; }
@@ -102,18 +102,7 @@ public interface IProperty : INotifyPropertyChanged, INotifyNeatooPropertyChange
     Task WaitForTasks();
     void AddMarkedBusy(long id);
     void RemoveMarkedBusy(long id);
-}
-```
 
-> **Note:** `IProperty<T>` provides a strongly-typed `Value` property.
-
-## IValidateProperty Interface
-
-Extended for validated properties:
-
-```csharp
-public interface IValidateProperty : IProperty
-{
     bool IsSelfValid { get; }  // This property only, excluding children
     bool IsValid { get; }      // This property and all children
     IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }
@@ -122,7 +111,7 @@ public interface IValidateProperty : IProperty
 }
 ```
 
-> **Note:** Methods like `ClearAllMessages()`, `SetMessagesForRule()` are internal and managed by the framework.
+> **Note:** `IValidateProperty<T>` provides a strongly-typed `Value` property.
 
 ## IEntityProperty Interface
 
@@ -146,8 +135,7 @@ Each base class uses a specific property interface level:
 
 | Base Class | Property Interface | Features |
 |------------|-------------------|----------|
-| `Base<T>` | `IProperty` | Value storage, busy tracking, notifications |
-| `ValidateBase<T>` | `IValidateProperty` | + Validation, rule messages, IsValid |
+| `ValidateBase<T>` | `IValidateProperty` | Value storage, busy tracking, notifications, validation, rule messages, IsValid |
 | `EntityBase<T>` | `IEntityProperty` | + Modification tracking, pause/resume |
 
 ```csharp
@@ -264,7 +252,7 @@ if (!property.IsValid)
 ```csharp
 public interface IPropertyMessage
 {
-    IProperty Property { get; }
+    IValidateProperty Property { get; }
     string Message { get; }
 }
 ```
@@ -354,13 +342,13 @@ The `PropertyManager` manages all properties on an entity:
 
 ```csharp
 // Access via protected property
-protected IPropertyManager<IProperty> PropertyManager { get; }
+protected IValidatePropertyManager<IValidateProperty> PropertyManager { get; }
 
 // Check if property exists
 bool hasName = PropertyManager.HasProperty("Name");
 
 // Get all properties
-IEnumerable<IProperty> allProps = PropertyManager.GetProperties;
+IEnumerable<IValidateProperty> allProps = PropertyManager.GetProperties;
 
 // Check modification state
 bool isModified = PropertyManager.IsModified;
@@ -696,7 +684,7 @@ public record NeatooPropertyChangedEventArgs
     public string PropertyName { get; init; }
 
     // The property wrapper (if applicable)
-    public IProperty? Property { get; init; }
+    public IValidateProperty? Property { get; init; }
 
     // The object where this event is being raised
     public object? Source { get; init; }

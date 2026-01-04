@@ -1,7 +1,7 @@
+using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Text.Json.Serialization;
 
 namespace Neatoo;
@@ -10,12 +10,21 @@ namespace Neatoo;
 /// Defines the interface for Neatoo objects that support validation and business rules.
 /// </summary>
 /// <remarks>
-/// <see cref="IValidateBase"/> extends <see cref="IBase"/> with validation capabilities,
+/// <see cref="IValidateBase"/> provides the foundation for property management, parent-child relationships,
+/// property change notifications, asynchronous task tracking, validation capabilities,
 /// including property-level validation messages, rule execution, and validity state tracking.
-/// Objects implementing this interface can participate in the Neatoo validation pipeline.
+/// All Neatoo business objects implement this interface either directly or through derived interfaces.
 /// </remarks>
-public interface IValidateBase : IBase, IValidateMetaProperties, INotifyPropertyChanged, INotifyNeatooPropertyChanged
+public interface IValidateBase : INeatooObject, INotifyPropertyChanged, INotifyNeatooPropertyChanged, IValidateMetaProperties
 {
+	/// <summary>
+	/// Gets the parent object in the object graph hierarchy.
+	/// </summary>
+	/// <value>
+	/// The parent <see cref="IValidateBase"/> object, or <c>null</c> if this is a root object.
+	/// </value>
+	IValidateBase? Parent { get; }
+
 	/// <summary>
 	/// Gets a value indicating whether the object is in a paused state.
 	/// </summary>
@@ -55,9 +64,13 @@ public interface IValidateBase : IBase, IValidateMetaProperties, INotifyProperty
 /// <typeparam name="T">The concrete type deriving from this base class, used for the curiously recurring template pattern (CRTP).</typeparam>
 /// <remarks>
 /// <para>
-/// <see cref="ValidateBase{T}"/> extends <see cref="Base{T}"/> with comprehensive validation capabilities:
+/// <see cref="ValidateBase{T}"/> provides the core infrastructure for Neatoo domain objects including:
 /// </para>
 /// <list type="bullet">
+/// <item><description>Property management through <see cref="IValidatePropertyManager{T}"/></description></item>
+/// <item><description>Parent-child relationship tracking in object graphs</description></item>
+/// <item><description>Property change notification via <see cref="INotifyPropertyChanged"/></description></item>
+/// <item><description>Asynchronous task tracking for property setters and rules</description></item>
 /// <item><description>Property-level validation messages via <see cref="IValidatePropertyManager{T}"/></description></item>
 /// <item><description>Business rule execution through <see cref="IRuleManager{T}"/></description></item>
 /// <item><description>Validity state tracking (IsValid, IsSelfValid)</description></item>
@@ -67,6 +80,10 @@ public interface IValidateBase : IBase, IValidateMetaProperties, INotifyProperty
 /// Validation rules are automatically triggered when properties change, unless the object is paused.
 /// Use <see cref="PauseAllActions"/> during batch updates to improve performance and prevent
 /// intermediate validation states.
+/// </para>
+/// <para>
+/// This class uses the Factory pattern for instantiation. Direct construction is not recommended;
+/// use the generated factory methods instead.
 /// </para>
 /// </remarks>
 /// <example>
@@ -83,16 +100,65 @@ public interface IValidateBase : IBase, IValidateMetaProperties, INotifyProperty
 /// </code>
 /// </example>
 [Factory]
-public abstract class ValidateBase<T> : Base<T>, IValidateBase, IValidateBaseInternal, INotifyPropertyChanged, IJsonOnDeserializing, IJsonOnDeserialized, IFactoryOnStart, IFactoryOnComplete
+public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateBaseInternal, ISetParent, INotifyPropertyChanged, IJsonOnDeserializing, IJsonOnDeserialized, IFactoryOnStart, IFactoryOnComplete
 	where T : ValidateBase<T>
 {
 	/// <summary>
-	/// Gets the property manager with validation capabilities.
+	/// Gets the task tracker for managing asynchronous operations on this object.
 	/// </summary>
 	/// <remarks>
-	/// This property shadows the base class PropertyManager to provide access to validation-specific features.
+	/// Used internally to track property setter tasks and ensure all async operations complete
+	/// before marking the object as not busy.
 	/// </remarks>
-	protected new IValidatePropertyManager<IValidateProperty> PropertyManager => (IValidatePropertyManager<IValidateProperty>)base.PropertyManager;
+	protected AsyncTasks RunningTasks { get; private set; } = new AsyncTasks();
+
+	/// <summary>
+	/// Gets or sets the property manager responsible for managing all properties on this object.
+	/// </summary>
+	/// <remarks>
+	/// The property manager handles property value storage, change notifications, busy state tracking,
+	/// and validation capabilities.
+	/// </remarks>
+	protected IValidatePropertyManager<IValidateProperty> PropertyManager { get; set; }
+
+	/// <summary>
+	/// Gets the property manager for internal interface implementation.
+	/// </summary>
+	IValidatePropertyManager<IValidateProperty> IValidateBaseInternal.PropertyManager => this.PropertyManager;
+
+	/// <summary>
+	/// Gets the property with the specified name for internal interface implementation.
+	/// </summary>
+	IValidateProperty IValidateBaseInternal.GetProperty(string propertyName) => this.GetProperty(propertyName);
+
+	/// <summary>
+	/// Gets the property with the specified name using indexer syntax for internal interface implementation.
+	/// </summary>
+	IValidateProperty IValidateBaseInternal.this[string propertyName] => this.GetProperty(propertyName);
+
+	/// <summary>
+	/// Adds a child task for internal interface implementation.
+	/// </summary>
+	void IValidateBaseInternal.AddChildTask(Task task) => this.AddChildTask(task);
+
+	/// <summary>
+	/// Gets the parent object in the object graph hierarchy.
+	/// </summary>
+	/// <value>The parent <see cref="IValidateBase"/> object, or <c>null</c> if this is a root object.</value>
+	public IValidateBase? Parent { get; protected set; }
+
+	/// <summary>
+	/// Gets the property with the specified name.
+	/// </summary>
+	/// <param name="propertyName">The name of the property to retrieve.</param>
+	/// <returns>The <see cref="IValidateProperty"/> instance for the specified property.</returns>
+	public IValidateProperty this[string propertyName] { get => this.GetProperty(propertyName); }
+
+	/// <summary>
+	/// Gets a value indicating whether the object has asynchronous operations in progress.
+	/// </summary>
+	/// <value><c>true</c> if async tasks are running or any property is busy; otherwise, <c>false</c>.</value>
+	public bool IsBusy => this.RunningTasks.IsRunning || this.PropertyManager.IsBusy;
 
 	/// <summary>
 	/// Gets the rule manager responsible for executing business rules on this object.
@@ -107,10 +173,21 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, IValidateBaseInt
 	/// Initializes a new instance of the <see cref="ValidateBase{T}"/> class.
 	/// </summary>
 	/// <param name="services">The validation services containing the property manager and rule manager factory.</param>
-	/// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
-	public ValidateBase(IValidateBaseServices<T> services) : base(services)
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> or its PropertyManager is null.</exception>
+	public ValidateBase(IValidateBaseServices<T> services)
 	{
 		ArgumentNullException.ThrowIfNull(services, nameof(services));
+
+		this.PropertyManager = services.ValidatePropertyManager ?? throw new ArgumentNullException("ValidatePropertyManager");
+
+		this.PropertyManager.NeatooPropertyChanged += this._PropertyManager_NeatooPropertyChanged;
+		this.PropertyManager.PropertyChanged += this._PropertyManager_PropertyChanged;
+
+		this.RunningTasks.OnFullSequenceComplete = () =>
+		{
+			this.CheckIfMetaPropertiesChanged();
+			return Task.CompletedTask;
+		};
 
 		this.RuleManager = services.CreateRuleManager((T)(IValidateBase)this);
 
@@ -124,6 +201,28 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, IValidateBaseInt
 		}, (t) => t.ObjectInvalid);
 
 		this.ResetMetaState();
+	}
+
+	/// <summary>
+	/// Sets the parent object for this instance in the object graph hierarchy.
+	/// </summary>
+	/// <param name="parent">The parent object, or <c>null</c> to make this a root object.</param>
+	/// <remarks>
+	/// This method is called automatically when an object is assigned to a property of another Neatoo object.
+	/// Override this method to add custom parent assignment logic.
+	/// </remarks>
+	protected virtual void SetParent(IValidateBase? parent)
+	{
+		this.Parent = parent;
+	}
+
+	/// <summary>
+	/// Explicit interface implementation for setting the parent object.
+	/// </summary>
+	/// <param name="parent">The parent object, or <c>null</c> to make this a root object.</param>
+	void ISetParent.SetParent(IValidateBase? parent)
+	{
+		this.SetParent(parent);
 	}
 
 	/// <summary>
@@ -157,13 +256,11 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, IValidateBaseInt
 	/// Checks if validation-related meta properties have changed and raises notifications.
 	/// </summary>
 	/// <remarks>
-	/// This method extends the base implementation to track changes to IsValid, IsSelfValid, and IsBusy.
+	/// This method tracks changes to IsValid, IsSelfValid, and IsBusy.
 	/// It automatically raises PropertyChanged events when these values change.
 	/// </remarks>
-	protected override void CheckIfMetaPropertiesChanged()
+	protected virtual void CheckIfMetaPropertiesChanged()
 	{
-		base.CheckIfMetaPropertiesChanged();
-
 		if (this.MetaState.IsValid != this.IsValid)
 		{
 			this.RaisePropertyChanged(nameof(this.IsValid));
@@ -195,6 +292,28 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, IValidateBaseInt
 	}
 
 	/// <summary>
+	/// Raises the <see cref="PropertyChanged"/> event for the specified property.
+	/// </summary>
+	/// <param name="propertyName">The name of the property that changed.</param>
+	protected virtual void RaisePropertyChanged(string propertyName)
+	{
+		if (!this.IsPaused)
+		{
+			this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
+	}
+
+	/// <summary>
+	/// Raises the <see cref="NeatooPropertyChanged"/> event with the specified event arguments.
+	/// </summary>
+	/// <param name="eventArgs">The event arguments containing property change details.</param>
+	/// <returns>A task representing the asynchronous event handling operation.</returns>
+	protected virtual Task RaiseNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+	{
+		return this.NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
+	}
+
+	/// <summary>
 	/// Handles property change notifications from child objects, triggering validation rules.
 	/// </summary>
 	/// <param name="eventArgs">The event arguments containing the child property change details.</param>
@@ -203,13 +322,13 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, IValidateBaseInt
 	/// When not paused, this method runs rules for the changed property and propagates the notification.
 	/// When paused, only the meta state is reset without running rules or propagating events.
 	/// </remarks>
-	protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+	protected virtual async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
 	{
 		if (!this.IsPaused)
 		{
 			await this.RunRules(eventArgs.FullPropertyName);
 
-			await base.ChildNeatooPropertyChanged(eventArgs);
+			await this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(eventArgs.Property!, this, eventArgs.InnerEventArgs));
 
 			this.CheckIfMetaPropertiesChanged();
 		}
@@ -219,20 +338,206 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, IValidateBaseInt
 		}
 	}
 
-	/// <summary>
-	/// Raises the PropertyChanged event if the object is not paused.
-	/// </summary>
-	/// <param name="propertyName">The name of the property that changed.</param>
-	/// <remarks>
-	/// When the object is paused via <see cref="PauseAllActions"/>, no PropertyChanged events are raised.
-	/// </remarks>
-	protected override void RaisePropertyChanged(string propertyName)
+	private Task _PropertyManager_NeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
 	{
-		if (!this.IsPaused)
+		if (eventArgs.Property != null && eventArgs.Property == eventArgs.Source) // One of this object's properties
 		{
-			base.RaisePropertyChanged(propertyName);
+			if (eventArgs.Property.Value is ISetParent child)
+			{
+				child.SetParent(this);
+			}
+
+			// This isn't meant to go to parent Neatoo objects, thru the tree, just immediate outside listeners
+			this.RaisePropertyChanged(eventArgs.FullPropertyName);
+		}
+
+		return this.ChildNeatooPropertyChanged(eventArgs);
+	}
+	private void _PropertyManager_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+	{
+		this.CheckIfMetaPropertiesChanged();
+	}
+
+	/// <summary>
+	/// Gets the value of the specified property.
+	/// </summary>
+	/// <typeparam name="P">The type of the property value.</typeparam>
+	/// <param name="propertyName">The name of the property. Automatically populated by the compiler when called from a property getter.</param>
+	/// <returns>The property value, or <c>default</c> if the property is not set.</returns>
+	/// <remarks>
+	/// Use this method in property getters to retrieve values from the property manager.
+	/// The property name is automatically captured from the calling member.
+	/// </remarks>
+	/// <example>
+	/// <code>
+	/// public string Name { get => Getter&lt;string&gt;(); set => Setter(value); }
+	/// </code>
+	/// </example>
+	protected virtual P? Getter<P>([System.Runtime.CompilerServices.CallerMemberName] string propertyName = "")
+	{
+		return (P?)this.PropertyManager[propertyName]?.Value;
+	}
+
+	/// <summary>
+	/// Sets the value of the specified property.
+	/// </summary>
+	/// <typeparam name="P">The type of the property value.</typeparam>
+	/// <param name="value">The new value for the property.</param>
+	/// <param name="propertyName">The name of the property. Automatically populated by the compiler when called from a property setter.</param>
+	/// <remarks>
+	/// <para>
+	/// Use this method in property setters to store values through the property manager.
+	/// The property name is automatically captured from the calling member.
+	/// </para>
+	/// <para>
+	/// Setting a property value may trigger asynchronous operations such as validation rules.
+	/// These tasks are automatically tracked and can be awaited via <see cref="WaitForTasks"/>.
+	/// </para>
+	/// </remarks>
+	/// <exception cref="AggregateException">Thrown if the property setter task fails.</exception>
+	/// <example>
+	/// <code>
+	/// public string Name { get => Getter&lt;string&gt;(); set => Setter(value); }
+	/// </code>
+	/// </example>
+	protected virtual void Setter<P>(P? value, [System.Runtime.CompilerServices.CallerMemberName] string propertyName = "")
+	{
+		var property = this.PropertyManager[propertyName];
+
+		// Cast to internal interface to call SetPrivateValue
+		Task task;
+		if (property is IValidatePropertyInternal propertyInternal)
+		{
+			task = propertyInternal.SetPrivateValue(value);
+		}
+		else
+		{
+			// Fallback for stubs that may not implement IValidatePropertyInternal
+			task = property.SetValue(value);
+		}
+
+		if (!task.IsCompleted)
+		{
+			// Cast to internal interface to call AddChildTask
+			if (this.Parent is IValidateBaseInternal parentInternal)
+			{
+				parentInternal.AddChildTask(task);
+			}
+
+			this.RunningTasks.AddTask(task);
+		}
+
+		if (task.Exception != null)
+		{
+			throw task.Exception;
 		}
 	}
+
+	/// <summary>
+	/// Adds a child task to be tracked for completion.
+	/// </summary>
+	/// <param name="task">The task to track.</param>
+	/// <remarks>
+	/// Tasks added through this method are propagated up the object graph hierarchy
+	/// to ensure the root object can await all pending operations.
+	/// </remarks>
+	public virtual void AddChildTask(Task task)
+	{
+		// Cast to internal interface to call AddChildTask on parent
+		if (this.Parent is IValidateBaseInternal parentInternal)
+		{
+			parentInternal.AddChildTask(task);
+		}
+
+		this.RunningTasks.AddTask(task);
+	}
+
+	/// <summary>
+	/// Gets the property with the specified name.
+	/// </summary>
+	/// <param name="propertyName">The name of the property to retrieve.</param>
+	/// <returns>The <see cref="IValidateProperty"/> instance for the specified property.</returns>
+	public IValidateProperty GetProperty(string propertyName)
+	{
+		return this.PropertyManager[propertyName];
+	}
+
+	/// <summary>
+	/// Attempts to get the validation property with the specified name.
+	/// </summary>
+	/// <param name="propertyName">The name of the property to retrieve.</param>
+	/// <param name="validateProperty">When this method returns, contains the property if found; otherwise, <c>null</c>.</param>
+	/// <returns><c>true</c> if the property exists; otherwise, <c>false</c>.</returns>
+	public bool TryGetProperty(string propertyName, out IValidateProperty validateProperty)
+	{
+		if (this.PropertyManager.HasProperty(propertyName))
+		{
+			validateProperty = this.PropertyManager[propertyName];
+			return true;
+		}
+		validateProperty = null!;
+		return false;
+	}
+
+	/// <summary>
+	/// Called after JSON deserialization to restore event subscriptions and parent-child relationships.
+	/// </summary>
+	/// <remarks>
+	/// This method reattaches event handlers to the property manager and re-establishes
+	/// parent references for all child objects.
+	/// </remarks>
+	public virtual void OnDeserialized()
+	{
+		this.PropertyManager.NeatooPropertyChanged += this._PropertyManager_NeatooPropertyChanged;
+		this.PropertyManager.PropertyChanged += this._PropertyManager_PropertyChanged;
+
+		// Cast to internal interface to access GetProperties
+		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
+		{
+			foreach (var property in pmInternal.GetProperties)
+			{
+				if (property.Value is ISetParent setParent)
+				{
+					setParent.SetParent(this);
+				}
+			}
+		}
+
+		this.ResumeAllActions();
+	}
+
+	/// <summary>
+	/// Waits for all asynchronous tasks on this object to complete.
+	/// </summary>
+	/// <returns>A task that completes when all pending operations have finished.</returns>
+	/// <remarks>
+	/// <para>
+	/// This method should be called after setting properties to ensure all asynchronous
+	/// operations (such as validation rules) have completed before proceeding.
+	/// </para>
+	/// </remarks>
+	public virtual async Task WaitForTasks()
+	{
+		await this.RunningTasks.AllDone;
+	}
+
+	/// <summary>
+	/// Occurs when a property value changes.
+	/// </summary>
+	/// <remarks>
+	/// This event follows the standard <see cref="INotifyPropertyChanged"/> pattern
+	/// for data binding scenarios.
+	/// </remarks>
+	public event PropertyChangedEventHandler? PropertyChanged;
+
+	/// <summary>
+	/// Occurs when a Neatoo property changes, providing extended event information.
+	/// </summary>
+	/// <remarks>
+	/// This event provides richer property change information than <see cref="PropertyChanged"/>,
+	/// including support for async event handlers and nested property change tracking.
+	/// </remarks>
+	public event NeatooPropertyChanged? NeatooPropertyChanged;
 
 	/// <summary>
 	/// Permanently marks the object as invalid with the specified message.
@@ -264,40 +569,6 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, IValidateBaseInt
 	/// Explicit interface implementation for IValidateBaseInternal.ObjectInvalid.
 	/// </summary>
 	string? IValidateBaseInternal.ObjectInvalid => this.ObjectInvalid;
-
-	/// <summary>
-	/// Gets the validation property with the specified name.
-	/// </summary>
-	/// <param name="propertyName">The name of the property to retrieve.</param>
-	/// <returns>The <see cref="IValidateProperty"/> instance for the specified property.</returns>
-	new public IValidateProperty GetProperty(string propertyName)
-	{
-		return this.PropertyManager[propertyName];
-	}
-
-	/// <summary>
-	/// Attempts to get the validation property with the specified name.
-	/// </summary>
-	/// <param name="propertyName">The name of the property to retrieve.</param>
-	/// <param name="validateProperty">When this method returns, contains the property if found; otherwise, <c>null</c>.</param>
-	/// <returns><c>true</c> if the property exists; otherwise, <c>false</c>.</returns>
-	public bool TryGetProperty(string propertyName, out IValidateProperty validateProperty)
-	{
-		if (this.PropertyManager.HasProperty(propertyName))
-		{
-			validateProperty = this.PropertyManager[propertyName];
-			return true;
-		}
-		validateProperty = null!;
-		return false;
-	}
-
-	/// <summary>
-	/// Gets the validation property with the specified name using indexer syntax.
-	/// </summary>
-	/// <param name="propertyName">The name of the property to retrieve.</param>
-	/// <returns>The <see cref="IValidateProperty"/> instance for the specified property.</returns>
-	new public IValidateProperty this[string propertyName] { get => this.GetProperty(propertyName); }
 
 	/// <summary>
 	/// Gets a value indicating whether the object is in a paused state.
@@ -492,19 +763,6 @@ public abstract class ValidateBase<T> : Base<T>, IValidateBase, IValidateBaseInt
 	public void OnDeserializing()
 	{
 		this.PauseAllActions();
-	}
-
-	/// <summary>
-	/// Called after JSON deserialization completes to resume all actions.
-	/// </summary>
-	/// <remarks>
-	/// Resumes actions that were paused in <see cref="OnDeserializing"/> and restores
-	/// event subscriptions through the base class implementation.
-	/// </remarks>
-	override public void OnDeserialized()
-	{
-		base.OnDeserialized();
-		this.ResumeAllActions();
 	}
 
 	/// <summary>

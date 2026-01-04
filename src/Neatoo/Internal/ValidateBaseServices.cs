@@ -11,8 +11,6 @@ public class ValidateBaseServices<T> : IValidateBaseServices<T>
 
     public RuleManagerFactory<T> ruleManagerFactory { get; protected set; }
 
-    public IPropertyManager<IProperty> PropertyManager => ValidatePropertyManager;
-
     public ValidateBaseServices() : base()
     {
         PropertyInfoList = new PropertyInfoList<T>((System.Reflection.PropertyInfo pi) => new PropertyInfoWrapper(pi));
@@ -25,18 +23,15 @@ public class ValidateBaseServices<T> : IValidateBaseServices<T>
         this.ruleManagerFactory = createRuleManager;
     }
 
-    public ValidateBaseServices(CreateValidatePropertyManager  validatePropertyManager, IPropertyInfoList<T> propertyInfoList, RuleManagerFactory<T> createRuleManager)
+    public ValidateBaseServices(CreateValidatePropertyManager validatePropertyManager, IPropertyInfoList<T> propertyInfoList, RuleManagerFactory<T> createRuleManager)
     {
         PropertyInfoList = new PropertyInfoList<T>((System.Reflection.PropertyInfo pi) => new PropertyInfoWrapper(pi));
         ValidatePropertyManager = validatePropertyManager(PropertyInfoList);
         this.ruleManagerFactory = createRuleManager;
     }
 
-
-
     public IRuleManager<T> CreateRuleManager(T target)
     {
         return ruleManagerFactory.CreateRuleManager(target, this.PropertyInfoList);
     }
-
 }

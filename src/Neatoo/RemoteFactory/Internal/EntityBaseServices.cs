@@ -12,8 +12,6 @@ public class EntityBaseServices<T> : ValidateBaseServices<T>, IEntityBaseService
 
     public new IValidatePropertyManager<IValidateProperty> ValidatePropertyManager => EntityPropertyManager;
 
-    public new IPropertyManager<IProperty> PropertyManager => EntityPropertyManager;
-
     public EntityBaseServices(IFactorySave<T>? factory) : base() {
 
         this.PropertyInfoList = new PropertyInfoList<T>((System.Reflection.PropertyInfo pi) => new PropertyInfoWrapper(pi));

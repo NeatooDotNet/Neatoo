@@ -80,7 +80,7 @@ public partial class NeatooValidationSummary : ComponentBase, IDisposable
         }
     }
 
-    private string GetDisplayName(IProperty property)
+    private string GetDisplayName(IValidateProperty property)
     {
         if (property is IEntityProperty entityProperty)
         {

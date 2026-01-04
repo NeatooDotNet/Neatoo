@@ -616,7 +616,7 @@ public class ListBaseTests
         var list = new TestList();
 
         // Assert
-        Assert.IsInstanceOfType(list, typeof(IListBase));
+        Assert.IsInstanceOfType(list, typeof(IValidateListBase));
     }
 
     [TestMethod]
@@ -626,7 +626,7 @@ public class ListBaseTests
         var list = new TestList();
 
         // Assert
-        Assert.IsInstanceOfType(list, typeof(IListBase<TestListItem>));
+        Assert.IsInstanceOfType(list, typeof(IValidateListBase<TestListItem>));
     }
 
     [TestMethod]

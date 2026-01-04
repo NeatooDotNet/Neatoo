@@ -716,7 +716,7 @@ public class EntityPropertyTests
         var property = new EntityProperty<string>(wrapper);
 
         // Assert
-        Assert.IsInstanceOfType(property, typeof(IProperty));
+        Assert.IsInstanceOfType(property, typeof(IValidateProperty));
     }
 
     [TestMethod]
@@ -1396,7 +1396,7 @@ public class EntityPropertyTests
         var wrapper = CreatePropertyInfoWrapper("Name");
         var property = new EntityProperty<string>(wrapper);
         property.Value = "TestValue";
-        IProperty iproperty = property;
+        IValidateProperty iproperty = property;
 
         // Act
         var value = iproperty.Value;

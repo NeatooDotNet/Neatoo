@@ -84,14 +84,6 @@ public static class AddNeatooServicesExtension
         //services.AddTransient<IValidatePropertyManager<IValidateProperty>, ValidatePropertyManager<IValidateProperty>>();
         //services.AddTransient<IEntityPropertyManager, EntityPropertyManager>();
 
-        services.AddTransient<CreatePropertyManager>(services =>
-        {
-            return (IPropertyInfoList propertyInfoList) =>
-            {
-                return new PropertyManager<IProperty>(propertyInfoList, services.GetRequiredService<IFactory>());
-            };
-        });
-
         services.AddTransient<CreateValidatePropertyManager>(services =>
         {
             return (IPropertyInfoList propertyInfoList) =>
@@ -109,7 +101,6 @@ public static class AddNeatooServicesExtension
         });
 
         // Simple wrapper - Always InstancePerDependency
-        services.AddTransient(typeof(IBaseServices<>), typeof(BaseServices<>));
         services.AddTransient(typeof(IValidateBaseServices<>), typeof(ValidateBaseServices<>));
         services.AddTransient(typeof(IEntityBaseServices<>), typeof(EntityBaseServices<>));
 

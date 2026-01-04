@@ -81,7 +81,7 @@ public class EntityPropertyManager : ValidatePropertyManager<IEntityProperty>, I
     {
     }
 
-    protected new IProperty CreateProperty<PV>(IPropertyInfo propertyInfo)
+    protected new IValidateProperty CreateProperty<PV>(IPropertyInfo propertyInfo)
     {
         var property = this.Factory.CreateEntityProperty<PV>(propertyInfo);
         property.IsPaused = this.IsPaused;

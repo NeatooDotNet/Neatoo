@@ -1,5 +1,9 @@
-﻿using Neatoo.RemoteFactory;
+﻿using Neatoo.Internal;
+using Neatoo.RemoteFactory;
 using Neatoo.Rules;
+using System.Collections;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
 
@@ -7,40 +11,61 @@ namespace Neatoo;
 
 /// <summary>
 /// Non-generic interface for a Neatoo validation list base.
+/// Provides collection change notifications, property change notifications, and access to the parent object.
 /// </summary>
-public interface IValidateListBase : IListBase
+public interface IValidateListBase : INeatooObject, INotifyCollectionChanged, INotifyPropertyChanged, IList, INotifyNeatooPropertyChanged, IValidateMetaProperties
 {
-
+    /// <summary>
+    /// Gets the parent object that owns this list.
+    /// </summary>
+    IValidateBase? Parent { get; }
 }
 
 /// <summary>
 /// Generic interface for a Neatoo validation list that contains validatable items of type <typeparamref name="I"/>.
-/// Provides access to validation meta properties aggregated from all items in the list.
+/// Provides collection and property change notifications, access to the parent object, and validation meta properties aggregated from all items in the list.
 /// </summary>
 /// <typeparam name="I">The type of items in the list, must implement <see cref="IValidateBase"/>.</typeparam>
-public interface IValidateListBase<I> : IListBase<I>, IValidateMetaProperties
+public interface IValidateListBase<I> : IList<I>, INeatooObject, INotifyCollectionChanged, INotifyPropertyChanged, INotifyNeatooPropertyChanged, IValidateMetaProperties
     where I : IValidateBase
 {
-
+    /// <summary>
+    /// Gets the parent object that owns this list.
+    /// </summary>
+    IValidateBase? Parent { get; }
 }
 
 /// <summary>
 /// Base class for Neatoo collections that support validation.
-/// Aggregates validation state from all child items and provides rule execution across the collection.
+/// Provides observable collection functionality, parent-child relationship management, property change notifications,
+/// validation state aggregation from all child items, and rule execution across the collection.
+/// This class serves as the foundation for all list-based Neatoo objects.
 /// </summary>
 /// <typeparam name="I">The type of items in the list, must implement <see cref="IValidateBase"/>.</typeparam>
-public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, IValidateListBase,
-                                                        INotifyPropertyChanged,
-                                                        IFactoryOnStart, IFactoryOnComplete
+[Factory]
+public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObject, IValidateListBase<I>, IValidateListBase,
+                                            ISetParent, INotifyPropertyChanged, IValidateMetaProperties,
+                                            IJsonOnDeserialized, IJsonOnDeserializing, IJsonOnSerialized, IJsonOnSerializing,
+                                            IFactoryOnStart, IFactoryOnComplete
     where I : IValidateBase
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ValidateListBase{I}"/> class.
     /// </summary>
-    public ValidateListBase() : base()
+    public ValidateListBase()
     {
         this.ResetMetaState();
     }
+
+    /// <summary>
+    /// Gets the parent object that owns this list.
+    /// </summary>
+    public IValidateBase? Parent { get; protected set; }
+
+    /// <summary>
+    /// Gets a value indicating whether any item in the list is currently busy executing asynchronous operations.
+    /// </summary>
+    public bool IsBusy => this.Any(c => c.IsBusy);
 
     /// <summary>
     /// Gets a value indicating whether all items in the list are valid.
@@ -62,21 +87,173 @@ public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, I
     public bool IsPaused { get; protected set; } = false;
 
     /// <summary>
+    /// Gets all property validation messages from all items in the collection.
+    /// </summary>
+    public IReadOnlyCollection<IPropertyMessage> PropertyMessages => this.SelectMany(_ => _.PropertyMessages).ToList().AsReadOnly();
+
+    /// <summary>
     /// Gets the cached meta state for change detection.
     /// Stores the previous values of <see cref="IsValid"/>, <see cref="IsSelfValid"/>, and <see cref="IsBusy"/>.
     /// </summary>
     protected (bool IsValid, bool IsSelfValid, bool IsBusy) MetaState { get; private set; }
 
     /// <summary>
-    /// Gets all property validation messages from all items in the collection.
+    /// Occurs when a Neatoo property value changes, providing detailed change information.
     /// </summary>
-    public IReadOnlyCollection<IPropertyMessage> PropertyMessages => this.SelectMany(_ => _.PropertyMessages).ToList().AsReadOnly();
+    public event NeatooPropertyChanged? NeatooPropertyChanged;
+
+    void ISetParent.SetParent(IValidateBase? parent)
+    {
+        // The list is not the Parent
+        this.Parent = parent;
+
+        foreach (var item in this)
+        {
+            if (item is ISetParent setParent)
+            {
+                setParent.SetParent(parent);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Inserts an item into the collection at the specified index.
+    /// Sets the item's parent and subscribes to property change events.
+    /// </summary>
+    /// <param name="index">The zero-based index at which to insert the item.</param>
+    /// <param name="item">The item to insert into the collection.</param>
+    protected override void InsertItem(int index, I item)
+    {
+        ((ISetParent)item).SetParent(this.Parent);
+
+        base.InsertItem(index, item);
+
+        item.PropertyChanged += this._PropertyChanged;
+        item.NeatooPropertyChanged += this._NeatooPropertyChanged;
+
+        this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.Count), this));
+
+        this.CheckIfMetaPropertiesChanged();
+    }
+
+    /// <summary>
+    /// Removes the item at the specified index from the collection.
+    /// Unsubscribes from the item's property change events before removal.
+    /// </summary>
+    /// <param name="index">The zero-based index of the item to remove.</param>
+    protected override void RemoveItem(int index)
+    {
+        this[index].PropertyChanged -= this._PropertyChanged;
+        this[index].NeatooPropertyChanged -= this._NeatooPropertyChanged;
+
+        base.RemoveItem(index);
+
+        this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.Count), this));
+
+        this.CheckIfMetaPropertiesChanged();
+    }
+
+    /// <summary>
+    /// Called after the object is constructed by the factory portal.
+    /// Override to perform additional initialization after construction.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    protected virtual Task PostPortalConstruct()
+    {
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Called when JSON deserialization is starting.
+    /// Pauses rule execution to prevent validation during deserialization.
+    /// </summary>
+    public virtual void OnDeserializing()
+    {
+        this.IsPaused = true;
+    }
+
+    /// <summary>
+    /// Called when JSON deserialization is complete.
+    /// Resubscribes to property change events for all items and sets parent references.
+    /// </summary>
+    public virtual void OnDeserialized()
+    {
+        foreach (var item in this)
+        {
+            item.PropertyChanged += this._PropertyChanged;
+            item.NeatooPropertyChanged += this._NeatooPropertyChanged;
+            if (item is ISetParent setParent)
+            {
+                setParent.SetParent(this.Parent);
+            }
+        }
+        this.ResumeAllActions();
+    }
+
+    /// <summary>
+    /// Called when JSON serialization is complete.
+    /// Override to perform cleanup after serialization.
+    /// </summary>
+    public virtual void OnSerialized()
+    {
+    }
+
+    /// <summary>
+    /// Called when JSON serialization is starting.
+    /// Override to prepare the object for serialization.
+    /// </summary>
+    public virtual void OnSerializing()
+    {
+    }
+
+    /// <summary>
+    /// Raises the <see cref="NeatooPropertyChanged"/> event with the specified event arguments.
+    /// </summary>
+    /// <param name="eventArgs">The event arguments containing property change information.</param>
+    /// <returns>A task representing the asynchronous event invocation.</returns>
+    protected virtual Task RaiseNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+    {
+        return this.NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Handles the <see cref="NeatooPropertyChanged"/> event from child items.
+    /// Checks for meta property changes and propagates the event to parent listeners.
+    /// </summary>
+    /// <param name="eventArgs">The event arguments containing property change information.</param>
+    /// <returns>A task representing the asynchronous event handling.</returns>
+    protected virtual Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+    {
+        this.CheckIfMetaPropertiesChanged();
+        // Lists don't add to the eventArgs
+        return this.RaiseNeatooPropertyChanged(eventArgs);
+    }
+
+    private Task _NeatooPropertyChanged(NeatooPropertyChangedEventArgs propertyNameBreadCrumbs)
+    {
+        return this.HandleNeatooPropertyChanged(propertyNameBreadCrumbs);
+    }
+
+    /// <summary>
+    /// Handles the <see cref="INotifyPropertyChanged.PropertyChanged"/> event from child items.
+    /// </summary>
+    /// <param name="sender">The source of the event.</param>
+    /// <param name="e">The event arguments containing the property name.</param>
+    protected virtual void HandlePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        this.CheckIfMetaPropertiesChanged();
+    }
+
+    private void _PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        this.HandlePropertyChanged(sender, e);
+    }
 
     /// <summary>
     /// Checks if any validation meta properties have changed and raises appropriate property change notifications.
     /// Compares current values against cached <see cref="MetaState"/> and notifies on differences.
     /// </summary>
-    protected override void CheckIfMetaPropertiesChanged()
+    protected virtual void CheckIfMetaPropertiesChanged()
     {
         if (this.MetaState.IsValid != this.IsValid)
         {
@@ -95,7 +272,6 @@ public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, I
         }
 
         this.ResetMetaState();
-        base.CheckIfMetaPropertiesChanged();
     }
 
     /// <summary>
@@ -105,6 +281,22 @@ public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, I
     protected virtual void ResetMetaState()
     {
         this.MetaState = (this.IsValid, this.IsSelfValid, this.IsBusy);
+    }
+
+    /// <summary>
+    /// Waits for all pending asynchronous tasks in the collection to complete.
+    /// Continues waiting until no items report being busy.
+    /// </summary>
+    /// <returns>A task that completes when all items have finished their pending operations.</returns>
+    public async Task WaitForTasks()
+    {
+        var busyTask = this.FirstOrDefault(x => x.IsBusy)?.WaitForTasks();
+
+        while (busyTask != null)
+        {
+            await busyTask;
+            busyTask = this.FirstOrDefault(x => x.IsBusy)?.WaitForTasks();
+        }
     }
 
     /// <summary>
@@ -170,26 +362,6 @@ public abstract class ValidateListBase<I> : ListBase<I>, IValidateListBase<I>, I
             this.IsPaused = false;
             this.ResetMetaState();
         }
-    }
-
-    /// <summary>
-    /// Called when JSON deserialization is starting.
-    /// Pauses rule execution to prevent validation during deserialization.
-    /// </summary>
-    public override void OnDeserializing()
-    {
-        base.OnDeserializing();
-        this.IsPaused = true;
-    }
-
-    /// <summary>
-    /// Called when JSON deserialization is complete.
-    /// Resumes all paused actions after deserialization is finished.
-    /// </summary>
-    public override void OnDeserialized()
-    {
-        base.OnDeserialized();
-        this.ResumeAllActions();
     }
 
     /// <summary>

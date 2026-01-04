@@ -22,24 +22,24 @@ public class PropertyMessageTests
         public int Age { get; set; }
     }
 
-    private IProperty _property = null!;
+    private IValidateProperty _property = null!;
 
     [TestInitialize]
     public void TestInitialize()
     {
         var propertyInfo = typeof(TestPoco).GetProperty(nameof(TestPoco.Name))!;
         var wrapper = new PropertyInfoWrapper(propertyInfo);
-        _property = new Property<string>(wrapper);
+        _property = new ValidateProperty<string>(wrapper);
     }
 
     /// <summary>
-    /// Helper method to create a Property instance from a TestPoco property.
+    /// Helper method to create a ValidateProperty instance from a TestPoco property.
     /// </summary>
-    private static Property<T> CreateProperty<T>(string propertyName)
+    private static ValidateProperty<T> CreateProperty<T>(string propertyName)
     {
         var propertyInfo = typeof(TestPoco).GetProperty(propertyName)!;
         var wrapper = new PropertyInfoWrapper(propertyInfo);
-        return new Property<T>(wrapper);
+        return new ValidateProperty<T>(wrapper);
     }
 
     #region Constructor Tests
@@ -128,7 +128,7 @@ public class PropertyMessageTests
 
         // Assert
         Assert.IsNotNull(result);
-        Assert.IsInstanceOfType(result, typeof(IProperty));
+        Assert.IsInstanceOfType(result, typeof(IValidateProperty));
     }
 
     [TestMethod]
