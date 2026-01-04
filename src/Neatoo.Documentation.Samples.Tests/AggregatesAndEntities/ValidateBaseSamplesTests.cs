@@ -57,9 +57,9 @@ public class ValidateBaseSamplesTests : SamplesTestBase
         var factory = GetRequiredService<IPersonSearchCriteriaFactory>();
         var criteria = factory.Create();
 
-        // Act
-        criteria.FromDate = DateTime.Today.AddDays(5);
+        // Act - Set ToDate first, then FromDate to trigger FromDate's validation rule
         criteria.ToDate = DateTime.Today;
+        criteria.FromDate = DateTime.Today.AddDays(5);
 
         // Assert
         var prop = criteria[nameof(IPersonSearchCriteria.FromDate)];
