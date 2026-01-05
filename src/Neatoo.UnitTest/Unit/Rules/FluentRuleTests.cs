@@ -1790,9 +1790,15 @@ public class AsyncFluentRuleWithTokenTests
         var target = TestTargetFactory.CreateTarget();
         target.ResumeAllActions();
 
+        var readyToCancel = new TaskCompletionSource<bool>();
+        var cancellationChecked = new TaskCompletionSource<bool>();
+
         Func<TestValidateTarget, CancellationToken, Task<string>> asyncFunc = async (t, token) =>
         {
-            await Task.Delay(1);
+            // Signal that we're ready for cancellation
+            readyToCancel.SetResult(true);
+            // Wait for cancellation to be triggered
+            await cancellationChecked.Task;
             token.ThrowIfCancellationRequested();
             await Task.Delay(1000); // Would take too long if not cancelled
             return "";
@@ -1801,9 +1807,14 @@ public class AsyncFluentRuleWithTokenTests
 
         using var cts = new CancellationTokenSource();
 
-        // Act - Start the task and cancel immediately
+        // Act - Start the task
         var task = rule.RunRule(target, cts.Token);
+        // Wait until the function signals it's ready for cancellation
+        await readyToCancel.Task;
+        // Cancel the token
         cts.Cancel();
+        // Signal the function to check the cancellation
+        cancellationChecked.SetResult(true);
 
         // Assert
         await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () => await task);
