@@ -24,7 +24,7 @@ namespace Neatoo.UnitTest
             this.serviceProvider = serviceProvider;
         }
 
-        public async Task<T?> ForDelegateNullable<T>(Type delegateType, object?[]? parameters)
+        public async Task<T?> ForDelegateNullable<T>(Type delegateType, object?[]? parameters, CancellationToken cancellationToken = default)
         {
             // Mimic all the steps of a Remote call except the actual http call
 
@@ -37,7 +37,7 @@ namespace Neatoo.UnitTest
             // Use the Server's container
             var remoteResponseOnServer = await serviceProvider.GetRequiredService<ServerServiceProvider>()
                                                                                  .serverProvider
-                                                                                 .GetRequiredService<HandleRemoteDelegateRequest>()(remoteRequestOnServer);
+                                                                                 .GetRequiredService<HandleRemoteDelegateRequest>()(remoteRequestOnServer, cancellationToken);
 
             json = JsonSerializer.Serialize(remoteResponseOnServer); // NeatooJsonSerializer.Serialize(remoteResponseOnServer);
             var result = JsonSerializer.Deserialize<RemoteResponseDto>(json); // NeatooJsonSerializer.Deserialize<RemoteResponseDto>(json);
@@ -45,9 +45,9 @@ namespace Neatoo.UnitTest
             return NeatooJsonSerializer.DeserializeRemoteResponse<T>(result!);
         }
 
-        public async Task<T> ForDelegate<T>(Type delegateType, object?[]? parameters)
+        public async Task<T> ForDelegate<T>(Type delegateType, object?[]? parameters, CancellationToken cancellationToken = default)
         {
-            var result = await ForDelegateNullable<T>(delegateType, parameters);
+            var result = await ForDelegateNullable<T>(delegateType, parameters, cancellationToken);
             if (result == null)
             {
                 throw new InvalidOperationException("Remote call failed");

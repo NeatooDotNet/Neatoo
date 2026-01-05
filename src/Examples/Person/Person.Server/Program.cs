@@ -20,10 +20,10 @@ builder.Services.AddScoped<IUser, User>();
 var app = builder.Build();
 
 // Neatoo
-app.MapPost("/api/neatoo", (HttpContext httpContext, RemoteRequestDto request) =>
+app.MapPost("/api/neatoo", (HttpContext httpContext, RemoteRequestDto request, CancellationToken cancellationToken) =>
 {
 	var handleRemoteDelegateRequest = httpContext.RequestServices.GetRequiredService<HandleRemoteDelegateRequest>();
-	return handleRemoteDelegateRequest(request);
+	return handleRemoteDelegateRequest(request, cancellationToken);
 });
 
 

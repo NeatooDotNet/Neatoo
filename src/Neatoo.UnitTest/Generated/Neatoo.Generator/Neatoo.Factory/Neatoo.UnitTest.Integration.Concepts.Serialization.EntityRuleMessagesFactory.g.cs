@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Neatoo.Internal;
 using Neatoo.Rules;
+using Neatoo.UnitTest.TestInfrastructure;
 using System.ComponentModel.DataAnnotations;
 
 /*
@@ -17,18 +18,18 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization
     {
     }
 
-    internal class EntityRuleMessagesFactory : FactoryBase<EntityRuleMessages>, IEntityRuleMessagesFactory
+    internal class EntityRuleMessagesFactory : FactoryBase<IEntityRuleMessages>, IEntityRuleMessagesFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
         // Delegates
         // Delegate Properties to provide Local or Remote fork in execution
-        public EntityRuleMessagesFactory(IServiceProvider serviceProvider, IFactoryCore<EntityRuleMessages> factoryCore) : base(factoryCore)
+        public EntityRuleMessagesFactory(IServiceProvider serviceProvider, IFactoryCore<IEntityRuleMessages> factoryCore) : base(factoryCore)
         {
             this.ServiceProvider = serviceProvider;
         }
 
-        public EntityRuleMessagesFactory(IServiceProvider serviceProvider, IMakeRemoteDelegateRequest remoteMethodDelegate, IFactoryCore<EntityRuleMessages> factoryCore) : base(factoryCore)
+        public EntityRuleMessagesFactory(IServiceProvider serviceProvider, IMakeRemoteDelegateRequest remoteMethodDelegate, IFactoryCore<IEntityRuleMessages> factoryCore) : base(factoryCore)
         {
             this.ServiceProvider = serviceProvider;
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;

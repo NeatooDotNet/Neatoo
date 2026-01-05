@@ -185,19 +185,48 @@ Tests are organized into:
 
 Neatoo depends on **RemoteFactory** (`C:\src\neatoodotnet\RemoteFactory`) for source generation of factory methods. Track analyzed commits to catch breaking changes.
 
+### Critical: NuGet Package Updates
+
+**When you observe new commits in RemoteFactory**, you MUST:
+
+1. **Check if a new NuGet package was published** - Look for version bumps in RemoteFactory's `Directory.Build.props`
+2. **Update both packages in Neatoo**:
+   - `Neatoo.RemoteFactory`
+   - `Neatoo.RemoteFactory.AspNetCore`
+3. **Build and test Neatoo** to verify compatibility
+4. **Document any breaking changes** in this file and create a plan if needed
+
+The packages are referenced in `Directory.Packages.props`. Update command:
+```powershell
+# Check current versions
+dotnet list package | findstr RemoteFactory
+
+# Update to latest (after confirming new version exists on NuGet)
+# Edit Directory.Packages.props with new version numbers
+```
+
+**Current Status**: Neatoo is up-to-date with the latest RemoteFactory.
+
 ### Last Analyzed Commit
 
 | Date | Commit | Description | Breaking? | Plan |
 |------|--------|-------------|-----------|------|
+| 2026-01-05 | N/A | 10.5.0 - Upgrade Complete | Migrated | `docs/todos/remotefactory-upgrade-blocked.md` |
+| 2026-01-04 | `db5d76e` | 10.4.0 - CancellationToken Support | Migrated | `docs/todos/remotefactory-upgrade-blocked.md` |
+| 2026-01-04 | `ef20bd3` | 10.2.0 - Ordinal Serialization | Migrated | `docs/todos/remotefactory-upgrade-blocked.md` |
 | 2026-01-01 | `27760f8` | 10.1.1 - Record Support | No | `docs/todos/remotefactory-record-support-update.md` |
 | 2025-12-31 | `b90ba4d` | Multi-target .NET 8.0, 9.0, 10.0 | No | N/A |
 | 2025-12-30 | `9e62dda` | Remove Mapper Functionality | **YES** | `docs/todos/remotefactory-mapper-removal-plan.md` |
 
 ### Current Version
 
-**Neatoo.RemoteFactory 10.1.1** (updated 2026-01-01)
+**Neatoo.RemoteFactory 10.5.0** (updated 2026-01-05)
 
 ### Breaking Change Notes
+
+**Ordinal Serialization (10.2.0)**: The generator creates `FromOrdinalArray()` and `JsonConverter.Read()` methods using object initializer syntax (`new Type { ... }`). **Status: MIGRATED** - Works correctly when entities use proper DI patterns and deserialize to interfaces.
+
+**CancellationToken Support (10.4.0)**: `IMakeRemoteDelegateRequest` interface methods now require `CancellationToken` parameter. **Status: MIGRATED** - Updated test infrastructure and example server.
 
 **Multi-Targeting (10.0.1)**: RemoteFactory now supports .NET 8.0, 9.0, and 10.0. No breaking changes for Neatoo (uses net9.0). Consider adopting multi-targeting for Neatoo in future.
 

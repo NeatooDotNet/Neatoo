@@ -109,6 +109,8 @@ namespace Neatoo.UnitTest.Performance
             services.AddScoped<NeatooEntityBaseFactory>();
             services.AddScoped<INeatooEntityBaseFactory, NeatooEntityBaseFactory>();
             services.AddTransient<NeatooEntityBase>();
+            // Register AOT-compatible ordinal converter
+            global::Neatoo.RemoteFactory.Internal.NeatooOrdinalConverterFactory.RegisterConverter(NeatooEntityBase.CreateOrdinalConverter());
         }
     }
 }

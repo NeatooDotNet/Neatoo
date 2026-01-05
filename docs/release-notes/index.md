@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 10.5.0** (2026-01-04)
+**Neatoo 10.6.0** (2026-01-05)
 
 ---
 
@@ -12,6 +12,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [10.6.0](v10.6.0.md) | 2026-01-05 | Feature | RemoteFactory upgrade to 10.5.0 with CancellationToken support |
 | [10.5.0](v10.5.0.md) | 2026-01-04 | Feature | CancellationToken support for async operations |
 | [10.4.0](v10.4.0.md) | 2026-01-04 | Feature | Collapse Base layer - simplified inheritance hierarchy |
 | [10.3.0](v10.3.0.md) | 2026-01-03 | Feature | Root property, ContainingList, Delete/Remove consistency |
@@ -24,6 +25,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [10.6.0](v10.6.0.md) | 2026-01-05 |
 | [10.5.0](v10.5.0.md) | 2026-01-04 |
 | [10.4.0](v10.4.0.md) | 2026-01-04 |
 | [10.3.0](v10.3.0.md) | 2026-01-03 |

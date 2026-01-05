@@ -4,30 +4,46 @@ using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Neatoo.Rules;
+using Neatoo.UnitTest.TestInfrastructure;
 using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.UnitTest.Integration.Concepts.Serialization;
 
-public class EntityRule : RuleBase<EntityRuleMessages>
+/// <summary>
+/// Rule that adds a validation error when Id is 2.
+/// </summary>
+public class EntityRule : RuleBase<IEntityRuleMessages>
 {
     public EntityRule()
     {
-        TriggerProperties.Add(new TriggerProperty<EntityRuleMessages>(t => t.Id));
+        TriggerProperties.Add(new TriggerProperty<IEntityRuleMessages>(t => t.Id));
     }
-    protected override IRuleMessages Execute(EntityRuleMessages target)
+    protected override IRuleMessages Execute(IEntityRuleMessages target)
     {
         if (target.Id == 2)
         {
-            return (nameof(EntityRuleMessages.Id), "Id is 2").AsRuleMessages();
+            return (nameof(IEntityRuleMessages.Id), "Id is 2").AsRuleMessages();
         }
         return IRuleMessages.None;
     }
 }
 
-[Factory]
-public partial class EntityRuleMessages : EntityBase<EntityRuleMessages>
+/// <summary>
+/// Interface for EntityRuleMessages to support proper serialization/deserialization.
+/// </summary>
+public interface IEntityRuleMessages : IEntityBase
 {
-    public EntityRuleMessages() : base(new EntityBaseServices<EntityRuleMessages>(null))
+    int Id { get; set; }
+    int? Required { get; set; }
+}
+
+/// <summary>
+/// Entity for testing rule message serialization behavior.
+/// </summary>
+[Factory]
+public partial class EntityRuleMessages : EntityBase<EntityRuleMessages>, IEntityRuleMessages
+{
+    public EntityRuleMessages(IEntityBaseServices<EntityRuleMessages> services) : base(services)
     {
         RuleManager.AddValidation((e) =>
         {
@@ -56,63 +72,59 @@ public partial class EntityRuleMessages : EntityBase<EntityRuleMessages>
     public partial int? Required { get; set; }
 }
 
+/// <summary>
+/// Tests for validating that rule messages survive serialization/deserialization.
+/// </summary>
 [TestClass]
-public class EntityObjectSerializedRuleMessageTests
+public class EntityObjectSerializedRuleMessageTests : IntegrationTestBase
 {
-    IServiceScope scope;
-    NeatooJsonSerializer resolver;
-    EntityRuleMessages target = new EntityRuleMessages();
+    private IEntityRuleMessages _target = null!;
 
     [TestInitialize]
     public async Task TestInitialize()
     {
-        scope = UnitTestServices.GetLifetimeScope();
-        resolver = scope.GetRequiredService<NeatooJsonSerializer>();
-        await target.RunRules();
+        InitializeScope();
+        _target = GetRequiredService<IEntityRuleMessages>();
+        await _target.RunRules();
     }
 
-    private string Serialize(object target)
+    private IEntityRuleMessages DeserializeEntity(string json)
     {
-        return resolver.Serialize(target);
-    }
-
-    private EntityRuleMessages? Deserialize(string json)
-    {
-        return resolver.Deserialize<EntityRuleMessages>(json);
+        return Deserialize<IEntityRuleMessages>(json);
     }
 
     [TestMethod]
     public void EntityObjectSerializedRuleMessageTests_IsValid_False()
     {
-        Assert.IsFalse(target.IsValid);
+        Assert.IsFalse(_target.IsValid);
     }
 
     [TestMethod]
     public void EntityObjectSerializedRuleMessageTests_Deserialize_IsValid_False()
     {
-        var json = Serialize(target);
-        var deserialized = Deserialize(json);
+        var json = Serialize(_target);
+        var deserialized = DeserializeEntity(json);
         Assert.IsFalse(deserialized.IsValid);
     }
 
     [TestMethod]
     public void EntityObjectSerializedRuleMessageTests_Deserialize_IsValid_Fixed()
     {
-        var json = Serialize(target);
-        var deserialized = Deserialize(json);
-        target.Id = 5;
-        target.Required = 5;
-        Assert.IsTrue(target.IsValid);
+        var json = Serialize(_target);
+        var deserialized = DeserializeEntity(json);
+        _target.Id = 5;
+        _target.Required = 5;
+        Assert.IsTrue(_target.IsValid);
     }
 
     [TestMethod]
     public void EntityObjectSerializedRuleMessageTests_Deserialize_IsValid_FluentFixed()
     {
-        target.Id = 1;
-        var json = Serialize(target);
-        var deserialized = Deserialize(json);
-        target.Id = 5;
-        target.Required = 5;
-        Assert.IsTrue(target.IsValid);
+        _target.Id = 1;
+        var json = Serialize(_target);
+        var deserialized = DeserializeEntity(json);
+        _target.Id = 5;
+        _target.Required = 5;
+        Assert.IsTrue(_target.IsValid);
     }
 }

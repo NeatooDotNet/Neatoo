@@ -86,7 +86,7 @@ namespace DomainModel
 
         public virtual async Task<Authorized<IPerson>> RemoteFetch()
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<Authorized<IPerson>>(typeof(FetchDelegate), []))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<Authorized<IPerson>>(typeof(FetchDelegate), [], default))!;
         }
 
         public async Task<Authorized<IPerson>> LocalFetch()
@@ -194,7 +194,7 @@ namespace DomainModel
 
         public virtual async Task<Authorized<IPerson>> RemoteSave(IPerson target)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<Authorized<IPerson>>(typeof(SaveDelegate), [target]))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<Authorized<IPerson>>(typeof(SaveDelegate), [target], default))!;
         }
 
         async Task<IFactorySaveMeta?> IFactorySave<Person>.Save(Person target)

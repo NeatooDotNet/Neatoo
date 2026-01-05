@@ -38,6 +38,8 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase.ValidateListBaseRule
         {
             services.AddScoped<ParentObjFactory>();
             services.AddScoped<IParentObjFactory, ParentObjFactory>();
+            // Register AOT-compatible ordinal converter
+            global::Neatoo.RemoteFactory.Internal.NeatooOrdinalConverterFactory.RegisterConverter(ParentObj.CreateOrdinalConverter());
         }
     }
 }

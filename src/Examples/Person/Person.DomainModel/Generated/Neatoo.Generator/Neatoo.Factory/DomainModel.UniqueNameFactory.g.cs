@@ -20,7 +20,7 @@ namespace DomainModel
             {
                 services.AddTransient<UniqueName.IsUniqueName>(cc =>
                 {
-                    return (id, firstName, lastName) => cc.GetRequiredService<IMakeRemoteDelegateRequest>().ForDelegate<bool>(typeof(UniqueName.IsUniqueName), [id, firstName, lastName]);
+                    return (id, firstName, lastName) => cc.GetRequiredService<IMakeRemoteDelegateRequest>().ForDelegate<bool>(typeof(UniqueName.IsUniqueName), [id, firstName, lastName], default);
                 });
             }
 

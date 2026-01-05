@@ -20,7 +20,7 @@ namespace Neatoo.Documentation.Samples.DatabaseValidation
             {
                 services.AddTransient<CheckEmailUnique.IsUnique>(cc =>
                 {
-                    return (email, excludeId) => cc.GetRequiredService<IMakeRemoteDelegateRequest>().ForDelegate<bool>(typeof(CheckEmailUnique.IsUnique), [email, excludeId]);
+                    return (email, excludeId) => cc.GetRequiredService<IMakeRemoteDelegateRequest>().ForDelegate<bool>(typeof(CheckEmailUnique.IsUnique), [email, excludeId], default);
                 });
             }
 

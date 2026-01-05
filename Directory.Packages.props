@@ -24,7 +24,8 @@
     <PackageVersion Include="MudBlazor" Version="8.0.0" />
     <!-- Neatoo Dependencies -->
     <PackageVersion Include="Neatoo" Version="9.10.1" />
-    <PackageVersion Include="Neatoo.RemoteFactory" Version="10.1.1" />
+    <PackageVersion Include="Neatoo.RemoteFactory" Version="10.5.0" />
+    <PackageVersion Include="Neatoo.RemoteFactory.AspNetCore" Version="10.5.0" />
     <PackageVersion Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <!-- Testing - MSTest -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />

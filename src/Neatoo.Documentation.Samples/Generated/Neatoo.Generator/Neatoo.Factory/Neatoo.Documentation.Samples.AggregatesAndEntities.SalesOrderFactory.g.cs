@@ -61,7 +61,7 @@ namespace Neatoo.Documentation.Samples.AggregatesAndEntities
 
         public virtual async Task<ISalesOrder> RemoteFetch(Guid id)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<ISalesOrder>(typeof(FetchDelegate), [id]))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<ISalesOrder>(typeof(FetchDelegate), [id], default))!;
         }
 
         public Task<ISalesOrder> LocalFetch(Guid id)
@@ -83,7 +83,7 @@ namespace Neatoo.Documentation.Samples.AggregatesAndEntities
 
         public virtual async Task<ISalesOrder> RemoteSave(ISalesOrder target)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<ISalesOrder>(typeof(SaveDelegate), [target]))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<ISalesOrder>(typeof(SaveDelegate), [target], default))!;
         }
 
         async Task<IFactorySaveMeta?> IFactorySave<SalesOrder>.Save(SalesOrder target)

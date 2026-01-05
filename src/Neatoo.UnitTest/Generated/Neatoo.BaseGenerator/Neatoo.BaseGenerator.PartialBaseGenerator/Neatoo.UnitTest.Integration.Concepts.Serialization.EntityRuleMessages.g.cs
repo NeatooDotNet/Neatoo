@@ -6,6 +6,7 @@ using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Neatoo.Rules;
+using Neatoo.UnitTest.TestInfrastructure;
 using System.ComponentModel.DataAnnotations;
 
 /*
