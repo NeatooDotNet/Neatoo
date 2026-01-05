@@ -58,6 +58,7 @@ Awaits all pending async operations.
 
 ```csharp
 Task WaitForTasks();
+Task WaitForTasks(CancellationToken token);
 ```
 
 **Usage:**
@@ -65,6 +66,23 @@ Task WaitForTasks();
 await entity.WaitForTasks();
 // All async rules have completed
 ```
+
+**With cancellation:**
+```csharp
+using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+try
+{
+    await entity.WaitForTasks(cts.Token);
+}
+catch (OperationCanceledException)
+{
+    // Waiting was cancelled - entity marked invalid
+    // entity.IsValid == false
+}
+```
+
+**Cancellation behavior:** When cancelled, the entity is marked invalid via `MarkInvalid()`. Recovery requires calling `RunRules(RunRulesFlag.All)` to re-validate.
 
 ## Validation Meta-Properties
 
@@ -179,6 +197,8 @@ await entity.RunRules();  // Same as RunRulesFlag.All
 await entity.RunRules();
 if (entity.IsValid) { /* save */ }
 ```
+
+**Cancellation:** Pass a `CancellationToken` to cancel rule execution. See [Validation and Rules - Cancellation Support](validation-and-rules.md#cancellation-support) for details and recovery patterns.
 
 ### ClearAllMessages() / ClearSelfMessages()
 

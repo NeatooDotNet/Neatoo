@@ -253,6 +253,22 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	protected (bool IsValid, bool IsSelfValid, bool IsBusy) MetaState { get; private set; }
 
 	/// <summary>
+	/// Raises property changed events if the value has changed from the cached state.
+	/// </summary>
+	/// <typeparam name="TValue">The type of the property value.</typeparam>
+	/// <param name="cachedValue">The previously cached value.</param>
+	/// <param name="currentValue">The current value.</param>
+	/// <param name="propertyName">The name of the property.</param>
+	protected void RaiseIfChanged<TValue>(TValue cachedValue, TValue currentValue, string propertyName)
+	{
+		if (!EqualityComparer<TValue>.Default.Equals(cachedValue, currentValue))
+		{
+			this.RaisePropertyChanged(propertyName);
+			this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(propertyName, this));
+		}
+	}
+
+	/// <summary>
 	/// Checks if validation-related meta properties have changed and raises notifications.
 	/// </summary>
 	/// <remarks>
@@ -261,21 +277,9 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// </remarks>
 	protected virtual void CheckIfMetaPropertiesChanged()
 	{
-		if (this.MetaState.IsValid != this.IsValid)
-		{
-			this.RaisePropertyChanged(nameof(this.IsValid));
-			this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsValid), this));
-		}
-		if (this.MetaState.IsSelfValid != this.IsSelfValid)
-		{
-			this.RaisePropertyChanged(nameof(this.IsSelfValid));
-			this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsSelfValid), this));
-		}
-		if (this.MetaState.IsBusy != this.IsBusy)
-		{
-			this.RaisePropertyChanged(nameof(this.IsBusy));
-			this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsBusy), this));
-		}
+		RaiseIfChanged(this.MetaState.IsValid, this.IsValid, nameof(this.IsValid));
+		RaiseIfChanged(this.MetaState.IsSelfValid, this.IsSelfValid, nameof(this.IsSelfValid));
+		RaiseIfChanged(this.MetaState.IsBusy, this.IsBusy, nameof(this.IsBusy));
 
 		this.ResetMetaState();
 	}
@@ -391,7 +395,7 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// </para>
 	/// <para>
 	/// Setting a property value may trigger asynchronous operations such as validation rules.
-	/// These tasks are automatically tracked and can be awaited via <see cref="WaitForTasks"/>.
+	/// These tasks are automatically tracked and can be awaited via <see cref="WaitForTasks()"/>.
 	/// </para>
 	/// </remarks>
 	/// <exception cref="AggregateException">Thrown if the property setter task fails.</exception>
@@ -519,6 +523,22 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	public virtual async Task WaitForTasks()
 	{
 		await this.RunningTasks.AllDone;
+	}
+
+	/// <summary>
+	/// Waits for all asynchronous tasks to complete, with cancellation support.
+	/// </summary>
+	/// <param name="token">Cancellation token to cancel the wait operation.</param>
+	/// <returns>A task that completes when all pending tasks are done or cancellation is requested.</returns>
+	/// <exception cref="OperationCanceledException">Thrown when the cancellation token is triggered.</exception>
+	/// <remarks>
+	/// <para>
+	/// Cancellation only affects waiting - running tasks will complete to avoid leaving the entity in an inconsistent state.
+	/// </para>
+	/// </remarks>
+	public virtual async Task WaitForTasks(CancellationToken token)
+	{
+		await this.RunningTasks.WaitForCompletion(token);
 	}
 
 	/// <summary>
@@ -667,16 +687,31 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// <param name="token">Optional cancellation token for the async operation.</param>
 	/// <returns>A task representing the asynchronous rule execution.</returns>
 	/// <remarks>
+	/// <para>
 	/// This method is typically called automatically when a property value changes.
 	/// It can also be called manually to re-validate a specific property.
+	/// </para>
+	/// <para>
+	/// If cancellation is requested, the object is marked invalid and must be re-validated
+	/// using <see cref="RunRules(RunRulesFlag, CancellationToken?)"/> with <see cref="RunRulesFlag.All"/>.
+	/// </para>
 	/// </remarks>
-	public virtual Task RunRules(string propertyName, CancellationToken? token = null)
+	/// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
+	public virtual async Task RunRules(string propertyName, CancellationToken? token = null)
 	{
-		var task = this.RuleManager.RunRules(propertyName, token);
-
-		this.CheckIfMetaPropertiesChanged();
-
-		return task;
+		try
+		{
+			await this.RuleManager.RunRules(propertyName, token);
+		}
+		catch (OperationCanceledException)
+		{
+			this.MarkInvalid("Validation cancelled");
+			throw;
+		}
+		finally
+		{
+			this.CheckIfMetaPropertiesChanged();
+		}
 	}
 
 	/// <summary>
@@ -693,7 +728,12 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// <para>
 	/// This method waits for all async rules to complete before returning.
 	/// </para>
+	/// <para>
+	/// If cancellation is requested, the object is marked invalid and must be re-validated
+	/// using this method with <see cref="RunRulesFlag.All"/>.
+	/// </para>
 	/// </remarks>
+	/// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
 	public virtual async Task RunRules(RunRulesFlag runRules = Neatoo.RunRulesFlag.All, CancellationToken? token = null)
 	{
 		if (runRules == Neatoo.RunRulesFlag.All)
@@ -701,13 +741,21 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 			this.ClearAllMessages();
 		}
 
-		if ((runRules | Neatoo.RunRulesFlag.Self) != Neatoo.RunRulesFlag.Self)
+		try
 		{
-			await this.PropertyManager.RunRules(runRules, token);
-		}
+			if ((runRules | Neatoo.RunRulesFlag.Self) != Neatoo.RunRulesFlag.Self)
+			{
+				await this.PropertyManager.RunRules(runRules, token);
+			}
 
-		await this.RuleManager.RunRules(runRules, token);
-		await this.RunningTasks.AllDone;
+			await this.RuleManager.RunRules(runRules, token);
+			await this.RunningTasks.AllDone;
+		}
+		catch (OperationCanceledException)
+		{
+			this.MarkInvalid("Validation cancelled");
+			throw;
+		}
 	}
 
 	/// <summary>

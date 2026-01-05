@@ -6,8 +6,6 @@
 /// </summary>
 public sealed class AsyncTasks
 {
-    // TODO: Add cancellation token
-
     private readonly object _lockObject = new object();
     private TaskCompletionSource<bool>? _allDoneCompletionSource;
     private Dictionary<Guid, Task> _tasks = new Dictionary<Guid, Task>();
@@ -77,6 +75,37 @@ public sealed class AsyncTasks
 
     public bool IsRunning { get; protected set; }
 
+    /// <summary>
+    /// Waits for all tasks to complete, with optional cancellation support.
+    /// </summary>
+    /// <param name="token">Optional cancellation token. If cancelled, throws <see cref="OperationCanceledException"/>.</param>
+    /// <returns>A task that completes when all tasks are done or cancellation is requested.</returns>
+    /// <remarks>
+    /// Cancellation only affects waiting - running tasks will complete to avoid inconsistent state.
+    /// </remarks>
+    public async Task WaitForCompletion(CancellationToken? token = null)
+    {
+        var allDone = this.AllDone;
+
+        if (token == null || !token.Value.CanBeCanceled)
+        {
+            await allDone;
+            return;
+        }
+
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = token.Value.Register(() => tcs.TrySetCanceled(token.Value));
+
+        var completedTask = await Task.WhenAny(allDone, tcs.Task);
+
+        if (completedTask == tcs.Task)
+        {
+            token.Value.ThrowIfCancellationRequested();
+        }
+
+        // Propagate any exceptions from AllDone
+        await allDone;
+    }
 
     private async Task SequenceCompleted(Guid id, Task task)
     {

@@ -916,11 +916,12 @@ public class RuleManagerCancellationTests
         var rule = new TestAsyncRule(trigger);
         ruleManager.AddRule(rule);
 
-        // Act
-        await ruleManager.RunRules(RunRulesFlag.All, cts.Token);
+        // Act & Assert - Should throw OperationCanceledException when token is already cancelled
+        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+            await ruleManager.RunRules(RunRulesFlag.All, cts.Token));
 
-        // Assert - The rule may or may not execute depending on timing,
-        // but it should not throw
+        // Rule should not have executed
+        Assert.IsFalse(rule.Executed);
     }
 
     [TestMethod]
@@ -937,8 +938,12 @@ public class RuleManagerCancellationTests
         var rule = new TestSyncRule(trigger);
         ruleManager.AddRule(rule);
 
-        // Act & Assert - Should not throw
-        await ruleManager.RunRule(rule, cts.Token);
+        // Act & Assert - Should throw OperationCanceledException when token is already cancelled
+        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+            await ruleManager.RunRule(rule, cts.Token));
+
+        // Rule should not have executed
+        Assert.IsFalse(rule.Executed);
     }
 }
 

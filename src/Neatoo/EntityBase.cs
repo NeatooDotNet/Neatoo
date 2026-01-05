@@ -27,7 +27,7 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
     IEnumerable<string> ModifiedProperties { get; }
 
     /// <summary>
-    /// Marks the entity for deletion. The entity will be deleted when <see cref="Save"/> is called.
+    /// Marks the entity for deletion. The entity will be deleted when <see cref="Save()"/> is called.
     /// </summary>
     void Delete();
 
@@ -67,7 +67,7 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
 /// <item><description>Child entity support for aggregate patterns via <see cref="IsChild"/></description></item>
 /// </list>
 /// <para>
-/// Entity objects can be persisted through the factory pattern. The <see cref="Save"/> method
+/// Entity objects can be persisted through the factory pattern. The <see cref="Save()"/> method
 /// delegates to the appropriate Insert, Update, or Delete factory method based on the entity state.
 /// </para>
 /// </remarks>
@@ -164,7 +164,7 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     /// </summary>
     /// <value><c>true</c> if this is a child entity; otherwise, <c>false</c>.</value>
     /// <remarks>
-    /// Child entities are saved as part of their parent aggregate and cannot call <see cref="Save"/> directly.
+    /// Child entities are saved as part of their parent aggregate and cannot call <see cref="Save()"/> directly.
     /// </remarks>
     public virtual bool IsChild { get; protected set; }
 
@@ -216,26 +216,10 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     {
         if (!this.IsPaused)
         {
-            if (this.EntityMetaState.IsModified != this.IsModified)
-            {
-                this.RaisePropertyChanged(nameof(this.IsModified));
-                this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsModified), this));
-            }
-            if (this.EntityMetaState.IsSelfModified != this.IsSelfModified)
-            {
-                this.RaisePropertyChanged(nameof(this.IsSelfModified));
-                this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsSelfModified), this));
-            }
-            if (this.EntityMetaState.IsSavable != this.IsSavable)
-            {
-                this.RaisePropertyChanged(nameof(this.IsSavable));
-                this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsSavable), this));
-            }
-            if (this.EntityMetaState.IsDeleted != this.IsDeleted)
-            {
-                this.RaisePropertyChanged(nameof(this.IsDeleted));
-                this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsDeleted), this));
-            }
+            RaiseIfChanged(this.EntityMetaState.IsModified, this.IsModified, nameof(this.IsModified));
+            RaiseIfChanged(this.EntityMetaState.IsSelfModified, this.IsSelfModified, nameof(this.IsSelfModified));
+            RaiseIfChanged(this.EntityMetaState.IsSavable, this.IsSavable, nameof(this.IsSavable));
+            RaiseIfChanged(this.EntityMetaState.IsDeleted, this.IsDeleted, nameof(this.IsDeleted));
         }
 
         base.CheckIfMetaPropertiesChanged();
@@ -279,10 +263,16 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     /// </remarks>
     protected virtual void MarkUnmodified()
     {
-        // TODO : What if busy??
+        if (this.IsBusy)
+        {
+            throw new InvalidOperationException(
+                "Cannot mark entity as unmodified while async operations are in progress. " +
+                "Call await WaitForTasks() before marking unmodified.");
+        }
+
         this.PropertyManager.MarkSelfUnmodified();
         this.IsMarkedModified = false;
-        this.CheckIfMetaPropertiesChanged(); // Really shouldn't be anything listening to this
+        this.CheckIfMetaPropertiesChanged();
     }
 
     /// <summary>
@@ -344,7 +334,7 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     /// ensuring consistent behavior between <c>entity.Delete()</c> and <c>list.Remove(entity)</c>.
     /// </para>
     /// <para>
-    /// The entity will be deleted from persistent storage when <see cref="Save"/> is called.
+    /// The entity will be deleted from persistent storage when <see cref="Save()"/> is called.
     /// Use <see cref="UnDelete"/> to reverse this operation before saving.
     /// </para>
     /// </remarks>
@@ -387,10 +377,6 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     /// </remarks>
     protected override Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-
-        // TODO - if an object isn't assigned to another IBase
-        // it will still consider us to be the Parent
-
         if (eventArgs.InnerEventArgs == null && eventArgs.Property.Value is IEntityBase child)
         {
             child.UnDelete();
@@ -435,7 +421,6 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
             }
             if (this.IsBusy)
             {
-                // TODO await this.WaitForTasks(); ??
                 throw new SaveOperationException(SaveFailureReason.IsBusy);
             }
         }
@@ -446,6 +431,36 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
         }
 
         return (IEntityBase)await this.Factory.Save((T)this);
+    }
+
+    /// <summary>
+    /// Saves the entity to persistence with cancellation support.
+    /// </summary>
+    /// <param name="token">Cancellation token to cancel the operation before persistence begins.</param>
+    /// <returns>A task that represents the asynchronous save operation. The task result is the saved entity.</returns>
+    /// <remarks>
+    /// <para>
+    /// Cancellation is only checked before persistence operations begin. Once Insert, Update, or Delete
+    /// starts executing, cancellation is not checked to avoid leaving the database in an inconsistent state.
+    /// </para>
+    /// <para>
+    /// If the entity has pending async operations (IsBusy), this method will wait for them with
+    /// cancellation support before proceeding.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="OperationCanceledException">Thrown when cancellation is requested before persistence begins.</exception>
+    /// <exception cref="SaveOperationException">Thrown when the entity cannot be saved due to validation or state issues.</exception>
+    public virtual async Task<IEntityBase> Save(CancellationToken token)
+    {
+        // Wait for any pending async operations with cancellation support
+        await this.WaitForTasks(token);
+
+        // Check cancellation before persistence
+        token.ThrowIfCancellationRequested();
+
+        // Delegate to the standard Save method
+        // NO cancellation checks during persistence to avoid data corruption
+        return await this.Save();
     }
 
     /// <summary>

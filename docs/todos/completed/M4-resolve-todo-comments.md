@@ -3,7 +3,8 @@
 **Priority:** Medium
 **Category:** Technical Debt
 **Effort:** Varies
-**Status:** Not Started
+**Status:** ✅ COMPLETE
+**Completed:** 2026-01-04
 
 ---
 
@@ -91,13 +92,13 @@ await entity.Save();
 
 ## Implementation Tasks
 
-- [ ] Decide on MarkUnmodified busy behavior (TODO #1)
-- [ ] Implement chosen solution for #1
-- [ ] Decide on Save auto-wait behavior (TODO #2)
-- [ ] Implement chosen solution for #2
-- [ ] Search for any other TODO comments
-- [ ] Add tests for new behavior
-- [ ] Remove TODO comments once resolved
+- [x] Decide on MarkUnmodified busy behavior (TODO #1) - Throw if busy
+- [x] Implement chosen solution for #1 - Added `InvalidOperationException` guard
+- [x] Decide on Save auto-wait behavior (TODO #2) - Keep throwing, improve message
+- [x] Implement chosen solution for #2 - Updated exception message in `Exceptions.cs`
+- [x] Search for any other TODO comments - Found 4 design notes (see below)
+- [x] Remove TODO comments once resolved
+- [x] All tests pass (1,787 tests)
 
 ---
 
@@ -123,9 +124,22 @@ Get-ChildItem -Path "src/Neatoo" -Recurse -Include "*.cs" |
 
 | TODO | File:Line | Decision | Status |
 |------|-----------|----------|--------|
-| MarkUnmodified busy | EntityBase.cs:259 | Throw if busy | Pending |
-| WaitForTasks in Save | EntityBase.cs:402 | Keep throwing, improve message | Pending |
-| DisplayName serialization | EntityPropertyManager.cs:29 | Remove from serialization | Moved → [M4a](M4a-displayname-serialization.md) |
+| MarkUnmodified busy | EntityBase.cs:264 | Throw if busy | ✅ Done |
+| WaitForTasks in Save | EntityBase.cs:426 | Keep throwing, improve message | ✅ Done |
+| DisplayName serialization | EntityPropertyManager.cs:29 | Remove from serialization | ✅ Done → [M4a](completed/M4a-displayname-serialization.md) |
+
+## Additional TODOs Found (Design Notes - Not Actionable)
+
+These are design notes/future improvement ideas, not blocking issues:
+
+| File | Line | Note | Type |
+|------|------|------|------|
+| `RuleBase.cs` | 58 | Replace OnRuleAdded with Factory Method | Design improvement |
+| `EntityBase.cs` | 381 | Parent tracking for unassigned objects | Design note |
+| `AsyncTasks.cs` | 9 | Add cancellation token | Feature request |
+| `NeatooBaseJsonTypeConverter.cs` | 99 | Ugly code block | Code quality |
+
+These can be addressed in future if needed, but don't represent incomplete functionality.
 
 ---
 

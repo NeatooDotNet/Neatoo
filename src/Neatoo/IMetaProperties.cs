@@ -25,6 +25,14 @@ public interface IValidateMetaProperties
     Task WaitForTasks();
 
     /// <summary>
+    /// Waits for all pending asynchronous operations to complete, with cancellation support.
+    /// </summary>
+    /// <param name="token">Cancellation token to cancel the wait operation.</param>
+    /// <returns>A task that completes when all pending operations are finished or cancellation is requested.</returns>
+    /// <exception cref="OperationCanceledException">Thrown when the cancellation token is triggered.</exception>
+    Task WaitForTasks(CancellationToken token);
+
+    /// <summary>
     /// Gets a value indicating whether the object and all its children are valid.
     /// </summary>
     /// <value><c>true</c> if the object and all child objects are valid; otherwise, <c>false</c>.</value>

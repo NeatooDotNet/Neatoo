@@ -14,11 +14,11 @@ This directory contains detailed action items from the comprehensive framework r
 | [H2](H2-document-async-validation-patterns.md) | High | Document Async Validation Patterns | Medium | Not Started |
 | [H3](completed/H3-add-generator-diagnostics.md) | High | Add Generator Diagnostics | Low | **Completed** |
 | [H4](completed/H4-thread-safe-ismarkedbusy.md) | High | Make IsMarkedBusy Thread-Safe | Low | **Completed** |
-| [M1](M1-extract-metaproperty-helper.md) | Medium | Extract Meta-Property Change Helper | Low | Not Started |
+| [M1](completed/M1-extract-metaproperty-helper.md) | Medium | Extract Meta-Property Change Helper | Low | **Completed** |
 | [M2](M2-value-object-base.md) | Medium | Add Value Object Base Type | Medium | Not Started |
 | [M3](M3-document-propertychanged-events.md) | Medium | Document PropertyChanged vs NeatooPropertyChanged | Low | Not Started |
-| [M4](M4-resolve-todo-comments.md) | Medium | Resolve TODO Comments | Low | Not Started |
-| [M4a](M4a-displayname-serialization.md) | Medium | Remove DisplayName from Serialization | Medium | **Completed** |
+| [M4](completed/M4-resolve-todo-comments.md) | Medium | Resolve TODO Comments | Low | **Completed** |
+| [M4a](completed/M4a-displayname-serialization.md) | Medium | Remove DisplayName from Serialization | Medium | **Completed** |
 | [M5](M5-aggregate-root-marker.md) | Medium | Add IAggregateRoot Marker Interface | Low | Not Started |
 | [M6](completed/multi-targeting-net8-9-10.md) | Medium | Multi-Target .NET 8.0/9.0/10.0 | Medium | **Completed** |
 | [L1](L1-naming-consistency.md) | Low | Naming Consistency Fixes | Low | Not Started |
@@ -26,6 +26,7 @@ This directory contains detailed action items from the comprehensive framework r
 | [L3](completed/L3-fix-waitfortasks-assert.md) | Low | Fix Debug.Assert in WaitForTasks | Low | **Completed** |
 | [L4](L4-specification-pattern.md) | Low | Specification Pattern Support | High | Evaluation |
 | [M7](M7-analyze-documentation-patterns.md) | Medium | Analyze Documentation Sample Patterns | Low | Not Started |
+| [CT1](completed/cancellation-token-support.md) | Medium | Add CancellationToken Support | High | **Completed** |
 
 ---
 
@@ -48,18 +49,19 @@ This directory contains detailed action items from the comprehensive framework r
 - [C2](C2-beginner-tutorials.md) - Beginner Tutorials
 - [H2](H2-document-async-validation-patterns.md) - Async Validation Patterns
 - [M3](M3-document-propertychanged-events.md) - PropertyChanged Events
-- [Snippet Refactoring](snippet-refactoring-plan.md) - Refactor full examples to focused micro-snippets
+- ~~[Snippet Refactoring](completed/snippet-refactoring-plan.md) - Refactor full examples to focused micro-snippets~~ **DONE**
 - ~~[Documentation Feedback Review](completed/documentation-feedback-review.md) - Inline feedback cleanup~~ **DONE**
 
 ### Code Quality
-- [M1](M1-extract-metaproperty-helper.md) - Meta-Property Change Helper
-- [M4](M4-resolve-todo-comments.md) - TODO Comments
-- ~~[M4a](M4a-displayname-serialization.md) - DisplayName Serialization Performance~~ **DONE**
+- ~~[M1](completed/M1-extract-metaproperty-helper.md) - Meta-Property Change Helper~~ **DONE**
+- ~~[M4](completed/M4-resolve-todo-comments.md) - TODO Comments~~ **DONE**
+- ~~[M4a](completed/M4a-displayname-serialization.md) - DisplayName Serialization Performance~~ **DONE**
 - [M7](M7-analyze-documentation-patterns.md) - Analyze Documentation Sample Patterns
 - [L1](L1-naming-consistency.md) - Naming Consistency
 
 ### Infrastructure
 - ~~[M6](completed/multi-targeting-net8-9-10.md) - Multi-Target .NET 8.0/9.0/10.0~~ **DONE**
+- ~~[CT1](completed/cancellation-token-support.md) - CancellationToken Support~~ **DONE**
 
 ---
 
@@ -69,7 +71,7 @@ This directory contains detailed action items from the comprehensive framework r
 - ~~[H1](completed/H1-fix-rulemanager-assertion.md) - Fix RuleManager assertion (Low effort)~~ **DONE**
 - ~~[H3](completed/H3-add-generator-diagnostics.md) - Add generator diagnostics (Low effort)~~ **DONE**
 - ~~[H4](completed/H4-thread-safe-ismarkedbusy.md) - Thread-safe IsMarkedBusy (Low effort)~~ **DONE**
-- [M4](M4-resolve-todo-comments.md) - Resolve TODO comments (Decision items)
+- ~~[M4](completed/M4-resolve-todo-comments.md) - Resolve TODO comments (Decision items)~~ **DONE**
 - [M7](M7-analyze-documentation-patterns.md) - Analyze patterns from doc samples (Low effort)
 
 ### Sprint 2 (Documentation)
@@ -78,7 +80,7 @@ This directory contains detailed action items from the comprehensive framework r
 - [M3](M3-document-propertychanged-events.md) - Event documentation
 
 ### Sprint 3 (Code Quality)
-- [M1](M1-extract-metaproperty-helper.md) - Extract helper method
+- ~~[M1](completed/M1-extract-metaproperty-helper.md) - Extract helper method~~ **DONE**
 - [L1](L1-naming-consistency.md) - Naming consistency
 - [L2](L2-duplicate-event-subscriptions.md) - Event subscription guards
 - ~~[L3](completed/L3-fix-waitfortasks-assert.md) - WaitForTasks cleanup~~ **DONE**
@@ -93,14 +95,14 @@ This directory contains detailed action items from the comprehensive framework r
 ### Entity List Enhancements
 - ~~[ContainingList Property](completed/containinglist-property-implementation.md) - Track entity's containing list~~ **DONE**
 - ~~[Delete/Remove Consistency](completed/entity-delete-vs-list-remove.md) - entity.Delete() and list.Remove() now consistent~~ **DONE**
-- [EntityListBase Add Use Cases](entitylistbase-add-use-cases.md) - Add item use case analysis
+- ~~[EntityListBase Add Use Cases](completed/entitylistbase-add-use-cases.md) - Add item use case analysis~~ **DONE**
 
 ---
 
 ## Related Documents
 
 - [Comprehensive Framework Review](completed/comprehensive-framework-review.md) - Full analysis (completed)
-- [RemoteFactory Mapper Removal Plan](remotefactory-mapper-removal-plan.md) - Migration plan
+- ~~[RemoteFactory Mapper Removal Plan](completed/remotefactory-mapper-removal-plan.md) - Migration plan~~ **DONE**
 
 ---
 

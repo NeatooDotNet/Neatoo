@@ -918,4 +918,172 @@ public class AsyncTasksTests
     }
 
     #endregion
+
+    #region WaitForCompletion with CancellationToken Tests
+
+    [TestMethod]
+    public async Task WaitForCompletion_NullToken_BehavesLikeAllDone()
+    {
+        // Arrange
+        var asyncTasks = new AsyncTasks();
+        var tcs = new TaskCompletionSource<bool>();
+        asyncTasks.AddTask(tcs.Task);
+
+        // Act
+        var waitTask = asyncTasks.WaitForCompletion(null);
+
+        // Complete the pending task
+        tcs.SetResult(true);
+        await waitTask;
+
+        // Assert
+        Assert.IsFalse(asyncTasks.IsRunning);
+    }
+
+    [TestMethod]
+    public async Task WaitForCompletion_NonCancelableToken_BehavesLikeAllDone()
+    {
+        // Arrange
+        var asyncTasks = new AsyncTasks();
+        var tcs = new TaskCompletionSource<bool>();
+        asyncTasks.AddTask(tcs.Task);
+
+        // Act - CancellationToken.None is not cancelable
+        var waitTask = asyncTasks.WaitForCompletion(CancellationToken.None);
+
+        // Complete the pending task
+        tcs.SetResult(true);
+        await waitTask;
+
+        // Assert
+        Assert.IsFalse(asyncTasks.IsRunning);
+    }
+
+    [TestMethod]
+    public async Task WaitForCompletion_AlreadyCancelledToken_ThrowsImmediately()
+    {
+        // Arrange
+        var asyncTasks = new AsyncTasks();
+        var tcs = new TaskCompletionSource<bool>();
+        asyncTasks.AddTask(tcs.Task);
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        // Act & Assert
+        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+            await asyncTasks.WaitForCompletion(cts.Token));
+
+        // Task should still be running
+        Assert.IsTrue(asyncTasks.IsRunning);
+    }
+
+    [TestMethod]
+    public async Task WaitForCompletion_TokenCancelledWhileWaiting_ThrowsOperationCanceledException()
+    {
+        // Arrange
+        var asyncTasks = new AsyncTasks();
+        var tcs = new TaskCompletionSource<bool>();
+        asyncTasks.AddTask(tcs.Task);
+
+        using var cts = new CancellationTokenSource();
+
+        // Start waiting
+        var waitTask = asyncTasks.WaitForCompletion(cts.Token);
+
+        // Cancel while waiting
+        cts.Cancel();
+
+        // Act & Assert
+        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+            await waitTask);
+
+        // Task should still be running (only the wait was cancelled)
+        Assert.IsTrue(asyncTasks.IsRunning);
+    }
+
+    [TestMethod]
+    public async Task WaitForCompletion_TaskCompletesBeforeCancel_CompletesNormally()
+    {
+        // Arrange
+        var asyncTasks = new AsyncTasks();
+        var tcs = new TaskCompletionSource<bool>();
+        asyncTasks.AddTask(tcs.Task);
+
+        using var cts = new CancellationTokenSource();
+
+        // Complete the task immediately
+        tcs.SetResult(true);
+
+        // Act - Wait should complete successfully
+        await asyncTasks.WaitForCompletion(cts.Token);
+
+        // Assert
+        Assert.IsFalse(asyncTasks.IsRunning);
+    }
+
+    [TestMethod]
+    public async Task WaitForCompletion_MultipleTasks_WaitsForAll()
+    {
+        // Arrange
+        var asyncTasks = new AsyncTasks();
+        var tcs1 = new TaskCompletionSource<bool>();
+        var tcs2 = new TaskCompletionSource<bool>();
+        asyncTasks.AddTask(tcs1.Task);
+        asyncTasks.AddTask(tcs2.Task);
+
+        using var cts = new CancellationTokenSource();
+
+        // Complete first task
+        tcs1.SetResult(true);
+
+        // Still running because tcs2 is not complete
+        Assert.IsTrue(asyncTasks.IsRunning);
+
+        // Complete second task
+        tcs2.SetResult(true);
+
+        // Act - Should complete successfully
+        await asyncTasks.WaitForCompletion(cts.Token);
+
+        // Assert
+        Assert.IsFalse(asyncTasks.IsRunning);
+    }
+
+    [TestMethod]
+    public async Task WaitForCompletion_NoTasksRunning_CompletesImmediately()
+    {
+        // Arrange
+        var asyncTasks = new AsyncTasks();
+
+        using var cts = new CancellationTokenSource();
+
+        // Act - Should complete immediately
+        await asyncTasks.WaitForCompletion(cts.Token);
+
+        // Assert
+        Assert.IsFalse(asyncTasks.IsRunning);
+    }
+
+    [TestMethod]
+    public async Task WaitForCompletion_TaskThrowsException_PropagatesException()
+    {
+        // Arrange
+        var asyncTasks = new AsyncTasks();
+        var tcs = new TaskCompletionSource<bool>();
+        asyncTasks.AddTask(tcs.Task);
+
+        using var cts = new CancellationTokenSource();
+
+        // Set an exception on the task
+        tcs.SetException(new InvalidOperationException("Test error"));
+
+        // Act & Assert - The AggregateException from AllDone should propagate
+        var ex = await Assert.ThrowsExceptionAsync<AggregateException>(async () =>
+            await asyncTasks.WaitForCompletion(cts.Token));
+
+        Assert.IsTrue(ex.InnerExceptions.Any(e => e is InvalidOperationException));
+    }
+
+    #endregion
 }

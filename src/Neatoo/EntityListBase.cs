@@ -141,21 +141,9 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     {
         base.CheckIfMetaPropertiesChanged();
 
-        if (this.EntityMetaState.IsModified != this.IsModified)
-        {
-            this.OnPropertyChanged(new PropertyChangedEventArgs(nameof(this.IsModified)));
-            this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsModified), this));
-        }
-        if (this.EntityMetaState.IsSelfModified != this.IsSelfModified)
-        {
-            this.OnPropertyChanged(new PropertyChangedEventArgs(nameof(this.IsSelfModified)));
-            this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsSelfModified), this));
-        }
-        if (this.EntityMetaState.IsSavable != this.IsSavable)
-        {
-            this.OnPropertyChanged(new PropertyChangedEventArgs(nameof(this.IsSavable)));
-            this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsSavable), this));
-        }
+        RaiseIfChanged(this.EntityMetaState.IsModified, this.IsModified, nameof(this.IsModified));
+        RaiseIfChanged(this.EntityMetaState.IsSelfModified, this.IsSelfModified, nameof(this.IsSelfModified));
+        RaiseIfChanged(this.EntityMetaState.IsSavable, this.IsSavable, nameof(this.IsSavable));
 
         this.ResetMetaState();
     }

@@ -113,6 +113,24 @@ public interface IRuleManager<T> : IRuleManager
     /// <param name="triggerProperty">The property that triggers this rule and receives the error message.</param>
     /// <returns>The created rule instance.</returns>
     AsyncFluentRule<T> AddValidationAsync(Func<T, Task<string>> func, Expression<Func<T, object?>> triggerProperty);
+
+    /// <summary>
+    /// Adds an asynchronous action rule with cancellation support that executes when the specified properties change.
+    /// Use this for rules that perform async side effects and need to respond to cancellation.
+    /// </summary>
+    /// <param name="func">The async function to execute, receiving the target and cancellation token.</param>
+    /// <param name="triggerProperties">The properties that trigger this rule when changed.</param>
+    /// <returns>The created rule instance.</returns>
+    ActionAsyncFluentRuleWithToken<T> AddActionAsync(Func<T, CancellationToken, Task> func, params Expression<Func<T, object?>>[] triggerProperties);
+
+    /// <summary>
+    /// Adds an asynchronous validation rule with cancellation support that executes when the specified property changes.
+    /// The function should return an error message string, or an empty/null string if validation passes.
+    /// </summary>
+    /// <param name="func">The async validation function that receives the target and cancellation token, returning an error message or empty string.</param>
+    /// <param name="triggerProperty">The property that triggers this rule and receives the error message.</param>
+    /// <returns>The created rule instance.</returns>
+    AsyncFluentRuleWithToken<T> AddValidationAsync(Func<T, CancellationToken, Task<string>> func, Expression<Func<T, object?>> triggerProperty);
 }
 
 /// <summary>
@@ -291,20 +309,50 @@ public class RuleManager<T> : IRuleManager<T>
     }
 
     /// <inheritdoc />
+    public ActionAsyncFluentRuleWithToken<T> AddActionAsync(Func<T, CancellationToken, Task> func, params Expression<Func<T, object?>>[] triggerProperties)
+    {
+        var rule = new ActionAsyncFluentRuleWithToken<T>(func, triggerProperties);
+        this.Rules.Add(this._ruleIndex++, rule);
+        rule.OnRuleAdded(this, this._ruleIndex);
+        return rule;
+    }
+
+    /// <inheritdoc />
+    public AsyncFluentRuleWithToken<T> AddValidationAsync(Func<T, CancellationToken, Task<string>> func, Expression<Func<T, object?>> triggerProperty)
+    {
+        var rule = new AsyncFluentRuleWithToken<T>(func, triggerProperty);
+        this.Rules.Add(this._ruleIndex++, rule);
+        rule.OnRuleAdded(this, this._ruleIndex);
+        return rule;
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="OperationCanceledException">Thrown when cancellation is requested before a rule executes.</exception>
     public async Task RunRules(string propertyName, CancellationToken? token = null)
     {
         foreach (var rule in this.Rules.Values.Where(r => r.TriggerProperties.Any(t => t.IsMatch(propertyName)))
                                     .OrderBy(r => r.RuleOrder).ToList())
         {
+            if (token?.IsCancellationRequested == true)
+            {
+                throw new OperationCanceledException(token.Value);
+            }
+
             await this.RunRule(rule, token);
         }
     }
 
     /// <inheritdoc />
+    /// <exception cref="OperationCanceledException">Thrown when cancellation is requested before a rule executes.</exception>
     public async Task RunRules(RunRulesFlag runRules = Neatoo.RunRulesFlag.All, CancellationToken? token = null)
     {
         foreach (var rule in this.Rules.ToList())
         {
+            if (token?.IsCancellationRequested == true)
+            {
+                throw new OperationCanceledException(token.Value);
+            }
+
             var messages = rule.Value.Messages;
             if (runRules == Neatoo.RunRulesFlag.All ||
                 runRules == Neatoo.RunRulesFlag.Self ||
@@ -318,8 +366,14 @@ public class RuleManager<T> : IRuleManager<T>
 
     /// <inheritdoc />
     /// <exception cref="InvalidRuleTypeException">Thrown when the rule cannot be executed for this target type.</exception>
+    /// <exception cref="OperationCanceledException">Thrown when cancellation is requested before the rule executes.</exception>
     public async Task RunRule(IRule r, CancellationToken? token = null)
     {
+        if (token?.IsCancellationRequested == true)
+        {
+            throw new OperationCanceledException(token.Value);
+        }
+
         if (!this.Rules.Values.Contains(r))
         {
             throw new RuleNotAddedException();
@@ -413,11 +467,6 @@ public class RuleManager<T> : IRuleManager<T>
         else
         {
             throw new InvalidRuleTypeException($"{r.GetType().FullName} cannot be executed for {typeof(T).FullName}");
-        }
-
-        if (token?.IsCancellationRequested ?? false)
-        {
-            return;
         }
     }
 }

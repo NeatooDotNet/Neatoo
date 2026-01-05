@@ -250,26 +250,30 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     }
 
     /// <summary>
+    /// Raises property changed events if the value has changed from the cached state.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the property value.</typeparam>
+    /// <param name="cachedValue">The previously cached value.</param>
+    /// <param name="currentValue">The current value.</param>
+    /// <param name="propertyName">The name of the property.</param>
+    protected void RaiseIfChanged<TValue>(TValue cachedValue, TValue currentValue, string propertyName)
+    {
+        if (!EqualityComparer<TValue>.Default.Equals(cachedValue, currentValue))
+        {
+            this.OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
+            this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(propertyName, this));
+        }
+    }
+
+    /// <summary>
     /// Checks if any validation meta properties have changed and raises appropriate property change notifications.
     /// Compares current values against cached <see cref="MetaState"/> and notifies on differences.
     /// </summary>
     protected virtual void CheckIfMetaPropertiesChanged()
     {
-        if (this.MetaState.IsValid != this.IsValid)
-        {
-            this.OnPropertyChanged(new PropertyChangedEventArgs(nameof(this.IsValid)));
-            this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsValid), this));
-        }
-        if (this.MetaState.IsSelfValid != this.IsSelfValid)
-        {
-            this.OnPropertyChanged(new PropertyChangedEventArgs(nameof(this.IsSelfValid)));
-            this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsSelfValid), this));
-        }
-        if (this.MetaState.IsBusy != this.IsBusy)
-        {
-            this.OnPropertyChanged(new PropertyChangedEventArgs(nameof(this.IsBusy)));
-            this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.IsBusy), this));
-        }
+        RaiseIfChanged(this.MetaState.IsValid, this.IsValid, nameof(this.IsValid));
+        RaiseIfChanged(this.MetaState.IsSelfValid, this.IsSelfValid, nameof(this.IsSelfValid));
+        RaiseIfChanged(this.MetaState.IsBusy, this.IsBusy, nameof(this.IsBusy));
 
         this.ResetMetaState();
     }
@@ -296,6 +300,25 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
         {
             await busyTask;
             busyTask = this.FirstOrDefault(x => x.IsBusy)?.WaitForTasks();
+        }
+    }
+
+    /// <summary>
+    /// Waits for all pending asynchronous tasks in the collection to complete, with cancellation support.
+    /// Continues waiting until no items report being busy or cancellation is requested.
+    /// </summary>
+    /// <param name="token">Cancellation token to cancel the wait operation.</param>
+    /// <returns>A task that completes when all items have finished their pending operations or cancellation is requested.</returns>
+    /// <exception cref="OperationCanceledException">Thrown when the cancellation token is triggered.</exception>
+    public async Task WaitForTasks(CancellationToken token)
+    {
+        var busyTask = this.FirstOrDefault(x => x.IsBusy)?.WaitForTasks(token);
+
+        while (busyTask != null)
+        {
+            token.ThrowIfCancellationRequested();
+            await busyTask;
+            busyTask = this.FirstOrDefault(x => x.IsBusy)?.WaitForTasks(token);
         }
     }
 

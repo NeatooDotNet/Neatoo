@@ -8,6 +8,7 @@ Neatoo provides a rules engine for business logic and validation. Rules execute 
 |---------|-------------|
 | [Rule Categories](#rule-categories) | Data annotations, inline rules, RuleBase, AsyncRuleBase |
 | [Running Rules](#running-rules) | Automatic execution, manual execution, when rules don't trigger |
+| [Cancellation Support](#cancellation-support) | CancellationToken for async rules, shutdown, navigation |
 | [Trigger Properties](#trigger-properties) | Specifying which properties trigger a rule |
 | [Returning Messages](#returning-rule-messages) | Single, multiple, conditional, chained messages |
 | [Data Annotations](#data-annotations) | Standard validation attributes |
@@ -613,6 +614,78 @@ await RunRules(nameof(Email));
 await RunRules(RunRulesFlag.All);           // All rules
 await RunRules(RunRulesFlag.Self);          // Only this object's rules
 await RunRules(RunRulesFlag.NotExecuted);   // Only rules that haven't run
+```
+
+### Cancellation Support
+
+All async rule operations support `CancellationToken` for graceful cancellation during shutdown or navigation.
+
+**Running rules with cancellation:**
+```csharp
+using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+try
+{
+    await entity.RunRules(RunRulesFlag.All, cts.Token);
+}
+catch (OperationCanceledException)
+{
+    // Validation was cancelled - entity is now marked invalid
+    // entity.IsValid == false
+}
+```
+
+**Waiting for async tasks with cancellation:**
+```csharp
+// Wait for pending async property setter tasks
+await entity.WaitForTasks(cancellationToken);
+```
+
+**Design Philosophy:**
+- **Cancellation is for stopping, not recovering.** When validation is cancelled, the object is marked invalid via `MarkInvalid()`.
+- **Running tasks complete.** Cancellation only affects waiting; tasks already executing finish to maintain consistency.
+- **Recovery requires explicit action.** Call `RunRules(RunRulesFlag.All)` to clear the cancelled state and re-validate.
+
+**When to use cancellation:**
+| Scenario | Pattern |
+|----------|---------|
+| Component disposal | `_cts.Cancel()` in `Dispose()` |
+| Navigation away | Cancel before navigating |
+| Request timeout | `CancellationTokenSource(TimeSpan.FromSeconds(n))` |
+| User-initiated cancel | Button triggers `_cts.Cancel()` |
+
+**Async rules can use the token:**
+```csharp
+protected override async Task<IRuleMessages> Execute(
+    IPerson target,
+    CancellationToken? token = null)
+{
+    // Pass token to async operations
+    var result = await _httpClient.GetAsync(url, token ?? CancellationToken.None);
+
+    // Or check manually
+    token?.ThrowIfCancellationRequested();
+
+    return None;
+}
+```
+
+**Fluent rules with cancellation:**
+```csharp
+// Token-accepting overloads pass CancellationToken to your delegate
+RuleManager.AddActionAsync(
+    async (target, token) =>
+    {
+        target.Rate = await service.GetRateAsync(target.ZipCode, token);
+    },
+    t => t.ZipCode);
+
+RuleManager.AddValidationAsync(
+    async (target, token) =>
+    {
+        return await service.ExistsAsync(target.Email, token) ? "In use" : "";
+    },
+    t => t.Email);
 ```
 
 ## Cross-Property Validation

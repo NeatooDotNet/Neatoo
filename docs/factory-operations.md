@@ -449,6 +449,28 @@ public async Task<IPerson> Save(IPerson person)
 }
 ```
 
+### Save with CancellationToken
+
+`EntityBase` supports cancellation via `Save(CancellationToken)`:
+
+```csharp
+using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+try
+{
+    person = await person.Save(cts.Token);
+}
+catch (OperationCanceledException)
+{
+    // Save was cancelled before persistence began
+}
+```
+
+**Important:** Cancellation only works **before** persistence. Once `Insert`, `Update`, or `Delete` begins, the operation cannot be cancelled to prevent data corruption. Cancellation applies to:
+
+- `WaitForTasks()` - waiting for async validation to complete
+- Pre-persistence checks
+
 ### Critical: Always Reassign After Save()
 
 When you call `Save()`, the aggregate is **serialized to the server**, persisted, and a **new instance is returned** via deserialization. You MUST capture this return value:

@@ -1550,3 +1550,264 @@ public class FluentRuleLambdaBehaviorTests
 }
 
 #endregion
+
+#region ActionAsyncFluentRuleWithToken Tests
+
+/// <summary>
+/// Unit tests for ActionAsyncFluentRuleWithToken - async actions that receive CancellationToken.
+/// </summary>
+[TestClass]
+public class ActionAsyncFluentRuleWithTokenTests
+{
+    [TestMethod]
+    public void Constructor_WithAsyncFuncAndTriggerProperties_CreatesRuleWithTriggers()
+    {
+        // Arrange
+        Func<TestValidateTarget, CancellationToken, Task> asyncFunc = async (t, token) => await Task.CompletedTask;
+        Expression<Func<TestValidateTarget, object?>> triggerExpr = t => t.Name;
+
+        // Act
+        var rule = new ActionAsyncFluentRuleWithToken<TestValidateTarget>(asyncFunc, triggerExpr);
+
+        // Assert
+        Assert.AreEqual(1, ((IRule)rule).TriggerProperties.Count);
+        Assert.AreEqual("Name", ((IRule)rule).TriggerProperties[0].PropertyName);
+    }
+
+    [TestMethod]
+    public async Task RunRule_WithNullToken_ExecutesAction()
+    {
+        // Arrange
+        var target = TestTargetFactory.CreateTarget();
+        target.ResumeAllActions();
+
+        var wasExecuted = false;
+        Func<TestValidateTarget, CancellationToken, Task> asyncFunc = async (t, token) =>
+        {
+            await Task.Delay(1);
+            wasExecuted = true;
+        };
+        var rule = new ActionAsyncFluentRuleWithToken<TestValidateTarget>(asyncFunc, t => t.Name);
+
+        // Act
+        await rule.RunRule(target, null);
+
+        // Assert
+        Assert.IsTrue(wasExecuted);
+    }
+
+    [TestMethod]
+    public async Task RunRule_WithValidToken_PassesTokenToAction()
+    {
+        // Arrange
+        var target = TestTargetFactory.CreateTarget();
+        target.ResumeAllActions();
+
+        CancellationToken? receivedToken = null;
+        Func<TestValidateTarget, CancellationToken, Task> asyncFunc = async (t, token) =>
+        {
+            receivedToken = token;
+            await Task.CompletedTask;
+        };
+        var rule = new ActionAsyncFluentRuleWithToken<TestValidateTarget>(asyncFunc, t => t.Name);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        await rule.RunRule(target, cts.Token);
+
+        // Assert
+        Assert.IsNotNull(receivedToken);
+        Assert.AreEqual(cts.Token, receivedToken.Value);
+    }
+
+    [TestMethod]
+    public async Task RunRule_WithCancelledToken_ThrowsBeforeExecution()
+    {
+        // Arrange
+        var target = TestTargetFactory.CreateTarget();
+        target.ResumeAllActions();
+
+        var wasExecuted = false;
+        Func<TestValidateTarget, CancellationToken, Task> asyncFunc = async (t, token) =>
+        {
+            wasExecuted = true;
+            await Task.CompletedTask;
+        };
+        var rule = new ActionAsyncFluentRuleWithToken<TestValidateTarget>(asyncFunc, t => t.Name);
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        // Act & Assert
+        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+            await rule.RunRule(target, cts.Token));
+
+        Assert.IsFalse(wasExecuted);
+    }
+
+    [TestMethod]
+    public async Task RunRule_ActionCanCheckCancellation_CanCancelMidExecution()
+    {
+        // Arrange
+        var target = TestTargetFactory.CreateTarget();
+        target.ResumeAllActions();
+
+        Func<TestValidateTarget, CancellationToken, Task> asyncFunc = async (t, token) =>
+        {
+            await Task.Delay(1);
+            token.ThrowIfCancellationRequested();
+            await Task.Delay(1000); // Would take too long if not cancelled
+        };
+        var rule = new ActionAsyncFluentRuleWithToken<TestValidateTarget>(asyncFunc, t => t.Name);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act - Start the task and cancel immediately
+        var task = rule.RunRule(target, cts.Token);
+        cts.Cancel();
+
+        // Assert
+        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () => await task);
+    }
+}
+
+#endregion
+
+#region AsyncFluentRuleWithToken Tests
+
+/// <summary>
+/// Unit tests for AsyncFluentRuleWithToken - validation rules that receive CancellationToken.
+/// </summary>
+[TestClass]
+public class AsyncFluentRuleWithTokenTests
+{
+    [TestMethod]
+    public void Constructor_WithAsyncFuncAndTriggerProperty_CreatesRuleWithTrigger()
+    {
+        // Arrange
+        Func<TestValidateTarget, CancellationToken, Task<string>> asyncFunc = async (t, token) => await Task.FromResult("");
+        Expression<Func<TestValidateTarget, object?>> triggerExpr = t => t.Name;
+
+        // Act
+        var rule = new AsyncFluentRuleWithToken<TestValidateTarget>(asyncFunc, triggerExpr);
+
+        // Assert
+        Assert.AreEqual(1, ((IRule)rule).TriggerProperties.Count);
+        Assert.AreEqual("Name", ((IRule)rule).TriggerProperties[0].PropertyName);
+    }
+
+    [TestMethod]
+    public async Task RunRule_ReturnsNoError_HasEmptyMessages()
+    {
+        // Arrange
+        var target = TestTargetFactory.CreateTarget();
+        target.ResumeAllActions();
+
+        Func<TestValidateTarget, CancellationToken, Task<string>> asyncFunc = async (t, token) => await Task.FromResult("");
+        var rule = new AsyncFluentRuleWithToken<TestValidateTarget>(asyncFunc, t => t.Name);
+
+        // Act
+        var result = await rule.RunRule(target, null);
+
+        // Assert
+        Assert.AreEqual(0, result.Count);
+    }
+
+    [TestMethod]
+    public async Task RunRule_ReturnsError_HasErrorMessage()
+    {
+        // Arrange
+        var target = TestTargetFactory.CreateTarget();
+        target.ResumeAllActions();
+
+        Func<TestValidateTarget, CancellationToken, Task<string>> asyncFunc = async (t, token) =>
+            await Task.FromResult("Validation failed");
+        var rule = new AsyncFluentRuleWithToken<TestValidateTarget>(asyncFunc, t => t.Name);
+
+        // Act
+        var result = await rule.RunRule(target, null);
+
+        // Assert
+        Assert.AreEqual(1, result.Count);
+        Assert.AreEqual("Validation failed", result[0].Message);
+    }
+
+    [TestMethod]
+    public async Task RunRule_WithValidToken_PassesTokenToFunc()
+    {
+        // Arrange
+        var target = TestTargetFactory.CreateTarget();
+        target.ResumeAllActions();
+
+        CancellationToken? receivedToken = null;
+        Func<TestValidateTarget, CancellationToken, Task<string>> asyncFunc = async (t, token) =>
+        {
+            receivedToken = token;
+            return await Task.FromResult("");
+        };
+        var rule = new AsyncFluentRuleWithToken<TestValidateTarget>(asyncFunc, t => t.Name);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        await rule.RunRule(target, cts.Token);
+
+        // Assert
+        Assert.IsNotNull(receivedToken);
+        Assert.AreEqual(cts.Token, receivedToken.Value);
+    }
+
+    [TestMethod]
+    public async Task RunRule_WithCancelledToken_ThrowsBeforeExecution()
+    {
+        // Arrange
+        var target = TestTargetFactory.CreateTarget();
+        target.ResumeAllActions();
+
+        var wasExecuted = false;
+        Func<TestValidateTarget, CancellationToken, Task<string>> asyncFunc = async (t, token) =>
+        {
+            wasExecuted = true;
+            return await Task.FromResult("");
+        };
+        var rule = new AsyncFluentRuleWithToken<TestValidateTarget>(asyncFunc, t => t.Name);
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        // Act & Assert
+        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+            await rule.RunRule(target, cts.Token));
+
+        Assert.IsFalse(wasExecuted);
+    }
+
+    [TestMethod]
+    public async Task RunRule_FuncCanCheckCancellation_CanCancelMidExecution()
+    {
+        // Arrange
+        var target = TestTargetFactory.CreateTarget();
+        target.ResumeAllActions();
+
+        Func<TestValidateTarget, CancellationToken, Task<string>> asyncFunc = async (t, token) =>
+        {
+            await Task.Delay(1);
+            token.ThrowIfCancellationRequested();
+            await Task.Delay(1000); // Would take too long if not cancelled
+            return "";
+        };
+        var rule = new AsyncFluentRuleWithToken<TestValidateTarget>(asyncFunc, t => t.Name);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act - Start the task and cancel immediately
+        var task = rule.RunRule(target, cts.Token);
+        cts.Cancel();
+
+        // Assert
+        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () => await task);
+    }
+}
+
+#endregion

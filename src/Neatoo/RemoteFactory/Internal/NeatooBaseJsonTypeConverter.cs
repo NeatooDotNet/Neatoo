@@ -96,7 +96,6 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                     jsonOnDeserializing.OnDeserializing();
                 }
 
-                // TODO : Ugly code block
                 editBaseType = result.GetType();
 
                 do

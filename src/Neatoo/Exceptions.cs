@@ -111,7 +111,7 @@ public class SaveOperationException : EntityException
 		SaveFailureReason.IsChildObject => "Child objects cannot be saved directly. Save the parent object instead.",
 		SaveFailureReason.IsInvalid => "Object is not valid and cannot be saved. Check validation errors before saving.",
 		SaveFailureReason.NotModified => "Object has not been modified. There are no changes to save.",
-		SaveFailureReason.IsBusy => "Object is busy with an async operation and cannot be saved. Wait for operations to complete.",
+		SaveFailureReason.IsBusy => "Object is busy with an async operation and cannot be saved. Call 'await entity.WaitForTasks()' before saving.",
 		SaveFailureReason.NoFactoryMethod => "No factory save method is configured. Ensure [Insert], [Update], and/or [Delete] methods with no non-service parameters are defined.",
 		_ => "Save operation failed."
 	};

@@ -55,7 +55,7 @@ public interface IRule
     /// </summary>
     /// <param name="ruleManager">The rule manager that this rule was added to.</param>
     /// <param name="uniqueIndex">The unique index assigned to this rule.</param>
-    void OnRuleAdded(IRuleManager ruleManager, uint uniqueIndex); // TODO: Replace with Factory Method and Constructor
+    void OnRuleAdded(IRuleManager ruleManager, uint uniqueIndex);
 }
 
 /// <summary>
@@ -223,8 +223,14 @@ public abstract class AsyncRuleBase<T> : IRule<T>
     }
 
     /// <inheritdoc />
+    /// <exception cref="OperationCanceledException">Thrown when cancellation is requested before execution.</exception>
     public virtual Task<IRuleMessages> RunRule(T target, CancellationToken? token = null)
     {
+        if (token?.IsCancellationRequested == true)
+        {
+            throw new OperationCanceledException(token.Value);
+        }
+
         this.Executed = true;
         return this.Execute(target, token);
     }
@@ -514,6 +520,94 @@ where T : class, IValidateBase
     protected override async Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
     {
         var result = await this.ExecuteFunc(target);
+
+        if (string.IsNullOrWhiteSpace(result))
+        {
+            return RuleMessages.None;
+        }
+        else
+        {
+            return (this.TriggerProperties.Single().PropertyName, result).AsRuleMessages();
+        }
+    }
+}
+
+/// <summary>
+/// A fluent rule that executes an asynchronous action with cancellation support without producing validation messages.
+/// Useful for rules that perform async side effects and need to respond to cancellation tokens.
+/// </summary>
+/// <typeparam name="T">The type of validation target this rule operates on.</typeparam>
+/// <remarks>
+/// This rule is created through <see cref="IRuleManager{T}.AddActionAsync(Func{T, CancellationToken, Task}, Expression{Func{T, object?}}[])"/>
+/// and always returns <see cref="RuleMessages.None"/> since it is intended for actions, not validation.
+/// </remarks>
+/// <example>
+/// <code>
+/// // In your ValidateBase constructor:
+/// RuleManager.AddActionAsync(
+///     async (target, token) => target.TaxRate = await taxService.GetTaxRateAsync(target.ZipCode, token),
+///     t => t.ZipCode);
+/// </code>
+/// </example>
+public class ActionAsyncFluentRuleWithToken<T> : AsyncRuleBase<T>
+    where T : class, IValidateBase
+{
+    private Func<T, CancellationToken, Task> ExecuteFunc { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ActionAsyncFluentRuleWithToken{T}"/> class.
+    /// </summary>
+    /// <param name="execute">The async function to execute when the rule is triggered, receiving the cancellation token.</param>
+    /// <param name="triggerProperties">Property expressions that define which properties trigger this rule when changed.</param>
+    public ActionAsyncFluentRuleWithToken(Func<T, CancellationToken, Task> execute, params Expression<Func<T, object?>>[] triggerProperties) : base(triggerProperties)
+    {
+        this.ExecuteFunc = execute;
+    }
+
+    /// <inheritdoc />
+    protected override async Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
+    {
+        await this.ExecuteFunc(target, token ?? CancellationToken.None);
+        return RuleMessages.None;
+    }
+}
+
+/// <summary>
+/// A fluent rule that executes an asynchronous validation function with cancellation support and produces a validation message.
+/// The validation function returns a string: an empty or null string indicates success, any other value is the error message.
+/// </summary>
+/// <typeparam name="T">The type of validation target this rule operates on.</typeparam>
+/// <remarks>
+/// This rule is created through <see cref="IRuleManager{T}.AddValidationAsync(Func{T, CancellationToken, Task{string}}, Expression{Func{T, object?}})"/>.
+/// The error message is automatically associated with the trigger property.
+/// </remarks>
+/// <example>
+/// <code>
+/// // In your ValidateBase constructor:
+/// RuleManager.AddValidationAsync(
+///     async (target, token) => await emailService.ExistsAsync(target.Email, token) ? "Email already in use" : "",
+///     t => t.Email);
+/// </code>
+/// </example>
+public class AsyncFluentRuleWithToken<T> : AsyncRuleBase<T>
+where T : class, IValidateBase
+{
+    private Func<T, CancellationToken, Task<string>> ExecuteFunc { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AsyncFluentRuleWithToken{T}"/> class.
+    /// </summary>
+    /// <param name="execute">The async validation function that receives the cancellation token and returns an error message or empty string for success.</param>
+    /// <param name="triggerProperty">The property expression that triggers this rule and receives any error message.</param>
+    public AsyncFluentRuleWithToken(Func<T, CancellationToken, Task<string>> execute, Expression<Func<T, object?>> triggerProperty) : base([triggerProperty])
+    {
+        this.ExecuteFunc = execute;
+    }
+
+    /// <inheritdoc />
+    protected override async Task<IRuleMessages> Execute(T target, CancellationToken? token = null)
+    {
+        var result = await this.ExecuteFunc(target, token ?? CancellationToken.None);
 
         if (string.IsNullOrWhiteSpace(result))
         {
