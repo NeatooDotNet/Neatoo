@@ -57,25 +57,25 @@ var result = await rule.RunRule(target);     // Returns IRuleMessages
 <!-- snippet: docs:testing:sync-rule-test -->
 ```csharp
 [TestMethod]
-public void RunRule_WhenNameIsEmpty_ReturnsError()
-{
-    // Arrange
-    var rule = new NameValidationRule();
+    public void RunRule_WhenNameIsEmpty_ReturnsError()
+    {
+        // Arrange
+        var rule = new NameValidationRule();
 
-    var mockTarget = new Mock<INamedEntity>();
-    mockTarget.Setup(e => e.Name).Returns(string.Empty);
-    mockTarget.Setup(e => e.Id).Returns(1);
+        var mockTarget = new Mock<INamedEntity>();
+        mockTarget.Setup(e => e.Name).Returns(string.Empty);
+        mockTarget.Setup(e => e.Id).Returns(1);
 
-    // Act - Use RunRule directly, NOT a wrapper class
-    var result = rule.RunRule(mockTarget.Object);
+        // Act - Use RunRule directly, NOT a wrapper class
+        var result = rule.RunRule(mockTarget.Object);
 
-    // Assert
-    Assert.IsNotNull(result);
-    var messages = result.Result.ToList();
-    Assert.AreEqual(1, messages.Count);
-    Assert.AreEqual("Name", messages[0].PropertyName);
-    Assert.IsTrue(messages[0].Message.Contains("required"));
-}
+        // Assert
+        Assert.IsNotNull(result);
+        var messages = result.Result.ToList();
+        Assert.AreEqual(1, messages.Count);
+        Assert.AreEqual("Name", messages[0].PropertyName);
+        Assert.IsTrue(messages[0].Message.Contains("required"));
+    }
 ```
 <!-- /snippet -->
 
@@ -105,38 +105,38 @@ Assert.AreEqual(2, messages.Count);
 <!-- snippet: docs:testing:async-rule-test -->
 ```csharp
 [TestMethod]
-public async Task RunRule_WhenNameNotUnique_ReturnsError()
-{
-    // Arrange - Mock the uniqueness check dependency
-    var mockCheckUnique = new Mock<ICheckNameUnique>();
-    mockCheckUnique
-        .Setup(c => c.IsUnique(It.IsAny<string>(), It.IsAny<int?>()))
-        .ReturnsAsync(false); // Name is NOT unique
+    public async Task RunRule_WhenNameNotUnique_ReturnsError()
+    {
+        // Arrange - Mock the uniqueness check dependency
+        var mockCheckUnique = new Mock<ICheckNameUnique>();
+        mockCheckUnique
+            .Setup(c => c.IsUnique(It.IsAny<string>(), It.IsAny<int?>()))
+            .ReturnsAsync(false); // Name is NOT unique
 
-    var rule = new UniqueNameAsyncRule(mockCheckUnique.Object);
+        var rule = new UniqueNameAsyncRule(mockCheckUnique.Object);
 
-    // Mock the target entity (IEntityBase for IsModified support)
-    var mockTarget = new Mock<INamedEntityWithTracking>();
-    mockTarget.Setup(e => e.Name).Returns("Duplicate Name");
-    mockTarget.Setup(e => e.Id).Returns(1);
+        // Mock the target entity (IEntityBase for IsModified support)
+        var mockTarget = new Mock<INamedEntityWithTracking>();
+        mockTarget.Setup(e => e.Name).Returns("Duplicate Name");
+        mockTarget.Setup(e => e.Id).Returns(1);
 
-    // Mock the property accessor for IsModified check
-    var mockProperty = new Mock<IEntityProperty>();
-    mockProperty.Setup(p => p.IsModified).Returns(true);
-    mockTarget.Setup(e => e[nameof(INamedEntityWithTracking.Name)]).Returns(mockProperty.Object);
+        // Mock the property accessor for IsModified check
+        var mockProperty = new Mock<IEntityProperty>();
+        mockProperty.Setup(p => p.IsModified).Returns(true);
+        mockTarget.Setup(e => e[nameof(INamedEntityWithTracking.Name)]).Returns(mockProperty.Object);
 
-    // Act - Use RunRule with await for async rules
-    var result = await rule.RunRule(mockTarget.Object);
+        // Act - Use RunRule with await for async rules
+        var result = await rule.RunRule(mockTarget.Object);
 
-    // Assert
-    var messages = result.ToList();
-    Assert.AreEqual(1, messages.Count);
-    Assert.AreEqual("Name", messages[0].PropertyName);
-    Assert.IsTrue(messages[0].Message.Contains("already exists"));
+        // Assert
+        var messages = result.ToList();
+        Assert.AreEqual(1, messages.Count);
+        Assert.AreEqual("Name", messages[0].PropertyName);
+        Assert.IsTrue(messages[0].Message.Contains("already exists"));
 
-    // Verify the dependency was called
-    mockCheckUnique.Verify(c => c.IsUnique("Duplicate Name", 1), Times.Once);
-}
+        // Verify the dependency was called
+        mockCheckUnique.Verify(c => c.IsUnique("Duplicate Name", 1), Times.Once);
+    }
 ```
 <!-- /snippet -->
 
@@ -170,29 +170,29 @@ mockService.Verify(s => s.CheckAsync(It.IsAny<string>()), Times.Never);
 <!-- snippet: docs:testing:rule-with-parent-test -->
 ```csharp
 [TestMethod]
-public void RunRule_WhenQuantityExceedsParentLimit_ReturnsError()
-{
-    // Arrange
-    var rule = new QuantityLimitRule();
+    public void RunRule_WhenQuantityExceedsParentLimit_ReturnsError()
+    {
+        // Arrange
+        var rule = new QuantityLimitRule();
 
-    // Mock the parent with a quantity limit
-    var mockParent = new Mock<IOrderHeader>();
-    mockParent.Setup(p => p.MaxQuantityPerLine).Returns(100);
+        // Mock the parent with a quantity limit
+        var mockParent = new Mock<IOrderHeader>();
+        mockParent.Setup(p => p.MaxQuantityPerLine).Returns(100);
 
-    // Mock the line item with quantity exceeding the limit
-    var mockTarget = new Mock<ILineItem>();
-    mockTarget.Setup(l => l.Quantity).Returns(150);
-    mockTarget.Setup(l => l.Parent).Returns(mockParent.Object);
+        // Mock the line item with quantity exceeding the limit
+        var mockTarget = new Mock<ILineItem>();
+        mockTarget.Setup(l => l.Quantity).Returns(150);
+        mockTarget.Setup(l => l.Parent).Returns(mockParent.Object);
 
-    // Act
-    var result = rule.RunRule(mockTarget.Object);
+        // Act
+        var result = rule.RunRule(mockTarget.Object);
 
-    // Assert
-    var messages = result.Result.ToList();
-    Assert.AreEqual(1, messages.Count);
-    Assert.AreEqual("Quantity", messages[0].PropertyName);
-    Assert.IsTrue(messages[0].Message.Contains("100"));
-}
+        // Assert
+        var messages = result.Result.ToList();
+        Assert.AreEqual(1, messages.Count);
+        Assert.AreEqual("Quantity", messages[0].PropertyName);
+        Assert.IsTrue(messages[0].Message.Contains("100"));
+    }
 ```
 <!-- /snippet -->
 

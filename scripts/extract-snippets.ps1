@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Extracts code snippets from Neatoo.Documentation.Samples and updates documentation.
+    Extracts code snippets from Neatoo.Samples and updates documentation.
 
 .DESCRIPTION
-    This script scans the Documentation.Samples project for #region docs:* markers,
+    This script scans the docs/samples/ projects for #region docs:* markers,
     extracts the code snippets, and can optionally update the corresponding markdown
     documentation files.
 
@@ -14,7 +14,7 @@
     Update the markdown documentation files with extracted snippets.
 
 .PARAMETER SamplesPath
-    Path to the samples project. Defaults to src/Neatoo.Documentation.Samples
+    Path to the samples directory. Defaults to docs/samples
 
 .PARAMETER DocsPath
     Path to the docs directory. Defaults to docs/
@@ -31,7 +31,7 @@
 param(
     [switch]$Verify,
     [switch]$Update,
-    [string]$SamplesPath = "src/Neatoo.Documentation.Samples",
+    [string]$SamplesPath = "docs/samples",
     [string]$DocsPath = "docs"
 )
 

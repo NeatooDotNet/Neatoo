@@ -95,7 +95,7 @@ public static partial class CheckEmailUnique
 ```
 <!-- /snippet -->
 
-The source generator creates a delegate `CheckShiftOverlap.HasOverlap` that can be injected and executed remotely.
+The source generator creates a delegate `CheckEmailUnique.IsUnique` that can be injected and executed remotely.
 
 ### Step 2: Create an Async Rule
 
@@ -139,24 +139,17 @@ public class AsyncUniqueEmailRule : AsyncRuleBase<IUserWithEmail>, IAsyncUniqueE
 ```
 <!-- /snippet -->
 
-### Step 3: Register the Rule
+### Step 3: Register the Rule with DI
+
+Register the rule interface so it can be injected into entity constructors:
 
 ```csharp
-// In domain model constructor
-public ShiftEdit(
-    IEntityBaseServices<ShiftEdit> services,
-    IShiftOverlapRule overlapRule) : base(services)
-{
-    RuleManager.AddRule(overlapRule);
-}
-
-// In DI registration
-builder.Services.AddScoped<IShiftOverlapRule, ShiftOverlapRule>();
+builder.Services.AddScoped<IAsyncUniqueEmailRule, AsyncUniqueEmailRule>();
 ```
 
-### Step 4: Clean Factory Methods
+### Step 4: Wire It Together
 
-Factory methods should contain **only** persistence logic:
+The entity constructor receives the rule via DI and registers it. Factory methods contain **only** persistence logic:
 
 <!-- snippet: docs:database-dependent-validation:clean-factory -->
 ```csharp

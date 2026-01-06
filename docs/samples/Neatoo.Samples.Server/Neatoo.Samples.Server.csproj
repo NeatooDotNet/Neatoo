@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFrameworks>net9.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Neatoo\Neatoo.csproj" />
+    <ProjectReference Include="..\Neatoo.Samples.DomainModel\Neatoo.Samples.DomainModel.csproj" />
+  </ItemGroup>
+
+</Project>

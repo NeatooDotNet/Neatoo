@@ -24,25 +24,37 @@ IPersonFactory.Save()     ----------->  Person.Update() executes
 
 ### Server Setup
 
-```csharp
-// Program.cs
-builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IMyAggregate).Assembly);
+Register Neatoo services for server mode:
 
-app.MapPost("/api/neatoo", async (HttpContext ctx, RemoteRequestDto request) =>
-    await NeatooEndpoint.HandleRequest(ctx, request));
+<!-- snippet: docs:remote-factory:server-di-setup -->
+```csharp
+builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IPerson).Assembly);
 ```
+<!-- /snippet -->
+
+Map the remote factory endpoint:
+
+<!-- snippet: docs:remote-factory:server-endpoint -->
+```csharp
+app.MapPost("/api/neatoo", (HttpContext httpContext, RemoteRequestDto request, CancellationToken cancellationToken) =>
+{
+    var handleRemoteDelegateRequest = httpContext.RequestServices.GetRequiredService<HandleRemoteDelegateRequest>();
+    return handleRemoteDelegateRequest(request, cancellationToken);
+});
+```
+<!-- /snippet -->
 
 ### Client Setup
 
-```csharp
-// Program.cs
-builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IMyAggregate).Assembly);
+Register Neatoo services for remote mode and configure the HTTP client:
 
-builder.Services.AddScoped(sp => new HttpClient
-{
-    BaseAddress = new Uri("https://api.myapp.com")
-});
+<!-- snippet: docs:remote-factory:client-di-setup -->
+```csharp
+builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IPerson).Assembly);
+builder.Services.AddKeyedScoped(RemoteFactoryServices.HttpClientKey, (sp, key) =>
+    new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 ```
+<!-- /snippet -->
 
 ## [Remote] Attribute
 
