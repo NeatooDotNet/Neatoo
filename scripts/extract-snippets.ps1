@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Extracts code snippets from Neatoo.Samples and updates documentation.
+    Extracts code snippets from Neatoo.Samples and updates documentation and skills.
 
 .DESCRIPTION
     This script scans the docs/samples/ projects for #region docs:* markers,
     extracts the code snippets, and can optionally update the corresponding markdown
-    documentation files.
+    documentation files and Claude skill files.
 
 .PARAMETER Verify
     Only verify that snippets exist and report status. Does not modify any files.
@@ -19,6 +19,9 @@
 .PARAMETER DocsPath
     Path to the docs directory. Defaults to docs/
 
+.PARAMETER SkillPath
+    Optional path to Claude skill directory. When provided, also processes skill files.
+
 .EXAMPLE
     .\extract-snippets.ps1 -Verify
     Verifies all snippet markers are valid without modifying files.
@@ -26,13 +29,18 @@
 .EXAMPLE
     .\extract-snippets.ps1 -Update
     Extracts snippets and updates documentation files.
+
+.EXAMPLE
+    .\extract-snippets.ps1 -Update -SkillPath "$env:USERPROFILE\.claude\skills\neatoo"
+    Updates both documentation and skill files.
 #>
 
 param(
     [switch]$Verify,
     [switch]$Update,
     [string]$SamplesPath = "docs/samples",
-    [string]$DocsPath = "docs"
+    [string]$DocsPath = "docs",
+    [string]$SkillPath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -47,6 +55,9 @@ Write-Host "=======================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Samples Path: $SamplesFullPath"
 Write-Host "Docs Path: $DocsFullPath"
+if ($SkillPath) {
+    Write-Host "Skill Path: $SkillPath"
+}
 Write-Host ""
 
 # Pattern to match region markers: #region docs:{doc-file}:{snippet-id}
@@ -193,7 +204,73 @@ if ($Verify) {
     }
 
     Write-Host ""
-    Write-Host "Verification complete. $verifiedCount snippets verified, $($orphanSnippets.Count) orphan snippets." -ForegroundColor Green
+    Write-Host "Docs verification complete. $verifiedCount snippets verified, $($orphanSnippets.Count) orphan snippets." -ForegroundColor Green
+
+    # Skill verification (if SkillPath provided)
+    if ($SkillPath -and (Test-Path $SkillPath)) {
+        Write-Host ""
+        Write-Host "Verifying skill files are in sync with samples..." -ForegroundColor Yellow
+
+        $skillOutOfSync = @()
+        $skillVerifiedCount = 0
+        $skillFiles = Get-ChildItem -Path $SkillPath -Filter "*.md"
+
+        foreach ($skillFile in $skillFiles) {
+            $skillContent = Get-Content $skillFile.FullName -Raw
+
+            # Find all snippet markers in this skill file
+            $skillMarkerPattern = '<!--\s*snippet:\s*docs:([^:]+):([^\s]+)\s*-->'
+            $skillMatches = [regex]::Matches($skillContent, $skillMarkerPattern)
+
+            foreach ($match in $skillMatches) {
+                $docFile = $match.Groups[1].Value
+                $snippetId = $match.Groups[2].Value
+                $key = "${docFile}:${snippetId}"
+
+                if (-not $snippets.ContainsKey($key)) {
+                    Write-Host "  Warning: Snippet '$key' not found in samples (referenced in $($skillFile.Name))" -ForegroundColor Yellow
+                    continue
+                }
+
+                $expectedContent = $snippets[$key].Content
+
+                # Extract current content from skill file
+                $contentPattern = "<!--\s*snippet:\s*docs:${docFile}:${snippetId}\s*-->\s*\r?\n``````(?:csharp|razor)?\r?\n([\s\S]*?)``````\s*\r?\n<!--\s*/snippet\s*-->"
+
+                if ($skillContent -match $contentPattern) {
+                    $currentContent = $Matches[1].Trim()
+                    $expectedTrimmed = $expectedContent.Trim()
+
+                    # Normalize line endings for comparison
+                    $currentNormalized = $currentContent -replace '\r\n', "`n"
+                    $expectedNormalized = $expectedTrimmed -replace '\r\n', "`n"
+
+                    if ($currentNormalized -ne $expectedNormalized) {
+                        $skillOutOfSync += "  - $($skillFile.Name): $key"
+                    } else {
+                        $skillVerifiedCount++
+                    }
+                } else {
+                    $skillOutOfSync += "  - $($skillFile.Name): $key (marker found but content pattern invalid)"
+                }
+            }
+        }
+
+        if ($skillOutOfSync.Count -gt 0) {
+            Write-Host ""
+            Write-Host "Skill files out of sync with samples:" -ForegroundColor Red
+            foreach ($item in $skillOutOfSync) {
+                Write-Host $item -ForegroundColor Red
+            }
+            Write-Host ""
+            Write-Host "Run '.\scripts\extract-snippets.ps1 -Update -SkillPath `"$SkillPath`"' to sync skills." -ForegroundColor Yellow
+            exit 1
+        }
+
+        Write-Host ""
+        Write-Host "Skill verification complete. $skillVerifiedCount snippets verified." -ForegroundColor Green
+    }
+
     exit 0
 }
 
@@ -246,12 +323,68 @@ if ($Update) {
     }
 
     Write-Host ""
-    Write-Host "Update complete. $updatedFiles files updated, $snippetsUpdated snippets processed." -ForegroundColor Green
+    Write-Host "Docs update complete. $updatedFiles files updated, $snippetsUpdated snippets processed." -ForegroundColor Green
+
+    # Skill update (if SkillPath provided)
+    if ($SkillPath -and (Test-Path $SkillPath)) {
+        Write-Host ""
+        Write-Host "Updating skill files..." -ForegroundColor Yellow
+
+        $skillUpdatedFiles = 0
+        $skillSnippetsUpdated = 0
+        $skillFiles = Get-ChildItem -Path $SkillPath -Filter "*.md"
+
+        foreach ($skillFile in $skillFiles) {
+            $skillContent = Get-Content $skillFile.FullName -Raw
+            $originalSkillContent = $skillContent
+            $skillFileUpdated = $false
+
+            # Find all snippet markers in this skill file
+            $skillMarkerPattern = '<!--\s*snippet:\s*docs:([^:]+):([^\s]+)\s*-->'
+            $skillMatches = [regex]::Matches($skillContent, $skillMarkerPattern)
+
+            foreach ($match in $skillMatches) {
+                $docFile = $match.Groups[1].Value
+                $snippetId = $match.Groups[2].Value
+                $key = "${docFile}:${snippetId}"
+
+                if (-not $snippets.ContainsKey($key)) {
+                    Write-Host "  Warning: Snippet '$key' not found in samples (referenced in $($skillFile.Name))" -ForegroundColor Yellow
+                    continue
+                }
+
+                $snippetContent = $snippets[$key].Content
+
+                # Pattern to match and replace the full snippet block
+                $contentPattern = "<!--\s*snippet:\s*docs:${docFile}:${snippetId}\s*-->\s*\r?\n``````(?:csharp|razor)?\r?\n([\s\S]*?)``````\s*\r?\n<!--\s*/snippet\s*-->"
+
+                if ($skillContent -match $contentPattern) {
+                    $replacement = "<!-- snippet: docs:${docFile}:${snippetId} -->`n``````csharp`n$snippetContent`n```````n<!-- /snippet -->"
+                    $skillContent = $skillContent -replace $contentPattern, $replacement
+                    $skillSnippetsUpdated++
+                    $skillFileUpdated = $true
+                }
+            }
+
+            if ($skillFileUpdated -and $skillContent -ne $originalSkillContent) {
+                Set-Content -Path $skillFile.FullName -Value $skillContent -NoNewline
+                $skillUpdatedFiles++
+                Write-Host "  Updated: $($skillFile.Name)" -ForegroundColor Green
+            }
+        }
+
+        Write-Host ""
+        Write-Host "Skill update complete. $skillUpdatedFiles files updated, $skillSnippetsUpdated snippets processed." -ForegroundColor Green
+    }
 }
 
 if (-not $Verify -and -not $Update) {
     Write-Host ""
     Write-Host "Usage:" -ForegroundColor Cyan
-    Write-Host "  .\extract-snippets.ps1 -Verify    # Verify snippets without updating"
-    Write-Host "  .\extract-snippets.ps1 -Update    # Update documentation files"
+    Write-Host "  .\extract-snippets.ps1 -Verify                    # Verify docs snippets"
+    Write-Host "  .\extract-snippets.ps1 -Update                    # Update docs files"
+    Write-Host ""
+    Write-Host "With skill support:" -ForegroundColor Cyan
+    Write-Host "  .\extract-snippets.ps1 -Verify -SkillPath <path>  # Verify docs + skills"
+    Write-Host "  .\extract-snippets.ps1 -Update -SkillPath <path>  # Update docs + skills"
 }

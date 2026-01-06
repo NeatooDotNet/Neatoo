@@ -3,6 +3,8 @@
 ///
 /// Compile-time validation only (docs use inline examples):
 /// - docs:factory-operations:save-usage-examples
+/// - docs:migration:save-reassignment
+/// - docs:migration:cancellation-token
 ///
 /// Corresponding tests: SaveUsageSamplesTests.cs
 /// </summary>
@@ -105,5 +107,63 @@ public static class SaveUsageExamples
 
         // Now IsDeleted = false, item will not be deleted on save
     }
+}
+#endregion
+
+#region docs:migration:save-reassignment
+/// <summary>
+/// Migration pattern: Save() reassignment (v10.5+)
+///
+/// IMPORTANT: Always reassign the result of Save() to your variable.
+/// Save() returns a new instance after the client-server roundtrip.
+/// </summary>
+public static class SaveReassignmentMigration
+{
+    public static async Task CorrectPattern(
+        ISaveableItem entity,
+        ISaveableItemFactory factory)
+    {
+        // v10.5+ CORRECT: Always reassign
+        entity = await factory.Save(entity);
+
+        // The returned entity has:
+        // - Server-generated values (timestamps, computed fields)
+        // - IsNew = false after Insert
+        // - IsModified = false after successful save
+    }
+
+    // WRONG: Ignoring the return value (pre-v10.5 habit)
+    // await factory.Save(entity);  // DON'T DO THIS
+    //
+    // The original 'entity' reference becomes stale after Save().
+    // Server-side changes are only in the returned instance.
+}
+#endregion
+
+#region docs:migration:cancellation-token
+/// <summary>
+/// Migration pattern: CancellationToken support (v10.5+)
+///
+/// Async operations now support CancellationToken for graceful cancellation.
+/// The token flows from client to server via HTTP connection state.
+/// </summary>
+public static class CancellationTokenMigration
+{
+    public static async Task RunRulesWithCancellation(
+        ISaveableItem entity,
+        CancellationToken cancellationToken)
+    {
+        // v10.5+: RunRules supports CancellationToken
+        await entity.RunRules(token: cancellationToken);
+
+        // CancellationToken flows to:
+        // - AsyncRuleBase.Execute() methods
+        // - Server-side operations via HTTP connection
+        // - Database queries (if passed through)
+    }
+
+    // For Save operations, cancellation is handled via HTTP:
+    // - Client disconnection cancels server operation
+    // - No explicit CancellationToken parameter needed on Save
 }
 #endregion

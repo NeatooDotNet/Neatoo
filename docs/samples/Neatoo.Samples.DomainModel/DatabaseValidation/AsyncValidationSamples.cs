@@ -2,6 +2,7 @@
 /// Code samples for docs/database-dependent-validation.md
 ///
 /// Snippets in this file:
+/// - docs:database-dependent-validation:anti-pattern (DON'T DO THIS)
 /// - docs:database-dependent-validation:command-pattern
 /// - docs:database-dependent-validation:async-rule
 /// - docs:database-dependent-validation:clean-factory
@@ -37,6 +38,36 @@ public class MockUserRepository : IUserRepository
         return Task.FromResult(_existingEmails.Contains(email));
     }
 }
+
+#region docs:database-dependent-validation:anti-pattern
+/// <summary>
+/// ANTI-PATTERN: Do NOT put validation in factory methods.
+/// This example shows what NOT to do.
+/// </summary>
+/// <remarks>
+/// Problems with this approach:
+/// 1. Poor UX - Users only see errors after clicking Save
+/// 2. Throws exceptions instead of validation messages
+/// 3. Bypasses rule system - no IsBusy, no UI integration
+/// 4. Returns HTTP 500 instead of validation error
+/// </remarks>
+public static class AntiPatternExample
+{
+    /// <summary>
+    /// BAD: Validation logic inside Insert method.
+    /// </summary>
+    public static async Task Insert_AntiPattern(
+        IUserWithEmail user,
+        IUserRepository repo)
+    {
+        // DON'T DO THIS - validation only runs at save time!
+        if (await repo.EmailExistsAsync(user.Email!, null))
+            throw new InvalidOperationException("Email already in use");
+
+        // ... persistence would go here
+    }
+}
+#endregion
 
 #region docs:database-dependent-validation:command-pattern
 /// <summary>

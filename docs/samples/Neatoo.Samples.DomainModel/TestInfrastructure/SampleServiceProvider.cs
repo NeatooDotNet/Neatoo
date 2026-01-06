@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Neatoo.Samples.DomainModel.AggregatesAndEntities;
+using Neatoo.Samples.DomainModel.Authorization;
 using Neatoo.Samples.DomainModel.DatabaseValidation;
 using Neatoo.Samples.DomainModel.FactoryOperations;
 using Neatoo.Samples.DomainModel.SampleDomain;
@@ -56,6 +57,12 @@ public static class SampleServiceProvider
         services.AddScoped<IProductRepository, MockProductRepository>();
         services.AddScoped<IInventoryDb, MockInventoryDb>();
         services.AddScoped<IUserRepository, MockUserRepository>();
+
+        // Register authorization services
+        services.AddScoped<ICurrentUser, MockCurrentUser>();
+        services.AddScoped<IDocumentAuth, DocumentAuth>();
+        services.AddScoped<IPublicReadAuth, PublicReadAuth>();
+        services.AddScoped<IRoleBasedAuth, RoleBasedAuth>();
 
         return services.BuildServiceProvider();
     }
