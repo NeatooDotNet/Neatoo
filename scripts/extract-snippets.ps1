@@ -308,8 +308,10 @@ if ($Update) {
             $markerPattern = "<!--\s*snippet:\s*docs:$($group.Name):$snippetId\s*-->\s*\r?\n``````(?:csharp|razor)?\r?\n([\s\S]*?)``````\s*\r?\n<!--\s*/snippet\s*-->"
 
             if ($docContent -match $markerPattern) {
+                # Use literal string replacement to avoid regex backreference issues with $ in code
+                $matchedBlock = $Matches[0]
                 $replacement = "<!-- snippet: docs:$($group.Name):$snippetId -->`n``````csharp`n$snippetContent`n```````n<!-- /snippet -->"
-                $docContent = $docContent -replace $markerPattern, $replacement
+                $docContent = $docContent.Replace($matchedBlock, $replacement)
                 $snippetsUpdated++
                 $fileUpdated = $true
             }
@@ -359,8 +361,10 @@ if ($Update) {
                 $contentPattern = "<!--\s*snippet:\s*docs:${docFile}:${snippetId}\s*-->\s*\r?\n``````(?:csharp|razor)?\r?\n([\s\S]*?)``````\s*\r?\n<!--\s*/snippet\s*-->"
 
                 if ($skillContent -match $contentPattern) {
+                    # Use literal string replacement to avoid regex backreference issues with $ in code
+                    $matchedBlock = $Matches[0]
                     $replacement = "<!-- snippet: docs:${docFile}:${snippetId} -->`n``````csharp`n$snippetContent`n```````n<!-- /snippet -->"
-                    $skillContent = $skillContent -replace $contentPattern, $replacement
+                    $skillContent = $skillContent.Replace($matchedBlock, $replacement)
                     $skillSnippetsUpdated++
                     $skillFileUpdated = $true
                 }
