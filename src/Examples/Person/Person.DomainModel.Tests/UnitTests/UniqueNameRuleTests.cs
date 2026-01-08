@@ -1,20 +1,20 @@
-﻿using Moq;
+﻿using KnockOff;
+using Moq;
 using Neatoo.Rules;
 
 namespace DomainModel.Tests.UnitTests
 {
-    public class UniqueNameRuleTests
+    [KnockOff<UniqueName.IsUniqueName>]
+    public partial class UniqueNameRuleTests
     {
         [Fact]
         public async Task Execute_ShouldReturnNone_WhenNameIsUnique()
         {
-            // Arrange
-            var mockIsUniqueName = new Mock<UniqueName.IsUniqueName>();
-            mockIsUniqueName
-                .Setup(x => x(It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<string>()))
-                .ReturnsAsync(true);
+            // Arrange - KnockOff delegate stub
+            var isUniqueStub = new Stubs.IsUniqueName();
+            isUniqueStub.Interceptor.OnCall = (ko, id, firstName, lastName) => Task.FromResult(true);
 
-            var rule = new UniqueNameRule(mockIsUniqueName.Object);
+            var rule = new UniqueNameRule(isUniqueStub);
 
             var mockPerson = new Mock<IPerson>();
             mockPerson.SetupGet(x => x.FirstName).Returns("Jane");
@@ -32,13 +32,11 @@ namespace DomainModel.Tests.UnitTests
         [Fact]
         public async Task Execute_ShouldReturnErrorMessages_WhenNameIsNotUnique()
         {
-            // Arrange
-            var mockIsUniqueName = new Mock<UniqueName.IsUniqueName>();
-            mockIsUniqueName
-                .Setup(x => x(It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<string>()))
-                .ReturnsAsync(false);
+            // Arrange - KnockOff delegate stub
+            var isUniqueStub = new Stubs.IsUniqueName();
+            isUniqueStub.Interceptor.OnCall = (ko, id, firstName, lastName) => Task.FromResult(false);
 
-            var rule = new UniqueNameRule(mockIsUniqueName.Object);
+            var rule = new UniqueNameRule(isUniqueStub);
 
             var mockPerson = new Mock<IPerson>();
             mockPerson.SetupGet(x => x.FirstName).Returns("John");
@@ -58,9 +56,9 @@ namespace DomainModel.Tests.UnitTests
         [Fact]
         public async Task Execute_ShouldReturnNone_WhenNameIsNotModified()
         {
-            // Arrange
-            var mockIsUniqueName = new Mock<UniqueName.IsUniqueName>();
-            var rule = new UniqueNameRule(mockIsUniqueName.Object);
+            // Arrange - KnockOff delegate stub (no OnCall configured = will not be called)
+            var isUniqueStub = new Stubs.IsUniqueName();
+            var rule = new UniqueNameRule(isUniqueStub);
 
             var mockPerson = new Mock<IPerson>();
             mockPerson.SetupGet(x => x.FirstName).Returns("Jane");
@@ -73,7 +71,8 @@ namespace DomainModel.Tests.UnitTests
 
             // Assert
             Assert.Equal(RuleMessages.None, result);
-            mockIsUniqueName.Verify(x => x(It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            Assert.False(isUniqueStub.Interceptor.WasCalled);
+            Assert.Equal(0, isUniqueStub.Interceptor.CallCount);
         }
     }
 }

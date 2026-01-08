@@ -1,8 +1,9 @@
-using Moq;
+using KnockOff;
 
 namespace DomainModel.Tests.UnitTests
 {
-    public class PersonAuthTests
+    [KnockOff<IUser>]
+    public partial class PersonAuthTests
     {
         [Theory]
         [InlineData(Role.None, false)]
@@ -13,10 +14,11 @@ namespace DomainModel.Tests.UnitTests
         public void CanAccess_ShouldReturnExpectedResult(Role userRole, bool expectedResult)
         {
             // Arrange
-            var mockUser = new Mock<IUser>();
-            mockUser.SetupGet(u => u.Role).Returns(userRole);
+            var userStub = new Stubs.IUser();
+            IUser user = userStub;
+            user.Role = userRole;
 
-            var auth = new PersonAuth(mockUser.Object);
+            var auth = new PersonAuth(user);
 
             // Act
             var result = auth.HasAccess();
@@ -34,10 +36,11 @@ namespace DomainModel.Tests.UnitTests
         public void CanCreate_ShouldReturnExpectedResult(Role userRole, bool expectedResult)
         {
             // Arrange
-            var mockUser = new Mock<IUser>();
-            mockUser.SetupGet(u => u.Role).Returns(userRole);
+            var userStub = new Stubs.IUser();
+            IUser user = userStub;
+            user.Role = userRole;
 
-            var auth = new PersonAuth(mockUser.Object);
+            var auth = new PersonAuth(user);
 
             // Act
             var result = auth.HasCreate();
@@ -55,10 +58,11 @@ namespace DomainModel.Tests.UnitTests
         public void CanFetch_ShouldReturnExpectedResult(Role userRole, bool expectedResult)
         {
             // Arrange
-            var mockUser = new Mock<IUser>();
-            mockUser.SetupGet(u => u.Role).Returns(userRole);
+            var userStub = new Stubs.IUser();
+            IUser user = userStub;
+            user.Role = userRole;
 
-            var auth = new PersonAuth(mockUser.Object);
+            var auth = new PersonAuth(user);
 
             // Act
             var result = auth.HasFetch();
@@ -76,10 +80,11 @@ namespace DomainModel.Tests.UnitTests
         public void CanInsert_ShouldReturnExpectedResult(Role userRole, bool expectedResult)
         {
             // Arrange
-            var mockUser = new Mock<IUser>();
-            mockUser.SetupGet(u => u.Role).Returns(userRole);
+            var userStub = new Stubs.IUser();
+            IUser user = userStub;
+            user.Role = userRole;
 
-            var auth = new PersonAuth(mockUser.Object);
+            var auth = new PersonAuth(user);
 
             // Act
             var result = auth.HasInsert();
@@ -97,10 +102,11 @@ namespace DomainModel.Tests.UnitTests
         public void CanUpdate_ShouldReturnExpectedResult(Role userRole, bool expectedResult)
         {
             // Arrange
-            var mockUser = new Mock<IUser>();
-            mockUser.SetupGet(u => u.Role).Returns(userRole);
+            var userStub = new Stubs.IUser();
+            IUser user = userStub;
+            user.Role = userRole;
 
-            var auth = new PersonAuth(mockUser.Object);
+            var auth = new PersonAuth(user);
 
             // Act
             var result = auth.HasUpdate();
@@ -118,10 +124,11 @@ namespace DomainModel.Tests.UnitTests
         public void CanDelete_ShouldReturnExpectedResult(Role userRole, bool expectedResult)
         {
             // Arrange
-            var mockUser = new Mock<IUser>();
-            mockUser.SetupGet(u => u.Role).Returns(userRole);
+            var userStub = new Stubs.IUser();
+            IUser user = userStub;
+            user.Role = userRole;
 
-            var auth = new PersonAuth(mockUser.Object);
+            var auth = new PersonAuth(user);
 
             // Act
             var result = auth.HasDelete();
