@@ -132,10 +132,14 @@ For standalone entities (not in a list), `Delete()` simply sets `IsDeleted = tru
 
 ### DeletedList
 
-The `DeletedList` contains items marked for deletion during save:
+When existing items are removed from a list, they are moved to `DeletedList` rather than discarded. This allows your `[Update]` factory method to delete them from the database.
+
+> **Critical**: Your list's `[Update]` method must iterate `this.Union(DeletedList)` to process
+> both active and deleted items. If you only iterate `this`, removed items will silently
+> remain in the database.
 
 ```csharp
-// In Update operation
+// In Update operation - MUST include DeletedList
 foreach (var item in lineItems.Union(lineItems.DeletedList))
 {
     if (item.IsDeleted)
@@ -145,6 +149,8 @@ foreach (var item in lineItems.Union(lineItems.DeletedList))
     // ...
 }
 ```
+
+See [List Factory Operations](factory-operations.md#list-factory-operations) for complete examples.
 
 ### Intra-Aggregate Moves
 

@@ -43,6 +43,29 @@ This guide covers common issues and solutions when working with Neatoo.
 5. **Restart IDE**
    Sometimes the analyzer host needs a restart.
 
+### Factory Hint Name Too Long
+
+**Symptoms:**
+- Build error mentioning hint name length or character limit
+- Error occurs for types with long fully qualified names (namespace + class name > 50 characters)
+
+**Cause:** RemoteFactory (v9.20.1+) enforces a 50-character default limit on fully qualified type names for generated source file naming.
+
+**Solution:**
+
+Add an assembly attribute to increase the limit:
+
+```csharp
+// In AssemblyAttributes.cs or any .cs file in your project
+[assembly: FactoryHintNameLength(100)]
+```
+
+Typical values:
+- `100` - suitable for most projects
+- `150` - for deeply nested namespaces
+
+**Note:** This is a RemoteFactory feature, not Neatoo itself. The limit ensures generated file names work across all operating systems.
+
 ### Factory Not Found at Runtime
 
 **Symptoms:**
@@ -613,6 +636,7 @@ See [Factory Operations](factory-operations.md#critical-always-reassign-after-sa
 | "Object is not valid" | Validation errors | Check PropertyMessages |
 | "Factory method not found" | Missing [Insert]/[Update] | Add factory methods |
 | "Property not found" | Non-partial property | Make property partial |
+| "Hint name too long" | Type name > 50 chars | Add `[assembly: FactoryHintNameLength(100)]` |
 
 ### Diagnostic Code
 

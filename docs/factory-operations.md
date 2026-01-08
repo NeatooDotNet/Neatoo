@@ -606,7 +606,14 @@ internal partial class InvoiceLine : EntityBase<InvoiceLine>, IInvoiceLine
 
 ## List Factory Operations
 
-List factories provide Save method that handles the collection:
+List factories provide Save method that handles the collection.
+
+> **Critical: Always include DeletedList in Update methods**
+>
+> When iterating items in a list's `[Update]` method, you must use `this.Union(DeletedList)`
+> to include items that were removed from the list. Removed items are moved to `DeletedList`
+> and marked `IsDeleted = true`. If you only iterate `this`, removed items will silently
+> remain in the database.
 
 <!-- snippet: docs:factory-operations:list-factory -->
 ```csharp

@@ -4,6 +4,19 @@
 
 **ALWAYS run `/neatoo` at the start of any Neatoo development session.** The skill contains essential patterns, anti-patterns, and pitfalls for working with Neatoo entities, rules, and factories.
 
+## Documentation Code Samples
+
+**ALWAYS run `/docs-snippets` when working with `docs/` or the neatoo skill.**
+
+### Workflow for Code in Documentation
+
+1. **Add code to samples first** - All code examples live in `docs/samples/`
+2. **Mark regions** - Use `#region docs:snippet-name` markers in sample files
+3. **Run sync** - Use the docs-snippets skill to extract and inject snippets
+4. **Never copy-paste** - Documentation code must come from compiled, tested samples
+
+This ensures all code in documentation is actually compiled and tested.
+
 ## Environment
 
 - **Platform:** Windows 11
