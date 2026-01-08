@@ -44,4 +44,18 @@ internal partial class Person : EntityBase<Person>, IPerson
     {
         Id = Guid.NewGuid();
     }
+
+    [Insert]
+    public Task Insert()
+    {
+        // In real implementation: persist to database
+        return Task.CompletedTask;
+    }
+
+    [Update]
+    public Task Update()
+    {
+        // In real implementation: update database record
+        return Task.CompletedTask;
+    }
 }

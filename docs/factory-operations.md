@@ -510,6 +510,237 @@ The object you started with is **not the same object** that comes back. They are
 
 This applies to Blazor components as well - if you don't reassign, the UI will show stale data and subsequent operations may fail. See [Blazor Binding](blazor-binding.md#critical-reassign-after-save-in-blazor-components) for UI-specific guidance.
 
+## Entity-Based Save
+
+In addition to `factory.Save(entity)`, entities can save themselves via `entity.Save()`:
+
+```csharp
+// Factory-based save (documented pattern)
+person = await personFactory.Save(person);
+
+// Entity-based save (equivalent)
+person = (IPerson) await person.Save();
+```
+
+Both approaches are equivalent—`entity.Save()` internally calls `factory.Save(this)`. The entity-based approach is useful when:
+
+- Implementing business operations on the entity (see [Business Operations](#business-operations))
+- The entity has access to its factory reference
+- You prefer the fluent style
+
+### EntityBase.Save() Methods
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `Save()` | `Task<IEntityBase>` | Persist entity, routes to Insert/Update/Delete |
+| `Save(CancellationToken)` | `Task<IEntityBase>` | Save with cancellation support |
+
+### Save Failure Exceptions
+
+`Save()` throws `SaveOperationException` when the entity cannot be saved:
+
+| Reason | Condition |
+|--------|-----------|
+| `IsChildObject` | `IsChild = true` - child entities must be saved through parent |
+| `IsInvalid` | `IsValid = false` - fix validation errors first |
+| `NotModified` | `IsModified = false` - no changes to save |
+| `IsBusy` | `IsBusy = true` - wait for async operations |
+| `NoFactoryMethod` | Entity has no factory reference |
+
+## Business Operations
+
+Domain operations like `Archive()`, `Complete()`, or `Approve()` often need to:
+
+1. Validate preconditions
+2. Modify entity state
+3. Persist changes
+4. Return the updated entity
+
+The **Business Operation pattern** combines these steps into a single interface method using `entity.Save()`:
+
+<!-- snippet: docs:factory-operations:business-operation-pattern -->
+```csharp
+/// <summary>
+/// Entity with business operations that modify state and persist.
+/// The Archive() method demonstrates the pattern: validate, modify, persist via Save().
+/// </summary>
+public partial interface IVisit : IEntityBase
+{
+    Guid Id { get; }
+    string? PatientName { get; set; }
+    VisitStatus Status { get; set; }
+    bool Archived { get; }
+    DateTime LastUpdated { get; }
+
+    /// <summary>
+    /// Archives the visit. No [Service] parameters - callable from interface.
+    /// </summary>
+    Task<IVisit> Archive();
+}
+
+[Factory]
+internal partial class Visit : EntityBase<Visit>, IVisit
+{
+    public Visit(IEntityBaseServices<Visit> services) : base(services) { }
+
+    public partial Guid Id { get; set; }
+
+    [Required(ErrorMessage = "Patient name is required")]
+    public partial string? PatientName { get; set; }
+
+    public partial VisitStatus Status { get; set; }
+    public partial bool Archived { get; set; }
+    public partial DateTime LastUpdated { get; set; }
+
+    /// <summary>
+    /// Business operation: Archives the visit.
+    /// </summary>
+    /// <returns>The updated entity after persistence.</returns>
+    public async Task<IVisit> Archive()
+    {
+        // Validate preconditions
+        if (Archived)
+            throw new InvalidOperationException("Visit is already archived");
+
+        // Modify properties (client-side)
+        Status = VisitStatus.Archived;
+        Archived = true;
+        LastUpdated = DateTime.UtcNow;
+
+        // Persist via existing Save() - triggers [Update]
+        return (IVisit)await this.Save();
+    }
+
+    [Create]
+    public void Create()
+    {
+        Id = Guid.NewGuid();
+        Status = VisitStatus.Active;
+        Archived = false;
+        LastUpdated = DateTime.UtcNow;
+    }
+
+    [Remote]
+    [Fetch]
+    public void Fetch(VisitEntity entity)
+    {
+        Id = entity.Id;
+        PatientName = entity.PatientName;
+        Status = entity.Status;
+        Archived = entity.Archived;
+        LastUpdated = entity.LastUpdated;
+    }
+
+    [Remote]
+    [Insert]
+    public async Task Insert([Service] IVisitDb db)
+    {
+        await RunRules();
+        if (!IsSavable)
+            return;
+
+        var entity = new VisitEntity
+        {
+            Id = Id,
+            PatientName = PatientName,
+            Status = Status,
+            Archived = Archived,
+            LastUpdated = DateTime.UtcNow
+        };
+        db.Visits.Add(entity);
+        await db.SaveChangesAsync();
+        LastUpdated = entity.LastUpdated;
+    }
+
+    [Remote]
+    [Update]
+    public async Task Update([Service] IVisitDb db)
+    {
+        await RunRules();
+        if (!IsSavable)
+            return;
+
+        var entity = db.Find(Id);
+        if (entity == null)
+            throw new KeyNotFoundException("Visit not found");
+
+        // Only update modified properties
+        if (this[nameof(PatientName)].IsModified)
+            entity.PatientName = PatientName;
+        if (this[nameof(Status)].IsModified)
+            entity.Status = Status;
+        if (this[nameof(Archived)].IsModified)
+            entity.Archived = Archived;
+
+        entity.LastUpdated = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        LastUpdated = entity.LastUpdated;
+    }
+}
+```
+<!-- /snippet -->
+
+### Pattern Benefits
+
+| Benefit | Description |
+|---------|-------------|
+| Clean API | `visit = await visit.Archive()` |
+| Interface-compatible | No `[Service]` params in interface method |
+| No extra infrastructure | Uses existing `EntityBase.Save()` |
+| Atomic | Can't forget to save after operation |
+| Discoverable | Operation is on the entity where expected |
+| Testable | Can mock at interface level |
+
+### How It Works
+
+1. **Client:** Business method validates preconditions and sets properties
+2. **Client:** `this.Save()` serializes entity and sends to server
+3. **Server:** `[Update]` receives entity, persists modified properties
+4. **Server:** Returns updated entity
+5. **Client:** Receives new instance
+
+### When to Use This Pattern
+
+Use business operations for domain actions that:
+
+- Modify multiple related properties atomically
+- Have validation preconditions
+- Should appear on the public interface
+- Need to persist immediately
+
+Examples: `Archive()`, `Complete()`, `Approve()`, `Cancel()`, `Submit()`
+
+### Alternative: [Execute] Command Pattern
+
+For operations that don't belong on the entity interface, use the `[Execute]` command pattern:
+
+```csharp
+[Factory]
+public static partial class ArchiveVisitCommand
+{
+    [Execute]
+    internal static async Task<IVisit?> _Archive(
+        Guid visitId,
+        [Service] IVisitFactory visitFactory,
+        [Service] IVisitDb db)
+    {
+        var visit = await visitFactory.Fetch(visitId);
+        if (visit == null) return null;
+
+        // Business logic here
+        return await visit.Archive();
+    }
+}
+
+// Usage - via injected delegate
+var archivedVisit = await _archiveVisit(visit.Id);
+```
+
+Choose the command pattern when:
+- Operation needs parameters not available on the entity
+- Operation spans multiple aggregates
+- You want to keep the entity interface minimal
+
 ## Authorization Methods
 
 > **Note:** Authorization is provided by [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory). For comprehensive documentation, see the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs).
