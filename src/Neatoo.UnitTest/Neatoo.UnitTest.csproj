@@ -15,7 +15,6 @@
 	<ItemGroup>
 		<PackageReference Include="KnockOff" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" />
-		<PackageReference Include="Moq" />
 		<PackageReference Include="MSTest.TestAdapter" />
 		<PackageReference Include="MSTest.TestFramework" />
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />

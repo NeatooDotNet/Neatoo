@@ -265,13 +265,13 @@ partial class RuleProxyTests
 			public int RemoveCount { get; private set; }
 
 			/// <summary>The backing delegate for raising the event.</summary>
-			public global::System.ComponentModel.PropertyChangedEventHandler?? Handler { get; private set; }
+			public global::System.ComponentModel.PropertyChangedEventHandler? Handler { get; private set; }
 
 			/// <summary>Records an event subscription.</summary>
-			public void RecordAdd(global::System.ComponentModel.PropertyChangedEventHandler?? handler) { AddCount++; Handler = (global::System.ComponentModel.PropertyChangedEventHandler??)global::System.Delegate.Combine(Handler, handler); }
+			public void RecordAdd(global::System.ComponentModel.PropertyChangedEventHandler? handler) { AddCount++; Handler = (global::System.ComponentModel.PropertyChangedEventHandler?)global::System.Delegate.Combine(Handler, handler); }
 
 			/// <summary>Records an event unsubscription.</summary>
-			public void RecordRemove(global::System.ComponentModel.PropertyChangedEventHandler?? handler) { RemoveCount++; Handler = (global::System.ComponentModel.PropertyChangedEventHandler??)global::System.Delegate.Remove(Handler, handler); }
+			public void RecordRemove(global::System.ComponentModel.PropertyChangedEventHandler? handler) { RemoveCount++; Handler = (global::System.ComponentModel.PropertyChangedEventHandler?)global::System.Delegate.Remove(Handler, handler); }
 
 			/// <summary>Resets all tracking state.</summary>
 			public void Reset() { AddCount = 0; RemoveCount = 0; Handler = null; }
@@ -299,8 +299,8 @@ partial class RuleProxyTests
 			public void Reset() { AddCount = 0; RemoveCount = 0; Handler = null; }
 		}
 
-		/// <summary>Stub implementation of Neatoo.IValidateBase.</summary>
-		public class IValidateBase : Neatoo.IValidateBase
+		/// <summary>Stub implementation of global::Neatoo.IValidateBase.</summary>
+		public class IValidateBase : global::Neatoo.IValidateBase
 		{
 			/// <summary>Interceptor for Parent.</summary>
 			public IValidateBase_ParentInterceptor Parent { get; } = new();
@@ -347,21 +347,22 @@ partial class RuleProxyTests
 			/// <summary>Interceptor for NeatooPropertyChanged event.</summary>
 			public IValidateBase_NeatooPropertyChangedInterceptor NeatooPropertyChangedInterceptor { get; } = new();
 
-			global::Neatoo.IValidateProperty Neatoo.IValidateBase.GetProperty(string propertyName)
+			global::Neatoo.IValidateProperty global::Neatoo.IValidateBase.GetProperty(string propertyName)
 			{
 				GetProperty.RecordCall(propertyName);
 				if (GetProperty.OnCall is { } onCall) return onCall(this, propertyName);
-				return default!;
+				throw new global::System.InvalidOperationException("No implementation provided for GetProperty. Set GetProperty.OnCall.");
 			}
 
-			bool Neatoo.IValidateBase.TryGetProperty(string propertyName, out global::Neatoo.IValidateProperty validateProperty)
+			bool global::Neatoo.IValidateBase.TryGetProperty(string propertyName, out global::Neatoo.IValidateProperty validateProperty)
 			{
+				validateProperty = default!;
 				TryGetProperty.RecordCall(propertyName);
 				if (TryGetProperty.OnCall is { } onCall) return onCall(this, propertyName);
 				return default!;
 			}
 
-			global::Neatoo.IValidateBase? Neatoo.IValidateBase.Parent
+			global::Neatoo.IValidateBase? global::Neatoo.IValidateBase.Parent
 			{
 				get
 				{
@@ -371,7 +372,7 @@ partial class RuleProxyTests
 				}
 			}
 
-			bool Neatoo.IValidateBase.IsPaused
+			bool global::Neatoo.IValidateBase.IsPaused
 			{
 				get
 				{
@@ -381,7 +382,7 @@ partial class RuleProxyTests
 				}
 			}
 
-			global::Neatoo.IValidateProperty Neatoo.IValidateBase.this[string propertyName]
+			global::Neatoo.IValidateProperty global::Neatoo.IValidateBase.this[string propertyName]
 			{
 				get
 				{
@@ -391,47 +392,47 @@ partial class RuleProxyTests
 				}
 			}
 
-			global::System.Threading.Tasks.Task Neatoo.IValidateBase.WaitForTasks()
+			global::System.Threading.Tasks.Task global::Neatoo.IValidateMetaProperties.WaitForTasks()
 			{
-				WaitForTasks.RecordCall();
-				if (WaitForTasks.OnCall is { } onCall) return onCall(this);
+				WaitForTasks.RecordCall(null);
+				if (WaitForTasks.OnCall is { } onCall) return onCall(this, null);
 				return global::System.Threading.Tasks.Task.CompletedTask;
 			}
 
-			global::System.Threading.Tasks.Task Neatoo.IValidateBase.WaitForTasks(global::System.Threading.CancellationToken token)
+			global::System.Threading.Tasks.Task global::Neatoo.IValidateMetaProperties.WaitForTasks(global::System.Threading.CancellationToken token)
 			{
 				WaitForTasks.RecordCall(token);
 				if (WaitForTasks.OnCall is { } onCall) return onCall(this, token);
 				return global::System.Threading.Tasks.Task.CompletedTask;
 			}
 
-			global::System.Threading.Tasks.Task Neatoo.IValidateBase.RunRules(string propertyName, global::System.Threading.CancellationToken? token)
+			global::System.Threading.Tasks.Task global::Neatoo.IValidateMetaProperties.RunRules(string propertyName, global::System.Threading.CancellationToken? token)
 			{
-				RunRules.RecordCall(propertyName, token);
-				if (RunRules.OnCall is { } onCall) return onCall(this, propertyName, token);
+				RunRules.RecordCall(propertyName, token, null);
+				if (RunRules.OnCall is { } onCall) return onCall(this, propertyName, token, null);
 				return global::System.Threading.Tasks.Task.CompletedTask;
 			}
 
-			global::System.Threading.Tasks.Task Neatoo.IValidateBase.RunRules(global::Neatoo.RunRulesFlag runRules, global::System.Threading.CancellationToken? token)
+			global::System.Threading.Tasks.Task global::Neatoo.IValidateMetaProperties.RunRules(global::Neatoo.RunRulesFlag runRules, global::System.Threading.CancellationToken? token)
 			{
-				RunRules.RecordCall(runRules, token);
-				if (RunRules.OnCall is { } onCall) return onCall(this, runRules, token);
+				RunRules.RecordCall(null, token, runRules);
+				if (RunRules.OnCall is { } onCall) return onCall(this, null, token, runRules);
 				return global::System.Threading.Tasks.Task.CompletedTask;
 			}
 
-			void Neatoo.IValidateBase.ClearAllMessages()
+			void global::Neatoo.IValidateMetaProperties.ClearAllMessages()
 			{
 				ClearAllMessages.RecordCall();
 				if (ClearAllMessages.OnCall is { } onCall) onCall(this);
 			}
 
-			void Neatoo.IValidateBase.ClearSelfMessages()
+			void global::Neatoo.IValidateMetaProperties.ClearSelfMessages()
 			{
 				ClearSelfMessages.RecordCall();
 				if (ClearSelfMessages.OnCall is { } onCall) onCall(this);
 			}
 
-			bool Neatoo.IValidateBase.IsBusy
+			bool global::Neatoo.IValidateMetaProperties.IsBusy
 			{
 				get
 				{
@@ -441,7 +442,7 @@ partial class RuleProxyTests
 				}
 			}
 
-			bool Neatoo.IValidateBase.IsValid
+			bool global::Neatoo.IValidateMetaProperties.IsValid
 			{
 				get
 				{
@@ -451,7 +452,7 @@ partial class RuleProxyTests
 				}
 			}
 
-			bool Neatoo.IValidateBase.IsSelfValid
+			bool global::Neatoo.IValidateMetaProperties.IsSelfValid
 			{
 				get
 				{
@@ -461,7 +462,7 @@ partial class RuleProxyTests
 				}
 			}
 
-			global::System.Collections.Generic.IReadOnlyCollection<global::Neatoo.IPropertyMessage> Neatoo.IValidateBase.PropertyMessages
+			global::System.Collections.Generic.IReadOnlyCollection<global::Neatoo.IPropertyMessage> global::Neatoo.IValidateMetaProperties.PropertyMessages
 			{
 				get
 				{
@@ -471,13 +472,13 @@ partial class RuleProxyTests
 				}
 			}
 
-			event global::System.ComponentModel.PropertyChangedEventHandler?? Neatoo.IValidateBase.PropertyChanged
+			event global::System.ComponentModel.PropertyChangedEventHandler? global::System.ComponentModel.INotifyPropertyChanged.PropertyChanged
 			{
 				add => PropertyChangedInterceptor.RecordAdd(value);
 				remove => PropertyChangedInterceptor.RecordRemove(value);
 			}
 
-			event global::Neatoo.NeatooPropertyChanged? Neatoo.IValidateBase.NeatooPropertyChanged
+			event global::Neatoo.NeatooPropertyChanged? global::Neatoo.INotifyNeatooPropertyChanged.NeatooPropertyChanged
 			{
 				add => NeatooPropertyChangedInterceptor.RecordAdd(value);
 				remove => NeatooPropertyChangedInterceptor.RecordRemove(value);

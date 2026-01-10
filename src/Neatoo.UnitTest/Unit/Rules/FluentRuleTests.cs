@@ -1,6 +1,6 @@
+using KnockOff;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 using Neatoo.Rules;
 using System.Linq.Expressions;
 
@@ -66,7 +66,8 @@ public static class TestTargetFactory
 /// Tests action invocation, trigger properties, and rule execution behavior.
 /// </summary>
 [TestClass]
-public class ActionFluentRuleTests
+[KnockOff<IRuleManager>]
+public partial class ActionFluentRuleTests
 {
     #region Constructor Tests
 
@@ -226,10 +227,10 @@ public class ActionFluentRuleTests
         // Arrange
         Action<TestValidateTarget> action = t => { };
         var rule = new ActionFluentRule<TestValidateTarget>(action);
-        var differentMockTarget = new Mock<IValidateBase>();
+        var differentTargetStub = new RuleProxyTests.Stubs.IValidateBase();
 
-        // Act - should throw because mock is not TestValidateTarget
-        await ((IRule)rule).RunRule(differentMockTarget.Object);
+        // Act - should throw because stub is not TestValidateTarget
+        await ((IRule)rule).RunRule(differentTargetStub);
     }
 
     #endregion
@@ -241,10 +242,10 @@ public class ActionFluentRuleTests
     {
         // Arrange
         var rule = new ActionFluentRule<TestValidateTarget>(t => { });
-        var mockRuleManager = new Mock<IRuleManager>();
+        var ruleManagerStub = new Stubs.IRuleManager();
 
         // Act
-        rule.OnRuleAdded(mockRuleManager.Object, 42u);
+        rule.OnRuleAdded(ruleManagerStub, 42u);
 
         // Assert
         Assert.AreEqual(42u, rule.UniqueIndex);
@@ -255,11 +256,11 @@ public class ActionFluentRuleTests
     {
         // Arrange
         var rule = new ActionFluentRule<TestValidateTarget>(t => { });
-        var mockRuleManager = new Mock<IRuleManager>();
+        var ruleManagerStub = new Stubs.IRuleManager();
 
         // Act
-        rule.OnRuleAdded(mockRuleManager.Object, 10u);
-        rule.OnRuleAdded(mockRuleManager.Object, 20u);
+        rule.OnRuleAdded(ruleManagerStub, 10u);
+        rule.OnRuleAdded(ruleManagerStub, 20u);
 
         // Assert - first index should be retained
         Assert.AreEqual(10u, rule.UniqueIndex);
@@ -498,10 +499,10 @@ public class ValidationFluentRuleTests
     {
         // Arrange
         var rule = new ValidationFluentRule<TestValidateTarget>(t => string.Empty, t => t.Name);
-        var mockRuleManager = new Mock<IRuleManager>();
+        var ruleManagerStub = new ActionFluentRuleTests.Stubs.IRuleManager();
 
         // Act
-        rule.OnRuleAdded(mockRuleManager.Object, 100u);
+        rule.OnRuleAdded(ruleManagerStub, 100u);
 
         // Assert
         Assert.AreEqual(100u, rule.UniqueIndex);
@@ -776,10 +777,10 @@ public class AsyncFluentRuleTests
         var rule = new AsyncFluentRule<TestValidateTarget>(
             async t => { await Task.CompletedTask; return string.Empty; },
             t => t.Name);
-        var mockRuleManager = new Mock<IRuleManager>();
+        var ruleManagerStub = new ActionFluentRuleTests.Stubs.IRuleManager();
 
         // Act
-        rule.OnRuleAdded(mockRuleManager.Object, 200u);
+        rule.OnRuleAdded(ruleManagerStub, 200u);
 
         // Assert
         Assert.AreEqual(200u, rule.UniqueIndex);
@@ -994,10 +995,10 @@ public class ActionAsyncFluentRuleTests
         // Arrange
         var rule = new ActionAsyncFluentRule<TestValidateTarget>(
             async t => await Task.CompletedTask);
-        var mockRuleManager = new Mock<IRuleManager>();
+        var ruleManagerStub = new ActionFluentRuleTests.Stubs.IRuleManager();
 
         // Act
-        rule.OnRuleAdded(mockRuleManager.Object, 300u);
+        rule.OnRuleAdded(ruleManagerStub, 300u);
 
         // Assert
         Assert.AreEqual(300u, rule.UniqueIndex);
@@ -1009,11 +1010,11 @@ public class ActionAsyncFluentRuleTests
         // Arrange
         var rule = new ActionAsyncFluentRule<TestValidateTarget>(
             async t => await Task.CompletedTask);
-        var mockRuleManager = new Mock<IRuleManager>();
+        var ruleManagerStub = new ActionFluentRuleTests.Stubs.IRuleManager();
 
         // Act
-        rule.OnRuleAdded(mockRuleManager.Object, 50u);
-        rule.OnRuleAdded(mockRuleManager.Object, 100u);
+        rule.OnRuleAdded(ruleManagerStub, 50u);
+        rule.OnRuleAdded(ruleManagerStub, 100u);
 
         // Assert
         Assert.AreEqual(50u, rule.UniqueIndex);
@@ -1087,10 +1088,10 @@ public class ActionAsyncFluentRuleTests
         // Arrange
         Func<TestValidateTarget, Task> asyncAction = async t => await Task.CompletedTask;
         var rule = new ActionAsyncFluentRule<TestValidateTarget>(asyncAction);
-        var differentMockTarget = new Mock<IValidateBase>();
+        var differentTargetStub = new RuleProxyTests.Stubs.IValidateBase();
 
         // Act
-        await ((IRule)rule).RunRule(differentMockTarget.Object);
+        await ((IRule)rule).RunRule(differentTargetStub);
     }
 
     #endregion
@@ -1314,7 +1315,7 @@ public class FluentRuleCrossCuttingTests
     public void OnRuleAdded_AllRuleTypes_PreservesFirstUniqueIndex()
     {
         // Arrange
-        var mockRuleManager = new Mock<IRuleManager>();
+        var ruleManagerStub = new ActionFluentRuleTests.Stubs.IRuleManager();
         var actionRule = new ActionFluentRule<TestValidateTarget>(t => { });
         var validationRule = new ValidationFluentRule<TestValidateTarget>(t => string.Empty, t => t.Name);
         var asyncRule = new AsyncFluentRule<TestValidateTarget>(
@@ -1323,17 +1324,17 @@ public class FluentRuleCrossCuttingTests
             async t => await Task.CompletedTask);
 
         // Act - call OnRuleAdded twice with different values
-        actionRule.OnRuleAdded(mockRuleManager.Object, 1u);
-        actionRule.OnRuleAdded(mockRuleManager.Object, 999u);
+        actionRule.OnRuleAdded(ruleManagerStub, 1u);
+        actionRule.OnRuleAdded(ruleManagerStub, 999u);
 
-        validationRule.OnRuleAdded(mockRuleManager.Object, 2u);
-        validationRule.OnRuleAdded(mockRuleManager.Object, 999u);
+        validationRule.OnRuleAdded(ruleManagerStub, 2u);
+        validationRule.OnRuleAdded(ruleManagerStub, 999u);
 
-        asyncRule.OnRuleAdded(mockRuleManager.Object, 3u);
-        asyncRule.OnRuleAdded(mockRuleManager.Object, 999u);
+        asyncRule.OnRuleAdded(ruleManagerStub, 3u);
+        asyncRule.OnRuleAdded(ruleManagerStub, 999u);
 
-        actionAsyncRule.OnRuleAdded(mockRuleManager.Object, 4u);
-        actionAsyncRule.OnRuleAdded(mockRuleManager.Object, 999u);
+        actionAsyncRule.OnRuleAdded(ruleManagerStub, 4u);
+        actionAsyncRule.OnRuleAdded(ruleManagerStub, 999u);
 
         // Assert - first value is preserved
         Assert.AreEqual(1u, actionRule.UniqueIndex);

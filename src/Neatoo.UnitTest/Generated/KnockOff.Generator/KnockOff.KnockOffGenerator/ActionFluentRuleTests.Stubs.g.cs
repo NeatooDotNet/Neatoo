@@ -8,482 +8,8 @@ partial class ActionFluentRuleTests
 	/// <summary>Contains stub implementations for inline stub pattern.</summary>
 	public static class Stubs
 	{
-		/// <summary>Interceptor for IValidateBase.Parent.</summary>
-		public sealed class IValidateBase_ParentInterceptor
-		{
-			/// <summary>Number of times the getter was accessed.</summary>
-			public int GetCount { get; private set; }
-
-			/// <summary>Callback for getter. If set, returns its value.</summary>
-			public global::System.Func<Stubs.IValidateBase, global::Neatoo.IValidateBase?>? OnGet { get; set; }
-
-			/// <summary>Value returned by getter when OnGet is not set.</summary>
-			public global::Neatoo.IValidateBase? Value { get; set; } = default!;
-
-			/// <summary>Records a getter access.</summary>
-			public void RecordGet() => GetCount++;
-
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { GetCount = 0; OnGet = null; Value = default!; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.IsPaused.</summary>
-		public sealed class IValidateBase_IsPausedInterceptor
-		{
-			/// <summary>Number of times the getter was accessed.</summary>
-			public int GetCount { get; private set; }
-
-			/// <summary>Callback for getter. If set, returns its value.</summary>
-			public global::System.Func<Stubs.IValidateBase, bool>? OnGet { get; set; }
-
-			/// <summary>Value returned by getter when OnGet is not set.</summary>
-			public bool Value { get; set; } = default!;
-
-			/// <summary>Records a getter access.</summary>
-			public void RecordGet() => GetCount++;
-
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { GetCount = 0; OnGet = null; Value = default!; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.StringIndexer.</summary>
-		public sealed class IValidateBase_StringIndexerInterceptor
-		{
-			/// <summary>Number of times the getter was accessed.</summary>
-			public int GetCount { get; private set; }
-
-			/// <summary>The last key used to access the getter.</summary>
-			public string? LastGetKey { get; private set; }
-
-			/// <summary>Callback for getter.</summary>
-			public global::System.Func<Stubs.IValidateBase, string, global::Neatoo.IValidateProperty>? OnGet { get; set; }
-
-			/// <summary>Records a getter access.</summary>
-			public void RecordGet(string propertyName) { GetCount++; LastGetKey = propertyName; }
-
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { GetCount = 0; LastGetKey = default; OnGet = null; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.IsBusy.</summary>
-		public sealed class IValidateBase_IsBusyInterceptor
-		{
-			/// <summary>Number of times the getter was accessed.</summary>
-			public int GetCount { get; private set; }
-
-			/// <summary>Callback for getter. If set, returns its value.</summary>
-			public global::System.Func<Stubs.IValidateBase, bool>? OnGet { get; set; }
-
-			/// <summary>Value returned by getter when OnGet is not set.</summary>
-			public bool Value { get; set; } = default!;
-
-			/// <summary>Records a getter access.</summary>
-			public void RecordGet() => GetCount++;
-
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { GetCount = 0; OnGet = null; Value = default!; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.IsValid.</summary>
-		public sealed class IValidateBase_IsValidInterceptor
-		{
-			/// <summary>Number of times the getter was accessed.</summary>
-			public int GetCount { get; private set; }
-
-			/// <summary>Callback for getter. If set, returns its value.</summary>
-			public global::System.Func<Stubs.IValidateBase, bool>? OnGet { get; set; }
-
-			/// <summary>Value returned by getter when OnGet is not set.</summary>
-			public bool Value { get; set; } = default!;
-
-			/// <summary>Records a getter access.</summary>
-			public void RecordGet() => GetCount++;
-
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { GetCount = 0; OnGet = null; Value = default!; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.IsSelfValid.</summary>
-		public sealed class IValidateBase_IsSelfValidInterceptor
-		{
-			/// <summary>Number of times the getter was accessed.</summary>
-			public int GetCount { get; private set; }
-
-			/// <summary>Callback for getter. If set, returns its value.</summary>
-			public global::System.Func<Stubs.IValidateBase, bool>? OnGet { get; set; }
-
-			/// <summary>Value returned by getter when OnGet is not set.</summary>
-			public bool Value { get; set; } = default!;
-
-			/// <summary>Records a getter access.</summary>
-			public void RecordGet() => GetCount++;
-
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { GetCount = 0; OnGet = null; Value = default!; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.PropertyMessages.</summary>
-		public sealed class IValidateBase_PropertyMessagesInterceptor
-		{
-			/// <summary>Number of times the getter was accessed.</summary>
-			public int GetCount { get; private set; }
-
-			/// <summary>Callback for getter. If set, returns its value.</summary>
-			public global::System.Func<Stubs.IValidateBase, global::System.Collections.Generic.IReadOnlyCollection<global::Neatoo.IPropertyMessage>>? OnGet { get; set; }
-
-			/// <summary>Value returned by getter when OnGet is not set.</summary>
-			public global::System.Collections.Generic.IReadOnlyCollection<global::Neatoo.IPropertyMessage> Value { get; set; } = default!;
-
-			/// <summary>Records a getter access.</summary>
-			public void RecordGet() => GetCount++;
-
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { GetCount = 0; OnGet = null; Value = default!; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.GetProperty.</summary>
-		public sealed class IValidateBase_GetPropertyInterceptor
-		{
-			/// <summary>Number of times this method was called.</summary>
-			public int CallCount { get; private set; }
-
-			/// <summary>Whether this method was called at least once.</summary>
-			public bool WasCalled => CallCount > 0;
-
-			/// <summary>The argument from the last call.</summary>
-			public string? LastCallArg { get; private set; }
-
-			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Func<Stubs.IValidateBase, string, global::Neatoo.IValidateProperty>? OnCall { get; set; }
-
-			public void RecordCall(string propertyName) { CallCount++; LastCallArg = propertyName; }
-
-			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.TryGetProperty.</summary>
-		public sealed class IValidateBase_TryGetPropertyInterceptor
-		{
-			/// <summary>Number of times this method was called.</summary>
-			public int CallCount { get; private set; }
-
-			/// <summary>Whether this method was called at least once.</summary>
-			public bool WasCalled => CallCount > 0;
-
-			/// <summary>The argument from the last call.</summary>
-			public string? LastCallArg { get; private set; }
-
-			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Func<Stubs.IValidateBase, string, bool>? OnCall { get; set; }
-
-			public void RecordCall(string propertyName) { CallCount++; LastCallArg = propertyName; }
-
-			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.WaitForTasks.</summary>
-		public sealed class IValidateBase_WaitForTasksInterceptor
-		{
-			/// <summary>Number of times this method was called.</summary>
-			public int CallCount { get; private set; }
-
-			/// <summary>Whether this method was called at least once.</summary>
-			public bool WasCalled => CallCount > 0;
-
-			/// <summary>The argument from the last call.</summary>
-			public global::System.Threading.CancellationToken? LastCallArg { get; private set; }
-
-			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Func<Stubs.IValidateBase, global::System.Threading.CancellationToken?, global::System.Threading.Tasks.Task>? OnCall { get; set; }
-
-			public void RecordCall(global::System.Threading.CancellationToken? token) { CallCount++; LastCallArg = token; }
-
-			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.RunRules.</summary>
-		public sealed class IValidateBase_RunRulesInterceptor
-		{
-			/// <summary>Number of times this method was called.</summary>
-			public int CallCount { get; private set; }
-
-			/// <summary>Whether this method was called at least once.</summary>
-			public bool WasCalled => CallCount > 0;
-
-			/// <summary>The arguments from the last call.</summary>
-			public (string? propertyName, global::System.Threading.CancellationToken? token, global::Neatoo.RunRulesFlag? runRules)? LastCallArgs { get; private set; }
-
-			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Func<Stubs.IValidateBase, string?, global::System.Threading.CancellationToken?, global::Neatoo.RunRulesFlag?, global::System.Threading.Tasks.Task>? OnCall { get; set; }
-
-			public void RecordCall(string? propertyName, global::System.Threading.CancellationToken? token, global::Neatoo.RunRulesFlag? runRules) { CallCount++; LastCallArgs = (propertyName, token, runRules); }
-
-			public void Reset() { CallCount = 0; LastCallArgs = default; OnCall = null; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.ClearAllMessages.</summary>
-		public sealed class IValidateBase_ClearAllMessagesInterceptor
-		{
-			/// <summary>Number of times this method was called.</summary>
-			public int CallCount { get; private set; }
-
-			/// <summary>Whether this method was called at least once.</summary>
-			public bool WasCalled => CallCount > 0;
-
-			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Action<Stubs.IValidateBase>? OnCall { get; set; }
-
-			public void RecordCall() { CallCount++; }
-
-			public void Reset() { CallCount = 0; OnCall = null; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.ClearSelfMessages.</summary>
-		public sealed class IValidateBase_ClearSelfMessagesInterceptor
-		{
-			/// <summary>Number of times this method was called.</summary>
-			public int CallCount { get; private set; }
-
-			/// <summary>Whether this method was called at least once.</summary>
-			public bool WasCalled => CallCount > 0;
-
-			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Action<Stubs.IValidateBase>? OnCall { get; set; }
-
-			public void RecordCall() { CallCount++; }
-
-			public void Reset() { CallCount = 0; OnCall = null; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.PropertyChanged event.</summary>
-		public sealed class IValidateBase_PropertyChangedInterceptor
-		{
-			/// <summary>Number of times the event was subscribed to.</summary>
-			public int AddCount { get; private set; }
-
-			/// <summary>Number of times the event was unsubscribed from.</summary>
-			public int RemoveCount { get; private set; }
-
-			/// <summary>The backing delegate for raising the event.</summary>
-			public global::System.ComponentModel.PropertyChangedEventHandler?? Handler { get; private set; }
-
-			/// <summary>Records an event subscription.</summary>
-			public void RecordAdd(global::System.ComponentModel.PropertyChangedEventHandler?? handler) { AddCount++; Handler = (global::System.ComponentModel.PropertyChangedEventHandler??)global::System.Delegate.Combine(Handler, handler); }
-
-			/// <summary>Records an event unsubscription.</summary>
-			public void RecordRemove(global::System.ComponentModel.PropertyChangedEventHandler?? handler) { RemoveCount++; Handler = (global::System.ComponentModel.PropertyChangedEventHandler??)global::System.Delegate.Remove(Handler, handler); }
-
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { AddCount = 0; RemoveCount = 0; Handler = null; }
-		}
-
-		/// <summary>Interceptor for IValidateBase.NeatooPropertyChanged event.</summary>
-		public sealed class IValidateBase_NeatooPropertyChangedInterceptor
-		{
-			/// <summary>Number of times the event was subscribed to.</summary>
-			public int AddCount { get; private set; }
-
-			/// <summary>Number of times the event was unsubscribed from.</summary>
-			public int RemoveCount { get; private set; }
-
-			/// <summary>The backing delegate for raising the event.</summary>
-			public global::Neatoo.NeatooPropertyChanged? Handler { get; private set; }
-
-			/// <summary>Records an event subscription.</summary>
-			public void RecordAdd(global::Neatoo.NeatooPropertyChanged? handler) { AddCount++; Handler = (global::Neatoo.NeatooPropertyChanged?)global::System.Delegate.Combine(Handler, handler); }
-
-			/// <summary>Records an event unsubscription.</summary>
-			public void RecordRemove(global::Neatoo.NeatooPropertyChanged? handler) { RemoveCount++; Handler = (global::Neatoo.NeatooPropertyChanged?)global::System.Delegate.Remove(Handler, handler); }
-
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { AddCount = 0; RemoveCount = 0; Handler = null; }
-		}
-
-		/// <summary>Stub implementation of Neatoo.IValidateBase.</summary>
-		public class IValidateBase : Neatoo.IValidateBase
-		{
-			/// <summary>Interceptor for Parent.</summary>
-			public IValidateBase_ParentInterceptor Parent { get; } = new();
-
-			/// <summary>Interceptor for IsPaused.</summary>
-			public IValidateBase_IsPausedInterceptor IsPaused { get; } = new();
-
-			/// <summary>Interceptor for StringIndexer.</summary>
-			public IValidateBase_StringIndexerInterceptor StringIndexer { get; } = new();
-
-			/// <summary>Interceptor for IsBusy.</summary>
-			public IValidateBase_IsBusyInterceptor IsBusy { get; } = new();
-
-			/// <summary>Interceptor for IsValid.</summary>
-			public IValidateBase_IsValidInterceptor IsValid { get; } = new();
-
-			/// <summary>Interceptor for IsSelfValid.</summary>
-			public IValidateBase_IsSelfValidInterceptor IsSelfValid { get; } = new();
-
-			/// <summary>Interceptor for PropertyMessages.</summary>
-			public IValidateBase_PropertyMessagesInterceptor PropertyMessages { get; } = new();
-
-			/// <summary>Interceptor for GetProperty.</summary>
-			public IValidateBase_GetPropertyInterceptor GetProperty { get; } = new();
-
-			/// <summary>Interceptor for TryGetProperty.</summary>
-			public IValidateBase_TryGetPropertyInterceptor TryGetProperty { get; } = new();
-
-			/// <summary>Interceptor for WaitForTasks.</summary>
-			public IValidateBase_WaitForTasksInterceptor WaitForTasks { get; } = new();
-
-			/// <summary>Interceptor for RunRules.</summary>
-			public IValidateBase_RunRulesInterceptor RunRules { get; } = new();
-
-			/// <summary>Interceptor for ClearAllMessages.</summary>
-			public IValidateBase_ClearAllMessagesInterceptor ClearAllMessages { get; } = new();
-
-			/// <summary>Interceptor for ClearSelfMessages.</summary>
-			public IValidateBase_ClearSelfMessagesInterceptor ClearSelfMessages { get; } = new();
-
-			/// <summary>Interceptor for PropertyChanged event.</summary>
-			public IValidateBase_PropertyChangedInterceptor PropertyChangedInterceptor { get; } = new();
-
-			/// <summary>Interceptor for NeatooPropertyChanged event.</summary>
-			public IValidateBase_NeatooPropertyChangedInterceptor NeatooPropertyChangedInterceptor { get; } = new();
-
-			global::Neatoo.IValidateProperty Neatoo.IValidateBase.GetProperty(string propertyName)
-			{
-				GetProperty.RecordCall(propertyName);
-				if (GetProperty.OnCall is { } onCall) return onCall(this, propertyName);
-				return default!;
-			}
-
-			bool Neatoo.IValidateBase.TryGetProperty(string propertyName, out global::Neatoo.IValidateProperty validateProperty)
-			{
-				TryGetProperty.RecordCall(propertyName);
-				if (TryGetProperty.OnCall is { } onCall) return onCall(this, propertyName);
-				return default!;
-			}
-
-			global::Neatoo.IValidateBase? Neatoo.IValidateBase.Parent
-			{
-				get
-				{
-					Parent.RecordGet();
-					if (Parent.OnGet is { } onGet) return onGet(this);
-					return Parent.Value;
-				}
-			}
-
-			bool Neatoo.IValidateBase.IsPaused
-			{
-				get
-				{
-					IsPaused.RecordGet();
-					if (IsPaused.OnGet is { } onGet) return onGet(this);
-					return IsPaused.Value;
-				}
-			}
-
-			global::Neatoo.IValidateProperty Neatoo.IValidateBase.this[string propertyName]
-			{
-				get
-				{
-					StringIndexer.RecordGet(propertyName);
-					if (StringIndexer.OnGet is { } onGet) return onGet(this, propertyName);
-					return default!;
-				}
-			}
-
-			global::System.Threading.Tasks.Task Neatoo.IValidateBase.WaitForTasks()
-			{
-				WaitForTasks.RecordCall();
-				if (WaitForTasks.OnCall is { } onCall) return onCall(this);
-				return global::System.Threading.Tasks.Task.CompletedTask;
-			}
-
-			global::System.Threading.Tasks.Task Neatoo.IValidateBase.WaitForTasks(global::System.Threading.CancellationToken token)
-			{
-				WaitForTasks.RecordCall(token);
-				if (WaitForTasks.OnCall is { } onCall) return onCall(this, token);
-				return global::System.Threading.Tasks.Task.CompletedTask;
-			}
-
-			global::System.Threading.Tasks.Task Neatoo.IValidateBase.RunRules(string propertyName, global::System.Threading.CancellationToken? token)
-			{
-				RunRules.RecordCall(propertyName, token);
-				if (RunRules.OnCall is { } onCall) return onCall(this, propertyName, token);
-				return global::System.Threading.Tasks.Task.CompletedTask;
-			}
-
-			global::System.Threading.Tasks.Task Neatoo.IValidateBase.RunRules(global::Neatoo.RunRulesFlag runRules, global::System.Threading.CancellationToken? token)
-			{
-				RunRules.RecordCall(runRules, token);
-				if (RunRules.OnCall is { } onCall) return onCall(this, runRules, token);
-				return global::System.Threading.Tasks.Task.CompletedTask;
-			}
-
-			void Neatoo.IValidateBase.ClearAllMessages()
-			{
-				ClearAllMessages.RecordCall();
-				if (ClearAllMessages.OnCall is { } onCall) onCall(this);
-			}
-
-			void Neatoo.IValidateBase.ClearSelfMessages()
-			{
-				ClearSelfMessages.RecordCall();
-				if (ClearSelfMessages.OnCall is { } onCall) onCall(this);
-			}
-
-			bool Neatoo.IValidateBase.IsBusy
-			{
-				get
-				{
-					IsBusy.RecordGet();
-					if (IsBusy.OnGet is { } onGet) return onGet(this);
-					return IsBusy.Value;
-				}
-			}
-
-			bool Neatoo.IValidateBase.IsValid
-			{
-				get
-				{
-					IsValid.RecordGet();
-					if (IsValid.OnGet is { } onGet) return onGet(this);
-					return IsValid.Value;
-				}
-			}
-
-			bool Neatoo.IValidateBase.IsSelfValid
-			{
-				get
-				{
-					IsSelfValid.RecordGet();
-					if (IsSelfValid.OnGet is { } onGet) return onGet(this);
-					return IsSelfValid.Value;
-				}
-			}
-
-			global::System.Collections.Generic.IReadOnlyCollection<global::Neatoo.IPropertyMessage> Neatoo.IValidateBase.PropertyMessages
-			{
-				get
-				{
-					PropertyMessages.RecordGet();
-					if (PropertyMessages.OnGet is { } onGet) return onGet(this);
-					return PropertyMessages.Value;
-				}
-			}
-
-			event global::System.ComponentModel.PropertyChangedEventHandler?? Neatoo.IValidateBase.PropertyChanged
-			{
-				add => PropertyChangedInterceptor.RecordAdd(value);
-				remove => PropertyChangedInterceptor.RecordRemove(value);
-			}
-
-			event global::Neatoo.NeatooPropertyChanged? Neatoo.IValidateBase.NeatooPropertyChanged
-			{
-				add => NeatooPropertyChangedInterceptor.RecordAdd(value);
-				remove => NeatooPropertyChangedInterceptor.RecordRemove(value);
-			}
-
-		}
+		private interface IGenericMethodCallTracker { int CallCount { get; } bool WasCalled { get; } }
+		private interface IResettable { void Reset(); }
 
 		/// <summary>Interceptor for IRuleManager.Rules.</summary>
 		public sealed class IRuleManager_RulesInterceptor
@@ -527,41 +53,115 @@ partial class ActionFluentRuleTests
 		/// <summary>Interceptor for IRuleManager.AddRule.</summary>
 		public sealed class IRuleManager_AddRuleInterceptor
 		{
-			/// <summary>Number of times this method was called.</summary>
-			public int CallCount { get; private set; }
+			private readonly global::System.Collections.Generic.Dictionary<global::System.Type, object> _typedHandlers = new();
 
-			/// <summary>Whether this method was called at least once.</summary>
-			public bool WasCalled => CallCount > 0;
+			/// <summary>Gets the typed handler for the specified type argument(s).</summary>
+			public AddRuleTypedHandler<T> Of<T>() where T : global::Neatoo.IValidateBase
+			{
+				var key = typeof(T);
+				if (!_typedHandlers.TryGetValue(key, out var handler))
+				{
+					handler = new AddRuleTypedHandler<T>();
+					_typedHandlers[key] = handler;
+				}
+				return (AddRuleTypedHandler<T>)handler;
+			}
 
-			/// <summary>The argument from the last call.</summary>
-			public global::Neatoo.Rules.IRule<T>? LastCallArg { get; private set; }
+			/// <summary>Total number of calls across all type arguments.</summary>
+			public int TotalCallCount => _typedHandlers.Values.Cast<IGenericMethodCallTracker>().Sum(h => h.CallCount);
 
-			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Action<Stubs.IRuleManager, global::Neatoo.Rules.IRule<T>>? OnCall { get; set; }
+			/// <summary>True if this method was called with any type argument.</summary>
+			public bool WasCalled => _typedHandlers.Values.Cast<IGenericMethodCallTracker>().Any(h => h.WasCalled);
 
-			public void RecordCall(global::Neatoo.Rules.IRule<T> rule) { CallCount++; LastCallArg = rule; }
+			/// <summary>All type argument(s) that were used in calls.</summary>
+			public global::System.Collections.Generic.IReadOnlyList<global::System.Type> CalledTypeArguments => _typedHandlers.Keys.ToList();
 
-			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
+			/// <summary>Resets all typed handlers.</summary>
+			public void Reset()
+			{
+				foreach (var handler in _typedHandlers.Values.Cast<IResettable>())
+					handler.Reset();
+				_typedHandlers.Clear();
+			}
+
+			/// <summary>Typed handler for AddRule with specific type arguments.</summary>
+			public sealed class AddRuleTypedHandler<T> : IGenericMethodCallTracker, IResettable where T : global::Neatoo.IValidateBase
+			{
+				/// <summary>Delegate for AddRule.</summary>
+				public delegate void AddRuleDelegate(Stubs.IRuleManager ko, global::Neatoo.Rules.IRule<T> rule);
+
+				/// <summary>Number of times this method was called with these type arguments.</summary>
+				public int CallCount { get; private set; }
+
+				/// <summary>True if this method was called at least once with these type arguments.</summary>
+				public bool WasCalled => CallCount > 0;
+
+				/// <summary>Callback invoked when this method is called. If set, its return value is used.</summary>
+				public AddRuleDelegate? OnCall { get; set; }
+
+				/// <summary>Records a method call.</summary>
+				public void RecordCall() => CallCount++;
+
+				/// <summary>Resets all tracking state.</summary>
+				public void Reset() { CallCount = 0; OnCall = null; }
+			}
 		}
 
 		/// <summary>Interceptor for IRuleManager.AddRules.</summary>
 		public sealed class IRuleManager_AddRulesInterceptor
 		{
-			/// <summary>Number of times this method was called.</summary>
-			public int CallCount { get; private set; }
+			private readonly global::System.Collections.Generic.Dictionary<global::System.Type, object> _typedHandlers = new();
 
-			/// <summary>Whether this method was called at least once.</summary>
-			public bool WasCalled => CallCount > 0;
+			/// <summary>Gets the typed handler for the specified type argument(s).</summary>
+			public AddRulesTypedHandler<T> Of<T>() where T : global::Neatoo.IValidateBase
+			{
+				var key = typeof(T);
+				if (!_typedHandlers.TryGetValue(key, out var handler))
+				{
+					handler = new AddRulesTypedHandler<T>();
+					_typedHandlers[key] = handler;
+				}
+				return (AddRulesTypedHandler<T>)handler;
+			}
 
-			/// <summary>The argument from the last call.</summary>
-			public global::Neatoo.Rules.IRule<T>[]? LastCallArg { get; private set; }
+			/// <summary>Total number of calls across all type arguments.</summary>
+			public int TotalCallCount => _typedHandlers.Values.Cast<IGenericMethodCallTracker>().Sum(h => h.CallCount);
 
-			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Action<Stubs.IRuleManager, global::Neatoo.Rules.IRule<T>[]>? OnCall { get; set; }
+			/// <summary>True if this method was called with any type argument.</summary>
+			public bool WasCalled => _typedHandlers.Values.Cast<IGenericMethodCallTracker>().Any(h => h.WasCalled);
 
-			public void RecordCall(global::Neatoo.Rules.IRule<T>[] rules) { CallCount++; LastCallArg = rules; }
+			/// <summary>All type argument(s) that were used in calls.</summary>
+			public global::System.Collections.Generic.IReadOnlyList<global::System.Type> CalledTypeArguments => _typedHandlers.Keys.ToList();
 
-			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
+			/// <summary>Resets all typed handlers.</summary>
+			public void Reset()
+			{
+				foreach (var handler in _typedHandlers.Values.Cast<IResettable>())
+					handler.Reset();
+				_typedHandlers.Clear();
+			}
+
+			/// <summary>Typed handler for AddRules with specific type arguments.</summary>
+			public sealed class AddRulesTypedHandler<T> : IGenericMethodCallTracker, IResettable where T : global::Neatoo.IValidateBase
+			{
+				/// <summary>Delegate for AddRules.</summary>
+				public delegate void AddRulesDelegate(Stubs.IRuleManager ko, global::Neatoo.Rules.IRule<T>[] rules);
+
+				/// <summary>Number of times this method was called with these type arguments.</summary>
+				public int CallCount { get; private set; }
+
+				/// <summary>True if this method was called at least once with these type arguments.</summary>
+				public bool WasCalled => CallCount > 0;
+
+				/// <summary>Callback invoked when this method is called. If set, its return value is used.</summary>
+				public AddRulesDelegate? OnCall { get; set; }
+
+				/// <summary>Records a method call.</summary>
+				public void RecordCall() => CallCount++;
+
+				/// <summary>Resets all tracking state.</summary>
+				public void Reset() { CallCount = 0; OnCall = null; }
+			}
 		}
 
 		/// <summary>Interceptor for IRuleManager.RunRule.</summary>
@@ -577,15 +177,75 @@ partial class ActionFluentRuleTests
 			public (global::Neatoo.Rules.IRule? r, global::System.Threading.CancellationToken? token)? LastCallArgs { get; private set; }
 
 			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Func<Stubs.IRuleManager, global::Neatoo.Rules.IRule?, global::System.Threading.CancellationToken?, global::System.Threading.Tasks.Task>? OnCall { get; set; }
+			public global::System.Func<Stubs.IRuleManager, global::Neatoo.Rules.IRule, global::System.Threading.CancellationToken?, global::System.Threading.Tasks.Task>? OnCall { get; set; }
 
-			public void RecordCall(global::Neatoo.Rules.IRule? r, global::System.Threading.CancellationToken? token) { CallCount++; LastCallArgs = (r, token); }
+			public void RecordCall(global::Neatoo.Rules.IRule r, global::System.Threading.CancellationToken? token) { CallCount++; LastCallArgs = (r, token); }
 
 			public void Reset() { CallCount = 0; LastCallArgs = default; OnCall = null; }
 		}
 
-		/// <summary>Stub implementation of Neatoo.Rules.IRuleManager.</summary>
-		public class IRuleManager : Neatoo.Rules.IRuleManager
+		/// <summary>Interceptor for IRuleManager.RunRuleGeneric.</summary>
+		public sealed class IRuleManager_RunRuleGenericInterceptor
+		{
+			private readonly global::System.Collections.Generic.Dictionary<global::System.Type, object> _typedHandlers = new();
+
+			/// <summary>Gets the typed handler for the specified type argument(s).</summary>
+			public RunRuleGenericTypedHandler<T> Of<T>() where T : global::Neatoo.Rules.IRule
+			{
+				var key = typeof(T);
+				if (!_typedHandlers.TryGetValue(key, out var handler))
+				{
+					handler = new RunRuleGenericTypedHandler<T>();
+					_typedHandlers[key] = handler;
+				}
+				return (RunRuleGenericTypedHandler<T>)handler;
+			}
+
+			/// <summary>Total number of calls across all type arguments.</summary>
+			public int TotalCallCount => _typedHandlers.Values.Cast<IGenericMethodCallTracker>().Sum(h => h.CallCount);
+
+			/// <summary>True if this method was called with any type argument.</summary>
+			public bool WasCalled => _typedHandlers.Values.Cast<IGenericMethodCallTracker>().Any(h => h.WasCalled);
+
+			/// <summary>All type argument(s) that were used in calls.</summary>
+			public global::System.Collections.Generic.IReadOnlyList<global::System.Type> CalledTypeArguments => _typedHandlers.Keys.ToList();
+
+			/// <summary>Resets all typed handlers.</summary>
+			public void Reset()
+			{
+				foreach (var handler in _typedHandlers.Values.Cast<IResettable>())
+					handler.Reset();
+				_typedHandlers.Clear();
+			}
+
+			/// <summary>Typed handler for RunRuleGeneric with specific type arguments.</summary>
+			public sealed class RunRuleGenericTypedHandler<T> : IGenericMethodCallTracker, IResettable where T : global::Neatoo.Rules.IRule
+			{
+				/// <summary>Delegate for RunRuleGeneric.</summary>
+				public delegate global::System.Threading.Tasks.Task RunRuleGenericDelegate(Stubs.IRuleManager ko, global::System.Threading.CancellationToken? token);
+
+				/// <summary>Number of times this method was called with these type arguments.</summary>
+				public int CallCount { get; private set; }
+
+				/// <summary>The 'token' argument from the most recent call.</summary>
+				public global::System.Threading.CancellationToken? LastCallArg { get; private set; }
+
+				/// <summary>True if this method was called at least once with these type arguments.</summary>
+				public bool WasCalled => CallCount > 0;
+
+				/// <summary>Callback invoked when this method is called. If set, its return value is used.</summary>
+				public RunRuleGenericDelegate? OnCall { get; set; }
+
+				/// <summary>Records a method call.</summary>
+				public void RecordCall(global::System.Threading.CancellationToken? token) { CallCount++; LastCallArg = token; }
+
+				/// <summary>Resets all tracking state.</summary>
+				public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
+			}
+		}
+
+		/// <summary>Stub implementation of global::Neatoo.Rules.IRuleManager.</summary>
+		public class IRuleManager : global::Neatoo.Rules.IRuleManager
 		{
 			/// <summary>Interceptor for Rules.</summary>
 			public IRuleManager_RulesInterceptor Rules { get; } = new();
@@ -599,50 +259,59 @@ partial class ActionFluentRuleTests
 			/// <summary>Interceptor for AddRules.</summary>
 			public IRuleManager_AddRulesInterceptor AddRules { get; } = new();
 
-			/// <summary>Interceptor for RunRule.</summary>
+			/// <summary>Interceptor for RunRule (non-generic overloads).</summary>
 			public IRuleManager_RunRuleInterceptor RunRule { get; } = new();
 
-			global::System.Threading.Tasks.Task Neatoo.Rules.IRuleManager.RunRules(string propertyName, global::System.Threading.CancellationToken? token)
+			/// <summary>Interceptor for RunRule (generic overloads, use .Of&lt;T&gt;()).</summary>
+			public IRuleManager_RunRuleGenericInterceptor RunRuleGeneric { get; } = new();
+
+			global::System.Threading.Tasks.Task global::Neatoo.Rules.IRuleManager.RunRules(string propertyName, global::System.Threading.CancellationToken? token)
 			{
-				RunRules.RecordCall(propertyName, token);
-				if (RunRules.OnCall is { } onCall) return onCall(this, propertyName, token);
+				RunRules.RecordCall(propertyName, token, null);
+				if (RunRules.OnCall is { } onCall) return onCall(this, propertyName, token, null);
 				return global::System.Threading.Tasks.Task.CompletedTask;
 			}
 
-			global::System.Threading.Tasks.Task Neatoo.Rules.IRuleManager.RunRules(global::Neatoo.RunRulesFlag runRules, global::System.Threading.CancellationToken? token)
+			global::System.Threading.Tasks.Task global::Neatoo.Rules.IRuleManager.RunRules(global::Neatoo.RunRulesFlag runRules, global::System.Threading.CancellationToken? token)
 			{
-				RunRules.RecordCall(runRules, token);
-				if (RunRules.OnCall is { } onCall) return onCall(this, runRules, token);
+				RunRules.RecordCall(null, token, runRules);
+				if (RunRules.OnCall is { } onCall) return onCall(this, null, token, runRules);
 				return global::System.Threading.Tasks.Task.CompletedTask;
 			}
 
-			void Neatoo.Rules.IRuleManager.AddRule(global::Neatoo.Rules.IRule<T> rule)
+			void global::Neatoo.Rules.IRuleManager.AddRule<T>(global::Neatoo.Rules.IRule<T> rule)
 			{
-				AddRule.RecordCall(rule);
-				if (AddRule.OnCall is { } onCall) onCall(this, rule);
+				var typedHandler = AddRule.Of<T>();
+				typedHandler.RecordCall();
+				if (typedHandler.OnCall is { } onCallCallback)
+				{ onCallCallback(this, rule); return; }
 			}
 
-			void Neatoo.Rules.IRuleManager.AddRules(global::Neatoo.Rules.IRule<T>[] rules)
+			void global::Neatoo.Rules.IRuleManager.AddRules<T>(global::Neatoo.Rules.IRule<T>[] rules)
 			{
-				AddRules.RecordCall(rules);
-				if (AddRules.OnCall is { } onCall) onCall(this, rules);
+				var typedHandler = AddRules.Of<T>();
+				typedHandler.RecordCall();
+				if (typedHandler.OnCall is { } onCallCallback)
+				{ onCallCallback(this, rules); return; }
 			}
 
-			global::System.Threading.Tasks.Task Neatoo.Rules.IRuleManager.RunRule(global::Neatoo.Rules.IRule r, global::System.Threading.CancellationToken? token)
+			global::System.Threading.Tasks.Task global::Neatoo.Rules.IRuleManager.RunRule(global::Neatoo.Rules.IRule r, global::System.Threading.CancellationToken? token)
 			{
 				RunRule.RecordCall(r, token);
 				if (RunRule.OnCall is { } onCall) return onCall(this, r, token);
 				return global::System.Threading.Tasks.Task.CompletedTask;
 			}
 
-			global::System.Threading.Tasks.Task Neatoo.Rules.IRuleManager.RunRule(global::System.Threading.CancellationToken? token)
+			global::System.Threading.Tasks.Task global::Neatoo.Rules.IRuleManager.RunRule<T>(global::System.Threading.CancellationToken? token)
 			{
-				RunRule.RecordCall(token);
-				if (RunRule.OnCall is { } onCall) return onCall(this, token);
+				var typedHandler = RunRuleGeneric.Of<T>();
+				typedHandler.RecordCall(token);
+				if (typedHandler.OnCall is { } onCallCallback)
+				{ return onCallCallback(this, token); }
 				return global::System.Threading.Tasks.Task.CompletedTask;
 			}
 
-			global::System.Collections.Generic.IEnumerable<global::Neatoo.Rules.IRule> Neatoo.Rules.IRuleManager.Rules
+			global::System.Collections.Generic.IEnumerable<global::Neatoo.Rules.IRule> global::Neatoo.Rules.IRuleManager.Rules
 			{
 				get
 				{
@@ -650,6 +319,28 @@ partial class ActionFluentRuleTests
 					if (Rules.OnGet is { } onGet) return onGet(this);
 					return Rules.Value;
 				}
+			}
+
+			/// <summary>Gets a smart default value for a generic type at runtime.</summary>
+			private static T SmartDefault<T>(string methodName)
+			{
+				var type = typeof(T);
+
+				// Value types -> default(T)
+				if (type.IsValueType)
+					return default!;
+
+				// Check for parameterless constructor
+				var ctor = type.GetConstructor(
+					System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance,
+					null, System.Type.EmptyTypes, null);
+
+				if (ctor != null)
+					return (T)ctor.Invoke(null);
+
+				throw new global::System.InvalidOperationException(
+					$"No implementation provided for {methodName}<{type.Name}>. " +
+					$"Set the handler's OnCall.");
 			}
 
 		}
