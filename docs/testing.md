@@ -7,6 +7,7 @@ This guide covers unit testing patterns for Neatoo rules and domain objects.
 | Section | Description |
 |---------|-------------|
 | [Testing Philosophy](#testing-philosophy) | Use real Neatoo classes, mock external dependencies |
+| [Unit Testing Entities](#unit-testing-entities) | Test entities directly without factories |
 | [Testing Rules](#testing-rules) | Use `RunRule` - do NOT expose `Execute` |
 | [Sync Rule Testing](#sync-rule-testing) | Testing `RuleBase<T>` rules |
 | [Async Rule Testing](#async-rule-testing) | Testing `AsyncRuleBase<T>` with mocked dependencies |
@@ -22,6 +23,92 @@ This guide covers unit testing patterns for Neatoo rules and domain objects.
 | Mock external dependencies | Mock `IEmailService`, database access | Mock `IValidateBase`, `IProperty` |
 | Test rules in isolation | Call `rule.RunRule(target)` | Create wrapper classes to expose `Execute` |
 | Use real Neatoo classes | Inherit from `ValidateBase<T>` | Manually implement Neatoo interfaces |
+
+---
+
+## Unit Testing Entities
+
+For unit testing individual entities without DI or factory setup, use the parameterless `EntityBaseServices<T>()` constructor:
+
+<!-- snippet: docs:testing:entity-unit-test-class -->
+```csharp
+/// <summary>
+/// Entity class designed for direct unit testing.
+/// Uses [SuppressFactory] to prevent factory generation.
+/// </summary>
+[SuppressFactory]
+public class TestableProduct : EntityBase<TestableProduct>
+{
+    /// <summary>
+    /// Parameterless constructor using EntityBaseServices for unit testing.
+    /// WARNING: This bypasses DI and disables Save() functionality.
+    /// </summary>
+    public TestableProduct() : base(new EntityBaseServices<TestableProduct>())
+    {
+    }
+
+    public string? Name { get => Getter<string>(); set => Setter(value); }
+    public decimal Price { get => Getter<decimal>(); set => Setter(value); }
+    public int Quantity { get => Getter<int>(); set => Setter(value); }
+
+    /// <summary>
+    /// Calculated property - tests business logic without needing factories.
+    /// </summary>
+    public decimal TotalValue => Price * Quantity;
+
+    /// <summary>
+    /// Expose MarkNew for testing state transitions.
+    /// </summary>
+    public void SetAsNew() => MarkNew();
+
+    /// <summary>
+    /// Expose MarkOld for testing existing entity scenarios.
+    /// </summary>
+    public void SetAsExisting() => MarkOld();
+
+    /// <summary>
+    /// Expose MarkAsChild for testing child entity behavior.
+    /// </summary>
+    public void SetAsChild() => MarkAsChild();
+}
+```
+<!-- /snippet -->
+
+> **Caution: Unit Testing Only**
+>
+> Using `new EntityBaseServices<T>()` creates an entity with:
+> - **No DI container** - `[Service]` attributes won't inject dependencies
+> - **No factory** - `Save()` operations will fail
+> - **No parent tracking** - Parent/child relationships won't work
+>
+> This pattern is acceptable for testing entity state tracking, property changes, calculated properties, and business logic that doesn't require persistence. Do not use in production code.
+
+### What You Can Test
+
+| Testable | Not Testable |
+|----------|--------------|
+| Property get/set | Save operations |
+| IsModified, IsNew, IsDeleted | Parent-child relationships |
+| Calculated properties | Factory methods |
+| Business logic methods | `[Service]` injected dependencies |
+| State transitions (MarkNew, etc.) | Remote operations |
+
+### Example Test
+
+```csharp
+[TestMethod]
+public void TestableProduct_WhenPropertyChanged_IsModifiedTrue()
+{
+    // Arrange - Create entity without factory
+    var product = new TestableProduct();
+
+    // Act
+    product.Name = "Widget";
+
+    // Assert
+    Assert.IsTrue(product.IsModified);
+}
+```
 
 ---
 
