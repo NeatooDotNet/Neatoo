@@ -1,5 +1,5 @@
+using KnockOff;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 using Neatoo.Rules;
 
 namespace Neatoo.UnitTest.Unit.Rules;
@@ -9,7 +9,8 @@ namespace Neatoo.UnitTest.Unit.Rules;
 /// Tests the simple data container behavior used in the rules system.
 /// </summary>
 [TestClass]
-public class RuleProxyTests
+[KnockOff<IValidateBase>]
+public partial class RuleProxyTests
 {
     #region Constructor Tests
 
@@ -42,13 +43,13 @@ public class RuleProxyTests
     {
         // Arrange
         var ruleProxy = new RuleProxy();
-        var mockTarget = new Mock<IValidateBase>();
+        var targetStub = new Stubs.IValidateBase();
 
         // Act
-        ruleProxy.Target = mockTarget.Object;
+        ruleProxy.Target = targetStub;
 
         // Assert
-        Assert.AreSame(mockTarget.Object, ruleProxy.Target);
+        Assert.AreSame(targetStub, ruleProxy.Target);
     }
 
     [TestMethod]
@@ -56,8 +57,8 @@ public class RuleProxyTests
     {
         // Arrange
         var ruleProxy = new RuleProxy();
-        var mockTarget = new Mock<IValidateBase>();
-        ruleProxy.Target = mockTarget.Object;
+        var targetStub = new Stubs.IValidateBase();
+        ruleProxy.Target = targetStub;
 
         // Act
         ruleProxy.Target = null!;
@@ -71,21 +72,21 @@ public class RuleProxyTests
     {
         // Arrange
         var ruleProxy = new RuleProxy();
-        var mockTarget1 = new Mock<IValidateBase>();
-        var mockTarget2 = new Mock<IValidateBase>();
-        var mockTarget3 = new Mock<IValidateBase>();
+        var targetStub1 = new Stubs.IValidateBase();
+        var targetStub2 = new Stubs.IValidateBase();
+        var targetStub3 = new Stubs.IValidateBase();
 
         // Act
-        ruleProxy.Target = mockTarget1.Object;
-        Assert.AreSame(mockTarget1.Object, ruleProxy.Target);
+        ruleProxy.Target = targetStub1;
+        Assert.AreSame(targetStub1, ruleProxy.Target);
 
-        ruleProxy.Target = mockTarget2.Object;
-        Assert.AreSame(mockTarget2.Object, ruleProxy.Target);
+        ruleProxy.Target = targetStub2;
+        Assert.AreSame(targetStub2, ruleProxy.Target);
 
-        ruleProxy.Target = mockTarget3.Object;
+        ruleProxy.Target = targetStub3;
 
         // Assert
-        Assert.AreSame(mockTarget3.Object, ruleProxy.Target);
+        Assert.AreSame(targetStub3, ruleProxy.Target);
     }
 
     [TestMethod]
@@ -93,14 +94,14 @@ public class RuleProxyTests
     {
         // Arrange
         var ruleProxy = new RuleProxy();
-        var mockTarget = new Mock<IValidateBase>();
+        var targetStub = new Stubs.IValidateBase();
 
         // Act
-        ruleProxy.Target = mockTarget.Object;
-        ruleProxy.Target = mockTarget.Object;
+        ruleProxy.Target = targetStub;
+        ruleProxy.Target = targetStub;
 
         // Assert
-        Assert.AreSame(mockTarget.Object, ruleProxy.Target);
+        Assert.AreSame(targetStub, ruleProxy.Target);
     }
 
     #endregion
@@ -112,17 +113,13 @@ public class RuleProxyTests
     {
         // Arrange
         var ruleProxy = new RuleProxy();
-        var mockTarget = new Mock<IValidateBase>();
-
-        // Setup minimal required interface members
-        mockTarget.SetupGet(x => x.IsPaused).Returns(false);
-        mockTarget.SetupGet(x => x.IsValid).Returns(true);
+        var targetStub = new Stubs.IValidateBase();
 
         // Act
-        ruleProxy.Target = mockTarget.Object;
+        ruleProxy.Target = targetStub;
 
         // Assert
-        Assert.AreSame(mockTarget.Object, ruleProxy.Target);
+        Assert.AreSame(targetStub, ruleProxy.Target);
     }
 
     #endregion
@@ -133,16 +130,16 @@ public class RuleProxyTests
     public void ObjectInitializer_WithTarget_SetsTarget()
     {
         // Arrange
-        var mockTarget = new Mock<IValidateBase>();
+        var targetStub = new Stubs.IValidateBase();
 
         // Act
         var ruleProxy = new RuleProxy
         {
-            Target = mockTarget.Object
+            Target = targetStub
         };
 
         // Assert
-        Assert.AreSame(mockTarget.Object, ruleProxy.Target);
+        Assert.AreSame(targetStub, ruleProxy.Target);
     }
 
     #endregion
@@ -154,27 +151,27 @@ public class RuleProxyTests
     {
         // Arrange
         var ruleProxy = new RuleProxy();
-        var mockTarget = new Mock<IValidateBase>();
+        var targetStub = new Stubs.IValidateBase();
 
         // Act
-        ruleProxy.Target = mockTarget.Object;
+        ruleProxy.Target = targetStub;
         var retrievedTarget = ruleProxy.Target;
 
         // Assert - Same reference
-        Assert.IsTrue(ReferenceEquals(mockTarget.Object, retrievedTarget));
+        Assert.IsTrue(ReferenceEquals(targetStub, retrievedTarget));
     }
 
     [TestMethod]
     public void MultipleRuleProxies_CanShareSameTarget()
     {
         // Arrange
-        var mockTarget = new Mock<IValidateBase>();
+        var targetStub = new Stubs.IValidateBase();
         var ruleProxy1 = new RuleProxy();
         var ruleProxy2 = new RuleProxy();
 
         // Act
-        ruleProxy1.Target = mockTarget.Object;
-        ruleProxy2.Target = mockTarget.Object;
+        ruleProxy1.Target = targetStub;
+        ruleProxy2.Target = targetStub;
 
         // Assert
         Assert.AreSame(ruleProxy1.Target, ruleProxy2.Target);
@@ -184,19 +181,19 @@ public class RuleProxyTests
     public void MultipleRuleProxies_WithDifferentTargets_MaintainIndependence()
     {
         // Arrange
-        var mockTarget1 = new Mock<IValidateBase>();
-        var mockTarget2 = new Mock<IValidateBase>();
+        var targetStub1 = new Stubs.IValidateBase();
+        var targetStub2 = new Stubs.IValidateBase();
         var ruleProxy1 = new RuleProxy();
         var ruleProxy2 = new RuleProxy();
 
         // Act
-        ruleProxy1.Target = mockTarget1.Object;
-        ruleProxy2.Target = mockTarget2.Object;
+        ruleProxy1.Target = targetStub1;
+        ruleProxy2.Target = targetStub2;
 
         // Assert
         Assert.AreNotSame(ruleProxy1.Target, ruleProxy2.Target);
-        Assert.AreSame(mockTarget1.Object, ruleProxy1.Target);
-        Assert.AreSame(mockTarget2.Object, ruleProxy2.Target);
+        Assert.AreSame(targetStub1, ruleProxy1.Target);
+        Assert.AreSame(targetStub2, ruleProxy2.Target);
     }
 
     #endregion
@@ -221,8 +218,8 @@ public class RuleProxyTests
     {
         // Arrange
         var ruleProxy = new RuleProxy();
-        var mockTarget = new Mock<IValidateBase>();
-        ruleProxy.Target = mockTarget.Object;
+        var targetStub = new Stubs.IValidateBase();
+        ruleProxy.Target = targetStub;
 
         // Assert - verify it's set
         Assert.IsNotNull(ruleProxy.Target);

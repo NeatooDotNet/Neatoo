@@ -1,39 +1,45 @@
-using Moq;
+using DomainModel.Tests.TestDoubles;
+using KnockOff;
 using Neatoo;
 using Neatoo.Internal;
-using Neatoo.Rules;
 using Person.Ef;
 
 namespace DomainModel.Tests.UnitTests
 {
-    public class PersonTests
+    // Using KnockOff 10.12.0 for all interfaces
+    [KnockOff<IPersonDbContext>]
+    [KnockOff<IPersonPhoneListFactory>]
+    [KnockOff<IPersonPhoneList>]
+    public partial class PersonTests
     {
-        private Mock<IPersonDbContext> mockPersonDbContext;
-        private Mock<IPersonPhoneListFactory> mockPhoneModelListFactory;
-        private Mock<IUniqueNameRule> mockUniqueNameRule;
-        private Mock<Person> mockPerson;
-        private Person person => mockPerson.Object;
+        private Stubs.IPersonDbContext personDbContextStub;
+        private Stubs.IPersonPhoneListFactory phoneListFactoryStub;
+        private TestUniqueNameRule testUniqueNameRule;
+        private TestPerson testPerson;
 
         public PersonTests()
         {
-            mockPersonDbContext = new Mock<IPersonDbContext>();
-            mockPhoneModelListFactory = new Mock<IPersonPhoneListFactory>();
-            mockUniqueNameRule = new Mock<AsyncRuleBase<IPerson>>().As<IUniqueNameRule>();
-            mockUniqueNameRule.CallBase = true;
+            personDbContextStub = new Stubs.IPersonDbContext();
+            phoneListFactoryStub = new Stubs.IPersonPhoneListFactory();
+            testUniqueNameRule = new TestUniqueNameRule();
 
-            mockPerson = new Mock<Person>(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
-            mockPerson.Setup(person => person.IsSavable).Returns(true);
-            mockPerson.Setup(person => person.RunRules(RunRulesFlag.All, null)).Returns(Task.CompletedTask);
-            mockPerson.CallBase = true;
+            testPerson = new TestPerson(new EntityBaseServices<Person>(null), testUniqueNameRule)
+            {
+                IsSavableOverride = true
+            };
         }
 
         [Fact]
         public void Adds_UniqueNameRule()
         {
-            var person = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
+            // Use a fresh rule for this test since the shared one is already used in constructor
+            var freshRule = new TestUniqueNameRule();
+
+            var person = new Person(new EntityBaseServices<Person>(null), freshRule);
 
             // Assert
-            mockUniqueNameRule.Verify(x => x.OnRuleAdded(It.IsAny<IRuleManager>(), It.IsAny<uint>()), Times.Once);
+            Assert.Equal(1, freshRule.OnRuleAddedCallCount);
+            Assert.NotNull(freshRule.LastRuleManager);
         }
 
         [Fact]
@@ -41,31 +47,31 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange
             var personEntity = new PersonEntity { FirstName = "John", LastName = "Doe" };
-            mockPersonDbContext.Setup(x => x.FindPerson(null)).ReturnsAsync(personEntity);
+            personDbContextStub.FindPerson.OnCall = (ko, id) => Task.FromResult(personEntity);
 
-            var mockPhoneModelList = new Mock<IPersonPhoneList>();
-            mockPhoneModelListFactory.Setup(x => x.Fetch(personEntity.Phones)).Returns(mockPhoneModelList.Object);
+            var phoneListStub = new Stubs.IPersonPhoneList();
+            phoneListFactoryStub.Fetch.OnCall = (ko, entities) => phoneListStub;
 
             // Act
-            var result = await person.Fetch(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
+            var result = await testPerson.Fetch(personDbContextStub, phoneListFactoryStub);
 
             // Assert
             Assert.True(result);
-            Assert.Equal("John", person.FirstName);
-            Assert.Equal("Doe", person.LastName);
-            Assert.Equal(mockPhoneModelList.Object, person.PersonPhoneList);
+            Assert.Equal("John", testPerson.FirstName);
+            Assert.Equal("Doe", testPerson.LastName);
+            Assert.Equal(phoneListStub, testPerson.PersonPhoneList);
         }
 
         [Fact]
         public async Task Fetch_ShouldReturnFalse_WhenPersonDoesNotExist()
         {
             // Arrange
-            mockPersonDbContext.Setup(x => x.FindPerson(null)).ReturnsAsync((PersonEntity?)null);
+            personDbContextStub.FindPerson.OnCall = (ko, id) => Task.FromResult<PersonEntity>(null!);
 
-            var person = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
+            var person = new Person(new EntityBaseServices<Person>(null), testUniqueNameRule);
 
             // Act
-            var result = await person.Fetch(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
+            var result = await person.Fetch(personDbContextStub, phoneListFactoryStub);
 
             // Assert
             Assert.False(result);
@@ -75,64 +81,66 @@ namespace DomainModel.Tests.UnitTests
         public async Task Insert_ShouldReturnPersonEntity_WhenModelIsSavable()
         {
             // Arrange
-            
-            var personEntity = new PersonEntity();
-            mockPersonDbContext.Setup(x => x.AddPerson(It.IsAny<PersonEntity>()));
-            mockPersonDbContext.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(1);
+            personDbContextStub.SaveChangesAsync.OnCall = (ko, token) => Task.FromResult(1);
 
-            var mockPhoneModelList = new Mock<IPersonPhoneList>();
-            person.PersonPhoneList = mockPhoneModelList.Object;
+            var phoneListStub = new Stubs.IPersonPhoneList();
+            testPerson.PersonPhoneList = phoneListStub;
+            phoneListFactoryStub.Save.OnCall = (ko, target, entities) => phoneListStub;
 
-            person.FirstName = "John";
-            person.LastName = "Doe";
+            testPerson.FirstName = "John";
+            testPerson.LastName = "Doe";
 
             // Act
-            var result = await person.Insert(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
+            var result = await testPerson.Insert(personDbContextStub, phoneListFactoryStub);
 
             // Assert
             Assert.NotNull(result);
-            mockPerson.Verify(x=> x.RunRules(RunRulesFlag.All, null), Times.Once);
-            mockPersonDbContext.Verify(x => x.AddPerson(It.IsAny<PersonEntity>()), Times.Once);
-            mockPersonDbContext.Verify(x => x.SaveChangesAsync(default), Times.Once);
+            Assert.Equal(1, testPerson.RunRulesCallCount);
+            Assert.True(personDbContextStub.AddPerson.WasCalled);
+            Assert.Equal(1, personDbContextStub.AddPerson.CallCount);
+            Assert.True(personDbContextStub.SaveChangesAsync.WasCalled);
+            Assert.Equal(1, personDbContextStub.SaveChangesAsync.CallCount);
         }
 
         [Fact]
         public async Task Insert_ShouldReturnNull_WhenModelIsNotSavable()
         {
             // Arrange
-            mockPerson.Setup(x => x.IsSavable).Returns(false);
+            testPerson.IsSavableOverride = false;
 
             // Act
-            var result = await person.Insert(mockPersonDbContext.Object, mockPhoneModelListFactory.Object);
+            var result = await testPerson.Insert(personDbContextStub, phoneListFactoryStub);
 
             // Assert
             Assert.Null(result);
-            mockPersonDbContext.Verify(x => x.AddPerson(It.IsAny<PersonEntity>()), Times.Never);
-            mockPersonDbContext.Verify(x => x.SaveChangesAsync(default), Times.Never);
+            Assert.False(personDbContextStub.AddPerson.WasCalled);
+            Assert.False(personDbContextStub.SaveChangesAsync.WasCalled);
         }
 
         [Fact]
         public async Task Update_ShouldThrowException_WhenPersonNotFound()
         {
             // Arrange
-            mockPersonDbContext.Setup(x => x.FindPerson(It.IsAny<Guid?>())).ReturnsAsync((PersonEntity?)null);
+            personDbContextStub.FindPerson.OnCall = (ko, id) => Task.FromResult<PersonEntity>(null!);
 
             // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => person.Update(mockPersonDbContext.Object, mockPhoneModelListFactory.Object));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => testPerson.Update(personDbContextStub, phoneListFactoryStub));
         }
 
         [Fact]
         public async Task Delete_ShouldCallDeleteAllPersons()
         {
             // Arrange
-            var person = new Person(new EntityBaseServices<Person>(null), mockUniqueNameRule.Object);
+            var person = new Person(new EntityBaseServices<Person>(null), testUniqueNameRule);
 
             // Act
-            await person.Delete(mockPersonDbContext.Object);
+            await person.Delete(personDbContextStub);
 
             // Assert
-            mockPersonDbContext.Verify(x => x.DeleteAllPersons(), Times.Once);
-            mockPersonDbContext.Verify(x => x.SaveChangesAsync(default), Times.Once);
+            Assert.True(personDbContextStub.DeleteAllPersons.WasCalled);
+            Assert.Equal(1, personDbContextStub.DeleteAllPersons.CallCount);
+            Assert.True(personDbContextStub.SaveChangesAsync.WasCalled);
+            Assert.Equal(1, personDbContextStub.SaveChangesAsync.CallCount);
         }
     }
 }

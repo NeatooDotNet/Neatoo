@@ -15,9 +15,10 @@ namespace Neatoo.Samples.DomainModel.SampleDomain
     public interface IPersonFactory
     {
         IPerson Create();
+        Task<IPerson> Save(IPerson target);
     }
 
-    internal class PersonFactory : FactoryBase<IPerson>, IPersonFactory
+    internal class PersonFactory : FactorySaveBase<IPerson>, IFactorySave<Person>, IPersonFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
@@ -45,12 +46,51 @@ namespace Neatoo.Samples.DomainModel.SampleDomain
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
+        public Task<IPerson> LocalInsert(IPerson target)
+        {
+            var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
+        }
+
+        public Task<IPerson> LocalUpdate(IPerson target)
+        {
+            var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update());
+        }
+
+        public virtual Task<IPerson> Save(IPerson target)
+        {
+            return LocalSave(target);
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<Person>.Save(Person target)
+        {
+            return (IFactorySaveMeta? )await Save(target);
+        }
+
+        public virtual async Task<IPerson> LocalSave(IPerson target)
+        {
+            if (target.IsDeleted)
+            {
+                throw new NotImplementedException();
+            }
+            else if (target.IsNew)
+            {
+                return await LocalInsert(target);
+            }
+            else
+            {
+                return await LocalUpdate(target);
+            }
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<PersonFactory>();
             services.AddScoped<IPersonFactory, PersonFactory>();
             services.AddTransient<Person>();
             services.AddTransient<IPerson, Person>();
+            services.AddScoped<IFactorySave<Person>, PersonFactory>();
         }
     }
 }

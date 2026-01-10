@@ -79,6 +79,30 @@ internal class PhoneList : EntityListBase<IPhone>, IPhoneList
 
 ## Adding Items
 
+### Always Use Parent's Add Methods
+
+Child entities should be created through the parent collection's add methods, not by calling child factories directly:
+
+```csharp
+// CORRECT - Use parent's domain method
+var phone = contact.PhoneNumbers.AddPhoneNumber();
+phone.Number = "555-1234";
+
+// WRONG - Calling child factory directly
+var phone = phoneFactory.Create();  // Don't do this
+phone.Number = "555-1234";
+contact.PhoneNumbers.Add(phone);    // Missing parent relationship setup
+```
+
+**Why this matters:**
+- The parent's add method ensures proper parent-child relationships
+- Factory injection is handled by the list, not the caller
+- Domain operations belong on the aggregate, not scattered in consuming code
+
+If you find yourself injecting child factories outside the aggregate, refactor to expose an add method on the collection interface.
+
+### What Happens When Items Are Added
+
 When items are added to an EntityListBase:
 
 1. **Child marking** - `item.MarkAsChild()` is called
@@ -132,10 +156,14 @@ For standalone entities (not in a list), `Delete()` simply sets `IsDeleted = tru
 
 ### DeletedList
 
-The `DeletedList` contains items marked for deletion during save:
+When existing items are removed from a list, they are moved to `DeletedList` rather than discarded. This allows your `[Update]` factory method to delete them from the database.
+
+> **Critical**: Your list's `[Update]` method must iterate `this.Union(DeletedList)` to process
+> both active and deleted items. If you only iterate `this`, removed items will silently
+> remain in the database.
 
 ```csharp
-// In Update operation
+// In Update operation - MUST include DeletedList
 foreach (var item in lineItems.Union(lineItems.DeletedList))
 {
     if (item.IsDeleted)
@@ -145,6 +173,8 @@ foreach (var item in lineItems.Union(lineItems.DeletedList))
     // ...
 }
 ```
+
+See [List Factory Operations](factory-operations.md#list-factory-operations) for complete examples.
 
 ### Intra-Aggregate Moves
 

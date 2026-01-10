@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 10.6.0** (2026-01-05)
+**Neatoo 10.6.2** (2026-01-10)
 
 ---
 
@@ -12,6 +12,8 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [10.6.2](v10.6.2.md) | 2026-01-10 | Patch | Parameterless constructor for EntityBaseServices<T> (unit testing) |
+| [10.6.1](v10.6.1.md) | 2026-01-09 | Patch | KnockOff 10.12.0 upgrade, Moq removed from test projects |
 | [10.6.0](v10.6.0.md) | 2026-01-05 | Feature | RemoteFactory upgrade to 10.5.0 with CancellationToken support |
 | [10.5.0](v10.5.0.md) | 2026-01-04 | Feature | CancellationToken support for async operations |
 | [10.4.0](v10.4.0.md) | 2026-01-04 | Feature | Collapse Base layer - simplified inheritance hierarchy |
@@ -25,6 +27,8 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [10.6.2](v10.6.2.md) | 2026-01-10 |
+| [10.6.1](v10.6.1.md) | 2026-01-09 |
 | [10.6.0](v10.6.0.md) | 2026-01-05 |
 | [10.5.0](v10.5.0.md) | 2026-01-04 |
 | [10.4.0](v10.4.0.md) | 2026-01-04 |

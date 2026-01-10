@@ -116,11 +116,7 @@ else
         if (!Person.IsSavable) return;
 
         // IMPORTANT: Always reassign - Save returns a new instance
-        // Person = await PersonFactory.Save(Person);
-
-        // Note: This sample Person entity doesn't have Insert/Update methods.
-        // In a real entity with [Insert] and [Update] methods, the factory
-        // generates a Save method that should be called like above.
+        Person = await PersonFactory.Save(Person);
     }
     @* #endregion *@
 

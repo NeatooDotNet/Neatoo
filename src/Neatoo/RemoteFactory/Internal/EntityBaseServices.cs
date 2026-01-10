@@ -12,6 +12,21 @@ public class EntityBaseServices<T> : ValidateBaseServices<T>, IEntityBaseService
 
     public new IValidatePropertyManager<IValidateProperty> ValidatePropertyManager => EntityPropertyManager;
 
+    /// <summary>
+    /// Unit testing constructor only. Creates an instance with a null factory.
+    /// </summary>
+    /// <remarks>
+    /// <para><strong>WARNING: For unit testing purposes only.</strong></para>
+    /// <para>Save operations will fail because no factory is configured.</para>
+    /// <para>Do not use this constructor in production code.</para>
+    /// </remarks>
+    public EntityBaseServices() : base()
+    {
+        this.PropertyInfoList = new PropertyInfoList<T>((System.Reflection.PropertyInfo pi) => new PropertyInfoWrapper(pi));
+        this.EntityPropertyManager = new EntityPropertyManager(this.PropertyInfoList, new DefaultFactory());
+        this.Factory = null;
+    }
+
     public EntityBaseServices(IFactorySave<T>? factory) : base() {
 
         this.PropertyInfoList = new PropertyInfoList<T>((System.Reflection.PropertyInfo pi) => new PropertyInfoWrapper(pi));

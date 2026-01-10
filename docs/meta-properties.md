@@ -25,6 +25,8 @@ IEntityMetaProperties
     - IsDeleted (EntityBase only)
     - Parent (IValidateBase?)
     - Root (IValidateBase?)
+    - Save() (EntityBase only)
+    - Save(CancellationToken) (EntityBase only)
 ```
 
 ## Validate Meta-Properties
@@ -419,6 +421,86 @@ bool IsSavable { get; }
 ```razor
 <MudButton Disabled="@(!entity.IsSavable)" OnClick="Save">Save</MudButton>
 ```
+
+### Save()
+
+Persists the entity to the database. Available only on `EntityBase<T>`.
+
+```csharp
+Task<IEntityBase> Save();
+Task<IEntityBase> Save(CancellationToken token);
+```
+
+**Behavior:**
+- Routes to `[Insert]`, `[Update]`, or `[Delete]` based on entity state
+- Internally calls `factory.Save(this)`
+- Returns a **new instance** after client-server roundtrip
+
+**Usage:**
+```csharp
+// Entity-based save
+person = (IPerson)await person.Save();
+
+// With cancellation
+person = (IPerson)await person.Save(cts.Token);
+```
+
+**Throws `SaveOperationException` when:**
+| Reason | Condition |
+|--------|-----------|
+| `IsChildObject` | `IsChild = true` |
+| `IsInvalid` | `IsValid = false` |
+| `NotModified` | `IsModified = false` |
+| `IsBusy` | `IsBusy = true` |
+| `NoFactoryMethod` | No factory reference |
+
+**Business Operation Pattern:**
+
+The `Save()` method enables domain operations that modify state and persist atomically:
+
+<!-- snippet: docs:meta-properties:business-operation-example -->
+```csharp
+/// <summary>
+/// Minimal example showing the business operation pattern.
+/// Used in meta-properties.md to demonstrate Save() usage.
+/// </summary>
+public partial interface IOrder : IEntityBase
+{
+    OrderStatus Status { get; set; }
+    DateTime? CompletedDate { get; }
+
+    Task<IOrder> Complete();
+}
+
+public enum OrderStatus { Pending, Completed }
+
+[Factory]
+[SuppressFactory]  // Suppress factory generation - example only
+internal partial class Order : EntityBase<Order>, IOrder
+{
+    public Order(IEntityBaseServices<Order> services) : base(services) { }
+
+    public partial OrderStatus Status { get; set; }
+    public partial DateTime? CompletedDate { get; set; }
+
+    public async Task<IOrder> Complete()
+    {
+        if (Status == OrderStatus.Completed)
+            throw new InvalidOperationException("Already completed");
+
+        Status = OrderStatus.Completed;
+        CompletedDate = DateTime.UtcNow;
+
+        return (IOrder)await this.Save();
+    }
+
+    [Create]
+    public void Create() => Status = OrderStatus.Pending;
+}
+```
+<!-- /snippet -->
+
+See [Factory Operations - Business Operations](factory-operations.md#business-operations) for the full pattern.
 
 ## Property-Level Meta-Properties
 
