@@ -624,6 +624,45 @@ See [Factory Operations](factory-operations.md#critical-always-reassign-after-sa
    app.MapPost("/api/neatoo", ...);
    ```
 
+## Design Issues
+
+### Feeling the Need to Cast to Concrete Types
+
+**Symptoms:**
+- You're casting `IPerson` to `Person` to access methods
+- You're injecting child factories outside the aggregate
+- You're bypassing `factory.Save()` with internal methods
+
+**Cause:** This indicates a design issue, not a Neatoo limitation.
+
+**Solutions:**
+
+| What You're Doing | Why It's Wrong | Correct Approach |
+|-------------------|----------------|------------------|
+| Casting to call a method | Interface is incomplete | Add method to interface |
+| Injecting child factories | Bypassing aggregate | Use parent's `AddItem()` method |
+| Calling internal save methods | Avoiding factory pattern | Use `factory.Save()` or `entity.Save()` |
+| Storing concrete types | Breaks serialization | Always use interface types |
+
+**The interface is your public API.** If consuming code needs a method, add it to the interface:
+
+```csharp
+// Before - casting to access method
+var concrete = (Visit)visit;
+await concrete.Archive();
+
+// After - method on interface
+public partial interface IVisit : IEntityBase
+{
+    Task<IVisit> Archive();
+}
+
+// Usage
+visit = await visit.Archive();
+```
+
+See [Aggregates and Entities](aggregates-and-entities.md#why-interfaces-are-required-not-optional) for complete guidance.
+
 ## Quick Reference
 
 ### Common Error Messages

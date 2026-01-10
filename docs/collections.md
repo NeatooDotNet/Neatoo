@@ -79,6 +79,30 @@ internal class PhoneList : EntityListBase<IPhone>, IPhoneList
 
 ## Adding Items
 
+### Always Use Parent's Add Methods
+
+Child entities should be created through the parent collection's add methods, not by calling child factories directly:
+
+```csharp
+// CORRECT - Use parent's domain method
+var phone = contact.PhoneNumbers.AddPhoneNumber();
+phone.Number = "555-1234";
+
+// WRONG - Calling child factory directly
+var phone = phoneFactory.Create();  // Don't do this
+phone.Number = "555-1234";
+contact.PhoneNumbers.Add(phone);    // Missing parent relationship setup
+```
+
+**Why this matters:**
+- The parent's add method ensures proper parent-child relationships
+- Factory injection is handled by the list, not the caller
+- Domain operations belong on the aggregate, not scattered in consuming code
+
+If you find yourself injecting child factories outside the aggregate, refactor to expose an add method on the collection interface.
+
+### What Happens When Items Are Added
+
 When items are added to an EntityListBase:
 
 1. **Child marking** - `item.MarkAsChild()` is called

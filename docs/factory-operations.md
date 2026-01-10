@@ -515,12 +515,31 @@ This applies to Blazor components as well - if you don't reassign, the UI will s
 In addition to `factory.Save(entity)`, entities can save themselves via `entity.Save()`:
 
 ```csharp
-// Factory-based save (documented pattern)
+// Factory-based save
 person = await personFactory.Save(person);
 
 // Entity-based save (equivalent)
 person = (IPerson) await person.Save();
 ```
+
+**Both approaches are correct.** Choose based on context:
+- Factory-based when you have the factory injected
+- Entity-based for business operations on the entity itself
+
+**Anti-pattern: Casting to concrete to access "internal" save methods:**
+
+```csharp
+// WRONG - Don't cast to concrete to call internal methods
+var concrete = (Person)person;
+await concrete.SomeInternalPersistMethod();
+
+// CORRECT - Use the standard patterns
+person = await personFactory.Save(person);
+// or
+person = (IPerson) await person.Save();
+```
+
+If you feel you need internal save methods, you're likely working around a design issue. The standard `Save()` routes to `[Insert]`, `[Update]`, or `[Delete]` based on entity state.
 
 Both approaches are equivalent—`entity.Save()` internally calls `factory.Save(this)`. The entity-based approach is useful when:
 

@@ -195,6 +195,50 @@ public partial interface ICustomer : IEntityBase
 ```
 <!-- /snippet -->
 
+### Why Interfaces Are Required (Not Optional)
+
+Casting to concrete types breaks Neatoo's design. The interface is your public API—all code outside the entity class itself should use interfaces.
+
+**Anti-patterns to avoid:**
+
+```csharp
+// WRONG - Casting to concrete type
+var person = personFactory.Create();
+var concrete = (Person)person;  // Don't do this
+concrete.InternalMethod();       // If you need this, add it to IPerson
+
+// WRONG - Storing concrete types
+private Person _person;  // Should be IPerson
+
+// WRONG - Bypassing factory.Save()
+var concrete = (Person)person;
+await concrete.SomeInternalSaveMethod();  // Use factory.Save() or person.Save()
+```
+
+**If you "need" to cast to concrete, something is wrong:**
+
+| Symptom | Problem | Solution |
+|---------|---------|----------|
+| Need a method not on interface | Interface is incomplete | Add the method to the interface |
+| Need to access internal state | Encapsulation violation | Expose via interface property/method |
+| Child factory called directly | Bypassing parent's add method | Use `parent.Children.AddItem()` |
+| Calling concrete's Save() | Avoiding factory pattern | Use `factory.Save(entity)` or `entity.Save()` |
+
+**The interface is your contract.** If business operations need to call a method, that method belongs on the interface. If it's truly internal, no code outside the entity should call it.
+
+```csharp
+// CORRECT - Method needed by consumers? Add to interface
+public partial interface IVisit : IEntityBase
+{
+    Task<IVisit> Archive();  // Business operation on interface
+}
+
+// CORRECT - Use interface types everywhere
+private IOrder _order;
+var order = await orderFactory.Create();
+order = await orderFactory.Save(order);
+```
+
 ### Aggregate Root Class
 
 Class declaration with `[Factory]` attribute:
