@@ -265,6 +265,7 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
         if (!task.IsCompleted && !this.IsSelfBusy)
         {
+            // Only track IsBusy if not already busy (prevents duplicate notifications)
             this.IsSelfBusy = true;
 
             try
@@ -273,15 +274,18 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
                 await task;
 
+                // Must set false BEFORE notification so listeners see correct IsBusy value
                 this.IsSelfBusy = false;
                 this.OnPropertyChanged(nameof(IsBusy));
             }
             finally
             {
+                // Failsafe: ensure IsSelfBusy is reset even if exception thrown
                 this.IsSelfBusy = false;
             }
         }
 
+        // Always await - handles case when IsSelfBusy was already true (skipped IsBusy tracking)
         await task;
     }
 

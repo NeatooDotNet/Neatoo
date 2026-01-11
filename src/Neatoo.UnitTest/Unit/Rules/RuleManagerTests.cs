@@ -949,6 +949,239 @@ public class RuleManagerCancellationTests
 
 #endregion
 
+#region ShouldRunRule Tests
+
+/// <summary>
+/// Tests for the static ShouldRunRule method that determines if a rule should execute based on flags.
+/// </summary>
+[TestClass]
+public class RuleManagerShouldRunRuleTests
+{
+    private RuleManagerTestTarget _target = null!;
+    private IRuleManager<RuleManagerTestTarget> _ruleManager = null!;
+
+    [TestInitialize]
+    public void Setup()
+    {
+        _target = new RuleManagerTestTarget();
+        _target.ResumeAllActions();
+        _ruleManager = _target.GetRuleManager();
+    }
+
+    #region Flag.All Tests
+
+    [TestMethod]
+    public void ShouldRunRule_FlagAll_NotExecutedRule_ReturnsTrue()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestSyncRule(trigger);
+        _ruleManager.AddRule(rule);
+
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.All);
+
+        Assert.IsTrue(result);
+    }
+
+    [TestMethod]
+    public async Task ShouldRunRule_FlagAll_ExecutedRule_ReturnsTrue()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestSyncRule(trigger);
+        _ruleManager.AddRule(rule);
+        await _ruleManager.RunRule(rule);
+
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.All);
+
+        Assert.IsTrue(result);
+    }
+
+    #endregion
+
+    #region Flag.Self Tests
+
+    [TestMethod]
+    public void ShouldRunRule_FlagSelf_ReturnsTrue()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestSyncRule(trigger);
+        _ruleManager.AddRule(rule);
+
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.Self);
+
+        Assert.IsTrue(result);
+    }
+
+    #endregion
+
+    #region Flag.NotExecuted Tests
+
+    [TestMethod]
+    public void ShouldRunRule_FlagNotExecuted_NotExecutedRule_ReturnsTrue()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestSyncRule(trigger);
+        _ruleManager.AddRule(rule);
+
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.NotExecuted);
+
+        Assert.IsTrue(result);
+    }
+
+    [TestMethod]
+    public async Task ShouldRunRule_FlagNotExecuted_ExecutedRule_ReturnsFalse()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestSyncRule(trigger);
+        _ruleManager.AddRule(rule);
+        await _ruleManager.RunRule(rule);
+
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.NotExecuted);
+
+        Assert.IsFalse(result);
+    }
+
+    #endregion
+
+    #region Flag.Executed Tests
+
+    [TestMethod]
+    public void ShouldRunRule_FlagExecuted_NotExecutedRule_ReturnsFalse()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestSyncRule(trigger);
+        _ruleManager.AddRule(rule);
+
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.Executed);
+
+        Assert.IsFalse(result);
+    }
+
+    [TestMethod]
+    public async Task ShouldRunRule_FlagExecuted_ExecutedRule_ReturnsTrue()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestSyncRule(trigger);
+        _ruleManager.AddRule(rule);
+        await _ruleManager.RunRule(rule);
+
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.Executed);
+
+        Assert.IsTrue(result);
+    }
+
+    #endregion
+
+    #region Flag.None Tests
+
+    [TestMethod]
+    public void ShouldRunRule_FlagNone_ReturnsFalse()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestSyncRule(trigger);
+        _ruleManager.AddRule(rule);
+
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.None);
+
+        Assert.IsFalse(result);
+    }
+
+    #endregion
+
+    #region Flag.NoMessages Tests - Documents Broken Behavior
+
+    /// <summary>
+    /// NoMessages always returns true because IRule.Messages is never populated.
+    /// This documents existing (broken) behavior.
+    /// </summary>
+    [TestMethod]
+    public void ShouldRunRule_FlagNoMessages_AlwaysReturnsTrue_BecauseMessagesNeverPopulated()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestSyncRule(trigger);
+        _ruleManager.AddRule(rule);
+
+        // NoMessages always matches because rule.Messages is always empty
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.NoMessages);
+
+        Assert.IsTrue(result, "NoMessages always returns true because IRule.Messages is never populated");
+    }
+
+    /// <summary>
+    /// Even rules that return error messages still have empty IRule.Messages
+    /// because PreviousMessages is never set. This documents existing (broken) behavior.
+    /// </summary>
+    [TestMethod]
+    public async Task ShouldRunRule_FlagNoMessages_RuleThatReturnsErrors_StillReturnsTrue_BecauseMessagesNeverPopulated()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestErrorRule("Error message", trigger);
+        _ruleManager.AddRule(rule);
+        await _ruleManager.RunRule(rule);
+
+        // Even after running an error rule, rule.Messages is empty
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.NoMessages);
+
+        Assert.IsTrue(result, "NoMessages returns true even for error rules because IRule.Messages is never populated");
+    }
+
+    #endregion
+
+    #region Flag.Messages Tests - Documents Broken Behavior
+
+    /// <summary>
+    /// Messages always returns false because IRule.Messages is never populated.
+    /// This documents existing (broken) behavior.
+    /// </summary>
+    [TestMethod]
+    public async Task ShouldRunRule_FlagMessages_AlwaysReturnsFalse_BecauseMessagesNeverPopulated()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestErrorRule("Error message", trigger);
+        _ruleManager.AddRule(rule);
+        await _ruleManager.RunRule(rule);
+
+        // Messages never matches because rule.Messages is always empty
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.Messages);
+
+        Assert.IsFalse(result, "Messages always returns false because IRule.Messages is never populated");
+    }
+
+    #endregion
+
+    #region Combined Flags Tests
+
+    [TestMethod]
+    public void ShouldRunRule_CombinedNotExecutedAndExecuted_NotExecutedRule_ReturnsTrue()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestSyncRule(trigger);
+        _ruleManager.AddRule(rule);
+
+        // NotExecuted matches
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.NotExecuted | RunRulesFlag.Executed);
+
+        Assert.IsTrue(result);
+    }
+
+    [TestMethod]
+    public async Task ShouldRunRule_CombinedNotExecutedAndExecuted_ExecutedRule_ReturnsTrue()
+    {
+        var trigger = new TriggerProperty<RuleManagerTestTarget>(t => t.Name);
+        var rule = new TestSyncRule(trigger);
+        _ruleManager.AddRule(rule);
+        await _ruleManager.RunRule(rule);
+
+        // Executed matches
+        var result = RuleManager<RuleManagerTestTarget>.ShouldRunRule(rule, RunRulesFlag.NotExecuted | RunRulesFlag.Executed);
+
+        Assert.IsTrue(result);
+    }
+
+    #endregion
+}
+
+#endregion
+
 #region Integration with ValidateBase Tests
 
 [TestClass]

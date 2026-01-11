@@ -743,7 +743,8 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 
 		try
 		{
-			if ((runRules | Neatoo.RunRulesFlag.Self) != Neatoo.RunRulesFlag.Self)
+			// Run child property rules unless only Self flag is set
+			if (runRules != RunRulesFlag.Self)
 			{
 				await this.PropertyManager.RunRules(runRules, token);
 			}

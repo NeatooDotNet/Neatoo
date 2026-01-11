@@ -212,9 +212,28 @@ public class RuleManager<T> : IRuleManager<T>
     protected uint _ruleIndex = 1;
 
     /// <summary>
+    /// Global counter for generating unique execution IDs for busy tracking.
+    /// Each rule execution gets a unique ID to track which executions are in-flight.
+    /// </summary>
+    private static long _nextExecId = 0;
+
+    /// <summary>
     /// Gets the dictionary of rules indexed by their unique index.
     /// </summary>
     private IDictionary<uint, IRule> Rules { get; } = new Dictionary<uint, IRule>();
+
+    /// <summary>
+    /// Registers a rule with the rule manager, assigning it a unique index.
+    /// </summary>
+    /// <typeparam name="TRule">The rule type.</typeparam>
+    /// <param name="rule">The rule to register.</param>
+    /// <returns>The registered rule.</returns>
+    private TRule RegisterRule<TRule>(TRule rule) where TRule : IRule
+    {
+        this.Rules.Add(this._ruleIndex++, rule);
+        rule.OnRuleAdded(this, this._ruleIndex);
+        return rule;
+    }
 
     /// <summary>
     /// Discovers and adds rules from validation attributes on the target's properties.
@@ -232,8 +251,7 @@ public class RuleManager<T> : IRuleManager<T>
                 var rule = attributeToRule.GetRule<T>(r, a);
                 if (rule != null)
                 {
-                    this.Rules.Add(this._ruleIndex++, rule);
-                    rule.OnRuleAdded(this, this._ruleIndex);
+                    this.RegisterRule(rule);
                 }
             }
         }
@@ -251,8 +269,7 @@ public class RuleManager<T> : IRuleManager<T>
     {
         if (typeof(T1).IsAssignableFrom(typeof(T)))
         {
-            this.Rules.Add(this._ruleIndex++, rule);
-            rule.OnRuleAdded(this, this._ruleIndex);
+            this.RegisterRule(rule);
         }
         else
         {
@@ -275,55 +292,37 @@ public class RuleManager<T> : IRuleManager<T>
     /// <inheritdoc />
     public ActionAsyncFluentRule<T> AddActionAsync(Func<T, Task> func, params Expression<Func<T, object?>>[] triggerProperties)
     {
-        var rule = new ActionAsyncFluentRule<T>(func, triggerProperties);
-        this.Rules.Add(this._ruleIndex++, rule);
-        rule.OnRuleAdded(this, this._ruleIndex);
-        return rule;
+        return this.RegisterRule(new ActionAsyncFluentRule<T>(func, triggerProperties));
     }
 
     /// <inheritdoc />
     public ActionFluentRule<T> AddAction(Action<T> func, params Expression<Func<T, object?>>[] triggerProperties)
     {
-        var rule = new ActionFluentRule<T>(func, triggerProperties);
-        this.Rules.Add(this._ruleIndex++, rule);
-        rule.OnRuleAdded(this, this._ruleIndex);
-        return rule;
+        return this.RegisterRule(new ActionFluentRule<T>(func, triggerProperties));
     }
 
     /// <inheritdoc />
     public ValidationFluentRule<T> AddValidation(Func<T, string> func, Expression<Func<T, object?>> triggerProperty)
     {
-        var rule = new ValidationFluentRule<T>(func, triggerProperty);
-        this.Rules.Add(this._ruleIndex++, rule);
-        rule.OnRuleAdded(this, this._ruleIndex);
-        return rule;
+        return this.RegisterRule(new ValidationFluentRule<T>(func, triggerProperty));
     }
 
     /// <inheritdoc />
     public AsyncFluentRule<T> AddValidationAsync(Func<T, Task<string>> func, Expression<Func<T, object?>> triggerProperty)
     {
-        var rule = new AsyncFluentRule<T>(func, triggerProperty);
-        this.Rules.Add(this._ruleIndex++, rule);
-        rule.OnRuleAdded(this, this._ruleIndex);
-        return rule;
+        return this.RegisterRule(new AsyncFluentRule<T>(func, triggerProperty));
     }
 
     /// <inheritdoc />
     public ActionAsyncFluentRuleWithToken<T> AddActionAsync(Func<T, CancellationToken, Task> func, params Expression<Func<T, object?>>[] triggerProperties)
     {
-        var rule = new ActionAsyncFluentRuleWithToken<T>(func, triggerProperties);
-        this.Rules.Add(this._ruleIndex++, rule);
-        rule.OnRuleAdded(this, this._ruleIndex);
-        return rule;
+        return this.RegisterRule(new ActionAsyncFluentRuleWithToken<T>(func, triggerProperties));
     }
 
     /// <inheritdoc />
     public AsyncFluentRuleWithToken<T> AddValidationAsync(Func<T, CancellationToken, Task<string>> func, Expression<Func<T, object?>> triggerProperty)
     {
-        var rule = new AsyncFluentRuleWithToken<T>(func, triggerProperty);
-        this.Rules.Add(this._ruleIndex++, rule);
-        rule.OnRuleAdded(this, this._ruleIndex);
-        return rule;
+        return this.RegisterRule(new AsyncFluentRuleWithToken<T>(func, triggerProperty));
     }
 
     /// <inheritdoc />
@@ -353,120 +352,166 @@ public class RuleManager<T> : IRuleManager<T>
                 throw new OperationCanceledException(token.Value);
             }
 
-            var messages = rule.Value.Messages;
-            if (runRules == Neatoo.RunRulesFlag.All ||
-                runRules == Neatoo.RunRulesFlag.Self ||
-                ((runRules & Neatoo.RunRulesFlag.NotExecuted) == Neatoo.RunRulesFlag.NotExecuted && rule.Value.Executed == false) ||
-                ((runRules & Neatoo.RunRulesFlag.Executed) == Neatoo.RunRulesFlag.Executed && rule.Value.Executed) ||
-                ((runRules & Neatoo.RunRulesFlag.NoMessages) == Neatoo.RunRulesFlag.NoMessages && messages.Count == 0) ||
-                ((runRules & Neatoo.RunRulesFlag.Messages) == Neatoo.RunRulesFlag.Messages && messages.Count > 0))
+            if (ShouldRunRule(rule.Value, runRules))
+            {
                 await this.RunRule(rule.Value, token);
+            }
         }
     }
 
+    /// <summary>
+    /// Determines whether a rule should be executed based on the specified flags.
+    /// </summary>
+    /// <param name="rule">The rule to evaluate.</param>
+    /// <param name="flags">The flags indicating which rules should run.</param>
+    /// <returns><c>true</c> if the rule should be executed; otherwise, <c>false</c>.</returns>
+    /// <remarks>
+    /// <para>Flag evaluation logic:</para>
+    /// <list type="bullet">
+    /// <item><see cref="RunRulesFlag.All"/> or <see cref="RunRulesFlag.Self"/>: Always run</item>
+    /// <item><see cref="RunRulesFlag.NotExecuted"/>: Run if rule has not been executed</item>
+    /// <item><see cref="RunRulesFlag.Executed"/>: Run if rule has been executed</item>
+    /// <item><see cref="RunRulesFlag.NoMessages"/>: Run if rule has no validation messages</item>
+    /// <item><see cref="RunRulesFlag.Messages"/>: Run if rule has validation messages</item>
+    /// </list>
+    /// <para>Flags can be combined. A rule runs if ANY of the specified conditions match.</para>
+    /// <para>
+    /// <b>Known issue:</b> The Messages and NoMessages flags check <see cref="IRule.Messages"/>,
+    /// but this property is never populated. These flags effectively don't work as intended.
+    /// NoMessages always matches (messages is always empty), Messages never matches.
+    /// </para>
+    /// </remarks>
+    public static bool ShouldRunRule(IRule rule, RunRulesFlag flags)
+    {
+        // All or Self flags mean run everything
+        if (flags == RunRulesFlag.All || flags == RunRulesFlag.Self)
+        {
+            return true;
+        }
+
+        // Check individual flags - rule runs if ANY condition matches
+        if ((flags & RunRulesFlag.NotExecuted) == RunRulesFlag.NotExecuted && !rule.Executed)
+        {
+            return true;
+        }
+
+        if ((flags & RunRulesFlag.Executed) == RunRulesFlag.Executed && rule.Executed)
+        {
+            return true;
+        }
+
+        var messageCount = rule.Messages.Count;
+
+        if ((flags & RunRulesFlag.NoMessages) == RunRulesFlag.NoMessages && messageCount == 0)
+        {
+            return true;
+        }
+
+        if ((flags & RunRulesFlag.Messages) == RunRulesFlag.Messages && messageCount > 0)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     /// <inheritdoc />
-    /// <exception cref="InvalidRuleTypeException">Thrown when the rule cannot be executed for this target type.</exception>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is requested before the rule executes.</exception>
-    public async Task RunRule(IRule r, CancellationToken? token = null)
+    public async Task RunRule(IRule rule, CancellationToken? token = null)
     {
         if (token?.IsCancellationRequested == true)
         {
             throw new OperationCanceledException(token.Value);
         }
 
-        if (!this.Rules.Values.Contains(r))
+        if (!this.Rules.Values.Contains(rule))
         {
             throw new RuleNotAddedException();
         }
 
-        if (r is IRule rule)
+        // Create unique ID for this execution (for busy tracking, not serialized).
+        // Atomic increment guarantees no collisions between concurrent executions.
+        var uniqueExecIndex = Interlocked.Increment(ref _nextExecId);
+        var triggerProperties = rule.TriggerProperties;
+
+        try
         {
-            var uniqueExecIndex = rule.UniqueIndex + Random.Shared.Next(10000, 100000);
-            var triggerProperties = rule.TriggerProperties;
+            var ruleMessageTask = rule.RunRule(this.Target, token);
 
-            try
-            {
-                var ruleMessageTask = r.RunRule(this.Target, token);
-
-                if (!ruleMessageTask.IsCompleted)
-                {
-                    foreach (var triggerProperty in triggerProperties)
-                    {
-                        if(this.Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty))
-                        {
-                            // Allowing null trigger properties that may be on a child target
-                            targetProperty.AddMarkedBusy(uniqueExecIndex);
-                        }
-                    }
-                }
-
-                var ruleMessages = (await ruleMessageTask) ?? RuleMessages.None;
-
-                foreach (var propertyName in triggerProperties.Select(t => t.PropertyName).Except(ruleMessages.Select(p => p.PropertyName)))
-                {
-                    if(this.Target.TryGetProperty(propertyName, out var targetProperty))
-                    {
-                        // Cast to internal interface to call ClearMessagesForRule
-                        if (targetProperty is IValidatePropertyInternal vpInternal)
-                        {
-                            vpInternal.ClearMessagesForRule(rule.UniqueIndex);
-                        }
-                    }
-                }
-
-                foreach (var ruleMessage in ruleMessages.GroupBy(rm => rm.PropertyName).ToDictionary(g => g.Key, g => g.ToList()))
-                {
-                    if(this.Target.TryGetProperty(ruleMessage.Key, out var targetProperty))
-                    {
-                        // Cast to internal interface to set RuleIndex
-                        ruleMessage.Value.ForEach(rm =>
-                        {
-                            if (rm is IRuleMessageInternal rmInternal)
-                            {
-                                rmInternal.RuleIndex = rule.UniqueIndex;
-                            }
-                        });
-
-                        // Cast to internal interface to call SetMessagesForRule
-                        if (targetProperty is IValidatePropertyInternal vpInternal)
-                        {
-                            vpInternal.SetMessagesForRule(ruleMessage.Value);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                foreach (var triggerProperty in triggerProperties)
-                {
-                    if(this.Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty))
-                    {
-                        // Cast to internal interface to call SetMessagesForRule
-                        if (targetProperty is IValidatePropertyInternal vpInternal)
-                        {
-                            // Allow children to be trigger properties
-                            vpInternal.SetMessagesForRule(triggerProperty.PropertyName.RuleMessages(ex.Message).AsReadOnly());
-                        }
-                    }
-                }
-
-                throw;
-            }
-            finally
+            if (!ruleMessageTask.IsCompleted)
             {
                 foreach (var triggerProperty in triggerProperties)
                 {
                     if (this.Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty))
                     {
                         // Allowing null trigger properties that may be on a child target
-                        targetProperty.RemoveMarkedBusy(uniqueExecIndex);
+                        targetProperty.AddMarkedBusy(uniqueExecIndex);
+                    }
+                }
+            }
+
+            var ruleMessages = (await ruleMessageTask) ?? RuleMessages.None;
+
+            foreach (var propertyName in triggerProperties.Select(t => t.PropertyName).Except(ruleMessages.Select(p => p.PropertyName)))
+            {
+                if (this.Target.TryGetProperty(propertyName, out var targetProperty))
+                {
+                    // Cast to internal interface to call ClearMessagesForRule
+                    if (targetProperty is IValidatePropertyInternal vpInternal)
+                    {
+                        vpInternal.ClearMessagesForRule(rule.UniqueIndex);
+                    }
+                }
+            }
+
+            foreach (var ruleMessage in ruleMessages.GroupBy(rm => rm.PropertyName).ToDictionary(g => g.Key, g => g.ToList()))
+            {
+                if (this.Target.TryGetProperty(ruleMessage.Key, out var targetProperty))
+                {
+                    // Cast to internal interface to set RuleIndex
+                    ruleMessage.Value.ForEach(rm =>
+                    {
+                        if (rm is IRuleMessageInternal rmInternal)
+                        {
+                            rmInternal.RuleIndex = rule.UniqueIndex;
+                        }
+                    });
+
+                    // Cast to internal interface to call SetMessagesForRule
+                    if (targetProperty is IValidatePropertyInternal vpInternal)
+                    {
+                        vpInternal.SetMessagesForRule(ruleMessage.Value);
                     }
                 }
             }
         }
-        else
+        catch (Exception ex)
         {
-            throw new InvalidRuleTypeException($"{r.GetType().FullName} cannot be executed for {typeof(T).FullName}");
+            foreach (var triggerProperty in triggerProperties)
+            {
+                if (this.Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty))
+                {
+                    // Cast to internal interface to call SetMessagesForRule
+                    if (targetProperty is IValidatePropertyInternal vpInternal)
+                    {
+                        // Allow children to be trigger properties
+                        vpInternal.SetMessagesForRule(triggerProperty.PropertyName.RuleMessages(ex.Message).AsReadOnly());
+                    }
+                }
+            }
+
+            throw;
+        }
+        finally
+        {
+            foreach (var triggerProperty in triggerProperties)
+            {
+                if (this.Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty))
+                {
+                    // Allowing null trigger properties that may be on a child target
+                    targetProperty.RemoveMarkedBusy(uniqueExecIndex);
+                }
+            }
         }
     }
 }

@@ -238,7 +238,8 @@ public abstract class AsyncRuleBase<T> : IRule<T>
     /// <inheritdoc />
     public virtual void OnRuleAdded(IRuleManager ruleManager, uint uniqueIndex)
     {
-        // Does this break static rules??
+        // Only set if not already assigned. This protects static rules (shared instances)
+        // from having their index overwritten when added to multiple RuleManagers.
         if (this.UniqueIndex == default)
         {
             this.UniqueIndex = uniqueIndex;

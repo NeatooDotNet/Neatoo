@@ -177,7 +177,7 @@ public interface IRuleMessages : IList<IRuleMessage>
     /// <summary>
     /// Gets an empty rule messages collection, indicating validation passed.
     /// </summary>
-    public static IRuleMessages None = new RuleMessages();
+    public static IRuleMessages None => new RuleMessages();
 }
 
 /// <summary>
@@ -214,7 +214,7 @@ public class RuleMessages : List<IRuleMessage>, IRuleMessages
     /// Gets an empty rule messages collection, indicating validation passed.
     /// Use this as a return value when no validation errors occurred.
     /// </summary>
-    public static RuleMessages None = new RuleMessages();
+    public static RuleMessages None => new RuleMessages();
 
     /// <inheritdoc />
     public void Add(string propertyName, string message)
