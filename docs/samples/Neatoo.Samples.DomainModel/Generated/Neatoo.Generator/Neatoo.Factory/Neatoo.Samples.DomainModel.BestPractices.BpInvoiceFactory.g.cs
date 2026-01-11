@@ -100,6 +100,14 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             services.AddTransient<BpInvoice>();
             services.AddTransient<IBpInvoice, BpInvoice>();
             services.AddScoped<IFactorySave<BpInvoice>, BpInvoiceFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

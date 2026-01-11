@@ -37,6 +37,14 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization
         {
             services.AddScoped<DisplayNameTestEntityFactory>();
             services.AddScoped<IDisplayNameTestEntityFactory, DisplayNameTestEntityFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

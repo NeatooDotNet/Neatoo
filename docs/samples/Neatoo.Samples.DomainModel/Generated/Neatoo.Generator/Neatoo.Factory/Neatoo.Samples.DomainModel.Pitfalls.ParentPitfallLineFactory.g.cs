@@ -49,6 +49,14 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
             services.AddScoped<IParentPitfallLineFactory, ParentPitfallLineFactory>();
             services.AddTransient<ParentPitfallLine>();
             services.AddTransient<IParentPitfallLine, ParentPitfallLine>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

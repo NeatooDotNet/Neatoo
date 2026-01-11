@@ -74,6 +74,14 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             services.AddScoped<IProductWithMultipleFetchFactory, ProductWithMultipleFetchFactory>();
             services.AddTransient<ProductWithMultipleFetch>();
             services.AddTransient<IProductWithMultipleFetch, ProductWithMultipleFetch>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

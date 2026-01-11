@@ -211,25 +211,74 @@ internal partial class Order : EntityBase<Order>, IOrder
 1. **ID is null until Insert** - Don't assign IDs in Create methods
 2. **Database generates the ID** - Assigned during Insert after `SaveChangesAsync()`
 3. **After Save(), capture the return** - Returned instance has database-assigned ID
-4. **Use nullable for FKs too** - Child FKs are `null` until parent is persisted
+
+### Interfaces Are Persistence-Agnostic
+
+**Foreign keys are persistence implementation details—never expose them on interfaces.**
+
+<!-- invalid:fk-on-interface-skill -->
+```csharp
+// WRONG - FK on interface
+public interface IOrderLine : IEntityBase
+{
+    long? OrderId { get; }  // Leaks persistence detail
+}
+```
+<!-- /snippet -->
+
+<!-- pseudo:parent-navigation-skill -->
+```csharp
+// CORRECT - Use parent navigation property (object reference)
+public interface IOrderLine : IEntityBase
+{
+    IOrder? ParentOrder { get; }  // Returns object, not FK
+}
+
+// Implementation uses Neatoo's built-in Parent property
+// NO FK property on domain object
+internal partial class OrderLine : EntityBase<OrderLine>, IOrderLine
+{
+    public IOrder? ParentOrder => this.Parent as IOrder;
+}
+```
+<!-- /snippet -->
+
+#### Best Practice: Don't Store FKs on Domain Objects
+
+**Pass parent IDs through factory method parameters, not as stored properties.**
+
+- Child's `[Insert]` receives parent ID as parameter
+- Pass ID directly to EF entity during persistence
+- Domain object never stores the FK
+- Factory's `Save(child, parentId)` passes IDs through
 
 ### Child Entity Pattern
 
-Child entities receive the parent's ID as a parameter to their Insert method:
+Child entities receive the parent's ID as a parameter to their Insert method. The FK goes directly to the EF entity—not stored on the domain object:
 
+<!-- pseudo:child-insert-pattern-skill -->
 ```csharp
-// Child Insert accepts parent ID
+// Child Insert accepts parent ID - passes directly to EF entity
 [Insert]
 public async Task Insert(long orderId, [Service] IDbContext db)
 {
-    OrderId = orderId;  // FK set from parameter
-    var entity = new OrderLineEntity();
-    MapTo(entity);
+    var entity = new OrderLineEntity
+    {
+        OrderId = orderId,  // FK goes directly to EF entity
+        ProductName = ProductName,
+        Quantity = Quantity
+    };
     db.OrderLines.Add(entity);
     await db.SaveChangesAsync();
     Id = entity.Id;
 }
+```
+<!-- /snippet -->
 
+Parent saves itself first, then passes its ID to children:
+
+<!-- pseudo:parent-saves-children-skill -->
+```csharp
 // Parent passes its ID when saving children
 [Insert]
 public async Task Insert([Service] IDbContext db, [Service] IOrderLineFactory lineFactory)
@@ -246,6 +295,7 @@ public async Task Insert([Service] IDbContext db, [Service] IOrderLineFactory li
     }
 }
 ```
+<!-- /snippet -->
 
 **Key insight:** The factory's `Save(child, parentId)` passes the parent ID through to the child's Insert method.
 

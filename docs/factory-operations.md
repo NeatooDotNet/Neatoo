@@ -489,6 +489,53 @@ catch (OperationCanceledException)
 - `WaitForTasks()` - waiting for async validation to complete
 - Pre-persistence checks
 
+### Save Accepts Interface Types
+
+Factory Save methods accept **interface types**, not concrete types. No casting is required:
+
+<!-- pseudo:save-interface-types -->
+```csharp
+// Factory signature - accepts interface
+Task<IOrderLine> Save(IOrderLine target, long orderId);
+
+// Usage - no casting needed
+await lineFactory.Save(line, order.Id.Value);
+```
+<!-- /snippet -->
+
+### Save Overload Generation from Insert
+
+The factory generates Save method signatures based on your Insert method's non-service parameters.
+
+| Insert Signature | Generated Save Signature |
+|------------------|--------------------------|
+| `Insert([Service] IDb db)` | `Save(IEntity target)` |
+| `Insert(long parentId, [Service] IDb db)` | `Save(IEntity target, long parentId)` |
+| `Insert(string category, int priority, [Service] IDb db)` | `Save(IEntity target, string category, int priority)` |
+
+Parameters marked with `[Service]` are injected from DI and don't appear in the Save signature. This pattern enables parent entities to pass IDs to children during Insert:
+
+<!-- pseudo:parent-saves-child-generated -->
+```csharp
+// Child's Insert method
+[Insert]
+public async Task Insert(long parentId, [Service] IDbContext db)
+{
+    ParentId = parentId;  // Internal FK
+    // ... persist
+}
+
+// Generated factory Save (from Insert parameters)
+public Task<IChildEntity> Save(IChildEntity target, long parentId);
+
+// Parent uses it
+foreach (var child in Children)
+{
+    await childFactory.Save(child, this.Id.Value);
+}
+```
+<!-- /snippet -->
+
 ### Critical: Always Reassign After Save()
 
 When you call `Save()`, the aggregate is **serialized to the server**, persisted, and a **new instance is returned** via deserialization. You MUST capture this return value:

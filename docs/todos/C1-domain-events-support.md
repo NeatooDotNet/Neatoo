@@ -2,7 +2,7 @@
 
 **Priority:** Critical
 **Category:** Missing DDD Feature
-**Effort:** High
+**Effort:** Low (revised from High - leverages RemoteFactory 10.6.0)
 **Status:** Not Started
 
 ---
@@ -13,139 +13,152 @@ Neatoo currently has no built-in domain event support. This creates several issu
 
 1. Cross-aggregate communication requires manual coordination
 2. Side effects (notifications, auditing) must be handled directly in factory methods
-3. Event sourcing integration is not possible
-4. No decoupled way to react to domain state changes
+3. No decoupled way to react to domain state changes
 
 ---
 
-## Proposed Solution
+## Solution: Leverage RemoteFactory 10.6.0
 
-### 1. Define Domain Event Infrastructure
+RemoteFactory 10.6.0 introduced the `[Event]` attribute which provides:
 
-```csharp
-// Core interface
-public interface IDomainEvent
-{
-    DateTimeOffset OccurredOn { get; }
-    Guid EventId { get; }
-}
+- Fire-and-forget execution with isolated DI scopes
+- Graceful shutdown tracking via `IEventTracker`
+- Remote execution across client-server boundary
+- Exception handling (logged, not thrown to caller)
 
-// Base implementation
-public abstract record DomainEventBase : IDomainEvent
-{
-    public DateTimeOffset OccurredOn { get; init; } = DateTimeOffset.UtcNow;
-    public Guid EventId { get; init; } = Guid.NewGuid();
-}
-```
+Neatoo only needs to add **event collection on entities**. The dispatch infrastructure is handled by RemoteFactory.
 
-### 2. Add Event Collection to EntityBase
+---
+
+## Implementation
+
+### 1. Add Event Collection to EntityBase
 
 ```csharp
 public abstract class EntityBase<T> : ValidateBase<T>, IEntityBase
 {
-    private readonly List<IDomainEvent> _domainEvents = new();
+    private List<object>? _domainEvents;
 
-    protected void AddDomainEvent(IDomainEvent @event)
-        => _domainEvents.Add(@event);
-
-    public IReadOnlyList<IDomainEvent> DomainEvents
-        => _domainEvents.AsReadOnly();
-
-    internal void ClearDomainEvents() => _domainEvents.Clear();
-}
-```
-
-### 3. Create Event Dispatcher
-
-```csharp
-public interface IDomainEventDispatcher
-{
-    Task DispatchAsync(IEnumerable<IDomainEvent> events, CancellationToken token = default);
-    Task DispatchAsync(IDomainEvent @event, CancellationToken token = default);
-}
-
-public interface IDomainEventHandler<in TEvent> where TEvent : IDomainEvent
-{
-    Task HandleAsync(TEvent @event, CancellationToken token = default);
-}
-```
-
-### 4. Integration with Neatoo Factory Operations
-
-Events are raised in `[Insert]`, `[Update]`, `[Delete]` methods and dispatched after successful `SaveChangesAsync()`. Events are NOT serialized across the RemoteFactory client-server boundary; they execute only on the server.
-
-```csharp
-// Define an event
-public record OrderPlacedEvent : DomainEventBase
-{
-    public Guid OrderId { get; init; }
-    public decimal TotalAmount { get; init; }
-}
-
-// Raise in entity factory method (server-side only)
-[Remote]
-[Insert]
-public async Task Insert([Service] IDbContext db, [Service] IDomainEventDispatcher dispatcher)
-{
-    await RunRules();
-    if (!IsSavable) return;
-
-    // Raise event before persistence
-    AddDomainEvent(new OrderPlacedEvent
+    protected void RaiseDomainEvent(object domainEvent)
     {
-        OrderId = Id,
-        TotalAmount = Total
-    });
+        _domainEvents ??= new();
+        _domainEvents.Add(domainEvent);
+    }
 
-    // Persistence
-    await db.SaveChangesAsync();
+    public IReadOnlyList<object> DomainEvents
+        => (IReadOnlyList<object>?)_domainEvents ?? [];
 
-    // Dispatch after successful save (server-side only)
-    await dispatcher.DispatchAsync(DomainEvents);
-    ClearDomainEvents();
+    public void ClearDomainEvents() => _domainEvents?.Clear();
 }
 ```
 
-**Key Points:**
-- Events are raised only in `[Remote]` factory operations (server-side)
-- Dispatch occurs after `SaveChangesAsync()` succeeds
-- Events are not serialized to the client via RemoteFactory
-- Handlers execute in the same server process
+### 2. Define Event Handlers with RemoteFactory [Event]
+
+```csharp
+// Event record (simple data carrier)
+public record OrderPlacedEvent(Guid OrderId, decimal Total);
+
+// Handler class with [Factory] and [Event]
+[Factory]
+public static partial class OrderEvents
+{
+    [Event]
+    public static Task OnOrderPlaced(
+        Guid orderId,
+        decimal total,
+        [Service] IEmailService email,
+        [Service] IAnalyticsService analytics,
+        CancellationToken ct)
+    {
+        // Fire-and-forget: runs in isolated scope
+        return Task.WhenAll(
+            email.SendOrderConfirmationAsync(orderId, ct),
+            analytics.TrackOrderAsync(orderId, total, ct));
+    }
+}
+```
+
+### 3. Raise and Dispatch in Factory Methods
+
+```csharp
+public partial class Order : EntityBase<Order>
+{
+    public Guid Id { get; private set; }
+    public decimal Total { get => Getter<decimal>(); set => Setter(value); }
+
+    [Remote]
+    [Insert]
+    public async Task Insert(
+        [Service] IDbContext db,
+        [Service] OrderEvents.OnOrderPlacedEvent onOrderPlaced)
+    {
+        Id = Guid.NewGuid();
+
+        // Raise event (collected on entity)
+        RaiseDomainEvent(new OrderPlacedEvent(Id, Total));
+
+        // Persist
+        db.Orders.Add(this);
+        await db.SaveChangesAsync();
+
+        // Dispatch after successful save
+        foreach (var evt in DomainEvents.OfType<OrderPlacedEvent>())
+        {
+            _ = onOrderPlaced(evt.OrderId, evt.Total);  // Fire-and-forget
+        }
+        ClearDomainEvents();
+    }
+}
+```
+
+---
+
+## Why This Approach
+
+| Concern | Solution |
+|---------|----------|
+| Event collection | `RaiseDomainEvent()` on EntityBase |
+| Handler execution | RemoteFactory `[Event]` attribute |
+| DI scope isolation | RemoteFactory (automatic) |
+| Graceful shutdown | RemoteFactory `IEventTracker` |
+| Remote execution | RemoteFactory (works across client-server) |
+| Exception handling | RemoteFactory (logged, not thrown) |
 
 ---
 
 ## Implementation Tasks
 
-- [ ] Create `IDomainEvent` interface in `Neatoo/DomainEvents/`
-- [ ] Create `DomainEventBase` abstract record
 - [ ] Add `_domainEvents` collection to `EntityBase<T>`
-- [ ] Add `AddDomainEvent()`, `DomainEvents`, `ClearDomainEvents()` members
-- [ ] Create `IDomainEventDispatcher` interface
-- [ ] Create `IDomainEventHandler<T>` interface
-- [ ] Create default `DomainEventDispatcher` implementation using DI
-- [ ] Add DI registration extension methods
-- [ ] Handle serialization of pending events (client-server scenarios)
+- [ ] Add `RaiseDomainEvent(object)` protected method
+- [ ] Add `DomainEvents` public readonly property
+- [ ] Add `ClearDomainEvents()` public method
+- [ ] Update `IEntityBase` interface if needed
 - [ ] Write unit tests for event collection
-- [ ] Write integration tests for dispatch
+- [ ] Create integration test with RemoteFactory `[Event]`
 - [ ] Add documentation with examples
-- [ ] Consider: Should events auto-dispatch on successful Save()?
 
 ---
 
-## Design Decisions Needed
+## Optional: Typed Event Interface
 
-1. **When to dispatch?**
-   - Option A: Manually in factory methods (more control)
-   - Option B: Automatically after successful Save() (less boilerplate)
-   - Option C: Both (default auto, opt-out available)
+For consistency, add optional marker interface:
 
-2. **Client-server handling?**
-   - Should events raised on client be serialized and dispatched on server?
-   - Or should events only be raised server-side?
+```csharp
+public interface IDomainEvent
+{
+    DateTimeOffset OccurredOn { get; }
+}
 
-3. **Transaction scope?**
-   - Should dispatch happen inside or outside the transaction?
-   - Outbox pattern support?
+public abstract record DomainEventBase : IDomainEvent
+{
+    public DateTimeOffset OccurredOn { get; init; } = DateTimeOffset.UtcNow;
+}
+
+// Usage
+public record OrderPlacedEvent(Guid OrderId, decimal Total) : DomainEventBase;
+```
+
+This is optional - events can be any object type.
 
 ---
 
@@ -153,19 +166,34 @@ public async Task Insert([Service] IDbContext db, [Service] IDomainEventDispatch
 
 | File | Action |
 |------|--------|
-| `src/Neatoo/DomainEvents/IDomainEvent.cs` | Create |
-| `src/Neatoo/DomainEvents/DomainEventBase.cs` | Create |
-| `src/Neatoo/DomainEvents/IDomainEventDispatcher.cs` | Create |
-| `src/Neatoo/DomainEvents/IDomainEventHandler.cs` | Create |
-| `src/Neatoo/DomainEvents/DomainEventDispatcher.cs` | Create |
-| `src/Neatoo/EntityBase.cs` | Modify |
-| `src/Neatoo/IEntityBase.cs` | Modify |
-| `src/Neatoo/ServiceCollectionExtensions.cs` | Modify |
-| `docs/domain-events.md` | Create |
+| `src/Neatoo/EntityBase.cs` | Add event collection members |
+| `src/Neatoo/IEntityBase.cs` | Add `DomainEvents`, `ClearDomainEvents()` |
+| `src/Neatoo/DomainEvents/IDomainEvent.cs` | Create (optional) |
+| `src/Neatoo/DomainEvents/DomainEventBase.cs` | Create (optional) |
+| `docs/concepts/domain-events.md` | Create |
+
+---
+
+## Design Notes
+
+**Why `object` instead of `IDomainEvent`?**
+- Simpler - no base type requirement
+- Works with records, classes, any type
+- RemoteFactory `[Event]` handlers take primitive parameters anyway
+
+**Why manual dispatch in factory methods?**
+- Explicit control over timing (after SaveChanges)
+- No magic - developer sees exactly what happens
+- Matches RemoteFactory's delegate injection pattern
+
+**Why fire-and-forget (`_ = onOrderPlaced(...)`)?**
+- Event handlers run in isolated scopes
+- Failures logged but don't fail the operation
+- Use `await` if you need to ensure completion
 
 ---
 
 ## References
 
-- [Microsoft Domain Events Pattern](https://docs.microsoft.com/en-us/dotnet/architecture/microservices/microservice-ddd-cqrs-patterns/domain-events-design-implementation)
-- [Jimmy Bogard on Domain Events](https://lostechies.com/jimmybogard/2014/05/13/a-better-domain-events-pattern/)
+- [RemoteFactory Events Documentation](https://github.com/NeatooDotNet/RemoteFactory/docs/concepts/events.md)
+- RemoteFactory 10.6.0 release notes

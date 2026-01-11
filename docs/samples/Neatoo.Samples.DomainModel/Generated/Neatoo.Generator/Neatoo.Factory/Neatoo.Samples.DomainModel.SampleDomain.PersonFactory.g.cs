@@ -91,6 +91,14 @@ namespace Neatoo.Samples.DomainModel.SampleDomain
             services.AddTransient<Person>();
             services.AddTransient<IPerson, Person>();
             services.AddScoped<IFactorySave<Person>, PersonFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

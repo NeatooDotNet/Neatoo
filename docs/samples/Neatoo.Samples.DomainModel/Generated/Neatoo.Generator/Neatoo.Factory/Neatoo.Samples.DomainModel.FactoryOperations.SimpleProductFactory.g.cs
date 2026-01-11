@@ -48,6 +48,14 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             services.AddScoped<ISimpleProductFactory, SimpleProductFactory>();
             services.AddTransient<SimpleProduct>();
             services.AddTransient<ISimpleProduct, SimpleProduct>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

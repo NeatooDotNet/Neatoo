@@ -113,6 +113,14 @@ namespace Neatoo.Samples.DomainModel.SourceGenerators
             services.AddTransient<Product>();
             services.AddTransient<IProduct, Product>();
             services.AddScoped<IFactorySave<Product>, ProductFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

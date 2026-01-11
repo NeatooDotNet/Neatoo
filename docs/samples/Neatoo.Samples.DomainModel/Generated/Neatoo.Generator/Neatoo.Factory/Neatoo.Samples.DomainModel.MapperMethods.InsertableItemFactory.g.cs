@@ -82,6 +82,14 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             services.AddTransient<InsertableItem>();
             services.AddTransient<IInsertableItem, InsertableItem>();
             services.AddScoped<IFactorySave<InsertableItem>, InsertableItemFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

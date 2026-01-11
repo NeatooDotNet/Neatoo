@@ -171,6 +171,124 @@ var phone = phoneFactory.Create();  // Bypass aggregate's add method
 
 For a complete list of interface-related mistakes, see [Common Pitfalls](troubleshooting.md) Section 14.
 
+### Interfaces Are Persistence-Agnostic
+
+**Interfaces represent the domain model, not the database schema.** Foreign keys are persistence implementation details that should not appear on interfaces.
+
+| Domain Concept | Interface Exposes | Interface Hides |
+|----------------|-------------------|-----------------|
+| Parent-child relationship | `IOrder.Lines` (collection) | `IOrderLine.OrderId` (FK) |
+| Entity identity | `IOrderLine.Id` (primary key) | Database-specific details |
+| Parent navigation | `IOrderLine.ParentOrder` (object reference) | Foreign key value |
+
+#### Why Hide Foreign Keys?
+
+Foreign keys are database schema details. Exposing them on interfaces:
+
+- **Couples domain to persistence** - What if you switch from SQL to NoSQL?
+- **Tempts improper mutation** - Consumers might try to reassign `OrderId` to "move" a child
+- **Leaks abstraction** - Domain consumers shouldn't need to know about database keys
+
+#### Parent Navigation Property Pattern
+
+If consumers need to know which parent a child belongs to, expose a **parent navigation property** instead of an FK:
+
+<!-- invalid:fk-on-interface -->
+```csharp
+// WRONG - FK on interface leaks persistence detail
+public interface IOrderLine : IEntityBase
+{
+    long? OrderId { get; }  // Exposes database key
+}
+```
+<!-- /snippet -->
+
+<!-- pseudo:parent-navigation-correct -->
+```csharp
+// CORRECT - Object reference via Neatoo's Parent property
+public interface IOrderLine : IEntityBase
+{
+    IOrder? ParentOrder { get; }  // Domain-oriented navigation
+}
+
+// Implementation uses built-in Parent property
+// NO FK property on domain object - pass through Insert parameter instead
+internal partial class OrderLine : EntityBase<OrderLine>, IOrderLine
+{
+    public IOrder? ParentOrder => this.Parent as IOrder;
+}
+```
+<!-- /snippet -->
+
+The navigation property uses Neatoo's built-in `Parent` property, which is automatically set when a child is added to a parent's collection.
+
+#### Best Practice: Don't Store FKs on Domain Objects
+
+**Pass parent IDs through factory method parameters, not as stored properties.**
+
+The child's `[Insert]` method receives the parent ID as a parameter and passes it directly to the EF entity during persistence. The domain object never stores the FK:
+
+<!-- pseudo:fk-through-insert -->
+```csharp
+// Insert receives parentId, passes directly to EF - no FK property needed
+[Insert]
+public async Task Insert(long orderId, [Service] IDbContext db)
+{
+    var entity = new OrderLineEntity
+    {
+        OrderId = orderId,  // FK goes to EF entity only
+        ProductName = ProductName
+    };
+    db.OrderLines.Add(entity);
+    await db.SaveChangesAsync();
+    Id = entity.Id;
+}
+```
+<!-- /snippet -->
+
+This pattern:
+- Keeps domain objects persistence-agnostic
+- Avoids `partial` FK properties appearing on generated interfaces
+- Uses factory's `Save(child, parentId)` overload to pass IDs through
+
+#### Anti-Pattern: FK with Setter on Interface
+
+<!-- invalid:fk-setter-antipattern -->
+```csharp
+// WRONG - FK with setter allows mutation
+public interface IOrderLine : IEntityBase
+{
+    long? OrderId { get; set; }  // Setter is dangerous
+}
+
+// This forces awkward patterns:
+var line = lineFactory.Create();
+line.OrderId = order.Id;  // Manual FK assignment - bad!
+
+// Or worse - consumers think they can "move" a line:
+line.OrderId = differentOrder.Id;  // Doesn't actually work as expected
+```
+<!-- /snippet -->
+
+#### Anti-Pattern: Read-Only FK on Interface
+
+Even read-only FKs violate the persistence-agnostic principle:
+
+<!-- invalid:fk-readonly-antipattern -->
+```csharp
+// STILL WRONG - Read-only FK still leaks persistence
+public interface IOrderLine : IEntityBase
+{
+    long? OrderId { get; }  // No setter, but still exposes database key
+}
+
+// Problems:
+// 1. Interface now depends on database schema (long vs GUID)
+// 2. Consumers may cache/compare FKs instead of using object references
+// 3. Violates DDD - domain model shouldn't expose storage keys
+```
+<!-- /snippet -->
+
 ## 2. Factory Pattern for Entity Creation
 
 **Never instantiate entities directly.** Always use the generated factory.
@@ -312,11 +430,10 @@ internal partial class BpProduct : EntityBase<BpProduct>, IBpProduct
 1. **ID is null until Insert** - Don't assign IDs in Create methods
 2. **Database generates the ID** - The ID is assigned during Insert after `SaveChangesAsync()`
 3. **After Save(), capture the return** - The returned instance has the database-assigned ID
-4. **Use nullable for FKs too** - Child entity foreign keys can be `null` until parent is persisted
 
 ### Parent-Child Relationships
 
-When both parent and child are new, the child's foreign key is `null` until the parent is persisted. The parent passes its ID to the child's Insert via the factory Save method.
+When saving parent-child aggregates, the parent passes its ID to the child's Insert method. The child's FK is an internal implementation detail—never expose it on the interface (see [Interfaces Are Persistence-Agnostic](#interfaces-are-persistence-agnostic)).
 
 **Child entity - Insert receives parent ID as parameter:**
 
@@ -324,13 +441,14 @@ When both parent and child are new, the child's foreign key is `null` until the 
 ```cs
 /// <summary>
 /// Child entity Insert receives parent ID as parameter.
+/// Foreign key is an internal implementation detail - not exposed on interface.
 /// </summary>
 public partial interface IBpOrderLine : IEntityBase
 {
     long? Id { get; }
-    long? OrderId { get; }  // FK - null until Insert
     string? ProductName { get; set; }
     int Quantity { get; set; }
+    // Note: No OrderId on interface - FK is a persistence implementation detail
 }
 
 [Factory]
@@ -339,27 +457,23 @@ internal partial class BpOrderLine : EntityBase<BpOrderLine>, IBpOrderLine
     public BpOrderLine(IEntityBaseServices<BpOrderLine> services) : base(services) { }
 
     public partial long? Id { get; set; }
-    public partial long? OrderId { get; set; }
     public partial string? ProductName { get; set; }
     public partial int Quantity { get; set; }
 
     [Create]
-    public void Create()
-    {
-        // OrderId stays null - set during Insert
-    }
+    public void Create() { }
 
     /// <summary>
     /// Insert receives parent ID as first parameter.
     /// The factory's Save(child, parentId) passes this through.
+    /// FK is passed directly to persistence - not stored on domain object.
     /// </summary>
     [Insert]
     public async Task Insert(long orderId, [Service] IDbContext db)
     {
-        OrderId = orderId;  // FK set from parameter
         var entity = new OrderLineEntity
         {
-            OrderId = orderId,
+            OrderId = orderId,  // FK goes directly to EF entity
             ProductName = ProductName,
             Quantity = Quantity
         };
@@ -390,8 +504,12 @@ public partial interface IBpInvoiceLineList : IEntityListBase<IBpInvoiceLine> { 
 public partial interface IBpInvoiceLine : IEntityBase
 {
     long? Id { get; }
-    long? InvoiceId { get; }
     string? Description { get; set; }
+
+    /// <summary>
+    /// Parent navigation via object reference - use instead of FK.
+    /// </summary>
+    IBpInvoice? ParentInvoice { get; }
 }
 
 [Factory]
@@ -440,22 +558,24 @@ internal partial class BpInvoiceLine : EntityBase<BpInvoiceLine>, IBpInvoiceLine
     public BpInvoiceLine(IEntityBaseServices<BpInvoiceLine> services) : base(services) { }
 
     public partial long? Id { get; set; }
-    public partial long? InvoiceId { get; set; }
     public partial string? Description { get; set; }
+
+    // Parent navigation - uses Neatoo's built-in Parent property
+    public IBpInvoice? ParentInvoice => this.Parent as IBpInvoice;
 
     [Create]
     public void Create() { }
 
     /// <summary>
     /// Insert receives parent ID - the factory's Save(child, parentId) passes this through.
+    /// FK is passed directly to persistence - not stored on domain object.
     /// </summary>
     [Insert]
     public async Task Insert(long invoiceId, [Service] IDbContext db)
     {
-        InvoiceId = invoiceId;  // FK set from parameter
         var entity = new OrderLineEntity
         {
-            OrderId = invoiceId,
+            OrderId = invoiceId,  // FK goes directly to EF entity
             ProductName = Description
         };
         db.OrderLines.Add(entity);

@@ -49,6 +49,14 @@ namespace Neatoo.Samples.DomainModel.Collections
             services.AddScoped<IContactPhoneListFactory, ContactPhoneListFactory>();
             services.AddTransient<ContactPhoneList>();
             services.AddTransient<IContactPhoneList, ContactPhoneList>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

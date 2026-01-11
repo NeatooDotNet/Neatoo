@@ -84,6 +84,14 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             services.AddTransient<ManualExecutionEntity>();
             services.AddTransient<IManualExecutionEntity, ManualExecutionEntity>();
             services.AddScoped<IFactorySave<ManualExecutionEntity>, ManualExecutionEntityFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

@@ -49,6 +49,14 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules
             services.AddScoped<IDataAnnotationsEntityFactory, DataAnnotationsEntityFactory>();
             services.AddTransient<DataAnnotationsEntity>();
             services.AddTransient<IDataAnnotationsEntity, DataAnnotationsEntity>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

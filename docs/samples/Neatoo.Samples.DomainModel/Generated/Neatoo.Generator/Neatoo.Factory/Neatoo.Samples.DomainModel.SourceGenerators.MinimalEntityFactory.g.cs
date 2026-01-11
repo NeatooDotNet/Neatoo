@@ -50,6 +50,14 @@ namespace Neatoo.Samples.DomainModel.SourceGenerators
             services.AddScoped<IMinimalEntityFactory, MinimalEntityFactory>();
             services.AddTransient<MinimalEntity>();
             services.AddTransient<IMinimalEntity, MinimalEntity>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

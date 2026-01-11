@@ -122,6 +122,14 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             services.AddTransient<OrderLineItem>();
             services.AddTransient<IOrderLineItem, OrderLineItem>();
             services.AddScoped<IFactorySave<OrderLineItem>, OrderLineItemFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

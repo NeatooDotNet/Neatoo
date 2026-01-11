@@ -120,7 +120,7 @@ Services should be constructor-injected, not passed by callers.
 - [x] **validation-and-rules.md** - Add section clarifying cascading rules as a feature
 - [x] **collections.md** - Reviewed - constructor pattern with `[Service]` is correct
 - [x] **aggregates-and-entities.md** - Added DI patterns section
-- [ ] **CLAUDE.md** - Review if project instructions need updates (optional)
+- [x] **CLAUDE.md** - Reviewed; no updates needed (skill handles usage patterns, CLAUDE.md handles workflow)
 
 ## Source Files Changed in Skill
 

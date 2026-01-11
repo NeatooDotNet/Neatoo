@@ -50,6 +50,14 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             services.AddScoped<IIsModifiedCheckUserFactory, IsModifiedCheckUserFactory>();
             services.AddTransient<IsModifiedCheckUser>();
             services.AddTransient<IIsModifiedCheckUser, IsModifiedCheckUser>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

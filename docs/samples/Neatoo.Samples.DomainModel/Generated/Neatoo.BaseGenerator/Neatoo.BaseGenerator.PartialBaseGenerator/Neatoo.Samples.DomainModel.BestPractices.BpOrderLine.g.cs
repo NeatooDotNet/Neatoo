@@ -16,7 +16,6 @@ namespace Neatoo.Samples.DomainModel.BestPractices
     internal partial class BpOrderLine
     {
         public partial long? Id { get => Getter<long?>(); set => Setter(value); }
-        public partial long? OrderId { get => Getter<long?>(); set => Setter(value); }
         public partial string? ProductName { get => Getter<string?>(); set => Setter(value); }
         public partial int Quantity { get => Getter<int>(); set => Setter(value); }
     }

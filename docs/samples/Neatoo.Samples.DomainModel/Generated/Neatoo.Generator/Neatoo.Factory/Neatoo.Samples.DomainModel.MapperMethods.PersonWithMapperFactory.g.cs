@@ -60,6 +60,14 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             services.AddScoped<IPersonWithMapperFactory, PersonWithMapperFactory>();
             services.AddTransient<PersonWithMapper>();
             services.AddTransient<IPersonWithMapper, PersonWithMapper>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

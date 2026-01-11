@@ -132,6 +132,14 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             services.AddTransient<Visit>();
             services.AddTransient<IVisit, Visit>();
             services.AddScoped<IFactorySave<Visit>, VisitFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

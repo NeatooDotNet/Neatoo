@@ -98,6 +98,14 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             services.AddTransient<BpProduct>();
             services.AddTransient<IBpProduct, BpProduct>();
             services.AddScoped<IFactorySave<BpProduct>, BpProductFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

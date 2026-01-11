@@ -62,6 +62,14 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
             services.AddScoped<IPersonPhoneListFactory, PersonPhoneListFactory>();
             services.AddTransient<PersonPhoneList>();
             services.AddTransient<IPersonPhoneList, PersonPhoneList>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

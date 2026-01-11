@@ -90,6 +90,14 @@ namespace Neatoo.Samples.DomainModel.Collections
             services.AddScoped<IPhoneListFactory, PhoneListFactory>();
             services.AddTransient<PhoneList>();
             services.AddTransient<IPhoneList, PhoneList>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

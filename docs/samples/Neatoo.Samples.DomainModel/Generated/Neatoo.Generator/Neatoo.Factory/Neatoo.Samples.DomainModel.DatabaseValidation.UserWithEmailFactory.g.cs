@@ -84,6 +84,14 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
             services.AddTransient<UserWithEmail>();
             services.AddTransient<IUserWithEmail, UserWithEmail>();
             services.AddScoped<IFactorySave<UserWithEmail>, UserWithEmailFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

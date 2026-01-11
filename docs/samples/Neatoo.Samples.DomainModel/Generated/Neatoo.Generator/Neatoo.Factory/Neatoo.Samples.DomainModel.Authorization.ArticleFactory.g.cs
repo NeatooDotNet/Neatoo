@@ -88,6 +88,14 @@ namespace Neatoo.Samples.DomainModel.Authorization
             services.AddScoped<IArticleFactory, ArticleFactory>();
             services.AddTransient<Article>();
             services.AddTransient<IArticle, Article>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

@@ -48,6 +48,14 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             services.AddScoped<IBpInvoiceLineListFactory, BpInvoiceLineListFactory>();
             services.AddTransient<BpInvoiceLineList>();
             services.AddTransient<IBpInvoiceLineList, BpInvoiceLineList>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

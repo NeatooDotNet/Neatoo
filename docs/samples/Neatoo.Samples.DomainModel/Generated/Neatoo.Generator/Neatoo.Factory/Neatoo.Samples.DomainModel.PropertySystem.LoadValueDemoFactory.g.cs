@@ -50,6 +50,14 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
             services.AddScoped<ILoadValueDemoFactory, LoadValueDemoFactory>();
             services.AddTransient<LoadValueDemo>();
             services.AddTransient<ILoadValueDemo, LoadValueDemo>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

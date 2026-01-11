@@ -94,6 +94,14 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             services.AddTransient<CustomerWithAddress>();
             services.AddTransient<ICustomerWithAddress, CustomerWithAddress>();
             services.AddScoped<IFactorySave<CustomerWithAddress>, CustomerWithAddressFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

@@ -100,6 +100,14 @@ namespace DomainModel
             services.AddScoped<IPersonPhoneFactory, PersonPhoneFactory>();
             services.AddTransient<PersonPhone>();
             services.AddTransient<IPersonPhone, PersonPhone>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

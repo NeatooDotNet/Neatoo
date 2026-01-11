@@ -49,6 +49,14 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
             services.AddScoped<IBulkUpdateDemoFactory, BulkUpdateDemoFactory>();
             services.AddTransient<BulkUpdateDemo>();
             services.AddTransient<IBulkUpdateDemo, BulkUpdateDemo>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

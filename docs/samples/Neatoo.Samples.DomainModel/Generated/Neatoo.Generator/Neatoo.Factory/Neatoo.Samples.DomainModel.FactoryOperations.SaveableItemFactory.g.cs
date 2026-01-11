@@ -99,6 +99,14 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             services.AddTransient<SaveableItem>();
             services.AddTransient<ISaveableItem, SaveableItem>();
             services.AddScoped<IFactorySave<SaveableItem>, SaveableItemFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

@@ -94,6 +94,14 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             services.AddScoped<IInvoiceLineFactory, InvoiceLineFactory>();
             services.AddTransient<InvoiceLine>();
             services.AddTransient<IInvoiceLine, InvoiceLine>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

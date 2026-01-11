@@ -115,6 +115,14 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
             services.AddTransient<Person>();
             services.AddTransient<IPerson, Person>();
             services.AddScoped<IFactorySave<Person>, PersonFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

@@ -50,6 +50,14 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             services.AddScoped<ICustomerFactory, CustomerFactory>();
             services.AddTransient<Customer>();
             services.AddTransient<ICustomer, Customer>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

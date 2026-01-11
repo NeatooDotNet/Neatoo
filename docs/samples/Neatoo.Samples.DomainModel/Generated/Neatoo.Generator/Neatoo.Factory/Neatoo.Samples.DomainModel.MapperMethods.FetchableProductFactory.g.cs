@@ -60,6 +60,14 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             services.AddScoped<IFetchableProductFactory, FetchableProductFactory>();
             services.AddTransient<FetchableProduct>();
             services.AddTransient<IFetchableProduct, FetchableProduct>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

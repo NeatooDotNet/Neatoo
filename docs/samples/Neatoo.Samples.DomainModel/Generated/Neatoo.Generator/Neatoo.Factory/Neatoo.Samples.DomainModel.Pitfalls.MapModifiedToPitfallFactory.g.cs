@@ -83,6 +83,14 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
             services.AddTransient<MapModifiedToPitfall>();
             services.AddTransient<IMapModifiedToPitfall, MapModifiedToPitfall>();
             services.AddScoped<IFactorySave<MapModifiedToPitfall>, MapModifiedToPitfallFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

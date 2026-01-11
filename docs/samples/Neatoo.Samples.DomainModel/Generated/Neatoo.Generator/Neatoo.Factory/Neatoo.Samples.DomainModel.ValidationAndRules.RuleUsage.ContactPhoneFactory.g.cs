@@ -50,6 +50,14 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             services.AddScoped<IContactPhoneFactory, ContactPhoneFactory>();
             services.AddTransient<ContactPhone>();
             services.AddTransient<IContactPhone, ContactPhone>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

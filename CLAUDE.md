@@ -128,6 +128,7 @@ dotnet list package | findstr RemoteFactory
 
 | Date | Commit | Description | Breaking? | Plan |
 |------|--------|-------------|-----------|------|
+| 2026-01-10 | `9b33a87` | 10.6.0 - [Event] Attribute for Domain Events | Yes* | N/A |
 | 2026-01-05 | N/A | 10.5.0 - Upgrade Complete | Migrated | `docs/todos/remotefactory-upgrade-blocked.md` |
 | 2026-01-04 | `db5d76e` | 10.4.0 - CancellationToken Support | Migrated | `docs/todos/remotefactory-upgrade-blocked.md` |
 | 2026-01-04 | `ef20bd3` | 10.2.0 - Ordinal Serialization | Migrated | `docs/todos/remotefactory-upgrade-blocked.md` |
@@ -137,9 +138,11 @@ dotnet list package | findstr RemoteFactory
 
 ### Current Version
 
-**Neatoo.RemoteFactory 10.5.0** (updated 2026-01-05)
+**Neatoo.RemoteFactory 10.6.0** (updated 2026-01-10)
 
 ### Breaking Change Notes
+
+**[Event] Attribute (10.6.0)**: New `[Event]` attribute for fire-and-forget domain events. `IMakeRemoteDelegateRequest` interface now requires `ForDelegateEvent(Type, object?[]?)` method. **Status: MIGRATED** - Updated test infrastructure's `MakeRemoteDelegateRequest` class.
 
 **Ordinal Serialization (10.2.0)**: The generator creates `FromOrdinalArray()` and `JsonConverter.Read()` methods using object initializer syntax (`new Type { ... }`). **Status: MIGRATED** - Works correctly when entities use proper DI patterns and deserialize to interfaces.
 

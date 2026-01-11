@@ -16,7 +16,6 @@ namespace Neatoo.Samples.DomainModel.BestPractices
     internal partial class BpInvoiceLine
     {
         public partial long? Id { get => Getter<long?>(); set => Setter(value); }
-        public partial long? InvoiceId { get => Getter<long?>(); set => Setter(value); }
         public partial string? Description { get => Getter<string?>(); set => Setter(value); }
     }
 }

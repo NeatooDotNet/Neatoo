@@ -50,6 +50,14 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
             services.AddScoped<IDisplayNameDemoFactory, DisplayNameDemoFactory>();
             services.AddTransient<DisplayNameDemo>();
             services.AddTransient<IDisplayNameDemo, DisplayNameDemo>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

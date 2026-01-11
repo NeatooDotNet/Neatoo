@@ -51,6 +51,14 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase
             services.AddScoped<IValidateObjectFactory, ValidateObjectFactory>();
             services.AddTransient<ValidateObject>();
             services.AddTransient<IValidateObject, ValidateObject>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

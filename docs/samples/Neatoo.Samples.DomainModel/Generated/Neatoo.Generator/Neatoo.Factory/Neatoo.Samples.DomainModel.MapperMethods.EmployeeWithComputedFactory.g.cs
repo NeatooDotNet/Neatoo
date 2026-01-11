@@ -60,6 +60,14 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             services.AddScoped<IEmployeeWithComputedFactory, EmployeeWithComputedFactory>();
             services.AddTransient<EmployeeWithComputed>();
             services.AddTransient<IEmployeeWithComputed, EmployeeWithComputed>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

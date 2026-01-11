@@ -48,6 +48,14 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             services.AddScoped<IPhoneNumberFactory, PhoneNumberFactory>();
             services.AddTransient<PhoneNumber>();
             services.AddTransient<IPhoneNumber, PhoneNumber>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

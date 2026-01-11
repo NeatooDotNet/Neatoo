@@ -89,6 +89,14 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests
             services.AddTransient<EntityObject>();
             services.AddTransient<IEntityObject, EntityObject>();
             services.AddScoped<IFactorySave<EntityObject>, EntityObjectFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

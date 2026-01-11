@@ -54,6 +54,21 @@ namespace Neatoo.UnitTest
             }
             return result;
         }
+
+        public async Task ForDelegateEvent(Type delegateType, object?[]? parameters)
+        {
+            // For events, we simulate the fire-and-forget pattern
+            // The server handles in a new scope, but we await acknowledgment
+            var remoteRequest = NeatooJsonSerializer.ToRemoteDelegateRequest(delegateType, parameters);
+
+            var json = JsonSerializer.Serialize(remoteRequest);
+            var remoteRequestOnServer = JsonSerializer.Deserialize<RemoteRequestDto>(json)!;
+
+            // Use the Server's container - fire and forget semantics (no return value needed)
+            await serviceProvider.GetRequiredService<ServerServiceProvider>()
+                                 .serverProvider
+                                 .GetRequiredService<HandleRemoteDelegateRequest>()(remoteRequestOnServer, default);
+        }
     }
 
     internal static class ClientServerContainers

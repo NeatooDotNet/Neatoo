@@ -245,13 +245,14 @@ internal partial class BpProduct : EntityBase<BpProduct>, IBpProduct
 #region child-entity-insert
 /// <summary>
 /// Child entity Insert receives parent ID as parameter.
+/// Foreign key is an internal implementation detail - not exposed on interface.
 /// </summary>
 public partial interface IBpOrderLine : IEntityBase
 {
     long? Id { get; }
-    long? OrderId { get; }  // FK - null until Insert
     string? ProductName { get; set; }
     int Quantity { get; set; }
+    // Note: No OrderId on interface - FK is a persistence implementation detail
 }
 
 [Factory]
@@ -260,27 +261,23 @@ internal partial class BpOrderLine : EntityBase<BpOrderLine>, IBpOrderLine
     public BpOrderLine(IEntityBaseServices<BpOrderLine> services) : base(services) { }
 
     public partial long? Id { get; set; }
-    public partial long? OrderId { get; set; }
     public partial string? ProductName { get; set; }
     public partial int Quantity { get; set; }
 
     [Create]
-    public void Create()
-    {
-        // OrderId stays null - set during Insert
-    }
+    public void Create() { }
 
     /// <summary>
     /// Insert receives parent ID as first parameter.
     /// The factory's Save(child, parentId) passes this through.
+    /// FK is passed directly to persistence - not stored on domain object.
     /// </summary>
     [Insert]
     public async Task Insert(long orderId, [Service] IDbContext db)
     {
-        OrderId = orderId;  // FK set from parameter
         var entity = new OrderLineEntity
         {
-            OrderId = orderId,
+            OrderId = orderId,  // FK goes directly to EF entity
             ProductName = ProductName,
             Quantity = Quantity
         };
@@ -307,8 +304,12 @@ public partial interface IBpInvoiceLineList : IEntityListBase<IBpInvoiceLine> { 
 public partial interface IBpInvoiceLine : IEntityBase
 {
     long? Id { get; }
-    long? InvoiceId { get; }
     string? Description { get; set; }
+
+    /// <summary>
+    /// Parent navigation via object reference - use instead of FK.
+    /// </summary>
+    IBpInvoice? ParentInvoice { get; }
 }
 
 [Factory]
@@ -357,22 +358,24 @@ internal partial class BpInvoiceLine : EntityBase<BpInvoiceLine>, IBpInvoiceLine
     public BpInvoiceLine(IEntityBaseServices<BpInvoiceLine> services) : base(services) { }
 
     public partial long? Id { get; set; }
-    public partial long? InvoiceId { get; set; }
     public partial string? Description { get; set; }
+
+    // Parent navigation - uses Neatoo's built-in Parent property
+    public IBpInvoice? ParentInvoice => this.Parent as IBpInvoice;
 
     [Create]
     public void Create() { }
 
     /// <summary>
     /// Insert receives parent ID - the factory's Save(child, parentId) passes this through.
+    /// FK is passed directly to persistence - not stored on domain object.
     /// </summary>
     [Insert]
     public async Task Insert(long invoiceId, [Service] IDbContext db)
     {
-        InvoiceId = invoiceId;  // FK set from parameter
         var entity = new OrderLineEntity
         {
-            OrderId = invoiceId,
+            OrderId = invoiceId,  // FK goes directly to EF entity
             ProductName = Description
         };
         db.OrderLines.Add(entity);

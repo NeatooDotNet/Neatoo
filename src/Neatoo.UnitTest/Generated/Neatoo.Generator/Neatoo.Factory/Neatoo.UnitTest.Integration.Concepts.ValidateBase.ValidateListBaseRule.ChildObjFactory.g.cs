@@ -40,6 +40,14 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase.ValidateListBaseRule
             services.AddScoped<IChildObjFactory, ChildObjFactory>();
             // Register AOT-compatible ordinal converter
             global::Neatoo.RemoteFactory.Internal.NeatooOrdinalConverterFactory.RegisterConverter(ChildObj.CreateOrdinalConverter());
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

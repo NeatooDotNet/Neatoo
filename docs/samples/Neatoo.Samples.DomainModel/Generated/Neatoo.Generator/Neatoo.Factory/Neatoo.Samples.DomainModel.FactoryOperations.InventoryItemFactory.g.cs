@@ -115,6 +115,14 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             services.AddTransient<InventoryItem>();
             services.AddTransient<IInventoryItem, InventoryItem>();
             services.AddScoped<IFactorySave<InventoryItem>, InventoryItemFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

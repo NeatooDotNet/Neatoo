@@ -356,6 +356,14 @@ namespace Neatoo.Samples.DomainModel.Authorization
             services.AddTransient<Document>();
             services.AddTransient<IDocument, Document>();
             services.AddScoped<IFactorySave<Document>, DocumentFactory>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

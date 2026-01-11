@@ -88,6 +88,14 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             services.AddScoped<IUpdatableRecordFactory, UpdatableRecordFactory>();
             services.AddTransient<UpdatableRecord>();
             services.AddTransient<IUpdatableRecord, UpdatableRecord>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

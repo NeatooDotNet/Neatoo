@@ -86,6 +86,14 @@ namespace Neatoo.UnitTest.Integration.Concepts.EntityBase
             services.AddScoped<IFactorySave<EntityPerson>, EntityPersonFactory>();
             // Register AOT-compatible ordinal converter
             global::Neatoo.RemoteFactory.Internal.NeatooOrdinalConverterFactory.RegisterConverter(EntityPerson.CreateOrdinalConverter());
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

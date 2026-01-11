@@ -49,6 +49,14 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             services.AddScoped<IProjectWithTasksFactory, ProjectWithTasksFactory>();
             services.AddTransient<ProjectWithTasks>();
             services.AddTransient<IProjectWithTasks, ProjectWithTasks>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

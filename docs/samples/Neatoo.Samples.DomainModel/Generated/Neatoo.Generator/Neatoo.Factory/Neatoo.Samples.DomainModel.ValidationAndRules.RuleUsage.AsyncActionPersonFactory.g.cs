@@ -50,6 +50,14 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             services.AddScoped<IAsyncActionPersonFactory, AsyncActionPersonFactory>();
             services.AddTransient<AsyncActionPerson>();
             services.AddTransient<IAsyncActionPerson, AsyncActionPerson>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

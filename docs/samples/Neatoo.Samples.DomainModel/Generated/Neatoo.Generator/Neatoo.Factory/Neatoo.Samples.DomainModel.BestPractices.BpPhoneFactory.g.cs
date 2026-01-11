@@ -48,6 +48,14 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             services.AddScoped<IBpPhoneFactory, BpPhoneFactory>();
             services.AddTransient<BpPhone>();
             services.AddTransient<IBpPhone, BpPhone>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

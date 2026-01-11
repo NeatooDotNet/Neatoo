@@ -49,6 +49,14 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
             services.AddScoped<IRequiredWhitespacePitfallFactory, RequiredWhitespacePitfallFactory>();
             services.AddTransient<RequiredWhitespacePitfall>();
             services.AddTransient<IRequiredWhitespacePitfall, RequiredWhitespacePitfall>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

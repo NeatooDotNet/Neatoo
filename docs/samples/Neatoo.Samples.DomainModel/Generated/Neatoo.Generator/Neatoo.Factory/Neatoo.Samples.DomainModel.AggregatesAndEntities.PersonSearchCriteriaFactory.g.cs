@@ -50,6 +50,14 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             services.AddScoped<IPersonSearchCriteriaFactory, PersonSearchCriteriaFactory>();
             services.AddTransient<PersonSearchCriteria>();
             services.AddTransient<IPersonSearchCriteria, PersonSearchCriteria>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }

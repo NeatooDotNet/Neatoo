@@ -8,7 +8,7 @@ This directory contains detailed action items from the comprehensive framework r
 
 | ID | Priority | Title | Effort | Status |
 |----|----------|-------|--------|--------|
-| [C1](C1-domain-events-support.md) | Critical | Add Domain Events Support | High | Not Started |
+| [C1](C1-domain-events-support.md) | Critical | Add Domain Events Support | Low | Not Started |
 | [C2](C2-beginner-tutorials.md) | Critical | Create Beginner-Friendly Tutorials | Medium | Not Started |
 | [H1](completed/H1-fix-rulemanager-assertion.md) | High | Fix RuleManager Assertion Logic | Low | **Completed** |
 | [H2](H2-document-async-validation-patterns.md) | High | Document Async Validation Patterns | Medium | Not Started |
@@ -86,7 +86,7 @@ This directory contains detailed action items from the comprehensive framework r
 - ~~[L3](completed/L3-fix-waitfortasks-assert.md) - WaitForTasks cleanup~~ **DONE**
 
 ### Sprint 4+ (Features)
-- [C1](C1-domain-events-support.md) - Domain Events (Major feature)
+- [C1](C1-domain-events-support.md) - Domain Events (Low effort with RemoteFactory 10.6.0)
 - [M2](M2-value-object-base.md) - Value Object support
 - [M5](M5-aggregate-root-marker.md) - IAggregateRoot marker
 

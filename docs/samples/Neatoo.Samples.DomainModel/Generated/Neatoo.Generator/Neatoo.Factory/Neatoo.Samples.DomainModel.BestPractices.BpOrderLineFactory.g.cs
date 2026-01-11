@@ -77,6 +77,14 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             services.AddScoped<IBpOrderLineFactory, BpOrderLineFactory>();
             services.AddTransient<BpOrderLine>();
             services.AddTransient<IBpOrderLine, BpOrderLine>();
+            // Event registrations
+            if (remoteLocal == NeatooFactory.Remote)
+            {
+            }
+
+            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
+            {
+            }
         }
     }
 }
