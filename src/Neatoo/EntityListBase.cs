@@ -44,6 +44,11 @@ public interface IEntityListBase<I> : IValidateListBase<I>, IEntityMetaPropertie
 public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IEntityListBase<I>, IEntityListBase, IEntityListBaseInternal
     where I : IEntityBase
 {
+    /// <summary>
+    /// Cached value for IsModified property (children only, not DeletedList).
+    /// Updated incrementally when child state changes.
+    /// </summary>
+    private bool _cachedChildrenModified = false;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EntityListBase{I}"/> class.
@@ -56,7 +61,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// <summary>
     /// Gets a value indicating whether any item in the list has been modified or any items are pending deletion.
     /// </summary>
-    public bool IsModified => this.Any(c => c.IsModified) || this.DeletedList.Any();
+    public bool IsModified => _cachedChildrenModified || this.DeletedList.Any();
 
     /// <summary>
     /// Gets a value indicating whether the list itself has been modified.
@@ -131,6 +136,33 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     void IEntityListBaseInternal.RemoveFromDeletedList(IEntityBase item)
     {
         this.DeletedList.Remove((I)item);
+    }
+
+    /// <summary>
+    /// Handles the <see cref="INotifyPropertyChanged.PropertyChanged"/> event from child items.
+    /// Updates cached IsModified property based on the child's state transition.
+    /// </summary>
+    /// <param name="sender">The source of the event.</param>
+    /// <param name="e">The event arguments containing the property name.</param>
+    protected override void HandlePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is IEntityBase child && e.PropertyName == nameof(IEntityMetaProperties.IsModified))
+        {
+            if (child.IsModified)
+            {
+                // Child BECAME modified → we're definitely modified now (O(1))
+                _cachedChildrenModified = true;
+            }
+            else if (_cachedChildrenModified)
+            {
+                // Child BECAME unmodified, and we were modified
+                // Check if any other child is still modified (O(k) where k = first modified)
+                _cachedChildrenModified = this.Any(c => c.IsModified);
+            }
+            // else: child became unmodified, we were already unmodified → no-op
+        }
+
+        base.HandlePropertyChanged(sender, e);
     }
 
     /// <summary>
@@ -218,6 +250,12 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
 
             // Set ContainingList to this list
             itemInternal.SetContainingList(this);
+
+            // Update cached modified state - item will be modified after MarkAsChild/MarkModified
+            if (item.IsModified)
+            {
+                _cachedChildrenModified = true;
+            }
         }
         else
         {
@@ -235,13 +273,17 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// Removes the item at the specified index from the collection.
     /// When not paused, marks non-new items as deleted and adds them to the <see cref="DeletedList"/>
     /// for persistence during save operations. ContainingList stays set to track ownership.
+    /// Updates cached modified state based on the removed item's state.
     /// </summary>
     /// <param name="index">The zero-based index of the item to remove.</param>
     protected override void RemoveItem(int index)
     {
+        bool wasItemModified = false;
+
         if (!this.IsPaused)
         {
             var item = this[index];
+            wasItemModified = item.IsModified;
 
             if (!item.IsNew)
             {
@@ -255,6 +297,61 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
         }
 
         base.RemoveItem(index);
+
+        // Update cached modified state if needed
+        // Note: We don't need to recalculate here for deleted items going to DeletedList
+        // because IsModified already checks DeletedList.Any()
+        if (!this.IsPaused && wasItemModified && _cachedChildrenModified)
+        {
+            // Removed a modified item, check if any others are still modified
+            _cachedChildrenModified = this.Any(c => c.IsModified);
+        }
+    }
+
+    /// <summary>
+    /// Replaces the element at the specified index.
+    /// Updates cached modified state based on the state transition.
+    /// </summary>
+    /// <param name="index">The zero-based index of the element to replace.</param>
+    /// <param name="item">The new item to set at the specified index.</param>
+    protected override void SetItem(int index, I item)
+    {
+        bool oldWasModified = false;
+
+        if (!this.IsPaused)
+        {
+            oldWasModified = this[index].IsModified;
+        }
+
+        base.SetItem(index, item);
+
+        // Update cached modified state
+        if (!this.IsPaused)
+        {
+            if (item.IsModified)
+            {
+                // New item is modified → we're definitely modified
+                _cachedChildrenModified = true;
+            }
+            else if (oldWasModified && _cachedChildrenModified)
+            {
+                // Old was modified, new is not → may need to recalculate
+                _cachedChildrenModified = this.Any(c => c.IsModified);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes all items from the collection.
+    /// Resets cached modified state.
+    /// </summary>
+    protected override void ClearItems()
+    {
+        base.ClearItems();
+
+        // Reset cache to empty list state (no children modified)
+        // Note: DeletedList is NOT cleared here - that happens in FactoryComplete
+        _cachedChildrenModified = false;
     }
 
     /// <summary>
@@ -280,6 +377,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// Called when a factory operation is complete.
     /// Clears the <see cref="DeletedList"/> after an update operation since deleted items have been persisted.
     /// Also clears ContainingList on deleted items since deletion is now persisted.
+    /// Recalculates cached modified state after DeletedList is cleared.
     /// </summary>
     /// <param name="factoryOperation">The type of factory operation that was performed.</param>
     public override void FactoryComplete(FactoryOperation factoryOperation)
@@ -294,6 +392,25 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
             }
 
             this.DeletedList.Clear();
+
+            // Recalculate cached modified state since DeletedList was cleared
+            // and items may have been marked unmodified during the save
+            _cachedChildrenModified = this.Any(c => c.IsModified);
         }
+    }
+
+    /// <summary>
+    /// Resumes all paused actions, including rule execution and property change notifications.
+    /// Recalculates cached modified state after resuming.
+    /// </summary>
+    public override void ResumeAllActions()
+    {
+        if (this.IsPaused)
+        {
+            // Recalculate cached modified value since items may have changed while paused
+            _cachedChildrenModified = this.Any(c => c.IsModified);
+        }
+
+        base.ResumeAllActions();
     }
 }

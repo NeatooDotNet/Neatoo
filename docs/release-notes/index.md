@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 10.7.0** (2026-01-11)
+**Neatoo 10.7.1** (2026-01-11)
 
 ---
 
@@ -12,6 +12,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [10.7.1](v10.7.1.md) | 2026-01-11 | Patch | List IsValid/IsBusy/IsModified caching optimization |
 | [10.7.0](v10.7.0.md) | 2026-01-11 | Feature | Stable rule identification via source generation |
 | [10.6.3](v10.6.3.md) | 2026-01-10 | Patch | Generator unit test infrastructure |
 | [10.6.2](v10.6.2.md) | 2026-01-10 | Patch | Parameterless constructor for EntityBaseServices<T> (unit testing) |
@@ -29,6 +30,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [10.7.1](v10.7.1.md) | 2026-01-11 |
 | [10.7.0](v10.7.0.md) | 2026-01-11 |
 | [10.6.3](v10.6.3.md) | 2026-01-10 |
 | [10.6.2](v10.6.2.md) | 2026-01-10 |

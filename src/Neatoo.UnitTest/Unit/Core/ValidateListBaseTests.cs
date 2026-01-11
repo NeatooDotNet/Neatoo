@@ -833,4 +833,365 @@ public class ValidateListBaseTests
     }
 
     #endregion
+
+    #region Caching Edge Cases Tests
+
+    [TestMethod]
+    public void SetItem_ReplaceValidWithInvalid_ListBecomesInvalid()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        var validItem1 = new TestValidateItem();
+        var validItem2 = new TestValidateItem();
+        list.Add(validItem1);
+        list.Add(validItem2);
+        Assert.IsTrue(list.IsValid);
+
+        // Act - Replace first item with an invalid item
+        var invalidItem = new TestValidateItem();
+        invalidItem.Resume();
+        invalidItem.AddValidationError("Error");
+        list[0] = invalidItem;
+
+        // Assert
+        Assert.IsFalse(list.IsValid);
+    }
+
+    [TestMethod]
+    public void SetItem_ReplaceInvalidWithValid_WhenOnlyInvalid_ListBecomesValid()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        var invalidItem = new TestValidateItem();
+        invalidItem.Resume();
+        invalidItem.AddValidationError("Error");
+        var validItem = new TestValidateItem();
+        list.Add(invalidItem);
+        list.Add(validItem);
+        Assert.IsFalse(list.IsValid);
+
+        // Act - Replace invalid item with a valid one
+        var newValidItem = new TestValidateItem();
+        list[0] = newValidItem;
+
+        // Assert
+        Assert.IsTrue(list.IsValid);
+    }
+
+    [TestMethod]
+    public void SetItem_ReplaceInvalidWithValid_WhenOthersInvalid_ListStaysInvalid()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        var invalidItem1 = new TestValidateItem();
+        var invalidItem2 = new TestValidateItem();
+        invalidItem1.Resume();
+        invalidItem2.Resume();
+        invalidItem1.AddValidationError("Error1");
+        invalidItem2.AddValidationError("Error2");
+        list.Add(invalidItem1);
+        list.Add(invalidItem2);
+        Assert.IsFalse(list.IsValid);
+
+        // Act - Replace first invalid item with a valid one (second still invalid)
+        var newValidItem = new TestValidateItem();
+        list[0] = newValidItem;
+
+        // Assert
+        Assert.IsFalse(list.IsValid);
+    }
+
+    [TestMethod]
+    public void SetItem_ReplaceValidWithValid_ListStaysValid()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        var validItem = new TestValidateItem();
+        list.Add(validItem);
+        Assert.IsTrue(list.IsValid);
+
+        // Act
+        var newValidItem = new TestValidateItem();
+        list[0] = newValidItem;
+
+        // Assert
+        Assert.IsTrue(list.IsValid);
+    }
+
+    [TestMethod]
+    public void PauseThenResume_WithInvalidItems_CacheRecalculatedOnResume()
+    {
+        // Arrange - Create list, pause, add items directly (simulating deserialization)
+        var list = new TestValidateList();
+        list.IsPaused = true;
+
+        var invalidItem = new TestValidateItem();
+        invalidItem.Resume();
+        invalidItem.AddValidationError("Error");
+        list.Add(invalidItem);
+
+        // While paused, cache is not updated, but after resume it should be correct
+        list.ResumeAllActions();
+
+        // Assert
+        Assert.IsFalse(list.IsValid);
+    }
+
+    [TestMethod]
+    public void RemoveMultipleInvalidItems_LastRemovalMakesValid()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        var invalid1 = new TestValidateItem();
+        var invalid2 = new TestValidateItem();
+        invalid1.Resume();
+        invalid2.Resume();
+        invalid1.AddValidationError("Error1");
+        invalid2.AddValidationError("Error2");
+        list.Add(invalid1);
+        list.Add(invalid2);
+        Assert.IsFalse(list.IsValid);
+
+        // Act - Remove first invalid
+        list.Remove(invalid1);
+        Assert.IsFalse(list.IsValid, "Still invalid with one invalid item");
+
+        // Act - Remove second invalid
+        list.Remove(invalid2);
+
+        // Assert
+        Assert.IsTrue(list.IsValid);
+    }
+
+    #endregion
+
+    #region Large List Performance Tests
+
+    [TestMethod]
+    public void LargeList_AddManyItems_IsValidRemainsCorrect()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        const int itemCount = 1000;
+
+        // Act - Add 1000 valid items
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = new TestValidateItem();
+            list.Add(item);
+        }
+
+        // Assert
+        Assert.AreEqual(itemCount, list.Count);
+        Assert.IsTrue(list.IsValid);
+    }
+
+    [TestMethod]
+    public void LargeList_OneInvalidAmongMany_IsValidFalse()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        const int itemCount = 1000;
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = new TestValidateItem();
+            list.Add(item);
+        }
+        Assert.IsTrue(list.IsValid);
+
+        // Act - Make one item in the middle invalid
+        var middleItem = list[500];
+        middleItem.Resume();
+        middleItem.AddValidationError("Error");
+
+        // Assert
+        Assert.IsFalse(list.IsValid);
+    }
+
+    [TestMethod]
+    public void LargeList_MakeInvalidThenValid_TracksCorrectly()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        const int itemCount = 1000;
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = new TestValidateItem();
+            item.Resume();
+            list.Add(item);
+        }
+
+        // Act/Assert - Make last item invalid
+        var lastItem = list[999];
+        lastItem.AddValidationError("Error");
+        Assert.IsFalse(list.IsValid);
+
+        // Act/Assert - Make it valid again
+        lastItem.ClearErrors();
+        Assert.IsTrue(list.IsValid);
+    }
+
+    [TestMethod]
+    public void LargeList_MultipleInvalidItems_FixOneByOne()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        const int itemCount = 1000;
+        const int invalidCount = 100;
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = new TestValidateItem();
+            item.Resume();
+            list.Add(item);
+        }
+
+        // Make first 100 items invalid
+        for (int i = 0; i < invalidCount; i++)
+        {
+            list[i].AddValidationError($"Error{i}");
+        }
+        Assert.IsFalse(list.IsValid);
+
+        // Act - Fix all but last invalid item
+        for (int i = 0; i < invalidCount - 1; i++)
+        {
+            list[i].ClearErrors();
+            Assert.IsFalse(list.IsValid, $"Should still be invalid after fixing item {i}");
+        }
+
+        // Fix last invalid item
+        list[invalidCount - 1].ClearErrors();
+
+        // Assert
+        Assert.IsTrue(list.IsValid);
+    }
+
+    [TestMethod]
+    public void LargeList_RapidStateChanges_CacheStaysConsistent()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        const int itemCount = 500;
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = new TestValidateItem();
+            item.Resume();
+            list.Add(item);
+        }
+
+        // Act - Rapidly toggle validity on multiple items
+        for (int round = 0; round < 10; round++)
+        {
+            // Make items 0-99 invalid
+            for (int i = 0; i < 100; i++)
+            {
+                list[i].AddValidationError($"Error{round}");
+            }
+            Assert.IsFalse(list.IsValid, $"Round {round}: Should be invalid after adding errors");
+
+            // Make them valid again
+            for (int i = 0; i < 100; i++)
+            {
+                list[i].ClearErrors();
+            }
+            Assert.IsTrue(list.IsValid, $"Round {round}: Should be valid after clearing errors");
+        }
+    }
+
+    [TestMethod]
+    public void LargeList_RemoveItems_IsValidUpdatesCorrectly()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        const int itemCount = 500;
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = new TestValidateItem();
+            item.Resume();
+            list.Add(item);
+        }
+
+        // Make items at positions 100, 200, 300 invalid
+        list[100].AddValidationError("Error100");
+        list[200].AddValidationError("Error200");
+        list[300].AddValidationError("Error300");
+        Assert.IsFalse(list.IsValid);
+
+        // Act - Remove invalid items (remove from end to preserve indices)
+        list.RemoveAt(300);
+        Assert.IsFalse(list.IsValid, "Still invalid with 2 invalid items");
+
+        list.RemoveAt(200);
+        Assert.IsFalse(list.IsValid, "Still invalid with 1 invalid item");
+
+        list.RemoveAt(100);
+
+        // Assert
+        Assert.IsTrue(list.IsValid);
+    }
+
+    [TestMethod]
+    public void LargeList_ClearList_ResetsToValid()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        const int itemCount = 1000;
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = new TestValidateItem();
+            item.Resume();
+            if (i % 10 == 0) // Every 10th item is invalid
+            {
+                item.AddValidationError($"Error{i}");
+            }
+            list.Add(item);
+        }
+        Assert.IsFalse(list.IsValid);
+
+        // Act
+        list.Clear();
+
+        // Assert
+        Assert.IsTrue(list.IsValid);
+        Assert.AreEqual(0, list.Count);
+    }
+
+    [TestMethod]
+    public void LargeList_SetItem_UpdatesCacheCorrectly()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        const int itemCount = 500;
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = new TestValidateItem();
+            list.Add(item);
+        }
+        Assert.IsTrue(list.IsValid);
+
+        // Act - Replace item at position 250 with invalid item
+        var invalidItem = new TestValidateItem();
+        invalidItem.Resume();
+        invalidItem.AddValidationError("Error");
+        list[250] = invalidItem;
+
+        // Assert
+        Assert.IsFalse(list.IsValid);
+
+        // Act - Replace with valid item
+        var validItem = new TestValidateItem();
+        list[250] = validItem;
+
+        // Assert
+        Assert.IsTrue(list.IsValid);
+    }
+
+    #endregion
 }

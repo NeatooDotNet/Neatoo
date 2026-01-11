@@ -793,4 +793,428 @@ public class EntityListBaseTests
     }
 
     #endregion
+
+    #region Caching Edge Cases Tests
+
+    [TestMethod]
+    public void SetItem_ReplaceUnmodifiedWithModified_ListBecomesModified()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        var item1 = CreateExistingItem();
+        var item2 = CreateExistingItem();
+
+        list.IsPaused = true;
+        list.Add(item1);
+        list.Add(item2);
+        list.IsPaused = false;
+        item1.MarkUnmodified();
+        item2.MarkUnmodified();
+        Assert.IsFalse(list.IsModified);
+
+        // Act - Replace first item with a modified item
+        var modifiedItem = CreateExistingItem();
+        modifiedItem.Name = "Modified";
+        list[0] = modifiedItem;
+
+        // Assert
+        Assert.IsTrue(list.IsModified);
+    }
+
+    [TestMethod]
+    public void SetItem_ReplaceModifiedWithUnmodified_WhenOnlyModified_ListBecomesUnmodified()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        var modifiedItem = CreateExistingItem();
+        var unmodifiedItem = CreateExistingItem();
+
+        list.IsPaused = true;
+        list.Add(modifiedItem);
+        list.Add(unmodifiedItem);
+        list.ResumeAllActions();
+        unmodifiedItem.MarkUnmodified();
+        modifiedItem.Name = "Modified";
+        Assert.IsTrue(list.IsModified);
+
+        // Act - Replace modified item with an unmodified one (not paused, so cache updates)
+        var newUnmodifiedItem = CreateExistingItem();
+        newUnmodifiedItem.MarkUnmodified();
+        list[0] = newUnmodifiedItem;
+
+        // Assert
+        Assert.IsFalse(list.IsModified);
+    }
+
+    [TestMethod]
+    public void PauseThenResume_WithModifiedItems_CacheRecalculatedOnResume()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        list.IsPaused = true;
+
+        var modifiedItem = CreateExistingItem();
+        modifiedItem.Name = "Modified while paused";
+        list.Add(modifiedItem);
+
+        // While paused, cache is not updated, but after resume it should be correct
+        list.ResumeAllActions();
+
+        // Assert
+        Assert.IsTrue(list.IsModified);
+    }
+
+    [TestMethod]
+    public void FactoryComplete_Update_RecalculatesCache()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        var item = CreateExistingItem();
+
+        list.IsPaused = true;
+        list.Add(item);
+        list.IsPaused = false;
+        item.MarkUnmodified();
+        Assert.IsFalse(list.IsModified);
+
+        // Make item modified, then remove to DeletedList
+        item.Name = "Modified";
+        list.Remove(item);
+        Assert.IsTrue(list.IsModified, "Should be modified due to DeletedList");
+
+        // Act - Simulate save
+        list.FactoryComplete(FactoryOperation.Update);
+
+        // Assert
+        Assert.IsFalse(list.IsModified);
+    }
+
+    [TestMethod]
+    public void Clear_ResetsModifiedCache()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        var item = CreateNewItem();
+        item.Name = "Modified";
+        list.Add(item);
+        Assert.IsTrue(list.IsModified);
+
+        // Act
+        list.Clear();
+
+        // Assert - No children, no deleted items, not modified
+        Assert.IsFalse(list.IsModified);
+    }
+
+    #endregion
+
+    #region Large List Performance Tests
+
+    [TestMethod]
+    public void LargeList_AddManyItems_IsModifiedTracksCorrectly()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        const int itemCount = 1000;
+
+        // Act - Add 1000 new items (all will be modified since they're new)
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = CreateNewItem();
+            list.Add(item);
+        }
+
+        // Assert
+        Assert.AreEqual(itemCount, list.Count);
+        Assert.IsTrue(list.IsModified);
+    }
+
+    [TestMethod]
+    public void LargeList_UnmodifiedItems_IsModifiedFalse()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        const int itemCount = 1000;
+
+        list.IsPaused = true;
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = CreateExistingItem();
+            list.Add(item);
+        }
+        list.ResumeAllActions();
+
+        // Mark all as unmodified
+        foreach (var item in list)
+        {
+            item.MarkUnmodified();
+        }
+
+        // Assert
+        Assert.IsFalse(list.IsModified);
+    }
+
+    [TestMethod]
+    public void LargeList_OneModifiedAmongMany_IsModifiedTrue()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        const int itemCount = 1000;
+
+        list.IsPaused = true;
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = CreateExistingItem();
+            list.Add(item);
+        }
+        list.ResumeAllActions();
+
+        foreach (var item in list)
+        {
+            item.MarkUnmodified();
+        }
+        Assert.IsFalse(list.IsModified);
+
+        // Act - Modify one item in the middle
+        list[500].Name = "Modified";
+
+        // Assert
+        Assert.IsTrue(list.IsModified);
+    }
+
+    [TestMethod]
+    public void LargeList_MultipleModifiedItems_MarkUnmodifiedOneByOne()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        const int itemCount = 1000;
+        const int modifiedCount = 100;
+
+        list.IsPaused = true;
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = CreateExistingItem();
+            list.Add(item);
+        }
+        list.ResumeAllActions();
+
+        // Mark all unmodified first
+        foreach (var item in list)
+        {
+            item.MarkUnmodified();
+        }
+
+        // Make first 100 items modified
+        for (int i = 0; i < modifiedCount; i++)
+        {
+            list[i].Name = $"Modified{i}";
+        }
+        Assert.IsTrue(list.IsModified);
+
+        // Act - Mark unmodified all but last modified item
+        for (int i = 0; i < modifiedCount - 1; i++)
+        {
+            list[i].MarkUnmodified();
+            Assert.IsTrue(list.IsModified, $"Should still be modified after unmarking item {i}");
+        }
+
+        // Mark last modified item as unmodified
+        list[modifiedCount - 1].MarkUnmodified();
+
+        // Assert
+        Assert.IsFalse(list.IsModified);
+    }
+
+    [TestMethod]
+    public void LargeList_RapidModificationChanges_CacheStaysConsistent()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        const int itemCount = 500;
+
+        list.IsPaused = true;
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = CreateExistingItem();
+            list.Add(item);
+        }
+        list.ResumeAllActions();
+
+        foreach (var item in list)
+        {
+            item.MarkUnmodified();
+        }
+
+        // Act - Rapidly toggle modification on multiple items
+        for (int round = 0; round < 10; round++)
+        {
+            // Modify items 0-99
+            for (int i = 0; i < 100; i++)
+            {
+                list[i].Name = $"Modified{round}_{i}";
+            }
+            Assert.IsTrue(list.IsModified, $"Round {round}: Should be modified after changes");
+
+            // Mark them unmodified again
+            for (int i = 0; i < 100; i++)
+            {
+                list[i].MarkUnmodified();
+            }
+            Assert.IsFalse(list.IsModified, $"Round {round}: Should be unmodified after marking");
+        }
+    }
+
+    [TestMethod]
+    public void LargeList_RemoveItems_IsModifiedUpdatesCorrectly()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        const int itemCount = 500;
+
+        list.IsPaused = true;
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = CreateExistingItem();
+            list.Add(item);
+        }
+        list.ResumeAllActions();
+
+        foreach (var item in list)
+        {
+            item.MarkUnmodified();
+        }
+        Assert.IsFalse(list.IsModified);
+
+        // Act - Remove items (they go to DeletedList)
+        list.RemoveAt(400);
+        Assert.IsTrue(list.IsModified, "Should be modified with 1 deleted item");
+
+        list.RemoveAt(300);
+        Assert.IsTrue(list.IsModified, "Should be modified with 2 deleted items");
+
+        list.RemoveAt(200);
+        Assert.IsTrue(list.IsModified, "Should be modified with 3 deleted items");
+
+        // Simulate save
+        list.FactoryComplete(FactoryOperation.Update);
+
+        // Assert
+        Assert.IsFalse(list.IsModified);
+        Assert.AreEqual(0, list.DeletedList.Count);
+    }
+
+    [TestMethod]
+    public void LargeList_ClearList_ResetsModifiedState()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        const int itemCount = 1000;
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = CreateNewItem();
+            item.Name = $"Item{i}";
+            list.Add(item);
+        }
+        Assert.IsTrue(list.IsModified);
+
+        // Act
+        list.Clear();
+
+        // Assert - No children, no deleted items (new items don't go to DeletedList)
+        Assert.IsFalse(list.IsModified);
+        Assert.AreEqual(0, list.Count);
+    }
+
+    [TestMethod]
+    public void LargeList_SetItem_UpdatesCacheCorrectly()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        const int itemCount = 500;
+
+        list.IsPaused = true;
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = CreateExistingItem();
+            list.Add(item);
+        }
+        list.ResumeAllActions();
+
+        foreach (var item in list)
+        {
+            item.MarkUnmodified();
+        }
+        Assert.IsFalse(list.IsModified);
+
+        // Act - Replace item at position 250 with modified item
+        var modifiedItem = CreateExistingItem();
+        modifiedItem.Name = "Modified";
+        list[250] = modifiedItem;
+
+        // Assert
+        Assert.IsTrue(list.IsModified);
+
+        // Act - Replace with unmodified item
+        var unmodifiedItem = CreateExistingItem();
+        list.IsPaused = true;
+        list[250] = unmodifiedItem;
+        list.ResumeAllActions();
+        unmodifiedItem.MarkUnmodified();
+
+        // Assert
+        Assert.IsFalse(list.IsModified);
+    }
+
+    [TestMethod]
+    public void LargeList_MixedOperations_CacheStaysConsistent()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        const int itemCount = 300;
+
+        list.IsPaused = true;
+        for (int i = 0; i < itemCount; i++)
+        {
+            var item = CreateExistingItem();
+            list.Add(item);
+        }
+        list.ResumeAllActions();
+
+        foreach (var item in list)
+        {
+            item.MarkUnmodified();
+        }
+        Assert.IsFalse(list.IsModified);
+
+        // Act - Mix of operations
+        // 1. Modify some items
+        list[50].Name = "Modified50";
+        list[100].Name = "Modified100";
+        Assert.IsTrue(list.IsModified);
+
+        // 2. Remove an item (goes to DeletedList)
+        list.RemoveAt(200);
+        Assert.IsTrue(list.IsModified);
+
+        // 3. Add a new item
+        var newItem = CreateNewItem();
+        list.Add(newItem);
+        Assert.IsTrue(list.IsModified);
+
+        // 4. Mark modified items as unmodified
+        list[50].MarkUnmodified();
+        list[100].MarkUnmodified();
+        Assert.IsTrue(list.IsModified, "Still modified due to DeletedList and new item");
+
+        // 5. Remove the new item (doesn't go to DeletedList)
+        list.Remove(newItem);
+        Assert.IsTrue(list.IsModified, "Still modified due to DeletedList");
+
+        // 6. Simulate save
+        list.FactoryComplete(FactoryOperation.Update);
+        Assert.IsFalse(list.IsModified);
+    }
+
+    #endregion
 }

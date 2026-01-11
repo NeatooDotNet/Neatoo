@@ -50,6 +50,16 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     where I : IValidateBase
 {
     /// <summary>
+    /// Cached value for IsValid property. Updated incrementally when child state changes.
+    /// </summary>
+    private bool _cachedIsValid = true;
+
+    /// <summary>
+    /// Cached value for IsBusy property. Updated incrementally when child state changes.
+    /// </summary>
+    private bool _cachedIsBusy = false;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="ValidateListBase{I}"/> class.
     /// </summary>
     public ValidateListBase()
@@ -65,13 +75,13 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// <summary>
     /// Gets a value indicating whether any item in the list is currently busy executing asynchronous operations.
     /// </summary>
-    public bool IsBusy => this.Any(c => c.IsBusy);
+    public bool IsBusy => _cachedIsBusy;
 
     /// <summary>
     /// Gets a value indicating whether all items in the list are valid.
     /// Returns <c>true</c> if no items report validation errors.
     /// </summary>
-    public bool IsValid => !this.Any(c => !c.IsValid);
+    public bool IsValid => _cachedIsValid;
 
     /// <summary>
     /// Gets a value indicating whether the list itself (not its items) is valid.
@@ -119,6 +129,7 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// <summary>
     /// Inserts an item into the collection at the specified index.
     /// Sets the item's parent and subscribes to property change events.
+    /// Updates cached meta properties based on the new item's state.
     /// </summary>
     /// <param name="index">The zero-based index at which to insert the item.</param>
     /// <param name="item">The item to insert into the collection.</param>
@@ -131,6 +142,19 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
         item.PropertyChanged += this._PropertyChanged;
         item.NeatooPropertyChanged += this._NeatooPropertyChanged;
 
+        // Update cached meta properties based on new item's state
+        if (!this.IsPaused)
+        {
+            if (!item.IsValid)
+            {
+                _cachedIsValid = false;
+            }
+            if (item.IsBusy)
+            {
+                _cachedIsBusy = true;
+            }
+        }
+
         this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.Count), this));
 
         this.CheckIfMetaPropertiesChanged();
@@ -139,14 +163,115 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// <summary>
     /// Removes the item at the specified index from the collection.
     /// Unsubscribes from the item's property change events before removal.
+    /// Updates cached meta properties based on the removed item's state.
     /// </summary>
     /// <param name="index">The zero-based index of the item to remove.</param>
     protected override void RemoveItem(int index)
     {
-        this[index].PropertyChanged -= this._PropertyChanged;
-        this[index].NeatooPropertyChanged -= this._NeatooPropertyChanged;
+        var item = this[index];
+        bool wasItemInvalid = !item.IsValid;
+        bool wasItemBusy = item.IsBusy;
+
+        item.PropertyChanged -= this._PropertyChanged;
+        item.NeatooPropertyChanged -= this._NeatooPropertyChanged;
 
         base.RemoveItem(index);
+
+        // Update cached meta properties based on removed item's state
+        if (!this.IsPaused)
+        {
+            // If removed item was invalid and we were invalid, check if still invalid
+            if (wasItemInvalid && !_cachedIsValid)
+            {
+                _cachedIsValid = !this.Any(c => !c.IsValid);
+            }
+            // If removed item was busy and we were busy, check if still busy
+            if (wasItemBusy && _cachedIsBusy)
+            {
+                _cachedIsBusy = this.Any(c => c.IsBusy);
+            }
+        }
+
+        this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.Count), this));
+
+        this.CheckIfMetaPropertiesChanged();
+    }
+
+    /// <summary>
+    /// Replaces the element at the specified index.
+    /// Unsubscribes from the old item's events and subscribes to the new item's events.
+    /// Updates cached meta properties based on the state transition.
+    /// </summary>
+    /// <param name="index">The zero-based index of the element to replace.</param>
+    /// <param name="item">The new item to set at the specified index.</param>
+    protected override void SetItem(int index, I item)
+    {
+        var oldItem = this[index];
+        bool oldWasInvalid = !oldItem.IsValid;
+        bool oldWasBusy = oldItem.IsBusy;
+
+        // Unsubscribe from old item
+        oldItem.PropertyChanged -= this._PropertyChanged;
+        oldItem.NeatooPropertyChanged -= this._NeatooPropertyChanged;
+
+        // Set parent on new item
+        ((ISetParent)item).SetParent(this.Parent);
+
+        base.SetItem(index, item);
+
+        // Subscribe to new item
+        item.PropertyChanged += this._PropertyChanged;
+        item.NeatooPropertyChanged += this._NeatooPropertyChanged;
+
+        // Update cached meta properties based on state transition
+        if (!this.IsPaused)
+        {
+            // Handle IsValid transition
+            if (!item.IsValid)
+            {
+                // New item is invalid → we're definitely invalid
+                _cachedIsValid = false;
+            }
+            else if (oldWasInvalid && !_cachedIsValid)
+            {
+                // Old was invalid, new is valid → may need to recalculate
+                _cachedIsValid = !this.Any(c => !c.IsValid);
+            }
+
+            // Handle IsBusy transition
+            if (item.IsBusy)
+            {
+                // New item is busy → we're definitely busy
+                _cachedIsBusy = true;
+            }
+            else if (oldWasBusy && _cachedIsBusy)
+            {
+                // Old was busy, new is not busy → may need to recalculate
+                _cachedIsBusy = this.Any(c => c.IsBusy);
+            }
+        }
+
+        this.CheckIfMetaPropertiesChanged();
+    }
+
+    /// <summary>
+    /// Removes all items from the collection.
+    /// Unsubscribes from all items' events and resets cached meta properties.
+    /// </summary>
+    protected override void ClearItems()
+    {
+        // Unsubscribe from all items
+        foreach (var item in this)
+        {
+            item.PropertyChanged -= this._PropertyChanged;
+            item.NeatooPropertyChanged -= this._NeatooPropertyChanged;
+        }
+
+        base.ClearItems();
+
+        // Reset cache to empty list state
+        _cachedIsValid = true;
+        _cachedIsBusy = false;
 
         this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.Count), this));
 
@@ -236,11 +361,49 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
 
     /// <summary>
     /// Handles the <see cref="INotifyPropertyChanged.PropertyChanged"/> event from child items.
+    /// Updates cached meta properties based on the child's state transition.
     /// </summary>
     /// <param name="sender">The source of the event.</param>
     /// <param name="e">The event arguments containing the property name.</param>
     protected virtual void HandlePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (sender is IValidateBase child)
+        {
+            // Handle IsValid changes
+            if (e.PropertyName == nameof(IValidateMetaProperties.IsValid))
+            {
+                if (!child.IsValid)
+                {
+                    // Child BECAME invalid → we're definitely invalid now (O(1))
+                    _cachedIsValid = false;
+                }
+                else if (!_cachedIsValid)
+                {
+                    // Child BECAME valid, and we were invalid
+                    // Check if any other child is still invalid (O(k) where k = first invalid)
+                    _cachedIsValid = !this.Any(c => !c.IsValid);
+                }
+                // else: child became valid, we were already valid → no-op
+            }
+
+            // Handle IsBusy changes
+            if (e.PropertyName == nameof(IValidateMetaProperties.IsBusy))
+            {
+                if (child.IsBusy)
+                {
+                    // Child BECAME busy → we're definitely busy now (O(1))
+                    _cachedIsBusy = true;
+                }
+                else if (_cachedIsBusy)
+                {
+                    // Child BECAME not busy, and we were busy
+                    // Check if any other child is still busy (O(k) where k = first busy)
+                    _cachedIsBusy = this.Any(c => c.IsBusy);
+                }
+                // else: child became not busy, we were already not busy → no-op
+            }
+        }
+
         this.CheckIfMetaPropertiesChanged();
     }
 
@@ -376,13 +539,18 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
 
     /// <summary>
     /// Resumes all paused actions, including rule execution and property change notifications.
-    /// Resets the meta state after resuming to ensure proper change detection.
+    /// Recalculates cached meta properties and resets the meta state after resuming.
     /// </summary>
     public virtual void ResumeAllActions()
     {
         if (this.IsPaused)
         {
             this.IsPaused = false;
+
+            // Recalculate cached values since items may have changed while paused
+            _cachedIsValid = !this.Any(c => !c.IsValid);
+            _cachedIsBusy = this.Any(c => c.IsBusy);
+
             this.ResetMetaState();
         }
     }
