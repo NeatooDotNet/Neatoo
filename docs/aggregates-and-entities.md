@@ -175,13 +175,16 @@ EntityBase (Aggregate Root)
 
 ## Defining an Aggregate Root
 
-### Interface Pattern
+### Interface-First Design (Best Practice)
 
-Interfaces are strongly recommended for Neatoo aggregates. While RemoteFactory supports concrete classes, interfaces provide:
+**Define a public interface for every Neatoo entity.** This is a core best practice that enables testability, clean APIs, and client-server transfer. See [Best Practices](best-practices.md) for the complete rationale.
 
-- **Unit testability** - Mock dependencies and test entities in isolation
-- **Client-server transfer** - Public interface enables factory generation
-- **Minimal overhead** - Interface members are auto-generated from partial properties
+| Benefit | Description |
+|---------|-------------|
+| **Testability** | Mock dependencies and stub entities in unit tests |
+| **Clean API** | Interface defines what consumers can do; implementation details stay hidden |
+| **Client-server** | RemoteFactory generates transfer code from interfaces |
+| **Encapsulation** | `internal` class prevents direct instantiation; factory pattern enforced |
 
 <!-- snippet: docs:aggregates-and-entities:interface-requirement -->
 ```csharp
@@ -195,49 +198,38 @@ public partial interface ICustomer : IEntityBase
 ```
 <!-- /snippet -->
 
-### Why Interfaces Are Required (Not Optional)
-
-Casting to concrete types breaks Neatoo's design. The interface is your public API—all code outside the entity class itself should use interfaces.
-
-**Anti-patterns to avoid:**
+**Always use interface types** in consuming code:
 
 ```csharp
-// WRONG - Casting to concrete type
-var person = personFactory.Create();
-var concrete = (Person)person;  // Don't do this
-concrete.InternalMethod();       // If you need this, add it to IPerson
+// Fields and properties
+private IOrder _order;
+public ICustomer SelectedCustomer { get; set; }
 
-// WRONG - Storing concrete types
-private Person _person;  // Should be IPerson
-
-// WRONG - Bypassing factory.Save()
-var concrete = (Person)person;
-await concrete.SomeInternalSaveMethod();  // Use factory.Save() or person.Save()
+// Factory calls return interfaces
+var order = await orderFactory.Create();
+order = await orderFactory.Save(order);
 ```
 
-**If you "need" to cast to concrete, something is wrong:**
-
-| Symptom | Problem | Solution |
-|---------|---------|----------|
-| Need a method not on interface | Interface is incomplete | Add the method to the interface |
-| Need to access internal state | Encapsulation violation | Expose via interface property/method |
-| Child factory called directly | Bypassing parent's add method | Use `parent.Children.AddItem()` |
-| Calling concrete's Save() | Avoiding factory pattern | Use `factory.Save(entity)` or `entity.Save()` |
-
-**The interface is your contract.** If business operations need to call a method, that method belongs on the interface. If it's truly internal, no code outside the entity should call it.
+**Expose business operations on interfaces:**
 
 ```csharp
-// CORRECT - Method needed by consumers? Add to interface
 public partial interface IVisit : IEntityBase
 {
     Task<IVisit> Archive();  // Business operation on interface
 }
-
-// CORRECT - Use interface types everywhere
-private IOrder _order;
-var order = await orderFactory.Create();
-order = await orderFactory.Save(order);
 ```
+
+### Interface Anti-Patterns
+
+Casting to concrete types defeats the interface-first pattern. If you find yourself needing to cast, the interface is incomplete—add the needed method or property.
+
+| Symptom | Solution |
+|---------|----------|
+| Need a method not on interface | Add the method to the interface |
+| Need to access internal state | Expose via interface property |
+| Child factory called directly | Use `parent.Children.AddItem()` pattern |
+
+For detailed anti-pattern examples, see [Troubleshooting](troubleshooting.md) Section 14.
 
 ### Aggregate Root Class
 

@@ -34,6 +34,7 @@ Neatoo provides bindable, serializable domain objects for Blazor and WPF applica
 | Task | Go To |
 |------|-------|
 | **Get started quickly** | [Quick Start](quick-start.md) |
+| **Follow best practices** | [Best Practices](best-practices.md) |
 | **Create a domain entity** | [Aggregates and Entities](aggregates-and-entities.md) |
 | **Add validation rules** | [Validation and Rules](validation-and-rules.md) |
 | **Load/save data** | [Factory Operations](factory-operations.md) |
@@ -51,6 +52,7 @@ Neatoo provides bindable, serializable domain objects for Blazor and WPF applica
 
 - [Quick Start](quick-start.md) - Get up and running in 10 minutes
 - [Installation](installation.md) - NuGet packages and project setup
+- [Best Practices](best-practices.md) - Interface-first design and recommended patterns
 
 ### Core Concepts
 
