@@ -46,7 +46,7 @@ public class OrderLineEntity
     public int Quantity { get; set; }
 }
 
-#region docs:best-practices:interface-first-pattern
+#region interface-first-pattern
 /// <summary>
 /// Interface-First Design: Define a public interface for every entity.
 /// The interface is your API contract.
@@ -120,7 +120,7 @@ internal partial class BpPhone : ValidateBase<BpPhone>, IBpPhone
     public void Create() { }
 }
 
-#region docs:best-practices:interface-usage
+#region interface-usage
 /// <summary>
 /// Always use interface types in consuming code.
 /// </summary>
@@ -163,7 +163,7 @@ internal partial class BpOrder : EntityBase<BpOrder>, IBpOrder
     public void Create() { }
 }
 
-#region docs:best-practices:business-operations-on-interface
+#region business-operations-on-interface
 /// <summary>
 /// Expose business operations on interfaces.
 /// </summary>
@@ -202,7 +202,7 @@ internal partial class BpVisit : EntityBase<BpVisit>, IBpVisit
 }
 #endregion
 
-#region docs:best-practices:nullable-id-pattern
+#region nullable-id-pattern
 /// <summary>
 /// Use nullable types for database-generated IDs.
 /// null = not yet persisted, Guid/long = persisted.
@@ -242,7 +242,7 @@ internal partial class BpProduct : EntityBase<BpProduct>, IBpProduct
 }
 #endregion
 
-#region docs:best-practices:child-entity-insert
+#region child-entity-insert
 /// <summary>
 /// Child entity Insert receives parent ID as parameter.
 /// </summary>
@@ -291,7 +291,7 @@ internal partial class BpOrderLine : EntityBase<BpOrderLine>, IBpOrderLine
 }
 #endregion
 
-#region docs:best-practices:parent-saves-children
+#region parent-saves-children
 /// <summary>
 /// Parent entity Insert: saves itself first, then passes ID to children.
 /// </summary>

@@ -15,7 +15,7 @@ using Neatoo.RemoteFactory;
 
 namespace Neatoo.Samples.DomainModel.Testing;
 
-#region docs:testing:entity-unit-test-class
+#region entity-unit-test-class
 /// <summary>
 /// Entity class designed for direct unit testing.
 /// Uses [SuppressFactory] to prevent factory generation.
@@ -57,7 +57,7 @@ public class TestableProduct : EntityBase<TestableProduct>
 }
 #endregion
 
-#region docs:testing:entity-unit-test-usage
+#region entity-unit-test-usage
 /// <summary>
 /// Example showing how to create and test an entity directly.
 /// </summary>

@@ -11,9 +11,22 @@
 ### Workflow for Code in Documentation
 
 1. **Add code to samples first** - All code examples live in `docs/samples/`
-2. **Mark regions** - Use `#region docs:snippet-name` markers in sample files
-3. **Run sync** - Use the docs-snippets skill to extract and inject snippets
+2. **Mark regions** - Use `#region {snippet-id}` markers in sample files (IDs must be globally unique)
+3. **Run sync** - Run `dotnet mdsnippets` to extract and inject snippets
 4. **Never copy-paste** - Documentation code must come from compiled, tested samples
+
+### Commands
+
+```powershell
+# Sync documentation with code snippets
+dotnet mdsnippets
+
+# Verify all code blocks have markers (pseudo:/invalid:)
+pwsh scripts/verify-code-blocks.ps1
+
+# Check for duplicate snippet IDs
+pwsh scripts/check-duplicate-ids.ps1
+```
 
 This ensures all code in documentation is actually compiled and tested.
 

@@ -14,7 +14,7 @@ using Neatoo.Rules;
 
 namespace Neatoo.Samples.DomainModel.Testing;
 
-#region docs:testing:sync-rule-definition
+#region sync-rule-definition
 /// <summary>
 /// Interface for entities validated by NameValidationRule.
 /// </summary>
@@ -43,7 +43,7 @@ public class NameValidationRule : RuleBase<INamedEntity>
 }
 #endregion
 
-#region docs:testing:async-rule-definition
+#region async-rule-definition
 /// <summary>
 /// Interface for uniqueness checking - typically generated from a [Factory] Command.
 /// </summary>
@@ -92,7 +92,7 @@ public class UniqueNameAsyncRule : AsyncRuleBase<INamedEntityWithTracking>
 }
 #endregion
 
-#region docs:testing:rule-with-parent-definition
+#region rule-with-parent-definition
 /// <summary>
 /// Interface for a line item that has a parent order.
 /// </summary>

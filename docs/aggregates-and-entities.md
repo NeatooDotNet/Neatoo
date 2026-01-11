@@ -44,24 +44,24 @@ EntityBase provides properties for tracking entity lifecycle. All are bindable f
 
 State tracking is automatic for `partial` properties:
 
-<!-- snippet: docs:aggregates-and-entities:state-tracking-properties -->
-```csharp
+<!-- snippet: state-tracking-properties -->
+```cs
 public partial Guid Id { get; set; }
-    public partial string? Status { get; set; }     // IsModified tracked automatically
-    public partial decimal Total { get; set; }      // IsSavable updated on change
+public partial string? Status { get; set; }     // IsModified tracked automatically
+public partial decimal Total { get; set; }      // IsSavable updated on change
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 Inline validation rules can be added in the constructor:
 
-<!-- snippet: docs:aggregates-and-entities:inline-validation-rule -->
-```csharp
+<!-- snippet: inline-validation-rule -->
+```cs
 // Inline validation rule - Total must be positive
-        RuleManager.AddValidation(
-            t => t.Total <= 0 ? "Total must be greater than zero" : "",
-            t => t.Total);
+RuleManager.AddValidation(
+    t => t.Total <= 0 ? "Total must be greater than zero" : "",
+    t => t.Total);
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Value Objects (POCO + `[Factory]`)
 
@@ -71,34 +71,34 @@ Simple classes without Neatoo base class inheritance. RemoteFactory generates fe
 
 Class declaration - no Neatoo base class:
 
-<!-- snippet: docs:aggregates-and-entities:value-object-declaration -->
-```csharp
+<!-- snippet: value-object-declaration -->
+```cs
 [Factory]
 internal partial class StateProvince : IStateProvince
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 Standard properties (no `partial` keyword needed):
 
-<!-- snippet: docs:aggregates-and-entities:value-object-properties -->
-```csharp
+<!-- snippet: value-object-properties -->
+```cs
 public string Code { get; private set; } = string.Empty;
-    public string Name { get; private set; } = string.Empty;
+public string Name { get; private set; } = string.Empty;
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 Fetch method populates the object:
 
-<!-- snippet: docs:aggregates-and-entities:value-object-fetch -->
-```csharp
+<!-- snippet: value-object-fetch -->
+```cs
 [Fetch]
-    public void Fetch(string code, string name)
-    {
-        Code = code;
-        Name = name;
-    }
+public void Fetch(string code, string name)
+{
+    Code = code;
+    Name = name;
+}
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Validated Non-Persisted Objects (ValidateBase)
 
@@ -109,29 +109,29 @@ Use `ValidateBase<T>` for objects that need validation but are NOT persisted. Co
 
 Class declaration inherits from `ValidateBase<T>`:
 
-<!-- snippet: docs:aggregates-and-entities:validatebase-declaration -->
-```csharp
+<!-- snippet: validatebase-declaration -->
+```cs
 [Factory]
 internal partial class PersonSearchCriteria : ValidateBase<PersonSearchCriteria>, IPersonSearchCriteria
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 Cross-property validation using inline rules:
 
-<!-- snippet: docs:aggregates-and-entities:criteria-inline-rule -->
-```csharp
+<!-- snippet: criteria-inline-rule -->
+```cs
 // Inline date range validation - validates when either date changes
-        RuleManager.AddValidation(
-            t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate
-                ? "From date must be before To date" : "",
-            t => t.FromDate);
+RuleManager.AddValidation(
+    t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate
+        ? "From date must be before To date" : "",
+    t => t.FromDate);
 
-        RuleManager.AddValidation(
-            t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate
-                ? "To date must be after From date" : "",
-            t => t.ToDate);
+RuleManager.AddValidation(
+    t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate
+        ? "To date must be after From date" : "",
+    t => t.ToDate);
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## Hierarchy Constraints
 
@@ -186,8 +186,8 @@ EntityBase (Aggregate Root)
 | **Client-server** | RemoteFactory generates transfer code from interfaces |
 | **Encapsulation** | `internal` class prevents direct instantiation; factory pattern enforced |
 
-<!-- snippet: docs:aggregates-and-entities:interface-requirement -->
-```csharp
+<!-- snippet: interface-requirement -->
+```cs
 /// <summary>
 /// Every aggregate requires a public interface for factory generation.
 /// </summary>
@@ -196,7 +196,7 @@ public partial interface ICustomer : IEntityBase
     // Properties are auto-generated from the partial class
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 **Always use interface types** in consuming code:
 
@@ -235,20 +235,20 @@ For detailed anti-pattern examples, see [Troubleshooting](troubleshooting.md) Se
 
 Class declaration with `[Factory]` attribute:
 
-<!-- snippet: docs:aggregates-and-entities:class-declaration -->
-```csharp
+<!-- snippet: class-declaration -->
+```cs
 [Factory]
 internal partial class Customer : EntityBase<Customer>, ICustomer
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 Constructor pattern - DI provides entity services:
 
-<!-- snippet: docs:aggregates-and-entities:entity-constructor -->
-```csharp
+<!-- snippet: entity-constructor -->
+```cs
 public Customer(IEntityBaseServices<Customer> services) : base(services) { }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Key Points
 
@@ -341,13 +341,13 @@ public IOrderLine AddLine()
 
 Properties must be declared as `partial` for Neatoo to generate backing code:
 
-<!-- snippet: docs:aggregates-and-entities:partial-property-declaration -->
-```csharp
+<!-- snippet: partial-property-declaration -->
+```cs
 // Correct - generates backing field with change tracking
-    public partial string? FirstName { get; set; }
-    public partial string? LastName { get; set; }
+public partial string? FirstName { get; set; }
+public partial string? LastName { get; set; }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### What Partial Properties Provide
 
@@ -360,15 +360,15 @@ Properties must be declared as `partial` for Neatoo to generate backing code:
 
 Use regular properties for calculated, UI-only, or server-only values:
 
-<!-- snippet: docs:aggregates-and-entities:non-partial-properties -->
-```csharp
+<!-- snippet: non-partial-properties -->
+```cs
 // Calculated property - not tracked, not serialized
-    public string FullName => $"{FirstName} {LastName}";
+public string FullName => $"{FirstName} {LastName}";
 
-    // UI-only property - not transferred to server
-    public bool IsExpanded { get; set; }
+// UI-only property - not transferred to server
+public bool IsExpanded { get; set; }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## Child Entities
 
@@ -376,12 +376,12 @@ Child entities within an aggregate are marked as children automatically when add
 
 Access the parent aggregate from a child entity:
 
-<!-- snippet: docs:aggregates-and-entities:parent-access-property -->
-```csharp
+<!-- snippet: parent-access-property -->
+```cs
 // Access parent through the Parent property
-    public IContact? ParentContact => Parent as IContact;
+public IContact? ParentContact => Parent as IContact;
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Child Entity Characteristics
 
@@ -475,23 +475,23 @@ Data annotations provide display metadata and basic validation. For comprehensiv
 
 Combine `[DisplayName]` and `[Required]` for labeled required fields:
 
-<!-- snippet: docs:aggregates-and-entities:displayname-required -->
-```csharp
+<!-- snippet: displayname-required -->
+```cs
 [DisplayName("First Name*")]
-    [Required(ErrorMessage = "First Name is required")]
-    public partial string? FirstName { get; set; }
+[Required(ErrorMessage = "First Name is required")]
+public partial string? FirstName { get; set; }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 Format validation with `[EmailAddress]`:
 
-<!-- snippet: docs:aggregates-and-entities:emailaddress-validation -->
-```csharp
+<!-- snippet: emailaddress-validation -->
+```cs
 [DisplayName("Email Address")]
-    [EmailAddress(ErrorMessage = "Invalid email format")]
-    public partial string? Email { get; set; }
+[EmailAddress(ErrorMessage = "Invalid email format")]
+public partial string? Email { get; set; }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 Neatoo converts these to validation rules automatically.
 
@@ -510,39 +510,39 @@ The `[Remote]` attribute determines whether a factory operation executes on the 
 
 Aggregate root - `[Remote]` operations called from UI:
 
-<!-- snippet: docs:aggregates-and-entities:remote-fetch -->
-```csharp
+<!-- snippet: remote-fetch -->
+```cs
 // [Remote] - Called from UI
-    [Remote]
-    [Fetch]
-    public void Fetch(Guid id)
-```
-<!-- /snippet -->
-
-<!-- snippet: docs:aggregates-and-entities:remote-insert -->
-```csharp
 [Remote]
-    [Insert]
-    public async Task Insert()
+[Fetch]
+public void Fetch(Guid id)
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
+
+<!-- snippet: remote-insert -->
+```cs
+[Remote]
+[Insert]
+public async Task Insert()
+```
+<!-- endSnippet -->
 
 Child entity - no `[Remote]`, parent calls internally:
 
-<!-- snippet: docs:aggregates-and-entities:child-fetch-no-remote -->
-```csharp
+<!-- snippet: child-fetch-no-remote -->
+```cs
 // No [Remote] - called internally by parent
-    [Fetch]
-    public void Fetch(OrderLineItemDto dto)
+[Fetch]
+public void Fetch(OrderLineItemDto dto)
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 The aggregate root's `[Remote]` methods handle all database operations, including saving child entities.
 
 ## Complete Example
 
-<!-- snippet: docs:aggregates-and-entities:complete-example -->
-```csharp
+<!-- snippet: complete-example -->
+```cs
 /// <summary>
 /// Complete aggregate root example showing all key patterns.
 /// </summary>
@@ -700,7 +700,7 @@ internal class PersonPhoneList : EntityListBase<IPersonPhone>, IPersonPhoneList
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## See Also
 

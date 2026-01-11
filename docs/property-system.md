@@ -6,9 +6,11 @@ Neatoo's property system provides change tracking, validation state, and UI bind
 
 When you declare a partial property:
 
+<!-- pseudo:partial-property-declaration -->
 ```csharp
 public partial string? Name { get; set; }
 ```
+<!-- /snippet -->
 
 Neatoo source-generates an implementation that:
 - Stores the value in an `IProperty` wrapper
@@ -21,23 +23,24 @@ Neatoo source-generates an implementation that:
 
 The generated implementation uses `Getter<T>` and `Setter<T>`:
 
+<!-- generated:docs/samples/Neatoo.Samples.DomainModel/Generated/Neatoo.BaseGenerator/Neatoo.BaseGenerator.PartialBaseGenerator/Neatoo.Samples.DomainModel.FactoryOperations.SimpleProduct.g.cs#L18-L20 -->
 ```csharp
-// Source-generated implementation
-public string? Name
-{
-    get => Getter<string>();
-    set => Setter(value);
-}
+public partial Guid Id { get => Getter<Guid>(); set => Setter(value); }
+public partial string? Name { get => Getter<string?>(); set => Setter(value); }
+public partial DateTime CreatedDate { get => Getter<DateTime>(); set => Setter(value); }
 ```
+<!-- /snippet -->
 
 ### Getter Behavior
 
+<!-- pseudo:getter-implementation -->
 ```csharp
 protected virtual P? Getter<P>(string propertyName)
 {
     return (P?)PropertyManager[propertyName]?.Value;
 }
 ```
+<!-- /snippet -->
 
 ### Setter Behavior
 
@@ -52,8 +55,8 @@ The setter:
 
 Access property wrappers through the indexer:
 
-<!-- snippet: docs:property-system:property-access -->
-```csharp
+<!-- snippet: property-access -->
+```cs
 /// <summary>
 /// Entity demonstrating property access patterns.
 /// </summary>
@@ -80,12 +83,13 @@ internal partial class PropertyAccessDemo : EntityBase<PropertyAccessDemo>, IPro
     public void Create() { }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## IValidateProperty Interface
 
 Base property interface available on all Neatoo objects:
 
+<!-- pseudo:ivalidateproperty-interface -->
 ```csharp
 public interface IValidateProperty : INotifyPropertyChanged, INotifyNeatooPropertyChanged
 {
@@ -110,6 +114,7 @@ public interface IValidateProperty : INotifyPropertyChanged, INotifyNeatooProper
     Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null);
 }
 ```
+<!-- /snippet -->
 
 > **Note:** `IValidateProperty<T>` provides a strongly-typed `Value` property.
 
@@ -117,6 +122,7 @@ public interface IValidateProperty : INotifyPropertyChanged, INotifyNeatooProper
 
 Full entity property with modification tracking:
 
+<!-- pseudo:ientityproperty-interface -->
 ```csharp
 public interface IEntityProperty : IValidateProperty
 {
@@ -126,8 +132,10 @@ public interface IEntityProperty : IValidateProperty
     string DisplayName { get; }       // UI display name
 
     void MarkSelfUnmodified();        // Reset modification state
+    void ApplyPropertyInfo(IPropertyInfo propertyInfo);  // Restore metadata after deserialization
 }
 ```
+<!-- /snippet -->
 
 ## Property Interface to Base Class Mapping
 
@@ -138,6 +146,7 @@ Each base class uses a specific property interface level:
 | `ValidateBase<T>` | `IValidateProperty` | Value storage, busy tracking, notifications, validation, rule messages, IsValid |
 | `EntityBase<T>` | `IEntityProperty` | + Modification tracking, pause/resume |
 
+<!-- pseudo:property-indexer-usage -->
 ```csharp
 // On ValidateBase - get validation property
 IValidateProperty prop = validateObject[nameof(Name)];
@@ -148,13 +157,14 @@ IEntityProperty entityProp = entity[nameof(Name)];
 bool isModified = entityProp.IsModified;
 string label = entityProp.DisplayName;
 ```
+<!-- /snippet -->
 
 ## Property Operations
 
 ### SetValue vs LoadValue
 
-<!-- snippet: docs:property-system:setvalue-loadvalue -->
-```csharp
+<!-- snippet: setvalue-loadvalue -->
+```cs
 /// <summary>
 /// Entity demonstrating SetValue vs LoadValue.
 /// </summary>
@@ -197,7 +207,7 @@ internal partial class LoadValueDemo : EntityBase<LoadValueDemo>, ILoadValueDemo
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 Use `LoadValue` when:
 - Setting values in rules without triggering cascading rules (use `LoadProperty()` helper)
@@ -210,6 +220,7 @@ Use `LoadValue` when:
 
 ### Check Modification
 
+<!-- pseudo:check-modification -->
 ```csharp
 if (person[nameof(Name)].IsModified)
 {
@@ -219,20 +230,24 @@ if (person[nameof(Name)].IsModified)
 // Get all modified property names
 IEnumerable<string> modifiedProps = person.ModifiedProperties;
 ```
+<!-- /snippet -->
 
 ### Clear Modification
 
+<!-- pseudo:clear-modification -->
 ```csharp
 // Mark single property as unmodified
 person[nameof(Name)].MarkSelfUnmodified();
 
 // Called automatically after successful save
 ```
+<!-- /snippet -->
 
 ## Property Messages
 
 Validation messages are attached to properties:
 
+<!-- pseudo:property-messages-usage -->
 ```csharp
 var property = person[nameof(Email)];
 
@@ -246,21 +261,25 @@ if (!property.IsValid)
     }
 }
 ```
+<!-- /snippet -->
 
 ### PropertyMessage Interface
 
+<!-- pseudo:ipropertymessage-interface -->
 ```csharp
 public interface IPropertyMessage
 {
-    IValidateProperty Property { get; }
-    string Message { get; }
+    IValidateProperty Property { get; set; }
+    string Message { get; set; }
 }
 ```
+<!-- /snippet -->
 
 ## Busy State
 
 Properties track async operations:
 
+<!-- pseudo:busy-state-checking -->
 ```csharp
 var property = person[nameof(Email)];
 
@@ -273,9 +292,11 @@ if (property.IsBusy)
 // Wait for all async operations
 await property.WaitForTasks();
 ```
+<!-- /snippet -->
 
 ### Entity-Level Busy
 
+<!-- pseudo:entity-level-busy -->
 ```csharp
 // True if any property is busy
 if (person.IsBusy)
@@ -286,13 +307,14 @@ if (person.IsBusy)
 // Wait for all properties
 await person.WaitForTasks();
 ```
+<!-- /snippet -->
 
 ## Display Name
 
 Properties can have display names from `[DisplayName]`:
 
-<!-- snippet: docs:property-system:display-name -->
-```csharp
+<!-- snippet: display-name -->
+```cs
 /// <summary>
 /// Entity demonstrating DisplayName attribute.
 /// </summary>
@@ -323,23 +345,26 @@ internal partial class DisplayNameDemo : EntityBase<DisplayNameDemo>, IDisplayNa
     public void Create() { }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## Read-Only State
 
 Properties can be marked read-only:
 
+<!-- pseudo:readonly-state-check -->
 ```csharp
 if (person[nameof(Name)].IsReadOnly)
 {
     // Disable input
 }
 ```
+<!-- /snippet -->
 
 ## Property Manager
 
 The `PropertyManager` manages all properties on an entity:
 
+<!-- pseudo:property-manager-usage -->
 ```csharp
 // Access via protected property
 protected IValidatePropertyManager<IValidateProperty> PropertyManager { get; }
@@ -354,13 +379,14 @@ IEnumerable<IValidateProperty> allProps = PropertyManager.GetProperties;
 bool isModified = PropertyManager.IsModified;
 bool isSelfModified = PropertyManager.IsSelfModified;
 ```
+<!-- /snippet -->
 
 ## Pausing Property Actions
 
 During bulk operations, pause property tracking to improve performance and avoid intermediate validation states. The `PauseAllActions()` method returns an `IDisposable` that automatically resumes when disposed.
 
-<!-- snippet: docs:property-system:pause-actions -->
-```csharp
+<!-- snippet: pause-actions -->
+```cs
 /// <summary>
 /// Entity demonstrating PauseAllActions pattern.
 /// </summary>
@@ -393,7 +419,7 @@ internal partial class BulkUpdateDemo : EntityBase<BulkUpdateDemo>, IBulkUpdateD
     public void Create() { }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### What Gets Paused
 
@@ -424,6 +450,7 @@ The framework automatically pauses actions during these operations:
 | Factory Insert/Update/Delete | `FactoryStart()` | Prevent events during persistence |
 | JSON Deserialization | `OnDeserializing()` | Prevent rules during state reconstruction |
 
+<!-- pseudo:factory-pause-flow -->
 ```csharp
 // Automatic pause flow in factory operations
 public virtual void FactoryStart(FactoryOperation factoryOperation)
@@ -436,13 +463,14 @@ public virtual void FactoryComplete(FactoryOperation factoryOperation)
     ResumeAllActions();  // Called by framework
 }
 ```
+<!-- /snippet -->
 
 ### Manual Pause Use Cases
 
 #### Bulk Property Updates
 
-<!-- snippet: docs:property-system:bulk-updates -->
-```csharp
+<!-- snippet: bulk-updates -->
+```cs
 /// <summary>
 /// Examples demonstrating bulk update patterns with PauseAllActions.
 /// Note: PauseAllActions is on the concrete base class, not the interface.
@@ -499,10 +527,11 @@ public class ExternalData
     public int Age { get; set; }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 #### Bulk Collection Operations
 
+<!-- pseudo:bulk-collection-operations -->
 ```csharp
 // Add multiple items efficiently
 using (order.PauseAllActions())
@@ -516,9 +545,11 @@ using (order.PauseAllActions())
     }
 }
 ```
+<!-- /snippet -->
 
 ### Checking Pause State
 
+<!-- pseudo:checking-pause-state -->
 ```csharp
 if (person.IsPaused)
 {
@@ -526,6 +557,7 @@ if (person.IsPaused)
     Console.WriteLine("Object is paused - changes won't trigger rules");
 }
 ```
+<!-- /snippet -->
 
 ### Resume Behavior
 
@@ -537,6 +569,7 @@ When the `using` block completes (or `ResumeAllActions()` is called directly):
 4. PropertyChanged events resume for future changes
 5. **Note:** Rules do NOT automatically run - call `RunRules()` if needed
 
+<!-- pseudo:resume-behavior -->
 ```csharp
 using (person.PauseAllActions())
 {
@@ -550,11 +583,13 @@ using (person.PauseAllActions())
 await person.RunRules();  // NOW validation runs
 // - IsValid = reflects current state
 ```
+<!-- /snippet -->
 
 ### Direct Resume (Without Using Block)
 
 You can also call `ResumeAllActions()` directly:
 
+<!-- pseudo:direct-resume-pattern -->
 ```csharp
 person.PauseAllActions();
 try
@@ -568,11 +603,13 @@ finally
     person.ResumeAllActions();  // Always resume, even on exception
 }
 ```
+<!-- /snippet -->
 
 ### Child Objects and Pausing
 
 **Important:** `PauseAllActions()` on a parent does NOT automatically pause child objects. If you need to pause children, do so explicitly:
 
+<!-- pseudo:child-objects-pausing -->
 ```csharp
 using (order.PauseAllActions())
 {
@@ -586,11 +623,13 @@ using (order.PauseAllActions())
     }
 }
 ```
+<!-- /snippet -->
 
 ### Nested Pause Calls
 
 Multiple calls to `PauseAllActions()` are safe - each returns a disposable that calls `ResumeAllActions()`:
 
+<!-- pseudo:nested-pause-calls -->
 ```csharp
 using (person.PauseAllActions())  // Pauses
 {
@@ -604,6 +643,7 @@ using (person.PauseAllActions())  // Pauses
     person.Age = 30;  // This WILL trigger rules (unpaused now)
 }  // Calls ResumeAllActions() again (no-op, already unpaused)
 ```
+<!-- /snippet -->
 
 **Best Practice:** Avoid nested pause blocks on the same object. Use a single pause block for all changes.
 
@@ -611,6 +651,7 @@ using (person.PauseAllActions())  // Pauses
 
 Properties integrate with Blazor binding:
 
+<!-- pseudo:ui-binding-example -->
 ```razor
 <!-- Bind to property value -->
 <MudTextField Value="@((string)person[nameof(Name)].Value)"
@@ -619,6 +660,7 @@ Properties integrate with Blazor binding:
 <!-- Or use Neatoo components -->
 <MudNeatooTextField T="string" EntityProperty="@person[nameof(Name)]" />
 ```
+<!-- /snippet -->
 
 The Neatoo components automatically handle:
 - Two-way binding
@@ -634,6 +676,7 @@ Neatoo provides two property change notification systems: the standard `Property
 
 The familiar `INotifyPropertyChanged` event for UI binding:
 
+<!-- pseudo:propertychanged-handler -->
 ```csharp
 person.PropertyChanged += (sender, e) =>
 {
@@ -643,6 +686,7 @@ person.PropertyChanged += (sender, e) =>
     }
 };
 ```
+<!-- /snippet -->
 
 **Characteristics:**
 - Synchronous event
@@ -654,6 +698,7 @@ person.PropertyChanged += (sender, e) =>
 
 The `NeatooPropertyChanged` event provides rich change tracking for complex object graphs:
 
+<!-- pseudo:neatoopropertychanged-delegate -->
 ```csharp
 public delegate Task NeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs);
 
@@ -662,6 +707,7 @@ public interface INotifyNeatooPropertyChanged
     event NeatooPropertyChanged NeatooPropertyChanged;
 }
 ```
+<!-- /snippet -->
 
 **Key Differences from PropertyChanged:**
 
@@ -677,6 +723,7 @@ public interface INotifyNeatooPropertyChanged
 
 The event args provide detailed information about property changes:
 
+<!-- pseudo:neatoopropertychangedeventargs -->
 ```csharp
 public record NeatooPropertyChangedEventArgs
 {
@@ -700,6 +747,7 @@ public record NeatooPropertyChangedEventArgs
     public string FullPropertyName => ...;
 }
 ```
+<!-- /snippet -->
 
 ### Understanding the Event Chain
 
@@ -711,6 +759,7 @@ Order                      // Receives: PropertyName="LineItems", FullPropertyNa
         └── LineItem       // Originates: PropertyName="Quantity", FullPropertyName="Quantity"
 ```
 
+<!-- pseudo:event-chain-example -->
 ```csharp
 // At the Order level
 order.NeatooPropertyChanged += async (args) =>
@@ -729,9 +778,11 @@ order.NeatooPropertyChanged += async (args) =>
     Console.WriteLine($"Original: {args.OriginalEventArgs.PropertyName}"); // "Quantity"
 };
 ```
+<!-- /snippet -->
 
 ### Subscribing to NeatooPropertyChanged
 
+<!-- pseudo:subscription-example -->
 ```csharp
 // Subscribe
 person.NeatooPropertyChanged += OnNeatooPropertyChanged;
@@ -746,11 +797,13 @@ private Task OnNeatooPropertyChanged(NeatooPropertyChangedEventArgs args)
 // Unsubscribe
 person.NeatooPropertyChanged -= OnNeatooPropertyChanged;
 ```
+<!-- /snippet -->
 
 ### Use Cases for NeatooPropertyChanged
 
 #### 1. Tracking Nested Property Changes
 
+<!-- pseudo:nested-property-tracking -->
 ```csharp
 order.NeatooPropertyChanged += async (args) =>
 {
@@ -762,11 +815,13 @@ order.NeatooPropertyChanged += async (args) =>
     }
 };
 ```
+<!-- /snippet -->
 
 #### 2. Cross-Item Validation in Collections
 
 Override `HandleNeatooPropertyChanged` in list classes to re-validate siblings:
 
+<!-- pseudo:cross-item-validation -->
 ```csharp
 protected override async Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
 {
@@ -786,9 +841,11 @@ protected override async Task HandleNeatooPropertyChanged(NeatooPropertyChangedE
     }
 }
 ```
+<!-- /snippet -->
 
 #### 3. Parent Reacting to Child Changes
 
+<!-- pseudo:parent-reacting-to-child -->
 ```csharp
 // In ValidateBase, ChildNeatooPropertyChanged runs rules for the changed child property
 protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
@@ -806,9 +863,11 @@ protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEv
     }
 }
 ```
+<!-- /snippet -->
 
 #### 4. UI State Management in Blazor
 
+<!-- pseudo:blazor-state-management -->
 ```razor
 @code {
     private IPerson person = default!;
@@ -834,6 +893,7 @@ protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEv
     }
 }
 ```
+<!-- /snippet -->
 
 ### When Events Are Raised
 
@@ -848,6 +908,7 @@ protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEv
 
 ### Event Flow Example
 
+<!-- pseudo:event-flow-example -->
 ```csharp
 // Given: Order -> LineItems -> LineItem.Quantity
 lineItem.Quantity = 5;
@@ -860,6 +921,7 @@ lineItem.Quantity = 5;
 // 5. Order runs rules triggered by "LineItems.Quantity"
 // 6. Order raises NeatooPropertyChanged(FullPropertyName="LineItems.Quantity")
 ```
+<!-- /snippet -->
 
 ### Comparison: When to Use Which Event
 
@@ -874,6 +936,7 @@ lineItem.Quantity = 5;
 
 ## Complete Example
 
+<!-- pseudo:complete-property-access -->
 ```csharp
 // Access and manipulate properties
 var person = personFactory.Create();
@@ -909,6 +972,7 @@ foreach (var prop in person.ModifiedProperties)
     Console.WriteLine($"Modified: {prop}");
 }
 ```
+<!-- /snippet -->
 
 ## See Also
 

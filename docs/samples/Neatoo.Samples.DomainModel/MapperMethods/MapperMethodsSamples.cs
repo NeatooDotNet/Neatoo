@@ -71,7 +71,7 @@ public class AddressEntity
 
 #endregion
 
-#region docs:mapper-methods:overview
+#region overview
 /// <summary>
 /// Person entity demonstrating MapFrom, MapTo, MapModifiedTo.
 /// </summary>
@@ -130,7 +130,7 @@ internal partial class PersonWithMapper : EntityBase<PersonWithMapper>, IPersonW
 }
 #endregion
 
-#region docs:mapper-methods:map-from
+#region map-from
 /// <summary>
 /// Demonstrates MapFrom usage in Fetch operations.
 /// </summary>
@@ -185,7 +185,7 @@ internal partial class FetchableProduct : EntityBase<FetchableProduct>, IFetchab
 }
 #endregion
 
-#region docs:mapper-methods:map-to
+#region map-to
 /// <summary>
 /// Demonstrates MapTo usage in Insert operations.
 /// </summary>
@@ -243,7 +243,7 @@ internal partial class InsertableItem : EntityBase<InsertableItem>, IInsertableI
 }
 #endregion
 
-#region docs:mapper-methods:map-modified-to
+#region map-modified-to
 /// <summary>
 /// Demonstrates MapModifiedTo for efficient updates.
 /// </summary>
@@ -308,7 +308,7 @@ internal partial class UpdatableRecord : EntityBase<UpdatableRecord>, IUpdatable
 }
 #endregion
 
-#region docs:mapper-methods:custom-mapping
+#region custom-mapping
 /// <summary>
 /// Demonstrates custom mapping logic for computed fields.
 /// </summary>
@@ -362,7 +362,7 @@ internal partial class EmployeeWithComputed : EntityBase<EmployeeWithComputed>, 
 }
 #endregion
 
-#region docs:mapper-methods:different-shapes
+#region different-shapes
 /// <summary>
 /// Demonstrates mapping between different entity structures.
 /// Domain model has flat address fields, EF has nested Address object.

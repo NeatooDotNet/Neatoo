@@ -5,22 +5,20 @@ Neatoo uses source-generated factories to manage entity lifecycle operations. Th
 ## Factory Overview
 
 For each class marked with `[Factory]`, Neatoo generates:
-- An interface (`IPersonFactory`)
+- An interface (`IArticleFactory`)
 - A factory implementation
 - Methods for each decorated operation
+- Authorization check methods (`CanCreate`, `CanFetch`, etc.) returning `Authorized`
 
+<!-- generated:docs/samples/Neatoo.Samples.DomainModel/Generated/Neatoo.Generator/Neatoo.Factory/Neatoo.Samples.DomainModel.Authorization.ArticleFactory.g.cs#L13-L17 -->
 ```csharp
-// Generated interface
-public interface IPersonFactory
+public interface IArticleFactory
 {
-    IPerson Create();
-    Task<IPerson> Fetch(int id);
-    Task<IPerson> Save(IPerson person);
-    bool CanCreate();
-    bool CanFetch();
-    // ...
+    IArticle? Create();
+    Authorized CanCreate();
 }
 ```
+<!-- /snippet -->
 
 ## Operation Attributes
 
@@ -36,11 +34,13 @@ public interface IPersonFactory
 
 Add `[Remote]` for operations callable from the client:
 
+<!-- pseudo:remote-fetch-example -->
 ```csharp
 [Remote]  // Callable from Blazor client
 [Fetch]
 public async Task Fetch(int id, [Service] IDbContext db) { }
 ```
+<!-- /snippet -->
 
 Aggregate roots typically have `[Remote]` on their operations. Child entities omit `[Remote]` since they're loaded/saved through the parent.
 
@@ -48,8 +48,8 @@ Aggregate roots typically have `[Remote]` on their operations. Child entities om
 
 Called when creating a new entity instance:
 
-<!-- snippet: docs:factory-operations:create-with-service -->
-```csharp
+<!-- snippet: create-with-service -->
+```cs
 /// <summary>
 /// Entity with Create operation using service injection.
 /// </summary>
@@ -107,22 +107,24 @@ internal partial class ProjectWithTasks : EntityBase<ProjectWithTasks>, IProject
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Usage
 
+<!-- pseudo:create-usage -->
 ```csharp
 var person = personFactory.Create();
 // person.IsNew = true
 // person.IsModified = false (initially)
 ```
+<!-- /snippet -->
 
 ## Fetch Operation
 
 Called to load an entity from a data source:
 
-<!-- snippet: docs:factory-operations:fetch-basic -->
-```csharp
+<!-- snippet: fetch-basic -->
+```cs
 /// <summary>
 /// Entity with basic Fetch operation.
 /// </summary>
@@ -159,22 +161,24 @@ internal partial class FetchableProduct : EntityBase<FetchableProduct>, IFetchab
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Usage
 
+<!-- pseudo:fetch-usage -->
 ```csharp
 var person = await personFactory.Fetch(42);
 // person.IsNew = false
 // person.IsModified = false
 ```
+<!-- /snippet -->
 
 ### Multiple Fetch Overloads
 
 Define multiple fetch methods with different parameters:
 
-<!-- snippet: docs:factory-operations:fetch-multiple-overloads -->
-```csharp
+<!-- snippet: fetch-multiple-overloads -->
+```cs
 /// <summary>
 /// Entity with multiple Fetch overloads for different lookup methods.
 /// </summary>
@@ -236,20 +240,22 @@ internal partial class ProductWithMultipleFetch : EntityBase<ProductWithMultiple
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 Generated factory:
+<!-- generated:factory-fetch-overloads -->
 ```csharp
 Task<IPerson> Fetch(int id);
 Task<IPerson> Fetch(string email);
 ```
+<!-- /snippet -->
 
 ## Insert Operation
 
 Called when saving a new entity (`IsNew = true`):
 
-<!-- snippet: docs:factory-operations:insert-operation -->
-```csharp
+<!-- snippet: insert-operation -->
+```cs
 /// <summary>
 /// Entity demonstrating Insert operation pattern.
 /// </summary>
@@ -310,7 +316,7 @@ internal partial class InventoryItem : EntityBase<InventoryItem>, IInventoryItem
         LastUpdated = entity.LastUpdated;
     }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Key Points
 
@@ -324,11 +330,13 @@ internal partial class InventoryItem : EntityBase<InventoryItem>, IInventoryItem
 >
 > Even though services are available via `[Service]`, do not add business validation in factory methods. Validation here only runs at save time, providing poor user experience.
 >
+> <!-- invalid:factory-validation-antipattern -->
 > ```csharp
 > // BAD - Don't do this!
 > if (await repository.EmailExistsAsync(Email))
 >     throw new InvalidOperationException("Email in use");
 > ```
+> <!-- /snippet -->
 >
 > Instead, use `AsyncRuleBase<T>` with a Command for database-dependent validation. This provides immediate feedback during editing.
 >
@@ -338,37 +346,38 @@ internal partial class InventoryItem : EntityBase<InventoryItem>, IInventoryItem
 
 Called when saving an existing entity (`IsNew = false`, `IsDeleted = false`):
 
-<!-- snippet: docs:factory-operations:update-operation -->
-```csharp
+<!-- snippet: factory-update-operation -->
+```cs
 [Update]
-    public async Task Update([Service] IInventoryDb db)
-    {
-        await RunRules();
-        if (!IsSavable)
-            return;
+public async Task Update([Service] IInventoryDb db)
+{
+    await RunRules();
+    if (!IsSavable)
+        return;
 
-        var entity = db.Find(Id);
-        if (entity == null)
-            throw new KeyNotFoundException("Item not found");
+    var entity = db.Find(Id);
+    if (entity == null)
+        throw new KeyNotFoundException("Item not found");
 
-        // Only update modified properties
-        if (this[nameof(Name)].IsModified)
-            entity.Name = Name ?? "";
-        if (this[nameof(Quantity)].IsModified)
-            entity.Quantity = Quantity;
+    // Only update modified properties
+    if (this[nameof(Name)].IsModified)
+        entity.Name = Name ?? "";
+    if (this[nameof(Quantity)].IsModified)
+        entity.Quantity = Quantity;
 
-        entity.LastUpdated = DateTime.UtcNow;
-        await db.SaveChangesAsync();
+    entity.LastUpdated = DateTime.UtcNow;
+    await db.SaveChangesAsync();
 
-        LastUpdated = entity.LastUpdated;
-    }
+    LastUpdated = entity.LastUpdated;
+}
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### MapModifiedTo
 
 Only transfers properties marked as modified:
 
+<!-- generated:mapmodifiedto-implementation -->
 ```csharp
 // Source-generated implementation example
 public partial void MapModifiedTo(PersonEntity entity)
@@ -380,6 +389,7 @@ public partial void MapModifiedTo(PersonEntity entity)
     // ...
 }
 ```
+<!-- /snippet -->
 
 > **Warning**: The same anti-pattern warning applies to Update operations. Do not add validation logic after `RunRules()`. See [Database-Dependent Validation](database-dependent-validation.md).
 
@@ -387,23 +397,24 @@ public partial void MapModifiedTo(PersonEntity entity)
 
 Called when saving a deleted entity (`IsDeleted = true`):
 
-<!-- snippet: docs:factory-operations:delete-operation -->
-```csharp
+<!-- snippet: delete-operation -->
+```cs
 [Delete]
-    public async Task Delete([Service] IInventoryDb db)
+public async Task Delete([Service] IInventoryDb db)
+{
+    var entity = db.Find(Id);
+    if (entity != null)
     {
-        var entity = db.Find(Id);
-        if (entity != null)
-        {
-            db.Remove(entity);
-            await db.SaveChangesAsync();
-        }
+        db.Remove(entity);
+        await db.SaveChangesAsync();
     }
+}
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Marking for Deletion
 
+<!-- pseudo:deletion-workflow -->
 ```csharp
 person.Delete();  // Marks IsDeleted = true
 await personFactory.Save(person);  // Triggers Delete operation
@@ -411,11 +422,13 @@ await personFactory.Save(person);  // Triggers Delete operation
 // Undo deletion before save
 person.UnDelete();
 ```
+<!-- /snippet -->
 
 ## Service Injection
 
 Use `[Service]` to inject dependencies into operations:
 
+<!-- pseudo:service-injection -->
 ```csharp
 [Insert]
 public async Task Insert(
@@ -426,6 +439,7 @@ public async Task Insert(
     // All services are resolved from DI
 }
 ```
+<!-- /snippet -->
 
 ### Available Services
 
@@ -435,6 +449,7 @@ Any service registered in your DI container can be injected.
 
 The `Save` method determines which operation to call:
 
+<!-- pseudo:save-routing-logic -->
 ```csharp
 public async Task<IPerson> Save(IPerson person)
 {
@@ -448,11 +463,13 @@ public async Task<IPerson> Save(IPerson person)
     return person;
 }
 ```
+<!-- /snippet -->
 
 ### Save with CancellationToken
 
 `EntityBase` supports cancellation via `Save(CancellationToken)`:
 
+<!-- pseudo:save-with-cancellation -->
 ```csharp
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
@@ -465,6 +482,7 @@ catch (OperationCanceledException)
     // Save was cancelled before persistence began
 }
 ```
+<!-- /snippet -->
 
 **Important:** Cancellation only works **before** persistence. Once `Insert`, `Update`, or `Delete` begins, the operation cannot be cancelled to prevent data corruption. Cancellation applies to:
 
@@ -475,17 +493,21 @@ catch (OperationCanceledException)
 
 When you call `Save()`, the aggregate is **serialized to the server**, persisted, and a **new instance is returned** via deserialization. You MUST capture this return value:
 
+<!-- pseudo:correct-save-pattern -->
 ```csharp
 // CORRECT - captures the new deserialized instance
 person = await personFactory.Save(person);
 Console.WriteLine(person.Id);  // Has database-generated ID
 ```
+<!-- /snippet -->
 
+<!-- invalid:wrong-save-pattern -->
 ```csharp
 // WRONG - original object is now stale!
 await personFactory.Save(person);
 Console.WriteLine(person.Id);  // Still empty/0 - you have the PRE-save instance
 ```
+<!-- /snippet -->
 
 #### Why This Happens
 
@@ -514,6 +536,7 @@ This applies to Blazor components as well - if you don't reassign, the UI will s
 
 In addition to `factory.Save(entity)`, entities can save themselves via `entity.Save()`:
 
+<!-- pseudo:entity-based-save -->
 ```csharp
 // Factory-based save
 person = await personFactory.Save(person);
@@ -521,6 +544,7 @@ person = await personFactory.Save(person);
 // Entity-based save (equivalent)
 person = (IPerson) await person.Save();
 ```
+<!-- /snippet -->
 
 **Both approaches are correct.** Choose based on context:
 - Factory-based when you have the factory injected
@@ -528,6 +552,7 @@ person = (IPerson) await person.Save();
 
 **Anti-pattern: Casting to concrete to access "internal" save methods:**
 
+<!-- invalid:casting-antipattern -->
 ```csharp
 // WRONG - Don't cast to concrete to call internal methods
 var concrete = (Person)person;
@@ -538,6 +563,7 @@ person = await personFactory.Save(person);
 // or
 person = (IPerson) await person.Save();
 ```
+<!-- /snippet -->
 
 If you feel you need internal save methods, you're likely working around a design issue. The standard `Save()` routes to `[Insert]`, `[Update]`, or `[Delete]` based on entity state.
 
@@ -577,8 +603,8 @@ Domain operations like `Archive()`, `Complete()`, or `Approve()` often need to:
 
 The **Business Operation pattern** combines these steps into a single interface method using `entity.Save()`:
 
-<!-- snippet: docs:factory-operations:business-operation-pattern -->
-```csharp
+<!-- snippet: business-operation-pattern -->
+```cs
 /// <summary>
 /// Entity with business operations that modify state and persist.
 /// The Archive() method demonstrates the pattern: validate, modify, persist via Save().
@@ -697,7 +723,7 @@ internal partial class Visit : EntityBase<Visit>, IVisit
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Pattern Benefits
 
@@ -733,6 +759,7 @@ Examples: `Archive()`, `Complete()`, `Approve()`, `Cancel()`, `Submit()`
 
 For operations that don't belong on the entity interface, use the `[Execute]` command pattern:
 
+<!-- pseudo:execute-command-pattern -->
 ```csharp
 [Factory]
 public static partial class ArchiveVisitCommand
@@ -754,6 +781,7 @@ public static partial class ArchiveVisitCommand
 // Usage - via injected delegate
 var archivedVisit = await _archiveVisit(visit.Id);
 ```
+<!-- /snippet -->
 
 Choose the command pattern when:
 - Operation needs parameters not available on the entity
@@ -766,6 +794,7 @@ Choose the command pattern when:
 
 Factories include authorization check methods:
 
+<!-- pseudo:authorize-factory -->
 ```csharp
 [AuthorizeFactory<IPersonAuth>]
 internal partial class Person : EntityBase<Person>, IPerson { }
@@ -777,21 +806,24 @@ public bool CanInsert();
 public bool CanUpdate();
 public bool CanDelete();
 ```
+<!-- /snippet -->
 
 ### UI Permission Display
 
+<!-- pseudo:ui-permission-display -->
 ```razor
 <MudButton Disabled="@(!personFactory.CanCreate())" OnClick="CreatePerson">
     New Person
 </MudButton>
 ```
+<!-- /snippet -->
 
 ## Child Entity Operations
 
 Child entities don't have `[Remote]` since they're managed through the parent:
 
-<!-- snippet: docs:factory-operations:child-entity -->
-```csharp
+<!-- snippet: factory-child-entity -->
+```cs
 /// <summary>
 /// Child entity - no [Remote] since managed through parent.
 /// </summary>
@@ -852,7 +884,7 @@ internal partial class InvoiceLine : EntityBase<InvoiceLine>, IInvoiceLine
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## List Factory Operations
 
@@ -865,8 +897,8 @@ List factories provide Save method that handles the collection.
 > and marked `IsDeleted = true`. If you only iterate `this`, removed items will silently
 > remain in the database.
 
-<!-- snippet: docs:factory-operations:list-factory -->
-```csharp
+<!-- snippet: list-factory -->
+```cs
 /// <summary>
 /// List factory handles collection of child entities.
 /// </summary>
@@ -925,17 +957,19 @@ internal class InvoiceLineList : EntityListBase<IInvoiceLine>, IInvoiceLineList
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## Mapper Methods
 
 Declare partial mapper methods; Neatoo source-generates implementations:
 
+<!-- pseudo:mapper-declarations -->
 ```csharp
 public partial void MapFrom(PersonEntity entity);
 public partial void MapTo(PersonEntity entity);
 public partial void MapModifiedTo(PersonEntity entity);
 ```
+<!-- /snippet -->
 
 Properties are mapped by name. The EF entity property names must match the domain model property names.
 
@@ -943,6 +977,7 @@ Properties are mapped by name. The EF entity property names must match the domai
 
 Entities receive callbacks during factory operations:
 
+<!-- pseudo:factory-callbacks -->
 ```csharp
 public virtual void FactoryStart(FactoryOperation operation)
 {
@@ -956,9 +991,11 @@ public virtual void FactoryComplete(FactoryOperation operation)
     // Insert/Update: marks unmodified, IsNew = false
 }
 ```
+<!-- /snippet -->
 
 ## Complete Example
 
+<!-- pseudo:complete-order-example -->
 ```csharp
 [Factory]
 internal partial class Order : EntityBase<Order>, IOrder
@@ -1038,6 +1075,7 @@ internal partial class Order : EntityBase<Order>, IOrder
     }
 }
 ```
+<!-- /snippet -->
 
 ## See Also
 

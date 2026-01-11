@@ -4,12 +4,12 @@
     Code samples for blazor-integration skill - Blazor binding patterns
 
     Snippets:
-    - docs:blazor-integration:property-binding
-    - docs:blazor-integration:validation-display
-    - docs:blazor-integration:issavable-button
-    - docs:blazor-integration:isbusy-handling
-    - docs:blazor-integration:async-loading
-    - docs:blazor-integration:save-pattern
+    - property-binding
+    - validation-display
+    - issavable-button
+    - isbusy-handling
+    - async-loading
+    - save-pattern
 
     Note: Examples use standard Blazor. For MudBlazor, use MudTextField, MudButton, etc.
 *@
@@ -22,7 +22,7 @@
 }
 else
 {
-    @* #region docs:blazor-integration:isbusy-handling *@
+    @* #region isbusy-handling *@
     @if (Person.IsBusy)
     {
         @* Show loading indicator while async rules execute *@
@@ -31,14 +31,14 @@ else
     @* #endregion *@
 
     <div class="form-group">
-        @* #region docs:blazor-integration:property-binding *@
+        @* #region property-binding *@
         @* Bind directly to entity properties - change notification is automatic *@
         <label>@Person[nameof(Person.FirstName)].DisplayName</label>
         <input type="text" @bind="Person.FirstName" @bind:event="oninput"
                class="@(Person[nameof(Person.FirstName)].IsValid ? "" : "is-invalid")" />
         @* #endregion *@
 
-        @* #region docs:blazor-integration:validation-display *@
+        @* #region validation-display *@
         @* Display validation messages from PropertyMessages collection *@
         @if (!Person[nameof(Person.FirstName)].IsValid)
         {
@@ -76,7 +76,7 @@ else
         }
     </div>
 
-    @* #region docs:blazor-integration:issavable-button *@
+    @* #region issavable-button *@
     @* IsSavable checks: IsModified, IsValid, !IsBusy, !IsChild *@
     <button type="button"
             disabled="@(!Person.IsSavable)"
@@ -93,7 +93,7 @@ else
 
     private IPerson? Person { get; set; }
 
-    @* #region docs:blazor-integration:async-loading *@
+    @* #region async-loading *@
     protected override async Task OnInitializedAsync()
     {
         // Create a new entity using the factory
@@ -104,7 +104,7 @@ else
     }
     @* #endregion *@
 
-    @* #region docs:blazor-integration:save-pattern *@
+    @* #region save-pattern *@
     private async Task SavePerson()
     {
         if (Person is null || !Person.IsSavable) return;

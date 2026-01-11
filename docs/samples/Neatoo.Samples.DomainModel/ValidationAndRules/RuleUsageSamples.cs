@@ -27,7 +27,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage;
 
-#region docs:validation-and-rules:rule-registration
+#region rule-registration
 /// <summary>
 /// Demonstrates rule registration in entity constructor and DI setup.
 /// </summary>
@@ -38,7 +38,7 @@ public partial interface IRuleRegistrationPerson : IValidateBase
     int Age { get; set; }
 }
 
-#region docs:validation-and-rules:rule-interface-definition
+#region rule-interface-definition
 // Rule interfaces
 public interface IAgeValidationRule : IRule<IRuleRegistrationPerson> { }
 public interface IUniqueNameValidationRule : IRule<IRuleRegistrationPerson> { }
@@ -48,13 +48,13 @@ public interface IUniqueNameValidationRule : IRule<IRuleRegistrationPerson> { }
 [Factory]
 internal partial class RuleRegistrationPerson : ValidateBase<RuleRegistrationPerson>, IRuleRegistrationPerson
 {
-    #region docs:validation-and-rules:entity-rule-injection
+    #region entity-rule-injection
     public RuleRegistrationPerson(
         IValidateBaseServices<RuleRegistrationPerson> services,
         IUniqueNameValidationRule uniqueNameRule,
         IAgeValidationRule ageRule) : base(services)
     {
-        #region docs:validation-and-rules:rule-manager-addrule
+        #region rule-manager-addrule
         RuleManager.AddRule(uniqueNameRule);
         RuleManager.AddRule(ageRule);
         #endregion
@@ -98,7 +98,7 @@ public class UniqueNameValidationRuleImpl : RuleBase<IRuleRegistrationPerson>, I
 // builder.Services.AddScoped<IAgeValidationRule, AgeValidationRuleImpl>();
 #endregion
 
-#region docs:validation-and-rules:async-action-rule
+#region async-action-rule
 /// <summary>
 /// Demonstrates AddActionAsync for async side effects.
 /// </summary>
@@ -133,7 +133,7 @@ internal partial class AsyncActionPerson : ValidateBase<AsyncActionPerson>, IAsy
 }
 #endregion
 
-#region docs:validation-and-rules:pause-all-actions
+#region pause-all-actions
 /// <summary>
 /// Demonstrates PauseAllActions for bulk updates without triggering rules.
 /// </summary>
@@ -177,7 +177,7 @@ internal partial class PauseActionsPerson : ValidateBase<PauseActionsPerson>, IP
 }
 #endregion
 
-#region docs:validation-and-rules:manual-execution
+#region manual-execution
 /// <summary>
 /// Demonstrates manual rule execution in factory methods.
 /// </summary>
@@ -217,7 +217,7 @@ internal partial class ManualExecutionEntity : EntityBase<ManualExecutionEntity>
 }
 #endregion
 
-#region docs:validation-and-rules:parent-child-validation
+#region parent-child-validation
 /// <summary>
 /// Demonstrates accessing parent entity from child validation rules.
 /// </summary>
@@ -239,7 +239,7 @@ public enum PhoneType { Home, Work, Mobile }
 
 public interface IUniquePhoneTypeRule : IRule<IContactPhone> { }
 
-#region docs:validation-and-rules:parent-child-rule-class
+#region parent-child-rule-class
 public class UniquePhoneTypeRule : RuleBase<IContactPhone>, IUniquePhoneTypeRule
 {
     public UniquePhoneTypeRule() : base(p => p.PhoneType) { }
@@ -249,7 +249,7 @@ public class UniquePhoneTypeRule : RuleBase<IContactPhone>, IUniquePhoneTypeRule
         if (target.ParentContact == null)
             return None;
 
-        #region docs:validation-and-rules:parent-access-in-rule
+        #region parent-access-in-rule
         var hasDuplicate = target.ParentContact.PhoneList
             .Where(p => p != target)
             .Any(p => p.PhoneType == target.PhoneType);
@@ -305,7 +305,7 @@ internal partial class ParentContact : EntityBase<ParentContact>, IParentContact
 }
 #endregion
 
-#region docs:validation-and-rules:load-property
+#region load-property
 /// <summary>
 /// Demonstrates LoadProperty for setting values without triggering rules.
 /// </summary>
@@ -349,7 +349,7 @@ internal partial class LoadPropertyPerson : ValidateBase<LoadPropertyPerson>, IL
 }
 #endregion
 
-#region docs:validation-and-rules:validation-messages
+#region validation-messages
 /// <summary>
 /// Demonstrates accessing validation messages.
 /// </summary>
@@ -401,7 +401,7 @@ internal partial class ValidationMessagesPerson : ValidateBase<ValidationMessage
 }
 #endregion
 
-#region docs:validation-and-rules:ismodified-check
+#region ismodified-check
 /// <summary>
 /// Demonstrates checking IsModified before expensive async operations.
 /// </summary>

@@ -16,7 +16,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.DomainModel.Authorization;
 
-#region docs:authorization:auth-interface
+#region auth-interface
 /// <summary>
 /// Authorization interface defines which operations require authorization.
 /// Methods return bool: true = authorized, false = denied.
@@ -61,7 +61,7 @@ public interface IDocumentAuth
 }
 #endregion
 
-#region docs:authorization:auth-implementation
+#region auth-implementation
 /// <summary>
 /// Authorization implementation checks user permissions.
 /// Injected via DI with current user context.
@@ -89,7 +89,7 @@ public class DocumentAuth : IDocumentAuth
 }
 #endregion
 
-#region docs:authorization:entity-with-auth
+#region entity-with-auth
 /// <summary>
 /// Entity with authorization - all factory operations are protected.
 /// </summary>
@@ -150,7 +150,7 @@ internal partial class Document : EntityBase<Document>, IDocument
 }
 #endregion
 
-#region docs:authorization:operation-specific
+#region operation-specific
 /// <summary>
 /// Different authorization rules for different operations.
 /// Read operations are public, write operations require admin.
@@ -196,7 +196,7 @@ public class PublicReadAuth : IPublicReadAuth
 }
 #endregion
 
-#region docs:authorization:role-based
+#region role-based
 /// <summary>
 /// Role-based authorization with hierarchical permissions.
 /// </summary>

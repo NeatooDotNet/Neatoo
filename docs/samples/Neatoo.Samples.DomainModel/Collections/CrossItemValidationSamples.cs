@@ -42,7 +42,7 @@ internal partial class ContactPhone : EntityBase<ContactPhone>, IContactPhone
     }
 }
 
-#region docs:collections:cross-item-validation
+#region cross-item-validation
 /// <summary>
 /// List that re-validates siblings when properties change.
 /// </summary>

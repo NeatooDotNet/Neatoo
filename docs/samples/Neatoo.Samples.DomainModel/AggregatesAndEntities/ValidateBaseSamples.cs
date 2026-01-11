@@ -38,7 +38,7 @@ public class DateRangeSearchRule : RuleBase<IPersonSearchCriteria>, IDateRangeSe
     }
 }
 
-#region docs:aggregates-and-entities:validatebase-criteria
+#region validatebase-criteria
 /// <summary>
 /// Criteria object - has validation but no persistence.
 /// Use ValidateBase for objects that need validation but are NOT persisted.
@@ -50,14 +50,14 @@ public partial interface IPersonSearchCriteria : IValidateBase
     DateTime? ToDate { get; set; }
 }
 
-#region docs:aggregates-and-entities:validatebase-declaration
+#region validatebase-declaration
 [Factory]
 internal partial class PersonSearchCriteria : ValidateBase<PersonSearchCriteria>, IPersonSearchCriteria
 #endregion
 {
     public PersonSearchCriteria(IValidateBaseServices<PersonSearchCriteria> services) : base(services)
     {
-        #region docs:aggregates-and-entities:criteria-inline-rule
+        #region criteria-inline-rule
         // Inline date range validation - validates when either date changes
         RuleManager.AddValidation(
             t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate
@@ -74,7 +74,7 @@ internal partial class PersonSearchCriteria : ValidateBase<PersonSearchCriteria>
     [Required(ErrorMessage = "At least one search term required")]
     public partial string? SearchTerm { get; set; }
 
-    #region docs:aggregates-and-entities:criteria-date-properties
+    #region criteria-date-properties
     public partial DateTime? FromDate { get; set; }
     public partial DateTime? ToDate { get; set; }
     #endregion
@@ -84,7 +84,7 @@ internal partial class PersonSearchCriteria : ValidateBase<PersonSearchCriteria>
 }
 #endregion
 
-#region docs:aggregates-and-entities:validatebase-order-criteria
+#region validatebase-order-criteria
 /// <summary>
 /// Another ValidateBase example - order search criteria.
 /// </summary>

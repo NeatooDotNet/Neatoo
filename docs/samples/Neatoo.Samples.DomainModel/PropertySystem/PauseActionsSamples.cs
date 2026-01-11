@@ -13,7 +13,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.DomainModel.PropertySystem;
 
-#region docs:property-system:pause-actions
+#region pause-actions
 /// <summary>
 /// Entity demonstrating PauseAllActions pattern.
 /// </summary>
@@ -47,7 +47,7 @@ internal partial class BulkUpdateDemo : EntityBase<BulkUpdateDemo>, IBulkUpdateD
 }
 #endregion
 
-#region docs:property-system:bulk-updates
+#region bulk-updates
 /// <summary>
 /// Examples demonstrating bulk update patterns with PauseAllActions.
 /// Note: PauseAllActions is on the concrete base class, not the interface.

@@ -17,7 +17,7 @@ using Neatoo.RemoteFactory;
 
 namespace Neatoo.Samples.DomainModel.ValidationAndRules;
 
-#region docs:validation-and-rules:fluent-rules-person
+#region fluent-rules-person
 /// <summary>
 /// Sample person that demonstrates fluent rule registration.
 /// </summary>
@@ -27,21 +27,21 @@ internal partial class PersonWithFluentRules : EntityBase<PersonWithFluentRules>
     public PersonWithFluentRules(IEntityBaseServices<PersonWithFluentRules> services,
                                   IEmailService emailService) : base(services)
     {
-        #region docs:validation-and-rules:fluent-validation
+        #region fluent-validation
         // Inline validation rule
         RuleManager.AddValidation(
             target => string.IsNullOrEmpty(target.Name) ? "Name is required" : "",
             t => t.Name);
         #endregion
 
-        #region docs:validation-and-rules:fluent-validation-async
+        #region fluent-validation-async
         // Async validation rule
         RuleManager.AddValidationAsync(
             async target => await emailService.EmailExistsAsync(target.Email!) ? "Email in use" : "",
             t => t.Email);
         #endregion
 
-        #region docs:validation-and-rules:fluent-action
+        #region fluent-action
         // Action rule for calculated values
         RuleManager.AddAction(
             target => target.FullName = $"{target.FirstName} {target.LastName}",

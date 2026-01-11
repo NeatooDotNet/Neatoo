@@ -25,7 +25,7 @@ public class TestingRuleSamplesTests
 {
     #region Sync Rule Tests
 
-    #region docs:testing:sync-rule-test
+    #region sync-rule-test
     [TestMethod]
     public void RunRule_WhenNameIsEmpty_ReturnsError()
     {
@@ -89,7 +89,7 @@ public class TestingRuleSamplesTests
 
     #region Async Rule Tests
 
-    #region docs:testing:async-rule-test
+    #region async-rule-test
     [TestMethod]
     public async Task RunRule_WhenNameNotUnique_ReturnsError()
     {
@@ -181,7 +181,7 @@ public class TestingRuleSamplesTests
 
     #region Rule with Parent Tests
 
-    #region docs:testing:rule-with-parent-test
+    #region rule-with-parent-test
     [TestMethod]
     public void RunRule_WhenQuantityExceedsParentLimit_ReturnsError()
     {

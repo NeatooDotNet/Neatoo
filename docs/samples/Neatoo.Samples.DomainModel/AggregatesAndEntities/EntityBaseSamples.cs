@@ -27,7 +27,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.DomainModel.AggregatesAndEntities;
 
-#region docs:aggregates-and-entities:entitybase-basic
+#region entitybase-basic
 /// <summary>
 /// Basic EntityBase example showing automatic state tracking.
 /// </summary>
@@ -43,7 +43,7 @@ internal partial class Order : EntityBase<Order>, IOrder
 {
     public Order(IEntityBaseServices<Order> services) : base(services)
     {
-        #region docs:aggregates-and-entities:inline-validation-rule
+        #region inline-validation-rule
         // Inline validation rule - Total must be positive
         RuleManager.AddValidation(
             t => t.Total <= 0 ? "Total must be greater than zero" : "",
@@ -51,7 +51,7 @@ internal partial class Order : EntityBase<Order>, IOrder
         #endregion
     }
 
-    #region docs:aggregates-and-entities:state-tracking-properties
+    #region state-tracking-properties
     public partial Guid Id { get; set; }
     public partial string? Status { get; set; }     // IsModified tracked automatically
     public partial decimal Total { get; set; }      // IsSavable updated on change
@@ -66,7 +66,7 @@ internal partial class Order : EntityBase<Order>, IOrder
 }
 #endregion
 
-#region docs:aggregates-and-entities:interface-requirement
+#region interface-requirement
 /// <summary>
 /// Every aggregate requires a public interface for factory generation.
 /// </summary>
@@ -76,16 +76,16 @@ public partial interface ICustomer : IEntityBase
 }
 #endregion
 
-#region docs:aggregates-and-entities:aggregate-root-class
+#region aggregate-root-class
 /// <summary>
 /// Complete aggregate root class pattern.
 /// </summary>
-#region docs:aggregates-and-entities:class-declaration
+#region class-declaration
 [Factory]
 internal partial class Customer : EntityBase<Customer>, ICustomer
 #endregion
 {
-    #region docs:aggregates-and-entities:entity-constructor
+    #region entity-constructor
     public Customer(IEntityBaseServices<Customer> services) : base(services) { }
     #endregion
 
@@ -110,7 +110,7 @@ public partial interface ICustomerAddressList : IEntityListBase<ICustomerAddress
 public partial interface ICustomerAddress : IEntityBase { }
 #endregion
 
-#region docs:aggregates-and-entities:partial-properties
+#region partial-properties
 /// <summary>
 /// Demonstrates partial vs non-partial properties.
 /// </summary>
@@ -127,13 +127,13 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
 {
     public Employee(IEntityBaseServices<Employee> services) : base(services) { }
 
-    #region docs:aggregates-and-entities:partial-property-declaration
+    #region partial-property-declaration
     // Correct - generates backing field with change tracking
     public partial string? FirstName { get; set; }
     public partial string? LastName { get; set; }
     #endregion
 
-    #region docs:aggregates-and-entities:non-partial-properties
+    #region non-partial-properties
     // Calculated property - not tracked, not serialized
     public string FullName => $"{FirstName} {LastName}";
 
@@ -146,7 +146,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
 }
 #endregion
 
-#region docs:aggregates-and-entities:data-annotations
+#region data-annotations
 /// <summary>
 /// Using data annotations for display and validation.
 /// </summary>
@@ -161,13 +161,13 @@ internal partial class Contact : EntityBase<Contact>, IContact
 {
     public Contact(IEntityBaseServices<Contact> services) : base(services) { }
 
-    #region docs:aggregates-and-entities:displayname-required
+    #region displayname-required
     [DisplayName("First Name*")]
     [Required(ErrorMessage = "First Name is required")]
     public partial string? FirstName { get; set; }
     #endregion
 
-    #region docs:aggregates-and-entities:emailaddress-validation
+    #region emailaddress-validation
     [DisplayName("Email Address")]
     [EmailAddress(ErrorMessage = "Invalid email format")]
     public partial string? Email { get; set; }

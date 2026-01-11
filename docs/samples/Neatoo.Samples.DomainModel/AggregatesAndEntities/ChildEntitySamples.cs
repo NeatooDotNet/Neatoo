@@ -19,7 +19,7 @@ using Neatoo.RemoteFactory;
 
 namespace Neatoo.Samples.DomainModel.AggregatesAndEntities;
 
-#region docs:aggregates-and-entities:child-entity
+#region entity-child-entity
 /// <summary>
 /// Child entity that belongs to a parent aggregate.
 /// </summary>
@@ -49,7 +49,7 @@ internal partial class PhoneNumber : EntityBase<PhoneNumber>, IPhoneNumber
     public partial PhoneType? PhoneType { get; set; }
     public partial string? Number { get; set; }
 
-    #region docs:aggregates-and-entities:parent-access-property
+    #region parent-access-property
     // Access parent through the Parent property
     public IContact? ParentContact => Parent as IContact;
     #endregion
@@ -62,7 +62,7 @@ internal partial class PhoneNumber : EntityBase<PhoneNumber>, IPhoneNumber
 }
 #endregion
 
-#region docs:aggregates-and-entities:aggregate-root-pattern
+#region aggregate-root-pattern
 /// <summary>
 /// Aggregate root with [Remote] operations - called from UI.
 /// </summary>
@@ -92,7 +92,7 @@ internal partial class SalesOrder : EntityBase<SalesOrder>, ISalesOrder
         LineItems = lineItems;
     }
 
-    #region docs:aggregates-and-entities:remote-fetch
+    #region remote-fetch
     // [Remote] - Called from UI
     [Remote]
     [Fetch]
@@ -106,7 +106,7 @@ internal partial class SalesOrder : EntityBase<SalesOrder>, ISalesOrder
         Id = id;
     }
 
-    #region docs:aggregates-and-entities:remote-insert
+    #region remote-insert
     [Remote]
     [Insert]
     public async Task Insert()
@@ -125,7 +125,7 @@ internal partial class SalesOrder : EntityBase<SalesOrder>, ISalesOrder
 }
 #endregion
 
-#region docs:aggregates-and-entities:child-entity-pattern
+#region child-entity-pattern
 /// <summary>
 /// Child entity - no [Remote], called internally by parent.
 /// </summary>
@@ -156,7 +156,7 @@ internal partial class OrderLineItem : EntityBase<OrderLineItem>, IOrderLineItem
         Id = Guid.NewGuid();
     }
 
-    #region docs:aggregates-and-entities:child-fetch-no-remote
+    #region child-fetch-no-remote
     // No [Remote] - called internally by parent
     [Fetch]
     public void Fetch(OrderLineItemDto dto)

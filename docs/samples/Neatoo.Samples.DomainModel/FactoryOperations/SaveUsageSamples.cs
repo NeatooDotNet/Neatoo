@@ -58,7 +58,7 @@ internal partial class SaveableItem : EntityBase<SaveableItem>, ISaveableItem
     }
 }
 
-#region docs:factory-operations:save-usage-examples
+#region save-usage-examples
 /// <summary>
 /// Examples demonstrating correct Save() usage patterns.
 /// </summary>
@@ -110,7 +110,7 @@ public static class SaveUsageExamples
 }
 #endregion
 
-#region docs:migration:save-reassignment
+#region save-reassignment
 /// <summary>
 /// Migration pattern: Save() reassignment (v10.5+)
 ///
@@ -140,7 +140,7 @@ public static class SaveReassignmentMigration
 }
 #endregion
 
-#region docs:migration:cancellation-token
+#region cancellation-token
 /// <summary>
 /// Migration pattern: CancellationToken support (v10.5+)
 ///

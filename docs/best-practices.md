@@ -8,8 +8,8 @@ This document outlines recommended patterns for building applications with Neato
 
 ### The Pattern
 
-<!-- snippet: docs:best-practices:interface-first-pattern -->
-```csharp
+<!-- snippet: interface-first-pattern -->
+```cs
 /// <summary>
 /// Interface-First Design: Define a public interface for every entity.
 /// The interface is your API contract.
@@ -58,7 +58,7 @@ internal partial class BpCustomer : EntityBase<BpCustomer>, IBpCustomer
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Why This Matters
 
@@ -73,8 +73,8 @@ internal partial class BpCustomer : EntityBase<BpCustomer>, IBpCustomer
 
 **Always use interface types** in consuming code:
 
-<!-- snippet: docs:best-practices:interface-usage -->
-```csharp
+<!-- snippet: interface-usage -->
+```cs
 /// <summary>
 /// Always use interface types in consuming code.
 /// </summary>
@@ -100,12 +100,12 @@ public class InterfaceUsageExample
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 **Expose business operations on interfaces:**
 
-<!-- snippet: docs:best-practices:business-operations-on-interface -->
-```csharp
+<!-- snippet: business-operations-on-interface -->
+```cs
 /// <summary>
 /// Expose business operations on interfaces.
 /// </summary>
@@ -143,7 +143,7 @@ internal partial class BpVisit : EntityBase<BpVisit>, IBpVisit
     public void Create() { }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Anti-Patterns to Avoid
 
@@ -257,8 +257,8 @@ if (person.IsValid) { ... }
 
 ### The Pattern
 
-<!-- snippet: docs:best-practices:nullable-id-pattern -->
-```csharp
+<!-- snippet: nullable-id-pattern -->
+```cs
 /// <summary>
 /// Use nullable types for database-generated IDs.
 /// null = not yet persisted, Guid/long = persisted.
@@ -297,7 +297,7 @@ internal partial class BpProduct : EntityBase<BpProduct>, IBpProduct
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Why This Matters
 
@@ -320,8 +320,8 @@ When both parent and child are new, the child's foreign key is `null` until the 
 
 **Child entity - Insert receives parent ID as parameter:**
 
-<!-- snippet: docs:best-practices:child-entity-insert -->
-```csharp
+<!-- snippet: child-entity-insert -->
+```cs
 /// <summary>
 /// Child entity Insert receives parent ID as parameter.
 /// </summary>
@@ -369,12 +369,12 @@ internal partial class BpOrderLine : EntityBase<BpOrderLine>, IBpOrderLine
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 **Parent entity - saves itself first, then passes ID to children:**
 
-<!-- snippet: docs:best-practices:parent-saves-children -->
-```csharp
+<!-- snippet: parent-saves-children -->
+```cs
 /// <summary>
 /// Parent entity Insert: saves itself first, then passes ID to children.
 /// </summary>
@@ -464,7 +464,7 @@ internal partial class BpInvoiceLine : EntityBase<BpInvoiceLine>, IBpInvoiceLine
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 **Key insight:** The child's `[Insert]` method accepts the parent ID as a parameter. The factory's `Save()` method passes this through to Insert. This keeps Create clean (no FK needed) while ensuring Insert has the parent ID.
 

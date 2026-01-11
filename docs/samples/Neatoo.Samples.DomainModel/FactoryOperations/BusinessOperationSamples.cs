@@ -53,7 +53,7 @@ public class MockVisitDb : IVisitDb
     public Task SaveChangesAsync() => Task.CompletedTask;
 }
 
-#region docs:factory-operations:business-operation-pattern
+#region business-operation-pattern
 /// <summary>
 /// Entity with business operations that modify state and persist.
 /// The Archive() method demonstrates the pattern: validate, modify, persist via Save().
@@ -173,7 +173,7 @@ internal partial class Visit : EntityBase<Visit>, IVisit
 }
 #endregion
 
-#region docs:factory-operations:entity-save-method
+#region entity-save-method
 /// <summary>
 /// Examples demonstrating entity.Save() vs factory.Save() patterns.
 /// </summary>
@@ -216,7 +216,7 @@ public static class EntitySaveExamples
 }
 #endregion
 
-#region docs:meta-properties:business-operation-example
+#region business-operation-example
 /// <summary>
 /// Minimal example showing the business operation pattern.
 /// Used in meta-properties.md to demonstrate Save() usage.

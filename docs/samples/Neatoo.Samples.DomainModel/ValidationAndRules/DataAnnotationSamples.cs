@@ -21,7 +21,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.DomainModel.ValidationAndRules;
 
-#region docs:validation-and-rules:data-annotations-entity
+#region data-annotations-entity
 /// <summary>
 /// Sample entity demonstrating all supported data annotation attributes.
 /// </summary>
@@ -32,7 +32,7 @@ internal partial class DataAnnotationsEntity : EntityBase<DataAnnotationsEntity>
 
     public partial Guid? Id { get; set; }
 
-    #region docs:validation-and-rules:required-attribute
+    #region required-attribute
     [Required]
     public partial string? FirstName { get; set; }
 
@@ -40,7 +40,7 @@ internal partial class DataAnnotationsEntity : EntityBase<DataAnnotationsEntity>
     public partial string? CustomerName { get; set; }
     #endregion
 
-    #region docs:validation-and-rules:stringlength-attribute
+    #region stringlength-attribute
     // Maximum length only
     [StringLength(100)]
     public partial string? Description { get; set; }
@@ -54,7 +54,7 @@ internal partial class DataAnnotationsEntity : EntityBase<DataAnnotationsEntity>
     public partial string? NameWithLength { get; set; }
     #endregion
 
-    #region docs:validation-and-rules:minmaxlength-attribute
+    #region minmaxlength-attribute
     // String minimum length
     [MinLength(3)]
     public partial string? Code { get; set; }
@@ -72,7 +72,7 @@ internal partial class DataAnnotationsEntity : EntityBase<DataAnnotationsEntity>
     public partial string[]? Categories { get; set; }
     #endregion
 
-    #region docs:validation-and-rules:range-attribute
+    #region range-attribute
     // Integer range
     [Range(1, 100)]
     public partial int Quantity { get; set; }
@@ -94,7 +94,7 @@ internal partial class DataAnnotationsEntity : EntityBase<DataAnnotationsEntity>
     public partial int Age { get; set; }
     #endregion
 
-    #region docs:validation-and-rules:regularexpression-attribute
+    #region regularexpression-attribute
     // Code format: 2 letters + 4 digits
     [RegularExpression(@"^[A-Z]{2}\d{4}$")]
     public partial string? ProductCode { get; set; }
@@ -108,7 +108,7 @@ internal partial class DataAnnotationsEntity : EntityBase<DataAnnotationsEntity>
     public partial string? UsernameAlphanumeric { get; set; }
     #endregion
 
-    #region docs:validation-and-rules:emailaddress-attribute
+    #region emailaddress-attribute
     [EmailAddress]
     public partial string? Email { get; set; }
 
@@ -116,7 +116,7 @@ internal partial class DataAnnotationsEntity : EntityBase<DataAnnotationsEntity>
     public partial string? ContactEmail { get; set; }
     #endregion
 
-    #region docs:validation-and-rules:combining-attributes
+    #region combining-attributes
     [Required(ErrorMessage = "Email is required")]
     [EmailAddress(ErrorMessage = "Invalid email format")]
     [StringLength(254, ErrorMessage = "Email too long")]
