@@ -235,10 +235,10 @@ public partial class ActionFluentRuleTests
 
     #endregion
 
-    #region RuleIndex and OnRuleAdded Tests
+    #region RuleId and OnRuleAdded Tests
 
     [TestMethod]
-    public void OnRuleAdded_SetsUniqueIndex()
+    public void OnRuleAdded_SetsRuleId()
     {
         // Arrange
         var rule = new ActionFluentRule<TestValidateTarget>(t => { });
@@ -248,7 +248,7 @@ public partial class ActionFluentRuleTests
         rule.OnRuleAdded(ruleManagerStub, 42u);
 
         // Assert
-        Assert.AreEqual(42u, rule.UniqueIndex);
+        Assert.AreEqual(42u, rule.RuleId);
     }
 
     [TestMethod]
@@ -263,17 +263,17 @@ public partial class ActionFluentRuleTests
         rule.OnRuleAdded(ruleManagerStub, 20u);
 
         // Assert - first index should be retained
-        Assert.AreEqual(10u, rule.UniqueIndex);
+        Assert.AreEqual(10u, rule.RuleId);
     }
 
     [TestMethod]
-    public void UniqueIndex_DefaultsToZero()
+    public void RuleId_DefaultsToZero()
     {
         // Arrange & Act
         var rule = new ActionFluentRule<TestValidateTarget>(t => { });
 
         // Assert
-        Assert.AreEqual(0u, rule.UniqueIndex);
+        Assert.AreEqual(0u, rule.RuleId);
     }
 
     #endregion
@@ -492,10 +492,10 @@ public class ValidationFluentRuleTests
 
     #endregion
 
-    #region RuleIndex Tests
+    #region RuleId Tests
 
     [TestMethod]
-    public void OnRuleAdded_SetsUniqueIndex()
+    public void OnRuleAdded_SetsRuleId()
     {
         // Arrange
         var rule = new ValidationFluentRule<TestValidateTarget>(t => string.Empty, t => t.Name);
@@ -505,7 +505,7 @@ public class ValidationFluentRuleTests
         rule.OnRuleAdded(ruleManagerStub, 100u);
 
         // Assert
-        Assert.AreEqual(100u, rule.UniqueIndex);
+        Assert.AreEqual(100u, rule.RuleId);
     }
 
     #endregion
@@ -768,10 +768,10 @@ public class AsyncFluentRuleTests
 
     #endregion
 
-    #region RuleIndex Tests
+    #region RuleId Tests
 
     [TestMethod]
-    public void OnRuleAdded_SetsUniqueIndex()
+    public void OnRuleAdded_SetsRuleId()
     {
         // Arrange
         var rule = new AsyncFluentRule<TestValidateTarget>(
@@ -783,7 +783,7 @@ public class AsyncFluentRuleTests
         rule.OnRuleAdded(ruleManagerStub, 200u);
 
         // Assert
-        Assert.AreEqual(200u, rule.UniqueIndex);
+        Assert.AreEqual(200u, rule.RuleId);
     }
 
     #endregion
@@ -987,10 +987,10 @@ public class ActionAsyncFluentRuleTests
 
     #endregion
 
-    #region RuleIndex Tests
+    #region RuleId Tests
 
     [TestMethod]
-    public void OnRuleAdded_SetsUniqueIndex()
+    public void OnRuleAdded_SetsRuleId()
     {
         // Arrange
         var rule = new ActionAsyncFluentRule<TestValidateTarget>(
@@ -1001,7 +1001,7 @@ public class ActionAsyncFluentRuleTests
         rule.OnRuleAdded(ruleManagerStub, 300u);
 
         // Assert
-        Assert.AreEqual(300u, rule.UniqueIndex);
+        Assert.AreEqual(300u, rule.RuleId);
     }
 
     [TestMethod]
@@ -1017,7 +1017,7 @@ public class ActionAsyncFluentRuleTests
         rule.OnRuleAdded(ruleManagerStub, 100u);
 
         // Assert
-        Assert.AreEqual(50u, rule.UniqueIndex);
+        Assert.AreEqual(50u, rule.RuleId);
     }
 
     #endregion
@@ -1203,7 +1203,7 @@ public class FluentRuleCrossCuttingTests
     }
 
     [TestMethod]
-    public void AllFluentRules_UniqueIndexDefaultsToZero()
+    public void AllFluentRules_RuleIdDefaultsToZero()
     {
         // Arrange & Act
         var actionRule = new ActionFluentRule<TestValidateTarget>(t => { });
@@ -1214,10 +1214,10 @@ public class FluentRuleCrossCuttingTests
             async t => await Task.CompletedTask);
 
         // Assert
-        Assert.AreEqual(0u, actionRule.UniqueIndex);
-        Assert.AreEqual(0u, validationRule.UniqueIndex);
-        Assert.AreEqual(0u, asyncRule.UniqueIndex);
-        Assert.AreEqual(0u, actionAsyncRule.UniqueIndex);
+        Assert.AreEqual(0u, actionRule.RuleId);
+        Assert.AreEqual(0u, validationRule.RuleId);
+        Assert.AreEqual(0u, asyncRule.RuleId);
+        Assert.AreEqual(0u, actionAsyncRule.RuleId);
     }
 
     [TestMethod]
@@ -1312,7 +1312,7 @@ public class FluentRuleCrossCuttingTests
     #region OnRuleAdded Idempotency Tests
 
     [TestMethod]
-    public void OnRuleAdded_AllRuleTypes_PreservesFirstUniqueIndex()
+    public void OnRuleAdded_AllRuleTypes_PreservesFirstRuleId()
     {
         // Arrange
         var ruleManagerStub = new ActionFluentRuleTests.Stubs.IRuleManager();
@@ -1337,10 +1337,10 @@ public class FluentRuleCrossCuttingTests
         actionAsyncRule.OnRuleAdded(ruleManagerStub, 999u);
 
         // Assert - first value is preserved
-        Assert.AreEqual(1u, actionRule.UniqueIndex);
-        Assert.AreEqual(2u, validationRule.UniqueIndex);
-        Assert.AreEqual(3u, asyncRule.UniqueIndex);
-        Assert.AreEqual(4u, actionAsyncRule.UniqueIndex);
+        Assert.AreEqual(1u, actionRule.RuleId);
+        Assert.AreEqual(2u, validationRule.RuleId);
+        Assert.AreEqual(3u, asyncRule.RuleId);
+        Assert.AreEqual(4u, actionAsyncRule.RuleId);
     }
 
     #endregion

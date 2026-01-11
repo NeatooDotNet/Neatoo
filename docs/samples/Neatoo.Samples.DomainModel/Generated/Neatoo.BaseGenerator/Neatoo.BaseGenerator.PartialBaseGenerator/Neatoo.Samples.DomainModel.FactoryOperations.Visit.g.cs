@@ -21,5 +21,18 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
         public partial VisitStatus Status { get => Getter<VisitStatus>(); set => Setter(value); }
         public partial bool Archived { get => Getter<bool>(); set => Setter(value); }
         public partial DateTime LastUpdated { get => Getter<DateTime>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"RequiredAttribute_PatientName" => 1u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

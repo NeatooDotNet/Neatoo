@@ -11,7 +11,7 @@ internal class TestUniqueNameRule : AsyncRuleBase<IPerson>, IUniqueNameRule
 {
     public int OnRuleAddedCallCount { get; private set; }
     public IRuleManager? LastRuleManager { get; private set; }
-    public uint LastUniqueIndex { get; private set; }
+    public uint LastRuleId { get; private set; }
 
     protected override Task<IRuleMessages> Execute(IPerson t, CancellationToken? token = null)
         => Task.FromResult<IRuleMessages>(None);
@@ -20,7 +20,7 @@ internal class TestUniqueNameRule : AsyncRuleBase<IPerson>, IUniqueNameRule
     {
         OnRuleAddedCallCount++;
         LastRuleManager = ruleManager;
-        LastUniqueIndex = uniqueIndex;
+        LastRuleId = uniqueIndex;
         base.OnRuleAdded(ruleManager, uniqueIndex);
     }
 }

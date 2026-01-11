@@ -20,5 +20,18 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
         public partial string? FirstName { get => Getter<string?>(); set => Setter(value); }
         public partial string? LastName { get => Getter<string?>(); set => Setter(value); }
         public partial string? FullName { get => Getter<string?>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"fullNameRule" => 1u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

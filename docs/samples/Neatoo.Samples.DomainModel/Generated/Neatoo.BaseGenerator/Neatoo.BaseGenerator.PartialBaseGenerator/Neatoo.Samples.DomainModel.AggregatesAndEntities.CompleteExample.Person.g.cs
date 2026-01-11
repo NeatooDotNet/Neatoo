@@ -39,5 +39,19 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
                 entity.LastName = this.LastName;
             }
         }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"RequiredAttribute_FirstName" => 1u,
+                @"RequiredAttribute_LastName" => 2u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

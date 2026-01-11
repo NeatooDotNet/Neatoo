@@ -235,31 +235,12 @@ public class RuleManagerAddRuleTests
         // Act
         ruleManager.AddRule(rule);
 
-        // Assert - UniqueIndex should be set
-        Assert.AreNotEqual(0u, rule.UniqueIndex);
+        // Assert - RuleId should be set
+        Assert.AreNotEqual(0u, rule.RuleId);
     }
 
     [TestMethod]
-    public void AddRules_AddsMultipleRules()
-    {
-        // Arrange
-        var target = new NoAttributeRulesTarget();
-        var ruleManager = target.GetRuleManager();
-        var trigger1 = new TriggerProperty<NoAttributeRulesTarget>(t => t.Name);
-        var trigger2 = new TriggerProperty<NoAttributeRulesTarget>(t => t.Value);
-        var rule1 = new TestSyncRule<NoAttributeRulesTarget>(trigger1);
-        var rule2 = new TestSyncRule<NoAttributeRulesTarget>(trigger2);
-
-        // Act
-        ruleManager.AddRules(rule1, rule2);
-
-        // Assert
-        Assert.IsTrue(ruleManager.Rules.Contains(rule1));
-        Assert.IsTrue(ruleManager.Rules.Contains(rule2));
-    }
-
-    [TestMethod]
-    public void AddRule_EachRuleGetsUniqueIndex()
+    public void AddRule_AddsMultipleRulesIndividually()
     {
         // Arrange
         var target = new NoAttributeRulesTarget();
@@ -274,7 +255,27 @@ public class RuleManagerAddRuleTests
         ruleManager.AddRule(rule2);
 
         // Assert
-        Assert.AreNotEqual(rule1.UniqueIndex, rule2.UniqueIndex);
+        Assert.IsTrue(ruleManager.Rules.Contains(rule1));
+        Assert.IsTrue(ruleManager.Rules.Contains(rule2));
+    }
+
+    [TestMethod]
+    public void AddRule_EachRuleGetsRuleId()
+    {
+        // Arrange
+        var target = new NoAttributeRulesTarget();
+        var ruleManager = target.GetRuleManager();
+        var trigger1 = new TriggerProperty<NoAttributeRulesTarget>(t => t.Name);
+        var trigger2 = new TriggerProperty<NoAttributeRulesTarget>(t => t.Value);
+        var rule1 = new TestSyncRule<NoAttributeRulesTarget>(trigger1);
+        var rule2 = new TestSyncRule<NoAttributeRulesTarget>(trigger2);
+
+        // Act
+        ruleManager.AddRule(rule1);
+        ruleManager.AddRule(rule2);
+
+        // Assert
+        Assert.AreNotEqual(rule1.RuleId, rule2.RuleId);
     }
 }
 

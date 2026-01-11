@@ -19,5 +19,19 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
     {
         public partial string? Email { get => Getter<string?>(); set => Setter(value); }
         public partial string? Name { get => Getter<string?>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"t => string.IsNullOrEmpty(t.Email) ? ""Email is required"" : """"" => 1u,
+                @"t => string.IsNullOrEmpty(t.Name) ? ""Name is required"" : """"" => 2u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

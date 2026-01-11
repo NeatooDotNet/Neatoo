@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace Neatoo.Rules;
@@ -43,14 +44,8 @@ public interface IRuleManager
     /// </summary>
     /// <typeparam name="T">The type of validation target the rule operates on.</typeparam>
     /// <param name="rule">The rule to add.</param>
-    void AddRule<T>(IRule<T> rule) where T : IValidateBase;
-
-    /// <summary>
-    /// Adds multiple strongly-typed rules to the rule manager.
-    /// </summary>
-    /// <typeparam name="T">The type of validation target the rules operate on.</typeparam>
-    /// <param name="rules">The rules to add.</param>
-    void AddRules<T>(params IRule<T>[] rules) where T : IValidateBase;
+    /// <param name="sourceExpression">Captured automatically by CallerArgumentExpression for stable rule ID.</param>
+    void AddRule<T>(IRule<T> rule, [CallerArgumentExpression(nameof(rule))] string? sourceExpression = null) where T : IValidateBase;
 
     /// <summary>
     /// Runs a specific rule instance.
@@ -79,13 +74,66 @@ public interface IRuleManager<T> : IRuleManager
     where T : class, IValidateBase
 {
     /// <summary>
+    /// Adds a synchronous action rule that executes when the specified property changes.
+    /// Use this for rules that perform side effects like calculating derived values.
+    /// </summary>
+    /// <param name="func">The action to execute.</param>
+    /// <param name="triggerProperty">The property that triggers this rule when changed.</param>
+    /// <param name="sourceExpression">Captured automatically by CallerArgumentExpression for stable rule ID.</param>
+    /// <returns>The created rule instance.</returns>
+    /// <remarks>
+    /// <para>
+    /// Multiple overloads exist (1, 2, 3 triggers + array) because <c>CallerArgumentExpression</c>
+    /// is incompatible with <c>params</c> arrays. C# requires <c>params</c> to be the last parameter,
+    /// but <c>CallerArgumentExpression</c> must come after the parameter it captures.
+    /// </para>
+    /// <para>
+    /// For 4+ trigger properties, use the array overload with an explicit array:
+    /// <code>AddAction(t => ..., new[] { t => t.A, t => t.B, t => t.C, t => t.D })</code>
+    /// </para>
+    /// </remarks>
+    ActionFluentRule<T> AddAction(
+        Action<T> func,
+        Expression<Func<T, object?>> triggerProperty,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
+
+    /// <inheritdoc cref="AddAction(Action{T}, Expression{Func{T, object?}}, string?)"/>
+    ActionFluentRule<T> AddAction(
+        Action<T> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
+
+    /// <inheritdoc cref="AddAction(Action{T}, Expression{Func{T, object?}}, string?)"/>
+    ActionFluentRule<T> AddAction(
+        Action<T> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        Expression<Func<T, object?>> triggerProperty3,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
+
+    /// <summary>
     /// Adds a synchronous action rule that executes when the specified properties change.
     /// Use this for rules that perform side effects like calculating derived values.
     /// </summary>
     /// <param name="func">The action to execute.</param>
-    /// <param name="triggerProperties">The properties that trigger this rule when changed.</param>
+    /// <param name="triggerProperties">The properties that trigger this rule when changed. Must be an explicit array, not <c>params</c>.</param>
+    /// <param name="sourceExpression">Captured automatically by CallerArgumentExpression for stable rule ID.</param>
     /// <returns>The created rule instance.</returns>
-    ActionFluentRule<T> AddAction(Action<T> func, params Expression<Func<T, object?>>[] triggerProperties);
+    /// <remarks>
+    /// Use this overload when you have more than 3 trigger properties.
+    /// You must explicitly create the array:
+    /// <code>
+    /// RuleManager.AddAction(
+    ///     t => t.Summary = Calculate(t),
+    ///     new[] { t => t.A, t => t.B, t => t.C, t => t.D });
+    /// </code>
+    /// This is required because <c>params</c> is incompatible with <c>CallerArgumentExpression</c>.
+    /// </remarks>
+    ActionFluentRule<T> AddAction(
+        Action<T> func,
+        Expression<Func<T, object?>>[] triggerProperties,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
 
     /// <summary>
     /// Adds a synchronous validation rule that executes when the specified property changes.
@@ -93,17 +141,71 @@ public interface IRuleManager<T> : IRuleManager
     /// </summary>
     /// <param name="func">The validation function that returns an error message or empty string.</param>
     /// <param name="triggerProperty">The property that triggers this rule and receives the error message.</param>
+    /// <param name="sourceExpression">Captured automatically by CallerArgumentExpression for stable rule ID.</param>
     /// <returns>The created rule instance.</returns>
-    ValidationFluentRule<T> AddValidation(Func<T, string> func, Expression<Func<T, object?>> triggerProperty);
+    ValidationFluentRule<T> AddValidation(Func<T, string> func, Expression<Func<T, object?>> triggerProperty, [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
+
+    /// <summary>
+    /// Adds an asynchronous action rule that executes when the specified property changes.
+    /// Use this for rules that perform async side effects like calling external services.
+    /// </summary>
+    /// <param name="func">The async function to execute.</param>
+    /// <param name="triggerProperty">The property that triggers this rule when changed.</param>
+    /// <param name="sourceExpression">Captured automatically by CallerArgumentExpression for stable rule ID.</param>
+    /// <returns>The created rule instance.</returns>
+    /// <remarks>
+    /// <para>
+    /// Multiple overloads exist (1, 2, 3 triggers + array) because <c>CallerArgumentExpression</c>
+    /// is incompatible with <c>params</c> arrays. C# requires <c>params</c> to be the last parameter,
+    /// but <c>CallerArgumentExpression</c> must come after the parameter it captures.
+    /// </para>
+    /// <para>
+    /// For 4+ trigger properties, use the array overload with an explicit array:
+    /// <code>AddActionAsync(async t => ..., new[] { t => t.A, t => t.B, t => t.C, t => t.D })</code>
+    /// </para>
+    /// </remarks>
+    ActionAsyncFluentRule<T> AddActionAsync(
+        Func<T, Task> func,
+        Expression<Func<T, object?>> triggerProperty,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
+
+    /// <inheritdoc cref="AddActionAsync(Func{T, Task}, Expression{Func{T, object?}}, string?)"/>
+    ActionAsyncFluentRule<T> AddActionAsync(
+        Func<T, Task> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
+
+    /// <inheritdoc cref="AddActionAsync(Func{T, Task}, Expression{Func{T, object?}}, string?)"/>
+    ActionAsyncFluentRule<T> AddActionAsync(
+        Func<T, Task> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        Expression<Func<T, object?>> triggerProperty3,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
 
     /// <summary>
     /// Adds an asynchronous action rule that executes when the specified properties change.
     /// Use this for rules that perform async side effects like calling external services.
     /// </summary>
     /// <param name="func">The async function to execute.</param>
-    /// <param name="triggerProperties">The properties that trigger this rule when changed.</param>
+    /// <param name="triggerProperties">The properties that trigger this rule when changed. Must be an explicit array, not <c>params</c>.</param>
+    /// <param name="sourceExpression">Captured automatically by CallerArgumentExpression for stable rule ID.</param>
     /// <returns>The created rule instance.</returns>
-    ActionAsyncFluentRule<T> AddActionAsync(Func<T, Task> func, params Expression<Func<T, object?>>[] triggerProperties);
+    /// <remarks>
+    /// Use this overload when you have more than 3 trigger properties.
+    /// You must explicitly create the array:
+    /// <code>
+    /// RuleManager.AddActionAsync(
+    ///     async t => await CalculateAsync(t),
+    ///     new[] { t => t.A, t => t.B, t => t.C, t => t.D });
+    /// </code>
+    /// This is required because <c>params</c> is incompatible with <c>CallerArgumentExpression</c>.
+    /// </remarks>
+    ActionAsyncFluentRule<T> AddActionAsync(
+        Func<T, Task> func,
+        Expression<Func<T, object?>>[] triggerProperties,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
 
     /// <summary>
     /// Adds an asynchronous validation rule that executes when the specified property changes.
@@ -111,17 +213,71 @@ public interface IRuleManager<T> : IRuleManager
     /// </summary>
     /// <param name="func">The async validation function that returns an error message or empty string.</param>
     /// <param name="triggerProperty">The property that triggers this rule and receives the error message.</param>
+    /// <param name="sourceExpression">Captured automatically by CallerArgumentExpression for stable rule ID.</param>
     /// <returns>The created rule instance.</returns>
-    AsyncFluentRule<T> AddValidationAsync(Func<T, Task<string>> func, Expression<Func<T, object?>> triggerProperty);
+    AsyncFluentRule<T> AddValidationAsync(Func<T, Task<string>> func, Expression<Func<T, object?>> triggerProperty, [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
+
+    /// <summary>
+    /// Adds an asynchronous action rule with cancellation support that executes when the specified property changes.
+    /// Use this for rules that perform async side effects and need to respond to cancellation.
+    /// </summary>
+    /// <param name="func">The async function to execute, receiving the target and cancellation token.</param>
+    /// <param name="triggerProperty">The property that triggers this rule when changed.</param>
+    /// <param name="sourceExpression">Captured automatically by CallerArgumentExpression for stable rule ID.</param>
+    /// <returns>The created rule instance.</returns>
+    /// <remarks>
+    /// <para>
+    /// Multiple overloads exist (1, 2, 3 triggers + array) because <c>CallerArgumentExpression</c>
+    /// is incompatible with <c>params</c> arrays. C# requires <c>params</c> to be the last parameter,
+    /// but <c>CallerArgumentExpression</c> must come after the parameter it captures.
+    /// </para>
+    /// <para>
+    /// For 4+ trigger properties, use the array overload with an explicit array:
+    /// <code>AddActionAsync(async (t, ct) => ..., new[] { t => t.A, t => t.B, t => t.C, t => t.D })</code>
+    /// </para>
+    /// </remarks>
+    ActionAsyncFluentRuleWithToken<T> AddActionAsync(
+        Func<T, CancellationToken, Task> func,
+        Expression<Func<T, object?>> triggerProperty,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
+
+    /// <inheritdoc cref="AddActionAsync(Func{T, CancellationToken, Task}, Expression{Func{T, object?}}, string?)"/>
+    ActionAsyncFluentRuleWithToken<T> AddActionAsync(
+        Func<T, CancellationToken, Task> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
+
+    /// <inheritdoc cref="AddActionAsync(Func{T, CancellationToken, Task}, Expression{Func{T, object?}}, string?)"/>
+    ActionAsyncFluentRuleWithToken<T> AddActionAsync(
+        Func<T, CancellationToken, Task> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        Expression<Func<T, object?>> triggerProperty3,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
 
     /// <summary>
     /// Adds an asynchronous action rule with cancellation support that executes when the specified properties change.
     /// Use this for rules that perform async side effects and need to respond to cancellation.
     /// </summary>
     /// <param name="func">The async function to execute, receiving the target and cancellation token.</param>
-    /// <param name="triggerProperties">The properties that trigger this rule when changed.</param>
+    /// <param name="triggerProperties">The properties that trigger this rule when changed. Must be an explicit array, not <c>params</c>.</param>
+    /// <param name="sourceExpression">Captured automatically by CallerArgumentExpression for stable rule ID.</param>
     /// <returns>The created rule instance.</returns>
-    ActionAsyncFluentRuleWithToken<T> AddActionAsync(Func<T, CancellationToken, Task> func, params Expression<Func<T, object?>>[] triggerProperties);
+    /// <remarks>
+    /// Use this overload when you have more than 3 trigger properties.
+    /// You must explicitly create the array:
+    /// <code>
+    /// RuleManager.AddActionAsync(
+    ///     async (t, ct) => await CalculateAsync(t, ct),
+    ///     new[] { t => t.A, t => t.B, t => t.C, t => t.D });
+    /// </code>
+    /// This is required because <c>params</c> is incompatible with <c>CallerArgumentExpression</c>.
+    /// </remarks>
+    ActionAsyncFluentRuleWithToken<T> AddActionAsync(
+        Func<T, CancellationToken, Task> func,
+        Expression<Func<T, object?>>[] triggerProperties,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
 
     /// <summary>
     /// Adds an asynchronous validation rule with cancellation support that executes when the specified property changes.
@@ -129,8 +285,9 @@ public interface IRuleManager<T> : IRuleManager
     /// </summary>
     /// <param name="func">The async validation function that receives the target and cancellation token, returning an error message or empty string.</param>
     /// <param name="triggerProperty">The property that triggers this rule and receives the error message.</param>
+    /// <param name="sourceExpression">Captured automatically by CallerArgumentExpression for stable rule ID.</param>
     /// <returns>The created rule instance.</returns>
-    AsyncFluentRuleWithToken<T> AddValidationAsync(Func<T, CancellationToken, Task<string>> func, Expression<Func<T, object?>> triggerProperty);
+    AsyncFluentRuleWithToken<T> AddValidationAsync(Func<T, CancellationToken, Task<string>> func, Expression<Func<T, object?>> triggerProperty, [CallerArgumentExpression(nameof(func))] string? sourceExpression = null);
 }
 
 /// <summary>
@@ -205,33 +362,29 @@ public class RuleManager<T> : IRuleManager<T>
     IEnumerable<IRule> IRuleManager.Rules => this.Rules.Values;
 
     /// <summary>
-    /// The current rule index counter. Used to assign unique indices to rules for message tracking.
-    /// Rules are indexed for serialization so broken rules transfer correctly.
-    /// This assumes that rules are added in the same order across instances.
-    /// </summary>
-    protected uint _ruleIndex = 1;
-
-    /// <summary>
     /// Global counter for generating unique execution IDs for busy tracking.
     /// Each rule execution gets a unique ID to track which executions are in-flight.
     /// </summary>
     private static long _nextExecId = 0;
 
     /// <summary>
-    /// Gets the dictionary of rules indexed by their unique index.
+    /// Gets the dictionary of rules indexed by their stable rule ID.
     /// </summary>
     private IDictionary<uint, IRule> Rules { get; } = new Dictionary<uint, IRule>();
 
     /// <summary>
-    /// Registers a rule with the rule manager, assigning it a unique index.
+    /// Registers a rule with the rule manager, assigning it a stable rule ID.
+    /// The ID is determined by the source expression captured via CallerArgumentExpression.
     /// </summary>
     /// <typeparam name="TRule">The rule type.</typeparam>
     /// <param name="rule">The rule to register.</param>
+    /// <param name="sourceExpression">The source expression captured by CallerArgumentExpression.</param>
     /// <returns>The registered rule.</returns>
-    private TRule RegisterRule<TRule>(TRule rule) where TRule : IRule
+    private TRule RegisterRule<TRule>(TRule rule, string sourceExpression) where TRule : IRule
     {
-        this.Rules.Add(this._ruleIndex++, rule);
-        rule.OnRuleAdded(this, this._ruleIndex);
+        var ruleId = ((IValidateBaseInternal)this.Target).GetRuleId(sourceExpression);
+        this.Rules.Add(ruleId, rule);
+        rule.OnRuleAdded(this, ruleId);
         return rule;
     }
 
@@ -251,25 +404,28 @@ public class RuleManager<T> : IRuleManager<T>
                 var rule = attributeToRule.GetRule<T>(r, a);
                 if (rule != null)
                 {
-                    this.RegisterRule(rule);
+                    // Attribute rules get a deterministic ID based on attribute type and property name
+                    var sourceExpression = $"{a.GetType().Name}_{r.Name}";
+                    this.RegisterRule(rule, sourceExpression);
                 }
             }
         }
     }
 
     /// <inheritdoc />
-    public void AddRules<T1>(params IRule<T1>[] rules) where T1 : IValidateBase
+    /// <exception cref="InvalidTargetTypeException">Thrown when the rule's target type is not compatible with this manager's target type.</exception>
+    public void AddRule<T1>(
+        IRule<T1> rule,
+        [CallerArgumentExpression(nameof(rule))] string? sourceExpression = null) where T1 : IValidateBase
     {
-        foreach (var r in rules) { this.AddRule(r); }
+        this.AddRuleInternal(rule, sourceExpression ?? "unknown");
     }
 
-    /// <inheritdoc />
-    /// <exception cref="InvalidTargetTypeException">Thrown when the rule's target type is not compatible with this manager's target type.</exception>
-    public void AddRule<T1>(IRule<T1> rule) where T1 : IValidateBase
+    private void AddRuleInternal<T1>(IRule<T1> rule, string sourceExpression) where T1 : IValidateBase
     {
         if (typeof(T1).IsAssignableFrom(typeof(T)))
         {
-            this.RegisterRule(rule);
+            this.RegisterRule(rule, sourceExpression);
         }
         else
         {
@@ -289,40 +445,160 @@ public class RuleManager<T> : IRuleManager<T>
         }
     }
 
+    #region AddAction overloads
+
     /// <inheritdoc />
-    public ActionAsyncFluentRule<T> AddActionAsync(Func<T, Task> func, params Expression<Func<T, object?>>[] triggerProperties)
+    public ActionFluentRule<T> AddAction(
+        Action<T> func,
+        Expression<Func<T, object?>> triggerProperty,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
     {
-        return this.RegisterRule(new ActionAsyncFluentRule<T>(func, triggerProperties));
+        return this.RegisterRule(new ActionFluentRule<T>(func, [triggerProperty]), sourceExpression ?? "unknown");
     }
 
     /// <inheritdoc />
-    public ActionFluentRule<T> AddAction(Action<T> func, params Expression<Func<T, object?>>[] triggerProperties)
+    public ActionFluentRule<T> AddAction(
+        Action<T> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
     {
-        return this.RegisterRule(new ActionFluentRule<T>(func, triggerProperties));
+        return this.RegisterRule(new ActionFluentRule<T>(func, [triggerProperty1, triggerProperty2]), sourceExpression ?? "unknown");
     }
 
     /// <inheritdoc />
-    public ValidationFluentRule<T> AddValidation(Func<T, string> func, Expression<Func<T, object?>> triggerProperty)
+    public ActionFluentRule<T> AddAction(
+        Action<T> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        Expression<Func<T, object?>> triggerProperty3,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
     {
-        return this.RegisterRule(new ValidationFluentRule<T>(func, triggerProperty));
+        return this.RegisterRule(new ActionFluentRule<T>(func, [triggerProperty1, triggerProperty2, triggerProperty3]), sourceExpression ?? "unknown");
     }
 
     /// <inheritdoc />
-    public AsyncFluentRule<T> AddValidationAsync(Func<T, Task<string>> func, Expression<Func<T, object?>> triggerProperty)
+    public ActionFluentRule<T> AddAction(
+        Action<T> func,
+        Expression<Func<T, object?>>[] triggerProperties,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
     {
-        return this.RegisterRule(new AsyncFluentRule<T>(func, triggerProperty));
+        return this.RegisterRule(new ActionFluentRule<T>(func, triggerProperties), sourceExpression ?? "unknown");
+    }
+
+    #endregion
+
+    #region AddActionAsync overloads
+
+    /// <inheritdoc />
+    public ActionAsyncFluentRule<T> AddActionAsync(
+        Func<T, Task> func,
+        Expression<Func<T, object?>> triggerProperty,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
+    {
+        return this.RegisterRule(new ActionAsyncFluentRule<T>(func, [triggerProperty]), sourceExpression ?? "unknown");
     }
 
     /// <inheritdoc />
-    public ActionAsyncFluentRuleWithToken<T> AddActionAsync(Func<T, CancellationToken, Task> func, params Expression<Func<T, object?>>[] triggerProperties)
+    public ActionAsyncFluentRule<T> AddActionAsync(
+        Func<T, Task> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
     {
-        return this.RegisterRule(new ActionAsyncFluentRuleWithToken<T>(func, triggerProperties));
+        return this.RegisterRule(new ActionAsyncFluentRule<T>(func, [triggerProperty1, triggerProperty2]), sourceExpression ?? "unknown");
     }
 
     /// <inheritdoc />
-    public AsyncFluentRuleWithToken<T> AddValidationAsync(Func<T, CancellationToken, Task<string>> func, Expression<Func<T, object?>> triggerProperty)
+    public ActionAsyncFluentRule<T> AddActionAsync(
+        Func<T, Task> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        Expression<Func<T, object?>> triggerProperty3,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
     {
-        return this.RegisterRule(new AsyncFluentRuleWithToken<T>(func, triggerProperty));
+        return this.RegisterRule(new ActionAsyncFluentRule<T>(func, [triggerProperty1, triggerProperty2, triggerProperty3]), sourceExpression ?? "unknown");
+    }
+
+    /// <inheritdoc />
+    public ActionAsyncFluentRule<T> AddActionAsync(
+        Func<T, Task> func,
+        Expression<Func<T, object?>>[] triggerProperties,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
+    {
+        return this.RegisterRule(new ActionAsyncFluentRule<T>(func, triggerProperties), sourceExpression ?? "unknown");
+    }
+
+    #endregion
+
+    /// <inheritdoc />
+    public ValidationFluentRule<T> AddValidation(
+        Func<T, string> func,
+        Expression<Func<T, object?>> triggerProperty,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
+    {
+        return this.RegisterRule(new ValidationFluentRule<T>(func, triggerProperty), sourceExpression ?? "unknown");
+    }
+
+    /// <inheritdoc />
+    public AsyncFluentRule<T> AddValidationAsync(
+        Func<T, Task<string>> func,
+        Expression<Func<T, object?>> triggerProperty,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
+    {
+        return this.RegisterRule(new AsyncFluentRule<T>(func, triggerProperty), sourceExpression ?? "unknown");
+    }
+
+    #region AddActionAsync with CancellationToken overloads
+
+    /// <inheritdoc />
+    public ActionAsyncFluentRuleWithToken<T> AddActionAsync(
+        Func<T, CancellationToken, Task> func,
+        Expression<Func<T, object?>> triggerProperty,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
+    {
+        return this.RegisterRule(new ActionAsyncFluentRuleWithToken<T>(func, [triggerProperty]), sourceExpression ?? "unknown");
+    }
+
+    /// <inheritdoc />
+    public ActionAsyncFluentRuleWithToken<T> AddActionAsync(
+        Func<T, CancellationToken, Task> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
+    {
+        return this.RegisterRule(new ActionAsyncFluentRuleWithToken<T>(func, [triggerProperty1, triggerProperty2]), sourceExpression ?? "unknown");
+    }
+
+    /// <inheritdoc />
+    public ActionAsyncFluentRuleWithToken<T> AddActionAsync(
+        Func<T, CancellationToken, Task> func,
+        Expression<Func<T, object?>> triggerProperty1,
+        Expression<Func<T, object?>> triggerProperty2,
+        Expression<Func<T, object?>> triggerProperty3,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
+    {
+        return this.RegisterRule(new ActionAsyncFluentRuleWithToken<T>(func, [triggerProperty1, triggerProperty2, triggerProperty3]), sourceExpression ?? "unknown");
+    }
+
+    /// <inheritdoc />
+    public ActionAsyncFluentRuleWithToken<T> AddActionAsync(
+        Func<T, CancellationToken, Task> func,
+        Expression<Func<T, object?>>[] triggerProperties,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
+    {
+        return this.RegisterRule(new ActionAsyncFluentRuleWithToken<T>(func, triggerProperties), sourceExpression ?? "unknown");
+    }
+
+    #endregion
+
+    /// <inheritdoc />
+    public AsyncFluentRuleWithToken<T> AddValidationAsync(
+        Func<T, CancellationToken, Task<string>> func,
+        Expression<Func<T, object?>> triggerProperty,
+        [CallerArgumentExpression(nameof(func))] string? sourceExpression = null)
+    {
+        return this.RegisterRule(new AsyncFluentRuleWithToken<T>(func, triggerProperty), sourceExpression ?? "unknown");
     }
 
     /// <inheritdoc />
@@ -459,7 +735,7 @@ public class RuleManager<T> : IRuleManager<T>
                     // Cast to internal interface to call ClearMessagesForRule
                     if (targetProperty is IValidatePropertyInternal vpInternal)
                     {
-                        vpInternal.ClearMessagesForRule(rule.UniqueIndex);
+                        vpInternal.ClearMessagesForRule(rule.RuleId);
                     }
                 }
             }
@@ -468,12 +744,12 @@ public class RuleManager<T> : IRuleManager<T>
             {
                 if (this.Target.TryGetProperty(ruleMessage.Key, out var targetProperty))
                 {
-                    // Cast to internal interface to set RuleIndex
+                    // Cast to internal interface to set RuleId
                     ruleMessage.Value.ForEach(rm =>
                     {
                         if (rm is IRuleMessageInternal rmInternal)
                         {
-                            rmInternal.RuleIndex = rule.UniqueIndex;
+                            rmInternal.RuleId = rule.RuleId;
                         }
                     });
 

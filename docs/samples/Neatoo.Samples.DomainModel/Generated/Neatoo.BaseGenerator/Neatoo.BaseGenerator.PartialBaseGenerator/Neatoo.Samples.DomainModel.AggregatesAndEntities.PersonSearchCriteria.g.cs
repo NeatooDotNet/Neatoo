@@ -20,5 +20,20 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
         public partial string? SearchTerm { get => Getter<string?>(); set => Setter(value); }
         public partial DateTime? FromDate { get => Getter<DateTime?>(); set => Setter(value); }
         public partial DateTime? ToDate { get => Getter<DateTime?>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"RequiredAttribute_SearchTerm" => 1u,
+                @"t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate ? ""From date must be before To date"" : """"" => 2u,
+                @"t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate ? ""To date must be after From date"" : """"" => 3u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

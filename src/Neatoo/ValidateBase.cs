@@ -591,6 +591,54 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	string? IValidateBaseInternal.ObjectInvalid => this.ObjectInvalid;
 
 	/// <summary>
+	/// Gets the stable rule ID for a source expression.
+	/// The generated code overrides this to use the compile-time RuleIdRegistry.
+	/// </summary>
+	/// <param name="sourceExpression">The source expression captured by CallerArgumentExpression.</param>
+	/// <returns>A stable uint ID for the rule.</returns>
+	protected virtual uint GetRuleId(string sourceExpression)
+	{
+		// Default implementation uses a hash of the source expression.
+		// The source generator overrides this with a compile-time RuleIdRegistry.
+		return ComputeRuleIdHash(sourceExpression);
+	}
+
+	/// <summary>
+	/// Computes a hash-based rule ID from a source expression.
+	/// Used as a fallback when the source generator hasn't overridden GetRuleId.
+	/// </summary>
+	private static uint ComputeRuleIdHash(string sourceExpression)
+	{
+		// Use a simple hash algorithm to generate a stable ID
+		unchecked
+		{
+			uint hash = 2166136261; // FNV-1a offset basis
+			foreach (char c in sourceExpression)
+			{
+				hash ^= c;
+				hash *= 16777619; // FNV-1a prime
+			}
+			return hash;
+		}
+	}
+
+	/// <summary>
+	/// Normalizes a source expression by collapsing whitespace.
+	/// Ensures expressions from CallerArgumentExpression match the generator's normalized patterns.
+	/// </summary>
+	private static string NormalizeSourceExpression(string sourceExpression)
+	{
+		// Collapse all whitespace sequences to single spaces
+		return System.Text.RegularExpressions.Regex.Replace(sourceExpression, @"\s+", " ").Trim();
+	}
+
+	/// <summary>
+	/// Explicit interface implementation for IValidateBaseInternal.GetRuleId.
+	/// Normalizes the source expression before passing to the virtual method.
+	/// </summary>
+	uint IValidateBaseInternal.GetRuleId(string sourceExpression) => this.GetRuleId(NormalizeSourceExpression(sourceExpression));
+
+	/// <summary>
 	/// Gets a value indicating whether the object is in a paused state.
 	/// </summary>
 	/// <value><c>true</c> if property change events, rules, and notifications are suppressed; otherwise, <c>false</c>.</value>

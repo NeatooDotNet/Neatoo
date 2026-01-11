@@ -859,7 +859,7 @@ public class EntityPropertyManagerTests
         var property = entity["Name"];
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Test error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Test error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
         Assert.IsFalse(property.IsValid);
@@ -884,11 +884,11 @@ public class EntityPropertyManagerTests
 
         ((IValidatePropertyInternal)nameProperty).SetMessagesForRule(new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Name error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Name error") { RuleId = 1 }
         });
         ((IValidatePropertyInternal)ageProperty).SetMessagesForRule(new List<IRuleMessage>
         {
-            new RuleMessage("Age", "Age error") { RuleIndex = 2 }
+            new RuleMessage("Age", "Age error") { RuleId = 2 }
         });
 
         Assert.IsFalse(entity.PropertyManager.IsValid);

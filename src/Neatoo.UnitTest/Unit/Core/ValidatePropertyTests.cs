@@ -109,8 +109,8 @@ public class ValidatePropertyTests
         // Arrange
         var ruleMessages = new IRuleMessage[]
         {
-            new RuleMessage("Name", "Error message 1") { RuleIndex = 1 },
-            new RuleMessage("Name", "Error message 2") { RuleIndex = 2 }
+            new RuleMessage("Name", "Error message 1") { RuleId = 1 },
+            new RuleMessage("Name", "Error message 2") { RuleId = 2 }
         };
 
         // Act
@@ -160,7 +160,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error message") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error message") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -176,7 +176,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error message") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error message") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -226,7 +226,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Validation error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Validation error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -277,7 +277,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error 1") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error 1") { RuleId = 1 }
         };
 
         // Act
@@ -296,9 +296,9 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
-            new RuleMessage("Name", "Error 2") { RuleIndex = 2 },
-            new RuleMessage("Name", "Error 3") { RuleIndex = 3 }
+            new RuleMessage("Name", "Error 1") { RuleId = 1 },
+            new RuleMessage("Name", "Error 2") { RuleId = 2 },
+            new RuleMessage("Name", "Error 3") { RuleId = 3 }
         };
 
         // Act
@@ -309,20 +309,20 @@ public class ValidatePropertyTests
     }
 
     [TestMethod]
-    public void SetMessagesForRule_ReplacesExistingForSameRuleIndex()
+    public void SetMessagesForRule_ReplacesExistingForSameRuleId()
     {
         // Arrange
         var wrapper = CreatePropertyInfoWrapper<string>("Name");
         var property = new ValidateProperty<string>(wrapper);
         var initialMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Initial error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Initial error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(initialMessages);
 
         var replacementMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Replacement error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Replacement error") { RuleId = 1 }
         };
 
         // Act
@@ -334,20 +334,20 @@ public class ValidatePropertyTests
     }
 
     [TestMethod]
-    public void SetMessagesForRule_PreservesOtherRuleIndexMessages()
+    public void SetMessagesForRule_PreservesOtherRuleIdMessages()
     {
         // Arrange
         var wrapper = CreatePropertyInfoWrapper<string>("Name");
         var property = new ValidateProperty<string>(wrapper);
         var rule1Messages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Rule 1 error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Rule 1 error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(rule1Messages);
 
         var rule2Messages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Rule 2 error") { RuleIndex = 2 }
+            new RuleMessage("Name", "Rule 2 error") { RuleId = 2 }
         };
 
         // Act
@@ -355,8 +355,8 @@ public class ValidatePropertyTests
 
         // Assert
         Assert.AreEqual(2, property.RuleMessages.Count);
-        Assert.IsTrue(property.RuleMessages.Any(rm => rm.RuleIndex == 1));
-        Assert.IsTrue(property.RuleMessages.Any(rm => rm.RuleIndex == 2));
+        Assert.IsTrue(property.RuleMessages.Any(rm => rm.RuleId == 1));
+        Assert.IsTrue(property.RuleMessages.Any(rm => rm.RuleId == 2));
     }
 
     [TestMethod]
@@ -367,7 +367,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name") { RuleIndex = 1 } // Message is null
+            new RuleMessage("Name") { RuleId = 1 } // Message is null
         };
 
         // Act
@@ -389,7 +389,7 @@ public class ValidatePropertyTests
 
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
 
         // Act
@@ -410,7 +410,7 @@ public class ValidatePropertyTests
 
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
 
         // Act
@@ -431,7 +431,7 @@ public class ValidatePropertyTests
 
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
 
         // Act
@@ -446,15 +446,15 @@ public class ValidatePropertyTests
     #region ClearMessagesForRule Tests
 
     [TestMethod]
-    public void ClearMessagesForRule_RemovesMessagesForSpecificRuleIndex()
+    public void ClearMessagesForRule_RemovesMessagesForSpecificRuleId()
     {
         // Arrange
         var wrapper = CreatePropertyInfoWrapper<string>("Name");
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Rule 1 error") { RuleIndex = 1 },
-            new RuleMessage("Name", "Rule 2 error") { RuleIndex = 2 }
+            new RuleMessage("Name", "Rule 1 error") { RuleId = 1 },
+            new RuleMessage("Name", "Rule 2 error") { RuleId = 2 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -463,20 +463,20 @@ public class ValidatePropertyTests
 
         // Assert
         Assert.AreEqual(1, property.RuleMessages.Count);
-        Assert.AreEqual(2u, property.RuleMessages[0].RuleIndex);
+        Assert.AreEqual(2u, property.RuleMessages[0].RuleId);
     }
 
     [TestMethod]
-    public void ClearMessagesForRule_PreservesOtherRuleIndexMessages()
+    public void ClearMessagesForRule_PreservesOtherRuleIdMessages()
     {
         // Arrange
         var wrapper = CreatePropertyInfoWrapper<string>("Name");
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
-            new RuleMessage("Name", "Error 2") { RuleIndex = 2 },
-            new RuleMessage("Name", "Error 3") { RuleIndex = 3 }
+            new RuleMessage("Name", "Error 1") { RuleId = 1 },
+            new RuleMessage("Name", "Error 2") { RuleId = 2 },
+            new RuleMessage("Name", "Error 3") { RuleId = 3 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -485,20 +485,20 @@ public class ValidatePropertyTests
 
         // Assert
         Assert.AreEqual(2, property.RuleMessages.Count);
-        Assert.IsTrue(property.RuleMessages.Any(rm => rm.RuleIndex == 1));
-        Assert.IsTrue(property.RuleMessages.Any(rm => rm.RuleIndex == 3));
-        Assert.IsFalse(property.RuleMessages.Any(rm => rm.RuleIndex == 2));
+        Assert.IsTrue(property.RuleMessages.Any(rm => rm.RuleId == 1));
+        Assert.IsTrue(property.RuleMessages.Any(rm => rm.RuleId == 3));
+        Assert.IsFalse(property.RuleMessages.Any(rm => rm.RuleId == 2));
     }
 
     [TestMethod]
-    public void ClearMessagesForRule_NonExistentRuleIndex_DoesNothing()
+    public void ClearMessagesForRule_NonExistentRuleId_DoesNothing()
     {
         // Arrange
         var wrapper = CreatePropertyInfoWrapper<string>("Name");
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -510,14 +510,14 @@ public class ValidatePropertyTests
     }
 
     [TestMethod]
-    public void ClearMessagesForRule_ClearsAllForRuleIndex_ResetsValidity()
+    public void ClearMessagesForRule_ClearsAllForRuleId_ResetsValidity()
     {
         // Arrange
         var wrapper = CreatePropertyInfoWrapper<string>("Name");
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Only error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Only error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
         Assert.IsFalse(property.IsValid);
@@ -537,7 +537,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -559,7 +559,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -581,7 +581,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -607,8 +607,8 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
-            new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
+            new RuleMessage("Name", "Error 1") { RuleId = 1 },
+            new RuleMessage("Name", "Error 2") { RuleId = 2 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -628,7 +628,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -666,8 +666,8 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
-            new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
+            new RuleMessage("Name", "Error 1") { RuleId = 1 },
+            new RuleMessage("Name", "Error 2") { RuleId = 2 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -711,7 +711,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -733,7 +733,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -755,7 +755,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -781,8 +781,8 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
-            new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
+            new RuleMessage("Name", "Error 1") { RuleId = 1 },
+            new RuleMessage("Name", "Error 2") { RuleId = 2 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -818,7 +818,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Specific error message") { RuleIndex = 42 }
+            new RuleMessage("Name", "Specific error message") { RuleId = 42 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -828,7 +828,7 @@ public class ValidatePropertyTests
         // Assert
         Assert.AreEqual(1, serialized.Length);
         Assert.AreEqual("Specific error message", serialized[0].Message);
-        Assert.AreEqual(42u, serialized[0].RuleIndex);
+        Assert.AreEqual(42u, serialized[0].RuleId);
     }
 
     #endregion
@@ -857,7 +857,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var newMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Direct message") { RuleIndex = 1 }
+            new RuleMessage("Name", "Direct message") { RuleId = 1 }
         };
 
         // Act
@@ -895,8 +895,8 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
-            new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
+            new RuleMessage("Name", "Error 1") { RuleId = 1 },
+            new RuleMessage("Name", "Error 2") { RuleId = 2 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -915,7 +915,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Test error message") { RuleIndex = 1 }
+            new RuleMessage("Name", "Test error message") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -936,7 +936,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -1309,7 +1309,7 @@ public class ValidatePropertyTests
             {
                 var messages = new List<IRuleMessage>
                 {
-                    new RuleMessage("Name", $"Error {ruleIndex}") { RuleIndex = ruleIndex }
+                    new RuleMessage("Name", $"Error {ruleIndex}") { RuleId = ruleIndex }
                 };
                 ((IValidatePropertyInternal)property).SetMessagesForRule(messages);
             }));
@@ -1322,23 +1322,23 @@ public class ValidatePropertyTests
     }
 
     [TestMethod]
-    public void MultipleRuleMessages_SameRuleIndex_KeepsOnlyLatest()
+    public void MultipleRuleMessages_SameRuleId_KeepsOnlyLatest()
     {
         // Arrange
         var wrapper = CreatePropertyInfoWrapper<string>("Name");
         var property = new ValidateProperty<string>(wrapper);
 
-        // First set of messages with RuleIndex 1
+        // First set of messages with RuleId 1
         var firstMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "First error") { RuleIndex = 1 }
+            new RuleMessage("Name", "First error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(firstMessages);
 
-        // Second set of messages with same RuleIndex 1
+        // Second set of messages with same RuleId 1
         var secondMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Second error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Second error") { RuleId = 1 }
         };
 
         // Act
@@ -1350,7 +1350,7 @@ public class ValidatePropertyTests
     }
 
     [TestMethod]
-    public void SetMessagesForRule_MultipleMessagesWithSameRuleIndex_AddsAllButRemovesPrevious()
+    public void SetMessagesForRule_MultipleMessagesWithSameRuleId_AddsAllButRemovesPrevious()
     {
         // Arrange
         var wrapper = CreatePropertyInfoWrapper<string>("Name");
@@ -1359,15 +1359,15 @@ public class ValidatePropertyTests
         // Initial messages
         var initialMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Initial") { RuleIndex = 1 }
+            new RuleMessage("Name", "Initial") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(initialMessages);
 
-        // New messages with same RuleIndex but multiple entries
+        // New messages with same RuleId but multiple entries
         var newMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "New Error 1") { RuleIndex = 1 },
-            new RuleMessage("Name", "New Error 2") { RuleIndex = 1 }
+            new RuleMessage("Name", "New Error 1") { RuleId = 1 },
+            new RuleMessage("Name", "New Error 2") { RuleId = 1 }
         };
 
         // Act
@@ -1375,7 +1375,7 @@ public class ValidatePropertyTests
 
         // Assert - both new messages should be added
         Assert.AreEqual(2, property.RuleMessages.Count);
-        Assert.IsTrue(property.RuleMessages.All(rm => rm.RuleIndex == 1));
+        Assert.IsTrue(property.RuleMessages.All(rm => rm.RuleId == 1));
     }
 
     #endregion

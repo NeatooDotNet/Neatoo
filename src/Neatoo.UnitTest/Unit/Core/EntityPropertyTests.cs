@@ -160,7 +160,7 @@ public class EntityPropertyTests
         // Arrange
         var ruleMessages = new IRuleMessage[]
         {
-            new RuleMessage("TestProperty", "Error message 1") { RuleIndex = 1 }
+            new RuleMessage("TestProperty", "Error message 1") { RuleId = 1 }
         };
 
         // Act
@@ -755,7 +755,7 @@ public class EntityPropertyTests
         var property = new EntityProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error message") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error message") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -782,7 +782,7 @@ public class EntityPropertyTests
         var property = new EntityProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Validation error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Validation error") { RuleId = 1 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -798,8 +798,8 @@ public class EntityPropertyTests
         var property = new EntityProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
-            new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
+            new RuleMessage("Name", "Error 1") { RuleId = 1 },
+            new RuleMessage("Name", "Error 2") { RuleId = 2 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -834,8 +834,8 @@ public class EntityPropertyTests
         var property = new EntityProperty<string>(wrapper);
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error 1") { RuleIndex = 1 },
-            new RuleMessage("Name", "Error 2") { RuleIndex = 2 }
+            new RuleMessage("Name", "Error 1") { RuleId = 1 },
+            new RuleMessage("Name", "Error 2") { RuleId = 2 }
         };
         ((IValidatePropertyInternal)property).SetMessagesForRule(ruleMessages);
 
@@ -1264,7 +1264,7 @@ public class EntityPropertyTests
 
         var ruleMessages = new List<IRuleMessage>
         {
-            new RuleMessage("Name", "Error") { RuleIndex = 1 }
+            new RuleMessage("Name", "Error") { RuleId = 1 }
         };
 
         // Act

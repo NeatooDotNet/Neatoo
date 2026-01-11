@@ -27,7 +27,9 @@ internal class ValidateAsyncObject : PersonValidateBase<ValidateAsyncObject>, IV
         IRecursiveAsyncRule recursiveAsyncRule
         ) : base(services)
     {
-        RuleManager.AddRules(shortNameRule, fullNameRule, recursiveAsyncRule);
+        RuleManager.AddRule(shortNameRule);
+        RuleManager.AddRule(fullNameRule);
+        RuleManager.AddRule(recursiveAsyncRule);
         ShortNameRule = shortNameRule;
         FullNameRule = fullNameRule;
         // TODO : Can add a rule that's not the correct type, Handle?

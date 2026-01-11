@@ -1055,14 +1055,14 @@ public class RequiredRuleEdgeCasesTests
     }
 
     [TestMethod]
-    public void UniqueIndex_DefaultsToZero()
+    public void RuleId_DefaultsToZero()
     {
         // Arrange
         var triggerProperty = new TriggerProperty<RequiredRuleTestTarget>(t => t.StringProperty);
         var rule = RequiredRuleTestHelper.CreateRequiredRule(triggerProperty, new RequiredAttribute());
 
         // Assert
-        Assert.AreEqual(0u, rule.UniqueIndex);
+        Assert.AreEqual(0u, rule.RuleId);
     }
 
     [TestMethod]

@@ -350,7 +350,7 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
         Debug.Assert(this.ValueIsValidateBase == null, "If the Child is IValidateBase then it should be handling the errors");
         lock (this.RuleMessagesLock)
         {
-            this.RuleMessages.RemoveAll(rm => ruleMessages.Any(rm2 => rm2.RuleIndex == rm.RuleIndex));
+            this.RuleMessages.RemoveAll(rm => ruleMessages.Any(rm2 => rm2.RuleId == rm.RuleId));
             this.RuleMessages.AddRange(ruleMessages.Where(rm => rm.Message != null));
         }
         this.OnPropertyChanged(nameof(IsValid));
@@ -363,9 +363,9 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
         this.SetMessagesForRule(ruleMessages);
     }
 
-    void IValidatePropertyInternal.ClearMessagesForRule(uint ruleIndex)
+    void IValidatePropertyInternal.ClearMessagesForRule(uint ruleId)
     {
-        this.RuleMessages.RemoveAll(rm => rm.RuleIndex == ruleIndex);
+        this.RuleMessages.RemoveAll(rm => rm.RuleId == ruleId);
         this.OnPropertyChanged(nameof(IsValid));
         this.OnPropertyChanged(nameof(IsSelfValid));
         this.OnPropertyChanged(nameof(RuleMessages));

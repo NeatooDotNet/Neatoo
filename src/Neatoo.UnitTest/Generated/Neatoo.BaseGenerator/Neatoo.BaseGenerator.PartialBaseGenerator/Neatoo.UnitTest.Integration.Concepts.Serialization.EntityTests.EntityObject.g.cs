@@ -17,5 +17,18 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests
         public partial IEntityObject Child { get => Getter<IEntityObject>(); set => Setter(value); }
         public partial IEntityObjectList ChildList { get => Getter<IEntityObjectList>(); set => Setter(value); }
         public partial int? Required { get => Getter<int?>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"RequiredAttribute_Required" => 1u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

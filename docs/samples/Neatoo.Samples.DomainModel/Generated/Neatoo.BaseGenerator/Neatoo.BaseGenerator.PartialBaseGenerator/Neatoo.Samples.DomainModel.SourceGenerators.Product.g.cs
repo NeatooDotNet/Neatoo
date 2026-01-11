@@ -21,5 +21,20 @@ namespace Neatoo.Samples.DomainModel.SourceGenerators
         public partial string? Name { get => Getter<string?>(); set => Setter(value); }
         public partial decimal Price { get => Getter<decimal>(); set => Setter(value); }
         public partial int StockCount { get => Getter<int>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"RangeAttribute_Price" => 1u,
+                @"RangeAttribute_StockCount" => 2u,
+                @"RequiredAttribute_Name" => 3u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

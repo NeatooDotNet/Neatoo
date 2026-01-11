@@ -88,10 +88,13 @@ partial class ActionFluentRuleTests
 			public sealed class AddRuleTypedHandler<T> : IGenericMethodCallTracker, IResettable where T : global::Neatoo.IValidateBase
 			{
 				/// <summary>Delegate for AddRule.</summary>
-				public delegate void AddRuleDelegate(Stubs.IRuleManager ko, global::Neatoo.Rules.IRule<T> rule);
+				public delegate void AddRuleDelegate(Stubs.IRuleManager ko, global::Neatoo.Rules.IRule<T> rule, string? sourceExpression);
 
 				/// <summary>Number of times this method was called with these type arguments.</summary>
 				public int CallCount { get; private set; }
+
+				/// <summary>The 'sourceExpression' argument from the most recent call.</summary>
+				public string? LastCallArg { get; private set; }
 
 				/// <summary>True if this method was called at least once with these type arguments.</summary>
 				public bool WasCalled => CallCount > 0;
@@ -100,67 +103,10 @@ partial class ActionFluentRuleTests
 				public AddRuleDelegate? OnCall { get; set; }
 
 				/// <summary>Records a method call.</summary>
-				public void RecordCall() => CallCount++;
+				public void RecordCall(string? sourceExpression) { CallCount++; LastCallArg = sourceExpression; }
 
 				/// <summary>Resets all tracking state.</summary>
-				public void Reset() { CallCount = 0; OnCall = null; }
-			}
-		}
-
-		/// <summary>Interceptor for IRuleManager.AddRules.</summary>
-		public sealed class IRuleManager_AddRulesInterceptor
-		{
-			private readonly global::System.Collections.Generic.Dictionary<global::System.Type, object> _typedHandlers = new();
-
-			/// <summary>Gets the typed handler for the specified type argument(s).</summary>
-			public AddRulesTypedHandler<T> Of<T>() where T : global::Neatoo.IValidateBase
-			{
-				var key = typeof(T);
-				if (!_typedHandlers.TryGetValue(key, out var handler))
-				{
-					handler = new AddRulesTypedHandler<T>();
-					_typedHandlers[key] = handler;
-				}
-				return (AddRulesTypedHandler<T>)handler;
-			}
-
-			/// <summary>Total number of calls across all type arguments.</summary>
-			public int TotalCallCount => _typedHandlers.Values.Cast<IGenericMethodCallTracker>().Sum(h => h.CallCount);
-
-			/// <summary>True if this method was called with any type argument.</summary>
-			public bool WasCalled => _typedHandlers.Values.Cast<IGenericMethodCallTracker>().Any(h => h.WasCalled);
-
-			/// <summary>All type argument(s) that were used in calls.</summary>
-			public global::System.Collections.Generic.IReadOnlyList<global::System.Type> CalledTypeArguments => _typedHandlers.Keys.ToList();
-
-			/// <summary>Resets all typed handlers.</summary>
-			public void Reset()
-			{
-				foreach (var handler in _typedHandlers.Values.Cast<IResettable>())
-					handler.Reset();
-				_typedHandlers.Clear();
-			}
-
-			/// <summary>Typed handler for AddRules with specific type arguments.</summary>
-			public sealed class AddRulesTypedHandler<T> : IGenericMethodCallTracker, IResettable where T : global::Neatoo.IValidateBase
-			{
-				/// <summary>Delegate for AddRules.</summary>
-				public delegate void AddRulesDelegate(Stubs.IRuleManager ko, global::Neatoo.Rules.IRule<T>[] rules);
-
-				/// <summary>Number of times this method was called with these type arguments.</summary>
-				public int CallCount { get; private set; }
-
-				/// <summary>True if this method was called at least once with these type arguments.</summary>
-				public bool WasCalled => CallCount > 0;
-
-				/// <summary>Callback invoked when this method is called. If set, its return value is used.</summary>
-				public AddRulesDelegate? OnCall { get; set; }
-
-				/// <summary>Records a method call.</summary>
-				public void RecordCall() => CallCount++;
-
-				/// <summary>Resets all tracking state.</summary>
-				public void Reset() { CallCount = 0; OnCall = null; }
+				public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
 			}
 		}
 
@@ -256,9 +202,6 @@ partial class ActionFluentRuleTests
 			/// <summary>Interceptor for AddRule.</summary>
 			public IRuleManager_AddRuleInterceptor AddRule { get; } = new();
 
-			/// <summary>Interceptor for AddRules.</summary>
-			public IRuleManager_AddRulesInterceptor AddRules { get; } = new();
-
 			/// <summary>Interceptor for RunRule (non-generic overloads).</summary>
 			public IRuleManager_RunRuleInterceptor RunRule { get; } = new();
 
@@ -279,20 +222,12 @@ partial class ActionFluentRuleTests
 				return global::System.Threading.Tasks.Task.CompletedTask;
 			}
 
-			void global::Neatoo.Rules.IRuleManager.AddRule<T>(global::Neatoo.Rules.IRule<T> rule)
+			void global::Neatoo.Rules.IRuleManager.AddRule<T>(global::Neatoo.Rules.IRule<T> rule, string? sourceExpression)
 			{
 				var typedHandler = AddRule.Of<T>();
-				typedHandler.RecordCall();
+				typedHandler.RecordCall(sourceExpression);
 				if (typedHandler.OnCall is { } onCallCallback)
-				{ onCallCallback(this, rule); return; }
-			}
-
-			void global::Neatoo.Rules.IRuleManager.AddRules<T>(global::Neatoo.Rules.IRule<T>[] rules)
-			{
-				var typedHandler = AddRules.Of<T>();
-				typedHandler.RecordCall();
-				if (typedHandler.OnCall is { } onCallCallback)
-				{ onCallCallback(this, rules); return; }
+				{ onCallCallback(this, rule, sourceExpression); return; }
 			}
 
 			global::System.Threading.Tasks.Task global::Neatoo.Rules.IRuleManager.RunRule(global::Neatoo.Rules.IRule r, global::System.Threading.CancellationToken? token)

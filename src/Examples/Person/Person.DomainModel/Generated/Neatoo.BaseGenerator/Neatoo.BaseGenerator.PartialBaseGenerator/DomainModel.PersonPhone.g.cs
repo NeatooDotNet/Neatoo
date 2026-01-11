@@ -44,5 +44,21 @@ namespace DomainModel
                 personPhoneEntity.PhoneType = (int? )this.PhoneType ?? throw new NullReferenceException("DomainModel.PersonPhone.PhoneType");
             }
         }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"RequiredAttribute_PhoneNumber" => 1u,
+                @"RequiredAttribute_PhoneType" => 2u,
+                @"uniquePhoneNumberRule" => 3u,
+                @"uniquePhoneTypeRule" => 4u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

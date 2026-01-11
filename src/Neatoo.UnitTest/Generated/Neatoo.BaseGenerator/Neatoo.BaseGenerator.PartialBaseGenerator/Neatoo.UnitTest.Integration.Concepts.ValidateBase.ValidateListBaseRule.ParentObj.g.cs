@@ -16,5 +16,18 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase.ValidateListBaseRule
     public partial class ParentObj
     {
         public partial ChildObjList ChildObjList { get => Getter<ChildObjList>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"p => { return p.ChildObjList.RunUniqueRule(); }" => 1u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

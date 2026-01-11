@@ -75,6 +75,10 @@ Neatoo provides bindable, serializable domain objects for Blazor and WPF applica
 - [Remote Factory Pattern](remote-factory.md) - Client-server state transfer
 - [Mapper Methods](mapper-methods.md) - MapFrom, MapTo, MapModifiedTo
 
+### Internals
+
+- [Rule Identification](advanced/rule-identification.md) - How rules get stable IDs for serialization
+
 ### Testing
 
 - [Testing](testing.md) - Unit testing rules and domain objects

@@ -27,5 +27,19 @@ namespace Neatoo.UnitTest.Performance
         public partial string? Description { get => Getter<string?>(); set => Setter(value); }
         public partial NeatooEntityBase? ChildA { get => Getter<NeatooEntityBase?>(); set => Setter(value); }
         public partial NeatooEntityBase? ChildB { get => Getter<NeatooEntityBase?>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"RequiredAttribute_Description" => 1u,
+                @"RequiredAttribute_Id" => 2u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

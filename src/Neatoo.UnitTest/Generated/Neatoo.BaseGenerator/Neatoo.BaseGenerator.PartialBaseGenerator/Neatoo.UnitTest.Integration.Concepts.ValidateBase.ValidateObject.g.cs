@@ -14,5 +14,21 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase
     {
         public partial IValidateObject Child { get => Getter<IValidateObject>(); set => Setter(value); }
         public partial IValidateObjectList ChildList { get => Getter<IValidateObjectList>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"fullNameRule" => 1u,
+                @"recursiveRule" => 2u,
+                @"ruleThrowsException" => 3u,
+                @"shortNameRule" => 4u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

@@ -20,5 +20,18 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
         public partial Guid Id { get => Getter<Guid>(); set => Setter(value); }
         public partial string? Status { get => Getter<string?>(); set => Setter(value); }
         public partial decimal Total { get => Getter<decimal>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"t => t.Total <= 0 ? ""Total must be greater than zero"" : """"" => 1u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

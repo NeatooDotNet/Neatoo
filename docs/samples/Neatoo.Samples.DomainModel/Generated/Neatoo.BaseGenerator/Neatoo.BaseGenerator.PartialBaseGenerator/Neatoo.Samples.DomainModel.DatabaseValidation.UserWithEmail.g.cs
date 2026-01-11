@@ -20,5 +20,18 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
         public partial Guid Id { get => Getter<Guid>(); set => Setter(value); }
         public partial string? Email { get => Getter<string?>(); set => Setter(value); }
         public partial string? Name { get => Getter<string?>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"uniqueEmailRule" => 1u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

@@ -12,10 +12,11 @@ namespace Neatoo.Rules;
 public interface IRuleMessage
 {
     /// <summary>
-    /// Gets the unique index of the rule that produced this message.
+    /// Gets the stable rule ID of the rule that produced this message.
     /// Used internally to track which rule owns this message for proper cleanup.
+    /// This ID is deterministic based on the source expression used to register the rule.
     /// </summary>
-    uint RuleIndex { get; }
+    uint RuleId { get; }
 
     /// <summary>
     /// Gets the name of the property this message is associated with.
@@ -53,12 +54,12 @@ public interface IRuleMessage
 public record RuleMessage : IRuleMessage, IRuleMessageInternal
 {
     /// <inheritdoc />
-    public uint RuleIndex { get; set; }
+    public uint RuleId { get; set; }
 
     /// <summary>
-    /// Explicit interface implementation for setting RuleIndex.
+    /// Explicit interface implementation for setting RuleId.
     /// </summary>
-    uint IRuleMessageInternal.RuleIndex { set => this.RuleIndex = value; }
+    uint IRuleMessageInternal.RuleId { set => this.RuleId = value; }
 
     /// <inheritdoc />
     public string PropertyName { get; }

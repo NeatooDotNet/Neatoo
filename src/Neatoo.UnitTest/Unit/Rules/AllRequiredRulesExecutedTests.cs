@@ -969,16 +969,16 @@ public class AllRequiredRulesExecutedInterfaceTests
 
 #endregion
 
-#region UniqueIndex Tests
+#region RuleId Tests
 
 /// <summary>
-/// Tests for AllRequiredRulesExecuted UniqueIndex behavior.
+/// Tests for AllRequiredRulesExecuted RuleId behavior.
 /// </summary>
 [TestClass]
-public class AllRequiredRulesExecutedUniqueIndexTests
+public class AllRequiredRulesExecutedRuleIdTests
 {
     [TestMethod]
-    public void UniqueIndex_SetByOnRuleAdded()
+    public void RuleId_SetByOnRuleAdded()
     {
         // Arrange
         var target = new SingleRequiredPropertyTarget();
@@ -990,8 +990,8 @@ public class AllRequiredRulesExecutedUniqueIndexTests
 
         var rule = ruleManager!.Rules.OfType<AllRequiredRulesExecuted>().Single();
 
-        // Assert - UniqueIndex should be set (not default)
-        Assert.AreNotEqual(0u, rule.UniqueIndex);
+        // Assert - RuleId should be set (not default)
+        Assert.AreNotEqual(0u, rule.RuleId);
     }
 }
 

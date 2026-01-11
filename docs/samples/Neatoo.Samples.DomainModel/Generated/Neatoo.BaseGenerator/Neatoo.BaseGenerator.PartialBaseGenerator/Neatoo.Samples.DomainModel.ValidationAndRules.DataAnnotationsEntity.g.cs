@@ -39,5 +39,43 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules
         public partial string? CombinedEmail { get => Getter<string?>(); set => Setter(value); }
         public partial int CombinedQuantity { get => Getter<int>(); set => Setter(value); }
         public partial string? FullName { get => Getter<string?>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"EmailAddressAttribute_CombinedEmail" => 1u,
+                @"EmailAddressAttribute_ContactEmail" => 2u,
+                @"EmailAddressAttribute_Email" => 3u,
+                @"MaxLengthAttribute_Categories" => 4u,
+                @"MaxLengthAttribute_Notes" => 5u,
+                @"MinLengthAttribute_Code" => 6u,
+                @"MinLengthAttribute_Tags" => 7u,
+                @"RangeAttribute_Age" => 8u,
+                @"RangeAttribute_AppointmentDate" => 9u,
+                @"RangeAttribute_CombinedQuantity" => 10u,
+                @"RangeAttribute_Percentage" => 11u,
+                @"RangeAttribute_Price" => 12u,
+                @"RangeAttribute_Quantity" => 13u,
+                @"RegularExpressionAttribute_FullName" => 14u,
+                @"RegularExpressionAttribute_Phone" => 15u,
+                @"RegularExpressionAttribute_ProductCode" => 16u,
+                @"RegularExpressionAttribute_UsernameAlphanumeric" => 17u,
+                @"RequiredAttribute_CombinedEmail" => 18u,
+                @"RequiredAttribute_CombinedQuantity" => 19u,
+                @"RequiredAttribute_CustomerName" => 20u,
+                @"RequiredAttribute_FirstName" => 21u,
+                @"StringLengthAttribute_CombinedEmail" => 22u,
+                @"StringLengthAttribute_Description" => 23u,
+                @"StringLengthAttribute_FullName" => 24u,
+                @"StringLengthAttribute_NameWithLength" => 25u,
+                @"StringLengthAttribute_Username" => 26u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

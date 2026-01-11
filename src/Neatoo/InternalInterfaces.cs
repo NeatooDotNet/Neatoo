@@ -44,6 +44,15 @@ internal interface IValidateBaseInternal
     /// Read by RuleManager for object-level validation.
     /// </summary>
     string? ObjectInvalid { get; }
+
+    /// <summary>
+    /// Gets the stable rule ID for a source expression.
+    /// Called by RuleManager during rule registration to get deterministic IDs.
+    /// The generated code overrides this to use the compile-time RuleIdRegistry.
+    /// </summary>
+    /// <param name="sourceExpression">The source expression captured by CallerArgumentExpression.</param>
+    /// <returns>A stable uint ID for the rule.</returns>
+    uint GetRuleId(string sourceExpression);
 }
 
 /// <summary>
@@ -113,11 +122,11 @@ internal interface IValidatePropertyInternal
     void SetMessagesForRule(IReadOnlyList<IRuleMessage> ruleMessages);
 
     /// <summary>
-    /// Clears messages from a specific rule by index.
+    /// Clears messages from a specific rule by ID.
     /// Called by RuleManager when a rule clears its previous messages.
     /// </summary>
-    /// <param name="ruleIndex">The index of the rule whose messages should be cleared.</param>
-    void ClearMessagesForRule(uint ruleIndex);
+    /// <param name="ruleId">The ID of the rule whose messages should be cleared.</param>
+    void ClearMessagesForRule(uint ruleId);
 
     /// <summary>
     /// Clears all validation messages including child messages.
@@ -159,13 +168,13 @@ internal interface IEntityListBaseInternal
 /// Internal interface for framework coordination within <see cref="IRuleMessage"/> implementations.
 /// </summary>
 /// <remarks>
-/// This interface exposes the RuleIndex setter used only by RuleManager.
+/// This interface exposes the RuleId setter used only by RuleManager.
 /// External consumers should not implement or depend on this interface.
 /// </remarks>
 internal interface IRuleMessageInternal
 {
     /// <summary>
-    /// Sets the rule index. Called by RuleManager when processing rule results.
+    /// Sets the rule ID. Called by RuleManager when processing rule results.
     /// </summary>
-    uint RuleIndex { set; }
+    uint RuleId { set; }
 }

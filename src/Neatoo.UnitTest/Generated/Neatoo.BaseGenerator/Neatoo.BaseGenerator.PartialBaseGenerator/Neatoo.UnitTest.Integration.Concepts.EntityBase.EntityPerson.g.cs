@@ -28,5 +28,20 @@ namespace Neatoo.UnitTest.Integration.Concepts.EntityBase
         public partial List<int> InitiallyDefined { get => Getter<List<int>>(); set => Setter(value); }
         public partial IEntityPerson Child { get => Getter<IEntityPerson>(); set => Setter(value); }
         public partial IEntityPersonList ChildList { get => Getter<IEntityPersonList>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"new FullNameRule()" => 1u,
+                @"new ShortNameRule()" => 2u,
+                @"person => person.FirstName == ""Error"" ? ""Error"" : string.Empty" => 3u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

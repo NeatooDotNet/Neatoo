@@ -21,5 +21,19 @@ namespace Neatoo.Samples.DomainModel.SampleDomain
         public partial string? Name { get => Getter<string?>(); set => Setter(value); }
         public partial DateTime StartDate { get => Getter<DateTime>(); set => Setter(value); }
         public partial DateTime EndDate { get => Getter<DateTime>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"dateRangeRule" => 1u,
+                @"RequiredAttribute_Name" => 2u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

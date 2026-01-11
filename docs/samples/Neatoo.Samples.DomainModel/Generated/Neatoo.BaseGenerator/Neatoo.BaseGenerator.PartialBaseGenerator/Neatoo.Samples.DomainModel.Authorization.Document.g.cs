@@ -19,5 +19,18 @@ namespace Neatoo.Samples.DomainModel.Authorization
         public partial Guid Id { get => Getter<Guid>(); set => Setter(value); }
         public partial string? Title { get => Getter<string?>(); set => Setter(value); }
         public partial string? Content { get => Getter<string?>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"RequiredAttribute_Title" => 1u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

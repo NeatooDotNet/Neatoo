@@ -19,5 +19,19 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
     {
         public partial string? FirstName { get => Getter<string?>(); set => Setter(value); }
         public partial string? Email { get => Getter<string?>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"EmailAddressAttribute_Email" => 1u,
+                @"RequiredAttribute_FirstName" => 2u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

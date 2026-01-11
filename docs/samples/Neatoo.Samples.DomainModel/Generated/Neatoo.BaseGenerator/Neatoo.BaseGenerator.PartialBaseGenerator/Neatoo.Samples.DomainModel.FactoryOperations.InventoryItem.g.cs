@@ -20,5 +20,18 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
         public partial string? Name { get => Getter<string?>(); set => Setter(value); }
         public partial int Quantity { get => Getter<int>(); set => Setter(value); }
         public partial DateTime LastUpdated { get => Getter<DateTime>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"RequiredAttribute_Name" => 1u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

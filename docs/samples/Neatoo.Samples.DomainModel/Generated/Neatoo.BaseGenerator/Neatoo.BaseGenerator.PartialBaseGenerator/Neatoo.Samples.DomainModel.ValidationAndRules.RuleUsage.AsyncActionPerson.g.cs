@@ -19,5 +19,18 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
     {
         public partial string? ZipCode { get => Getter<string?>(); set => Setter(value); }
         public partial decimal TaxRate { get => Getter<decimal>(); set => Setter(value); }
+
+        /// <summary>
+        /// Generated override for stable rule identification.
+        /// Maps source expressions to deterministic ordinal IDs.
+        /// </summary>
+        protected override uint GetRuleId(string sourceExpression)
+        {
+            return sourceExpression switch
+            {
+                @"async target => target.TaxRate = await GetTaxRateAsync(target.ZipCode)" => 1u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+            };
+        }
     }
 }

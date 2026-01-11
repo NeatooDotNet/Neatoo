@@ -21,7 +21,7 @@ public class RuleMessageTests
         // Assert
         Assert.AreEqual("TestProperty", ruleMessage.PropertyName);
         Assert.IsNull(ruleMessage.Message);
-        Assert.AreEqual(0u, ruleMessage.RuleIndex);
+        Assert.AreEqual(0u, ruleMessage.RuleId);
     }
 
     [TestMethod]
@@ -36,16 +36,16 @@ public class RuleMessageTests
     }
 
     [TestMethod]
-    public void RuleIndex_SetValue_ReturnsSetValue()
+    public void RuleId_SetValue_ReturnsSetValue()
     {
         // Arrange
         var ruleMessage = new RuleMessage("TestProperty", "Error");
 
         // Act
-        ruleMessage.RuleIndex = 42u;
+        ruleMessage.RuleId = 42u;
 
         // Assert
-        Assert.AreEqual(42u, ruleMessage.RuleIndex);
+        Assert.AreEqual(42u, ruleMessage.RuleId);
     }
 
     #endregion
@@ -664,16 +664,16 @@ public class IRuleMessageInterfaceTests
     }
 
     [TestMethod]
-    public void IRuleMessage_RuleIndex_CanBeSetViaInternalInterface()
+    public void IRuleMessage_RuleId_CanBeSetViaInternalInterface()
     {
         // Arrange
         var ruleMessage = new RuleMessage("Prop", "Error");
 
-        // Act - RuleIndex setter is on the internal interface
-        ((IRuleMessageInternal)ruleMessage).RuleIndex = 100u;
+        // Act - RuleId setter is on the internal interface
+        ((IRuleMessageInternal)ruleMessage).RuleId = 100u;
 
-        // Assert - RuleIndex getter is on the public interface
-        Assert.AreEqual(100u, ruleMessage.RuleIndex);
+        // Assert - RuleId getter is on the public interface
+        Assert.AreEqual(100u, ruleMessage.RuleId);
     }
 }
 

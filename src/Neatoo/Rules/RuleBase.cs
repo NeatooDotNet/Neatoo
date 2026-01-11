@@ -26,10 +26,11 @@ public interface IRule
     int RuleOrder { get; }
 
     /// <summary>
-    /// Gets the unique index assigned to this rule by the <see cref="IRuleManager"/>.
-    /// Used to track which rule produced specific validation messages.
+    /// Gets the stable rule ID assigned to this rule by the <see cref="IRuleManager"/>.
+    /// This ID is deterministic based on the source expression used to register the rule,
+    /// ensuring consistent identification across client and server.
     /// </summary>
-    uint UniqueIndex { get; }
+    uint RuleId { get; }
 
     /// <summary>
     /// Gets the collection of validation messages produced by the last execution of this rule.
@@ -51,11 +52,11 @@ public interface IRule
     Task<IRuleMessages> RunRule(IValidateBase target, CancellationToken? token = null);
 
     /// <summary>
-    /// Called when the rule is added to a <see cref="IRuleManager"/> to initialize the rule's unique index.
+    /// Called when the rule is added to a <see cref="IRuleManager"/> to initialize the rule's ID.
     /// </summary>
     /// <param name="ruleManager">The rule manager that this rule was added to.</param>
-    /// <param name="uniqueIndex">The unique index assigned to this rule.</param>
-    void OnRuleAdded(IRuleManager ruleManager, uint uniqueIndex);
+    /// <param name="ruleId">The stable rule ID assigned to this rule.</param>
+    void OnRuleAdded(IRuleManager ruleManager, uint ruleId);
 }
 
 /// <summary>
@@ -145,10 +146,10 @@ public abstract class AsyncRuleBase<T> : IRule<T>
     }
 
     /// <summary>
-    /// Gets or sets the unique index for this rule. For static rules, set this to a unique value
-    /// to ensure proper message tracking across instances.
+    /// Gets or sets the stable rule ID for this rule. This ID is deterministic based on the
+    /// source expression used to register the rule.
     /// </summary>
-    public uint UniqueIndex { get; protected set; }
+    public uint RuleId { get; protected set; }
 
     /// <summary>
     /// Gets an empty <see cref="RuleMessages"/> collection, representing no validation errors.
@@ -236,13 +237,13 @@ public abstract class AsyncRuleBase<T> : IRule<T>
     }
 
     /// <inheritdoc />
-    public virtual void OnRuleAdded(IRuleManager ruleManager, uint uniqueIndex)
+    public virtual void OnRuleAdded(IRuleManager ruleManager, uint ruleId)
     {
         // Only set if not already assigned. This protects static rules (shared instances)
-        // from having their index overwritten when added to multiple RuleManagers.
-        if (this.UniqueIndex == default)
+        // from having their ID overwritten when added to multiple RuleManagers.
+        if (this.RuleId == default)
         {
-            this.UniqueIndex = uniqueIndex;
+            this.RuleId = ruleId;
         }
     }
 

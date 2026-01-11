@@ -25,7 +25,10 @@ internal partial class ValidateObject : PersonValidateBase<ValidateObject>, IVal
         IRuleThrowsException ruleThrowsException
         ) : base(services)
     {
-        RuleManager.AddRules(shortNameRule, fullNameRule, recursiveRule, ruleThrowsException);
+        RuleManager.AddRule(shortNameRule);
+        RuleManager.AddRule(fullNameRule);
+        RuleManager.AddRule(recursiveRule);
+        RuleManager.AddRule(ruleThrowsException);
         ShortNameRule = shortNameRule;
         FullNameRule = fullNameRule;
     }

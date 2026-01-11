@@ -24,7 +24,8 @@ public partial class EntityPerson : PersonEntityBase<EntityPerson>, IEntityPerso
     public EntityPerson() : base(new EntityBaseServices<EntityPerson>(null))
     {
         using var paused = PauseAllActions();
-        RuleManager.AddRules(new ShortNameRule(), new FullNameRule());
+        RuleManager.AddRule(new ShortNameRule());
+        RuleManager.AddRule(new FullNameRule());
         InitiallyDefined = new List<int>() { 1, 2, 3 };
         RuleManager.AddValidation(person => person.FirstName == "Error" ? "Error" : string.Empty, ep => ep.FirstName);
     }

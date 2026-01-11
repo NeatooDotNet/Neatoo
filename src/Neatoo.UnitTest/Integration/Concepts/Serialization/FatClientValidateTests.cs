@@ -176,7 +176,7 @@ public class FatClientValidateTests : IntegrationTestBase
     public void FatClientValidate_Deserialize_MarkInvalid()
     {
         // This caught a really critical issue that lead to the RuleManager.TransferredResults logic
-        // After being transferred the RuleIndex values would not match up
+        // After being transferred the RuleId values would not match up
         // So the object would be stuck in InValid
 
         _target.MarkInvalid(Guid.NewGuid().ToString());

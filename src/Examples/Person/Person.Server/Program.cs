@@ -19,6 +19,13 @@ builder.Services.AddScoped<IUser, User>();
 
 var app = builder.Build();
 
+// Ensure database is created
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<IPersonDbContext>() as PersonDbContext;
+    await db!.Database.EnsureCreatedAsync();
+}
+
 // Neatoo
 app.MapPost("/api/neatoo", (HttpContext httpContext, RemoteRequestDto request, CancellationToken cancellationToken) =>
 {
