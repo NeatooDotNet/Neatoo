@@ -15,7 +15,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.DomainModel.PropertySystem;
 
-#region docs:property-system:property-access
+#region property-access
 /// <summary>
 /// Entity demonstrating property access patterns.
 /// </summary>
@@ -43,7 +43,7 @@ internal partial class PropertyAccessDemo : EntityBase<PropertyAccessDemo>, IPro
 }
 #endregion
 
-#region docs:property-system:display-name
+#region display-name
 /// <summary>
 /// Entity demonstrating DisplayName attribute.
 /// </summary>
@@ -75,7 +75,7 @@ internal partial class DisplayNameDemo : EntityBase<DisplayNameDemo>, IDisplayNa
 }
 #endregion
 
-#region docs:property-system:setvalue-loadvalue
+#region setvalue-loadvalue
 /// <summary>
 /// Entity demonstrating SetValue vs LoadValue.
 /// </summary>

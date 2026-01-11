@@ -27,7 +27,7 @@ public class PhoneEntity
     public string PhoneType { get; set; } = "";
 }
 
-#region docs:collections:child-item
+#region child-item
 /// <summary>
 /// Child entity for phone numbers.
 /// </summary>
@@ -80,7 +80,7 @@ internal partial class Phone : EntityBase<Phone>, IPhone
 }
 #endregion
 
-#region docs:collections:interface-definition
+#region interface-definition
 /// <summary>
 /// Collection interface with domain-specific methods.
 /// </summary>
@@ -91,7 +91,7 @@ public interface IPhoneList : IEntityListBase<IPhone>
 }
 #endregion
 
-#region docs:collections:list-implementation
+#region list-implementation
 /// <summary>
 /// EntityListBase implementation with factory injection.
 /// </summary>
@@ -117,7 +117,7 @@ internal class PhoneList : EntityListBase<IPhone>, IPhoneList
         Remove(phone);  // Marks for deletion if not new
     }
 
-    #region docs:collections:fetch-operation
+    #region fetch-operation
     [Fetch]
     public void Fetch(IEnumerable<PhoneEntity> entities,
                       [Service] IPhoneFactory phoneFactory)
@@ -130,7 +130,7 @@ internal class PhoneList : EntityListBase<IPhone>, IPhoneList
     }
     #endregion
 
-    #region docs:collections:update-operation
+    #region collections-update-operation
     [Update]
     public void Update(ICollection<PhoneEntity> entities,
                        [Service] IPhoneFactory phoneFactory)

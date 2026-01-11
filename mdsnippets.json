@@ -1,0 +1,22 @@
+{
+  "Convention": "InPlaceOverwrite",
+  "LinkFormat": "GitHub",
+  "UrlPrefix": "",
+  "ReadOnly": false,
+  "OmitSnippetLinks": true,
+  "ExcludeDirectories": [
+    "node_modules",
+    "bin",
+    "obj",
+    ".git",
+    "Generated",
+    "todos",
+    "release-notes"
+  ],
+  "ExcludeMarkdownDirectories": [
+    "docs/todos"
+  ],
+  "DocumentExtensions": [
+    "md"
+  ]
+}

@@ -39,7 +39,7 @@ public class MockUserRepository : IUserRepository
     }
 }
 
-#region docs:database-dependent-validation:anti-pattern
+#region anti-pattern
 /// <summary>
 /// ANTI-PATTERN: Do NOT put validation in factory methods.
 /// This example shows what NOT to do.
@@ -69,7 +69,7 @@ public static class AntiPatternExample
 }
 #endregion
 
-#region docs:database-dependent-validation:command-pattern
+#region command-pattern
 /// <summary>
 /// Command for checking email uniqueness.
 /// The source generator creates a delegate that can be injected and executed remotely.
@@ -88,7 +88,7 @@ public static partial class CheckEmailUnique
 }
 #endregion
 
-#region docs:database-dependent-validation:async-rule
+#region async-rule
 /// <summary>
 /// Async rule that validates email uniqueness using the command.
 /// </summary>
@@ -140,7 +140,7 @@ public partial interface IUserWithEmail : IEntityBase
     string? Name { get; set; }
 }
 
-#region docs:database-dependent-validation:clean-factory
+#region clean-factory
 /// <summary>
 /// Entity with clean factory methods - validation is in rules, not here.
 /// </summary>

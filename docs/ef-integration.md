@@ -6,8 +6,8 @@ Neatoo integrates with Entity Framework Core for persistence. The domain model r
 
 Define an interface for your DbContext to enable testing and dependency injection:
 
-<!-- snippet: docs:ef-integration:dbcontext-interface -->
-```csharp
+<!-- snippet: dbcontext-interface -->
+```cs
 public interface ISampleDbContext
 {
     DbSet<PersonEntity> Persons { get; }
@@ -16,12 +16,12 @@ public interface ISampleDbContext
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 Implement the DbContext:
 
-<!-- snippet: docs:ef-integration:dbcontext-class -->
-```csharp
+<!-- snippet: dbcontext-class -->
+```cs
 public class SampleDbContext : DbContext, ISampleDbContext
 {
     public virtual DbSet<PersonEntity> Persons { get; set; } = null!;
@@ -51,14 +51,14 @@ public class SampleDbContext : DbContext, ISampleDbContext
         => Persons.FirstOrDefaultAsync(p => p.Id == id);
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## EF Entity Classes
 
 EF entities are separate from Neatoo domain entities:
 
-<!-- snippet: docs:ef-integration:entity-class -->
-```csharp
+<!-- snippet: entity-class -->
+```cs
 public class PersonEntity
 {
     [Key]
@@ -73,7 +73,7 @@ public class PersonEntity
     public string? Email { get; set; }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## Mapping Between Domain and EF Entities
 

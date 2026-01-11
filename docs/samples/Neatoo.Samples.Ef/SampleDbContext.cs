@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.Ef;
 
-#region docs:ef-integration:dbcontext-interface
+#region dbcontext-interface
 public interface ISampleDbContext
 {
     DbSet<PersonEntity> Persons { get; }
@@ -13,7 +13,7 @@ public interface ISampleDbContext
 }
 #endregion
 
-#region docs:ef-integration:dbcontext-class
+#region dbcontext-class
 public class SampleDbContext : DbContext, ISampleDbContext
 {
     public virtual DbSet<PersonEntity> Persons { get; set; } = null!;
@@ -44,7 +44,7 @@ public class SampleDbContext : DbContext, ISampleDbContext
 }
 #endregion
 
-#region docs:ef-integration:entity-class
+#region entity-class
 public class PersonEntity
 {
     [Key]

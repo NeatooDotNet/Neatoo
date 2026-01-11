@@ -51,7 +51,7 @@ public class MockInventoryDb : IInventoryDb
     public Task SaveChangesAsync() => Task.CompletedTask;
 }
 
-#region docs:factory-operations:insert-operation
+#region insert-operation
 /// <summary>
 /// Entity demonstrating Insert operation pattern.
 /// </summary>
@@ -113,7 +113,7 @@ internal partial class InventoryItem : EntityBase<InventoryItem>, IInventoryItem
     }
     #endregion
 
-    #region docs:factory-operations:update-operation
+    #region factory-update-operation
     [Update]
     public async Task Update([Service] IInventoryDb db)
     {
@@ -138,7 +138,7 @@ internal partial class InventoryItem : EntityBase<InventoryItem>, IInventoryItem
     }
     #endregion
 
-    #region docs:factory-operations:delete-operation
+    #region delete-operation
     [Delete]
     public async Task Delete([Service] IInventoryDb db)
     {

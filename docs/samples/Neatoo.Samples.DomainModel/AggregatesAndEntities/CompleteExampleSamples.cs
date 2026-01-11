@@ -13,7 +13,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample;
 
-#region docs:aggregates-and-entities:complete-example
+#region complete-example
 /// <summary>
 /// Complete aggregate root example showing all key patterns.
 /// </summary>

@@ -26,40 +26,41 @@ IPersonFactory.Save()     ----------->  Person.Update() executes
 
 Register Neatoo services for server mode:
 
-<!-- snippet: docs:remote-factory:server-di-setup -->
-```csharp
+<!-- snippet: server-di-setup -->
+```cs
 builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IPerson).Assembly);
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 Map the remote factory endpoint:
 
-<!-- snippet: docs:remote-factory:server-endpoint -->
-```csharp
+<!-- snippet: server-endpoint -->
+```cs
 app.MapPost("/api/neatoo", (HttpContext httpContext, RemoteRequestDto request, CancellationToken cancellationToken) =>
 {
     var handleRemoteDelegateRequest = httpContext.RequestServices.GetRequiredService<HandleRemoteDelegateRequest>();
     return handleRemoteDelegateRequest(request, cancellationToken);
 });
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Client Setup
 
 Register Neatoo services for remote mode and configure the HTTP client:
 
-<!-- snippet: docs:remote-factory:client-di-setup -->
-```csharp
+<!-- snippet: client-di-setup -->
+```cs
 builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IPerson).Assembly);
 builder.Services.AddKeyedScoped(RemoteFactoryServices.HttpClientKey, (sp, key) =>
     new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## [Remote] Attribute
 
 Mark factory operations that should be callable from the client:
 
+<!-- pseudo:remote-attribute-patterns -->
 ```csharp
 [Factory]
 internal partial class Person : EntityBase<Person>, IPerson
@@ -81,6 +82,7 @@ internal partial class Person : EntityBase<Person>, IPerson
     public async Task Delete([Service] IDbContext db) { }
 }
 ```
+<!-- /snippet -->
 
 ### When to Use [Remote]
 
@@ -95,6 +97,7 @@ internal partial class Person : EntityBase<Person>, IPerson
 
 Child entities don't need `[Remote]` since they're managed through the aggregate root:
 
+<!-- pseudo:aggregate-vs-child-patterns -->
 ```csharp
 // Aggregate Root - needs [Remote]
 [Factory]
@@ -120,6 +123,7 @@ internal partial class OrderLineItem : EntityBase<OrderLineItem>, IOrderLineItem
     public void Insert(LineItemEntity entity) { }
 }
 ```
+<!-- /snippet -->
 
 ## State Transfer
 
@@ -134,6 +138,7 @@ The Remote Factory serializes:
 
 ### Serialization Behavior
 
+<!-- pseudo:serialization-behavior -->
 ```csharp
 // Client creates entity
 var person = personFactory.Create();
@@ -153,11 +158,13 @@ person.LastName = "Doe";
 person = await personFactory.Save(person);
 // person now has server-generated ID, validation state, etc.
 ```
+<!-- /snippet -->
 
 ### Object Identity After Remote Operations
 
 When using Remote Factory, understand that **remote operations return new object instances**:
 
+<!-- pseudo:object-identity-demo -->
 ```csharp
 var person = await personFactory.Create();
 var originalReference = person;
@@ -167,6 +174,7 @@ person = await personFactory.Save(person);
 // These are DIFFERENT objects
 Console.WriteLine(ReferenceEquals(originalReference, person));  // false
 ```
+<!-- /snippet -->
 
 This occurs because:
 1. The object is serialized (converted to data)
@@ -189,6 +197,7 @@ Always treat remote factory operations as returning fresh instances that must be
 
 #### Common Mistake
 
+<!-- invalid:wrong-save-pattern -->
 ```csharp
 // WRONG - discards the new instance
 await personFactory.Save(person);
@@ -198,6 +207,7 @@ await personFactory.Save(person);
 person = await personFactory.Save(person);
 // person is now the updated post-save instance
 ```
+<!-- /snippet -->
 
 See [Factory Operations](factory-operations.md#critical-always-reassign-after-save) for detailed guidance.
 
@@ -205,6 +215,7 @@ See [Factory Operations](factory-operations.md#critical-always-reassign-after-sa
 
 Rules execute on both client and server:
 
+<!-- pseudo:email-validation-rule -->
 ```csharp
 // Rule defined once
 public class EmailValidationRule : RuleBase<IPerson>
@@ -219,6 +230,7 @@ public class EmailValidationRule : RuleBase<IPerson>
     }
 }
 ```
+<!-- /snippet -->
 
 ### Client Behavior
 - Rule executes when Email property changes
@@ -234,6 +246,7 @@ public class EmailValidationRule : RuleBase<IPerson>
 
 Async rules work on client but may behave differently:
 
+<!-- pseudo:unique-email-rule-async -->
 ```csharp
 public class UniqueEmailRule : AsyncRuleBase<IPerson>
 {
@@ -254,9 +267,11 @@ public class UniqueEmailRule : AsyncRuleBase<IPerson>
     }
 }
 ```
+<!-- /snippet -->
 
 ### Client Implementation
 
+<!-- pseudo:client-email-service -->
 ```csharp
 // Client-side service calls the server
 public class ClientEmailService : IEmailService
@@ -270,9 +285,11 @@ public class ClientEmailService : IEmailService
     }
 }
 ```
+<!-- /snippet -->
 
 ### Server Implementation
 
+<!-- pseudo:server-email-service -->
 ```csharp
 // Server-side service queries database
 public class ServerEmailService : IEmailService
@@ -285,11 +302,13 @@ public class ServerEmailService : IEmailService
     }
 }
 ```
+<!-- /snippet -->
 
 ## Service Injection
 
 Services are resolved from DI on the server:
 
+<!-- pseudo:service-injection -->
 ```csharp
 [Insert]
 public async Task Insert(
@@ -300,6 +319,7 @@ public async Task Insert(
     // All services are server-side implementations
 }
 ```
+<!-- /snippet -->
 
 The client doesn't need these services registered since the operation executes on server.
 
@@ -307,6 +327,7 @@ The client doesn't need these services registered since the operation executes o
 
 Factory operations can return data to the client:
 
+<!-- pseudo:insert-with-mapto -->
 ```csharp
 [Remote]
 [Insert]
@@ -326,14 +347,17 @@ public async Task<PersonEntity?> Insert([Service] IDbContext db)
     return entity;  // Optionally return for caller
 }
 ```
+<!-- /snippet -->
 
 ### Capture Return Values
 
+<!-- pseudo:capture-return-values -->
 ```csharp
 // Important: capture the returned entity
 person = await personFactory.Save(person);
 Console.WriteLine(person.Id);  // Has the generated ID
 ```
+<!-- /snippet -->
 
 ## Error Handling
 
@@ -341,6 +365,7 @@ Console.WriteLine(person.Id);  // Has the generated ID
 
 Exceptions on the server are propagated to the client:
 
+<!-- pseudo:exception-handling -->
 ```csharp
 try
 {
@@ -352,11 +377,13 @@ catch (Exception ex)
     Console.WriteLine(ex.Message);
 }
 ```
+<!-- /snippet -->
 
 ### Validation Failures
 
 When validation fails, the entity is returned with validation messages:
 
+<!-- pseudo:validation-failure-handling -->
 ```csharp
 person = await personFactory.Save(person);
 
@@ -369,6 +396,7 @@ if (!person.IsValid)
     }
 }
 ```
+<!-- /snippet -->
 
 ## Authorization
 
@@ -376,6 +404,7 @@ if (!person.IsValid)
 
 Authorization is checked on the server:
 
+<!-- pseudo:authorization-pattern -->
 ```csharp
 [AuthorizeFactory<IPersonAuth>]
 internal partial class Person : EntityBase<Person>, IPerson { }
@@ -393,11 +422,13 @@ public class PersonAuth : IPersonAuth
     public bool CanDelete() => _user.HasPermission("Person.Delete");
 }
 ```
+<!-- /snippet -->
 
 ### Client Authorization Display
 
 The factory exposes authorization methods:
 
+<!-- pseudo:client-authorization-display -->
 ```razor
 @inject IPersonFactory PersonFactory
 
@@ -406,18 +437,22 @@ The factory exposes authorization methods:
     <MudButton OnClick="CreatePerson">New Person</MudButton>
 }
 ```
+<!-- /snippet -->
 
 ## Endpoint Configuration
 
 ### Custom Endpoint Path
 
+<!-- pseudo:custom-endpoint-path -->
 ```csharp
 app.MapPost("/my-custom-path", async (HttpContext ctx, RemoteRequestDto request) =>
     await NeatooEndpoint.HandleRequest(ctx, request));
 ```
+<!-- /snippet -->
 
 ### Client Configuration
 
+<!-- pseudo:client-endpoint-config -->
 ```csharp
 // Configure the endpoint URL
 builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IMyAggregate).Assembly, options =>
@@ -425,12 +460,13 @@ builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IMyAggregate).As
     options.Endpoint = "/my-custom-path";
 });
 ```
+<!-- /snippet -->
 
 ## Single Endpoint Architecture
 
 Neatoo uses a single endpoint for all operations:
 
-```
+```json
 POST /api/neatoo
 {
     "TypeName": "DomainModel.Person, DomainModel",
@@ -449,6 +485,7 @@ This eliminates the need for:
 
 ### 1. Validate Before Save
 
+<!-- pseudo:validate-before-save -->
 ```csharp
 [Update]
 public async Task Update([Service] IDbContext db)
@@ -458,9 +495,11 @@ public async Task Update([Service] IDbContext db)
     // ... persist
 }
 ```
+<!-- /snippet -->
 
 ### 2. Keep Operations Focused
 
+<!-- pseudo:keep-operations-focused -->
 ```csharp
 // Good: Single responsibility
 [Fetch]
@@ -470,9 +509,11 @@ public async Task Fetch(int id, [Service] IDbContext db) { }
 [Fetch]
 public async Task FetchWithStats(int id, [Service] IDbContext db, [Service] IStatsService stats) { }
 ```
+<!-- /snippet -->
 
 ### 3. Handle Concurrency
 
+<!-- pseudo:concurrency-handling -->
 ```csharp
 [Update]
 public async Task Update([Service] IDbContext db)
@@ -488,6 +529,7 @@ public async Task Update([Service] IDbContext db)
     await db.SaveChangesAsync();
 }
 ```
+<!-- /snippet -->
 
 ## See Also
 

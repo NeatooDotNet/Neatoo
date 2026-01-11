@@ -14,7 +14,7 @@ using Neatoo.RemoteFactory;
 
 namespace Neatoo.Samples.DomainModel.FactoryOperations;
 
-#region docs:factory-operations:create-basic
+#region create-basic
 /// <summary>
 /// Basic entity with simple Create operation.
 /// </summary>
@@ -43,7 +43,7 @@ internal partial class SimpleProduct : EntityBase<SimpleProduct>, ISimpleProduct
 }
 #endregion
 
-#region docs:factory-operations:create-with-service
+#region create-with-service
 /// <summary>
 /// Entity with Create operation using service injection.
 /// </summary>

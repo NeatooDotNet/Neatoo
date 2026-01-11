@@ -15,7 +15,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.DomainModel.Pitfalls;
 
-#region docs:pitfalls:pause-all-actions-interface
+#region pause-all-actions-interface
 /// <summary>
 /// PauseAllActions() is on the concrete class, not the interface.
 /// </summary>
@@ -67,7 +67,7 @@ public static class PauseActionsPitfallExample
 }
 #endregion
 
-#region docs:pitfalls:parent-aggregate-root
+#region parent-aggregate-root
 /// <summary>
 /// Parent property returns the aggregate root, NOT the containing list.
 /// </summary>
@@ -132,7 +132,7 @@ internal class ParentPitfallLineList : EntityListBase<IParentPitfallLine>, IPare
 }
 #endregion
 
-#region docs:pitfalls:required-whitespace
+#region required-whitespace
 /// <summary>
 /// [Required] on strings uses IsNullOrWhiteSpace, catching whitespace-only values.
 /// This is STRICTER than standard .NET [Required] behavior.
@@ -176,7 +176,7 @@ public static class RequiredWhitespacePitfallExample
 }
 #endregion
 
-#region docs:pitfalls:map-modified-to-declaration
+#region map-modified-to-declaration
 /// <summary>
 /// MapModifiedTo is generated - declare as partial method.
 /// </summary>

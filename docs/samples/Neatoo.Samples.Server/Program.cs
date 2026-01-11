@@ -4,13 +4,13 @@ using Neatoo.Samples.DomainModel.SampleDomain;
 
 var builder = WebApplication.CreateBuilder(args);
 
-#region docs:remote-factory:server-di-setup
+#region server-di-setup
 builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IPerson).Assembly);
 #endregion
 
 var app = builder.Build();
 
-#region docs:remote-factory:server-endpoint
+#region server-endpoint
 app.MapPost("/api/neatoo", (HttpContext httpContext, RemoteRequestDto request, CancellationToken cancellationToken) =>
 {
     var handleRemoteDelegateRequest = httpContext.RequestServices.GetRequiredService<HandleRemoteDelegateRequest>();

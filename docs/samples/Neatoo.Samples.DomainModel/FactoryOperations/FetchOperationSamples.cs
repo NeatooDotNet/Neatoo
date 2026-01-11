@@ -46,7 +46,7 @@ public class MockProductRepository : IProductRepository
     public ProductData? FindBySku(string sku) => _products.FirstOrDefault(p => p.Sku == sku);
 }
 
-#region docs:factory-operations:fetch-basic
+#region fetch-basic
 /// <summary>
 /// Entity with basic Fetch operation.
 /// </summary>
@@ -84,7 +84,7 @@ internal partial class FetchableProduct : EntityBase<FetchableProduct>, IFetchab
 }
 #endregion
 
-#region docs:factory-operations:fetch-multiple-overloads
+#region fetch-multiple-overloads
 /// <summary>
 /// Entity with multiple Fetch overloads for different lookup methods.
 /// </summary>

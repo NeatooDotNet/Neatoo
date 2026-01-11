@@ -22,7 +22,7 @@ public class InvoiceLineEntity
     public decimal Amount { get; set; }
 }
 
-#region docs:factory-operations:child-entity
+#region factory-child-entity
 /// <summary>
 /// Child entity - no [Remote] since managed through parent.
 /// </summary>
@@ -84,7 +84,7 @@ internal partial class InvoiceLine : EntityBase<InvoiceLine>, IInvoiceLine
 }
 #endregion
 
-#region docs:factory-operations:list-factory
+#region list-factory
 /// <summary>
 /// List factory handles collection of child entities.
 /// </summary>

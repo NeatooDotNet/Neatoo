@@ -9,7 +9,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-#region docs:remote-factory:client-di-setup
+#region client-di-setup
 builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IPerson).Assembly);
 builder.Services.AddKeyedScoped(RemoteFactoryServices.HttpClientKey, (sp, key) =>
     new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });

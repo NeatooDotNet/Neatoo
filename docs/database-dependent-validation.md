@@ -74,8 +74,8 @@ When some rules run during editing and others only at save time, users can't pre
 
 Commands are `[Factory]` classes with `[Execute]` methods that run on the server:
 
-<!-- snippet: docs:database-dependent-validation:command-pattern -->
-```csharp
+<!-- snippet: command-pattern -->
+```cs
 /// <summary>
 /// Command for checking email uniqueness.
 /// The source generator creates a delegate that can be injected and executed remotely.
@@ -93,14 +93,14 @@ public static partial class CheckEmailUnique
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 The source generator creates a delegate `CheckEmailUnique.IsUnique` that can be injected and executed remotely.
 
 ### Step 2: Create an Async Rule
 
-<!-- snippet: docs:database-dependent-validation:async-rule -->
-```csharp
+<!-- snippet: async-rule -->
+```cs
 /// <summary>
 /// Async rule that validates email uniqueness using the command.
 /// </summary>
@@ -137,7 +137,7 @@ public class AsyncUniqueEmailRule : AsyncRuleBase<IUserWithEmail>, IAsyncUniqueE
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Step 3: Register the Rule with DI
 
@@ -151,8 +151,8 @@ builder.Services.AddScoped<IAsyncUniqueEmailRule, AsyncUniqueEmailRule>();
 
 The entity constructor receives the rule via DI and registers it. Factory methods contain **only** persistence logic:
 
-<!-- snippet: docs:database-dependent-validation:clean-factory -->
-```csharp
+<!-- snippet: clean-factory -->
+```cs
 /// <summary>
 /// Entity with clean factory methods - validation is in rules, not here.
 /// </summary>
@@ -193,7 +193,7 @@ internal partial class UserWithEmail : EntityBase<UserWithEmail>, IUserWithEmail
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## Benefits Comparison
 

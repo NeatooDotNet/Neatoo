@@ -16,7 +16,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.DomainModel.SourceGenerators;
 
-#region docs:source-generators:complete-entity
+#region complete-entity
 /// <summary>
 /// Complete entity example - what the developer writes.
 /// The source generators create:
@@ -90,7 +90,7 @@ internal partial class Product : EntityBase<Product>, IProduct
 }
 #endregion
 
-#region docs:source-generators:entity-input
+#region entity-input
 /// <summary>
 /// Minimal entity showing required elements for source generation.
 /// </summary>
@@ -112,7 +112,7 @@ internal partial class MinimalEntity : EntityBase<MinimalEntity>, IMinimalEntity
 }
 #endregion
 
-#region docs:source-generators:factory-attribute
+#region factory-attribute
 // The [Factory] attribute marks a class for factory generation.
 // Place it on the class declaration:
 //
@@ -125,7 +125,7 @@ internal partial class MinimalEntity : EntityBase<MinimalEntity>, IMinimalEntity
 // - DI registration extension methods
 #endregion
 
-#region docs:source-generators:partial-property
+#region partial-property
 // The 'partial' keyword on properties triggers implementation generation:
 //
 // public partial string? Name { get; set; }

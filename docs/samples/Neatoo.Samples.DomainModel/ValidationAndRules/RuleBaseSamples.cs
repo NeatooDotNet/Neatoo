@@ -20,7 +20,7 @@ using Neatoo.Rules;
 
 namespace Neatoo.Samples.DomainModel.ValidationAndRules;
 
-#region docs:validation-and-rules:age-validation-rule
+#region age-validation-rule
 public interface IAgeValidationRule : IRule<IPerson> { }
 
 public class AgeValidationRule : RuleBase<IPerson>, IAgeValidationRule
@@ -42,7 +42,7 @@ public class AgeValidationRule : RuleBase<IPerson>, IAgeValidationRule
 }
 #endregion
 
-#region docs:validation-and-rules:unique-email-rule
+#region unique-email-rule
 public interface IUniqueEmailRule : IRule<IPerson> { }
 
 public class UniqueEmailRule : AsyncRuleBase<IPerson>, IUniqueEmailRule
@@ -68,7 +68,7 @@ public class UniqueEmailRule : AsyncRuleBase<IPerson>, IUniqueEmailRule
 }
 #endregion
 
-#region docs:validation-and-rules:trigger-properties
+#region trigger-properties
 public class TriggerPropertiesConstructorExample : RuleBase<IPerson>
 {
     // Constructor approach - pass trigger properties to base
@@ -89,7 +89,7 @@ public class TriggerPropertiesMethodExample : RuleBase<IPerson>
 }
 #endregion
 
-#region docs:validation-and-rules:returning-messages-single
+#region returning-messages-single
 public class SingleMessageExample : RuleBase<IPerson>
 {
     public SingleMessageExample() : base(p => p.Email) { }
@@ -102,7 +102,7 @@ public class SingleMessageExample : RuleBase<IPerson>
 }
 #endregion
 
-#region docs:validation-and-rules:returning-messages-multiple
+#region returning-messages-multiple
 public class MultipleMessagesExample : RuleBase<IPerson>
 {
     public MultipleMessagesExample() : base(p => p.FirstName, p => p.LastName) { }
@@ -119,7 +119,7 @@ public class MultipleMessagesExample : RuleBase<IPerson>
 }
 #endregion
 
-#region docs:validation-and-rules:returning-messages-conditional
+#region returning-messages-conditional
 public class ConditionalMessageExample : RuleBase<IPerson>
 {
     public ConditionalMessageExample() : base(p => p.Age) { }
@@ -135,7 +135,7 @@ public class ConditionalMessageExample : RuleBase<IPerson>
 }
 #endregion
 
-#region docs:validation-and-rules:returning-messages-chained
+#region returning-messages-chained
 public class ChainedConditionsExample : RuleBase<IPerson>
 {
     public ChainedConditionsExample() : base(p => p.FirstName) { }
@@ -149,7 +149,7 @@ public class ChainedConditionsExample : RuleBase<IPerson>
 }
 #endregion
 
-#region docs:validation-and-rules:date-range-rule
+#region date-range-rule
 public interface IDateRangeRule : IRule<IEvent> { }
 
 public class DateRangeRule : RuleBase<IEvent>, IDateRangeRule
@@ -171,7 +171,7 @@ public class DateRangeRule : RuleBase<IEvent>, IDateRangeRule
 }
 #endregion
 
-#region docs:validation-and-rules:complete-rule-example
+#region complete-rule-example
 public interface IUniqueNameRule : IRule<IPerson> { }
 
 public class UniqueNameRule : AsyncRuleBase<IPerson>, IUniqueNameRule

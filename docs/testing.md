@@ -30,8 +30,8 @@ This guide covers unit testing patterns for Neatoo rules and domain objects.
 
 For unit testing individual entities without DI or factory setup, use the parameterless `EntityBaseServices<T>()` constructor:
 
-<!-- snippet: docs:testing:entity-unit-test-class -->
-```csharp
+<!-- snippet: entity-unit-test-class -->
+```cs
 /// <summary>
 /// Entity class designed for direct unit testing.
 /// Uses [SuppressFactory] to prevent factory generation.
@@ -72,7 +72,7 @@ public class TestableProduct : EntityBase<TestableProduct>
     public void SetAsChild() => MarkAsChild();
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 > **Caution: Unit Testing Only**
 >
@@ -95,6 +95,7 @@ public class TestableProduct : EntityBase<TestableProduct>
 
 ### Example Test
 
+<!-- pseudo:entity-unit-test-example -->
 ```csharp
 [TestMethod]
 public void TestableProduct_WhenPropertyChanged_IsModifiedTrue()
@@ -109,6 +110,7 @@ public void TestableProduct_WhenPropertyChanged_IsModifiedTrue()
     Assert.IsTrue(product.IsModified);
 }
 ```
+<!-- /snippet -->
 
 ---
 
@@ -118,6 +120,7 @@ public void TestableProduct_WhenPropertyChanged_IsModifiedTrue()
 
 Every rule class (`RuleBase<T>`, `AsyncRuleBase<T>`) provides a **public `RunRule` method** for testing:
 
+<!-- pseudo:runrule-methods -->
 ```csharp
 // Sync rule
 var result = rule.RunRule(target);           // Returns Task<IRuleMessages>
@@ -125,6 +128,7 @@ var result = rule.RunRule(target);           // Returns Task<IRuleMessages>
 // Async rule
 var result = await rule.RunRule(target);     // Returns IRuleMessages
 ```
+<!-- /snippet -->
 
 ### Why `RunRule` Exists
 
@@ -141,33 +145,34 @@ var result = await rule.RunRule(target);     // Returns IRuleMessages
 
 ### Basic Pattern
 
-<!-- snippet: docs:testing:sync-rule-test -->
-```csharp
+<!-- snippet: sync-rule-test -->
+```cs
 [TestMethod]
-    public void RunRule_WhenNameIsEmpty_ReturnsError()
-    {
-        // Arrange
-        var rule = new NameValidationRule();
+public void RunRule_WhenNameIsEmpty_ReturnsError()
+{
+    // Arrange
+    var rule = new NameValidationRule();
 
-        var mockTarget = new Mock<INamedEntity>();
-        mockTarget.Setup(e => e.Name).Returns(string.Empty);
-        mockTarget.Setup(e => e.Id).Returns(1);
+    var mockTarget = new Mock<INamedEntity>();
+    mockTarget.Setup(e => e.Name).Returns(string.Empty);
+    mockTarget.Setup(e => e.Id).Returns(1);
 
-        // Act - Use RunRule directly, NOT a wrapper class
-        var result = rule.RunRule(mockTarget.Object);
+    // Act - Use RunRule directly, NOT a wrapper class
+    var result = rule.RunRule(mockTarget.Object);
 
-        // Assert
-        Assert.IsNotNull(result);
-        var messages = result.Result.ToList();
-        Assert.AreEqual(1, messages.Count);
-        Assert.AreEqual("Name", messages[0].PropertyName);
-        Assert.IsTrue(messages[0].Message.Contains("required"));
-    }
+    // Assert
+    Assert.IsNotNull(result);
+    var messages = result.Result.ToList();
+    Assert.AreEqual(1, messages.Count);
+    Assert.AreEqual("Name", messages[0].PropertyName);
+    Assert.IsTrue(messages[0].Message.Contains("required"));
+}
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### What to Assert
 
+<!-- pseudo:what-to-assert -->
 ```csharp
 var result = rule.RunRule(mockTarget.Object);
 var messages = result.Result.ToList();
@@ -182,6 +187,7 @@ Assert.IsTrue(messages.Any(m => m.Message.Contains("required")));
 // Error count
 Assert.AreEqual(2, messages.Count);
 ```
+<!-- /snippet -->
 
 ---
 
@@ -189,57 +195,60 @@ Assert.AreEqual(2, messages.Count);
 
 ### Pattern with Mocked Dependency
 
-<!-- snippet: docs:testing:async-rule-test -->
-```csharp
+<!-- snippet: async-rule-test -->
+```cs
 [TestMethod]
-    public async Task RunRule_WhenNameNotUnique_ReturnsError()
-    {
-        // Arrange - Mock the uniqueness check dependency
-        var mockCheckUnique = new Mock<ICheckNameUnique>();
-        mockCheckUnique
-            .Setup(c => c.IsUnique(It.IsAny<string>(), It.IsAny<int?>()))
-            .ReturnsAsync(false); // Name is NOT unique
+public async Task RunRule_WhenNameNotUnique_ReturnsError()
+{
+    // Arrange - Mock the uniqueness check dependency
+    var mockCheckUnique = new Mock<ICheckNameUnique>();
+    mockCheckUnique
+        .Setup(c => c.IsUnique(It.IsAny<string>(), It.IsAny<int?>()))
+        .ReturnsAsync(false); // Name is NOT unique
 
-        var rule = new UniqueNameAsyncRule(mockCheckUnique.Object);
+    var rule = new UniqueNameAsyncRule(mockCheckUnique.Object);
 
-        // Mock the target entity (IEntityBase for IsModified support)
-        var mockTarget = new Mock<INamedEntityWithTracking>();
-        mockTarget.Setup(e => e.Name).Returns("Duplicate Name");
-        mockTarget.Setup(e => e.Id).Returns(1);
+    // Mock the target entity (IEntityBase for IsModified support)
+    var mockTarget = new Mock<INamedEntityWithTracking>();
+    mockTarget.Setup(e => e.Name).Returns("Duplicate Name");
+    mockTarget.Setup(e => e.Id).Returns(1);
 
-        // Mock the property accessor for IsModified check
-        var mockProperty = new Mock<IEntityProperty>();
-        mockProperty.Setup(p => p.IsModified).Returns(true);
-        mockTarget.Setup(e => e[nameof(INamedEntityWithTracking.Name)]).Returns(mockProperty.Object);
+    // Mock the property accessor for IsModified check
+    var mockProperty = new Mock<IEntityProperty>();
+    mockProperty.Setup(p => p.IsModified).Returns(true);
+    mockTarget.Setup(e => e[nameof(INamedEntityWithTracking.Name)]).Returns(mockProperty.Object);
 
-        // Act - Use RunRule with await for async rules
-        var result = await rule.RunRule(mockTarget.Object);
+    // Act - Use RunRule with await for async rules
+    var result = await rule.RunRule(mockTarget.Object);
 
-        // Assert
-        var messages = result.ToList();
-        Assert.AreEqual(1, messages.Count);
-        Assert.AreEqual("Name", messages[0].PropertyName);
-        Assert.IsTrue(messages[0].Message.Contains("already exists"));
+    // Assert
+    var messages = result.ToList();
+    Assert.AreEqual(1, messages.Count);
+    Assert.AreEqual("Name", messages[0].PropertyName);
+    Assert.IsTrue(messages[0].Message.Contains("already exists"));
 
-        // Verify the dependency was called
-        mockCheckUnique.Verify(c => c.IsUnique("Duplicate Name", 1), Times.Once);
-    }
+    // Verify the dependency was called
+    mockCheckUnique.Verify(c => c.IsUnique("Duplicate Name", 1), Times.Once);
+}
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Mocking `IsModified`
 
 When your rule checks `IsModified` (common optimization for async rules):
 
+<!-- pseudo:mocking-ismodified -->
 ```csharp
 // Mock the property with IsModified = true
 var mockProperty = new Mock<IEntityProperty>();
 mockProperty.Setup(p => p.IsModified).Returns(true);
 mockTarget.Setup(e => e[nameof(IEntity.PropertyName)]).Returns(mockProperty.Object);
 ```
+<!-- /snippet -->
 
 ### Verifying Dependency Calls
 
+<!-- pseudo:verifying-dependency-calls -->
 ```csharp
 // Verify called
 mockService.Verify(s => s.CheckAsync(email), Times.Once);
@@ -247,6 +256,7 @@ mockService.Verify(s => s.CheckAsync(email), Times.Once);
 // Verify NOT called (e.g., when property not modified)
 mockService.Verify(s => s.CheckAsync(It.IsAny<string>()), Times.Never);
 ```
+<!-- /snippet -->
 
 ---
 
@@ -254,37 +264,38 @@ mockService.Verify(s => s.CheckAsync(It.IsAny<string>()), Times.Never);
 
 ### Testing Rules that Access Parent
 
-<!-- snippet: docs:testing:rule-with-parent-test -->
-```csharp
+<!-- snippet: rule-with-parent-test -->
+```cs
 [TestMethod]
-    public void RunRule_WhenQuantityExceedsParentLimit_ReturnsError()
-    {
-        // Arrange
-        var rule = new QuantityLimitRule();
+public void RunRule_WhenQuantityExceedsParentLimit_ReturnsError()
+{
+    // Arrange
+    var rule = new QuantityLimitRule();
 
-        // Mock the parent with a quantity limit
-        var mockParent = new Mock<IOrderHeader>();
-        mockParent.Setup(p => p.MaxQuantityPerLine).Returns(100);
+    // Mock the parent with a quantity limit
+    var mockParent = new Mock<IOrderHeader>();
+    mockParent.Setup(p => p.MaxQuantityPerLine).Returns(100);
 
-        // Mock the line item with quantity exceeding the limit
-        var mockTarget = new Mock<ILineItem>();
-        mockTarget.Setup(l => l.Quantity).Returns(150);
-        mockTarget.Setup(l => l.Parent).Returns(mockParent.Object);
+    // Mock the line item with quantity exceeding the limit
+    var mockTarget = new Mock<ILineItem>();
+    mockTarget.Setup(l => l.Quantity).Returns(150);
+    mockTarget.Setup(l => l.Parent).Returns(mockParent.Object);
 
-        // Act
-        var result = rule.RunRule(mockTarget.Object);
+    // Act
+    var result = rule.RunRule(mockTarget.Object);
 
-        // Assert
-        var messages = result.Result.ToList();
-        Assert.AreEqual(1, messages.Count);
-        Assert.AreEqual("Quantity", messages[0].PropertyName);
-        Assert.IsTrue(messages[0].Message.Contains("100"));
-    }
+    // Assert
+    var messages = result.Result.ToList();
+    Assert.AreEqual(1, messages.Count);
+    Assert.AreEqual("Quantity", messages[0].PropertyName);
+    Assert.IsTrue(messages[0].Message.Contains("100"));
+}
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Testing Null Parent Handling
 
+<!-- pseudo:testing-null-parent -->
 ```csharp
 [TestMethod]
 public void RunRule_WhenNoParent_ReturnsNone()
@@ -301,6 +312,7 @@ public void RunRule_WhenNoParent_ReturnsNone()
     Assert.IsFalse(result.Result.Any());
 }
 ```
+<!-- /snippet -->
 
 ---
 
@@ -308,6 +320,7 @@ public void RunRule_WhenNoParent_ReturnsNone()
 
 ### Don't: Create Wrapper Classes to Expose Execute
 
+<!-- invalid:wrapper-class-antipattern -->
 ```csharp
 // WRONG - Unnecessary boilerplate
 private class TestableBuildingEditRule : BuildingEditRule
@@ -321,21 +334,27 @@ private class TestableBuildingEditRule : BuildingEditRule
 var rule = new TestableBuildingEditRule();
 var result = rule.TestExecute(mockTarget);  // Don't do this
 ```
+<!-- /snippet -->
 
+<!-- pseudo:correct-runrule-usage -->
 ```csharp
 // CORRECT - Use RunRule directly
 var rule = new BuildingEditRule();
 var result = rule.RunRule(mockTarget.Object);  // Public API
 ```
+<!-- /snippet -->
 
 ### Don't: Mock Neatoo Interfaces
 
+<!-- invalid:mock-neatoo-antipattern -->
 ```csharp
 // WRONG - Mocking framework internals
 var mockValidateBase = new Mock<IValidateBase>();
 // ... manually setting up PropertyMessages, IsValid, etc.
 ```
+<!-- /snippet -->
 
+<!-- pseudo:correct-real-neatoo-class -->
 ```csharp
 // CORRECT - Use real Neatoo classes for integration tests
 public class TestPerson : ValidateBase<TestPerson>
@@ -343,11 +362,13 @@ public class TestPerson : ValidateBase<TestPerson>
     public string Name { get => Getter<string>(); set => Setter(value); }
 }
 ```
+<!-- /snippet -->
 
 ### Don't: Test Rules Only Through Domain Objects
 
 For unit testing rules, test the rule in isolation first:
 
+<!-- pseudo:rule-testing-approach -->
 ```csharp
 // Unit test - tests rule logic in isolation
 var rule = new EmailValidationRule();
@@ -360,6 +381,7 @@ person.Email = "invalid";
 await person.WaitForTasks();
 Assert.IsFalse(person.IsValid);
 ```
+<!-- /snippet -->
 
 ---
 
