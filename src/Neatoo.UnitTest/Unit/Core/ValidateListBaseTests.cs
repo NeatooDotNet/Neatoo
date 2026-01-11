@@ -661,6 +661,147 @@ public class ValidateListBaseTests
 
     #endregion
 
+    #region Multiple Children State Transitions Tests
+
+    [TestMethod]
+    public void IsValid_MultipleChildrenTransitions_TracksCorrectly()
+    {
+        // Arrange - Start with 3 valid items
+        var list = new TestValidateList();
+        var item1 = new TestValidateItem(); item1.Resume();
+        var item2 = new TestValidateItem(); item2.Resume();
+        var item3 = new TestValidateItem(); item3.Resume();
+
+        list.Add(item1);
+        list.Add(item2);
+        list.Add(item3);
+        Assert.IsTrue(list.IsValid, "All items valid - list should be valid");
+
+        // Act/Assert - First item becomes invalid
+        item1.AddValidationError("Error1");
+        Assert.IsFalse(list.IsValid, "One item invalid - list should be invalid");
+
+        // Act/Assert - Second item also becomes invalid
+        item2.AddValidationError("Error2");
+        Assert.IsFalse(list.IsValid, "Two items invalid - list should be invalid");
+
+        // Act/Assert - First item becomes valid again (but second still invalid)
+        item1.ClearErrors();
+        Assert.IsFalse(list.IsValid, "One item still invalid - list should be invalid");
+
+        // Act/Assert - Second item becomes valid (all valid now)
+        item2.ClearErrors();
+        Assert.IsTrue(list.IsValid, "All items valid again - list should be valid");
+    }
+
+    [TestMethod]
+    public void IsValid_ChildBecomesInvalidThenValidMultipleTimes_TracksCorrectly()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        var item = new TestValidateItem();
+        item.Resume();
+        list.Add(item);
+
+        // Act/Assert - Toggle validity multiple times
+        for (int i = 0; i < 5; i++)
+        {
+            Assert.IsTrue(list.IsValid, $"Iteration {i}: Item valid - list should be valid");
+
+            item.AddValidationError($"Error{i}");
+            Assert.IsFalse(list.IsValid, $"Iteration {i}: Item invalid - list should be invalid");
+
+            item.ClearErrors();
+        }
+
+        Assert.IsTrue(list.IsValid, "Final state: Item valid - list should be valid");
+    }
+
+    [TestMethod]
+    public void IsValid_AllChildrenInvalidThenAllBecomeValid_TracksCorrectly()
+    {
+        // Arrange - Start with 3 items, all invalid
+        var list = new TestValidateList();
+        var item1 = new TestValidateItem(); item1.Resume();
+        var item2 = new TestValidateItem(); item2.Resume();
+        var item3 = new TestValidateItem(); item3.Resume();
+
+        item1.AddValidationError("Error1");
+        item2.AddValidationError("Error2");
+        item3.AddValidationError("Error3");
+
+        list.Add(item1);
+        list.Add(item2);
+        list.Add(item3);
+        Assert.IsFalse(list.IsValid, "All items invalid - list should be invalid");
+
+        // Act/Assert - Fix items one by one
+        item1.ClearErrors();
+        Assert.IsFalse(list.IsValid, "Two items still invalid - list should be invalid");
+
+        item2.ClearErrors();
+        Assert.IsFalse(list.IsValid, "One item still invalid - list should be invalid");
+
+        item3.ClearErrors();
+        Assert.IsTrue(list.IsValid, "All items now valid - list should be valid");
+    }
+
+    [TestMethod]
+    public void PropertyChanged_FiredOncePerTransition_NotMultipleTimes()
+    {
+        // Arrange
+        var list = new TestValidateList();
+        var item = new TestValidateItem();
+        item.Resume();
+        list.Add(item);
+
+        var isValidChangedCount = 0;
+        ((INotifyPropertyChanged)list).PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == "IsValid") isValidChangedCount++;
+        };
+
+        // Act - Make invalid (should fire once)
+        isValidChangedCount = 0;
+        item.AddValidationError("Error");
+        Assert.AreEqual(1, isValidChangedCount, "IsValid should fire exactly once when becoming invalid");
+
+        // Act - Make valid (should fire once)
+        isValidChangedCount = 0;
+        item.ClearErrors();
+        Assert.AreEqual(1, isValidChangedCount, "IsValid should fire exactly once when becoming valid");
+    }
+
+    [TestMethod]
+    public void PropertyChanged_NotFiredWhenValidStateUnchanged()
+    {
+        // Arrange - List with two invalid items
+        var list = new TestValidateList();
+        var item1 = new TestValidateItem(); item1.Resume();
+        var item2 = new TestValidateItem(); item2.Resume();
+
+        item1.AddValidationError("Error1");
+        item2.AddValidationError("Error2");
+        list.Add(item1);
+        list.Add(item2);
+
+        var isValidChangedCount = 0;
+        ((INotifyPropertyChanged)list).PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == "IsValid") isValidChangedCount++;
+        };
+
+        // Act - Fix one item (list is still invalid because item2 is invalid)
+        isValidChangedCount = 0;
+        item1.ClearErrors();
+
+        // Assert - IsValid should NOT fire because list was invalid before and is still invalid
+        Assert.IsFalse(list.IsValid, "List should still be invalid");
+        Assert.AreEqual(0, isValidChangedCount, "IsValid should not fire when state doesn't change");
+    }
+
+    #endregion
+
     #region Edge Cases Tests
 
     [TestMethod]

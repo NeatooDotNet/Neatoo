@@ -56,6 +56,7 @@ public class EntityListBaseTests
         public new void MarkOld() => base.MarkOld();
         public new void MarkAsChild() => base.MarkAsChild();
         public new void MarkModified() => base.MarkModified();
+        public new void MarkUnmodified() => base.MarkUnmodified();
     }
 
     private static TestEntityItem CreateNewItem()
@@ -649,6 +650,111 @@ public class EntityListBaseTests
         // Assert
         Assert.AreEqual(2, list.Count);
     }
+
+    #endregion
+
+    #region Multiple Children State Transitions Tests
+
+    [TestMethod]
+    public void IsModified_MultipleChildrenTransitions_TracksCorrectly()
+    {
+        // Arrange - Start with 3 unmodified existing items
+        var list = new TestEntityList();
+        var item1 = CreateExistingItem();
+        var item2 = CreateExistingItem();
+        var item3 = CreateExistingItem();
+
+        // Add items while paused so they don't get marked modified
+        list.IsPaused = true;
+        list.Add(item1);
+        list.Add(item2);
+        list.Add(item3);
+        list.IsPaused = false;
+
+        // Mark all unmodified
+        item1.MarkUnmodified();
+        item2.MarkUnmodified();
+        item3.MarkUnmodified();
+        Assert.IsFalse(list.IsModified, "All items unmodified - list should not be modified");
+
+        // Act/Assert - First item becomes modified
+        item1.Name = "Modified1";
+        Assert.IsTrue(list.IsModified, "One item modified - list should be modified");
+
+        // Act/Assert - Second item also becomes modified
+        item2.Name = "Modified2";
+        Assert.IsTrue(list.IsModified, "Two items modified - list should be modified");
+
+        // Act/Assert - First item becomes unmodified (but second still modified)
+        item1.MarkUnmodified();
+        Assert.IsTrue(list.IsModified, "One item still modified - list should be modified");
+
+        // Act/Assert - Second item becomes unmodified (all unmodified now)
+        item2.MarkUnmodified();
+        Assert.IsFalse(list.IsModified, "All items unmodified again - list should not be modified");
+    }
+
+    [TestMethod]
+    public void IsModified_DeletedListChanges_TracksCorrectly()
+    {
+        // Arrange - Create a fresh list with items added while paused
+        var list = new TestEntityList();
+        var item1 = CreateExistingItem();
+        var item2 = CreateExistingItem();
+
+        list.IsPaused = true;
+        list.Add(item1);
+        list.Add(item2);
+        list.IsPaused = false;
+        item1.MarkUnmodified();
+        item2.MarkUnmodified();
+
+        Assert.IsFalse(list.IsModified, "Starting state: no modifications");
+
+        // Act - Remove item (adds to deleted list)
+        list.Remove(item1);
+        Assert.IsTrue(list.IsModified, "Deleted item exists - list should be modified");
+        Assert.AreEqual(1, list.DeletedList.Count);
+
+        // Act - Simulate save completion
+        list.FactoryComplete(FactoryOperation.Update);
+        Assert.IsFalse(list.IsModified, "After save - list should not be modified");
+    }
+
+    [TestMethod]
+    public void IsModified_ChildBecomesModifiedThenUnmodifiedMultipleTimes_TracksCorrectly()
+    {
+        // Arrange
+        var list = new TestEntityList();
+        var item = CreateExistingItem();
+
+        list.IsPaused = true;
+        list.Add(item);
+        list.IsPaused = false;
+        item.MarkUnmodified();
+
+        // Act/Assert - Toggle modification multiple times
+        for (int i = 0; i < 5; i++)
+        {
+            Assert.IsFalse(list.IsModified, $"Iteration {i}: Item unmodified - list should not be modified");
+
+            item.Name = $"Modified{i}";
+            Assert.IsTrue(list.IsModified, $"Iteration {i}: Item modified - list should be modified");
+
+            item.MarkUnmodified();
+        }
+
+        Assert.IsFalse(list.IsModified, "Final state: Item unmodified - list should not be modified");
+    }
+
+    // NOTE: PropertyChanged tests for IsModified are NOT included because
+    // EntityListBase.IsModified is computed (uses Any()) and EntityProperty
+    // does not raise PropertyChanged for IsModified changes. This is existing
+    // behavior - the list correctly computes IsModified but doesn't get
+    // notifications when children's IsModified state changes.
+    //
+    // If we add caching/notification for IsModified in the future, we should
+    // add tests similar to ValidateListBase's IsValid notification tests.
 
     #endregion
 
