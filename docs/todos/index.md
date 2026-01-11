@@ -26,6 +26,7 @@ This directory contains detailed action items from the comprehensive framework r
 | [L3](completed/L3-fix-waitfortasks-assert.md) | Low | Fix Debug.Assert in WaitForTasks | Low | **Completed** |
 | [L4](L4-specification-pattern.md) | Low | Specification Pattern Support | High | Evaluation |
 | [M7](M7-analyze-documentation-patterns.md) | Medium | Analyze Documentation Sample Patterns | Low | Not Started |
+| [M8](M8-document-child-property-cascade.md) | Medium | Document Child Property Cascade Behavior | Low | Not Started |
 | [CT1](completed/cancellation-token-support.md) | Medium | Add CancellationToken Support | High | **Completed** |
 
 ---
@@ -49,6 +50,7 @@ This directory contains detailed action items from the comprehensive framework r
 - [C2](C2-beginner-tutorials.md) - Beginner Tutorials
 - [H2](H2-document-async-validation-patterns.md) - Async Validation Patterns
 - [M3](M3-document-propertychanged-events.md) - PropertyChanged Events
+- [M8](M8-document-child-property-cascade.md) - Child Property Cascade Behavior
 - ~~[Snippet Refactoring](completed/snippet-refactoring-plan.md) - Refactor full examples to focused micro-snippets~~ **DONE**
 - ~~[Documentation Feedback Review](completed/documentation-feedback-review.md) - Inline feedback cleanup~~ **DONE**
 
@@ -62,6 +64,8 @@ This directory contains detailed action items from the comprehensive framework r
 ### Infrastructure
 - ~~[M6](completed/multi-targeting-net8-9-10.md) - Multi-Target .NET 8.0/9.0/10.0~~ **DONE**
 - ~~[CT1](completed/cancellation-token-support.md) - CancellationToken Support~~ **DONE**
+- ~~[RemoteFactory Upgrade](completed/remotefactory-upgrade-blocked.md) - Upgraded to 10.5.0~~ **DONE**
+- ~~[Skill Samples](completed/skill-samples-needed.md) - Added 17 snippets for skill files~~ **DONE**
 
 ---
 
@@ -78,6 +82,7 @@ This directory contains detailed action items from the comprehensive framework r
 - [C2](C2-beginner-tutorials.md) - Beginner tutorials (Reduces adoption barrier)
 - [H2](H2-document-async-validation-patterns.md) - Async validation docs
 - [M3](M3-document-propertychanged-events.md) - Event documentation
+- [M8](M8-document-child-property-cascade.md) - Child property cascade behavior
 
 ### Sprint 3 (Code Quality)
 - ~~[M1](completed/M1-extract-metaproperty-helper.md) - Extract helper method~~ **DONE**
