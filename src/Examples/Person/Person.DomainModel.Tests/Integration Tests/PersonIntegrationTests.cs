@@ -16,7 +16,7 @@ namespace DomainModel.Tests.IntegrationTests
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddDbContext<PersonDbContext>(options => options.UseSqlite(new SqliteConnection("Filename=:memory:")));
             serviceCollection.AddScoped<IPersonDbContext>(cc => cc.GetRequiredService<PersonDbContext>());
-            serviceCollection.AddNeatooServices(Neatoo.RemoteFactory.NeatooFactory.Server, typeof(Person).Assembly);
+            serviceCollection.AddNeatooServices(Neatoo.RemoteFactory.NeatooFactory.Logical, typeof(Person).Assembly);
             serviceCollection.AddTransient<IPersonAuth, PersonAuth>();
             var user = new User();
             user.Role = Role.Delete;
