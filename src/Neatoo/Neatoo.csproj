@@ -4,7 +4,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Only enable CI build optimizations when running in CI environment -->
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true' or '$(TF_BUILD)' == 'true' or '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
-    <DebugType>embedded</DebugType>
+    <DebugType>portable</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 	  <Description>A .NET Domain Models framework for Blazor and WPF powered by Roslyn source generators.</Description>
@@ -49,6 +51,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
     <PackageReference Include="Neatoo.RemoteFactory" />
     <PackageReference Include="System.ComponentModel.Annotations" />
   </ItemGroup>
