@@ -16,7 +16,7 @@ namespace DomainModel.Tests.IntegrationTests
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddDbContext<PersonDbContext>(options => options.UseSqlite(new SqliteConnection("Filename=:memory:")));
             serviceCollection.AddScoped<IPersonDbContext>(cc => cc.GetRequiredService<PersonDbContext>());
-            serviceCollection.AddNeatooServices(Neatoo.RemoteFactory.NeatooFactory.Logical, typeof(Person).Assembly);
+            serviceCollection.AddNeatooServices(Neatoo.RemoteFactory.NeatooFactory.Server, typeof(Person).Assembly);
             serviceCollection.AddTransient<IPersonAuth, PersonAuth>();
             var user = new User();
             user.Role = Role.Delete;
@@ -141,7 +141,7 @@ namespace DomainModel.Tests.IntegrationTests
             await CheckValid();
 
             // Check duplicate name rule
-            await person.Save(); // Need a record in the database to check for duplicates
+            await factory.Save(person, CancellationToken.None); // Need a record in the database to check for duplicates
 
             person = factory.Create();
             Assert.NotNull(person);
@@ -167,7 +167,7 @@ namespace DomainModel.Tests.IntegrationTests
             var person = await CreateAsync();
 
             // Act
-            var saved = await person.Save();
+            var saved = await factory.Save(person, CancellationToken.None);
             var result = await factory.Fetch(CancellationToken.None);
 
             // Assert
@@ -189,7 +189,7 @@ namespace DomainModel.Tests.IntegrationTests
             var person = await CreateAsync();
 
             // Act
-            var result = await person.Save();
+            var result = await factory.Save(person, CancellationToken.None);
 
             // Assert
             var personEntity = personContext.Persons.Single();
@@ -211,7 +211,7 @@ namespace DomainModel.Tests.IntegrationTests
             var person = await CreateAsync();
 
             // Act
-            var result = (IPerson)await person.Save();
+            var result = (IPerson?)await factory.Save(person, CancellationToken.None);
 
             result.FirstName = this.firstName;
             result.LastName = this.lastName;
@@ -222,7 +222,7 @@ namespace DomainModel.Tests.IntegrationTests
             result.Notes = "Updated notes";
 
             await result.WaitForTasks();
-            result = (IPerson)await result.Save();
+            result = (IPerson?)await factory.Save(result!, CancellationToken.None);
 
             // Assert
             var personEntity = personContext.Persons.Single();
