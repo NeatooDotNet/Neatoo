@@ -419,41 +419,7 @@ internal class ContactPhoneList : EntityListBase<IContactPhone>, IContactPhoneLi
 
 ## Custom Add Methods
 
-Provide domain-specific add methods:
-
-<!-- pseudo:custom-add-methods -->
-```csharp
-public interface IPersonPhoneList : IEntityListBase<IPersonPhone>
-{
-    IPersonPhone AddPhoneNumber();
-    Task RemovePhoneNumber(IPersonPhone phone);
-}
-
-[Factory]
-internal class PersonPhoneList : EntityListBase<IPersonPhone>, IPersonPhoneList
-{
-    private readonly IPersonPhoneFactory _phoneFactory;
-
-    public PersonPhoneList([Service] IPersonPhoneFactory phoneFactory)
-    {
-        _phoneFactory = phoneFactory;
-    }
-
-    public IPersonPhone AddPhoneNumber()
-    {
-        var phone = _phoneFactory.Create();
-        Add(phone);
-        return phone;
-    }
-
-    public async Task RemovePhoneNumber(IPersonPhone phone)
-    {
-        Remove(phone);
-        await RunRules();  // Re-validate after removal
-    }
-}
-```
-<!-- /snippet -->
+The [list-implementation](#implementation) snippet above demonstrates custom add methods: `AddPhoneNumber()` creates a child via the injected factory and `RemovePhoneNumber()` removes items from the collection.
 
 ## UI Binding
 
@@ -508,96 +474,13 @@ During bulk operations:
 
 ## Complete Example
 
-<!-- pseudo:complete-personphonelist -->
-```csharp
-public interface IPersonPhoneList : IEntityListBase<IPersonPhone>
-{
-    IPersonPhone AddPhoneNumber();
-    Task RemovePhoneNumber(IPersonPhone phone);
-}
+For a complete collection implementation, see the [list-implementation](#implementation) snippet which includes:
+- Interface with custom add/remove methods
+- Factory injection via `[Service]`
+- `[Fetch]` operation that populates from data entities
+- `[Update]` operation that handles inserts, updates, and deletes
 
-[Factory]
-internal class PersonPhoneList : EntityListBase<IPersonPhone>, IPersonPhoneList
-{
-    private readonly IPersonPhoneFactory _phoneFactory;
-
-    public PersonPhoneList([Service] IPersonPhoneFactory phoneFactory)
-    {
-        _phoneFactory = phoneFactory;
-    }
-
-    public IPersonPhone AddPhoneNumber()
-    {
-        var phone = _phoneFactory.Create();
-        Add(phone);
-        return phone;
-    }
-
-    public async Task RemovePhoneNumber(IPersonPhone phone)
-    {
-        Remove(phone);
-        await RunRules();
-    }
-
-    // Re-validate siblings when properties change
-    protected override async Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
-    {
-        await base.HandleNeatooPropertyChanged(eventArgs);
-
-        if (eventArgs.PropertyName == nameof(IPersonPhone.PhoneType) ||
-            eventArgs.PropertyName == nameof(IPersonPhone.PhoneNumber))
-        {
-            if (eventArgs.Source is IPersonPhone changedPhone)
-            {
-                await Task.WhenAll(
-                    this.Except([changedPhone])
-                        .Select(p => p.RunRules()));
-            }
-        }
-    }
-
-    [Fetch]
-    public void Fetch(IEnumerable<PersonPhoneEntity> entities,
-                      [Service] IPersonPhoneFactory phoneFactory)
-    {
-        foreach (var entity in entities)
-        {
-            var phone = phoneFactory.Fetch(entity);
-            Add(phone);
-        }
-    }
-
-    [Update]
-    public void Update(ICollection<PersonPhoneEntity> entities,
-                       [Service] IPersonPhoneFactory phoneFactory)
-    {
-        foreach (var phone in this.Union(DeletedList))
-        {
-            PersonPhoneEntity entity;
-
-            if (phone.IsNew)
-            {
-                entity = new PersonPhoneEntity();
-                entities.Add(entity);
-            }
-            else
-            {
-                entity = entities.Single(e => e.Id == phone.Id);
-            }
-
-            if (phone.IsDeleted)
-            {
-                entities.Remove(entity);
-            }
-            else
-            {
-                phoneFactory.Save(phone, entity);
-            }
-        }
-    }
-}
-```
-<!-- /snippet -->
+For cross-item validation, see [cross-item-validation](#cross-item-validation) which shows how to re-validate siblings when properties change.
 
 ## See Also
 

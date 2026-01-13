@@ -60,29 +60,57 @@ builder.Services.AddKeyedScoped(RemoteFactoryServices.HttpClientKey, (sp, key) =
 
 Mark factory operations that should be callable from the client:
 
-<!-- pseudo:remote-attribute-patterns -->
-```csharp
-[Factory]
-internal partial class Person : EntityBase<Person>, IPerson
+<!-- snippet: remote-attribute-patterns -->
+```cs
+/// <summary>
+/// Aggregate root entity with [Remote] operations.
+/// All CRUD operations are callable from the client.
+/// </summary>
+public partial interface IRemotePerson : IEntityBase
 {
+    int Id { get; }
+    string? FirstName { get; set; }
+    string? LastName { get; set; }
+    string? Email { get; set; }
+}
+
+[Factory]
+internal partial class RemotePerson : EntityBase<RemotePerson>, IRemotePerson
+{
+    public RemotePerson(IEntityBaseServices<RemotePerson> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string? FirstName { get; set; }
+    public partial string? LastName { get; set; }
+    public partial string? Email { get; set; }
+
     [Remote]  // Callable from client
     [Fetch]
-    public async Task Fetch(int id, [Service] IDbContext db) { }
+    public void Fetch(int id)
+    {
+        Id = id;
+        FirstName = "John";
+        LastName = "Doe";
+        Email = "john@example.com";
+    }
 
     [Remote]
     [Insert]
-    public async Task Insert([Service] IDbContext db) { }
+    public Task Insert() => Task.CompletedTask;
 
     [Remote]
     [Update]
-    public async Task Update([Service] IDbContext db) { }
+    public Task Update() => Task.CompletedTask;
 
     [Remote]
     [Delete]
-    public async Task Delete([Service] IDbContext db) { }
+    public Task Delete() => Task.CompletedTask;
+
+    [Create]
+    public void Create() { }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### When to Use [Remote]
 
@@ -97,33 +125,85 @@ internal partial class Person : EntityBase<Person>, IPerson
 
 Child entities don't need `[Remote]` since they're managed through the aggregate root:
 
-<!-- pseudo:aggregate-vs-child-patterns -->
-```csharp
-// Aggregate Root - needs [Remote]
-[Factory]
-internal partial class Order : EntityBase<Order>, IOrder
+<!-- snippet: aggregate-vs-child-patterns -->
+```cs
+/// <summary>
+/// Aggregate Root - needs [Remote] for client-server communication.
+/// </summary>
+public partial interface IRemoteOrder : IEntityBase
 {
+    int Id { get; }
+    string? CustomerName { get; set; }
+}
+
+[Factory]
+internal partial class RemoteOrder : EntityBase<RemoteOrder>, IRemoteOrder
+{
+    public RemoteOrder(IEntityBaseServices<RemoteOrder> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string? CustomerName { get; set; }
+
     [Remote]
     [Fetch]
-    public async Task Fetch(int id, [Service] IOrderDbContext db) { }
+    public void Fetch(int id)
+    {
+        // Load order from database
+        Id = id;
+        CustomerName = "Acme Corp";
+    }
 
     [Remote]
     [Update]
-    public async Task Update([Service] IOrderDbContext db) { }
+    public Task Update()
+    {
+        // Save order and all children
+        return Task.CompletedTask;
+    }
+
+    [Create]
+    public void Create() { }
 }
 
-// Child Entity - NO [Remote]
-[Factory]
-internal partial class OrderLineItem : EntityBase<OrderLineItem>, IOrderLineItem
+/// <summary>
+/// Child Entity - NO [Remote] needed.
+/// Saved through parent's operations.
+/// </summary>
+public partial interface IRemoteOrderLineItem : IEntityBase
 {
-    [Fetch]  // Called by Order.Fetch internally
-    public void Fetch(LineItemEntity entity) { }
+    int Id { get; }
+    string? ProductName { get; set; }
+    int Quantity { get; set; }
+}
 
-    [Insert]  // Called by Order.Update internally
-    public void Insert(LineItemEntity entity) { }
+[Factory]
+internal partial class RemoteOrderLineItem : EntityBase<RemoteOrderLineItem>, IRemoteOrderLineItem
+{
+    public RemoteOrderLineItem(IEntityBaseServices<RemoteOrderLineItem> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string? ProductName { get; set; }
+    public partial int Quantity { get; set; }
+
+    [Fetch]  // Called by Order.Fetch internally - no [Remote]
+    public void Fetch(int id, string productName, int quantity)
+    {
+        Id = id;
+        ProductName = productName;
+        Quantity = quantity;
+    }
+
+    [Insert]  // Called by Order.Update internally - no [Remote]
+    public Task Insert()
+    {
+        return Task.CompletedTask;
+    }
+
+    [Create]
+    public void Create() { }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## State Transfer
 
@@ -215,22 +295,37 @@ See [Factory Operations](factory-operations.md#critical-always-reassign-after-sa
 
 Rules execute on both client and server:
 
-<!-- pseudo:email-validation-rule -->
-```csharp
-// Rule defined once
-public class EmailValidationRule : RuleBase<IPerson>
+<!-- snippet: email-validation-rule -->
+```cs
+/// <summary>
+/// Interface for entities with email validation.
+/// </summary>
+public interface IPersonWithEmail : IValidateBase
 {
-    public EmailValidationRule() : base(p => p.Email) { }
+    string? Email { get; set; }
+}
 
-    protected override IRuleMessages Execute(IPerson target)
+/// <summary>
+/// Sync validation rule for email format.
+/// Executes on both client and server.
+/// </summary>
+public class EmailFormatValidationRule : RuleBase<IPersonWithEmail>
+{
+    public EmailFormatValidationRule() : base(p => p.Email) { }
+
+    protected override IRuleMessages Execute(IPersonWithEmail target)
     {
         if (string.IsNullOrEmpty(target.Email))
             return (nameof(target.Email), "Email is required").AsRuleMessages();
+
+        if (!target.Email.Contains('@'))
+            return (nameof(target.Email), "Invalid email format").AsRuleMessages();
+
         return None;
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Client Behavior
 - Rule executes when Email property changes
@@ -246,63 +341,107 @@ public class EmailValidationRule : RuleBase<IPerson>
 
 Async rules work on client but may behave differently:
 
-<!-- pseudo:unique-email-rule-async -->
-```csharp
-public class UniqueEmailRule : AsyncRuleBase<IPerson>
+<!-- snippet: unique-email-rule-async -->
+```cs
+/// <summary>
+/// Service interface for email uniqueness checking.
+/// Different implementations for client vs server.
+/// </summary>
+public interface IEmailExistsService
 {
-    private readonly IEmailService _emailService;
+    Task<bool> ExistsAsync(string email);
+}
 
-    public UniqueEmailRule(IEmailService emailService) : base(p => p.Email)
+/// <summary>
+/// Async rule that checks email uniqueness via service.
+/// Service implementation differs on client vs server.
+/// </summary>
+public class UniqueEmailAsyncRule : AsyncRuleBase<IPersonWithEmail>
+{
+    private readonly IEmailExistsService _emailService;
+
+    public UniqueEmailAsyncRule(IEmailExistsService emailService) : base(p => p.Email)
     {
         _emailService = emailService;
     }
 
-    protected override async Task<IRuleMessages> Execute(IPerson target, CancellationToken? token)
+    protected override async Task<IRuleMessages> Execute(IPersonWithEmail target, CancellationToken? token = null)
     {
+        if (string.IsNullOrEmpty(target.Email))
+            return None;
+
         // On client: calls server API
         // On server: calls database directly
         if (await _emailService.ExistsAsync(target.Email))
             return (nameof(target.Email), "Email already exists").AsRuleMessages();
+
         return None;
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Client Implementation
 
-<!-- pseudo:client-email-service -->
-```csharp
-// Client-side service calls the server
-public class ClientEmailService : IEmailService
+<!-- snippet: client-email-service -->
+```cs
+/// <summary>
+/// Client-side email service that calls the server API.
+/// Registered in Blazor WASM DI container.
+/// </summary>
+public class ClientEmailExistsService : IEmailExistsService
 {
     private readonly HttpClient _http;
 
+    public ClientEmailExistsService(HttpClient http)
+    {
+        _http = http;
+    }
+
     public async Task<bool> ExistsAsync(string email)
     {
-        // Call server API
-        return await _http.GetFromJsonAsync<bool>($"/api/email/exists?email={email}");
+        // Call server API endpoint
+        var uri = new Uri($"/api/email/exists?email={Uri.EscapeDataString(email)}", UriKind.Relative);
+        var response = await _http.GetAsync(uri);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<bool>();
     }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Server Implementation
 
-<!-- pseudo:server-email-service -->
-```csharp
-// Server-side service queries database
-public class ServerEmailService : IEmailService
+<!-- snippet: server-email-service -->
+```cs
+/// <summary>
+/// Server-side email service that queries the database.
+/// Registered in ASP.NET Core DI container.
+/// </summary>
+public class ServerEmailExistsService : IEmailExistsService
 {
-    private readonly IDbContext _db;
+    private readonly IUserRepository _repository;
+
+    public ServerEmailExistsService(IUserRepository repository)
+    {
+        _repository = repository;
+    }
 
     public async Task<bool> ExistsAsync(string email)
     {
-        return await _db.Users.AnyAsync(u => u.Email == email);
+        return await _repository.EmailExistsAsync(email);
     }
 }
+
+/// <summary>
+/// Repository interface for user data access.
+/// </summary>
+public interface IUserRepository
+{
+    Task<bool> EmailExistsAsync(string email);
+}
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ## Service Injection
 
@@ -404,16 +543,29 @@ if (!person.IsValid)
 
 Authorization is checked on the server:
 
-<!-- pseudo:authorization-pattern -->
-```csharp
-[AuthorizeFactory<IPersonAuth>]
-internal partial class Person : EntityBase<Person>, IPerson { }
+<!-- snippet: authorization-pattern -->
+```cs
+/// <summary>
+/// Authorization interface for Person entity operations.
+/// </summary>
+public interface IPersonAuth
+{
+    bool CanCreate();
+    bool CanFetch();
+    bool CanInsert();
+    bool CanUpdate();
+    bool CanDelete();
+}
 
+/// <summary>
+/// Authorization implementation that checks user permissions.
+/// Injected via DI on the server.
+/// </summary>
 public class PersonAuth : IPersonAuth
 {
-    private readonly ICurrentUser _user;
+    private readonly IUserPermissions _user;
 
-    public PersonAuth(ICurrentUser user) => _user = user;
+    public PersonAuth(IUserPermissions user) => _user = user;
 
     public bool CanCreate() => _user.HasPermission("Person.Create");
     public bool CanFetch() => _user.HasPermission("Person.Read");
@@ -421,8 +573,16 @@ public class PersonAuth : IPersonAuth
     public bool CanUpdate() => _user.HasPermission("Person.Update");
     public bool CanDelete() => _user.HasPermission("Person.Delete");
 }
+
+/// <summary>
+/// Interface for checking user permissions.
+/// </summary>
+public interface IUserPermissions
+{
+    bool HasPermission(string permission);
+}
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Client Authorization Display
 

@@ -14,10 +14,10 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
     {
         IInventoryItem Create();
         IInventoryItem Fetch(InventoryItemEntity entity);
-        Task<IInventoryItem?> Save(IInventoryItem target);
+        Task<IInventoryItem?> Save(IInventoryItem target, CancellationToken cancellationToken);
     }
 
-    internal class InventoryItemFactory : FactorySaveBase<IInventoryItem>, IFactorySave<InventoryItem>, IInventoryItemFactory
+    internal class InventoryItemFactory : FactoryBase<IInventoryItem>, IInventoryItemFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
@@ -56,38 +56,33 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entity));
         }
 
-        public Task<IInventoryItem> LocalInsert(IInventoryItem target)
+        public Task<IInventoryItem> LocalInsert(IInventoryItem target, CancellationToken cancellationToken)
         {
             var cTarget = (InventoryItem)target ?? throw new Exception("IInventoryItem must implement InventoryItem");
             var db = ServiceProvider.GetRequiredService<IInventoryDb>();
-            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(db));
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(db, cancellationToken));
         }
 
-        public Task<IInventoryItem> LocalUpdate(IInventoryItem target)
+        public Task<IInventoryItem> LocalUpdate(IInventoryItem target, CancellationToken cancellationToken)
         {
             var cTarget = (InventoryItem)target ?? throw new Exception("IInventoryItem must implement InventoryItem");
             var db = ServiceProvider.GetRequiredService<IInventoryDb>();
-            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update(db));
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update(db, cancellationToken));
         }
 
-        public Task<IInventoryItem> LocalDelete(IInventoryItem target)
+        public Task<IInventoryItem> LocalDelete(IInventoryItem target, CancellationToken cancellationToken)
         {
             var cTarget = (InventoryItem)target ?? throw new Exception("IInventoryItem must implement InventoryItem");
             var db = ServiceProvider.GetRequiredService<IInventoryDb>();
-            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete(db));
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete(db, cancellationToken));
         }
 
-        public virtual Task<IInventoryItem?> Save(IInventoryItem target)
+        public virtual Task<IInventoryItem?> Save(IInventoryItem target, CancellationToken cancellationToken)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<InventoryItem>.Save(InventoryItem target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<IInventoryItem?> LocalSave(IInventoryItem target)
+        public virtual async Task<IInventoryItem?> LocalSave(IInventoryItem target, CancellationToken cancellationToken)
         {
             if (target.IsDeleted)
             {
@@ -96,15 +91,15 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
                     return default(IInventoryItem);
                 }
 
-                return await LocalDelete(target);
+                return await LocalDelete(target, cancellationToken);
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
-                return await LocalUpdate(target);
+                return await LocalUpdate(target, cancellationToken);
             }
         }
 
@@ -114,7 +109,6 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             services.AddScoped<IInventoryItemFactory, InventoryItemFactory>();
             services.AddTransient<InventoryItem>();
             services.AddTransient<IInventoryItem, InventoryItem>();
-            services.AddScoped<IFactorySave<InventoryItem>, InventoryItemFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

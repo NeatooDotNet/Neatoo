@@ -16,6 +16,7 @@
 /// </summary>
 
 using Neatoo.RemoteFactory;
+using Neatoo.Samples.DomainModel.SampleDomain;
 
 namespace Neatoo.Samples.DomainModel.AggregatesAndEntities;
 
@@ -64,6 +65,25 @@ internal partial class PhoneNumber : EntityBase<PhoneNumber>, IPhoneNumber
 
 #region aggregate-root-pattern
 /// <summary>
+/// EF entity for SalesOrder persistence.
+/// </summary>
+public class SalesOrderEntity
+{
+    public Guid? Id { get; set; }
+    public string? CustomerName { get; set; }
+    public DateTime OrderDate { get; set; }
+    public ICollection<OrderLineItemEntity> LineItems { get; set; } = new List<OrderLineItemEntity>();
+}
+
+public class OrderLineItemEntity
+{
+    public Guid? Id { get; set; }
+    public string? ProductName { get; set; }
+    public int Quantity { get; set; }
+    public decimal UnitPrice { get; set; }
+}
+
+/// <summary>
 /// Aggregate root with [Remote] operations - called from UI.
 /// </summary>
 public partial interface ISalesOrder : IEntityBase
@@ -92,35 +112,45 @@ internal partial class SalesOrder : EntityBase<SalesOrder>, ISalesOrder
         LineItems = lineItems;
     }
 
+    public void MapFrom(SalesOrderEntity entity)
+    {
+        Id = entity.Id;
+        CustomerName = entity.CustomerName;
+        OrderDate = entity.OrderDate;
+    }
+
+    public void MapTo(SalesOrderEntity entity)
+    {
+        entity.Id = Id;
+        entity.CustomerName = CustomerName;
+        entity.OrderDate = OrderDate;
+    }
+
     #region remote-fetch
     // [Remote] - Called from UI
     [Remote]
     [Fetch]
-    public void Fetch(Guid id)
+    public async Task Fetch(Guid id, [Service] IRepositoryWithChildren<SalesOrderEntity, OrderLineItemEntity> repository, CancellationToken cancellationToken)
     #endregion
     {
-        // In real implementation:
-        // var entity = await db.Orders.Include(o => o.LineItems).FirstOrDefaultAsync(o => o.Id == id);
-        // MapFrom(entity);
-        // LineItems = lineItemListFactory.Fetch(entity.LineItems);
-        Id = id;
+        var entity = await repository.FindAsync(id);
+        if (entity == null) return;
+        MapFrom(entity);
     }
 
     #region remote-insert
     [Remote]
     [Insert]
-    public async Task Insert()
+    public async Task Insert([Service] IRepository<SalesOrderEntity> repository, CancellationToken cancellationToken)
     #endregion
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
         if (!IsSavable) return;
 
-        // In real implementation:
-        // var entity = new OrderEntity();
-        // MapTo(entity);
-        // lineItemListFactory.Save(LineItems, entity.LineItems);
-        // db.Orders.Add(entity);
-        // await db.SaveChangesAsync();
+        var entity = new SalesOrderEntity();
+        MapTo(entity);
+        await repository.AddAsync(entity);
+        await repository.SaveChangesAsync();
     }
 }
 #endregion

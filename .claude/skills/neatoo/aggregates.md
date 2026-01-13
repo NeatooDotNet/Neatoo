@@ -273,17 +273,20 @@ internal class PhoneList : EntityListBase<IPhone>, IPhoneList
 
 Use IDs rather than direct references for cross-aggregate relationships:
 
+<!-- pseudo:cross-aggregate-reference -->
 ```csharp
 // Cross-aggregate reference by ID
 public partial Guid? CustomerId { get; set; }
 
 // NOT: public partial ICustomer? Customer { get; set; }
 ```
+<!-- /snippet -->
 
 ## Child Creation Pattern
 
 Child entities should be created through the parent collection's add methods, not by injecting child factories into consuming code:
 
+<!-- pseudo:child-creation-pattern -->
 ```csharp
 // CORRECT - Use aggregate's domain method
 var phone = contact.PhoneNumbers.AddPhoneNumber();
@@ -298,6 +301,7 @@ void AddPhone()
     contact.PhoneNumbers.Add(phone);
 }
 ```
+<!-- /snippet -->
 
 The collection's `AddPhoneNumber()` method:
 - Creates via factory internally

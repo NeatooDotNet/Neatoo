@@ -195,10 +195,12 @@ RemoteFactory (the source generator powering Neatoo factories) enforces a **50-c
 
 Add the assembly attribute to increase the limit:
 
+<!-- pseudo:hint-name-length -->
 ```csharp
 // In AssemblyAttributes.cs or any .cs file in your project
 [assembly: FactoryHintNameLength(100)]
 ```
+<!-- /snippet -->
 
 Choose a value that accommodates your longest fully qualified type name. Common values:
 - `100` - suitable for most projects

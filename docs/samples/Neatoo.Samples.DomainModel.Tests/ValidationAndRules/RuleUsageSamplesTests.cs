@@ -140,7 +140,7 @@ public class RuleUsageSamplesTests : SamplesTestBase
         entity.Name = "Test Entity";
 
         // Act
-        await factory.Save(entity);
+        await factory.Save(entity, CancellationToken.None);
 
         // Assert
         Assert.IsNotNull(entity.Id);
@@ -156,7 +156,7 @@ public class RuleUsageSamplesTests : SamplesTestBase
         entity.Name = "";
 
         // Act
-        entity = await factory.Save(entity);
+        entity = await factory.Save(entity, CancellationToken.None);
 
         // Assert - Id should not be set because validation failed
         Assert.IsNull(entity.Id);

@@ -32,18 +32,20 @@ public class UnitTestEntitySamplesTests
         Assert.AreEqual(5, product.Quantity);
     }
 
+    #region entity-unit-test-example
     [TestMethod]
     public void TestableProduct_WhenPropertyChanged_IsModifiedTrue()
     {
-        // Arrange
+        // Arrange - Create entity without factory
         var product = new TestableProduct();
 
         // Act
-        product.Name = "Changed";
+        product.Name = "Widget";
 
         // Assert
-        Assert.IsTrue(product.IsModified, "Entity should be modified after property change");
+        Assert.IsTrue(product.IsModified);
     }
+    #endregion
 
     [TestMethod]
     public void TestableProduct_TotalValue_CalculatesCorrectly()

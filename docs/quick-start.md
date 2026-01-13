@@ -24,23 +24,21 @@ dotnet add package Neatoo.Blazor.MudNeatoo
 
 Every Neatoo aggregate requires a public interface:
 
-```csharp
-using Neatoo;
-
+<!-- snippet: qs-interface-pattern -->
+```cs
 public partial interface IOrder : IEntityBase
 {
     // Interface members are auto-generated from partial properties
 }
 ```
+<!-- endSnippet -->
 
 > **Learn more:** [Aggregates and Entities](aggregates-and-entities.md) - Interface pattern, base class selection
 
 ## Step 2: Create the Aggregate Root
 
-```csharp
-using Neatoo;
-using Neatoo.RemoteFactory;
-
+<!-- snippet: qs-aggregate-root -->
+```cs
 [Factory]
 internal partial class Order : EntityBase<Order>, IOrder
 {
@@ -122,6 +120,7 @@ internal partial class Order : EntityBase<Order>, IOrder
     }
 }
 ```
+<!-- endSnippet -->
 
 > **Learn more:** [Factory Operations](factory-operations.md) - Create, Fetch, Insert, Update, Delete lifecycle | [Mapper Methods](mapper-methods.md) - MapFrom, MapTo, MapModifiedTo
 
@@ -129,46 +128,62 @@ internal partial class Order : EntityBase<Order>, IOrder
 
 ### Server (ASP.NET Core)
 
-```csharp
-// Program.cs
-builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IOrder).Assembly);
+<!-- snippet: qs-server-setup -->
+```cs
+// Program.cs (ASP.NET Core)
+public static void ConfigureServer(WebApplicationBuilder builder, WebApplication app)
+{
+    builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IOrder).Assembly);
 
-// Add the RemoteFactory endpoint
-app.MapPost("/api/neatoo", (HttpContext ctx, RemoteRequestDto request) =>
-    NeatooEndpoint.HandleRequest(ctx, request));
+    // Add the RemoteFactory endpoint
+    app.MapPost("/api/neatoo", (HttpContext httpContext, RemoteRequestDto request, CancellationToken token) =>
+    {
+        var handler = httpContext.RequestServices.GetRequiredService<HandleRemoteDelegateRequest>();
+        return handler(request, token);
+    });
+}
 ```
+<!-- endSnippet -->
 
 ### Client (Blazor WebAssembly)
 
-```csharp
-// Program.cs
-builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IOrder).Assembly);
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:5001") });
+<!-- snippet: qs-client-setup -->
+```cs
+// Program.cs (Blazor WebAssembly)
+public static void ConfigureClient(IServiceCollection services)
+{
+    services.AddNeatooServices(NeatooFactory.Remote, typeof(IOrder).Assembly);
+    services.AddKeyedScoped(RemoteFactoryServices.HttpClientKey, (sp, key) =>
+        new HttpClient { BaseAddress = new Uri("https://localhost:5001") });
+}
 ```
+<!-- endSnippet -->
 
 > **Learn more:** [Remote Factory Pattern](remote-factory.md) - Client-server setup, NeatooFactory enum
 
 ## Step 4: Use the Factory
 
-```csharp
-// Inject the generated factory
-@inject IOrderFactory OrderFactory
+<!-- snippet: qs-factory-usage -->
+```cs
+public async Task FactoryUsageExample(int orderId)
+{
+    // Create a new order
+    var order = _orderFactory.Create();
+    order.CustomerName = "Acme Corp";
+    order.Total = 150.00m;
 
-// Create a new order
-var order = OrderFactory.Create();
-order.CustomerName = "Acme Corp";
-order.Total = 150.00m;
+    // Save returns the updated entity (with generated ID, etc.)
+    order = await _orderFactory.Save(order);
 
-// Save returns the updated entity (with generated ID, etc.)
-order = await OrderFactory.Save(order);
+    // Fetch an existing order
+    var existingOrder = await _orderFactory.Fetch(orderId);
 
-// Fetch an existing order
-var existingOrder = await OrderFactory.Fetch(orderId);
-
-// Modify and save
-existingOrder.Total = 175.00m;
-existingOrder = await OrderFactory.Save(existingOrder);
+    // Modify and save
+    existingOrder.Total = 175.00m;
+    existingOrder = await _orderFactory.Save(existingOrder);
+}
 ```
+<!-- endSnippet -->
 
 > **Learn more:** [Factory Operations](factory-operations.md) - Factory methods and save patterns
 

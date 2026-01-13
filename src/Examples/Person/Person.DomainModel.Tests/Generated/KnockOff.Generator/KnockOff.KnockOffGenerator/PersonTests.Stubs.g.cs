@@ -55,15 +55,15 @@ partial class PersonTests
 			/// <summary>Whether this method was called at least once.</summary>
 			public bool WasCalled => CallCount > 0;
 
-			/// <summary>The argument from the last call.</summary>
-			public global::System.Guid? LastCallArg { get; private set; }
+			/// <summary>The arguments from the last call.</summary>
+			public (global::System.Threading.CancellationToken? cancellationToken, global::System.Guid? id)? LastCallArgs { get; private set; }
 
 			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Func<Stubs.IPersonDbContext, global::System.Guid?, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity>>? OnCall { get; set; }
+			public global::System.Func<Stubs.IPersonDbContext, global::System.Threading.CancellationToken, global::System.Guid?, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>>? OnCall { get; set; }
 
-			public void RecordCall(global::System.Guid? id) { CallCount++; LastCallArg = id; }
+			public void RecordCall(global::System.Threading.CancellationToken cancellationToken, global::System.Guid? id) { CallCount++; LastCallArgs = (cancellationToken, id); }
 
-			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
+			public void Reset() { CallCount = 0; LastCallArgs = default; OnCall = null; }
 		}
 
 		/// <summary>Interceptor for IPersonDbContext.AddPerson.</summary>
@@ -95,12 +95,15 @@ partial class PersonTests
 			/// <summary>Whether this method was called at least once.</summary>
 			public bool WasCalled => CallCount > 0;
 
+			/// <summary>The argument from the last call.</summary>
+			public global::System.Threading.CancellationToken? LastCallArg { get; private set; }
+
 			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Func<Stubs.IPersonDbContext, global::System.Threading.Tasks.Task>? OnCall { get; set; }
+			public global::System.Func<Stubs.IPersonDbContext, global::System.Threading.CancellationToken, global::System.Threading.Tasks.Task>? OnCall { get; set; }
 
-			public void RecordCall() { CallCount++; }
+			public void RecordCall(global::System.Threading.CancellationToken cancellationToken) { CallCount++; LastCallArg = cancellationToken; }
 
-			public void Reset() { CallCount = 0; OnCall = null; }
+			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
 		}
 
 		/// <summary>Interceptor for IPersonDbContext.DeletePerson.</summary>
@@ -167,11 +170,18 @@ partial class PersonTests
 			/// <summary>Interceptor for SaveChangesAsync.</summary>
 			public IPersonDbContext_SaveChangesAsyncInterceptor SaveChangesAsync { get; } = new();
 
-			global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity> global::Person.Ef.IPersonDbContext.FindPerson(global::System.Guid? id)
+			global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> global::Person.Ef.IPersonDbContext.FindPerson(global::System.Threading.CancellationToken cancellationToken)
 			{
-				FindPerson.RecordCall(id);
-				if (FindPerson.OnCall is { } onCall) return onCall(this, id);
-				return global::System.Threading.Tasks.Task.FromResult<global::Person.Ef.PersonEntity>(new global::Person.Ef.PersonEntity());
+				FindPerson.RecordCall(cancellationToken, null);
+				if (FindPerson.OnCall is { } onCall) return onCall(this, cancellationToken, null);
+				return global::System.Threading.Tasks.Task.FromResult<global::Person.Ef.PersonEntity?>(default!);
+			}
+
+			global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> global::Person.Ef.IPersonDbContext.FindPerson(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)
+			{
+				FindPerson.RecordCall(cancellationToken, id);
+				if (FindPerson.OnCall is { } onCall) return onCall(this, cancellationToken, id);
+				return global::System.Threading.Tasks.Task.FromResult<global::Person.Ef.PersonEntity?>(default!);
 			}
 
 			void global::Person.Ef.IPersonDbContext.AddPerson(global::Person.Ef.PersonEntity personEntity)
@@ -180,10 +190,10 @@ partial class PersonTests
 				if (AddPerson.OnCall is { } onCall) onCall(this, personEntity);
 			}
 
-			global::System.Threading.Tasks.Task global::Person.Ef.IPersonDbContext.DeleteAllPersons()
+			global::System.Threading.Tasks.Task global::Person.Ef.IPersonDbContext.DeleteAllPersons(global::System.Threading.CancellationToken cancellationToken)
 			{
-				DeleteAllPersons.RecordCall();
-				if (DeleteAllPersons.OnCall is { } onCall) return onCall(this);
+				DeleteAllPersons.RecordCall(cancellationToken);
+				if (DeleteAllPersons.OnCall is { } onCall) return onCall(this, cancellationToken);
 				return global::System.Threading.Tasks.Task.CompletedTask;
 			}
 

@@ -47,13 +47,13 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange
             var personEntity = new PersonEntity { FirstName = "John", LastName = "Doe" };
-            personDbContextStub.FindPerson.OnCall = (ko, id) => Task.FromResult(personEntity);
+            personDbContextStub.FindPerson.OnCall = (ko, token, id) => Task.FromResult(personEntity);
 
             var phoneListStub = new Stubs.IPersonPhoneList();
             phoneListFactoryStub.Fetch.OnCall = (ko, entities) => phoneListStub;
 
             // Act
-            var result = await testPerson.Fetch(personDbContextStub, phoneListFactoryStub);
+            var result = await testPerson.Fetch(personDbContextStub, phoneListFactoryStub, CancellationToken.None);
 
             // Assert
             Assert.True(result);
@@ -66,12 +66,12 @@ namespace DomainModel.Tests.UnitTests
         public async Task Fetch_ShouldReturnFalse_WhenPersonDoesNotExist()
         {
             // Arrange
-            personDbContextStub.FindPerson.OnCall = (ko, id) => Task.FromResult<PersonEntity>(null!);
+            personDbContextStub.FindPerson.OnCall = (ko, token, id) => Task.FromResult<PersonEntity>(null!);
 
             var person = new Person(new EntityBaseServices<Person>(null), testUniqueNameRule);
 
             // Act
-            var result = await person.Fetch(personDbContextStub, phoneListFactoryStub);
+            var result = await person.Fetch(personDbContextStub, phoneListFactoryStub, CancellationToken.None);
 
             // Assert
             Assert.False(result);
@@ -91,7 +91,7 @@ namespace DomainModel.Tests.UnitTests
             testPerson.LastName = "Doe";
 
             // Act
-            var result = await testPerson.Insert(personDbContextStub, phoneListFactoryStub);
+            var result = await testPerson.Insert(personDbContextStub, phoneListFactoryStub, CancellationToken.None);
 
             // Assert
             Assert.NotNull(result);
@@ -109,7 +109,7 @@ namespace DomainModel.Tests.UnitTests
             testPerson.IsSavableOverride = false;
 
             // Act
-            var result = await testPerson.Insert(personDbContextStub, phoneListFactoryStub);
+            var result = await testPerson.Insert(personDbContextStub, phoneListFactoryStub, CancellationToken.None);
 
             // Assert
             Assert.Null(result);
@@ -121,10 +121,10 @@ namespace DomainModel.Tests.UnitTests
         public async Task Update_ShouldThrowException_WhenPersonNotFound()
         {
             // Arrange
-            personDbContextStub.FindPerson.OnCall = (ko, id) => Task.FromResult<PersonEntity>(null!);
+            personDbContextStub.FindPerson.OnCall = (ko, token, id) => Task.FromResult<PersonEntity>(null!);
 
             // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => testPerson.Update(personDbContextStub, phoneListFactoryStub));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => testPerson.Update(personDbContextStub, phoneListFactoryStub, CancellationToken.None));
         }
 
         [Fact]
@@ -134,7 +134,7 @@ namespace DomainModel.Tests.UnitTests
             var person = new Person(new EntityBaseServices<Person>(null), testUniqueNameRule);
 
             // Act
-            await person.Delete(personDbContextStub);
+            await person.Delete(personDbContextStub, CancellationToken.None);
 
             // Assert
             Assert.True(personDbContextStub.DeleteAllPersons.WasCalled);

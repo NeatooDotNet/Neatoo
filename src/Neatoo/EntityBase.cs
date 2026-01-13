@@ -43,6 +43,17 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
     Task<IEntityBase> Save();
 
     /// <summary>
+    /// Persists the entity asynchronously with cancellation support.
+    /// </summary>
+    /// <param name="token">Cancellation token to cancel the operation before persistence begins.</param>
+    /// <returns>A task that represents the asynchronous save operation. The task result contains the saved entity.</returns>
+    /// <remarks>
+    /// Cancellation is checked before persistence operations begin. Once Insert, Update, or Delete
+    /// starts executing, cancellation is not checked to avoid leaving the database in an inconsistent state.
+    /// </remarks>
+    Task<IEntityBase> Save(CancellationToken token);
+
+    /// <summary>
     /// Gets the entity property with the specified name using indexer syntax.
     /// </summary>
     /// <param name="propertyName">The name of the property to retrieve.</param>

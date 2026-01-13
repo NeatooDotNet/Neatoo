@@ -95,8 +95,8 @@ public class TestableProduct : EntityBase<TestableProduct>
 
 ### Example Test
 
-<!-- pseudo:entity-unit-test-example -->
-```csharp
+<!-- snippet: entity-unit-test-example -->
+```cs
 [TestMethod]
 public void TestableProduct_WhenPropertyChanged_IsModifiedTrue()
 {
@@ -110,7 +110,7 @@ public void TestableProduct_WhenPropertyChanged_IsModifiedTrue()
     Assert.IsTrue(product.IsModified);
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ---
 
@@ -295,8 +295,8 @@ public void RunRule_WhenQuantityExceedsParentLimit_ReturnsError()
 
 ### Testing Null Parent Handling
 
-<!-- pseudo:testing-null-parent -->
-```csharp
+<!-- snippet: testing-null-parent -->
+```cs
 [TestMethod]
 public void RunRule_WhenNoParent_ReturnsNone()
 {
@@ -312,7 +312,7 @@ public void RunRule_WhenNoParent_ReturnsNone()
     Assert.IsFalse(result.Result.Any());
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ---
 
@@ -354,15 +354,21 @@ var mockValidateBase = new Mock<IValidateBase>();
 ```
 <!-- /snippet -->
 
-<!-- pseudo:correct-real-neatoo-class -->
-```csharp
-// CORRECT - Use real Neatoo classes for integration tests
+<!-- snippet: correct-real-neatoo-class -->
+```cs
+/// <summary>
+/// CORRECT - Use real Neatoo classes for integration tests.
+/// Don't mock Neatoo interfaces like IValidateBase.
+/// </summary>
+[SuppressFactory]
 public class TestPerson : ValidateBase<TestPerson>
 {
-    public string Name { get => Getter<string>(); set => Setter(value); }
+    public TestPerson() : base(new ValidateBaseServices<TestPerson>()) { }
+
+    public string? Name { get => Getter<string>(); set => Setter(value); }
 }
 ```
-<!-- /snippet -->
+<!-- endSnippet -->
 
 ### Don't: Test Rules Only Through Domain Objects
 

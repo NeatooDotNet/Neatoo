@@ -2,6 +2,7 @@
 using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Microsoft.Extensions.DependencyInjection;
+using Neatoo.Samples.DomainModel.SampleDomain;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -15,10 +16,10 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
     {
         IPerson Create();
         IPerson Fetch(PersonEntity entity);
-        Task<IPerson?> Save(IPerson target);
+        Task<IPerson?> Save(IPerson target, CancellationToken cancellationToken);
     }
 
-    internal class PersonFactory : FactorySaveBase<IPerson>, IFactorySave<Person>, IPersonFactory
+    internal class PersonFactory : FactoryBase<IPerson>, IPersonFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
@@ -59,35 +60,33 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entity, phoneListFactory));
         }
 
-        public Task<IPerson> LocalInsert(IPerson target)
+        public Task<IPerson> LocalInsert(IPerson target, CancellationToken cancellationToken)
         {
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
-            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
+            var repository = ServiceProvider.GetRequiredService<IRepository<PersonEntity>>();
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(repository, cancellationToken));
         }
 
-        public Task<IPerson> LocalUpdate(IPerson target)
+        public Task<IPerson> LocalUpdate(IPerson target, CancellationToken cancellationToken)
         {
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
-            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update());
+            var repository = ServiceProvider.GetRequiredService<IRepository<PersonEntity>>();
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update(repository, cancellationToken));
         }
 
-        public Task<IPerson> LocalDelete(IPerson target)
+        public Task<IPerson> LocalDelete(IPerson target, CancellationToken cancellationToken)
         {
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
-            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete());
+            var repository = ServiceProvider.GetRequiredService<IRepository<PersonEntity>>();
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete(repository, cancellationToken));
         }
 
-        public virtual Task<IPerson?> Save(IPerson target)
+        public virtual Task<IPerson?> Save(IPerson target, CancellationToken cancellationToken)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<Person>.Save(Person target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<IPerson?> LocalSave(IPerson target)
+        public virtual async Task<IPerson?> LocalSave(IPerson target, CancellationToken cancellationToken)
         {
             if (target.IsDeleted)
             {
@@ -96,15 +95,15 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
                     return default(IPerson);
                 }
 
-                return await LocalDelete(target);
+                return await LocalDelete(target, cancellationToken);
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
-                return await LocalUpdate(target);
+                return await LocalUpdate(target, cancellationToken);
             }
         }
 
@@ -114,7 +113,6 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
             services.AddScoped<IPersonFactory, PersonFactory>();
             services.AddTransient<Person>();
             services.AddTransient<IPerson, Person>();
-            services.AddScoped<IFactorySave<Person>, PersonFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

@@ -29,6 +29,7 @@ The source generator analyzes entity constructors and properties at compile time
 
 For each entity, the generator produces a `GetRuleId` override:
 
+<!-- generated:rule-identification-generated -->
 ```csharp
 protected override uint GetRuleId(string sourceExpression)
 {
@@ -41,6 +42,7 @@ protected override uint GetRuleId(string sourceExpression)
     };
 }
 ```
+<!-- /snippet -->
 
 IDs are sorted alphabetically and assigned ordinals (1, 2, 3...). This ensures:
 - Same source code produces same IDs on client and server
@@ -51,16 +53,20 @@ IDs are sorted alphabetically and assigned ordinals (1, 2, 3...). This ensures:
 
 At runtime, `[CallerArgumentExpression]` captures the exact source text passed to `AddRule`, `AddValidation`, etc.:
 
+<!-- pseudo:caller-argument-expression -->
 ```csharp
 // In RuleManager
 void AddRule<T>(IRule<T> rule,
     [CallerArgumentExpression("rule")] string? sourceExpression = null);
 ```
+<!-- /snippet -->
 
 When you write:
+<!-- pseudo:addrule-example -->
 ```csharp
 RuleManager.AddRule(new AgeValidationRule());
 ```
+<!-- /snippet -->
 
 The compiler captures `"new AgeValidationRule()"` as `sourceExpression`. This matches the generated switch case.
 
@@ -68,6 +74,7 @@ The compiler captures `"new AgeValidationRule()"` as `sourceExpression`. This ma
 
 If a rule's source expression doesn't match any generated case (e.g., rules added dynamically), the base implementation uses a deterministic FNV-1a hash:
 
+<!-- pseudo:getruleid-fallback -->
 ```csharp
 // Base implementation in ValidateBase
 protected virtual uint GetRuleId(string sourceExpression)
@@ -75,6 +82,7 @@ protected virtual uint GetRuleId(string sourceExpression)
     return ComputeRuleIdHash(sourceExpression);
 }
 ```
+<!-- /snippet -->
 
 This ensures all rules get stable IDs, even if not captured by the generator.
 

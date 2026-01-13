@@ -26,6 +26,7 @@ Use a synchronous getter that returns `null`/default until loaded, combined with
 
 ### IProperty Extensions
 
+<!-- pseudo:iproperty-lazy-loading -->
 ```csharp
 public interface IProperty
 {
@@ -39,9 +40,11 @@ public interface IProperty
     Task<T> GetValueAsync<T>();
 }
 ```
+<!-- /snippet -->
 
 ### Property Getter Behavior
 
+<!-- pseudo:lazy-property-getter -->
 ```csharp
 // In domain object
 public ChildObject? Child
@@ -54,9 +57,11 @@ public ChildObject? Child
 // Access triggers load automatically (fire-and-forget)
 // Or explicitly load via PropertyManager
 ```
+<!-- /snippet -->
 
 ### Explicit Loading
 
+<!-- pseudo:explicit-loading -->
 ```csharp
 // Load a specific property
 await myObject.PropertyManager["Child"].LoadAsync();
@@ -70,6 +75,7 @@ if (myObject.PropertyManager["Child"].IsLoaded)
     // Safe to access synchronously
 }
 ```
+<!-- /snippet -->
 
 ## Blazor Usage Patterns
 
@@ -88,12 +94,14 @@ else
 
 ### Pattern 2: Pre-load in Lifecycle
 
+<!-- pseudo:preload-lifecycle -->
 ```csharp
 protected override async Task OnParametersSetAsync()
 {
     await myObject.PropertyManager["Child"].LoadAsync();
 }
 ```
+<!-- /snippet -->
 
 ### Pattern 3: Disabled Until Loaded
 
@@ -136,6 +144,7 @@ protected override async Task OnParametersSetAsync()
 
 ### [Load] Attribute for Lazy Load Methods
 
+<!-- pseudo:load-attribute -->
 ```csharp
 public class Order : EntityBase<Order>
 {
@@ -158,6 +167,7 @@ public class Order : EntityBase<Order>
     }
 }
 ```
+<!-- /snippet -->
 
 ## Integration with Existing Infrastructure
 
@@ -165,10 +175,12 @@ public class Order : EntityBase<Order>
 
 The existing `IsBusy` property will reflect loading state:
 
+<!-- pseudo:isbusy-loading -->
 ```csharp
 // Already exists in Base.cs
 public bool IsBusy => this.RunningTasks.IsRunning || this.PropertyManager.IsBusy;
 ```
+<!-- /snippet -->
 
 Loading operations will be tracked through `AsyncTasks`, so:
 - Parent objects show `IsBusy = true` while children load

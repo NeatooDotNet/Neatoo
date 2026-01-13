@@ -3,6 +3,7 @@ using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Neatoo.Rules;
+using Neatoo.Samples.DomainModel.SampleDomain;
 using System.ComponentModel.DataAnnotations;
 
 /*
@@ -14,10 +15,10 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
     public interface IUserWithEmailFactory
     {
         IUserWithEmail Create();
-        Task<IUserWithEmail> Save(IUserWithEmail target);
+        Task<IUserWithEmail> Save(IUserWithEmail target, CancellationToken cancellationToken);
     }
 
-    internal class UserWithEmailFactory : FactorySaveBase<IUserWithEmail>, IFactorySave<UserWithEmail>, IUserWithEmailFactory
+    internal class UserWithEmailFactory : FactoryBase<IUserWithEmail>, IUserWithEmailFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
@@ -45,23 +46,19 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<IUserWithEmail> LocalInsert(IUserWithEmail target)
+        public Task<IUserWithEmail> LocalInsert(IUserWithEmail target, CancellationToken cancellationToken)
         {
             var cTarget = (UserWithEmail)target ?? throw new Exception("IUserWithEmail must implement UserWithEmail");
-            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
+            var repository = ServiceProvider.GetRequiredService<IRepository<UserWithEmailEntity>>();
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(repository, cancellationToken));
         }
 
-        public virtual Task<IUserWithEmail> Save(IUserWithEmail target)
+        public virtual Task<IUserWithEmail> Save(IUserWithEmail target, CancellationToken cancellationToken)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<UserWithEmail>.Save(UserWithEmail target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<IUserWithEmail> LocalSave(IUserWithEmail target)
+        public virtual async Task<IUserWithEmail> LocalSave(IUserWithEmail target, CancellationToken cancellationToken)
         {
             if (target.IsDeleted)
             {
@@ -69,7 +66,7 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
@@ -83,7 +80,6 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
             services.AddScoped<IUserWithEmailFactory, UserWithEmailFactory>();
             services.AddTransient<UserWithEmail>();
             services.AddTransient<IUserWithEmail, UserWithEmail>();
-            services.AddScoped<IFactorySave<UserWithEmail>, UserWithEmailFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

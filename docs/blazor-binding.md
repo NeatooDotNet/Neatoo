@@ -227,6 +227,7 @@ Standard save button with all state checks:
 
 In Blazor, failing to reassign after `Save()` causes the UI to display stale data. This is because `Save()` serializes the object to the server and returns a **completely new deserialized instance**.
 
+<!-- pseudo:blazor-save-reassign -->
 ```csharp
 @code {
     private IPerson? Person { get; set; }
@@ -245,6 +246,7 @@ In Blazor, failing to reassign after `Save()` causes the UI to display stale dat
     }
 }
 ```
+<!-- /snippet -->
 
 #### Why This Matters for Blazor
 
@@ -258,6 +260,7 @@ When `Save()` completes, a **completely new object instance** is returned. If yo
 
 #### Common Mistake Pattern
 
+<!-- invalid:blazor-save-mistake -->
 ```csharp
 // DON'T DO THIS
 private async Task HandleSave()
@@ -272,9 +275,11 @@ private async Task HandleSave()
     NavigationManager.NavigateTo($"/person/{Person.Id}");  // Navigates to empty GUID!
 }
 ```
+<!-- /snippet -->
 
 #### Correct Pattern
 
+<!-- pseudo:blazor-save-correct -->
 ```csharp
 // DO THIS
 private async Task HandleSave()
@@ -285,6 +290,7 @@ private async Task HandleSave()
     NavigationManager.NavigateTo($"/person/{Person.Id}");  // Works correctly
 }
 ```
+<!-- /snippet -->
 
 See [Factory Operations](factory-operations.md#critical-always-reassign-after-save) for a detailed explanation of why this happens.
 

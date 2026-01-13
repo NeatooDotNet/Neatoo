@@ -12,15 +12,15 @@ namespace Neatoo.Samples.DomainModel.BestPractices
     public interface IBpInvoiceFactory
     {
         IBpInvoice Create();
-        Task<IBpInvoice> Save(IBpInvoice target);
+        Task<IBpInvoice> Save(IBpInvoice target, CancellationToken cancellationToken);
     }
 
-    internal class BpInvoiceFactory : FactorySaveBase<IBpInvoice>, IFactorySave<BpInvoice>, IBpInvoiceFactory
+    internal class BpInvoiceFactory : FactoryBase<IBpInvoice>, IBpInvoiceFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
         // Delegates
-        public delegate Task<IBpInvoice> SaveDelegate(IBpInvoice target);
+        public delegate Task<IBpInvoice> SaveDelegate(IBpInvoice target, CancellationToken cancellationToken);
         // Delegate Properties to provide Local or Remote fork in execution
         public SaveDelegate SaveProperty { get; }
 
@@ -49,30 +49,25 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create(lineListFactory));
         }
 
-        public Task<IBpInvoice> LocalInsert(IBpInvoice target)
+        public Task<IBpInvoice> LocalInsert(IBpInvoice target, CancellationToken cancellationToken)
         {
             var cTarget = (BpInvoice)target ?? throw new Exception("IBpInvoice must implement BpInvoice");
             var db = ServiceProvider.GetRequiredService<IDbContext>();
             var lineFactory = ServiceProvider.GetRequiredService<IBpInvoiceLineFactory>();
-            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(db, lineFactory));
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(db, lineFactory, cancellationToken));
         }
 
-        public virtual Task<IBpInvoice> Save(IBpInvoice target)
+        public virtual Task<IBpInvoice> Save(IBpInvoice target, CancellationToken cancellationToken)
         {
-            return SaveProperty(target);
+            return SaveProperty(target, cancellationToken);
         }
 
-        public virtual async Task<IBpInvoice> RemoteSave(IBpInvoice target)
+        public virtual async Task<IBpInvoice> RemoteSave(IBpInvoice target, CancellationToken cancellationToken)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<IBpInvoice>(typeof(SaveDelegate), [target], default))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<IBpInvoice>(typeof(SaveDelegate), [target], cancellationToken))!;
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<BpInvoice>.Save(BpInvoice target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<IBpInvoice> LocalSave(IBpInvoice target)
+        public virtual async Task<IBpInvoice> LocalSave(IBpInvoice target, CancellationToken cancellationToken)
         {
             if (target.IsDeleted)
             {
@@ -80,7 +75,7 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
@@ -95,11 +90,10 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             services.AddScoped<SaveDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<BpInvoiceFactory>();
-                return (IBpInvoice target) => factory.LocalSave(target);
+                return (IBpInvoice target, CancellationToken cancellationToken) => factory.LocalSave(target, cancellationToken);
             });
             services.AddTransient<BpInvoice>();
             services.AddTransient<IBpInvoice, BpInvoice>();
-            services.AddScoped<IFactorySave<BpInvoice>, BpInvoiceFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

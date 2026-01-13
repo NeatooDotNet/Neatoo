@@ -16,9 +16,9 @@ namespace DomainModel
     public interface IPersonFactory
     {
         IPerson? Create();
-        Task<IPerson?> Fetch();
-        Task<IPerson?> Save(IPerson target);
-        Task<Authorized<IPerson>> TrySave(IPerson target);
+        Task<IPerson?> Fetch(CancellationToken cancellationToken);
+        Task<IPerson?> Save(IPerson target, CancellationToken cancellationToken);
+        Task<Authorized<IPerson>> TrySave(IPerson target, CancellationToken cancellationToken);
         Authorized CanCreate();
         Authorized CanFetch();
         Authorized CanInsert();
@@ -27,13 +27,13 @@ namespace DomainModel
         Authorized CanSave();
     }
 
-    internal class PersonFactory : FactorySaveBase<IPerson>, IFactorySave<Person>, IPersonFactory
+    internal class PersonFactory : FactoryBase<IPerson>, IPersonFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
         // Delegates
-        public delegate Task<Authorized<IPerson>> FetchDelegate();
-        public delegate Task<Authorized<IPerson>> SaveDelegate(IPerson target);
+        public delegate Task<Authorized<IPerson>> FetchDelegate(CancellationToken cancellationToken);
+        public delegate Task<Authorized<IPerson>> SaveDelegate(IPerson target, CancellationToken cancellationToken);
         // Delegate Properties to provide Local or Remote fork in execution
         public FetchDelegate FetchProperty { get; }
         public SaveDelegate SaveProperty { get; }
@@ -79,17 +79,17 @@ namespace DomainModel
             return new Authorized<IPerson>(DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create(personPhoneModelList)));
         }
 
-        public virtual async Task<IPerson?> Fetch()
+        public virtual async Task<IPerson?> Fetch(CancellationToken cancellationToken)
         {
-            return (await FetchProperty()).Result;
+            return (await FetchProperty(cancellationToken)).Result;
         }
 
-        public virtual async Task<Authorized<IPerson>> RemoteFetch()
+        public virtual async Task<Authorized<IPerson>> RemoteFetch(CancellationToken cancellationToken)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<Authorized<IPerson>>(typeof(FetchDelegate), [], default))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<Authorized<IPerson>>(typeof(FetchDelegate), [], cancellationToken))!;
         }
 
-        public async Task<Authorized<IPerson>> LocalFetch()
+        public async Task<Authorized<IPerson>> LocalFetch(CancellationToken cancellationToken)
         {
             Authorized authorized;
             IPersonAuth ipersonauth = ServiceProvider.GetRequiredService<IPersonAuth>();
@@ -108,10 +108,10 @@ namespace DomainModel
             var target = ServiceProvider.GetRequiredService<Person>();
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
             var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
-            return new Authorized<IPerson>(await DoFactoryMethodCallBoolAsync(target, FactoryOperation.Fetch, () => target.Fetch(personContext, personPhoneModelListFactory)));
+            return new Authorized<IPerson>(await DoFactoryMethodCallBoolAsync(target, FactoryOperation.Fetch, () => target.Fetch(personContext, personPhoneModelListFactory, cancellationToken)));
         }
 
-        public async Task<Authorized<IPerson>> LocalInsert(IPerson target)
+        public async Task<Authorized<IPerson>> LocalInsert(IPerson target, CancellationToken cancellationToken)
         {
             Authorized authorized;
             IPersonAuth ipersonauth = ServiceProvider.GetRequiredService<IPersonAuth>();
@@ -130,10 +130,10 @@ namespace DomainModel
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
             var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
-            return new Authorized<IPerson>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(personContext, personPhoneModelListFactory)));
+            return new Authorized<IPerson>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(personContext, personPhoneModelListFactory, cancellationToken)));
         }
 
-        public async Task<Authorized<IPerson>> LocalUpdate(IPerson target)
+        public async Task<Authorized<IPerson>> LocalUpdate(IPerson target, CancellationToken cancellationToken)
         {
             Authorized authorized;
             IPersonAuth ipersonauth = ServiceProvider.GetRequiredService<IPersonAuth>();
@@ -152,10 +152,10 @@ namespace DomainModel
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
             var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
-            return new Authorized<IPerson>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update(personContext, personPhoneModelListFactory)));
+            return new Authorized<IPerson>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update(personContext, personPhoneModelListFactory, cancellationToken)));
         }
 
-        public async Task<Authorized<IPerson>> LocalDelete(IPerson target)
+        public async Task<Authorized<IPerson>> LocalDelete(IPerson target, CancellationToken cancellationToken)
         {
             Authorized authorized;
             IPersonAuth ipersonauth = ServiceProvider.GetRequiredService<IPersonAuth>();
@@ -173,12 +173,12 @@ namespace DomainModel
 
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
-            return new Authorized<IPerson>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete(personContext)));
+            return new Authorized<IPerson>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete(personContext, cancellationToken)));
         }
 
-        public virtual async Task<IPerson?> Save(IPerson target)
+        public virtual async Task<IPerson?> Save(IPerson target, CancellationToken cancellationToken)
         {
-            var authorized = (await SaveProperty(target));
+            var authorized = (await SaveProperty(target, cancellationToken));
             if (!authorized.HasAccess)
             {
                 throw new NotAuthorizedException(authorized);
@@ -187,22 +187,17 @@ namespace DomainModel
             return authorized.Result;
         }
 
-        public virtual async Task<Authorized<IPerson>> TrySave(IPerson target)
+        public virtual async Task<Authorized<IPerson>> TrySave(IPerson target, CancellationToken cancellationToken)
         {
-            return await SaveProperty(target);
+            return await SaveProperty(target, cancellationToken);
         }
 
-        public virtual async Task<Authorized<IPerson>> RemoteSave(IPerson target)
+        public virtual async Task<Authorized<IPerson>> RemoteSave(IPerson target, CancellationToken cancellationToken)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<Authorized<IPerson>>(typeof(SaveDelegate), [target], default))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<Authorized<IPerson>>(typeof(SaveDelegate), [target], cancellationToken))!;
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<Person>.Save(Person target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<Authorized<IPerson>> LocalSave(IPerson target)
+        public virtual async Task<Authorized<IPerson>> LocalSave(IPerson target, CancellationToken cancellationToken)
         {
             if (target.IsDeleted)
             {
@@ -211,15 +206,15 @@ namespace DomainModel
                     return new Authorized<IPerson>();
                 }
 
-                return await LocalDelete(target);
+                return await LocalDelete(target, cancellationToken);
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
-                return await LocalUpdate(target);
+                return await LocalUpdate(target, cancellationToken);
             }
         }
 
@@ -386,16 +381,15 @@ namespace DomainModel
             services.AddScoped<FetchDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<PersonFactory>();
-                return () => factory.LocalFetch();
+                return (CancellationToken cancellationToken) => factory.LocalFetch(cancellationToken);
             });
             services.AddScoped<SaveDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<PersonFactory>();
-                return (IPerson target) => factory.LocalSave(target);
+                return (IPerson target, CancellationToken cancellationToken) => factory.LocalSave(target, cancellationToken);
             });
             services.AddTransient<Person>();
             services.AddTransient<IPerson, Person>();
-            services.AddScoped<IFactorySave<Person>, PersonFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

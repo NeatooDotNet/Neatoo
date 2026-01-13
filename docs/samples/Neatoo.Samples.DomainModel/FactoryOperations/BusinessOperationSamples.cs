@@ -127,9 +127,9 @@ internal partial class Visit : EntityBase<Visit>, IVisit
 
     [Remote]
     [Insert]
-    public async Task Insert([Service] IVisitDb db)
+    public async Task Insert([Service] IVisitDb db, CancellationToken cancellationToken)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
         if (!IsSavable)
             return;
 
@@ -148,9 +148,9 @@ internal partial class Visit : EntityBase<Visit>, IVisit
 
     [Remote]
     [Update]
-    public async Task Update([Service] IVisitDb db)
+    public async Task Update([Service] IVisitDb db, CancellationToken cancellationToken)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
         if (!IsSavable)
             return;
 
@@ -184,12 +184,13 @@ public static class EntitySaveExamples
     /// </summary>
     public static async Task<IVisit> FactorySavePattern(
         IVisit visit,
-        IVisitFactory visitFactory)
+        IVisitFactory visitFactory,
+        CancellationToken cancellationToken)
     {
         visit.PatientName = "Updated Name";
 
         // Factory-based save
-        return await visitFactory.Save(visit);
+        return await visitFactory.Save(visit, cancellationToken);
     }
 
     /// <summary>

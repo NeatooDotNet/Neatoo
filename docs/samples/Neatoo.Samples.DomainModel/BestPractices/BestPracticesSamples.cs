@@ -231,7 +231,7 @@ internal partial class BpProduct : EntityBase<BpProduct>, IBpProduct
 
     [Remote]
     [Insert]
-    public async Task Insert([Service] IDbContext db)
+    public async Task Insert([Service] IDbContext db, CancellationToken cancellationToken)
     {
         var entity = new OrderEntity();
         entity.CustomerName = Name;
@@ -273,7 +273,7 @@ internal partial class BpOrderLine : EntityBase<BpOrderLine>, IBpOrderLine
     /// FK is passed directly to persistence - not stored on domain object.
     /// </summary>
     [Insert]
-    public async Task Insert(long orderId, [Service] IDbContext db)
+    public async Task Insert(long orderId, [Service] IDbContext db, CancellationToken cancellationToken)
     {
         var entity = new OrderLineEntity
         {
@@ -329,7 +329,7 @@ internal partial class BpInvoice : EntityBase<BpInvoice>, IBpInvoice
 
     [Remote]
     [Insert]
-    public async Task Insert([Service] IDbContext db, [Service] IBpInvoiceLineFactory lineFactory)
+    public async Task Insert([Service] IDbContext db, [Service] IBpInvoiceLineFactory lineFactory, CancellationToken cancellationToken)
     {
         // Save parent first
         var entity = new OrderEntity { CustomerName = CustomerName };
@@ -340,7 +340,7 @@ internal partial class BpInvoice : EntityBase<BpInvoice>, IBpInvoice
         // Save children, passing parent ID to each child's Insert
         foreach (var line in Lines)
         {
-            await lineFactory.Save(line, Id.Value);  // Parent ID passed to child
+            await lineFactory.Save(line, Id.Value, cancellationToken);  // Parent ID passed to child
         }
     }
 }
@@ -371,7 +371,7 @@ internal partial class BpInvoiceLine : EntityBase<BpInvoiceLine>, IBpInvoiceLine
     /// FK is passed directly to persistence - not stored on domain object.
     /// </summary>
     [Insert]
-    public async Task Insert(long invoiceId, [Service] IDbContext db)
+    public async Task Insert(long invoiceId, [Service] IDbContext db, CancellationToken cancellationToken)
     {
         var entity = new OrderLineEntity
         {

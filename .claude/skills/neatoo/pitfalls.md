@@ -6,6 +6,7 @@ Consolidated list of common mistakes when working with Neatoo.
 
 The server deserializes and returns a **new instance**. Always capture the return value:
 
+<!-- pseudo:pitfall-reassign-save -->
 ```csharp
 // WRONG - changes lost
 await personFactory.Save(person);
@@ -13,6 +14,7 @@ await personFactory.Save(person);
 // CORRECT
 person = await personFactory.Save(person);
 ```
+<!-- /snippet -->
 
 See: factories.md, blazor-integration.md
 
@@ -20,6 +22,7 @@ See: factories.md, blazor-integration.md
 
 Async validation rules run in the background. Check `IsBusy` or call `WaitForTasks()` before checking validity:
 
+<!-- pseudo:pitfall-async-rules -->
 ```csharp
 // WRONG - may check validity before async rules complete
 if (person.IsValid) { ... }
@@ -28,6 +31,7 @@ if (person.IsValid) { ... }
 await person.WaitForTasks();
 if (person.IsValid) { ... }
 ```
+<!-- /snippet -->
 
 See: rules.md, blazor-integration.md
 
@@ -35,6 +39,7 @@ See: rules.md, blazor-integration.md
 
 Children save through their parent aggregate root. Don't call Save on child factories:
 
+<!-- pseudo:pitfall-child-save -->
 ```csharp
 // WRONG - children don't have their own Save
 await orderLineFactory.Save(lineItem);
@@ -42,6 +47,7 @@ await orderLineFactory.Save(lineItem);
 // CORRECT - save through aggregate root
 order = await orderFactory.Save(order);  // Saves order AND all line items
 ```
+<!-- /snippet -->
 
 See: aggregates.md, factories.md
 
@@ -49,6 +55,7 @@ See: aggregates.md, factories.md
 
 Server-side operations need `[Remote]` to execute on the server in client-server scenarios:
 
+<!-- pseudo:pitfall-missing-remote -->
 ```csharp
 // WRONG - runs on client, can't access database
 [Fetch]
@@ -59,6 +66,7 @@ public void Fetch(Guid id) { ... }
 [Fetch]
 public void Fetch(Guid id) { ... }
 ```
+<!-- /snippet -->
 
 See: client-server.md, factories.md
 
@@ -66,6 +74,7 @@ See: client-server.md, factories.md
 
 Fetch returns `null` when the entity isn't found. Always check:
 
+<!-- pseudo:pitfall-null-fetch -->
 ```csharp
 // WRONG - NullReferenceException if not found
 var person = personFactory.Fetch(id);
@@ -79,6 +88,7 @@ if (person is null)
     return;
 }
 ```
+<!-- /snippet -->
 
 See: factories.md
 
@@ -86,6 +96,7 @@ See: factories.md
 
 `IsSavable` is the comprehensive check for save readiness:
 
+<!-- pseudo:pitfall-issavable -->
 ```csharp
 // WRONG - doesn't check IsBusy, IsModified, or IsChild
 if (person.IsValid) { await Save(); }
@@ -93,6 +104,7 @@ if (person.IsValid) { await Save(); }
 // CORRECT - checks IsModified && IsValid && !IsBusy && !IsChild
 if (person.IsSavable) { await Save(); }
 ```
+<!-- /snippet -->
 
 See: entities.md, properties.md, blazor-integration.md
 
@@ -100,6 +112,7 @@ See: entities.md, properties.md, blazor-integration.md
 
 Use `LoadProperty` instead of property setters during Fetch to avoid triggering rules:
 
+<!-- pseudo:pitfall-loadproperty -->
 ```csharp
 // WRONG - triggers rules during load
 [Fetch]
@@ -115,6 +128,7 @@ public void Fetch(PersonEntity entity)
     LoadProperty(nameof(Name), entity.Name);
 }
 ```
+<!-- /snippet -->
 
 Note: `MapFrom` methods typically use direct assignment since rules are paused during factory operations.
 
@@ -124,6 +138,7 @@ See: data-mapping.md, properties.md
 
 Don't create circular parent-child references. Children reference parents, not vice versa in terms of ownership:
 
+<!-- pseudo:pitfall-circular-reference -->
 ```csharp
 // WRONG - Order owns LineItems, LineItem owns Order?
 public partial IOrder Order { get; set; }  // In LineItem - creates cycle
@@ -131,6 +146,7 @@ public partial IOrder Order { get; set; }  // In LineItem - creates cycle
 // CORRECT - Use Parent property (read-only, set by framework)
 public IOrder? Parent => GetParent<IOrder>();  // Framework manages this
 ```
+<!-- /snippet -->
 
 See: aggregates.md
 
@@ -390,6 +406,7 @@ See: data-mapping.md
 
 The parameterless `EntityBaseServices<T>()` constructor is for **unit testing only**. Using it in production code will break your application:
 
+<!-- invalid:pitfall-production-services -->
 ```csharp
 // WRONG - Production code should NEVER do this
 public class MyEntity : EntityBase<MyEntity>
@@ -406,6 +423,7 @@ internal partial class MyEntity : EntityBase<MyEntity>
     public MyEntity(IEntityBaseServices<MyEntity> services) : base(services) { }
 }
 ```
+<!-- /snippet -->
 
 **What breaks in production:**
 - **Save() fails** - Factory is `null`, no persistence possible
@@ -417,6 +435,7 @@ internal partial class MyEntity : EntityBase<MyEntity>
 - Testing calculated properties and business logic methods
 - Testing property change behavior
 
+<!-- pseudo:pitfall-test-entity -->
 ```csharp
 // Unit test entity - use [SuppressFactory] to make intent clear
 [SuppressFactory]
@@ -428,6 +447,7 @@ public class TestableProduct : EntityBase<TestableProduct>
     public decimal TotalValue => Price * Quantity;  // Testable without factory
 }
 ```
+<!-- /snippet -->
 
 See: testing.md
 
@@ -439,6 +459,7 @@ Interface-first design is a core Neatoo best practice: define a public interface
 
 ### Anti-Patterns
 
+<!-- invalid:pitfall-interface-antipatterns -->
 ```csharp
 // WRONG - Casting to concrete type
 var person = personFactory.Create();
@@ -459,6 +480,7 @@ contact.PhoneNumbers.Add(phone);
 // CORRECT - Use parent's domain method
 var phone = contact.PhoneNumbers.AddPhoneNumber();
 ```
+<!-- /snippet -->
 
 ### Diagnosing the Problem
 
@@ -473,6 +495,7 @@ var phone = contact.PhoneNumbers.AddPhoneNumber();
 
 ### Correct Pattern
 
+<!-- pseudo:pitfall-interface-correct -->
 ```csharp
 // Method needed by consumers? Add to interface
 public partial interface IVisit : IEntityBase
@@ -487,6 +510,7 @@ public async Task<IVisit> Archive()
     return (IVisit)await this.Save();
 }
 ```
+<!-- /snippet -->
 
 See: best-practices.md, entities.md, factories.md, aggregates.md
 
@@ -494,6 +518,7 @@ See: best-practices.md, entities.md, factories.md, aggregates.md
 
 Child entities should be created through the parent collection's add methods, not by injecting child factories into consuming code:
 
+<!-- pseudo:pitfall-child-factory-injection -->
 ```csharp
 // WRONG - Injecting child factory into Blazor component
 @inject IPhoneFactory PhoneFactory
@@ -510,6 +535,7 @@ void AddPhone()
     var phone = contact.PhoneNumbers.AddPhoneNumber();  // Aggregate manages creation
 }
 ```
+<!-- /snippet -->
 
 **Why this matters:**
 - The parent's add method ensures proper parent-child relationships
@@ -518,12 +544,14 @@ void AddPhone()
 
 If you find yourself injecting child factories outside the aggregate, refactor to expose an add method on the collection interface:
 
+<!-- pseudo:pitfall-list-add-method -->
 ```csharp
 public interface IPhoneList : IEntityListBase<IPhone>
 {
     IPhone AddPhoneNumber();  // Expose domain operation
 }
 ```
+<!-- /snippet -->
 
 See: aggregates.md, entities.md
 

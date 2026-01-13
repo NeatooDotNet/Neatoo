@@ -168,7 +168,7 @@ namespace DomainModel.Tests.IntegrationTests
 
             // Act
             var saved = await person.Save();
-            var result = await factory.Fetch();
+            var result = await factory.Fetch(CancellationToken.None);
 
             // Assert
             var personEntity = personContext.Persons.Single();

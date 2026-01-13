@@ -8,6 +8,7 @@
 /// </summary>
 
 using Neatoo.RemoteFactory;
+using Neatoo.Samples.DomainModel.SampleDomain;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -73,35 +74,31 @@ internal partial class Person : EntityBase<Person>, IPerson
     }
 
     [Insert]
-    public Task Insert()
+    public async Task Insert([Service] IRepository<PersonEntity> repository, CancellationToken cancellationToken)
     {
-        // In real code: create entity, MapTo, save to database
         Id = Guid.NewGuid();
         var entity = new PersonEntity();
         MapTo(entity);
-        // db.Persons.Add(entity);
-        // phoneListFactory.Save(PersonPhoneList, entity.Phones);
-        // await db.SaveChangesAsync();
-        return Task.CompletedTask;
+        await repository.AddAsync(entity);
+        await repository.SaveChangesAsync();
     }
 
     [Update]
-    public Task Update()
+    public async Task Update([Service] IRepository<PersonEntity> repository, CancellationToken cancellationToken)
     {
-        // In real code: fetch entity, MapModifiedTo, save changes
-        // var entity = await db.Persons.FindAsync(Id);
-        // MapModifiedTo(entity);
-        // phoneListFactory.Save(PersonPhoneList, entity.Phones);
-        // await db.SaveChangesAsync();
-        return Task.CompletedTask;
+        var entity = await repository.FindAsync(Id);
+        if (entity == null) return;
+        MapModifiedTo(entity);
+        await repository.SaveChangesAsync();
     }
 
     [Delete]
-    public Task Delete()
+    public async Task Delete([Service] IRepository<PersonEntity> repository, CancellationToken cancellationToken)
     {
-        // In real code: delete from database
-        // await db.Persons.Where(p => p.Id == Id).ExecuteDeleteAsync();
-        return Task.CompletedTask;
+        var entity = await repository.FindAsync(Id);
+        if (entity == null) return;
+        await repository.RemoveAsync(entity);
+        await repository.SaveChangesAsync();
     }
 }
 

@@ -32,6 +32,7 @@ NeatooException (abstract)
 
 The root exception for all Neatoo framework exceptions. Catch this to handle any Neatoo-specific error.
 
+<!-- pseudo:neatoo-exception-catch -->
 ```csharp
 try
 {
@@ -43,6 +44,7 @@ catch (NeatooException ex)
     logger.LogError(ex, "Neatoo operation failed");
 }
 ```
+<!-- /snippet -->
 
 ### PropertyException
 
@@ -66,6 +68,7 @@ Base exception for setup and configuration errors.
 
 Thrown when a save operation fails on an entity. The `Reason` property indicates why the save failed.
 
+<!-- pseudo:save-operation-exception -->
 ```csharp
 try
 {
@@ -102,6 +105,7 @@ catch (SaveOperationException ex)
     }
 }
 ```
+<!-- /snippet -->
 
 #### SaveFailureReason Enum
 
@@ -117,6 +121,7 @@ catch (SaveOperationException ex)
 
 Thrown when attempting to add or remove a child object that is currently busy with an async operation.
 
+<!-- pseudo:child-object-busy-exception -->
 ```csharp
 try
 {
@@ -138,11 +143,13 @@ catch (ChildObjectBusyException ex)
     personPhoneList.Add(newPhone);
 }
 ```
+<!-- /snippet -->
 
 ### TypeNotRegisteredException
 
 Thrown when a required type is not registered in the dependency injection container.
 
+<!-- pseudo:type-not-registered-exception -->
 ```csharp
 catch (TypeNotRegisteredException ex)
 {
@@ -151,6 +158,7 @@ catch (TypeNotRegisteredException ex)
     message = "Application configuration error. Please contact support.";
 }
 ```
+<!-- /snippet -->
 
 **Common causes:**
 - Forgot to call `AddNeatooServices()` in Program.cs
@@ -161,6 +169,7 @@ catch (TypeNotRegisteredException ex)
 
 Thrown when attempting to run a rule that hasn't been added to the RuleManager.
 
+<!-- pseudo:rule-not-added-exception -->
 ```csharp
 catch (RuleNotAddedException ex)
 {
@@ -169,22 +178,26 @@ catch (RuleNotAddedException ex)
     // RuleManager.AddRule(uniqueNameRule);
 }
 ```
+<!-- /snippet -->
 
 ### PropertyReadOnlyException
 
 Thrown when attempting to set a read-only property.
 
+<!-- pseudo:property-readonly-exception -->
 ```csharp
 catch (PropertyReadOnlyException ex)
 {
     message = "This field cannot be modified.";
 }
 ```
+<!-- /snippet -->
 
 ### PropertyMissingException
 
 Thrown when a required property cannot be found on an entity.
 
+<!-- pseudo:property-missing-exception -->
 ```csharp
 catch (PropertyMissingException ex)
 {
@@ -192,6 +205,7 @@ catch (PropertyMissingException ex)
     // Check property name matches partial property declaration
 }
 ```
+<!-- /snippet -->
 
 ## Best Practices
 
@@ -199,6 +213,7 @@ catch (PropertyMissingException ex)
 
 Catch specific exceptions for targeted error handling:
 
+<!-- pseudo:specific-exception-handling -->
 ```csharp
 try
 {
@@ -225,11 +240,13 @@ catch (NeatooException ex)
     throw;
 }
 ```
+<!-- /snippet -->
 
 ### 2. Check IsSavable Before Save
 
 Avoid exceptions by checking state before saving:
 
+<!-- pseudo:check-before-save -->
 ```csharp
 async Task SavePerson()
 {
@@ -260,11 +277,13 @@ async Task SavePerson()
     person = await personFactory.Save(person);
 }
 ```
+<!-- /snippet -->
 
 ### 3. Handle Remote Factory Errors
 
 For client-server scenarios, handle network and server errors:
 
+<!-- pseudo:remote-factory-errors -->
 ```csharp
 try
 {
@@ -287,6 +306,7 @@ catch (NeatooException ex)
     message = "An error occurred. Please try again.";
 }
 ```
+<!-- /snippet -->
 
 ### 4. Blazor Error Handling Pattern
 
@@ -376,6 +396,7 @@ Complete error handling in a Blazor component:
 
 ### Logging Recommendations
 
+<!-- pseudo:logging-exceptions -->
 ```csharp
 catch (NeatooException ex)
 {
@@ -385,6 +406,7 @@ catch (NeatooException ex)
         ex.Message);
 }
 ```
+<!-- /snippet -->
 
 ## See Also
 

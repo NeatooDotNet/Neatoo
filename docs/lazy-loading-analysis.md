@@ -8,12 +8,14 @@
 
 The codebase has **no built-in lazy loading** for child objects. The `Getter<P>()` in `Base.cs:242-245` is synchronous and returns values directly from `PropertyManager`:
 
+<!-- pseudo:analysis-getter-current -->
 ```csharp
 protected virtual P? Getter<P>([CallerMemberName] string propertyName = "")
 {
     return (P?)this.PropertyManager[propertyName]?.Value;
 }
 ```
+<!-- /snippet -->
 
 All child objects and related data are loaded eagerly when the parent object is created or fetched.
 
@@ -30,12 +32,14 @@ The framework already has excellent foundational infrastructure for lazy loading
 - `AddChildTask()` method propagates async operations up the parent hierarchy
 - `WaitForTasks()` method allows awaiting all pending operations
 
+<!-- pseudo:analysis-async-tracking -->
 ```csharp
 // From Base.cs
 public bool IsBusy => this.RunningTasks.IsRunning || this.PropertyManager.IsBusy;
 public virtual void AddChildTask(Task task) { ... }
 public virtual async Task WaitForTasks() { ... }
 ```
+<!-- /snippet -->
 
 ### B. Property-Level Async Operations (Property.cs:85-120)
 
@@ -44,6 +48,7 @@ public virtual async Task WaitForTasks() { ... }
 - `LoadValue()` method exists for silent value loading without triggering rules
 - Event propagation system (`PassThruValueNeatooPropertyChanged`) handles child property changes
 
+<!-- pseudo:analysis-property-async -->
 ```csharp
 // From Property.cs
 public virtual Task SetValue(object? newValue)
@@ -51,6 +56,7 @@ public virtual Task SetPrivateValue(object? newValue, bool quietly = false)
 public virtual void LoadValue(object? value) // Silent loading
 public Task WaitForTasks() // Async operation tracking
 ```
+<!-- /snippet -->
 
 ### C. Pause/Resume Pattern (ValidateBase.cs:328-378)
 
@@ -58,6 +64,7 @@ public Task WaitForTasks() // Async operation tracking
 - Useful during bulk loading or initialization
 - Allows batch operations without intermediate validation states
 
+<!-- pseudo:analysis-pause-pattern -->
 ```csharp
 using (customer.PauseAllActions())
 {
@@ -65,6 +72,7 @@ using (customer.PauseAllActions())
     customer.Email = "john@example.com";
 } // Rules run automatically when disposed
 ```
+<!-- /snippet -->
 
 ### D. Factory Pattern Integration (EntityBase.cs:108-120, RemoteFactory)
 
@@ -72,6 +80,7 @@ using (customer.PauseAllActions())
 - FactoryStart/FactoryComplete callbacks pause/resume actions automatically
 - Decorated methods with `[Service]` parameter injection enable dependency passing
 
+<!-- pseudo:analysis-factory-fetch -->
 ```csharp
 [Fetch]
 public async Task<bool> Fetch([Service] IPersonDbContext personContext,
@@ -82,6 +91,7 @@ public async Task<bool> Fetch([Service] IPersonDbContext personContext,
     return true;
 }
 ```
+<!-- /snippet -->
 
 ### E. Property-Child Relationship Management (Base.cs:206-221, Property.cs:143-205)
 
@@ -98,6 +108,7 @@ public async Task<bool> Fetch([Service] IPersonDbContext personContext,
 
 Create a wrapper type that defers materialization:
 
+<!-- pseudo:analysis-lazy-wrapper -->
 ```csharp
 // New type: Lazy child reference
 public Lazy<ChildObject> Child { get; set; }
@@ -105,6 +116,7 @@ public Lazy<ChildObject> Child { get; set; }
 // Current: Eager loading (all child data loaded)
 public ChildObject Child { get; set; }
 ```
+<!-- /snippet -->
 
 **Pros:**
 - Minimal framework changes
@@ -120,12 +132,14 @@ public ChildObject Child { get; set; }
 
 Add framework support for deferred properties:
 
+<!-- pseudo:analysis-deferred-attribute -->
 ```csharp
 [DeferredLoad]
 public ChildObject Child { get; set; }
 
 // Property getter would check if loaded, trigger factory method if not
 ```
+<!-- /snippet -->
 
 **Required Changes:**
 
@@ -179,6 +193,7 @@ public ChildObject Child { get; set; }
 
 ### Issue 1: Property Getter Synchronicity
 
+<!-- pseudo:analysis-sync-getter-issue -->
 ```csharp
 // Current pattern from Base.cs:242-245
 protected virtual P? Getter<P>([CallerMemberName] string propertyName = "")
@@ -186,6 +201,7 @@ protected virtual P? Getter<P>([CallerMemberName] string propertyName = "")
     return (P?)this.PropertyManager[propertyName]?.Value;
 }
 ```
+<!-- /snippet -->
 
 **Problem:** Synchronous getter cannot await async load operations. Would need redesign or Task<T> return type.
 

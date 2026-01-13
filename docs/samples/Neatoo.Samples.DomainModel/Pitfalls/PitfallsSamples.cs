@@ -11,6 +11,7 @@
 /// </summary>
 
 using Neatoo.RemoteFactory;
+using Neatoo.Samples.DomainModel.SampleDomain;
 using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.DomainModel.Pitfalls;
@@ -219,18 +220,16 @@ internal partial class MapModifiedToPitfall : EntityBase<MapModifiedToPitfall>, 
     }
 
     [Update]
-    public async Task Update()
+    public async Task Update([Service] IRepository<MapModifiedToPitfallEntity> repository, CancellationToken cancellationToken)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
         if (!IsSavable) return;
 
-        // In real code: var entity = await db.FindAsync(Id);
-        var entity = new MapModifiedToPitfallEntity { Id = Id };
+        var entity = await repository.FindAsync(Id);
+        if (entity == null) return;
 
-        // Only modified properties are copied
         MapModifiedTo(entity);
-
-        // In real code: await db.SaveChangesAsync();
+        await repository.SaveChangesAsync();
     }
 }
 #endregion

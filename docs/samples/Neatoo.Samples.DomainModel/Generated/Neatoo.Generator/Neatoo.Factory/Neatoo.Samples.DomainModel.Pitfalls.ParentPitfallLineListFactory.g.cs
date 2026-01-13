@@ -2,6 +2,7 @@
 using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Microsoft.Extensions.DependencyInjection;
+using Neatoo.Samples.DomainModel.SampleDomain;
 using System.ComponentModel.DataAnnotations;
 
 /*

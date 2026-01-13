@@ -12,7 +12,7 @@ namespace Neatoo.Samples.DomainModel.BestPractices
     public interface IBpInvoiceLineFactory
     {
         IBpInvoiceLine Create();
-        Task<IBpInvoiceLine> Save(IBpInvoiceLine target, long invoiceId);
+        Task<IBpInvoiceLine> Save(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken);
     }
 
     internal class BpInvoiceLineFactory : FactoryBase<IBpInvoiceLine>, IBpInvoiceLineFactory
@@ -43,19 +43,19 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<IBpInvoiceLine> LocalInsert(IBpInvoiceLine target, long invoiceId)
+        public Task<IBpInvoiceLine> LocalInsert(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken)
         {
             var cTarget = (BpInvoiceLine)target ?? throw new Exception("IBpInvoiceLine must implement BpInvoiceLine");
             var db = ServiceProvider.GetRequiredService<IDbContext>();
-            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(invoiceId, db));
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(invoiceId, db, cancellationToken));
         }
 
-        public virtual Task<IBpInvoiceLine> Save(IBpInvoiceLine target, long invoiceId)
+        public virtual Task<IBpInvoiceLine> Save(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken)
         {
-            return LocalSave(target, invoiceId);
+            return LocalSave(target, invoiceId, cancellationToken);
         }
 
-        public virtual async Task<IBpInvoiceLine> LocalSave(IBpInvoiceLine target, long invoiceId)
+        public virtual async Task<IBpInvoiceLine> LocalSave(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken)
         {
             if (target.IsDeleted)
             {
@@ -63,7 +63,7 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target, invoiceId);
+                return await LocalInsert(target, invoiceId, cancellationToken);
             }
             else
             {

@@ -79,6 +79,7 @@ public class PersonEntity
 
 Use mapper methods to transfer data between domain entities and EF entities:
 
+<!-- pseudo:ef-mapper-usage -->
 ```csharp
 [Factory]
 internal partial class Person : EntityBase<Person>, IPerson
@@ -121,6 +122,7 @@ internal partial class Person : EntityBase<Person>, IPerson
     }
 }
 ```
+<!-- /snippet -->
 
 ## Best Practices
 
@@ -128,6 +130,7 @@ internal partial class Person : EntityBase<Person>, IPerson
 
 EF entities should be simple POCOs without business logic:
 
+<!-- pseudo:ef-entity-simple -->
 ```csharp
 // Good: Simple data class
 public class PersonEntity
@@ -142,6 +145,7 @@ public class PersonEntity
     public string FullName => $"{FirstName} {LastName}";  // Domain logic
 }
 ```
+<!-- /snippet -->
 
 ### 2. Use Interface for DbContext
 
@@ -154,6 +158,7 @@ Defining an interface enables:
 
 Use `MapModifiedTo` instead of `MapTo` when updating:
 
+<!-- pseudo:mapmodifiedto-usage -->
 ```csharp
 // Good: Only updates changed properties
 MapModifiedTo(entity);
@@ -161,6 +166,7 @@ MapModifiedTo(entity);
 // Less efficient: Updates all properties
 MapTo(entity);
 ```
+<!-- /snippet -->
 
 ## See Also
 

@@ -58,6 +58,10 @@ public static class SampleServiceProvider
         services.AddScoped<IInventoryDb, MockInventoryDb>();
         services.AddScoped<IUserRepository, MockUserRepository>();
 
+        // Register generic mock repositories for sample persistence patterns
+        services.AddScoped(typeof(IRepository<>), typeof(MockRepository<>));
+        services.AddScoped(typeof(IRepositoryWithChildren<,>), typeof(MockRepositoryWithChildren<,>));
+
         // Register authorization services
         services.AddScoped<ICurrentUser, MockCurrentUser>();
         services.AddScoped<IDocumentAuth, DocumentAuth>();

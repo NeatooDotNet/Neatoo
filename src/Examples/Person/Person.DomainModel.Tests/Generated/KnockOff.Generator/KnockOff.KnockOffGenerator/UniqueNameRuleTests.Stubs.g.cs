@@ -541,12 +541,15 @@ partial class UniqueNameRuleTests
 			/// <summary>Whether this method was called at least once.</summary>
 			public bool WasCalled => CallCount > 0;
 
+			/// <summary>The argument from the last call.</summary>
+			public global::System.Threading.CancellationToken? LastCallArg { get; private set; }
+
 			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Func<Stubs.IPerson, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>? OnCall { get; set; }
+			public global::System.Func<Stubs.IPerson, global::System.Threading.CancellationToken?, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>? OnCall { get; set; }
 
-			public void RecordCall() { CallCount++; }
+			public void RecordCall(global::System.Threading.CancellationToken? token) { CallCount++; LastCallArg = token; }
 
-			public void Reset() { CallCount = 0; OnCall = null; }
+			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
 		}
 
 		/// <summary>Interceptor for IPerson.GetProperty.</summary>
@@ -919,8 +922,15 @@ partial class UniqueNameRuleTests
 
 			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityBase.Save()
 			{
-				Save.RecordCall();
-				if (Save.OnCall is { } onCall) return onCall(this);
+				Save.RecordCall(null);
+				if (Save.OnCall is { } onCall) return onCall(this, null);
+				throw new global::System.InvalidOperationException("No implementation provided for Save. Set Save.OnCall.");
+			}
+
+			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityBase.Save(global::System.Threading.CancellationToken token)
+			{
+				Save.RecordCall(token);
+				if (Save.OnCall is { } onCall) return onCall(this, token);
 				throw new global::System.InvalidOperationException("No implementation provided for Save. Set Save.OnCall.");
 			}
 

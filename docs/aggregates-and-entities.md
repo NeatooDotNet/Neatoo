@@ -200,6 +200,7 @@ public partial interface ICustomer : IEntityBase
 
 **Always use interface types** in consuming code:
 
+<!-- pseudo:interface-usage -->
 ```csharp
 // Fields and properties
 private IOrder _order;
@@ -209,15 +210,18 @@ public ICustomer SelectedCustomer { get; set; }
 var order = await orderFactory.Create();
 order = await orderFactory.Save(order);
 ```
+<!-- /snippet -->
 
 **Expose business operations on interfaces:**
 
+<!-- pseudo:interface-business-operation -->
 ```csharp
 public partial interface IVisit : IEntityBase
 {
     Task<IVisit> Archive();  // Business operation on interface
 }
 ```
+<!-- /snippet -->
 
 ### Interface Anti-Patterns
 
@@ -271,6 +275,7 @@ Neatoo entities support two DI patterns, and choosing correctly affects memory u
 
 Constructor-inject dependencies needed throughout the entity's lifetime:
 
+<!-- pseudo:constructor-injection-rules -->
 ```csharp
 public Person(
     IEntityBaseServices<Person> services,
@@ -282,7 +287,9 @@ public Person(
     RuleManager.AddRule(new EmailValidationRule(_emailValidator));
 }
 ```
+<!-- /snippet -->
 
+<!-- pseudo:constructor-injection-list -->
 ```csharp
 // List needs factory for repeated AddItem() calls
 public PhoneList([Service] IPhoneFactory phoneFactory)
@@ -297,11 +304,13 @@ public IPhone AddPhoneNumber()
     return phone;
 }
 ```
+<!-- /snippet -->
 
 ### [Service] Injection - For Factory Methods
 
 Use `[Service]` for dependencies only needed during `[Create]`, `[Fetch]`, etc. This keeps the entity lighter—dependencies aren't stored as fields and don't need to be serialized during client-server transfer.
 
+<!-- pseudo:service-injection -->
 ```csharp
 public Person(IEntityBaseServices<Person> services) : base(services)
 {
@@ -314,11 +323,13 @@ public void Create([Service] IPersonPhoneListFactory phoneListFactory)
     PersonPhoneList = phoneListFactory.Create();  // One-time initialization
 }
 ```
+<!-- /snippet -->
 
 ### Preferred Pattern: Inject into Class, Not Method Parameters
 
 Avoid requiring callers to provide factories as method parameters. DI handles this automatically:
 
+<!-- pseudo:prefer-class-injection -->
 ```csharp
 // Avoid - forces caller to inject and pass factory
 public IOrderLine AddLine(IOrderLineFactory lineFactory)
@@ -336,6 +347,7 @@ public IOrderLine AddLine()
     return line;
 }
 ```
+<!-- /snippet -->
 
 ## Partial Properties
 
@@ -393,6 +405,7 @@ public IContact? ParentContact => Parent as IContact;
 
 The `Root` property identifies the aggregate root for any entity in the hierarchy:
 
+<!-- pseudo:root-property -->
 ```csharp
 var order = await orderFactory.Create();
 var line = await order.Lines.AddLine();
@@ -401,9 +414,11 @@ order.Root    // null (it IS the root)
 line.Root     // order
 line.Parent   // order (immediate parent)
 ```
+<!-- /snippet -->
 
 **Cross-Aggregate Enforcement:** Neatoo prevents adding an entity from one aggregate to another:
 
+<!-- pseudo:cross-aggregate-enforcement -->
 ```csharp
 var order1 = await orderFactory.Create();
 var order2 = await orderFactory.Create();
@@ -413,6 +428,7 @@ var line = await order1.Lines.AddLine();
 // Attempt to add to different aggregate
 order2.Lines.Add(line);  // THROWS InvalidOperationException
 ```
+<!-- /snippet -->
 
 | Scenario | item.Root | list.Root | Result |
 |----------|-----------|-----------|--------|
@@ -447,6 +463,7 @@ When adding items to an `EntityListBase<T>`, Neatoo enforces constraints and man
 
 Items can be moved between lists within the same aggregate:
 
+<!-- pseudo:intra-aggregate-move -->
 ```csharp
 var order = await orderFactory.Create();
 var line = await order.ActiveLines.AddLine();
@@ -455,6 +472,7 @@ var line = await order.ActiveLines.AddLine();
 order.ActiveLines.Remove(line);
 order.ArchivedLines.Add(line);  // Allowed - same Root
 ```
+<!-- /snippet -->
 
 When an existing item is re-added (after removal), Neatoo automatically:
 1. Removes it from the previous list's `DeletedList`
@@ -515,7 +533,7 @@ Aggregate root - `[Remote]` operations called from UI:
 // [Remote] - Called from UI
 [Remote]
 [Fetch]
-public void Fetch(Guid id)
+public async Task Fetch(Guid id, [Service] IRepositoryWithChildren<SalesOrderEntity, OrderLineItemEntity> repository, CancellationToken cancellationToken)
 ```
 <!-- endSnippet -->
 
@@ -523,7 +541,7 @@ public void Fetch(Guid id)
 ```cs
 [Remote]
 [Insert]
-public async Task Insert()
+public async Task Insert([Service] IRepository<SalesOrderEntity> repository, CancellationToken cancellationToken)
 ```
 <!-- endSnippet -->
 
@@ -602,35 +620,31 @@ internal partial class Person : EntityBase<Person>, IPerson
     }
 
     [Insert]
-    public Task Insert()
+    public async Task Insert([Service] IRepository<PersonEntity> repository, CancellationToken cancellationToken)
     {
-        // In real code: create entity, MapTo, save to database
         Id = Guid.NewGuid();
         var entity = new PersonEntity();
         MapTo(entity);
-        // db.Persons.Add(entity);
-        // phoneListFactory.Save(PersonPhoneList, entity.Phones);
-        // await db.SaveChangesAsync();
-        return Task.CompletedTask;
+        await repository.AddAsync(entity);
+        await repository.SaveChangesAsync();
     }
 
     [Update]
-    public Task Update()
+    public async Task Update([Service] IRepository<PersonEntity> repository, CancellationToken cancellationToken)
     {
-        // In real code: fetch entity, MapModifiedTo, save changes
-        // var entity = await db.Persons.FindAsync(Id);
-        // MapModifiedTo(entity);
-        // phoneListFactory.Save(PersonPhoneList, entity.Phones);
-        // await db.SaveChangesAsync();
-        return Task.CompletedTask;
+        var entity = await repository.FindAsync(Id);
+        if (entity == null) return;
+        MapModifiedTo(entity);
+        await repository.SaveChangesAsync();
     }
 
     [Delete]
-    public Task Delete()
+    public async Task Delete([Service] IRepository<PersonEntity> repository, CancellationToken cancellationToken)
     {
-        // In real code: delete from database
-        // await db.Persons.Where(p => p.Id == Id).ExecuteDeleteAsync();
-        return Task.CompletedTask;
+        var entity = await repository.FindAsync(Id);
+        if (entity == null) return;
+        await repository.RemoveAsync(entity);
+        await repository.SaveChangesAsync();
     }
 }
 

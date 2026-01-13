@@ -186,7 +186,7 @@ public class CompleteExampleSamplesTests : SamplesTestBase
         person.LastName = "Doe";
 
         // Act
-        person = await factory.Save(person);
+        person = await factory.Save(person, CancellationToken.None);
 
         // Assert
         Assert.IsNotNull(person.Id);

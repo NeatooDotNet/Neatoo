@@ -31,7 +31,7 @@ public class SaveOperationSamplesTests : SamplesTestBase
         item.Quantity = 10;
 
         // Act
-        await factory.Save(item);
+        await factory.Save(item, CancellationToken.None);
 
         // Assert
         Assert.AreEqual(1, db.Items.Count);
@@ -50,7 +50,7 @@ public class SaveOperationSamplesTests : SamplesTestBase
         // Name is required but not set
 
         // Act
-        await factory.Save(item);
+        await factory.Save(item, CancellationToken.None);
 
         // Assert - validation failed, nothing persisted
         Assert.AreEqual(0, db.Items.Count);
@@ -84,7 +84,7 @@ public class SaveOperationSamplesTests : SamplesTestBase
 
         // Act - modify and save
         item.Quantity = 15;
-        await factory.Save(item);
+        await factory.Save(item, CancellationToken.None);
 
         // Assert
         Assert.AreEqual(1, db.Items.Count);
@@ -113,7 +113,7 @@ public class SaveOperationSamplesTests : SamplesTestBase
 
         // Act - only modify Name
         item.Name = "Updated Name";
-        await factory.Save(item);
+        await factory.Save(item, CancellationToken.None);
 
         // Assert
         Assert.AreEqual("Updated Name", db.Items[0].Name);
@@ -143,7 +143,7 @@ public class SaveOperationSamplesTests : SamplesTestBase
 
         // Act
         item.Delete();
-        await factory.Save(item);
+        await factory.Save(item, CancellationToken.None);
 
         // Assert
         Assert.AreEqual(0, db.Items.Count);
@@ -169,7 +169,7 @@ public class SaveOperationSamplesTests : SamplesTestBase
         // Act
         item.Delete();
         item.UnDelete(); // Changed mind
-        await factory.Save(item);
+        await factory.Save(item, CancellationToken.None);
 
         // Assert - item still exists
         Assert.AreEqual(1, db.Items.Count);

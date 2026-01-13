@@ -128,6 +128,7 @@ dotnet list package | findstr RemoteFactory
 
 | Date | Commit | Description | Breaking? | Plan |
 |------|--------|-------------|-----------|------|
+| 2026-01-11 | N/A | 10.7.0 - Fix duplicate Save with CancellationToken | No | N/A |
 | 2026-01-10 | `9b33a87` | 10.6.0 - [Event] Attribute for Domain Events | Yes* | N/A |
 | 2026-01-05 | N/A | 10.5.0 - Upgrade Complete | Migrated | `docs/todos/remotefactory-upgrade-blocked.md` |
 | 2026-01-04 | `db5d76e` | 10.4.0 - CancellationToken Support | Migrated | `docs/todos/remotefactory-upgrade-blocked.md` |
@@ -138,7 +139,7 @@ dotnet list package | findstr RemoteFactory
 
 ### Current Version
 
-**Neatoo.RemoteFactory 10.6.0** (updated 2026-01-10)
+**Neatoo.RemoteFactory 10.7.0** (updated 2026-01-11)
 
 ### Breaking Change Notes
 

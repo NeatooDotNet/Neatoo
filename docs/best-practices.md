@@ -149,6 +149,7 @@ internal partial class BpVisit : EntityBase<BpVisit>, IBpVisit
 
 Casting to concrete types defeats the interface-first pattern:
 
+<!-- invalid:interface-antipatterns -->
 ```csharp
 // WRONG - Casting to concrete
 var person = personFactory.Create();
@@ -160,6 +161,7 @@ private Person _person;  // Should be IPerson
 // WRONG - Calling child factory directly
 var phone = phoneFactory.Create();  // Bypass aggregate's add method
 ```
+<!-- /snippet -->
 
 **If you find yourself needing to cast, the interface is incomplete.** Add the needed method or property to the interface.
 
@@ -293,6 +295,7 @@ public interface IOrderLine : IEntityBase
 
 **Never instantiate entities directly.** Always use the generated factory.
 
+<!-- pseudo:factory-creation -->
 ```csharp
 // WRONG - Direct instantiation
 var order = new Order();  // Won't compile (internal class)
@@ -300,6 +303,7 @@ var order = new Order();  // Won't compile (internal class)
 // CORRECT - Factory creation
 var order = await orderFactory.Create();
 ```
+<!-- /snippet -->
 
 The factory:
 - Sets up parent-child relationships
@@ -311,6 +315,7 @@ The factory:
 
 **Save through the aggregate root, not individual children.**
 
+<!-- pseudo:aggregate-save -->
 ```csharp
 // WRONG - Saving child directly
 await orderLineFactory.Save(lineItem);  // Child factories don't have Save
@@ -318,6 +323,7 @@ await orderLineFactory.Save(lineItem);  // Child factories don't have Save
 // CORRECT - Save through aggregate root
 order = await orderFactory.Save(order);  // Saves order AND all line items
 ```
+<!-- /snippet -->
 
 Child entities:
 - Set `IsChild = true` automatically when added to parent
@@ -328,6 +334,7 @@ Child entities:
 
 **Always capture the return value from Save().** The server deserializes a new instance.
 
+<!-- pseudo:save-reassign -->
 ```csharp
 // WRONG - Changes lost
 await personFactory.Save(person);
@@ -337,11 +344,13 @@ person.Name = "Updated";  // person still references the old instance
 person = await personFactory.Save(person);
 person.Name = "Updated";  // Works with the server-returned instance
 ```
+<!-- /snippet -->
 
 ## 5. Check IsSavable, Not Just IsValid
 
 **Use `IsSavable` for the complete save-readiness check.**
 
+<!-- pseudo:issavable-check -->
 ```csharp
 // WRONG - Incomplete check
 if (person.IsValid) { await Save(); }  // Ignores IsBusy, IsModified, IsChild
@@ -349,6 +358,7 @@ if (person.IsValid) { await Save(); }  // Ignores IsBusy, IsModified, IsChild
 // CORRECT - Complete check
 if (person.IsSavable) { await Save(); }
 ```
+<!-- /snippet -->
 
 `IsSavable` is `true` when:
 - `IsModified == true` (has changes)
@@ -360,6 +370,7 @@ if (person.IsSavable) { await Save(); }
 
 **Await `WaitForTasks()` before checking validity** when using async validation rules.
 
+<!-- pseudo:waitfortasks-validity -->
 ```csharp
 // WRONG - May check before async rules complete
 if (person.IsValid) { ... }
@@ -368,6 +379,7 @@ if (person.IsValid) { ... }
 await person.WaitForTasks();
 if (person.IsValid) { ... }
 ```
+<!-- /snippet -->
 
 ## 7. Nullable IDs for Database-Generated Keys
 
@@ -405,7 +417,7 @@ internal partial class BpProduct : EntityBase<BpProduct>, IBpProduct
 
     [Remote]
     [Insert]
-    public async Task Insert([Service] IDbContext db)
+    public async Task Insert([Service] IDbContext db, CancellationToken cancellationToken)
     {
         var entity = new OrderEntity();
         entity.CustomerName = Name;
@@ -469,7 +481,7 @@ internal partial class BpOrderLine : EntityBase<BpOrderLine>, IBpOrderLine
     /// FK is passed directly to persistence - not stored on domain object.
     /// </summary>
     [Insert]
-    public async Task Insert(long orderId, [Service] IDbContext db)
+    public async Task Insert(long orderId, [Service] IDbContext db, CancellationToken cancellationToken)
     {
         var entity = new OrderLineEntity
         {
@@ -529,7 +541,7 @@ internal partial class BpInvoice : EntityBase<BpInvoice>, IBpInvoice
 
     [Remote]
     [Insert]
-    public async Task Insert([Service] IDbContext db, [Service] IBpInvoiceLineFactory lineFactory)
+    public async Task Insert([Service] IDbContext db, [Service] IBpInvoiceLineFactory lineFactory, CancellationToken cancellationToken)
     {
         // Save parent first
         var entity = new OrderEntity { CustomerName = CustomerName };
@@ -540,7 +552,7 @@ internal partial class BpInvoice : EntityBase<BpInvoice>, IBpInvoice
         // Save children, passing parent ID to each child's Insert
         foreach (var line in Lines)
         {
-            await lineFactory.Save(line, Id.Value);  // Parent ID passed to child
+            await lineFactory.Save(line, Id.Value, cancellationToken);  // Parent ID passed to child
         }
     }
 }
@@ -571,7 +583,7 @@ internal partial class BpInvoiceLine : EntityBase<BpInvoiceLine>, IBpInvoiceLine
     /// FK is passed directly to persistence - not stored on domain object.
     /// </summary>
     [Insert]
-    public async Task Insert(long invoiceId, [Service] IDbContext db)
+    public async Task Insert(long invoiceId, [Service] IDbContext db, CancellationToken cancellationToken)
     {
         var entity = new OrderLineEntity
         {

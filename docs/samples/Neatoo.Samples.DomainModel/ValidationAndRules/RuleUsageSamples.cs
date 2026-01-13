@@ -88,14 +88,9 @@ public class UniqueNameValidationRuleImpl : RuleBase<IRuleRegistrationPerson>, I
 
     protected override IRuleMessages Execute(IRuleRegistrationPerson target)
     {
-        // Simplified - real implementation would check database
         return None;
     }
 }
-
-// DI Registration example (shown in comments - actual registration in test setup)
-// builder.Services.AddScoped<IUniqueNameValidationRule, UniqueNameValidationRuleImpl>();
-// builder.Services.AddScoped<IAgeValidationRule, AgeValidationRuleImpl>();
 #endregion
 
 #region async-action-rule
@@ -204,9 +199,9 @@ internal partial class ManualExecutionEntity : EntityBase<ManualExecutionEntity>
     public void Create() { }
 
     [Insert]
-    public async Task Insert()
+    public async Task Insert(CancellationToken cancellationToken)
     {
-        await RunRules();  // Run all rules
+        await RunRules(token: cancellationToken);  // Run all rules
 
         if (!IsSavable)
             return;  // Don't save if invalid

@@ -12,9 +12,20 @@
 
 using Neatoo.RemoteFactory;
 using Neatoo.Rules;
+using Neatoo.Samples.DomainModel.SampleDomain;
 using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.Samples.DomainModel.DatabaseValidation;
+
+/// <summary>
+/// EF entity for UserWithEmail persistence.
+/// </summary>
+public class UserWithEmailEntity
+{
+    public Guid Id { get; set; }
+    public string? Email { get; set; }
+    public string? Name { get; set; }
+}
 
 /// <summary>
 /// Mock repository for email uniqueness checks.
@@ -170,14 +181,15 @@ internal partial class UserWithEmail : EntityBase<UserWithEmail>, IUserWithEmail
     /// Validation is handled by rules during editing.
     /// </summary>
     [Insert]
-    public async Task Insert()
+    public async Task Insert([Service] IRepository<UserWithEmailEntity> repository, CancellationToken cancellationToken)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
         if (!IsSavable)
             return;
 
-        // Only persistence - validation already handled by rules
-        // In real code: await repository.InsertAsync(entity);
+        var entity = new UserWithEmailEntity { Id = Id, Email = Email, Name = Name };
+        await repository.AddAsync(entity);
+        await repository.SaveChangesAsync();
     }
 }
 #endregion

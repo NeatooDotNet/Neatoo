@@ -228,22 +228,22 @@ public class TestingRuleSamplesTests
         Assert.IsFalse(result.Result.Any(), "Should return no messages when within limit");
     }
 
+    #region testing-null-parent
     [TestMethod]
     public void RunRule_WhenNoParent_ReturnsNone()
     {
-        // Arrange
         var rule = new QuantityLimitRule();
 
         var mockTarget = new Mock<ILineItem>();
         mockTarget.Setup(l => l.Quantity).Returns(1000);
         mockTarget.Setup(l => l.Parent).Returns((IOrderHeader?)null);
 
-        // Act
         var result = rule.RunRule(mockTarget.Object);
 
-        // Assert - Should gracefully handle null parent
-        Assert.IsFalse(result.Result.Any(), "Should return no messages when parent is null");
+        // Rule should handle null parent gracefully
+        Assert.IsFalse(result.Result.Any());
     }
+    #endregion
 
     #endregion
 }

@@ -240,12 +240,14 @@ public class ExternalData
 
 Access individual property metadata via indexer:
 
+<!-- pseudo:property-level-access -->
 ```csharp
 var prop = entity[nameof(entity.FirstName)];
 prop.IsModified    // Was this property changed?
 prop.IsBusy        // Async validation running?
 prop.DisplayName   // UI-friendly label
 ```
+<!-- /snippet -->
 
 ## Key Concepts
 

@@ -143,14 +143,14 @@
     private async Task Fetch()
     {
         Message = "Fetching...";
-        NewPerson(await PersonFactory.Fetch());
+        NewPerson(await PersonFactory.Fetch(CancellationToken.None));
         Message = string.Empty;
     }
 
     private async Task Delete()
     {
         this.Person!.Delete();
-        await PersonFactory.Save(Person!);
+        await PersonFactory.Save(Person!, CancellationToken.None);
         this.Person = null;
     }
 
@@ -178,7 +178,7 @@
         }
 
         Message = "Saving...";
-        NewPerson(await PersonFactory.Save(Person!));
+        NewPerson(await PersonFactory.Save(Person!, CancellationToken.None));
         Message = string.Empty;
     }
 

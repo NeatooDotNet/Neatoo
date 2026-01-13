@@ -68,9 +68,10 @@ internal partial class Person : EntityBase<Person>, IPerson
     [Remote]
     [Fetch]
     public async Task<bool> Fetch([Service] IPersonDbContext personContext,
-                                    [Service] IPersonPhoneListFactory personPhoneModelListFactory)
+                                    [Service] IPersonPhoneListFactory personPhoneModelListFactory,
+                                    CancellationToken cancellationToken = default)
     {
-        var personEntity = await personContext.FindPerson();
+        var personEntity = await personContext.FindPerson(cancellationToken);
         if (personEntity == null)
         {
             return false;
@@ -83,9 +84,10 @@ internal partial class Person : EntityBase<Person>, IPerson
     [Remote]
     [Insert]
     public async Task<PersonEntity?> Insert([Service] IPersonDbContext personContext,
-                                    [Service] IPersonPhoneListFactory personPhoneModelListFactory)
+                                    [Service] IPersonPhoneListFactory personPhoneModelListFactory,
+                                    CancellationToken cancellationToken = default)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
 
         if(!this.IsSavable)
         {
@@ -100,23 +102,24 @@ internal partial class Person : EntityBase<Person>, IPerson
 
         personPhoneModelListFactory.Save(this.PersonPhoneList, personEntity.Phones);
 
-        await personContext.SaveChangesAsync();
+        await personContext.SaveChangesAsync(cancellationToken);
         return personEntity;
     }
 
     [Remote]
     [Update]
     public async Task<PersonEntity?> Update([Service] IPersonDbContext personContext,
-                                    [Service] IPersonPhoneListFactory personPhoneModelListFactory)
+                                    [Service] IPersonPhoneListFactory personPhoneModelListFactory,
+                                    CancellationToken cancellationToken = default)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
 
         if (!this.IsSavable)
         {
             return null;
         }
 
-        var personEntity = await personContext.FindPerson(this.Id);
+        var personEntity = await personContext.FindPerson(this.Id, cancellationToken);
         if (personEntity == null)
         {
             throw new KeyNotFoundException("Person not found");
@@ -126,15 +129,16 @@ internal partial class Person : EntityBase<Person>, IPerson
 
         personPhoneModelListFactory.Save(this.PersonPhoneList, personEntity.Phones);
 
-        await personContext.SaveChangesAsync();
+        await personContext.SaveChangesAsync(cancellationToken);
         return personEntity;
     }
 
     [Remote]
     [Delete]
-    public async Task Delete([Service] IPersonDbContext personContext)
+    public async Task Delete([Service] IPersonDbContext personContext,
+                             CancellationToken cancellationToken)
     {
-        await personContext.DeleteAllPersons();
-        await personContext.SaveChangesAsync();
+        await personContext.DeleteAllPersons(cancellationToken);
+        await personContext.SaveChangesAsync(cancellationToken);
     }
 }

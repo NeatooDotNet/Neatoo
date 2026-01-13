@@ -65,31 +65,29 @@ MySolution/
 
 ### Program.cs
 
-```csharp
-using Neatoo.RemoteFactory;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Add Neatoo services for server-side execution
-builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IMyAggregate).Assembly);
-
-// Register your DbContext
-builder.Services.AddDbContext<MyDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
-
-// Register validation rules
-builder.Services.AddScoped<IMyValidationRule, MyValidationRule>();
-
-var app = builder.Build();
-
-// Map the Neatoo RemoteFactory endpoint
-app.MapPost("/api/neatoo", async (HttpContext context, RemoteRequestDto request) =>
+<!-- snippet: server-program-cs -->
+```cs
+// Server Program.cs - Complete configuration example
+public static void ConfigureServerProgram(WebApplicationBuilder builder, WebApplication app)
 {
-    return await NeatooEndpoint.HandleRequest(context, request);
-});
+    // Add Neatoo services for server-side execution
+    builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IMyAggregate).Assembly);
 
-app.Run();
+    // Register your DbContext (example - actual implementation depends on your setup)
+    // builder.Services.AddDbContext<MyDbContext>(options => options.UseSqlServer(connectionString));
+
+    // Register validation rules
+    builder.Services.AddScoped<IMyValidationRule, MyValidationRule>();
+
+    // Map the Neatoo RemoteFactory endpoint
+    app.MapPost("/api/neatoo", (HttpContext httpContext, RemoteRequestDto request, CancellationToken token) =>
+    {
+        var handler = httpContext.RequestServices.GetRequiredService<HandleRemoteDelegateRequest>();
+        return handler(request, token);
+    });
+}
 ```
+<!-- endSnippet -->
 
 ### appsettings.json
 
@@ -105,33 +103,32 @@ app.Run();
 
 ### Blazor WebAssembly Program.cs
 
-```csharp
-using Neatoo.RemoteFactory;
-
-var builder = WebAssemblyHostBuilder.CreateDefault(args);
-builder.RootComponents.Add<App>("#app");
-
-// Add Neatoo services for client-side with remote factory calls
-builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IMyAggregate).Assembly);
-
-// Configure HttpClient for API calls
-builder.Services.AddScoped(sp => new HttpClient
+<!-- snippet: client-program-cs -->
+```cs
+// Blazor WebAssembly Program.cs - Complete configuration example
+public static void ConfigureClientProgram(WebAssemblyHostBuilder builder)
 {
-    BaseAddress = new Uri("https://localhost:5001")
-});
+    // Add Neatoo services for client-side with remote factory calls
+    builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IMyAggregate).Assembly);
 
-// Register validation rules (same rules run on client)
-builder.Services.AddScoped<IMyValidationRule, MyValidationRule>();
+    // Configure HttpClient for API calls
+    builder.Services.AddKeyedScoped(RemoteFactoryServices.HttpClientKey, (sp, key) =>
+        new HttpClient { BaseAddress = new Uri("https://localhost:5001") });
 
-await builder.Build().RunAsync();
+    // Register validation rules (same rules run on client)
+    builder.Services.AddScoped<IMyValidationRule, MyValidationRule>();
+}
 ```
+<!-- endSnippet -->
 
 ### MudBlazor Configuration
 
+<!-- pseudo:mudblazor-services -->
 ```csharp
 // Program.cs
 builder.Services.AddMudServices();
 ```
+<!-- /snippet -->
 
 ```razor
 <!-- MainLayout.razor or App.razor -->
@@ -161,11 +158,13 @@ builder.Services.AddMudServices();
 
 ### GlobalUsings.cs (Optional)
 
+<!-- pseudo:global-usings -->
 ```csharp
 global using Neatoo;
 global using Neatoo.RemoteFactory;
 global using Neatoo.Rules;
 ```
+<!-- /snippet -->
 
 ## Service Registration
 
@@ -173,7 +172,8 @@ global using Neatoo.Rules;
 
 Register factories, rules, and services in both client and server:
 
-```csharp
+<!-- snippet: domain-model-services -->
+```cs
 // Extension method for shared registration
 public static class DomainModelServiceExtensions
 {
@@ -189,18 +189,18 @@ public static class DomainModelServiceExtensions
         return services;
     }
 }
-
-// Usage in Program.cs
-builder.Services.AddDomainModelServices();
 ```
+<!-- endSnippet -->
 
 ### Server-Only Services
 
+<!-- pseudo:server-only-services -->
 ```csharp
 // DbContext and repositories
 builder.Services.AddDbContext<MyDbContext>(...);
 builder.Services.AddScoped<IMyRepository, MyRepository>();
 ```
+<!-- /snippet -->
 
 ## Configuration Modes
 
@@ -220,9 +220,11 @@ builder.Services.AddScoped<IMyRepository, MyRepository>();
 
 For desktop apps or server-only scenarios:
 
+<!-- pseudo:standalone-setup -->
 ```csharp
 builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IMyAggregate).Assembly);
 ```
+<!-- /snippet -->
 
 ## Source Generator Setup
 
@@ -233,16 +235,20 @@ The source generators require:
 3. **Interface** - Each aggregate needs a public interface
 4. **[Factory] attribute** - Marks classes for factory generation
 
-```csharp
-// Required structure
+<!-- snippet: source-gen-structure -->
+```cs
+// Required structure for source generation
 public partial interface IMyAggregate : IEntityBase { }
 
 [Factory]
 internal partial class MyAggregate : EntityBase<MyAggregate>, IMyAggregate
 {
+    public MyAggregate(IEntityBaseServices<MyAggregate> services) : base(services) { }
+
     public partial string? Name { get; set; }  // Partial for state tracking
 }
 ```
+<!-- endSnippet -->
 
 ## Troubleshooting
 

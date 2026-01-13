@@ -15,6 +15,7 @@ This guide covers the correct pattern for implementing validation rules that req
 
 When developers need database access for validation, they often place the logic in `[Insert]` or `[Update]` methods because services are readily available there:
 
+<!-- invalid:factory-validation-antipattern -->
 ```csharp
 [Insert]
 [Remote]
@@ -34,6 +35,7 @@ public async Task Insert([Service] IShiftRepository repository)
     // ... persistence logic
 }
 ```
+<!-- /snippet -->
 
 **This pattern is wrong.** While it prevents invalid data from being persisted, it creates significant problems.
 
@@ -143,9 +145,11 @@ public class AsyncUniqueEmailRule : AsyncRuleBase<IUserWithEmail>, IAsyncUniqueE
 
 Register the rule interface so it can be injected into entity constructors:
 
+<!-- pseudo:async-rule-di-registration -->
 ```csharp
 builder.Services.AddScoped<IAsyncUniqueEmailRule, AsyncUniqueEmailRule>();
 ```
+<!-- /snippet -->
 
 ### Step 4: Wire It Together
 
@@ -182,14 +186,15 @@ internal partial class UserWithEmail : EntityBase<UserWithEmail>, IUserWithEmail
     /// Validation is handled by rules during editing.
     /// </summary>
     [Insert]
-    public async Task Insert()
+    public async Task Insert([Service] IRepository<UserWithEmailEntity> repository, CancellationToken cancellationToken)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
         if (!IsSavable)
             return;
 
-        // Only persistence - validation already handled by rules
-        // In real code: await repository.InsertAsync(entity);
+        var entity = new UserWithEmailEntity { Id = Id, Email = Email, Name = Name };
+        await repository.AddAsync(entity);
+        await repository.SaveChangesAsync();
     }
 }
 ```
@@ -214,6 +219,7 @@ See the complete example above (Steps 1-4) for email uniqueness validation.
 
 ### Date Range Overlap
 
+<!-- pseudo:booking-overlap-rule -->
 ```csharp
 public class BookingOverlapRule : AsyncRuleBase<IBooking>, IBookingOverlapRule
 {
@@ -250,6 +256,7 @@ public class BookingOverlapRule : AsyncRuleBase<IBooking>, IBookingOverlapRule
     }
 }
 ```
+<!-- /snippet -->
 
 ## Why Developers Fall Into This Trap
 

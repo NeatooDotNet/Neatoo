@@ -11,9 +11,10 @@ public interface IPersonDbContext
 {
 	DbSet<PersonEntity> Persons { get; }
     DbSet<PersonPhoneEntity> PersonPhones { get; }
-	Task<PersonEntity> FindPerson(Guid? id = null);
+	Task<PersonEntity?> FindPerson(CancellationToken cancellationToken = default);
+	Task<PersonEntity?> FindPerson(Guid? id, CancellationToken cancellationToken = default);
 	void AddPerson(PersonEntity personEntity);
-    Task DeleteAllPersons();
+    Task DeleteAllPersons(CancellationToken cancellationToken = default);
 	void DeletePerson(PersonEntity person);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
@@ -55,15 +56,20 @@ public class PersonDbContext : DbContext, IPersonDbContext
         Persons.Add(personEntity);
     }
 
-    public Task<PersonEntity?> FindPerson(Guid? id = null)
+    public Task<PersonEntity?> FindPerson(CancellationToken cancellationToken = default)
 	{
-        return Persons.FirstOrDefaultAsync(_ => id == null || _.Id == id);
+        return Persons.FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task DeleteAllPersons()
+    public Task<PersonEntity?> FindPerson(Guid? id, CancellationToken cancellationToken = default)
+	{
+        return Persons.FirstOrDefaultAsync(_ => _.Id == id, cancellationToken);
+    }
+
+    public async Task DeleteAllPersons(CancellationToken cancellationToken = default)
     {
-		await PersonPhones.ExecuteDeleteAsync();
-        await Persons.ExecuteDeleteAsync();
+		await PersonPhones.ExecuteDeleteAsync(cancellationToken);
+        await Persons.ExecuteDeleteAsync(cancellationToken);
     }
 
     public void DeletePerson(PersonEntity person)

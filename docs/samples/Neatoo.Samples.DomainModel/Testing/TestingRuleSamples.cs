@@ -10,6 +10,8 @@
 /// </summary>
 
 using Neatoo;
+using Neatoo.Internal;
+using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 
 namespace Neatoo.Samples.DomainModel.Testing;
@@ -131,5 +133,19 @@ public class QuantityLimitRule : RuleBase<ILineItem>
 
         return None;
     }
+}
+#endregion
+
+#region correct-real-neatoo-class
+/// <summary>
+/// CORRECT - Use real Neatoo classes for integration tests.
+/// Don't mock Neatoo interfaces like IValidateBase.
+/// </summary>
+[SuppressFactory]
+public class TestPerson : ValidateBase<TestPerson>
+{
+    public TestPerson() : base(new ValidateBaseServices<TestPerson>()) { }
+
+    public string? Name { get => Getter<string>(); set => Setter(value); }
 }
 #endregion

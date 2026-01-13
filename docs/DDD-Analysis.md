@@ -40,6 +40,7 @@ The framework actively prevents anemic domain models by:
 - Supporting complex cross-property validations through `RuleBase<T>`
 
 Example:
+<!-- pseudo:ddd-rich-domain-model -->
 ```csharp
 internal partial class Person : EntityBase<Person>, IPerson
 {
@@ -59,11 +60,13 @@ internal partial class Person : EntityBase<Person>, IPerson
     }
 }
 ```
+<!-- /snippet -->
 
 #### 1.3 Business Invariant Enforcement
 
 The rules system (`RuleManager`, `RuleBase<T>`, `AsyncRuleBase<T>`) provides a first-class mechanism for expressing business invariants:
 
+<!-- pseudo:ddd-business-invariant -->
 ```csharp
 internal class UniquePhoneTypeRule : RuleBase<IPersonPhone>, IUniquePhoneTypeRule
 {
@@ -77,6 +80,7 @@ internal class UniquePhoneTypeRule : RuleBase<IPersonPhone>, IUniquePhoneTypeRul
     }
 }
 ```
+<!-- /snippet -->
 
 #### 1.4 Aggregate Boundary Awareness
 
@@ -113,6 +117,7 @@ Neatoo demonstrates strong alignment with DDD tactical patterns, particularly fo
 
 The meta-property system provides UI-bindable state:
 
+<!-- pseudo:ddd-meta-properties -->
 ```csharp
 public interface IEntityMetaProperties : IFactorySaveMeta
 {
@@ -123,6 +128,7 @@ public interface IEntityMetaProperties : IFactorySaveMeta
     bool IsSavable { get; }
 }
 ```
+<!-- /snippet -->
 
 This enables sophisticated UIs that can:
 - Disable save buttons until `IsSavable` is true
@@ -144,6 +150,7 @@ The serialization system (`NeatooJsonConverterFactory`) handles the complete dom
 
 `AsyncRuleBase<T>` enables validation rules that call external services:
 
+<!-- pseudo:ddd-async-validation -->
 ```csharp
 internal class UniqueNameRule : AsyncRuleBase<IPerson>, IUniqueNameRule
 {
@@ -157,6 +164,7 @@ internal class UniqueNameRule : AsyncRuleBase<IPerson>, IUniqueNameRule
     }
 }
 ```
+<!-- /snippet -->
 
 The framework properly tracks busy state during async validation (`IsBusy`, `AddMarkedBusy`, `RemoveMarkedBusy`).
 
@@ -164,10 +172,12 @@ The framework properly tracks busy state during async validation (`IsBusy`, `Add
 
 Authorization is provided through [RemoteFactory's](https://github.com/NeatooDotNet/RemoteFactory) integration with Neatoo. The declarative authorization pattern integrates into the factory:
 
+<!-- pseudo:ddd-authorization -->
 ```csharp
 [AuthorizeFactory<IPersonAuth>]  // RemoteFactory attribute
 internal partial class Person : EntityBase<Person>, IPerson { }
 ```
+<!-- /snippet -->
 
 This generates authorization checks for all factory operations, with `CanCreate()`, `CanFetch()`, etc. methods available for UI permission display. For comprehensive authorization documentation, see the [RemoteFactory documentation](https://github.com/NeatooDotNet/RemoteFactory/tree/main/docs).
 
@@ -181,9 +191,11 @@ This generates authorization checks for all factory operations, with `CanCreate(
 
 **Neatoo Approach:** Entities inherit from `EntityBase<T>`:
 
+<!-- pseudo:ddd-entity-inheritance -->
 ```csharp
 internal partial class Person : EntityBase<Person>, IPerson
 ```
+<!-- /snippet -->
 
 **Analysis:** This is a pragmatic trade-off. The benefits (property tracking, validation, serialization) outweigh the coupling concerns for the target use case (LOB applications). The interface-based design (`IPerson`) does allow the domain contract to remain clean.
 
@@ -195,9 +207,11 @@ internal partial class Person : EntityBase<Person>, IPerson
 
 **Neatoo Approach:** Properties go through a wrapper system:
 
+<!-- pseudo:ddd-property-wrapper -->
 ```csharp
 public partial Guid? Id { get => Getter<Guid?>(); set => Setter(value); }
 ```
+<!-- /snippet -->
 
 **Analysis:** This enables:
 - Automatic change tracking (`IsModified`)
@@ -214,6 +228,7 @@ The source generators make this relatively transparent to developers.
 
 **Neatoo Approach:** Entities contain `[Insert]`, `[Update]`, `[Delete]` methods:
 
+<!-- pseudo:ddd-persistence-in-entity -->
 ```csharp
 [Remote]
 [Insert]
@@ -222,6 +237,7 @@ public async Task<PersonEntity?> Insert([Service] IPersonDbContext personContext
     // Persistence logic here
 }
 ```
+<!-- /snippet -->
 
 **Analysis:** This is a conscious design choice aligning with the "Active Record" pattern variant. Services are injected via `[Service]` attribute, keeping the entity unaware of concrete infrastructure.
 
@@ -236,6 +252,7 @@ public async Task<PersonEntity?> Insert([Service] IPersonDbContext personContext
 **Neatoo Approach:** Value Objects are implemented as simple POCO classes with the `[Factory]` attribute. They do not inherit from any Neatoo base class. [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) handles factory operations for fetching value objects.
 
 **Example:**
+<!-- pseudo:ddd-value-object -->
 ```csharp
 [Factory]
 internal partial class StateProvince : IStateProvince
@@ -251,6 +268,7 @@ internal partial class StateProvince : IStateProvince
     }
 }
 ```
+<!-- /snippet -->
 
 **Analysis:** This approach is clean and aligns with DDD principles - value objects are simple, immutable (after fetch), and focused on their attributes rather than identity. RemoteFactory handles the factory generation.
 
@@ -269,6 +287,7 @@ The `Neatoo.BaseGenerator` automatically generates:
 - Interface members
 - Mapper methods (`MapFrom`, `MapTo`, `MapModifiedTo`)
 
+<!-- generated:ddd-mapmodifiedto -->
 ```csharp
 public partial void MapModifiedTo(PersonEntity personEntity)
 {
@@ -279,10 +298,12 @@ public partial void MapModifiedTo(PersonEntity personEntity)
     // ... only modified properties are mapped
 }
 ```
+<!-- /snippet -->
 
 **Fluent Rule API**
 
 Quick validation rules can be defined inline:
+<!-- pseudo:ddd-fluent-rule -->
 ```csharp
 RuleManager.AddValidation(static (t) =>
 {
@@ -291,6 +312,7 @@ RuleManager.AddValidation(static (t) =>
     return string.Empty;
 }, (t) => t.ObjectInvalid);
 ```
+<!-- /snippet -->
 
 ### 4.2 Testability Assessment
 
@@ -298,6 +320,7 @@ RuleManager.AddValidation(static (t) =>
 
 Rules are highly testable in isolation:
 
+<!-- pseudo:ddd-rule-test -->
 ```csharp
 [Fact]
 public async Task Execute_ShouldReturnNone_WhenNameIsUnique()
@@ -313,11 +336,13 @@ public async Task Execute_ShouldReturnNone_WhenNameIsUnique()
     Assert.Equal(RuleMessages.None, result);
 }
 ```
+<!-- /snippet -->
 
 **Entity Method Testing**
 
 Entity methods can be tested with mocked services:
 
+<!-- pseudo:ddd-entity-test -->
 ```csharp
 [Fact]
 public async Task Insert_ShouldReturnPersonEntity_WhenModelIsSavable()
@@ -328,6 +353,7 @@ public async Task Insert_ShouldReturnPersonEntity_WhenModelIsSavable()
     Assert.NotNull(result);
 }
 ```
+<!-- /snippet -->
 
 **Concern: Base Class Complexity**
 
@@ -410,20 +436,24 @@ Neatoo appears inspired by CSLA (particularly Rocky Lhotka's work). Key differen
 
 **Recommendation:** Consider explicit rule ordering/dependencies for complex scenarios:
 
+<!-- pseudo:ddd-rule-dependency -->
 ```csharp
 [DependsOn(typeof(RequiredFieldsRule))]
 internal class UniqueNameRule : AsyncRuleBase<IPerson> { }
 ```
+<!-- /snippet -->
 
 ### 6.3 Aggregate Root Marker
 
 **Recommendation:** Add an `IAggregateRoot` marker interface for clarity:
 
+<!-- pseudo:ddd-aggregate-root-marker -->
 ```csharp
 public interface IAggregateRoot : IEntityBase { }
 
 internal partial class Person : EntityBase<Person>, IAggregateRoot, IPerson
 ```
+<!-- /snippet -->
 
 ### 6.4 Domain Events
 
@@ -431,6 +461,7 @@ internal partial class Person : EntityBase<Person>, IAggregateRoot, IPerson
 
 **Recommendation:** Consider adding a lightweight domain event mechanism:
 
+<!-- pseudo:ddd-domain-events -->
 ```csharp
 public interface IDomainEvent { }
 
@@ -441,11 +472,13 @@ public abstract class EntityBase<T>
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 }
 ```
+<!-- /snippet -->
 
 ### 6.5 Testing Helpers
 
 **Recommendation:** Provide a testing utilities package:
 
+<!-- pseudo:ddd-test-helpers -->
 ```csharp
 // Suggested testing helper
 public static class NeatooTestHelpers
@@ -456,6 +489,7 @@ public static class NeatooTestHelpers
     }
 }
 ```
+<!-- /snippet -->
 
 ### 6.6 Documentation for Complex Aggregate Patterns
 

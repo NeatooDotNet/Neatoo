@@ -114,6 +114,7 @@ EntityListBase<I>            - For child entity collections with deleted item tr
 
 ## Quick Example
 
+<!-- pseudo:index-quick-example -->
 ```csharp
 // Define interface (required for factory generation)
 public partial interface ICustomer : IEntityBase { }
@@ -177,3 +178,4 @@ internal partial class Customer : EntityBase<Customer>, ICustomer
     }
 }
 ```
+<!-- /snippet -->

@@ -12,7 +12,7 @@ namespace Neatoo.Samples.DomainModel.BestPractices
     public interface IBpOrderLineFactory
     {
         IBpOrderLine Create();
-        Task<IBpOrderLine> Save(IBpOrderLine target, long orderId);
+        Task<IBpOrderLine> Save(IBpOrderLine target, long orderId, CancellationToken cancellationToken);
     }
 
     internal class BpOrderLineFactory : FactoryBase<IBpOrderLine>, IBpOrderLineFactory
@@ -43,19 +43,19 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<IBpOrderLine> LocalInsert(IBpOrderLine target, long orderId)
+        public Task<IBpOrderLine> LocalInsert(IBpOrderLine target, long orderId, CancellationToken cancellationToken)
         {
             var cTarget = (BpOrderLine)target ?? throw new Exception("IBpOrderLine must implement BpOrderLine");
             var db = ServiceProvider.GetRequiredService<IDbContext>();
-            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(orderId, db));
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(orderId, db, cancellationToken));
         }
 
-        public virtual Task<IBpOrderLine> Save(IBpOrderLine target, long orderId)
+        public virtual Task<IBpOrderLine> Save(IBpOrderLine target, long orderId, CancellationToken cancellationToken)
         {
-            return LocalSave(target, orderId);
+            return LocalSave(target, orderId, cancellationToken);
         }
 
-        public virtual async Task<IBpOrderLine> LocalSave(IBpOrderLine target, long orderId)
+        public virtual async Task<IBpOrderLine> LocalSave(IBpOrderLine target, long orderId, CancellationToken cancellationToken)
         {
             if (target.IsDeleted)
             {
@@ -63,7 +63,7 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target, orderId);
+                return await LocalInsert(target, orderId, cancellationToken);
             }
             else
             {

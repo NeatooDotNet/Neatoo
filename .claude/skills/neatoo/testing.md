@@ -304,6 +304,7 @@ Using `new EntityBaseServices<T>()` creates an entity with:
 
 ### Test Example
 
+<!-- pseudo:test-example-ismodified -->
 ```csharp
 [TestMethod]
 public void Product_WhenQuantityChanged_IsModifiedTrue()
@@ -318,6 +319,7 @@ public void Product_WhenQuantityChanged_IsModifiedTrue()
     Assert.IsTrue(product.IsModified);
 }
 ```
+<!-- /snippet -->
 
 ## Testing Patterns
 

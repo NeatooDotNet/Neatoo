@@ -45,6 +45,7 @@ These are accessible to derived classes but not to external callers. The goal is
 
 All Neatoo services follow this pattern:
 
+<!-- pseudo:service-registration-pattern -->
 ```csharp
 // Interface defines the contract
 public interface ISomeService<T> { }
@@ -61,6 +62,7 @@ services.AddTransient(typeof(ISomeService<>), typeof(SomeService<>));
 // Users can replace with their own implementation
 services.AddTransient(typeof(ISomeService<>), typeof(MyCustomService<>));
 ```
+<!-- /snippet -->
 
 ## Extending Neatoo
 

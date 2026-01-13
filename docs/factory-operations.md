@@ -297,9 +297,9 @@ internal partial class InventoryItem : EntityBase<InventoryItem>, IInventoryItem
     }
 
     [Insert]
-    public async Task Insert([Service] IInventoryDb db)
+    public async Task Insert([Service] IInventoryDb db, CancellationToken cancellationToken)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
         if (!IsSavable)
             return;
 
@@ -349,9 +349,9 @@ Called when saving an existing entity (`IsNew = false`, `IsDeleted = false`):
 <!-- snippet: factory-update-operation -->
 ```cs
 [Update]
-public async Task Update([Service] IInventoryDb db)
+public async Task Update([Service] IInventoryDb db, CancellationToken cancellationToken)
 {
-    await RunRules();
+    await RunRules(token: cancellationToken);
     if (!IsSavable)
         return;
 
@@ -400,7 +400,7 @@ Called when saving a deleted entity (`IsDeleted = true`):
 <!-- snippet: delete-operation -->
 ```cs
 [Delete]
-public async Task Delete([Service] IInventoryDb db)
+public async Task Delete([Service] IInventoryDb db, CancellationToken cancellationToken)
 {
     var entity = db.Find(Id);
     if (entity != null)
@@ -725,9 +725,9 @@ internal partial class Visit : EntityBase<Visit>, IVisit
 
     [Remote]
     [Insert]
-    public async Task Insert([Service] IVisitDb db)
+    public async Task Insert([Service] IVisitDb db, CancellationToken cancellationToken)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
         if (!IsSavable)
             return;
 
@@ -746,9 +746,9 @@ internal partial class Visit : EntityBase<Visit>, IVisit
 
     [Remote]
     [Update]
-    public async Task Update([Service] IVisitDb db)
+    public async Task Update([Service] IVisitDb db, CancellationToken cancellationToken)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
         if (!IsSavable)
             return;
 

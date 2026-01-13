@@ -74,8 +74,10 @@ public static class SaveUsageExamples
         var item = factory.Create();
         item.Name = "New Item";
 
+        #region correct-save-pattern
         // CORRECT - capture the returned instance
         item = await factory.Save(item);
+        #endregion
 
         // Now 'item' has database-generated values
         return item;
@@ -162,8 +164,27 @@ public static class CancellationTokenMigration
         // - Database queries (if passed through)
     }
 
-    // For Save operations, cancellation is handled via HTTP:
-    // - Client disconnection cancels server operation
-    // - No explicit CancellationToken parameter needed on Save
+    #region save-with-cancellation
+    public static async Task<ISaveableItem> SaveWithTimeout(
+        ISaveableItem entity,
+        ISaveableItemFactory factory)
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+        try
+        {
+            // Wait for async validation with timeout
+            await entity.WaitForTasks(cts.Token);
+
+            // Then save (HTTP handles cancellation)
+            return await factory.Save(entity);
+        }
+        catch (OperationCanceledException)
+        {
+            // Timed out waiting for async validation
+            throw;
+        }
+    }
+    #endregion
 }
 #endregion

@@ -421,6 +421,7 @@ public static class SaveUsageExamples
 
 **IMPORTANT**: `Save()` returns a new object instance. You must reassign:
 
+<!-- pseudo:factories-reassign-save -->
 ```csharp
 // WRONG - stale reference
 await personFactory.Save(person);
@@ -428,6 +429,7 @@ await personFactory.Save(person);
 // CORRECT - capture new instance
 person = await personFactory.Save(person);
 ```
+<!-- /snippet -->
 
 ### Why Reassignment is Required
 

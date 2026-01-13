@@ -2,6 +2,7 @@
 using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Microsoft.Extensions.DependencyInjection;
+using Neatoo.Samples.DomainModel.SampleDomain;
 
 /*
 							READONLY - DO NOT EDIT!!!!
@@ -12,17 +13,17 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
     public interface ISalesOrderFactory
     {
         ISalesOrder Create();
-        Task<ISalesOrder> Fetch(Guid id);
-        Task<ISalesOrder> Save(ISalesOrder target);
+        Task<ISalesOrder> Fetch(Guid id, CancellationToken cancellationToken);
+        Task<ISalesOrder> Save(ISalesOrder target, CancellationToken cancellationToken);
     }
 
-    internal class SalesOrderFactory : FactorySaveBase<ISalesOrder>, IFactorySave<SalesOrder>, ISalesOrderFactory
+    internal class SalesOrderFactory : FactoryBase<ISalesOrder>, ISalesOrderFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
         // Delegates
-        public delegate Task<ISalesOrder> FetchDelegate(Guid id);
-        public delegate Task<ISalesOrder> SaveDelegate(ISalesOrder target);
+        public delegate Task<ISalesOrder> FetchDelegate(Guid id, CancellationToken cancellationToken);
+        public delegate Task<ISalesOrder> SaveDelegate(ISalesOrder target, CancellationToken cancellationToken);
         // Delegate Properties to provide Local or Remote fork in execution
         public FetchDelegate FetchProperty { get; }
         public SaveDelegate SaveProperty { get; }
@@ -54,44 +55,41 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create(lineItems));
         }
 
-        public virtual Task<ISalesOrder> Fetch(Guid id)
+        public virtual Task<ISalesOrder> Fetch(Guid id, CancellationToken cancellationToken)
         {
-            return FetchProperty(id);
+            return FetchProperty(id, cancellationToken);
         }
 
-        public virtual async Task<ISalesOrder> RemoteFetch(Guid id)
+        public virtual async Task<ISalesOrder> RemoteFetch(Guid id, CancellationToken cancellationToken)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<ISalesOrder>(typeof(FetchDelegate), [id], default))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<ISalesOrder>(typeof(FetchDelegate), [id], cancellationToken))!;
         }
 
-        public Task<ISalesOrder> LocalFetch(Guid id)
+        public Task<ISalesOrder> LocalFetch(Guid id, CancellationToken cancellationToken)
         {
             var target = ServiceProvider.GetRequiredService<SalesOrder>();
-            return Task.FromResult(DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id)));
+            var repository = ServiceProvider.GetRequiredService<IRepositoryWithChildren<SalesOrderEntity, OrderLineItemEntity>>();
+            return DoFactoryMethodCallAsync(target, FactoryOperation.Fetch, () => target.Fetch(id, repository, cancellationToken));
         }
 
-        public Task<ISalesOrder> LocalInsert(ISalesOrder target)
+        public Task<ISalesOrder> LocalInsert(ISalesOrder target, CancellationToken cancellationToken)
         {
             var cTarget = (SalesOrder)target ?? throw new Exception("ISalesOrder must implement SalesOrder");
-            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
+            var repository = ServiceProvider.GetRequiredService<IRepository<SalesOrderEntity>>();
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(repository, cancellationToken));
         }
 
-        public virtual Task<ISalesOrder> Save(ISalesOrder target)
+        public virtual Task<ISalesOrder> Save(ISalesOrder target, CancellationToken cancellationToken)
         {
-            return SaveProperty(target);
+            return SaveProperty(target, cancellationToken);
         }
 
-        public virtual async Task<ISalesOrder> RemoteSave(ISalesOrder target)
+        public virtual async Task<ISalesOrder> RemoteSave(ISalesOrder target, CancellationToken cancellationToken)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<ISalesOrder>(typeof(SaveDelegate), [target], default))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<ISalesOrder>(typeof(SaveDelegate), [target], cancellationToken))!;
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<SalesOrder>.Save(SalesOrder target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<ISalesOrder> LocalSave(ISalesOrder target)
+        public virtual async Task<ISalesOrder> LocalSave(ISalesOrder target, CancellationToken cancellationToken)
         {
             if (target.IsDeleted)
             {
@@ -99,7 +97,7 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
@@ -114,16 +112,15 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             services.AddScoped<FetchDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<SalesOrderFactory>();
-                return (Guid id) => factory.LocalFetch(id);
+                return (Guid id, CancellationToken cancellationToken) => factory.LocalFetch(id, cancellationToken);
             });
             services.AddScoped<SaveDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<SalesOrderFactory>();
-                return (ISalesOrder target) => factory.LocalSave(target);
+                return (ISalesOrder target, CancellationToken cancellationToken) => factory.LocalSave(target, cancellationToken);
             });
             services.AddTransient<SalesOrder>();
             services.AddTransient<ISalesOrder, SalesOrder>();
-            services.AddScoped<IFactorySave<SalesOrder>, SalesOrderFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

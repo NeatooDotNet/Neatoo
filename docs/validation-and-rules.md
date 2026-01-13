@@ -150,11 +150,13 @@ RuleManager.AddRule(ageRule);
 
 ### DI Registration
 
+<!-- pseudo:rule-di-registration -->
 ```csharp
 // In DI setup
 builder.Services.AddScoped<IUniqueNameValidationRule, UniqueNameValidationRuleImpl>();
 builder.Services.AddScoped<IAgeValidationRule, AgeValidationRuleImpl>();
 ```
+<!-- /snippet -->
 
 ## Trigger Properties
 
@@ -311,12 +313,14 @@ RuleManager.AddAction(
 
 ### Async Transformations
 
+<!-- pseudo:async-action-rule -->
 ```csharp
 // Lookup and transform on property change
 RuleManager.AddActionAsync(
     async target => target.TaxRate = await taxService.GetRateAsync(target.ZipCode),
     t => t.ZipCode);
 ```
+<!-- /snippet -->
 
 ### Use Cases
 
@@ -511,6 +515,7 @@ public partial string? FullName { get; set; }
 
 All attributes support custom error messages:
 
+<!-- pseudo:custom-error-messages -->
 ```csharp
 // Default message: "PropertyName is required."
 [Required]
@@ -520,6 +525,7 @@ public partial string? Name { get; set; }
 [Required(ErrorMessage = "Please enter your full name")]
 public partial string? Name { get; set; }
 ```
+<!-- /snippet -->
 
 ### Attribute vs Rule Comparison
 
@@ -536,9 +542,11 @@ public partial string? Name { get; set; }
 
 Rules run automatically when trigger properties change through the `Setter`:
 
+<!-- pseudo:automatic-rule-execution -->
 ```csharp
 person.FirstName = "John";  // Rules triggered automatically
 ```
+<!-- /snippet -->
 
 ### When Rules DON'T Trigger
 
@@ -553,6 +561,7 @@ Rules do **not** execute in these scenarios:
 | Property set to same value | No change detected | N/A |
 
 **Example - LoadValue doesn't trigger:**
+<!-- pseudo:loadvalue-no-trigger -->
 ```csharp
 // Setter - triggers rules (outside factory operations)
 person.FirstName = "John";          // Rules execute
@@ -560,6 +569,7 @@ person.FirstName = "John";          // Rules execute
 // LoadValue - no rules, no modification tracking
 person[nameof(IPerson.FirstName)].LoadValue("John");  // No rules
 ```
+<!-- /snippet -->
 
 > **Note:** In `[Fetch]`, `[Create]`, and other factory methods, you don't need `LoadValue`.
 > Rules are automatically paused via `FactoryStart()`, so regular setters work fine:
@@ -575,6 +585,7 @@ person[nameof(IPerson.FirstName)].LoadValue("John");  // No rules
 > ```
 
 **Example - PauseAllActions:**
+<!-- pseudo:pause-all-actions -->
 ```csharp
 using (person.PauseAllActions())
 {
@@ -584,11 +595,13 @@ using (person.PauseAllActions())
 }
 // All rules run now when disposed
 ```
+<!-- /snippet -->
 
 ### Manual Execution
 
 Run rules explicitly before save operations:
 
+<!-- pseudo:manual-runrules -->
 ```csharp
 [Insert]
 public async Task Insert([Service] IDbContext db)
@@ -601,26 +614,32 @@ public async Task Insert([Service] IDbContext db)
     // ... persist
 }
 ```
+<!-- /snippet -->
 
 ### Run Specific Property Rules
 
+<!-- pseudo:runrules-specific-property -->
 ```csharp
 await RunRules(nameof(Email));
 ```
+<!-- /snippet -->
 
 ### Run Rules with Flags
 
+<!-- pseudo:runrules-flags -->
 ```csharp
 await RunRules(RunRulesFlag.All);           // All rules
 await RunRules(RunRulesFlag.Self);          // Only this object's rules
 await RunRules(RunRulesFlag.NotExecuted);   // Only rules that haven't run
 ```
+<!-- /snippet -->
 
 ### Cancellation Support
 
 All async rule operations support `CancellationToken` for graceful cancellation during shutdown or navigation.
 
 **Running rules with cancellation:**
+<!-- pseudo:runrules-cancellation -->
 ```csharp
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
@@ -634,12 +653,15 @@ catch (OperationCanceledException)
     // entity.IsValid == false
 }
 ```
+<!-- /snippet -->
 
 **Waiting for async tasks with cancellation:**
+<!-- pseudo:waitfortasks-cancellation -->
 ```csharp
 // Wait for pending async property setter tasks
 await entity.WaitForTasks(cancellationToken);
 ```
+<!-- /snippet -->
 
 **Design Philosophy:**
 - **Cancellation is for stopping, not recovering.** When validation is cancelled, the object is marked invalid via `MarkInvalid()`.
@@ -655,6 +677,7 @@ await entity.WaitForTasks(cancellationToken);
 | User-initiated cancel | Button triggers `_cts.Cancel()` |
 
 **Async rules can use the token:**
+<!-- pseudo:async-rule-with-token -->
 ```csharp
 protected override async Task<IRuleMessages> Execute(
     IPerson target,
@@ -669,8 +692,10 @@ protected override async Task<IRuleMessages> Execute(
     return None;
 }
 ```
+<!-- /snippet -->
 
 **Fluent rules with cancellation:**
+<!-- pseudo:fluent-rules-cancellation -->
 ```csharp
 // Token-accepting overloads pass CancellationToken to your delegate
 RuleManager.AddActionAsync(
@@ -687,6 +712,7 @@ RuleManager.AddValidationAsync(
     },
     t => t.Email);
 ```
+<!-- /snippet -->
 
 ## Cross-Property Validation
 
@@ -763,9 +789,11 @@ var hasDuplicate = target.ParentContact.PhoneList
 
 The child entity exposes its parent through a property:
 
+<!-- pseudo:parent-property -->
 ```csharp
 public IParentContact? ParentContact => Parent as IParentContact;
 ```
+<!-- /snippet -->
 
 This works because `Parent` is set automatically when the child is added to a parent collection.
 
@@ -773,6 +801,7 @@ This works because `Parent` is set automatically when the child is added to a pa
 
 When a rule sets a property, dependent rules run automatically. **This cascading behavior is intentional** and essential for maintaining domain consistency.
 
+<!-- pseudo:cascading-rules -->
 ```csharp
 public class OrderTotalRule : RuleBase<IOrder>
 {
@@ -789,6 +818,7 @@ public class OrderTotalRule : RuleBase<IOrder>
     }
 }
 ```
+<!-- /snippet -->
 
 If `Total` has dependent rules (e.g., discount calculation, credit limit check), they run automatically. This is the expected behavior.
 
@@ -796,6 +826,7 @@ If `Total` has dependent rules (e.g., discount calculation, credit limit check),
 
 Use `LoadProperty()` **only** to prevent circular references:
 
+<!-- pseudo:loadproperty-circular -->
 ```csharp
 protected override IRuleMessages Execute(IOrder target)
 {
@@ -804,6 +835,7 @@ protected override IRuleMessages Execute(IOrder target)
     return None;
 }
 ```
+<!-- /snippet -->
 
 **Do NOT use LoadProperty for:**
 - Factory methods (`[Fetch]`, `[Create]`, etc.) - rules are already paused
@@ -827,6 +859,7 @@ When async rules execute:
 
 Access validation messages through the property or entity:
 
+<!-- pseudo:access-validation-messages -->
 ```csharp
 // Property-level messages
 var emailMessages = person[nameof(IPerson.Email)].PropertyMessages;
@@ -843,9 +876,11 @@ if (!person.IsValid)
     }
 }
 ```
+<!-- /snippet -->
 
 ## Clearing Messages
 
+<!-- pseudo:clearing-messages -->
 ```csharp
 // Clear all messages (including children)
 person.ClearAllMessages();
@@ -856,6 +891,7 @@ person.ClearSelfMessages();
 // Clear specific property
 person[nameof(IPerson.Email)].ClearAllMessages();
 ```
+<!-- /snippet -->
 
 ## Complete Rule Example
 
@@ -921,6 +957,7 @@ Validation failures should return `IRuleMessages`, not throw exceptions. Excepti
 
 For expensive async rules, check if the property was actually modified:
 
+<!-- pseudo:check-ismodified -->
 ```csharp
 protected override async Task<IRuleMessages> Execute(IUser target, ...)
 {
@@ -931,6 +968,7 @@ protected override async Task<IRuleMessages> Execute(IUser target, ...)
     // ... expensive database check
 }
 ```
+<!-- /snippet -->
 
 ## See Also
 

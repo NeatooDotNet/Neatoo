@@ -8,6 +8,7 @@ Recommended patterns for building applications with Neatoo.
 
 ### The Pattern
 
+<!-- pseudo:skill-interface-first-pattern -->
 ```csharp
 // Public interface - defines the API contract
 public partial interface ICustomer : IEntityBase
@@ -37,6 +38,7 @@ internal partial class Customer : EntityBase<Customer>, ICustomer
     }
 }
 ```
+<!-- /snippet -->
 
 ### Benefits
 
@@ -51,6 +53,7 @@ internal partial class Customer : EntityBase<Customer>, ICustomer
 
 **Always use interface types** in consuming code:
 
+<!-- pseudo:skill-interface-usage -->
 ```csharp
 // Fields and properties - use interfaces
 private IOrder _order;
@@ -64,25 +67,32 @@ public async Task<ICustomer> LoadCustomer(Guid id) { ... }
 var customer = await customerFactory.Create();
 customer = await customerFactory.Save(customer);
 ```
+<!-- /snippet -->
 
 ### Anti-Patterns
 
 **WRONG - Casting to concrete type:**
+<!-- invalid:skill-casting-to-concrete -->
 ```csharp
 var person = personFactory.Create();
 var concrete = (Person)person;  // Don't do this
 ```
+<!-- /snippet -->
 
 **WRONG - Storing concrete types:**
+<!-- invalid:skill-storing-concrete-types -->
 ```csharp
 private Person _person;  // Should be IPerson
 ```
+<!-- /snippet -->
 
 **WRONG - Calling child factory directly:**
+<!-- invalid:skill-calling-child-factory -->
 ```csharp
 var phone = phoneFactory.Create();  // Bypass aggregate's add method
 contact.PhoneNumbers.Add(phone);
 ```
+<!-- /snippet -->
 
 **If you need to cast, the interface is incomplete.** Add the needed method or property:
 
@@ -98,6 +108,7 @@ See pitfalls.md Section 14 for detailed anti-pattern examples.
 
 **Never instantiate entities directly.** Always use the generated factory.
 
+<!-- pseudo:skill-factory-creation -->
 ```csharp
 // WRONG - Direct instantiation
 var order = new Order();  // Won't compile (internal class)
@@ -105,6 +116,7 @@ var order = new Order();  // Won't compile (internal class)
 // CORRECT - Factory creation
 var order = await orderFactory.Create();
 ```
+<!-- /snippet -->
 
 The factory provides:
 - Parent-child relationship setup
@@ -116,6 +128,7 @@ The factory provides:
 
 **Save through the aggregate root, not individual children.**
 
+<!-- pseudo:skill-aggregate-save -->
 ```csharp
 // WRONG - Saving child directly
 await orderLineFactory.Save(lineItem);  // Child factories don't have Save
@@ -123,11 +136,13 @@ await orderLineFactory.Save(lineItem);  // Child factories don't have Save
 // CORRECT - Save through aggregate root
 order = await orderFactory.Save(order);  // Saves order AND all line items
 ```
+<!-- /snippet -->
 
 ## 4. Reassign After Save
 
 **Always capture the return value from Save().** The server deserializes a new instance.
 
+<!-- pseudo:skill-save-reassign -->
 ```csharp
 // WRONG - Changes lost
 await personFactory.Save(person);
@@ -135,11 +150,13 @@ await personFactory.Save(person);
 // CORRECT - Reassign
 person = await personFactory.Save(person);
 ```
+<!-- /snippet -->
 
 ## 5. Check IsSavable, Not Just IsValid
 
 **Use `IsSavable` for complete save-readiness check.**
 
+<!-- pseudo:skill-issavable-check -->
 ```csharp
 // WRONG - Incomplete check
 if (person.IsValid) { await Save(); }
@@ -147,6 +164,7 @@ if (person.IsValid) { await Save(); }
 // CORRECT - Complete check
 if (person.IsSavable) { await Save(); }
 ```
+<!-- /snippet -->
 
 `IsSavable` is `true` when: `IsModified && IsValid && !IsBusy && !IsChild`
 
@@ -154,6 +172,7 @@ if (person.IsSavable) { await Save(); }
 
 **Await `WaitForTasks()` before checking validity** when using async validation rules.
 
+<!-- pseudo:skill-waitfortasks -->
 ```csharp
 // WRONG - May check before async rules complete
 if (person.IsValid) { ... }
@@ -162,6 +181,7 @@ if (person.IsValid) { ... }
 await person.WaitForTasks();
 if (person.IsValid) { ... }
 ```
+<!-- /snippet -->
 
 ## 7. Nullable IDs for Database-Generated Keys
 
@@ -169,6 +189,7 @@ if (person.IsValid) { ... }
 
 ### The Pattern
 
+<!-- pseudo:skill-nullable-id-pattern -->
 ```csharp
 public partial interface IOrder : IEntityBase
 {
@@ -197,6 +218,7 @@ internal partial class Order : EntityBase<Order>, IOrder
     }
 }
 ```
+<!-- /snippet -->
 
 ### Why This Matters
 

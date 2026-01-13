@@ -93,9 +93,9 @@ internal partial class InventoryItem : EntityBase<InventoryItem>, IInventoryItem
     }
 
     [Insert]
-    public async Task Insert([Service] IInventoryDb db)
+    public async Task Insert([Service] IInventoryDb db, CancellationToken cancellationToken)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
         if (!IsSavable)
             return;
 
@@ -115,9 +115,9 @@ internal partial class InventoryItem : EntityBase<InventoryItem>, IInventoryItem
 
     #region factory-update-operation
     [Update]
-    public async Task Update([Service] IInventoryDb db)
+    public async Task Update([Service] IInventoryDb db, CancellationToken cancellationToken)
     {
-        await RunRules();
+        await RunRules(token: cancellationToken);
         if (!IsSavable)
             return;
 
@@ -140,7 +140,7 @@ internal partial class InventoryItem : EntityBase<InventoryItem>, IInventoryItem
 
     #region delete-operation
     [Delete]
-    public async Task Delete([Service] IInventoryDb db)
+    public async Task Delete([Service] IInventoryDb db, CancellationToken cancellationToken)
     {
         var entity = db.Find(Id);
         if (entity != null)

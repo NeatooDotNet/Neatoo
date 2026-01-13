@@ -55,10 +55,12 @@ This guide covers common issues and solutions when working with Neatoo.
 
 Add an assembly attribute to increase the limit:
 
+<!-- pseudo:factory-hint-name-length -->
 ```csharp
 // In AssemblyAttributes.cs or any .cs file in your project
 [assembly: FactoryHintNameLength(100)]
 ```
+<!-- /snippet -->
 
 Typical values:
 - `100` - suitable for most projects
@@ -105,6 +107,7 @@ Typical values:
 
 **Solution:** Move validation to `AsyncRuleBase<T>` with a Command:
 
+<!-- invalid:validation-in-factory -->
 ```csharp
 // WRONG - in factory method
 [Insert]
@@ -129,6 +132,7 @@ public class UniqueEmailRule : AsyncRuleBase<IUser>, IUniqueEmailRule
     }
 }
 ```
+<!-- /snippet -->
 
 See [Database-Dependent Validation](database-dependent-validation.md) for complete guidance.
 
@@ -385,6 +389,7 @@ See [Database-Dependent Validation](database-dependent-validation.md) for comple
 
 **Cause:** You forgot to reassign the return value from `Save()`:
 
+<!-- invalid:save-without-reassign -->
 ```csharp
 // WRONG - person is now stale
 await person.Save();
@@ -394,6 +399,7 @@ await person.Save();
 person = await person.Save();
 // person is now the POST-save instance with updated values
 ```
+<!-- /snippet -->
 
 **Why This Happens:**
 
@@ -410,6 +416,7 @@ Think of it like mailing a document:
 
 Always capture the return value:
 
+<!-- pseudo:save-with-reassign -->
 ```csharp
 // In a Blazor component
 this.Person = await this.Person.Save();
@@ -422,6 +429,7 @@ return savedPerson;
 person = await person.Save();
 var id = person.Id;  // Now has the database-generated ID
 ```
+<!-- /snippet -->
 
 See [Factory Operations](factory-operations.md#critical-always-reassign-after-save) and [Blazor Binding](blazor-binding.md#critical-reassign-after-save-in-blazor-components) for more details.
 
@@ -646,6 +654,7 @@ See [Factory Operations](factory-operations.md#critical-always-reassign-after-sa
 
 **The interface is your public API.** If consuming code needs a method, add it to the interface:
 
+<!-- pseudo:interface-method-addition -->
 ```csharp
 // Before - casting to access method
 var concrete = (Visit)visit;
@@ -660,6 +669,7 @@ public partial interface IVisit : IEntityBase
 // Usage
 visit = await visit.Archive();
 ```
+<!-- /snippet -->
 
 See [Aggregates and Entities](aggregates-and-entities.md#why-interfaces-are-required-not-optional) for complete guidance.
 
@@ -679,6 +689,7 @@ See [Aggregates and Entities](aggregates-and-entities.md#why-interfaces-are-requ
 
 ### Diagnostic Code
 
+<!-- pseudo:diagnose-entity -->
 ```csharp
 void DiagnoseEntity(IEntityBase entity)
 {
@@ -701,6 +712,7 @@ void DiagnoseEntity(IEntityBase entity)
     }
 }
 ```
+<!-- /snippet -->
 
 ## See Also
 
