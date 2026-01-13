@@ -128,6 +128,8 @@ dotnet list package | findstr RemoteFactory
 
 | Date | Commit | Description | Breaking? | Plan |
 |------|--------|-------------|-----------|------|
+| 2026-01-13 | N/A | 10.9.0 - FactoryMode.RemoteOnly for client-server separation | No | N/A |
+| 2026-01-13 | N/A | 10.8.0 - Optional CancellationToken on all factory methods | No* | N/A |
 | 2026-01-11 | N/A | 10.7.0 - Fix duplicate Save with CancellationToken | No | N/A |
 | 2026-01-10 | `9b33a87` | 10.6.0 - [Event] Attribute for Domain Events | Yes* | N/A |
 | 2026-01-05 | N/A | 10.5.0 - Upgrade Complete | Migrated | `docs/todos/remotefactory-upgrade-blocked.md` |
@@ -139,9 +141,13 @@ dotnet list package | findstr RemoteFactory
 
 ### Current Version
 
-**Neatoo.RemoteFactory 10.7.0** (updated 2026-01-11)
+**Neatoo.RemoteFactory 10.9.0** (updated 2026-01-13)
 
 ### Breaking Change Notes
+
+**FactoryMode.RemoteOnly (10.9.0)**: New `FactoryMode` enum and `[assembly: FactoryMode(FactoryMode.RemoteOnly)]` attribute for client-only assemblies. Generates remote HTTP stubs only, skipping local method implementations. Default is `FactoryMode.Full`. **Status: NOT BREAKING** - New feature, existing code unchanged.
+
+**Optional CancellationToken (10.8.0)**: All generated factory methods now include `CancellationToken cancellationToken = default` as the last parameter. Backward compatible via default parameter. **Status: MIGRATED** - Updated Person example to forward CancellationToken in Fetch/Save calls; updated KnockOff stub callbacks to match new delegate signatures. **BONUS: This release also fixed the NeatooFactory.Logical regression** where `person.Save()` failed with "No factory save method is configured" - see `docs/todos/neatoofactory-logical-mode-regression.md` in RemoteFactory.
 
 **[Event] Attribute (10.6.0)**: New `[Event]` attribute for fire-and-forget domain events. `IMakeRemoteDelegateRequest` interface now requires `ForDelegateEvent(Type, object?[]?)` method. **Status: MIGRATED** - Updated test infrastructure's `MakeRemoteDelegateRequest` class.
 

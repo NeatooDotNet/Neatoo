@@ -12,7 +12,7 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase
 {
     public interface IValidateObjectFactory
     {
-        Task<IValidateObject> Fetch(PersonDto person);
+        Task<IValidateObject> Fetch(PersonDto person, CancellationToken cancellationToken = default);
     }
 
     internal class ValidateObjectFactory : FactoryBase<IValidateObject>, IValidateObjectFactory
@@ -32,12 +32,12 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual Task<IValidateObject> Fetch(PersonDto person)
+        public virtual Task<IValidateObject> Fetch(PersonDto person, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(person);
+            return LocalFetch(person, cancellationToken);
         }
 
-        public Task<IValidateObject> LocalFetch(PersonDto person)
+        public Task<IValidateObject> LocalFetch(PersonDto person, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<ValidateObject>();
             var portal = ServiceProvider.GetRequiredService<IValidateObjectFactory>();

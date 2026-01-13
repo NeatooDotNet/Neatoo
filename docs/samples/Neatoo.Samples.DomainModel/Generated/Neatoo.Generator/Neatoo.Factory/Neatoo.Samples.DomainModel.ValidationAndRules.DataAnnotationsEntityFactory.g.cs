@@ -12,7 +12,7 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules
 {
     public interface IDataAnnotationsEntityFactory
     {
-        IDataAnnotationsEntity Create();
+        IDataAnnotationsEntity Create(CancellationToken cancellationToken = default);
     }
 
     internal class DataAnnotationsEntityFactory : FactoryBase<IDataAnnotationsEntity>, IDataAnnotationsEntityFactory
@@ -32,12 +32,12 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IDataAnnotationsEntity Create()
+        public virtual IDataAnnotationsEntity Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IDataAnnotationsEntity LocalCreate()
+        public IDataAnnotationsEntity LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<DataAnnotationsEntity>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

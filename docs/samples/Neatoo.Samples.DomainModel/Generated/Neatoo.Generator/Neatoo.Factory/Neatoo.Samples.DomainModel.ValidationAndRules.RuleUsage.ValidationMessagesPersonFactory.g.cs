@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
 {
     public interface IValidationMessagesPersonFactory
     {
-        IValidationMessagesPerson Create();
+        IValidationMessagesPerson Create(CancellationToken cancellationToken = default);
     }
 
     internal class ValidationMessagesPersonFactory : FactoryBase<IValidationMessagesPerson>, IValidationMessagesPersonFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IValidationMessagesPerson Create()
+        public virtual IValidationMessagesPerson Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IValidationMessagesPerson LocalCreate()
+        public IValidationMessagesPerson LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<ValidationMessagesPerson>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

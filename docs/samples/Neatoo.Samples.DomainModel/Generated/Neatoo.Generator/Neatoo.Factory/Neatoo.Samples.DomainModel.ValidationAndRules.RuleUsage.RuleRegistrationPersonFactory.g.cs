@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
 {
     public interface IRuleRegistrationPersonFactory
     {
-        IRuleRegistrationPerson Create();
+        IRuleRegistrationPerson Create(CancellationToken cancellationToken = default);
     }
 
     internal class RuleRegistrationPersonFactory : FactoryBase<IRuleRegistrationPerson>, IRuleRegistrationPersonFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IRuleRegistrationPerson Create()
+        public virtual IRuleRegistrationPerson Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IRuleRegistrationPerson LocalCreate()
+        public IRuleRegistrationPerson LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<RuleRegistrationPerson>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

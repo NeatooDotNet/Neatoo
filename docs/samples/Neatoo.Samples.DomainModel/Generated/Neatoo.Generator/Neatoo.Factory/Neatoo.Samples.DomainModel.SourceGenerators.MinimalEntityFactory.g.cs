@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.SourceGenerators
 {
     public interface IMinimalEntityFactory
     {
-        IMinimalEntity Create();
+        IMinimalEntity Create(CancellationToken cancellationToken = default);
     }
 
     internal class MinimalEntityFactory : FactoryBase<IMinimalEntity>, IMinimalEntityFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.SourceGenerators
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IMinimalEntity Create()
+        public virtual IMinimalEntity Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IMinimalEntity LocalCreate()
+        public IMinimalEntity LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<MinimalEntity>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

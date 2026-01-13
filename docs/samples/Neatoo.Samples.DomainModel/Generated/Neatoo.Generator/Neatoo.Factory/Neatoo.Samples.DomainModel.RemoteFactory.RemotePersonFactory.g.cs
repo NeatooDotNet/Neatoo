@@ -14,9 +14,9 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
 {
     public interface IRemotePersonFactory
     {
-        Task<IRemotePerson> Fetch(int id);
-        IRemotePerson Create();
-        Task<IRemotePerson?> Save(IRemotePerson target);
+        Task<IRemotePerson> Fetch(int id, CancellationToken cancellationToken = default);
+        IRemotePerson Create(CancellationToken cancellationToken = default);
+        Task<IRemotePerson?> Save(IRemotePerson target, CancellationToken cancellationToken = default);
     }
 
     internal class RemotePersonFactory : FactorySaveBase<IRemotePerson>, IFactorySave<RemotePerson>, IRemotePersonFactory
@@ -24,8 +24,8 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
         // Delegates
-        public delegate Task<IRemotePerson> FetchDelegate(int id);
-        public delegate Task<IRemotePerson?> SaveDelegate(IRemotePerson target);
+        public delegate Task<IRemotePerson> FetchDelegate(int id, CancellationToken cancellationToken = default);
+        public delegate Task<IRemotePerson?> SaveDelegate(IRemotePerson target, CancellationToken cancellationToken = default);
         // Delegate Properties to provide Local or Remote fork in execution
         public FetchDelegate FetchProperty { get; }
         public SaveDelegate SaveProperty { get; }
@@ -45,67 +45,62 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
             SaveProperty = RemoteSave;
         }
 
-        public virtual Task<IRemotePerson> Fetch(int id)
+        public virtual Task<IRemotePerson> Fetch(int id, CancellationToken cancellationToken = default)
         {
-            return FetchProperty(id);
+            return FetchProperty(id, cancellationToken);
         }
 
-        public virtual async Task<IRemotePerson> RemoteFetch(int id)
+        public virtual async Task<IRemotePerson> RemoteFetch(int id, CancellationToken cancellationToken = default)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<IRemotePerson>(typeof(FetchDelegate), [id], default))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<IRemotePerson>(typeof(FetchDelegate), [id], cancellationToken))!;
         }
 
-        public Task<IRemotePerson> LocalFetch(int id)
+        public Task<IRemotePerson> LocalFetch(int id, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<RemotePerson>();
             return Task.FromResult(DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id)));
         }
 
-        public Task<IRemotePerson> LocalInsert(IRemotePerson target)
+        public Task<IRemotePerson> LocalInsert(IRemotePerson target, CancellationToken cancellationToken = default)
         {
             var cTarget = (RemotePerson)target ?? throw new Exception("IRemotePerson must implement RemotePerson");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
         }
 
-        public Task<IRemotePerson> LocalUpdate(IRemotePerson target)
+        public Task<IRemotePerson> LocalUpdate(IRemotePerson target, CancellationToken cancellationToken = default)
         {
             var cTarget = (RemotePerson)target ?? throw new Exception("IRemotePerson must implement RemotePerson");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update());
         }
 
-        public Task<IRemotePerson> LocalDelete(IRemotePerson target)
+        public Task<IRemotePerson> LocalDelete(IRemotePerson target, CancellationToken cancellationToken = default)
         {
             var cTarget = (RemotePerson)target ?? throw new Exception("IRemotePerson must implement RemotePerson");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete());
         }
 
-        public virtual IRemotePerson Create()
+        public virtual IRemotePerson Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IRemotePerson LocalCreate()
+        public IRemotePerson LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<RemotePerson>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual Task<IRemotePerson?> Save(IRemotePerson target)
+        public virtual Task<IRemotePerson?> Save(IRemotePerson target, CancellationToken cancellationToken = default)
         {
-            return SaveProperty(target);
+            return SaveProperty(target, cancellationToken);
         }
 
-        public virtual async Task<IRemotePerson?> RemoteSave(IRemotePerson target)
+        public virtual async Task<IRemotePerson?> RemoteSave(IRemotePerson target, CancellationToken cancellationToken = default)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegateNullable<IRemotePerson?>(typeof(SaveDelegate), [target], default))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegateNullable<IRemotePerson?>(typeof(SaveDelegate), [target], cancellationToken))!;
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<RemotePerson>.Save(RemotePerson target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<IRemotePerson?> LocalSave(IRemotePerson target)
+        public virtual async Task<IRemotePerson?> LocalSave(IRemotePerson target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -114,16 +109,21 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
                     return default(IRemotePerson);
                 }
 
-                return await LocalDelete(target);
+                return await LocalDelete(target, cancellationToken);
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
-                return await LocalUpdate(target);
+                return await LocalUpdate(target, cancellationToken);
             }
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<RemotePerson>.Save(RemotePerson target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
@@ -133,12 +133,12 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
             services.AddScoped<FetchDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<RemotePersonFactory>();
-                return (int id) => factory.LocalFetch(id);
+                return (int id, CancellationToken cancellationToken = default) => factory.LocalFetch(id, cancellationToken);
             });
             services.AddScoped<SaveDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<RemotePersonFactory>();
-                return (IRemotePerson target) => factory.LocalSave(target);
+                return (IRemotePerson target, CancellationToken cancellationToken = default) => factory.LocalSave(target, cancellationToken);
             });
             services.AddTransient<RemotePerson>();
             services.AddTransient<IRemotePerson, RemotePerson>();

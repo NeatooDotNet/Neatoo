@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
 {
     public interface ILoadValueDemoFactory
     {
-        ILoadValueDemo Create();
+        ILoadValueDemo Create(CancellationToken cancellationToken = default);
     }
 
     internal class LoadValueDemoFactory : FactoryBase<ILoadValueDemo>, ILoadValueDemoFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual ILoadValueDemo Create()
+        public virtual ILoadValueDemo Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public ILoadValueDemo LocalCreate()
+        public ILoadValueDemo LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<LoadValueDemo>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

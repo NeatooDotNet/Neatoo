@@ -12,8 +12,8 @@ namespace Neatoo.Samples.DomainModel.Authorization
 {
     public interface IArticleFactory
     {
-        IArticle? Create();
-        Authorized CanCreate();
+        IArticle? Create(CancellationToken cancellationToken = default);
+        Authorized CanCreate(CancellationToken cancellationToken = default);
     }
 
     internal class ArticleFactory : FactoryBase<IArticle>, IArticleFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.Authorization
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IArticle? Create()
+        public virtual IArticle? Create(CancellationToken cancellationToken = default)
         {
-            return (LocalCreate()).Result;
+            return (LocalCreate(cancellationToken)).Result;
         }
 
-        public Authorized<IArticle> LocalCreate()
+        public Authorized<IArticle> LocalCreate(CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IRoleBasedAuth irolebasedauth = ServiceProvider.GetRequiredService<IRoleBasedAuth>();
@@ -58,12 +58,12 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return new Authorized<IArticle>(DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create()));
         }
 
-        public virtual Authorized CanCreate()
+        public virtual Authorized CanCreate(CancellationToken cancellationToken = default)
         {
-            return LocalCanCreate();
+            return LocalCanCreate(cancellationToken);
         }
 
-        public Authorized LocalCanCreate()
+        public Authorized LocalCanCreate(CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IRoleBasedAuth irolebasedauth = ServiceProvider.GetRequiredService<IRoleBasedAuth>();

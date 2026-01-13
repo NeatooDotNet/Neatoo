@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
 {
     public interface IPropertyAccessDemoFactory
     {
-        IPropertyAccessDemo Create();
+        IPropertyAccessDemo Create(CancellationToken cancellationToken = default);
     }
 
     internal class PropertyAccessDemoFactory : FactoryBase<IPropertyAccessDemo>, IPropertyAccessDemoFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPropertyAccessDemo Create()
+        public virtual IPropertyAccessDemo Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPropertyAccessDemo LocalCreate()
+        public IPropertyAccessDemo LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PropertyAccessDemo>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

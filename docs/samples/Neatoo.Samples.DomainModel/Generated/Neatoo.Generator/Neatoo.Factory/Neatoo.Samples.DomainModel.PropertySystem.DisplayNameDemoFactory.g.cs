@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
 {
     public interface IDisplayNameDemoFactory
     {
-        IDisplayNameDemo Create();
+        IDisplayNameDemo Create(CancellationToken cancellationToken = default);
     }
 
     internal class DisplayNameDemoFactory : FactoryBase<IDisplayNameDemo>, IDisplayNameDemoFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IDisplayNameDemo Create()
+        public virtual IDisplayNameDemo Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IDisplayNameDemo LocalCreate()
+        public IDisplayNameDemo LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<DisplayNameDemo>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

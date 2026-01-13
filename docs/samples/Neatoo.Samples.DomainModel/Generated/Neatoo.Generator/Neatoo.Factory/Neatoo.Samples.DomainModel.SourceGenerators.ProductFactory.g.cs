@@ -13,9 +13,9 @@ namespace Neatoo.Samples.DomainModel.SourceGenerators
 {
     public interface IProductFactory
     {
-        IProduct Create();
-        IProduct Fetch(int id, string name, decimal price, int stockCount);
-        Task<IProduct?> Save(IProduct target);
+        IProduct Create(CancellationToken cancellationToken = default);
+        IProduct Fetch(int id, string name, decimal price, int stockCount, CancellationToken cancellationToken = default);
+        Task<IProduct?> Save(IProduct target, CancellationToken cancellationToken = default);
     }
 
     internal class ProductFactory : FactorySaveBase<IProduct>, IFactorySave<Product>, IProductFactory
@@ -35,57 +35,52 @@ namespace Neatoo.Samples.DomainModel.SourceGenerators
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IProduct Create()
+        public virtual IProduct Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IProduct LocalCreate()
+        public IProduct LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<Product>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IProduct Fetch(int id, string name, decimal price, int stockCount)
+        public virtual IProduct Fetch(int id, string name, decimal price, int stockCount, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(id, name, price, stockCount);
+            return LocalFetch(id, name, price, stockCount, cancellationToken);
         }
 
-        public IProduct LocalFetch(int id, string name, decimal price, int stockCount)
+        public IProduct LocalFetch(int id, string name, decimal price, int stockCount, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<Product>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id, name, price, stockCount));
         }
 
-        public Task<IProduct> LocalInsert(IProduct target)
+        public Task<IProduct> LocalInsert(IProduct target, CancellationToken cancellationToken = default)
         {
             var cTarget = (Product)target ?? throw new Exception("IProduct must implement Product");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
         }
 
-        public Task<IProduct> LocalUpdate(IProduct target)
+        public Task<IProduct> LocalUpdate(IProduct target, CancellationToken cancellationToken = default)
         {
             var cTarget = (Product)target ?? throw new Exception("IProduct must implement Product");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update());
         }
 
-        public Task<IProduct> LocalDelete(IProduct target)
+        public Task<IProduct> LocalDelete(IProduct target, CancellationToken cancellationToken = default)
         {
             var cTarget = (Product)target ?? throw new Exception("IProduct must implement Product");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete());
         }
 
-        public virtual Task<IProduct?> Save(IProduct target)
+        public virtual Task<IProduct?> Save(IProduct target, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<Product>.Save(Product target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<IProduct?> LocalSave(IProduct target)
+        public virtual async Task<IProduct?> LocalSave(IProduct target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -94,16 +89,21 @@ namespace Neatoo.Samples.DomainModel.SourceGenerators
                     return default(IProduct);
                 }
 
-                return await LocalDelete(target);
+                return await LocalDelete(target, cancellationToken);
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
-                return await LocalUpdate(target);
+                return await LocalUpdate(target, cancellationToken);
             }
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<Product>.Save(Product target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)

@@ -13,11 +13,11 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
 {
     public interface IMapModifiedToPitfallFactory
     {
-        IMapModifiedToPitfall Create();
-        Task<IMapModifiedToPitfall> Save(IMapModifiedToPitfall target, CancellationToken cancellationToken);
+        IMapModifiedToPitfall Create(CancellationToken cancellationToken = default);
+        Task<IMapModifiedToPitfall> Save(IMapModifiedToPitfall target, CancellationToken cancellationToken = default);
     }
 
-    internal class MapModifiedToPitfallFactory : FactoryBase<IMapModifiedToPitfall>, IMapModifiedToPitfallFactory
+    internal class MapModifiedToPitfallFactory : FactorySaveBase<IMapModifiedToPitfall>, IFactorySave<MapModifiedToPitfall>, IMapModifiedToPitfallFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
@@ -34,30 +34,30 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IMapModifiedToPitfall Create()
+        public virtual IMapModifiedToPitfall Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IMapModifiedToPitfall LocalCreate()
+        public IMapModifiedToPitfall LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<MapModifiedToPitfall>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<IMapModifiedToPitfall> LocalUpdate(IMapModifiedToPitfall target, CancellationToken cancellationToken)
+        public Task<IMapModifiedToPitfall> LocalUpdate(IMapModifiedToPitfall target, CancellationToken cancellationToken = default)
         {
             var cTarget = (MapModifiedToPitfall)target ?? throw new Exception("IMapModifiedToPitfall must implement MapModifiedToPitfall");
             var repository = ServiceProvider.GetRequiredService<IRepository<MapModifiedToPitfallEntity>>();
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update(repository, cancellationToken));
         }
 
-        public virtual Task<IMapModifiedToPitfall> Save(IMapModifiedToPitfall target, CancellationToken cancellationToken)
+        public virtual Task<IMapModifiedToPitfall> Save(IMapModifiedToPitfall target, CancellationToken cancellationToken = default)
         {
             return LocalSave(target, cancellationToken);
         }
 
-        public virtual async Task<IMapModifiedToPitfall> LocalSave(IMapModifiedToPitfall target, CancellationToken cancellationToken)
+        public virtual async Task<IMapModifiedToPitfall> LocalSave(IMapModifiedToPitfall target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -73,12 +73,18 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
             }
         }
 
+        async Task<IFactorySaveMeta?> IFactorySave<MapModifiedToPitfall>.Save(MapModifiedToPitfall target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<MapModifiedToPitfallFactory>();
             services.AddScoped<IMapModifiedToPitfallFactory, MapModifiedToPitfallFactory>();
             services.AddTransient<MapModifiedToPitfall>();
             services.AddTransient<IMapModifiedToPitfall, MapModifiedToPitfall>();
+            services.AddScoped<IFactorySave<MapModifiedToPitfall>, MapModifiedToPitfallFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

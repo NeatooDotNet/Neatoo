@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
 {
     public interface IPauseActionsPitfallFactory
     {
-        IPauseActionsPitfall Create();
+        IPauseActionsPitfall Create(CancellationToken cancellationToken = default);
     }
 
     internal class PauseActionsPitfallFactory : FactoryBase<IPauseActionsPitfall>, IPauseActionsPitfallFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPauseActionsPitfall Create()
+        public virtual IPauseActionsPitfall Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPauseActionsPitfall LocalCreate()
+        public IPauseActionsPitfall LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PauseActionsPitfall>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

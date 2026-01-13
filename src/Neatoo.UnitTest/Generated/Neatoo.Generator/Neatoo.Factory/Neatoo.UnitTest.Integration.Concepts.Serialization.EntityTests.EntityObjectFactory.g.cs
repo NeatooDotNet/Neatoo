@@ -12,8 +12,8 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests
 {
     public interface IEntityObjectFactory
     {
-        Task<IEntityObject> Create(Guid ID, string Name);
-        Task<IEntityObject> Save(IEntityObject target);
+        Task<IEntityObject> Create(Guid ID, string Name, CancellationToken cancellationToken = default);
+        Task<IEntityObject> Save(IEntityObject target, CancellationToken cancellationToken = default);
     }
 
     internal class EntityObjectFactory : FactorySaveBase<IEntityObject>, IFactorySave<EntityObject>, IEntityObjectFactory
@@ -33,40 +33,35 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual Task<IEntityObject> Create(Guid ID, string Name)
+        public virtual Task<IEntityObject> Create(Guid ID, string Name, CancellationToken cancellationToken = default)
         {
-            return LocalCreate(ID, Name);
+            return LocalCreate(ID, Name, cancellationToken);
         }
 
-        public Task<IEntityObject> LocalCreate(Guid ID, string Name)
+        public Task<IEntityObject> LocalCreate(Guid ID, string Name, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<EntityObject>();
             return DoFactoryMethodCallAsync(target, FactoryOperation.Create, () => target.Create(ID, Name));
         }
 
-        public Task<IEntityObject> LocalUpdate(IEntityObject target)
+        public Task<IEntityObject> LocalUpdate(IEntityObject target, CancellationToken cancellationToken = default)
         {
             var cTarget = (EntityObject)target ?? throw new Exception("IEntityObject must implement EntityObject");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update());
         }
 
-        public Task<IEntityObject> LocalUpdate1(IEntityObject target)
+        public Task<IEntityObject> LocalUpdate1(IEntityObject target, CancellationToken cancellationToken = default)
         {
             var cTarget = (EntityObject)target ?? throw new Exception("IEntityObject must implement EntityObject");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Update());
         }
 
-        public virtual Task<IEntityObject> Save(IEntityObject target)
+        public virtual Task<IEntityObject> Save(IEntityObject target, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<EntityObject>.Save(EntityObject target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<IEntityObject> LocalSave(IEntityObject target)
+        public virtual async Task<IEntityObject> LocalSave(IEntityObject target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -74,12 +69,17 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests
             }
             else if (target.IsNew)
             {
-                return await LocalUpdate1(target);
+                return await LocalUpdate1(target, cancellationToken);
             }
             else
             {
-                return await LocalUpdate(target);
+                return await LocalUpdate(target, cancellationToken);
             }
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<EntityObject>.Save(EntityObject target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)

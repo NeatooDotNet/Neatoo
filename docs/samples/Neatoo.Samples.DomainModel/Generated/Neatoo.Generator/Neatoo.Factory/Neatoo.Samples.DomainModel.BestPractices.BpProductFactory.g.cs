@@ -11,16 +11,16 @@ namespace Neatoo.Samples.DomainModel.BestPractices
 {
     public interface IBpProductFactory
     {
-        IBpProduct Create();
-        Task<IBpProduct> Save(IBpProduct target, CancellationToken cancellationToken);
+        IBpProduct Create(CancellationToken cancellationToken = default);
+        Task<IBpProduct> Save(IBpProduct target, CancellationToken cancellationToken = default);
     }
 
-    internal class BpProductFactory : FactoryBase<IBpProduct>, IBpProductFactory
+    internal class BpProductFactory : FactorySaveBase<IBpProduct>, IFactorySave<BpProduct>, IBpProductFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
         // Delegates
-        public delegate Task<IBpProduct> SaveDelegate(IBpProduct target, CancellationToken cancellationToken);
+        public delegate Task<IBpProduct> SaveDelegate(IBpProduct target, CancellationToken cancellationToken = default);
         // Delegate Properties to provide Local or Remote fork in execution
         public SaveDelegate SaveProperty { get; }
 
@@ -37,35 +37,35 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             SaveProperty = RemoteSave;
         }
 
-        public virtual IBpProduct Create()
+        public virtual IBpProduct Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IBpProduct LocalCreate()
+        public IBpProduct LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<BpProduct>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<IBpProduct> LocalInsert(IBpProduct target, CancellationToken cancellationToken)
+        public Task<IBpProduct> LocalInsert(IBpProduct target, CancellationToken cancellationToken = default)
         {
             var cTarget = (BpProduct)target ?? throw new Exception("IBpProduct must implement BpProduct");
             var db = ServiceProvider.GetRequiredService<IDbContext>();
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(db, cancellationToken));
         }
 
-        public virtual Task<IBpProduct> Save(IBpProduct target, CancellationToken cancellationToken)
+        public virtual Task<IBpProduct> Save(IBpProduct target, CancellationToken cancellationToken = default)
         {
             return SaveProperty(target, cancellationToken);
         }
 
-        public virtual async Task<IBpProduct> RemoteSave(IBpProduct target, CancellationToken cancellationToken)
+        public virtual async Task<IBpProduct> RemoteSave(IBpProduct target, CancellationToken cancellationToken = default)
         {
             return (await MakeRemoteDelegateRequest!.ForDelegate<IBpProduct>(typeof(SaveDelegate), [target], cancellationToken))!;
         }
 
-        public virtual async Task<IBpProduct> LocalSave(IBpProduct target, CancellationToken cancellationToken)
+        public virtual async Task<IBpProduct> LocalSave(IBpProduct target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -81,6 +81,11 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             }
         }
 
+        async Task<IFactorySaveMeta?> IFactorySave<BpProduct>.Save(BpProduct target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<BpProductFactory>();
@@ -88,10 +93,11 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             services.AddScoped<SaveDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<BpProductFactory>();
-                return (IBpProduct target, CancellationToken cancellationToken) => factory.LocalSave(target, cancellationToken);
+                return (IBpProduct target, CancellationToken cancellationToken = default) => factory.LocalSave(target, cancellationToken);
             });
             services.AddTransient<BpProduct>();
             services.AddTransient<IBpProduct, BpProduct>();
+            services.AddScoped<IFactorySave<BpProduct>, BpProductFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

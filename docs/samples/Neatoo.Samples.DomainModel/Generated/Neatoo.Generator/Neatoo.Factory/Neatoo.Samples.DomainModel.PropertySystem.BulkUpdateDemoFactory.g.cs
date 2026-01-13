@@ -12,7 +12,7 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
 {
     public interface IBulkUpdateDemoFactory
     {
-        IBulkUpdateDemo Create();
+        IBulkUpdateDemo Create(CancellationToken cancellationToken = default);
     }
 
     internal class BulkUpdateDemoFactory : FactoryBase<IBulkUpdateDemo>, IBulkUpdateDemoFactory
@@ -32,12 +32,12 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IBulkUpdateDemo Create()
+        public virtual IBulkUpdateDemo Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IBulkUpdateDemo LocalCreate()
+        public IBulkUpdateDemo LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<BulkUpdateDemo>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

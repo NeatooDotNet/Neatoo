@@ -12,7 +12,7 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules
 {
     public interface IPersonWithFluentRulesFactory
     {
-        IPersonWithFluentRules Create();
+        IPersonWithFluentRules Create(CancellationToken cancellationToken = default);
     }
 
     internal class PersonWithFluentRulesFactory : FactoryBase<IPersonWithFluentRules>, IPersonWithFluentRulesFactory
@@ -32,12 +32,12 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPersonWithFluentRules Create()
+        public virtual IPersonWithFluentRules Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPersonWithFluentRules LocalCreate()
+        public IPersonWithFluentRules LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PersonWithFluentRules>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

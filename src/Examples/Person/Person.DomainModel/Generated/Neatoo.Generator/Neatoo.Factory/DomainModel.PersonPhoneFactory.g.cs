@@ -15,9 +15,9 @@ namespace DomainModel
 {
     public interface IPersonPhoneFactory
     {
-        IPersonPhone Create();
-        IPersonPhone Fetch(PersonPhoneEntity personPhoneEntity);
-        IPersonPhone Save(IPersonPhone target, PersonPhoneEntity personPhoneEntity);
+        IPersonPhone Create(CancellationToken cancellationToken = default);
+        IPersonPhone Fetch(PersonPhoneEntity personPhoneEntity, CancellationToken cancellationToken = default);
+        IPersonPhone Save(IPersonPhone target, PersonPhoneEntity personPhoneEntity, CancellationToken cancellationToken = default);
     }
 
     internal class PersonPhoneFactory : FactoryBase<IPersonPhone>, IPersonPhoneFactory
@@ -37,12 +37,12 @@ namespace DomainModel
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPersonPhone Create()
+        public virtual IPersonPhone Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPersonPhone LocalCreate()
+        public IPersonPhone LocalCreate(CancellationToken cancellationToken = default)
         {
             var uniquePhoneNumberRule = ServiceProvider.GetRequiredService<IUniquePhoneNumberRule>();
             var uniquePhoneTypeRule = ServiceProvider.GetRequiredService<IUniquePhoneTypeRule>();
@@ -50,35 +50,35 @@ namespace DomainModel
             return DoFactoryMethodCall(FactoryOperation.Create, () => new PersonPhone(uniquePhoneNumberRule, uniquePhoneTypeRule, services));
         }
 
-        public virtual IPersonPhone Fetch(PersonPhoneEntity personPhoneEntity)
+        public virtual IPersonPhone Fetch(PersonPhoneEntity personPhoneEntity, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(personPhoneEntity);
+            return LocalFetch(personPhoneEntity, cancellationToken);
         }
 
-        public IPersonPhone LocalFetch(PersonPhoneEntity personPhoneEntity)
+        public IPersonPhone LocalFetch(PersonPhoneEntity personPhoneEntity, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PersonPhone>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(personPhoneEntity));
         }
 
-        public IPersonPhone LocalInsert(IPersonPhone target, PersonPhoneEntity personPhoneEntity)
+        public IPersonPhone LocalInsert(IPersonPhone target, PersonPhoneEntity personPhoneEntity, CancellationToken cancellationToken = default)
         {
             var cTarget = (PersonPhone)target ?? throw new Exception("IPersonPhone must implement PersonPhone");
             return DoFactoryMethodCall(cTarget, FactoryOperation.Insert, () => cTarget.Insert(personPhoneEntity));
         }
 
-        public IPersonPhone LocalUpdate(IPersonPhone target, PersonPhoneEntity personPhoneEntity)
+        public IPersonPhone LocalUpdate(IPersonPhone target, PersonPhoneEntity personPhoneEntity, CancellationToken cancellationToken = default)
         {
             var cTarget = (PersonPhone)target ?? throw new Exception("IPersonPhone must implement PersonPhone");
             return DoFactoryMethodCall(cTarget, FactoryOperation.Update, () => cTarget.Update(personPhoneEntity));
         }
 
-        public virtual IPersonPhone Save(IPersonPhone target, PersonPhoneEntity personPhoneEntity)
+        public virtual IPersonPhone Save(IPersonPhone target, PersonPhoneEntity personPhoneEntity, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target, personPhoneEntity);
+            return LocalSave(target, personPhoneEntity, cancellationToken);
         }
 
-        public virtual IPersonPhone LocalSave(IPersonPhone target, PersonPhoneEntity personPhoneEntity)
+        public virtual IPersonPhone LocalSave(IPersonPhone target, PersonPhoneEntity personPhoneEntity, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -86,11 +86,11 @@ namespace DomainModel
             }
             else if (target.IsNew)
             {
-                return LocalInsert(target, personPhoneEntity);
+                return LocalInsert(target, personPhoneEntity, cancellationToken);
             }
             else
             {
-                return LocalUpdate(target, personPhoneEntity);
+                return LocalUpdate(target, personPhoneEntity, cancellationToken);
             }
         }
 

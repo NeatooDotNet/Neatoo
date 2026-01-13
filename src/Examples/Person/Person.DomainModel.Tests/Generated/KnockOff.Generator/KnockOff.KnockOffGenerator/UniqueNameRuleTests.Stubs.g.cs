@@ -1990,12 +1990,12 @@ partial class UniqueNameRuleTests
 			public bool WasCalled => CallCount > 0;
 
 			/// <summary>The arguments from the last invocation.</summary>
-			public (global::System.Guid? id, string? firstName, string? lastName)? LastCallArgs { get; private set; }
+			public (global::System.Guid? id, string? firstName, string? lastName, global::System.Threading.CancellationToken? cancellationToken)? LastCallArgs { get; private set; }
 
 			/// <summary>Callback invoked when delegate is called.</summary>
-			public global::System.Func<Stubs.IsUniqueName, global::System.Guid?, string, string, global::System.Threading.Tasks.Task<bool>>? OnCall { get; set; }
+			public global::System.Func<Stubs.IsUniqueName, global::System.Guid?, string, string, global::System.Threading.CancellationToken, global::System.Threading.Tasks.Task<bool>>? OnCall { get; set; }
 
-			public void RecordCall(global::System.Guid? id, string firstName, string lastName) { CallCount++; LastCallArgs = (id, firstName, lastName); }
+			public void RecordCall(global::System.Guid? id, string firstName, string lastName, global::System.Threading.CancellationToken cancellationToken) { CallCount++; LastCallArgs = (id, firstName, lastName, cancellationToken); }
 
 			public void Reset() { CallCount = 0; LastCallArgs = default; OnCall = null; }
 		}
@@ -2006,10 +2006,10 @@ partial class UniqueNameRuleTests
 			/// <summary>Interceptor for tracking and configuring delegate behavior.</summary>
 			public IsUniqueNameInterceptor Interceptor { get; } = new();
 
-			private global::System.Threading.Tasks.Task<bool> Invoke(global::System.Guid? id, string firstName, string lastName)
+			private global::System.Threading.Tasks.Task<bool> Invoke(global::System.Guid? id, string firstName, string lastName, global::System.Threading.CancellationToken cancellationToken)
 			{
-				Interceptor.RecordCall(id, firstName, lastName);
-				if (Interceptor.OnCall is { } onCall) return onCall(this, id, firstName, lastName);
+				Interceptor.RecordCall(id, firstName, lastName, cancellationToken);
+				if (Interceptor.OnCall is { } onCall) return onCall(this, id, firstName, lastName, cancellationToken);
 				return default!;
 			}
 

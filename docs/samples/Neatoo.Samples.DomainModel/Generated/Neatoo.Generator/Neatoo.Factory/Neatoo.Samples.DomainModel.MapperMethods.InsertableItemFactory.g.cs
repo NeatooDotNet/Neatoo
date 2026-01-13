@@ -11,8 +11,8 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
 {
     public interface IInsertableItemFactory
     {
-        IInsertableItem Create();
-        Task<IInsertableItem> Save(IInsertableItem target);
+        IInsertableItem Create(CancellationToken cancellationToken = default);
+        Task<IInsertableItem> Save(IInsertableItem target, CancellationToken cancellationToken = default);
     }
 
     internal class InsertableItemFactory : FactorySaveBase<IInsertableItem>, IFactorySave<InsertableItem>, IInsertableItemFactory
@@ -32,34 +32,29 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IInsertableItem Create()
+        public virtual IInsertableItem Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IInsertableItem LocalCreate()
+        public IInsertableItem LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<InsertableItem>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<IInsertableItem> LocalInsert(IInsertableItem target)
+        public Task<IInsertableItem> LocalInsert(IInsertableItem target, CancellationToken cancellationToken = default)
         {
             var cTarget = (InsertableItem)target ?? throw new Exception("IInsertableItem must implement InsertableItem");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
         }
 
-        public virtual Task<IInsertableItem> Save(IInsertableItem target)
+        public virtual Task<IInsertableItem> Save(IInsertableItem target, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<InsertableItem>.Save(InsertableItem target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<IInsertableItem> LocalSave(IInsertableItem target)
+        public virtual async Task<IInsertableItem> LocalSave(IInsertableItem target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -67,12 +62,17 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
                 throw new NotImplementedException();
             }
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<InsertableItem>.Save(InsertableItem target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)

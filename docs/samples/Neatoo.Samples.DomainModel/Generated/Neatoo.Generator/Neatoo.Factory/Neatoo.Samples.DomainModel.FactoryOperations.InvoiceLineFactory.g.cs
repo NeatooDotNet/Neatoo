@@ -11,9 +11,9 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
 {
     public interface IInvoiceLineFactory
     {
-        IInvoiceLine Create();
-        IInvoiceLine Fetch(InvoiceLineEntity entity);
-        IInvoiceLine Save(IInvoiceLine target, InvoiceLineEntity entity);
+        IInvoiceLine Create(CancellationToken cancellationToken = default);
+        IInvoiceLine Fetch(InvoiceLineEntity entity, CancellationToken cancellationToken = default);
+        IInvoiceLine Save(IInvoiceLine target, InvoiceLineEntity entity, CancellationToken cancellationToken = default);
     }
 
     internal class InvoiceLineFactory : FactoryBase<IInvoiceLine>, IInvoiceLineFactory
@@ -33,46 +33,46 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IInvoiceLine Create()
+        public virtual IInvoiceLine Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IInvoiceLine LocalCreate()
+        public IInvoiceLine LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<InvoiceLine>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IInvoiceLine Fetch(InvoiceLineEntity entity)
+        public virtual IInvoiceLine Fetch(InvoiceLineEntity entity, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(entity);
+            return LocalFetch(entity, cancellationToken);
         }
 
-        public IInvoiceLine LocalFetch(InvoiceLineEntity entity)
+        public IInvoiceLine LocalFetch(InvoiceLineEntity entity, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<InvoiceLine>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entity));
         }
 
-        public IInvoiceLine LocalInsert(IInvoiceLine target, InvoiceLineEntity entity)
+        public IInvoiceLine LocalInsert(IInvoiceLine target, InvoiceLineEntity entity, CancellationToken cancellationToken = default)
         {
             var cTarget = (InvoiceLine)target ?? throw new Exception("IInvoiceLine must implement InvoiceLine");
             return DoFactoryMethodCall(cTarget, FactoryOperation.Insert, () => cTarget.Insert(entity));
         }
 
-        public IInvoiceLine LocalUpdate(IInvoiceLine target, InvoiceLineEntity entity)
+        public IInvoiceLine LocalUpdate(IInvoiceLine target, InvoiceLineEntity entity, CancellationToken cancellationToken = default)
         {
             var cTarget = (InvoiceLine)target ?? throw new Exception("IInvoiceLine must implement InvoiceLine");
             return DoFactoryMethodCall(cTarget, FactoryOperation.Update, () => cTarget.Update(entity));
         }
 
-        public virtual IInvoiceLine Save(IInvoiceLine target, InvoiceLineEntity entity)
+        public virtual IInvoiceLine Save(IInvoiceLine target, InvoiceLineEntity entity, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target, entity);
+            return LocalSave(target, entity, cancellationToken);
         }
 
-        public virtual IInvoiceLine LocalSave(IInvoiceLine target, InvoiceLineEntity entity)
+        public virtual IInvoiceLine LocalSave(IInvoiceLine target, InvoiceLineEntity entity, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -80,11 +80,11 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             }
             else if (target.IsNew)
             {
-                return LocalInsert(target, entity);
+                return LocalInsert(target, entity, cancellationToken);
             }
             else
             {
-                return LocalUpdate(target, entity);
+                return LocalUpdate(target, entity, cancellationToken);
             }
         }
 

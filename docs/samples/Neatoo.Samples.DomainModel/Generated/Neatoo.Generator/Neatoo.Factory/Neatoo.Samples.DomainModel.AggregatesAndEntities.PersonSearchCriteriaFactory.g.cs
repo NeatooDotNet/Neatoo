@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
 {
     public interface IPersonSearchCriteriaFactory
     {
-        IPersonSearchCriteria Create();
+        IPersonSearchCriteria Create(CancellationToken cancellationToken = default);
     }
 
     internal class PersonSearchCriteriaFactory : FactoryBase<IPersonSearchCriteria>, IPersonSearchCriteriaFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPersonSearchCriteria Create()
+        public virtual IPersonSearchCriteria Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPersonSearchCriteria LocalCreate()
+        public IPersonSearchCriteria LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PersonSearchCriteria>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

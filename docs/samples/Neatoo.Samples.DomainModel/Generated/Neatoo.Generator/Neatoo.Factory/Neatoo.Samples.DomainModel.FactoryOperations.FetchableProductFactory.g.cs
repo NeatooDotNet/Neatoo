@@ -11,8 +11,8 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
 {
     public interface IFetchableProductFactory
     {
-        IFetchableProduct Create();
-        IFetchableProduct? Fetch(int id);
+        IFetchableProduct Create(CancellationToken cancellationToken = default);
+        IFetchableProduct? Fetch(int id, CancellationToken cancellationToken = default);
     }
 
     internal class FetchableProductFactory : FactoryBase<IFetchableProduct>, IFetchableProductFactory
@@ -32,23 +32,23 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IFetchableProduct Create()
+        public virtual IFetchableProduct Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IFetchableProduct LocalCreate()
+        public IFetchableProduct LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<FetchableProduct>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IFetchableProduct? Fetch(int id)
+        public virtual IFetchableProduct? Fetch(int id, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(id);
+            return LocalFetch(id, cancellationToken);
         }
 
-        public IFetchableProduct? LocalFetch(int id)
+        public IFetchableProduct? LocalFetch(int id, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<FetchableProduct>();
             var repo = ServiceProvider.GetRequiredService<IProductRepository>();

@@ -306,5 +306,25 @@ namespace DomainModel.Tests.IntegrationTests
 
             Assert.Contains("Phone number must be unique", person.PropertyMessages.Select(m => m.Message));
         }
+
+        /// <summary>
+        /// Test to verify person.Save() works in Logical mode.
+        /// This tests the regression where IFactorySave was not being injected into EntityBaseServices.
+        /// </summary>
+        [Fact]
+        public async Task PersonSave_DirectSave_ShouldWork()
+        {
+            // Arrange
+            var person = await CreateAsync();
+
+            // Act - Use person.Save() directly instead of factory.Save()
+            var result = await person.Save();
+
+            // Assert
+            Assert.NotNull(result);
+            var personEntity = personContext.Persons.Single();
+            Assert.Equal(this.firstName, personEntity.FirstName);
+            Assert.Equal(this.lastName, personEntity.LastName);
+        }
     }
 }

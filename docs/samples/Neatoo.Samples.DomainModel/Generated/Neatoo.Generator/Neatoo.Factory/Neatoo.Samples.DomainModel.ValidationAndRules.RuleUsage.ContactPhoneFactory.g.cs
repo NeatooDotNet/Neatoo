@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
 {
     public interface IContactPhoneFactory
     {
-        IContactPhone Create();
+        IContactPhone Create(CancellationToken cancellationToken = default);
     }
 
     internal class ContactPhoneFactory : FactoryBase<IContactPhone>, IContactPhoneFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IContactPhone Create()
+        public virtual IContactPhone Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IContactPhone LocalCreate()
+        public IContactPhone LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<ContactPhone>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

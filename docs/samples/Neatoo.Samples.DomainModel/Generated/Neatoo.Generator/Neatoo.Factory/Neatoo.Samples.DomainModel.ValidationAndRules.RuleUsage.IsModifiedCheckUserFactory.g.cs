@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
 {
     public interface IIsModifiedCheckUserFactory
     {
-        IIsModifiedCheckUser Create();
+        IIsModifiedCheckUser Create(CancellationToken cancellationToken = default);
     }
 
     internal class IsModifiedCheckUserFactory : FactoryBase<IIsModifiedCheckUser>, IIsModifiedCheckUserFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IIsModifiedCheckUser Create()
+        public virtual IIsModifiedCheckUser Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IIsModifiedCheckUser LocalCreate()
+        public IIsModifiedCheckUser LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<IsModifiedCheckUser>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

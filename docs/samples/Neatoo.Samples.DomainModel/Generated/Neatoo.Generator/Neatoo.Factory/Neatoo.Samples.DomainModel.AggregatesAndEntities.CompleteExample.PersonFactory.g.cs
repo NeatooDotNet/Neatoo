@@ -14,12 +14,12 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
 {
     public interface IPersonFactory
     {
-        IPerson Create();
-        IPerson Fetch(PersonEntity entity);
-        Task<IPerson?> Save(IPerson target, CancellationToken cancellationToken);
+        IPerson Create(CancellationToken cancellationToken = default);
+        IPerson Fetch(PersonEntity entity, CancellationToken cancellationToken = default);
+        Task<IPerson?> Save(IPerson target, CancellationToken cancellationToken = default);
     }
 
-    internal class PersonFactory : FactoryBase<IPerson>, IPersonFactory
+    internal class PersonFactory : FactorySaveBase<IPerson>, IFactorySave<Person>, IPersonFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
@@ -36,57 +36,57 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPerson Create()
+        public virtual IPerson Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPerson LocalCreate()
+        public IPerson LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<Person>();
             var phoneListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create(phoneListFactory));
         }
 
-        public virtual IPerson Fetch(PersonEntity entity)
+        public virtual IPerson Fetch(PersonEntity entity, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(entity);
+            return LocalFetch(entity, cancellationToken);
         }
 
-        public IPerson LocalFetch(PersonEntity entity)
+        public IPerson LocalFetch(PersonEntity entity, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<Person>();
             var phoneListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entity, phoneListFactory));
         }
 
-        public Task<IPerson> LocalInsert(IPerson target, CancellationToken cancellationToken)
+        public Task<IPerson> LocalInsert(IPerson target, CancellationToken cancellationToken = default)
         {
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
             var repository = ServiceProvider.GetRequiredService<IRepository<PersonEntity>>();
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(repository, cancellationToken));
         }
 
-        public Task<IPerson> LocalUpdate(IPerson target, CancellationToken cancellationToken)
+        public Task<IPerson> LocalUpdate(IPerson target, CancellationToken cancellationToken = default)
         {
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
             var repository = ServiceProvider.GetRequiredService<IRepository<PersonEntity>>();
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update(repository, cancellationToken));
         }
 
-        public Task<IPerson> LocalDelete(IPerson target, CancellationToken cancellationToken)
+        public Task<IPerson> LocalDelete(IPerson target, CancellationToken cancellationToken = default)
         {
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
             var repository = ServiceProvider.GetRequiredService<IRepository<PersonEntity>>();
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete(repository, cancellationToken));
         }
 
-        public virtual Task<IPerson?> Save(IPerson target, CancellationToken cancellationToken)
+        public virtual Task<IPerson?> Save(IPerson target, CancellationToken cancellationToken = default)
         {
             return LocalSave(target, cancellationToken);
         }
 
-        public virtual async Task<IPerson?> LocalSave(IPerson target, CancellationToken cancellationToken)
+        public virtual async Task<IPerson?> LocalSave(IPerson target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -107,12 +107,18 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
             }
         }
 
+        async Task<IFactorySaveMeta?> IFactorySave<Person>.Save(Person target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<PersonFactory>();
             services.AddScoped<IPersonFactory, PersonFactory>();
             services.AddTransient<Person>();
             services.AddTransient<IPerson, Person>();
+            services.AddScoped<IFactorySave<Person>, PersonFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

@@ -13,14 +13,14 @@ namespace DomainModel
 {
     public static partial class UniqueName
     {
-        public delegate Task<bool> IsUniqueName(Guid? id, string firstName, string lastName);
+        public delegate Task<bool> IsUniqueName(Guid? id, string firstName, string lastName, CancellationToken cancellationToken = default);
         internal static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             if (remoteLocal == NeatooFactory.Remote)
             {
                 services.AddTransient<UniqueName.IsUniqueName>(cc =>
                 {
-                    return (id, firstName, lastName) => cc.GetRequiredService<IMakeRemoteDelegateRequest>().ForDelegate<bool>(typeof(UniqueName.IsUniqueName), [id, firstName, lastName], default);
+                    return (id, firstName, lastName, cancellationToken) => cc.GetRequiredService<IMakeRemoteDelegateRequest>().ForDelegate<bool>(typeof(UniqueName.IsUniqueName), [id, firstName, lastName], cancellationToken);
                 });
             }
 
@@ -28,7 +28,7 @@ namespace DomainModel
             {
                 services.AddTransient<UniqueName.IsUniqueName>(cc =>
                 {
-                    return (Guid? id, string firstName, string lastName) =>
+                    return (Guid? id, string firstName, string lastName, CancellationToken cancellationToken = default) =>
                     {
                         var personContext = cc.GetRequiredService<IPersonDbContext>();
                         return UniqueName._IsUniqueName(id, firstName, lastName, personContext);

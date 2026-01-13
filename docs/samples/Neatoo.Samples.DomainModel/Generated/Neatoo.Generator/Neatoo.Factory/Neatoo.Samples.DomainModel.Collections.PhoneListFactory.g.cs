@@ -11,9 +11,9 @@ namespace Neatoo.Samples.DomainModel.Collections
 {
     public interface IPhoneListFactory
     {
-        IPhoneList Fetch(IEnumerable<PhoneEntity> entities);
-        IPhoneList Create();
-        IPhoneList Save(IPhoneList target, ICollection<PhoneEntity> entities);
+        IPhoneList Fetch(IEnumerable<PhoneEntity> entities, CancellationToken cancellationToken = default);
+        IPhoneList Create(CancellationToken cancellationToken = default);
+        IPhoneList Save(IPhoneList target, ICollection<PhoneEntity> entities, CancellationToken cancellationToken = default);
     }
 
     internal class PhoneListFactory : FactoryBase<IPhoneList>, IPhoneListFactory
@@ -33,42 +33,42 @@ namespace Neatoo.Samples.DomainModel.Collections
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPhoneList Fetch(IEnumerable<PhoneEntity> entities)
+        public virtual IPhoneList Fetch(IEnumerable<PhoneEntity> entities, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(entities);
+            return LocalFetch(entities, cancellationToken);
         }
 
-        public IPhoneList LocalFetch(IEnumerable<PhoneEntity> entities)
+        public IPhoneList LocalFetch(IEnumerable<PhoneEntity> entities, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PhoneList>();
             var phoneFactory = ServiceProvider.GetRequiredService<IPhoneFactory>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entities, phoneFactory));
         }
 
-        public IPhoneList LocalUpdate(IPhoneList target, ICollection<PhoneEntity> entities)
+        public IPhoneList LocalUpdate(IPhoneList target, ICollection<PhoneEntity> entities, CancellationToken cancellationToken = default)
         {
             var cTarget = (PhoneList)target ?? throw new Exception("IPhoneList must implement PhoneList");
             var phoneFactory = ServiceProvider.GetRequiredService<IPhoneFactory>();
             return DoFactoryMethodCall(cTarget, FactoryOperation.Update, () => cTarget.Update(entities, phoneFactory));
         }
 
-        public virtual IPhoneList Create()
+        public virtual IPhoneList Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPhoneList LocalCreate()
+        public IPhoneList LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PhoneList>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IPhoneList Save(IPhoneList target, ICollection<PhoneEntity> entities)
+        public virtual IPhoneList Save(IPhoneList target, ICollection<PhoneEntity> entities, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target, entities);
+            return LocalSave(target, entities, cancellationToken);
         }
 
-        public virtual IPhoneList LocalSave(IPhoneList target, ICollection<PhoneEntity> entities)
+        public virtual IPhoneList LocalSave(IPhoneList target, ICollection<PhoneEntity> entities, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -80,7 +80,7 @@ namespace Neatoo.Samples.DomainModel.Collections
             }
             else
             {
-                return LocalUpdate(target, entities);
+                return LocalUpdate(target, entities, cancellationToken);
             }
         }
 

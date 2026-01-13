@@ -14,14 +14,14 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
 {
     public static partial class CheckEmailUnique
     {
-        public delegate Task<bool> IsUnique(string email, Guid? excludeId);
+        public delegate Task<bool> IsUnique(string email, Guid? excludeId, CancellationToken cancellationToken = default);
         internal static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             if (remoteLocal == NeatooFactory.Remote)
             {
                 services.AddTransient<CheckEmailUnique.IsUnique>(cc =>
                 {
-                    return (email, excludeId) => cc.GetRequiredService<IMakeRemoteDelegateRequest>().ForDelegate<bool>(typeof(CheckEmailUnique.IsUnique), [email, excludeId], default);
+                    return (email, excludeId, cancellationToken) => cc.GetRequiredService<IMakeRemoteDelegateRequest>().ForDelegate<bool>(typeof(CheckEmailUnique.IsUnique), [email, excludeId], cancellationToken);
                 });
             }
 
@@ -29,7 +29,7 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
             {
                 services.AddTransient<CheckEmailUnique.IsUnique>(cc =>
                 {
-                    return (string email, Guid? excludeId) =>
+                    return (string email, Guid? excludeId, CancellationToken cancellationToken = default) =>
                     {
                         var repo = cc.GetRequiredService<IUserRepository>();
                         return CheckEmailUnique._IsUnique(email, excludeId, repo);

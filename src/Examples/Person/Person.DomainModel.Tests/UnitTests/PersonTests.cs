@@ -50,7 +50,7 @@ namespace DomainModel.Tests.UnitTests
             personDbContextStub.FindPerson.OnCall = (ko, token, id) => Task.FromResult(personEntity);
 
             var phoneListStub = new Stubs.IPersonPhoneList();
-            phoneListFactoryStub.Fetch.OnCall = (ko, entities) => phoneListStub;
+            phoneListFactoryStub.Fetch.OnCall = (ko, entities, token) => phoneListStub;
 
             // Act
             var result = await testPerson.Fetch(personDbContextStub, phoneListFactoryStub, CancellationToken.None);
@@ -85,7 +85,7 @@ namespace DomainModel.Tests.UnitTests
 
             var phoneListStub = new Stubs.IPersonPhoneList();
             testPerson.PersonPhoneList = phoneListStub;
-            phoneListFactoryStub.Save.OnCall = (ko, target, entities) => phoneListStub;
+            phoneListFactoryStub.Save.OnCall = (ko, target, entities, token) => phoneListStub;
 
             testPerson.FirstName = "John";
             testPerson.LastName = "Doe";

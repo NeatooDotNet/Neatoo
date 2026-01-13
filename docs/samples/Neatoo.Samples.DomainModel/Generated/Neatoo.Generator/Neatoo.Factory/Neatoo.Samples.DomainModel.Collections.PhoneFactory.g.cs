@@ -11,9 +11,9 @@ namespace Neatoo.Samples.DomainModel.Collections
 {
     public interface IPhoneFactory
     {
-        IPhone Create();
-        IPhone Fetch(PhoneEntity entity);
-        IPhone Save(IPhone target, PhoneEntity entity);
+        IPhone Create(CancellationToken cancellationToken = default);
+        IPhone Fetch(PhoneEntity entity, CancellationToken cancellationToken = default);
+        IPhone Save(IPhone target, PhoneEntity entity, CancellationToken cancellationToken = default);
     }
 
     internal class PhoneFactory : FactoryBase<IPhone>, IPhoneFactory
@@ -33,46 +33,46 @@ namespace Neatoo.Samples.DomainModel.Collections
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPhone Create()
+        public virtual IPhone Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPhone LocalCreate()
+        public IPhone LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<Phone>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IPhone Fetch(PhoneEntity entity)
+        public virtual IPhone Fetch(PhoneEntity entity, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(entity);
+            return LocalFetch(entity, cancellationToken);
         }
 
-        public IPhone LocalFetch(PhoneEntity entity)
+        public IPhone LocalFetch(PhoneEntity entity, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<Phone>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entity));
         }
 
-        public IPhone LocalInsert(IPhone target, PhoneEntity entity)
+        public IPhone LocalInsert(IPhone target, PhoneEntity entity, CancellationToken cancellationToken = default)
         {
             var cTarget = (Phone)target ?? throw new Exception("IPhone must implement Phone");
             return DoFactoryMethodCall(cTarget, FactoryOperation.Insert, () => cTarget.Insert(entity));
         }
 
-        public IPhone LocalUpdate(IPhone target, PhoneEntity entity)
+        public IPhone LocalUpdate(IPhone target, PhoneEntity entity, CancellationToken cancellationToken = default)
         {
             var cTarget = (Phone)target ?? throw new Exception("IPhone must implement Phone");
             return DoFactoryMethodCall(cTarget, FactoryOperation.Update, () => cTarget.Update(entity));
         }
 
-        public virtual IPhone Save(IPhone target, PhoneEntity entity)
+        public virtual IPhone Save(IPhone target, PhoneEntity entity, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target, entity);
+            return LocalSave(target, entity, cancellationToken);
         }
 
-        public virtual IPhone LocalSave(IPhone target, PhoneEntity entity)
+        public virtual IPhone LocalSave(IPhone target, PhoneEntity entity, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -80,11 +80,11 @@ namespace Neatoo.Samples.DomainModel.Collections
             }
             else if (target.IsNew)
             {
-                return LocalInsert(target, entity);
+                return LocalInsert(target, entity, cancellationToken);
             }
             else
             {
-                return LocalUpdate(target, entity);
+                return LocalUpdate(target, entity, cancellationToken);
             }
         }
 

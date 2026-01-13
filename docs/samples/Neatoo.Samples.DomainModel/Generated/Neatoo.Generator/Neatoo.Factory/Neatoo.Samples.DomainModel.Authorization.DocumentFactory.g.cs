@@ -12,16 +12,16 @@ namespace Neatoo.Samples.DomainModel.Authorization
 {
     public interface IDocumentFactory
     {
-        IDocument? Create();
-        IDocument? Fetch(Guid id, string title, string content);
-        Task<IDocument?> Save(IDocument target);
-        Task<Authorized<IDocument>> TrySave(IDocument target);
-        Authorized CanCreate();
-        Authorized CanFetch();
-        Authorized CanInsert();
-        Authorized CanUpdate();
-        Authorized CanDelete();
-        Authorized CanSave();
+        IDocument? Create(CancellationToken cancellationToken = default);
+        IDocument? Fetch(Guid id, string title, string content, CancellationToken cancellationToken = default);
+        Task<IDocument?> Save(IDocument target, CancellationToken cancellationToken = default);
+        Task<Authorized<IDocument>> TrySave(IDocument target, CancellationToken cancellationToken = default);
+        Authorized CanCreate(CancellationToken cancellationToken = default);
+        Authorized CanFetch(CancellationToken cancellationToken = default);
+        Authorized CanInsert(CancellationToken cancellationToken = default);
+        Authorized CanUpdate(CancellationToken cancellationToken = default);
+        Authorized CanDelete(CancellationToken cancellationToken = default);
+        Authorized CanSave(CancellationToken cancellationToken = default);
     }
 
     internal class DocumentFactory : FactorySaveBase<IDocument>, IFactorySave<Document>, IDocumentFactory
@@ -41,12 +41,12 @@ namespace Neatoo.Samples.DomainModel.Authorization
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IDocument? Create()
+        public virtual IDocument? Create(CancellationToken cancellationToken = default)
         {
-            return (LocalCreate()).Result;
+            return (LocalCreate(cancellationToken)).Result;
         }
 
-        public Authorized<IDocument> LocalCreate()
+        public Authorized<IDocument> LocalCreate(CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IDocumentAuth idocumentauth = ServiceProvider.GetRequiredService<IDocumentAuth>();
@@ -66,12 +66,12 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return new Authorized<IDocument>(DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create()));
         }
 
-        public virtual IDocument? Fetch(Guid id, string title, string content)
+        public virtual IDocument? Fetch(Guid id, string title, string content, CancellationToken cancellationToken = default)
         {
-            return (LocalFetch(id, title, content)).Result;
+            return (LocalFetch(id, title, content, cancellationToken)).Result;
         }
 
-        public Authorized<IDocument> LocalFetch(Guid id, string title, string content)
+        public Authorized<IDocument> LocalFetch(Guid id, string title, string content, CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IDocumentAuth idocumentauth = ServiceProvider.GetRequiredService<IDocumentAuth>();
@@ -91,7 +91,7 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return new Authorized<IDocument>(DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id, title, content)));
         }
 
-        public async Task<Authorized<IDocument>> LocalInsert(IDocument target)
+        public async Task<Authorized<IDocument>> LocalInsert(IDocument target, CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IDocumentAuth idocumentauth = ServiceProvider.GetRequiredService<IDocumentAuth>();
@@ -111,7 +111,7 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return new Authorized<IDocument>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert()));
         }
 
-        public async Task<Authorized<IDocument>> LocalUpdate(IDocument target)
+        public async Task<Authorized<IDocument>> LocalUpdate(IDocument target, CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IDocumentAuth idocumentauth = ServiceProvider.GetRequiredService<IDocumentAuth>();
@@ -131,7 +131,7 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return new Authorized<IDocument>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update()));
         }
 
-        public async Task<Authorized<IDocument>> LocalDelete(IDocument target)
+        public async Task<Authorized<IDocument>> LocalDelete(IDocument target, CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IDocumentAuth idocumentauth = ServiceProvider.GetRequiredService<IDocumentAuth>();
@@ -151,9 +151,9 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return new Authorized<IDocument>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete()));
         }
 
-        public virtual async Task<IDocument?> Save(IDocument target)
+        public virtual async Task<IDocument?> Save(IDocument target, CancellationToken cancellationToken = default)
         {
-            var authorized = (await LocalSave(target));
+            var authorized = (await LocalSave(target, cancellationToken));
             if (!authorized.HasAccess)
             {
                 throw new NotAuthorizedException(authorized);
@@ -162,17 +162,12 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return authorized.Result;
         }
 
-        public virtual async Task<Authorized<IDocument>> TrySave(IDocument target)
+        public virtual async Task<Authorized<IDocument>> TrySave(IDocument target, CancellationToken cancellationToken = default)
         {
-            return await LocalSave(target);
+            return await LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<Document>.Save(Document target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<Authorized<IDocument>> LocalSave(IDocument target)
+        public virtual async Task<Authorized<IDocument>> LocalSave(IDocument target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -181,24 +176,29 @@ namespace Neatoo.Samples.DomainModel.Authorization
                     return new Authorized<IDocument>();
                 }
 
-                return await LocalDelete(target);
+                return await LocalDelete(target, cancellationToken);
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
-                return await LocalUpdate(target);
+                return await LocalUpdate(target, cancellationToken);
             }
         }
 
-        public virtual Authorized CanCreate()
+        async Task<IFactorySaveMeta?> IFactorySave<Document>.Save(Document target, CancellationToken cancellationToken)
         {
-            return LocalCanCreate();
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
         }
 
-        public Authorized LocalCanCreate()
+        public virtual Authorized CanCreate(CancellationToken cancellationToken = default)
+        {
+            return LocalCanCreate(cancellationToken);
+        }
+
+        public Authorized LocalCanCreate(CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IDocumentAuth idocumentauth = ServiceProvider.GetRequiredService<IDocumentAuth>();
@@ -217,12 +217,12 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return new Authorized(true);
         }
 
-        public virtual Authorized CanFetch()
+        public virtual Authorized CanFetch(CancellationToken cancellationToken = default)
         {
-            return LocalCanFetch();
+            return LocalCanFetch(cancellationToken);
         }
 
-        public Authorized LocalCanFetch()
+        public Authorized LocalCanFetch(CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IDocumentAuth idocumentauth = ServiceProvider.GetRequiredService<IDocumentAuth>();
@@ -241,12 +241,12 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return new Authorized(true);
         }
 
-        public virtual Authorized CanInsert()
+        public virtual Authorized CanInsert(CancellationToken cancellationToken = default)
         {
-            return LocalCanInsert();
+            return LocalCanInsert(cancellationToken);
         }
 
-        public Authorized LocalCanInsert()
+        public Authorized LocalCanInsert(CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IDocumentAuth idocumentauth = ServiceProvider.GetRequiredService<IDocumentAuth>();
@@ -265,12 +265,12 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return new Authorized(true);
         }
 
-        public virtual Authorized CanUpdate()
+        public virtual Authorized CanUpdate(CancellationToken cancellationToken = default)
         {
-            return LocalCanUpdate();
+            return LocalCanUpdate(cancellationToken);
         }
 
-        public Authorized LocalCanUpdate()
+        public Authorized LocalCanUpdate(CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IDocumentAuth idocumentauth = ServiceProvider.GetRequiredService<IDocumentAuth>();
@@ -289,12 +289,12 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return new Authorized(true);
         }
 
-        public virtual Authorized CanDelete()
+        public virtual Authorized CanDelete(CancellationToken cancellationToken = default)
         {
-            return LocalCanDelete();
+            return LocalCanDelete(cancellationToken);
         }
 
-        public Authorized LocalCanDelete()
+        public Authorized LocalCanDelete(CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IDocumentAuth idocumentauth = ServiceProvider.GetRequiredService<IDocumentAuth>();
@@ -313,12 +313,12 @@ namespace Neatoo.Samples.DomainModel.Authorization
             return new Authorized(true);
         }
 
-        public virtual Authorized CanSave()
+        public virtual Authorized CanSave(CancellationToken cancellationToken = default)
         {
-            return LocalCanSave();
+            return LocalCanSave(cancellationToken);
         }
 
-        public Authorized LocalCanSave()
+        public Authorized LocalCanSave(CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             IDocumentAuth idocumentauth = ServiceProvider.GetRequiredService<IDocumentAuth>();

@@ -14,8 +14,8 @@ namespace Neatoo.Samples.DomainModel.SampleDomain
 {
     public interface IPersonFactory
     {
-        IPerson Create();
-        Task<IPerson> Save(IPerson target);
+        IPerson Create(CancellationToken cancellationToken = default);
+        Task<IPerson> Save(IPerson target, CancellationToken cancellationToken = default);
     }
 
     internal class PersonFactory : FactorySaveBase<IPerson>, IFactorySave<Person>, IPersonFactory
@@ -35,40 +35,35 @@ namespace Neatoo.Samples.DomainModel.SampleDomain
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPerson Create()
+        public virtual IPerson Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPerson LocalCreate()
+        public IPerson LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<Person>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<IPerson> LocalInsert(IPerson target)
+        public Task<IPerson> LocalInsert(IPerson target, CancellationToken cancellationToken = default)
         {
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
         }
 
-        public Task<IPerson> LocalUpdate(IPerson target)
+        public Task<IPerson> LocalUpdate(IPerson target, CancellationToken cancellationToken = default)
         {
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update());
         }
 
-        public virtual Task<IPerson> Save(IPerson target)
+        public virtual Task<IPerson> Save(IPerson target, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<Person>.Save(Person target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<IPerson> LocalSave(IPerson target)
+        public virtual async Task<IPerson> LocalSave(IPerson target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -76,12 +71,17 @@ namespace Neatoo.Samples.DomainModel.SampleDomain
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
-                return await LocalUpdate(target);
+                return await LocalUpdate(target, cancellationToken);
             }
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<Person>.Save(Person target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)

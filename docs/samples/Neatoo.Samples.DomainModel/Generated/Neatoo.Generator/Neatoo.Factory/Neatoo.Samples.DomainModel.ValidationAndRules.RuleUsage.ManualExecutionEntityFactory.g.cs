@@ -13,11 +13,11 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
 {
     public interface IManualExecutionEntityFactory
     {
-        IManualExecutionEntity Create();
-        Task<IManualExecutionEntity> Save(IManualExecutionEntity target, CancellationToken cancellationToken);
+        IManualExecutionEntity Create(CancellationToken cancellationToken = default);
+        Task<IManualExecutionEntity> Save(IManualExecutionEntity target, CancellationToken cancellationToken = default);
     }
 
-    internal class ManualExecutionEntityFactory : FactoryBase<IManualExecutionEntity>, IManualExecutionEntityFactory
+    internal class ManualExecutionEntityFactory : FactorySaveBase<IManualExecutionEntity>, IFactorySave<ManualExecutionEntity>, IManualExecutionEntityFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
@@ -34,29 +34,29 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IManualExecutionEntity Create()
+        public virtual IManualExecutionEntity Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IManualExecutionEntity LocalCreate()
+        public IManualExecutionEntity LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<ManualExecutionEntity>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<IManualExecutionEntity> LocalInsert(IManualExecutionEntity target, CancellationToken cancellationToken)
+        public Task<IManualExecutionEntity> LocalInsert(IManualExecutionEntity target, CancellationToken cancellationToken = default)
         {
             var cTarget = (ManualExecutionEntity)target ?? throw new Exception("IManualExecutionEntity must implement ManualExecutionEntity");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(cancellationToken));
         }
 
-        public virtual Task<IManualExecutionEntity> Save(IManualExecutionEntity target, CancellationToken cancellationToken)
+        public virtual Task<IManualExecutionEntity> Save(IManualExecutionEntity target, CancellationToken cancellationToken = default)
         {
             return LocalSave(target, cancellationToken);
         }
 
-        public virtual async Task<IManualExecutionEntity> LocalSave(IManualExecutionEntity target, CancellationToken cancellationToken)
+        public virtual async Task<IManualExecutionEntity> LocalSave(IManualExecutionEntity target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -72,12 +72,18 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             }
         }
 
+        async Task<IFactorySaveMeta?> IFactorySave<ManualExecutionEntity>.Save(ManualExecutionEntity target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<ManualExecutionEntityFactory>();
             services.AddScoped<IManualExecutionEntityFactory, ManualExecutionEntityFactory>();
             services.AddTransient<ManualExecutionEntity>();
             services.AddTransient<IManualExecutionEntity, ManualExecutionEntity>();
+            services.AddScoped<IFactorySave<ManualExecutionEntity>, ManualExecutionEntityFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

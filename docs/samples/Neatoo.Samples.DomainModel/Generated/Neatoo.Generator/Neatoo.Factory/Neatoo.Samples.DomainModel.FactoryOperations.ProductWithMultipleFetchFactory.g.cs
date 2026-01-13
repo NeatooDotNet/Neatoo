@@ -11,9 +11,9 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
 {
     public interface IProductWithMultipleFetchFactory
     {
-        IProductWithMultipleFetch Create();
-        IProductWithMultipleFetch? Fetch(int id);
-        IProductWithMultipleFetch? Fetch(string sku);
+        IProductWithMultipleFetch Create(CancellationToken cancellationToken = default);
+        IProductWithMultipleFetch? Fetch(int id, CancellationToken cancellationToken = default);
+        IProductWithMultipleFetch? Fetch(string sku, CancellationToken cancellationToken = default);
     }
 
     internal class ProductWithMultipleFetchFactory : FactoryBase<IProductWithMultipleFetch>, IProductWithMultipleFetchFactory
@@ -33,35 +33,35 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IProductWithMultipleFetch Create()
+        public virtual IProductWithMultipleFetch Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IProductWithMultipleFetch LocalCreate()
+        public IProductWithMultipleFetch LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<ProductWithMultipleFetch>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IProductWithMultipleFetch? Fetch(int id)
+        public virtual IProductWithMultipleFetch? Fetch(int id, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(id);
+            return LocalFetch(id, cancellationToken);
         }
 
-        public IProductWithMultipleFetch? LocalFetch(int id)
+        public IProductWithMultipleFetch? LocalFetch(int id, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<ProductWithMultipleFetch>();
             var repo = ServiceProvider.GetRequiredService<IProductRepository>();
             return DoFactoryMethodCallBool(target, FactoryOperation.Fetch, () => target.Fetch(id, repo));
         }
 
-        public virtual IProductWithMultipleFetch? Fetch(string sku)
+        public virtual IProductWithMultipleFetch? Fetch(string sku, CancellationToken cancellationToken = default)
         {
-            return LocalFetch1(sku);
+            return LocalFetch1(sku, cancellationToken);
         }
 
-        public IProductWithMultipleFetch? LocalFetch1(string sku)
+        public IProductWithMultipleFetch? LocalFetch1(string sku, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<ProductWithMultipleFetch>();
             var repo = ServiceProvider.GetRequiredService<IProductRepository>();

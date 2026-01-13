@@ -12,10 +12,10 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
 {
     public interface IOrderLineItemFactory
     {
-        IOrderLineItem Create();
-        IOrderLineItem Fetch(OrderLineItemDto dto);
-        IOrderLineItem Save(IOrderLineItem target);
-        IOrderLineItem Save(IOrderLineItem target, OrderLineItemDto dto);
+        IOrderLineItem Create(CancellationToken cancellationToken = default);
+        IOrderLineItem Fetch(OrderLineItemDto dto, CancellationToken cancellationToken = default);
+        IOrderLineItem Save(IOrderLineItem target, CancellationToken cancellationToken = default);
+        IOrderLineItem Save(IOrderLineItem target, OrderLineItemDto dto, CancellationToken cancellationToken = default);
     }
 
     internal class OrderLineItemFactory : FactorySaveBase<IOrderLineItem>, IFactorySave<OrderLineItem>, IOrderLineItemFactory
@@ -35,51 +35,46 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IOrderLineItem Create()
+        public virtual IOrderLineItem Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IOrderLineItem LocalCreate()
+        public IOrderLineItem LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<OrderLineItem>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IOrderLineItem Fetch(OrderLineItemDto dto)
+        public virtual IOrderLineItem Fetch(OrderLineItemDto dto, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(dto);
+            return LocalFetch(dto, cancellationToken);
         }
 
-        public IOrderLineItem LocalFetch(OrderLineItemDto dto)
+        public IOrderLineItem LocalFetch(OrderLineItemDto dto, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<OrderLineItem>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(dto));
         }
 
-        public IOrderLineItem LocalInsert(IOrderLineItem target)
+        public IOrderLineItem LocalInsert(IOrderLineItem target, CancellationToken cancellationToken = default)
         {
             var cTarget = (OrderLineItem)target ?? throw new Exception("IOrderLineItem must implement OrderLineItem");
             return DoFactoryMethodCall(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
         }
 
-        public IOrderLineItem LocalUpdate(IOrderLineItem target, OrderLineItemDto dto)
+        public IOrderLineItem LocalUpdate(IOrderLineItem target, OrderLineItemDto dto, CancellationToken cancellationToken = default)
         {
             var cTarget = (OrderLineItem)target ?? throw new Exception("IOrderLineItem must implement OrderLineItem");
             return DoFactoryMethodCall(cTarget, FactoryOperation.Update, () => cTarget.Update(dto));
         }
 
-        public virtual IOrderLineItem Save(IOrderLineItem target)
+        public virtual IOrderLineItem Save(IOrderLineItem target, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<OrderLineItem>.Save(OrderLineItem target)
-        {
-            return await Task.FromResult((IFactorySaveMeta? )Save(target));
-        }
-
-        public virtual IOrderLineItem LocalSave(IOrderLineItem target)
+        public virtual IOrderLineItem LocalSave(IOrderLineItem target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -87,7 +82,7 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             }
             else if (target.IsNew)
             {
-                return LocalInsert(target);
+                return LocalInsert(target, cancellationToken);
             }
             else
             {
@@ -95,12 +90,17 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             }
         }
 
-        public virtual IOrderLineItem Save(IOrderLineItem target, OrderLineItemDto dto)
+        async Task<IFactorySaveMeta?> IFactorySave<OrderLineItem>.Save(OrderLineItem target, CancellationToken cancellationToken)
         {
-            return LocalSave1(target, dto);
+            return await Task.FromResult((IFactorySaveMeta? )Save(target, cancellationToken));
         }
 
-        public virtual IOrderLineItem LocalSave1(IOrderLineItem target, OrderLineItemDto dto)
+        public virtual IOrderLineItem Save(IOrderLineItem target, OrderLineItemDto dto, CancellationToken cancellationToken = default)
+        {
+            return LocalSave1(target, dto, cancellationToken);
+        }
+
+        public virtual IOrderLineItem LocalSave1(IOrderLineItem target, OrderLineItemDto dto, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -112,7 +112,7 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             }
             else
             {
-                return LocalUpdate(target, dto);
+                return LocalUpdate(target, dto, cancellationToken);
             }
         }
 

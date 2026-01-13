@@ -11,7 +11,7 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
 {
     public interface ISimpleProductFactory
     {
-        ISimpleProduct Create();
+        ISimpleProduct Create(CancellationToken cancellationToken = default);
     }
 
     internal class SimpleProductFactory : FactoryBase<ISimpleProduct>, ISimpleProductFactory
@@ -31,12 +31,12 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual ISimpleProduct Create()
+        public virtual ISimpleProduct Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public ISimpleProduct LocalCreate()
+        public ISimpleProduct LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<SimpleProduct>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

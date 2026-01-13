@@ -11,7 +11,7 @@ namespace Neatoo.Samples.DomainModel.BestPractices
 {
     public interface IBpVisitFactory
     {
-        IBpVisit Create();
+        IBpVisit Create(CancellationToken cancellationToken = default);
     }
 
     internal class BpVisitFactory : FactoryBase<IBpVisit>, IBpVisitFactory
@@ -31,12 +31,12 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IBpVisit Create()
+        public virtual IBpVisit Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IBpVisit LocalCreate()
+        public IBpVisit LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<BpVisit>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

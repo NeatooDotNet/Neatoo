@@ -11,9 +11,9 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
 {
     public interface ICustomerWithAddressFactory
     {
-        ICustomerWithAddress Create();
-        ICustomerWithAddress Fetch(CustomerEntity entity);
-        Task<ICustomerWithAddress> Save(ICustomerWithAddress target);
+        ICustomerWithAddress Create(CancellationToken cancellationToken = default);
+        ICustomerWithAddress Fetch(CustomerEntity entity, CancellationToken cancellationToken = default);
+        Task<ICustomerWithAddress> Save(ICustomerWithAddress target, CancellationToken cancellationToken = default);
     }
 
     internal class CustomerWithAddressFactory : FactorySaveBase<ICustomerWithAddress>, IFactorySave<CustomerWithAddress>, ICustomerWithAddressFactory
@@ -33,45 +33,40 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual ICustomerWithAddress Create()
+        public virtual ICustomerWithAddress Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public ICustomerWithAddress LocalCreate()
+        public ICustomerWithAddress LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<CustomerWithAddress>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual ICustomerWithAddress Fetch(CustomerEntity entity)
+        public virtual ICustomerWithAddress Fetch(CustomerEntity entity, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(entity);
+            return LocalFetch(entity, cancellationToken);
         }
 
-        public ICustomerWithAddress LocalFetch(CustomerEntity entity)
+        public ICustomerWithAddress LocalFetch(CustomerEntity entity, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<CustomerWithAddress>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entity));
         }
 
-        public Task<ICustomerWithAddress> LocalInsert(ICustomerWithAddress target)
+        public Task<ICustomerWithAddress> LocalInsert(ICustomerWithAddress target, CancellationToken cancellationToken = default)
         {
             var cTarget = (CustomerWithAddress)target ?? throw new Exception("ICustomerWithAddress must implement CustomerWithAddress");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
         }
 
-        public virtual Task<ICustomerWithAddress> Save(ICustomerWithAddress target)
+        public virtual Task<ICustomerWithAddress> Save(ICustomerWithAddress target, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<CustomerWithAddress>.Save(CustomerWithAddress target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<ICustomerWithAddress> LocalSave(ICustomerWithAddress target)
+        public virtual async Task<ICustomerWithAddress> LocalSave(ICustomerWithAddress target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -79,12 +74,17 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
                 throw new NotImplementedException();
             }
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<CustomerWithAddress>.Save(CustomerWithAddress target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)

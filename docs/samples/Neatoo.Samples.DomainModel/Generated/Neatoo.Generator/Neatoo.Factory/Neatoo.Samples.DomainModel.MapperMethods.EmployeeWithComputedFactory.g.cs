@@ -11,8 +11,8 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
 {
     public interface IEmployeeWithComputedFactory
     {
-        IEmployeeWithComputed Create();
-        IEmployeeWithComputed Fetch(EmployeeEntity entity);
+        IEmployeeWithComputed Create(CancellationToken cancellationToken = default);
+        IEmployeeWithComputed Fetch(EmployeeEntity entity, CancellationToken cancellationToken = default);
     }
 
     internal class EmployeeWithComputedFactory : FactoryBase<IEmployeeWithComputed>, IEmployeeWithComputedFactory
@@ -32,23 +32,23 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IEmployeeWithComputed Create()
+        public virtual IEmployeeWithComputed Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IEmployeeWithComputed LocalCreate()
+        public IEmployeeWithComputed LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<EmployeeWithComputed>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IEmployeeWithComputed Fetch(EmployeeEntity entity)
+        public virtual IEmployeeWithComputed Fetch(EmployeeEntity entity, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(entity);
+            return LocalFetch(entity, cancellationToken);
         }
 
-        public IEmployeeWithComputed LocalFetch(EmployeeEntity entity)
+        public IEmployeeWithComputed LocalFetch(EmployeeEntity entity, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<EmployeeWithComputed>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entity));

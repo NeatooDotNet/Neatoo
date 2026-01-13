@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
 {
     public interface ICustomerFactory
     {
-        ICustomer Create();
+        ICustomer Create(CancellationToken cancellationToken = default);
     }
 
     internal class CustomerFactory : FactoryBase<ICustomer>, ICustomerFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual ICustomer Create()
+        public virtual ICustomer Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public ICustomer LocalCreate()
+        public ICustomer LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<Customer>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

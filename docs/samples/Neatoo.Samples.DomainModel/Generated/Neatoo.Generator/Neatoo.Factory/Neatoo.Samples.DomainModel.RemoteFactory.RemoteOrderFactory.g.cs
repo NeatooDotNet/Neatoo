@@ -14,9 +14,9 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
 {
     public interface IRemoteOrderFactory
     {
-        Task<IRemoteOrder> Fetch(int id);
-        IRemoteOrder Create();
-        Task<IRemoteOrder> Save(IRemoteOrder target);
+        Task<IRemoteOrder> Fetch(int id, CancellationToken cancellationToken = default);
+        IRemoteOrder Create(CancellationToken cancellationToken = default);
+        Task<IRemoteOrder> Save(IRemoteOrder target, CancellationToken cancellationToken = default);
     }
 
     internal class RemoteOrderFactory : FactorySaveBase<IRemoteOrder>, IFactorySave<RemoteOrder>, IRemoteOrderFactory
@@ -24,8 +24,8 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
         // Delegates
-        public delegate Task<IRemoteOrder> FetchDelegate(int id);
-        public delegate Task<IRemoteOrder> SaveDelegate(IRemoteOrder target);
+        public delegate Task<IRemoteOrder> FetchDelegate(int id, CancellationToken cancellationToken = default);
+        public delegate Task<IRemoteOrder> SaveDelegate(IRemoteOrder target, CancellationToken cancellationToken = default);
         // Delegate Properties to provide Local or Remote fork in execution
         public FetchDelegate FetchProperty { get; }
         public SaveDelegate SaveProperty { get; }
@@ -45,55 +45,50 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
             SaveProperty = RemoteSave;
         }
 
-        public virtual Task<IRemoteOrder> Fetch(int id)
+        public virtual Task<IRemoteOrder> Fetch(int id, CancellationToken cancellationToken = default)
         {
-            return FetchProperty(id);
+            return FetchProperty(id, cancellationToken);
         }
 
-        public virtual async Task<IRemoteOrder> RemoteFetch(int id)
+        public virtual async Task<IRemoteOrder> RemoteFetch(int id, CancellationToken cancellationToken = default)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<IRemoteOrder>(typeof(FetchDelegate), [id], default))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<IRemoteOrder>(typeof(FetchDelegate), [id], cancellationToken))!;
         }
 
-        public Task<IRemoteOrder> LocalFetch(int id)
+        public Task<IRemoteOrder> LocalFetch(int id, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<RemoteOrder>();
             return Task.FromResult(DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id)));
         }
 
-        public Task<IRemoteOrder> LocalUpdate(IRemoteOrder target)
+        public Task<IRemoteOrder> LocalUpdate(IRemoteOrder target, CancellationToken cancellationToken = default)
         {
             var cTarget = (RemoteOrder)target ?? throw new Exception("IRemoteOrder must implement RemoteOrder");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update());
         }
 
-        public virtual IRemoteOrder Create()
+        public virtual IRemoteOrder Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IRemoteOrder LocalCreate()
+        public IRemoteOrder LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<RemoteOrder>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual Task<IRemoteOrder> Save(IRemoteOrder target)
+        public virtual Task<IRemoteOrder> Save(IRemoteOrder target, CancellationToken cancellationToken = default)
         {
-            return SaveProperty(target);
+            return SaveProperty(target, cancellationToken);
         }
 
-        public virtual async Task<IRemoteOrder> RemoteSave(IRemoteOrder target)
+        public virtual async Task<IRemoteOrder> RemoteSave(IRemoteOrder target, CancellationToken cancellationToken = default)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<IRemoteOrder>(typeof(SaveDelegate), [target], default))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<IRemoteOrder>(typeof(SaveDelegate), [target], cancellationToken))!;
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<RemoteOrder>.Save(RemoteOrder target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<IRemoteOrder> LocalSave(IRemoteOrder target)
+        public virtual async Task<IRemoteOrder> LocalSave(IRemoteOrder target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -105,8 +100,13 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
             }
             else
             {
-                return await LocalUpdate(target);
+                return await LocalUpdate(target, cancellationToken);
             }
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<RemoteOrder>.Save(RemoteOrder target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
@@ -116,12 +116,12 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
             services.AddScoped<FetchDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<RemoteOrderFactory>();
-                return (int id) => factory.LocalFetch(id);
+                return (int id, CancellationToken cancellationToken = default) => factory.LocalFetch(id, cancellationToken);
             });
             services.AddScoped<SaveDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<RemoteOrderFactory>();
-                return (IRemoteOrder target) => factory.LocalSave(target);
+                return (IRemoteOrder target, CancellationToken cancellationToken = default) => factory.LocalSave(target, cancellationToken);
             });
             services.AddTransient<RemoteOrder>();
             services.AddTransient<IRemoteOrder, RemoteOrder>();

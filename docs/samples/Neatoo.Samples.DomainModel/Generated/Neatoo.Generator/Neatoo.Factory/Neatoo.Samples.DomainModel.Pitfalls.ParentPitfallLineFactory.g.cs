@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
 {
     public interface IParentPitfallLineFactory
     {
-        IParentPitfallLine Create();
+        IParentPitfallLine Create(CancellationToken cancellationToken = default);
     }
 
     internal class ParentPitfallLineFactory : FactoryBase<IParentPitfallLine>, IParentPitfallLineFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IParentPitfallLine Create()
+        public virtual IParentPitfallLine Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IParentPitfallLine LocalCreate()
+        public IParentPitfallLine LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<ParentPitfallLine>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

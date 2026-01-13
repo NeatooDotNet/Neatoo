@@ -14,8 +14,8 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
 {
     public interface IPersonPhoneFactory
     {
-        IPersonPhone Create();
-        IPersonPhone Fetch(PersonPhoneEntity entity);
+        IPersonPhone Create(CancellationToken cancellationToken = default);
+        IPersonPhone Fetch(PersonPhoneEntity entity, CancellationToken cancellationToken = default);
     }
 
     internal class PersonPhoneFactory : FactoryBase<IPersonPhone>, IPersonPhoneFactory
@@ -35,23 +35,23 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPersonPhone Create()
+        public virtual IPersonPhone Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPersonPhone LocalCreate()
+        public IPersonPhone LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PersonPhone>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IPersonPhone Fetch(PersonPhoneEntity entity)
+        public virtual IPersonPhone Fetch(PersonPhoneEntity entity, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(entity);
+            return LocalFetch(entity, cancellationToken);
         }
 
-        public IPersonPhone LocalFetch(PersonPhoneEntity entity)
+        public IPersonPhone LocalFetch(PersonPhoneEntity entity, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PersonPhone>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entity));

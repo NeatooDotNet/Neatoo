@@ -14,8 +14,8 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
 {
     public interface IPersonPhoneListFactory
     {
-        IPersonPhoneList Create();
-        IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> entities);
+        IPersonPhoneList Create(CancellationToken cancellationToken = default);
+        IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> entities, CancellationToken cancellationToken = default);
     }
 
     internal class PersonPhoneListFactory : FactoryBase<IPersonPhoneList>, IPersonPhoneListFactory
@@ -35,23 +35,23 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities.CompleteExample
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPersonPhoneList Create()
+        public virtual IPersonPhoneList Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPersonPhoneList LocalCreate()
+        public IPersonPhoneList LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PersonPhoneList>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> entities)
+        public virtual IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> entities, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(entities);
+            return LocalFetch(entities, cancellationToken);
         }
 
-        public IPersonPhoneList LocalFetch(IEnumerable<PersonPhoneEntity> entities)
+        public IPersonPhoneList LocalFetch(IEnumerable<PersonPhoneEntity> entities, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PersonPhoneList>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entities));

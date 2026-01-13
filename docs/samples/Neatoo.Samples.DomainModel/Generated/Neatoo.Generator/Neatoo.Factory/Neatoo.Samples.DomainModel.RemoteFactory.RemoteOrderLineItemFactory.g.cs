@@ -14,9 +14,9 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
 {
     public interface IRemoteOrderLineItemFactory
     {
-        IRemoteOrderLineItem Fetch(int id, string productName, int quantity);
-        IRemoteOrderLineItem Create();
-        Task<IRemoteOrderLineItem> Save(IRemoteOrderLineItem target);
+        IRemoteOrderLineItem Fetch(int id, string productName, int quantity, CancellationToken cancellationToken = default);
+        IRemoteOrderLineItem Create(CancellationToken cancellationToken = default);
+        Task<IRemoteOrderLineItem> Save(IRemoteOrderLineItem target, CancellationToken cancellationToken = default);
     }
 
     internal class RemoteOrderLineItemFactory : FactorySaveBase<IRemoteOrderLineItem>, IFactorySave<RemoteOrderLineItem>, IRemoteOrderLineItemFactory
@@ -36,45 +36,40 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IRemoteOrderLineItem Fetch(int id, string productName, int quantity)
+        public virtual IRemoteOrderLineItem Fetch(int id, string productName, int quantity, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(id, productName, quantity);
+            return LocalFetch(id, productName, quantity, cancellationToken);
         }
 
-        public IRemoteOrderLineItem LocalFetch(int id, string productName, int quantity)
+        public IRemoteOrderLineItem LocalFetch(int id, string productName, int quantity, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<RemoteOrderLineItem>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id, productName, quantity));
         }
 
-        public Task<IRemoteOrderLineItem> LocalInsert(IRemoteOrderLineItem target)
+        public Task<IRemoteOrderLineItem> LocalInsert(IRemoteOrderLineItem target, CancellationToken cancellationToken = default)
         {
             var cTarget = (RemoteOrderLineItem)target ?? throw new Exception("IRemoteOrderLineItem must implement RemoteOrderLineItem");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
         }
 
-        public virtual IRemoteOrderLineItem Create()
+        public virtual IRemoteOrderLineItem Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IRemoteOrderLineItem LocalCreate()
+        public IRemoteOrderLineItem LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<RemoteOrderLineItem>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual Task<IRemoteOrderLineItem> Save(IRemoteOrderLineItem target)
+        public virtual Task<IRemoteOrderLineItem> Save(IRemoteOrderLineItem target, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<RemoteOrderLineItem>.Save(RemoteOrderLineItem target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<IRemoteOrderLineItem> LocalSave(IRemoteOrderLineItem target)
+        public virtual async Task<IRemoteOrderLineItem> LocalSave(IRemoteOrderLineItem target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -82,12 +77,17 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
                 throw new NotImplementedException();
             }
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<RemoteOrderLineItem>.Save(RemoteOrderLineItem target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)

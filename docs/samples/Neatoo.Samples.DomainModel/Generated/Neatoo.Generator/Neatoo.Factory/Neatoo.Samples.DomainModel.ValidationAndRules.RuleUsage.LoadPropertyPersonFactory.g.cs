@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
 {
     public interface ILoadPropertyPersonFactory
     {
-        ILoadPropertyPerson Create();
+        ILoadPropertyPerson Create(CancellationToken cancellationToken = default);
     }
 
     internal class LoadPropertyPersonFactory : FactoryBase<ILoadPropertyPerson>, ILoadPropertyPersonFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual ILoadPropertyPerson Create()
+        public virtual ILoadPropertyPerson Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public ILoadPropertyPerson LocalCreate()
+        public ILoadPropertyPerson LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<LoadPropertyPerson>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

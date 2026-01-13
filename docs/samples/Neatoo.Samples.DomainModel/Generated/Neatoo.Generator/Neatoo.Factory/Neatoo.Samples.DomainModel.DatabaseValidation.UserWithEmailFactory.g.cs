@@ -14,11 +14,11 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
 {
     public interface IUserWithEmailFactory
     {
-        IUserWithEmail Create();
-        Task<IUserWithEmail> Save(IUserWithEmail target, CancellationToken cancellationToken);
+        IUserWithEmail Create(CancellationToken cancellationToken = default);
+        Task<IUserWithEmail> Save(IUserWithEmail target, CancellationToken cancellationToken = default);
     }
 
-    internal class UserWithEmailFactory : FactoryBase<IUserWithEmail>, IUserWithEmailFactory
+    internal class UserWithEmailFactory : FactorySaveBase<IUserWithEmail>, IFactorySave<UserWithEmail>, IUserWithEmailFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
@@ -35,30 +35,30 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IUserWithEmail Create()
+        public virtual IUserWithEmail Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IUserWithEmail LocalCreate()
+        public IUserWithEmail LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<UserWithEmail>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<IUserWithEmail> LocalInsert(IUserWithEmail target, CancellationToken cancellationToken)
+        public Task<IUserWithEmail> LocalInsert(IUserWithEmail target, CancellationToken cancellationToken = default)
         {
             var cTarget = (UserWithEmail)target ?? throw new Exception("IUserWithEmail must implement UserWithEmail");
             var repository = ServiceProvider.GetRequiredService<IRepository<UserWithEmailEntity>>();
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(repository, cancellationToken));
         }
 
-        public virtual Task<IUserWithEmail> Save(IUserWithEmail target, CancellationToken cancellationToken)
+        public virtual Task<IUserWithEmail> Save(IUserWithEmail target, CancellationToken cancellationToken = default)
         {
             return LocalSave(target, cancellationToken);
         }
 
-        public virtual async Task<IUserWithEmail> LocalSave(IUserWithEmail target, CancellationToken cancellationToken)
+        public virtual async Task<IUserWithEmail> LocalSave(IUserWithEmail target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -74,12 +74,18 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
             }
         }
 
+        async Task<IFactorySaveMeta?> IFactorySave<UserWithEmail>.Save(UserWithEmail target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<UserWithEmailFactory>();
             services.AddScoped<IUserWithEmailFactory, UserWithEmailFactory>();
             services.AddTransient<UserWithEmail>();
             services.AddTransient<IUserWithEmail, UserWithEmail>();
+            services.AddScoped<IFactorySave<UserWithEmail>, UserWithEmailFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

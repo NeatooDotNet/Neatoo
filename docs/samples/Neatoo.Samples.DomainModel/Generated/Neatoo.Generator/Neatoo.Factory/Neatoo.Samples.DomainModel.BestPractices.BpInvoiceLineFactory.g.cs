@@ -11,8 +11,8 @@ namespace Neatoo.Samples.DomainModel.BestPractices
 {
     public interface IBpInvoiceLineFactory
     {
-        IBpInvoiceLine Create();
-        Task<IBpInvoiceLine> Save(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken);
+        IBpInvoiceLine Create(CancellationToken cancellationToken = default);
+        Task<IBpInvoiceLine> Save(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken = default);
     }
 
     internal class BpInvoiceLineFactory : FactoryBase<IBpInvoiceLine>, IBpInvoiceLineFactory
@@ -32,30 +32,30 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IBpInvoiceLine Create()
+        public virtual IBpInvoiceLine Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IBpInvoiceLine LocalCreate()
+        public IBpInvoiceLine LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<BpInvoiceLine>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<IBpInvoiceLine> LocalInsert(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken)
+        public Task<IBpInvoiceLine> LocalInsert(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken = default)
         {
             var cTarget = (BpInvoiceLine)target ?? throw new Exception("IBpInvoiceLine must implement BpInvoiceLine");
             var db = ServiceProvider.GetRequiredService<IDbContext>();
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(invoiceId, db, cancellationToken));
         }
 
-        public virtual Task<IBpInvoiceLine> Save(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken)
+        public virtual Task<IBpInvoiceLine> Save(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken = default)
         {
             return LocalSave(target, invoiceId, cancellationToken);
         }
 
-        public virtual async Task<IBpInvoiceLine> LocalSave(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken)
+        public virtual async Task<IBpInvoiceLine> LocalSave(IBpInvoiceLine target, long invoiceId, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {

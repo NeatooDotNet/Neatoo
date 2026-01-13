@@ -13,8 +13,8 @@ namespace DomainModel
 {
     public interface IPersonPhoneListFactory
     {
-        IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities);
-        IPersonPhoneList Save(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities);
+        IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default);
+        IPersonPhoneList Save(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default);
     }
 
     internal class PersonPhoneListFactory : FactoryBase<IPersonPhoneList>, IPersonPhoneListFactory
@@ -34,31 +34,31 @@ namespace DomainModel
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities)
+        public virtual IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(personPhoneEntities);
+            return LocalFetch(personPhoneEntities, cancellationToken);
         }
 
-        public IPersonPhoneList LocalFetch(IEnumerable<PersonPhoneEntity> personPhoneEntities)
+        public IPersonPhoneList LocalFetch(IEnumerable<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PersonPhoneList>();
             var personPhoneModelFactory = ServiceProvider.GetRequiredService<IPersonPhoneFactory>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(personPhoneEntities, personPhoneModelFactory));
         }
 
-        public IPersonPhoneList LocalUpdate(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities)
+        public IPersonPhoneList LocalUpdate(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default)
         {
             var cTarget = (PersonPhoneList)target ?? throw new Exception("IPersonPhoneList must implement PersonPhoneList");
             var personPhoneModelFactory = ServiceProvider.GetRequiredService<IPersonPhoneFactory>();
             return DoFactoryMethodCall(cTarget, FactoryOperation.Update, () => cTarget.Update(personPhoneEntities, personPhoneModelFactory));
         }
 
-        public virtual IPersonPhoneList Save(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities)
+        public virtual IPersonPhoneList Save(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target, personPhoneEntities);
+            return LocalSave(target, personPhoneEntities, cancellationToken);
         }
 
-        public virtual IPersonPhoneList LocalSave(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities)
+        public virtual IPersonPhoneList LocalSave(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -70,7 +70,7 @@ namespace DomainModel
             }
             else
             {
-                return LocalUpdate(target, personPhoneEntities);
+                return LocalUpdate(target, personPhoneEntities, cancellationToken);
             }
         }
 

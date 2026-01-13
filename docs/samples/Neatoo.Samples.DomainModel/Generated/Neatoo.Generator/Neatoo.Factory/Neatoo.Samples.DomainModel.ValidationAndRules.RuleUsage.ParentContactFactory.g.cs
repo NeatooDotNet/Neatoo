@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
 {
     public interface IParentContactFactory
     {
-        IParentContact Create();
+        IParentContact Create(CancellationToken cancellationToken = default);
     }
 
     internal class ParentContactFactory : FactoryBase<IParentContact>, IParentContactFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IParentContact Create()
+        public virtual IParentContact Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IParentContact LocalCreate()
+        public IParentContact LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<ParentContact>();
             var phoneListFactory = ServiceProvider.GetRequiredService<IContactPhoneListFactory>();

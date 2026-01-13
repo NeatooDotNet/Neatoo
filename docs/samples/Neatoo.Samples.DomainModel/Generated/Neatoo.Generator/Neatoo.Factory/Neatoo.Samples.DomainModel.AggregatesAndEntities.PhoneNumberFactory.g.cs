@@ -12,7 +12,7 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
 {
     public interface IPhoneNumberFactory
     {
-        IPhoneNumber Create();
+        IPhoneNumber Create(CancellationToken cancellationToken = default);
     }
 
     internal class PhoneNumberFactory : FactoryBase<IPhoneNumber>, IPhoneNumberFactory
@@ -32,12 +32,12 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPhoneNumber Create()
+        public virtual IPhoneNumber Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPhoneNumber LocalCreate()
+        public IPhoneNumber LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PhoneNumber>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

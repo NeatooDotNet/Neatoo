@@ -11,8 +11,8 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
 {
     public interface ISaveableItemFactory
     {
-        ISaveableItem Create();
-        Task<ISaveableItem?> Save(ISaveableItem target);
+        ISaveableItem Create(CancellationToken cancellationToken = default);
+        Task<ISaveableItem?> Save(ISaveableItem target, CancellationToken cancellationToken = default);
     }
 
     internal class SaveableItemFactory : FactorySaveBase<ISaveableItem>, IFactorySave<SaveableItem>, ISaveableItemFactory
@@ -32,46 +32,41 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual ISaveableItem Create()
+        public virtual ISaveableItem Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public ISaveableItem LocalCreate()
+        public ISaveableItem LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<SaveableItem>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<ISaveableItem> LocalInsert(ISaveableItem target)
+        public Task<ISaveableItem> LocalInsert(ISaveableItem target, CancellationToken cancellationToken = default)
         {
             var cTarget = (SaveableItem)target ?? throw new Exception("ISaveableItem must implement SaveableItem");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
         }
 
-        public Task<ISaveableItem> LocalUpdate(ISaveableItem target)
+        public Task<ISaveableItem> LocalUpdate(ISaveableItem target, CancellationToken cancellationToken = default)
         {
             var cTarget = (SaveableItem)target ?? throw new Exception("ISaveableItem must implement SaveableItem");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update());
         }
 
-        public Task<ISaveableItem> LocalDelete(ISaveableItem target)
+        public Task<ISaveableItem> LocalDelete(ISaveableItem target, CancellationToken cancellationToken = default)
         {
             var cTarget = (SaveableItem)target ?? throw new Exception("ISaveableItem must implement SaveableItem");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete());
         }
 
-        public virtual Task<ISaveableItem?> Save(ISaveableItem target)
+        public virtual Task<ISaveableItem?> Save(ISaveableItem target, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<SaveableItem>.Save(SaveableItem target)
-        {
-            return (IFactorySaveMeta? )await Save(target);
-        }
-
-        public virtual async Task<ISaveableItem?> LocalSave(ISaveableItem target)
+        public virtual async Task<ISaveableItem?> LocalSave(ISaveableItem target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -80,16 +75,21 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
                     return default(ISaveableItem);
                 }
 
-                return await LocalDelete(target);
+                return await LocalDelete(target, cancellationToken);
             }
             else if (target.IsNew)
             {
-                return await LocalInsert(target);
+                return await LocalInsert(target, cancellationToken);
             }
             else
             {
-                return await LocalUpdate(target);
+                return await LocalUpdate(target, cancellationToken);
             }
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<SaveableItem>.Save(SaveableItem target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)

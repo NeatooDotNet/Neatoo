@@ -77,7 +77,7 @@ internal partial class Person : EntityBase<Person>, IPerson
             return false;
         }
         this.MapFrom(personEntity);
-        this.PersonPhoneList = personPhoneModelListFactory.Fetch(personEntity.Phones);
+        this.PersonPhoneList = personPhoneModelListFactory.Fetch(personEntity.Phones, cancellationToken);
         return true;
     }
 
@@ -100,7 +100,7 @@ internal partial class Person : EntityBase<Person>, IPerson
         this.MapTo(personEntity);
         personContext.AddPerson(personEntity);
 
-        personPhoneModelListFactory.Save(this.PersonPhoneList, personEntity.Phones);
+        personPhoneModelListFactory.Save(this.PersonPhoneList, personEntity.Phones, cancellationToken);
 
         await personContext.SaveChangesAsync(cancellationToken);
         return personEntity;
@@ -127,7 +127,7 @@ internal partial class Person : EntityBase<Person>, IPerson
 
         this.MapModifiedTo(personEntity);
 
-        personPhoneModelListFactory.Save(this.PersonPhoneList, personEntity.Phones);
+        personPhoneModelListFactory.Save(this.PersonPhoneList, personEntity.Phones, cancellationToken);
 
         await personContext.SaveChangesAsync(cancellationToken);
         return personEntity;

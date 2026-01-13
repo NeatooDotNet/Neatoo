@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
 {
     public interface IPauseActionsPersonFactory
     {
-        IPauseActionsPerson Create();
+        IPauseActionsPerson Create(CancellationToken cancellationToken = default);
     }
 
     internal class PauseActionsPersonFactory : FactoryBase<IPauseActionsPerson>, IPauseActionsPersonFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPauseActionsPerson Create()
+        public virtual IPauseActionsPerson Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPauseActionsPerson LocalCreate()
+        public IPauseActionsPerson LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PauseActionsPerson>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

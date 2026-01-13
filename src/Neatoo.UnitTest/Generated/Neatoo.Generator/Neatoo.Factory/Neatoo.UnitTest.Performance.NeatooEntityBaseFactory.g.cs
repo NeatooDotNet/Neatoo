@@ -24,9 +24,9 @@ namespace Neatoo.UnitTest.Performance
 {
     public interface INeatooEntityBaseFactory
     {
-        NeatooEntityBase? Create();
-        NeatooEntityBase? Create(int id);
-        Authorized CanCreate();
+        NeatooEntityBase? Create(CancellationToken cancellationToken = default);
+        NeatooEntityBase? Create(int id, CancellationToken cancellationToken = default);
+        Authorized CanCreate(CancellationToken cancellationToken = default);
     }
 
     internal class NeatooEntityBaseFactory : FactoryBase<NeatooEntityBase>, INeatooEntityBaseFactory
@@ -46,12 +46,12 @@ namespace Neatoo.UnitTest.Performance
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual NeatooEntityBase? Create()
+        public virtual NeatooEntityBase? Create(CancellationToken cancellationToken = default)
         {
-            return (LocalCreate()).Result;
+            return (LocalCreate(cancellationToken)).Result;
         }
 
-        public Authorized<NeatooEntityBase> LocalCreate()
+        public Authorized<NeatooEntityBase> LocalCreate(CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             NeatooEntityBaseAuth neatooentitybaseauth = ServiceProvider.GetRequiredService<NeatooEntityBaseAuth>();
@@ -66,12 +66,12 @@ namespace Neatoo.UnitTest.Performance
             return new Authorized<NeatooEntityBase>(DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create(factory)));
         }
 
-        public virtual NeatooEntityBase? Create(int id)
+        public virtual NeatooEntityBase? Create(int id, CancellationToken cancellationToken = default)
         {
-            return (LocalCreate1(id)).Result;
+            return (LocalCreate1(id, cancellationToken)).Result;
         }
 
-        public Authorized<NeatooEntityBase> LocalCreate1(int id)
+        public Authorized<NeatooEntityBase> LocalCreate1(int id, CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             NeatooEntityBaseAuth neatooentitybaseauth = ServiceProvider.GetRequiredService<NeatooEntityBaseAuth>();
@@ -86,12 +86,12 @@ namespace Neatoo.UnitTest.Performance
             return new Authorized<NeatooEntityBase>(DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create(id, factory)));
         }
 
-        public virtual Authorized CanCreate()
+        public virtual Authorized CanCreate(CancellationToken cancellationToken = default)
         {
-            return LocalCanCreate();
+            return LocalCanCreate(cancellationToken);
         }
 
-        public Authorized LocalCanCreate()
+        public Authorized LocalCanCreate(CancellationToken cancellationToken = default)
         {
             Authorized authorized;
             NeatooEntityBaseAuth neatooentitybaseauth = ServiceProvider.GetRequiredService<NeatooEntityBaseAuth>();

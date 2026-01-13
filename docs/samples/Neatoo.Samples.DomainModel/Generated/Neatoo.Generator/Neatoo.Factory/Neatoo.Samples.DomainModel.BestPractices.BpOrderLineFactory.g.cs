@@ -11,8 +11,8 @@ namespace Neatoo.Samples.DomainModel.BestPractices
 {
     public interface IBpOrderLineFactory
     {
-        IBpOrderLine Create();
-        Task<IBpOrderLine> Save(IBpOrderLine target, long orderId, CancellationToken cancellationToken);
+        IBpOrderLine Create(CancellationToken cancellationToken = default);
+        Task<IBpOrderLine> Save(IBpOrderLine target, long orderId, CancellationToken cancellationToken = default);
     }
 
     internal class BpOrderLineFactory : FactoryBase<IBpOrderLine>, IBpOrderLineFactory
@@ -32,30 +32,30 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IBpOrderLine Create()
+        public virtual IBpOrderLine Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IBpOrderLine LocalCreate()
+        public IBpOrderLine LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<BpOrderLine>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public Task<IBpOrderLine> LocalInsert(IBpOrderLine target, long orderId, CancellationToken cancellationToken)
+        public Task<IBpOrderLine> LocalInsert(IBpOrderLine target, long orderId, CancellationToken cancellationToken = default)
         {
             var cTarget = (BpOrderLine)target ?? throw new Exception("IBpOrderLine must implement BpOrderLine");
             var db = ServiceProvider.GetRequiredService<IDbContext>();
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(orderId, db, cancellationToken));
         }
 
-        public virtual Task<IBpOrderLine> Save(IBpOrderLine target, long orderId, CancellationToken cancellationToken)
+        public virtual Task<IBpOrderLine> Save(IBpOrderLine target, long orderId, CancellationToken cancellationToken = default)
         {
             return LocalSave(target, orderId, cancellationToken);
         }
 
-        public virtual async Task<IBpOrderLine> LocalSave(IBpOrderLine target, long orderId, CancellationToken cancellationToken)
+        public virtual async Task<IBpOrderLine> LocalSave(IBpOrderLine target, long orderId, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {

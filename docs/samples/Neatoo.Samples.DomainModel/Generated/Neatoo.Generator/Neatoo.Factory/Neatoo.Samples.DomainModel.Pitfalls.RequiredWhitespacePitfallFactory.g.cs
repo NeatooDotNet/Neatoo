@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
 {
     public interface IRequiredWhitespacePitfallFactory
     {
-        IRequiredWhitespacePitfall Create();
+        IRequiredWhitespacePitfall Create(CancellationToken cancellationToken = default);
     }
 
     internal class RequiredWhitespacePitfallFactory : FactoryBase<IRequiredWhitespacePitfall>, IRequiredWhitespacePitfallFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IRequiredWhitespacePitfall Create()
+        public virtual IRequiredWhitespacePitfall Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IRequiredWhitespacePitfall LocalCreate()
+        public IRequiredWhitespacePitfall LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<RequiredWhitespacePitfall>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

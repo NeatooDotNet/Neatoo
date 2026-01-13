@@ -241,15 +241,15 @@ partial class PersonTests
 			/// <summary>Whether this method was called at least once.</summary>
 			public bool WasCalled => CallCount > 0;
 
-			/// <summary>The argument from the last call.</summary>
-			public global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity>? LastCallArg { get; private set; }
+			/// <summary>The arguments from the last call.</summary>
+			public (global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity>? personPhoneEntities, global::System.Threading.CancellationToken? cancellationToken)? LastCallArgs { get; private set; }
 
 			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Func<Stubs.IPersonPhoneListFactory, global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity>, global::DomainModel.IPersonPhoneList>? OnCall { get; set; }
+			public global::System.Func<Stubs.IPersonPhoneListFactory, global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, global::DomainModel.IPersonPhoneList>? OnCall { get; set; }
 
-			public void RecordCall(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities) { CallCount++; LastCallArg = personPhoneEntities; }
+			public void RecordCall(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) { CallCount++; LastCallArgs = (personPhoneEntities, cancellationToken); }
 
-			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
+			public void Reset() { CallCount = 0; LastCallArgs = default; OnCall = null; }
 		}
 
 		/// <summary>Interceptor for IPersonPhoneListFactory.Save.</summary>
@@ -262,12 +262,12 @@ partial class PersonTests
 			public bool WasCalled => CallCount > 0;
 
 			/// <summary>The arguments from the last call.</summary>
-			public (global::DomainModel.IPersonPhoneList? target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity>? personPhoneEntities)? LastCallArgs { get; private set; }
+			public (global::DomainModel.IPersonPhoneList? target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity>? personPhoneEntities, global::System.Threading.CancellationToken? cancellationToken)? LastCallArgs { get; private set; }
 
 			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Func<Stubs.IPersonPhoneListFactory, global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity>, global::DomainModel.IPersonPhoneList>? OnCall { get; set; }
+			public global::System.Func<Stubs.IPersonPhoneListFactory, global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, global::DomainModel.IPersonPhoneList>? OnCall { get; set; }
 
-			public void RecordCall(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities) { CallCount++; LastCallArgs = (target, personPhoneEntities); }
+			public void RecordCall(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) { CallCount++; LastCallArgs = (target, personPhoneEntities, cancellationToken); }
 
 			public void Reset() { CallCount = 0; LastCallArgs = default; OnCall = null; }
 		}
@@ -281,17 +281,17 @@ partial class PersonTests
 			/// <summary>Interceptor for Save.</summary>
 			public IPersonPhoneListFactory_SaveInterceptor Save { get; } = new();
 
-			global::DomainModel.IPersonPhoneList global::DomainModel.IPersonPhoneListFactory.Fetch(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities)
+			global::DomainModel.IPersonPhoneList global::DomainModel.IPersonPhoneListFactory.Fetch(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
 			{
-				Fetch.RecordCall(personPhoneEntities);
-				if (Fetch.OnCall is { } onCall) return onCall(this, personPhoneEntities);
+				Fetch.RecordCall(personPhoneEntities, cancellationToken);
+				if (Fetch.OnCall is { } onCall) return onCall(this, personPhoneEntities, cancellationToken);
 				throw new global::System.InvalidOperationException("No implementation provided for Fetch. Set Fetch.OnCall.");
 			}
 
-			global::DomainModel.IPersonPhoneList global::DomainModel.IPersonPhoneListFactory.Save(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities)
+			global::DomainModel.IPersonPhoneList global::DomainModel.IPersonPhoneListFactory.Save(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
 			{
-				Save.RecordCall(target, personPhoneEntities);
-				if (Save.OnCall is { } onCall) return onCall(this, target, personPhoneEntities);
+				Save.RecordCall(target, personPhoneEntities, cancellationToken);
+				if (Save.OnCall is { } onCall) return onCall(this, target, personPhoneEntities, cancellationToken);
 				throw new global::System.InvalidOperationException("No implementation provided for Save. Set Save.OnCall.");
 			}
 

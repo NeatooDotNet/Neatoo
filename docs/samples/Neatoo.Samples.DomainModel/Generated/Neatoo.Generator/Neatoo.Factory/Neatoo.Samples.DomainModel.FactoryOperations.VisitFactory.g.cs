@@ -12,18 +12,18 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
 {
     public interface IVisitFactory
     {
-        IVisit Create();
-        Task<IVisit> Fetch(VisitEntity entity);
-        Task<IVisit> Save(IVisit target, CancellationToken cancellationToken);
+        IVisit Create(CancellationToken cancellationToken = default);
+        Task<IVisit> Fetch(VisitEntity entity, CancellationToken cancellationToken = default);
+        Task<IVisit> Save(IVisit target, CancellationToken cancellationToken = default);
     }
 
-    internal class VisitFactory : FactoryBase<IVisit>, IVisitFactory
+    internal class VisitFactory : FactorySaveBase<IVisit>, IFactorySave<Visit>, IVisitFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
         // Delegates
-        public delegate Task<IVisit> FetchDelegate(VisitEntity entity);
-        public delegate Task<IVisit> SaveDelegate(IVisit target, CancellationToken cancellationToken);
+        public delegate Task<IVisit> FetchDelegate(VisitEntity entity, CancellationToken cancellationToken = default);
+        public delegate Task<IVisit> SaveDelegate(IVisit target, CancellationToken cancellationToken = default);
         // Delegate Properties to provide Local or Remote fork in execution
         public FetchDelegate FetchProperty { get; }
         public SaveDelegate SaveProperty { get; }
@@ -43,58 +43,58 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             SaveProperty = RemoteSave;
         }
 
-        public virtual IVisit Create()
+        public virtual IVisit Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IVisit LocalCreate()
+        public IVisit LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<Visit>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual Task<IVisit> Fetch(VisitEntity entity)
+        public virtual Task<IVisit> Fetch(VisitEntity entity, CancellationToken cancellationToken = default)
         {
-            return FetchProperty(entity);
+            return FetchProperty(entity, cancellationToken);
         }
 
-        public virtual async Task<IVisit> RemoteFetch(VisitEntity entity)
+        public virtual async Task<IVisit> RemoteFetch(VisitEntity entity, CancellationToken cancellationToken = default)
         {
-            return (await MakeRemoteDelegateRequest!.ForDelegate<IVisit>(typeof(FetchDelegate), [entity], default))!;
+            return (await MakeRemoteDelegateRequest!.ForDelegate<IVisit>(typeof(FetchDelegate), [entity], cancellationToken))!;
         }
 
-        public Task<IVisit> LocalFetch(VisitEntity entity)
+        public Task<IVisit> LocalFetch(VisitEntity entity, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<Visit>();
             return Task.FromResult(DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entity)));
         }
 
-        public Task<IVisit> LocalInsert(IVisit target, CancellationToken cancellationToken)
+        public Task<IVisit> LocalInsert(IVisit target, CancellationToken cancellationToken = default)
         {
             var cTarget = (Visit)target ?? throw new Exception("IVisit must implement Visit");
             var db = ServiceProvider.GetRequiredService<IVisitDb>();
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(db, cancellationToken));
         }
 
-        public Task<IVisit> LocalUpdate(IVisit target, CancellationToken cancellationToken)
+        public Task<IVisit> LocalUpdate(IVisit target, CancellationToken cancellationToken = default)
         {
             var cTarget = (Visit)target ?? throw new Exception("IVisit must implement Visit");
             var db = ServiceProvider.GetRequiredService<IVisitDb>();
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update(db, cancellationToken));
         }
 
-        public virtual Task<IVisit> Save(IVisit target, CancellationToken cancellationToken)
+        public virtual Task<IVisit> Save(IVisit target, CancellationToken cancellationToken = default)
         {
             return SaveProperty(target, cancellationToken);
         }
 
-        public virtual async Task<IVisit> RemoteSave(IVisit target, CancellationToken cancellationToken)
+        public virtual async Task<IVisit> RemoteSave(IVisit target, CancellationToken cancellationToken = default)
         {
             return (await MakeRemoteDelegateRequest!.ForDelegate<IVisit>(typeof(SaveDelegate), [target], cancellationToken))!;
         }
 
-        public virtual async Task<IVisit> LocalSave(IVisit target, CancellationToken cancellationToken)
+        public virtual async Task<IVisit> LocalSave(IVisit target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -110,6 +110,11 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             }
         }
 
+        async Task<IFactorySaveMeta?> IFactorySave<Visit>.Save(Visit target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await Save(target, cancellationToken);
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<VisitFactory>();
@@ -117,15 +122,16 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             services.AddScoped<FetchDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<VisitFactory>();
-                return (VisitEntity entity) => factory.LocalFetch(entity);
+                return (VisitEntity entity, CancellationToken cancellationToken = default) => factory.LocalFetch(entity, cancellationToken);
             });
             services.AddScoped<SaveDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<VisitFactory>();
-                return (IVisit target, CancellationToken cancellationToken) => factory.LocalSave(target, cancellationToken);
+                return (IVisit target, CancellationToken cancellationToken = default) => factory.LocalSave(target, cancellationToken);
             });
             services.AddTransient<Visit>();
             services.AddTransient<IVisit, Visit>();
+            services.AddScoped<IFactorySave<Visit>, VisitFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

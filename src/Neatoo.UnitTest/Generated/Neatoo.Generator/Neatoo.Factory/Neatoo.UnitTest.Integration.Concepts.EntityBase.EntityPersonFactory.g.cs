@@ -13,8 +13,8 @@ namespace Neatoo.UnitTest.Integration.Concepts.EntityBase
 {
     public interface IEntityPersonFactory
     {
-        IEntityPerson FillFromDto(PersonDto dto);
-        IEntityPerson Save(IEntityPerson target);
+        IEntityPerson FillFromDto(PersonDto dto, CancellationToken cancellationToken = default);
+        IEntityPerson Save(IEntityPerson target, CancellationToken cancellationToken = default);
     }
 
     internal class EntityPersonFactory : FactorySaveBase<IEntityPerson>, IFactorySave<EntityPerson>, IEntityPersonFactory
@@ -34,34 +34,29 @@ namespace Neatoo.UnitTest.Integration.Concepts.EntityBase
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public IEntityPerson LocalInsert(IEntityPerson target)
+        public IEntityPerson LocalInsert(IEntityPerson target, CancellationToken cancellationToken = default)
         {
             var cTarget = (EntityPerson)target ?? throw new Exception("IEntityPerson must implement EntityPerson");
             return DoFactoryMethodCall(cTarget, FactoryOperation.Insert, () => cTarget.Insert());
         }
 
-        public virtual IEntityPerson FillFromDto(PersonDto dto)
+        public virtual IEntityPerson FillFromDto(PersonDto dto, CancellationToken cancellationToken = default)
         {
-            return LocalFillFromDto(dto);
+            return LocalFillFromDto(dto, cancellationToken);
         }
 
-        public IEntityPerson LocalFillFromDto(PersonDto dto)
+        public IEntityPerson LocalFillFromDto(PersonDto dto, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<EntityPerson>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.FillFromDto(dto));
         }
 
-        public virtual IEntityPerson Save(IEntityPerson target)
+        public virtual IEntityPerson Save(IEntityPerson target, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target);
+            return LocalSave(target, cancellationToken);
         }
 
-        async Task<IFactorySaveMeta?> IFactorySave<EntityPerson>.Save(EntityPerson target)
-        {
-            return await Task.FromResult((IFactorySaveMeta? )Save(target));
-        }
-
-        public virtual IEntityPerson LocalSave(IEntityPerson target)
+        public virtual IEntityPerson LocalSave(IEntityPerson target, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -69,12 +64,17 @@ namespace Neatoo.UnitTest.Integration.Concepts.EntityBase
             }
             else if (target.IsNew)
             {
-                return LocalInsert(target);
+                return LocalInsert(target, cancellationToken);
             }
             else
             {
                 throw new NotImplementedException();
             }
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<EntityPerson>.Save(EntityPerson target, CancellationToken cancellationToken)
+        {
+            return await Task.FromResult((IFactorySaveMeta? )Save(target, cancellationToken));
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)

@@ -11,9 +11,9 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
 {
     public interface IInvoiceLineListFactory
     {
-        IInvoiceLineList Create();
-        IInvoiceLineList Fetch(IEnumerable<InvoiceLineEntity> entities);
-        IInvoiceLineList Save(IInvoiceLineList target, ICollection<InvoiceLineEntity> entities);
+        IInvoiceLineList Create(CancellationToken cancellationToken = default);
+        IInvoiceLineList Fetch(IEnumerable<InvoiceLineEntity> entities, CancellationToken cancellationToken = default);
+        IInvoiceLineList Save(IInvoiceLineList target, ICollection<InvoiceLineEntity> entities, CancellationToken cancellationToken = default);
     }
 
     internal class InvoiceLineListFactory : FactoryBase<IInvoiceLineList>, IInvoiceLineListFactory
@@ -33,42 +33,42 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IInvoiceLineList Create()
+        public virtual IInvoiceLineList Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IInvoiceLineList LocalCreate()
+        public IInvoiceLineList LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<InvoiceLineList>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IInvoiceLineList Fetch(IEnumerable<InvoiceLineEntity> entities)
+        public virtual IInvoiceLineList Fetch(IEnumerable<InvoiceLineEntity> entities, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(entities);
+            return LocalFetch(entities, cancellationToken);
         }
 
-        public IInvoiceLineList LocalFetch(IEnumerable<InvoiceLineEntity> entities)
+        public IInvoiceLineList LocalFetch(IEnumerable<InvoiceLineEntity> entities, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<InvoiceLineList>();
             var lineFactory = ServiceProvider.GetRequiredService<IInvoiceLineFactory>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entities, lineFactory));
         }
 
-        public IInvoiceLineList LocalUpdate(IInvoiceLineList target, ICollection<InvoiceLineEntity> entities)
+        public IInvoiceLineList LocalUpdate(IInvoiceLineList target, ICollection<InvoiceLineEntity> entities, CancellationToken cancellationToken = default)
         {
             var cTarget = (InvoiceLineList)target ?? throw new Exception("IInvoiceLineList must implement InvoiceLineList");
             var lineFactory = ServiceProvider.GetRequiredService<IInvoiceLineFactory>();
             return DoFactoryMethodCall(cTarget, FactoryOperation.Update, () => cTarget.Update(entities, lineFactory));
         }
 
-        public virtual IInvoiceLineList Save(IInvoiceLineList target, ICollection<InvoiceLineEntity> entities)
+        public virtual IInvoiceLineList Save(IInvoiceLineList target, ICollection<InvoiceLineEntity> entities, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target, entities);
+            return LocalSave(target, entities, cancellationToken);
         }
 
-        public virtual IInvoiceLineList LocalSave(IInvoiceLineList target, ICollection<InvoiceLineEntity> entities)
+        public virtual IInvoiceLineList LocalSave(IInvoiceLineList target, ICollection<InvoiceLineEntity> entities, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -80,7 +80,7 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             }
             else
             {
-                return LocalUpdate(target, entities);
+                return LocalUpdate(target, entities, cancellationToken);
             }
         }
 

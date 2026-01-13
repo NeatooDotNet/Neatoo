@@ -13,7 +13,7 @@ namespace Neatoo.Samples.DomainModel.SampleDomain
 {
     public interface IEventFactory
     {
-        IEvent Create();
+        IEvent Create(CancellationToken cancellationToken = default);
     }
 
     internal class EventFactory : FactoryBase<IEvent>, IEventFactory
@@ -33,12 +33,12 @@ namespace Neatoo.Samples.DomainModel.SampleDomain
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IEvent Create()
+        public virtual IEvent Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IEvent LocalCreate()
+        public IEvent LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<Event>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());

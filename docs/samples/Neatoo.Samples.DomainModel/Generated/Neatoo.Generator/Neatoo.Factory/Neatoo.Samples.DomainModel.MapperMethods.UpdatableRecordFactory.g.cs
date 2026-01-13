@@ -11,9 +11,9 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
 {
     public interface IUpdatableRecordFactory
     {
-        IUpdatableRecord Create();
-        IUpdatableRecord Fetch(RecordEntity entity);
-        Task<IUpdatableRecord> Save(IUpdatableRecord target, RecordEntity entity);
+        IUpdatableRecord Create(CancellationToken cancellationToken = default);
+        IUpdatableRecord Fetch(RecordEntity entity, CancellationToken cancellationToken = default);
+        Task<IUpdatableRecord> Save(IUpdatableRecord target, RecordEntity entity, CancellationToken cancellationToken = default);
     }
 
     internal class UpdatableRecordFactory : FactoryBase<IUpdatableRecord>, IUpdatableRecordFactory
@@ -33,40 +33,40 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IUpdatableRecord Create()
+        public virtual IUpdatableRecord Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IUpdatableRecord LocalCreate()
+        public IUpdatableRecord LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<UpdatableRecord>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IUpdatableRecord Fetch(RecordEntity entity)
+        public virtual IUpdatableRecord Fetch(RecordEntity entity, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(entity);
+            return LocalFetch(entity, cancellationToken);
         }
 
-        public IUpdatableRecord LocalFetch(RecordEntity entity)
+        public IUpdatableRecord LocalFetch(RecordEntity entity, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<UpdatableRecord>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entity));
         }
 
-        public Task<IUpdatableRecord> LocalUpdate(IUpdatableRecord target, RecordEntity entity)
+        public Task<IUpdatableRecord> LocalUpdate(IUpdatableRecord target, RecordEntity entity, CancellationToken cancellationToken = default)
         {
             var cTarget = (UpdatableRecord)target ?? throw new Exception("IUpdatableRecord must implement UpdatableRecord");
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update(entity));
         }
 
-        public virtual Task<IUpdatableRecord> Save(IUpdatableRecord target, RecordEntity entity)
+        public virtual Task<IUpdatableRecord> Save(IUpdatableRecord target, RecordEntity entity, CancellationToken cancellationToken = default)
         {
-            return LocalSave(target, entity);
+            return LocalSave(target, entity, cancellationToken);
         }
 
-        public virtual async Task<IUpdatableRecord> LocalSave(IUpdatableRecord target, RecordEntity entity)
+        public virtual async Task<IUpdatableRecord> LocalSave(IUpdatableRecord target, RecordEntity entity, CancellationToken cancellationToken = default)
         {
             if (target.IsDeleted)
             {
@@ -78,7 +78,7 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             }
             else
             {
-                return await LocalUpdate(target, entity);
+                return await LocalUpdate(target, entity, cancellationToken);
             }
         }
 

@@ -11,7 +11,7 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
 {
     public interface IProjectWithTasksFactory
     {
-        IProjectWithTasks Create();
+        IProjectWithTasks Create(CancellationToken cancellationToken = default);
     }
 
     internal class ProjectWithTasksFactory : FactoryBase<IProjectWithTasks>, IProjectWithTasksFactory
@@ -31,12 +31,12 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IProjectWithTasks Create()
+        public virtual IProjectWithTasks Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IProjectWithTasks LocalCreate()
+        public IProjectWithTasks LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<ProjectWithTasks>();
             var taskListFactory = ServiceProvider.GetRequiredService<IProjectTaskListFactory>();

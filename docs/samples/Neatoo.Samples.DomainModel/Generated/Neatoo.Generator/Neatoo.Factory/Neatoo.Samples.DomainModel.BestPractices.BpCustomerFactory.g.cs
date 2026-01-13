@@ -11,8 +11,8 @@ namespace Neatoo.Samples.DomainModel.BestPractices
 {
     public interface IBpCustomerFactory
     {
-        IBpCustomer Create();
-        IBpCustomer Fetch(Guid id);
+        IBpCustomer Create(CancellationToken cancellationToken = default);
+        IBpCustomer Fetch(Guid id, CancellationToken cancellationToken = default);
     }
 
     internal class BpCustomerFactory : FactoryBase<IBpCustomer>, IBpCustomerFactory
@@ -32,24 +32,24 @@ namespace Neatoo.Samples.DomainModel.BestPractices
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IBpCustomer Create()
+        public virtual IBpCustomer Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IBpCustomer LocalCreate()
+        public IBpCustomer LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<BpCustomer>();
             var phoneListFactory = ServiceProvider.GetRequiredService<IBpPhoneListFactory>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create(phoneListFactory));
         }
 
-        public virtual IBpCustomer Fetch(Guid id)
+        public virtual IBpCustomer Fetch(Guid id, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(id);
+            return LocalFetch(id, cancellationToken);
         }
 
-        public IBpCustomer LocalFetch(Guid id)
+        public IBpCustomer LocalFetch(Guid id, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<BpCustomer>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id));

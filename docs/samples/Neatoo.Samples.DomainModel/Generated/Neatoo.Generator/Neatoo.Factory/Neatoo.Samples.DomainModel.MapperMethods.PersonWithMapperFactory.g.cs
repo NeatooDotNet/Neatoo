@@ -11,8 +11,8 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
 {
     public interface IPersonWithMapperFactory
     {
-        IPersonWithMapper Create();
-        IPersonWithMapper Fetch(PersonEntity entity);
+        IPersonWithMapper Create(CancellationToken cancellationToken = default);
+        IPersonWithMapper Fetch(PersonEntity entity, CancellationToken cancellationToken = default);
     }
 
     internal class PersonWithMapperFactory : FactoryBase<IPersonWithMapper>, IPersonWithMapperFactory
@@ -32,23 +32,23 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual IPersonWithMapper Create()
+        public virtual IPersonWithMapper Create(CancellationToken cancellationToken = default)
         {
-            return LocalCreate();
+            return LocalCreate(cancellationToken);
         }
 
-        public IPersonWithMapper LocalCreate()
+        public IPersonWithMapper LocalCreate(CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PersonWithMapper>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
-        public virtual IPersonWithMapper Fetch(PersonEntity entity)
+        public virtual IPersonWithMapper Fetch(PersonEntity entity, CancellationToken cancellationToken = default)
         {
-            return LocalFetch(entity);
+            return LocalFetch(entity, cancellationToken);
         }
 
-        public IPersonWithMapper LocalFetch(PersonEntity entity)
+        public IPersonWithMapper LocalFetch(PersonEntity entity, CancellationToken cancellationToken = default)
         {
             var target = ServiceProvider.GetRequiredService<PersonWithMapper>();
             return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(entity));
