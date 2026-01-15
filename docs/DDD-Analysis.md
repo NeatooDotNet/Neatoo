@@ -276,7 +276,25 @@ internal partial class StateProvince : IStateProvince
 
 ---
 
-## 4. Developer Experience Analysis
+## 4. Architecture: Facade Pattern
+
+If you look at `ValidateBase<T>`, it appears to have many responsibilities: properties, validation, rules, state tracking, async coordination, and serialization. This might look like a "god class."
+
+But it's a **facade** - it coordinates specialists rather than implementing everything itself:
+
+| Coordinator | Responsibility |
+|-------------|----------------|
+| `PropertyManager` | Property storage and change tracking |
+| `RuleManager` | Rule registration and execution |
+| `AsyncTasks` | Task coordination and completion tracking |
+
+The base class provides the API surface for what DDD entities need. Developers interact with one class, not five. The complexity is managed internally, not monolithic.
+
+This is a deliberate design choice: the facade pattern keeps the developer experience simple while allowing internal separation of concerns.
+
+---
+
+## 5. Developer Experience Analysis
 
 ### 4.1 Productivity Benefits
 

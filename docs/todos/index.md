@@ -25,6 +25,8 @@ This directory contains detailed action items from the comprehensive framework r
 | [L2](L2-duplicate-event-subscriptions.md) | Low | Guard Against Duplicate Event Subscriptions | Low | Not Started |
 | [L3](completed/L3-fix-waitfortasks-assert.md) | Low | Fix Debug.Assert in WaitForTasks | Low | **Completed** |
 | [L4](L4-specification-pattern.md) | Low | Specification Pattern Support | High | Evaluation |
+| [L5](L5-internal-interface-pattern.md) | Low | Internal Interface Pattern - Document & Simplify | Medium | Not Started |
+| [L6](L6-consolidate-lifecycle-interfaces.md) | Low | Consolidate Lifecycle Interfaces | Low | Not Started |
 | [M7](M7-analyze-documentation-patterns.md) | Medium | Analyze Documentation Sample Patterns | Low | Not Started |
 | [M8](M8-document-child-property-cascade.md) | Medium | Document Child Property Cascade Behavior | Low | Not Started |
 | [CT1](completed/cancellation-token-support.md) | Medium | Add CancellationToken Support | High | **Completed** |
@@ -60,6 +62,8 @@ This directory contains detailed action items from the comprehensive framework r
 - ~~[M4a](completed/M4a-displayname-serialization.md) - DisplayName Serialization Performance~~ **DONE**
 - [M7](M7-analyze-documentation-patterns.md) - Analyze Documentation Sample Patterns
 - [L1](L1-naming-consistency.md) - Naming Consistency
+- [L5](L5-internal-interface-pattern.md) - Internal Interface Pattern (document rationale, consider InternalsVisibleTo simplification)
+- [L6](L6-consolidate-lifecycle-interfaces.md) - Consolidate Lifecycle Interfaces (cosmetic)
 
 ### Infrastructure
 - ~~[M6](completed/multi-targeting-net8-9-10.md) - Multi-Target .NET 8.0/9.0/10.0~~ **DONE**

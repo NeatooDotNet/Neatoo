@@ -35,10 +35,31 @@
 
 ## Tasks
 
-- [ ] Add `PropertyChanged` notification for `IsModified` in `EntityProperty`
-- [ ] Consider caching `IsModified` value similar to how `ValidatePropertyManager` caches `IsValid`
-- [ ] Add tests similar to `ValidateListBaseTests.PropertyChanged_FiredOncePerTransition`
-- [ ] Verify parent `IsSavable` updates correctly when child list items are modified
+- [x] Add `PropertyChanged` notification for `IsModified` in `EntityProperty`
+- [x] Cache `IsModified` value in `EntityPropertyManager` (similar to how `ValidatePropertyManager` caches `IsValid`)
+- [x] Add tests similar to `ValidateListBaseTests.PropertyChanged_FiredOncePerTransition` (existing test `EntityListBaseTest_AddInvalidChild_MakeValid_PropertyChanged` covers this)
+- [x] Verify parent `IsSavable` updates correctly when child list items are modified
+
+## Solution Summary
+
+### Files Modified
+
+1. **EntityProperty<T>** (`EntityPropertyManager.cs:36-83`)
+   - Added PropertyChanged notifications for `IsSelfModified` and `IsModified` in:
+     - `OnPropertyChanged()` when Value changes
+     - `MarkSelfUnmodified()`
+     - `LoadValue()`
+
+2. **EntityPropertyManager** (`EntityPropertyManager.cs:88-188`)
+   - Changed `IsModified` and `IsSelfModified` from computed to cached properties
+   - Added `Property_PropertyChanged` override to recalculate and raise PropertyChanged when child properties change
+   - Updated `OnDeserialized()` to initialize cached values
+
+3. **EntityListBase** (`EntityListBase.cs:169-184`)
+   - Fixed `CheckIfMetaPropertiesChanged()` ordering bug: entity-specific comparisons must happen BEFORE calling `base.CheckIfMetaPropertiesChanged()` (base calls `ResetMetaState()` via virtual dispatch)
+
+4. **ValidatePropertyManager** (`ValidatePropertyManager.cs:76-80`)
+   - Added `RaisePropertyChanged()` helper method for derived classes
 
 ## Related
 

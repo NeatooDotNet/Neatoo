@@ -169,15 +169,18 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// Checks if any entity meta properties have changed and raises appropriate property change notifications.
     /// Compares current values against cached <see cref="EntityMetaState"/> and notifies on differences.
     /// </summary>
+    /// <remarks>
+    /// IMPORTANT: Entity-specific comparisons must happen BEFORE calling base.CheckIfMetaPropertiesChanged(),
+    /// because base calls ResetMetaState() which updates EntityMetaState via virtual dispatch.
+    /// </remarks>
     protected override void CheckIfMetaPropertiesChanged()
     {
-        base.CheckIfMetaPropertiesChanged();
-
+        // Compare entity meta properties BEFORE calling base (which resets the cache)
         RaiseIfChanged(this.EntityMetaState.IsModified, this.IsModified, nameof(this.IsModified));
         RaiseIfChanged(this.EntityMetaState.IsSelfModified, this.IsSelfModified, nameof(this.IsSelfModified));
         RaiseIfChanged(this.EntityMetaState.IsSavable, this.IsSavable, nameof(this.IsSavable));
 
-        this.ResetMetaState();
+        base.CheckIfMetaPropertiesChanged();
     }
 
     /// <summary>

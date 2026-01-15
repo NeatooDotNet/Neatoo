@@ -41,7 +41,13 @@ public class EntityProperty<T> : ValidateProperty<T>, IEntityProperty<T>
         {
             if (!this.IsPaused)
             {
+                var wasModified = this.IsSelfModified;
                 this.IsSelfModified = true && this.EntityChild == null; // Never consider ourself modified if holding a Neatoo object
+                if (wasModified != this.IsSelfModified)
+                {
+                    OnPropertyChanged(nameof(IsSelfModified));
+                    OnPropertyChanged(nameof(IsModified));
+                }
             }
         }
     }
@@ -64,12 +70,16 @@ public class EntityProperty<T> : ValidateProperty<T>, IEntityProperty<T>
     public void MarkSelfUnmodified()
     {
         this.IsSelfModified = false;
+        OnPropertyChanged(nameof(IsSelfModified));
+        OnPropertyChanged(nameof(IsModified));
     }
 
     public override void LoadValue(object? value)
     {
         base.LoadValue(value);
         this.IsSelfModified = false;
+        OnPropertyChanged(nameof(IsSelfModified));
+        OnPropertyChanged(nameof(IsModified));
     }
 }
 
@@ -88,8 +98,10 @@ public class EntityPropertyManager : ValidatePropertyManager<IEntityProperty>, I
         return property;
     }
 
-    public bool IsModified => this.PropertyBag.Any(p => p.Value.IsModified);
-    public bool IsSelfModified => this.PropertyBag.Any(p => p.Value.IsSelfModified);
+    [JsonIgnore]
+    public bool IsModified { get; protected set; }
+    [JsonIgnore]
+    public bool IsSelfModified { get; protected set; }
     public bool IsPaused { get; private set; } = false;
 
     public IEnumerable<string> ModifiedProperties => this.PropertyBag.Where(f => f.Value.IsModified).Select(f => f.Value.Name);
@@ -120,6 +132,41 @@ public class EntityPropertyManager : ValidatePropertyManager<IEntityProperty>, I
         }
     }
 
+    protected override void Property_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (this.IsPaused)
+        {
+            base.Property_PropertyChanged(sender, e);
+            return;
+        }
+
+        // Recalculate and cache IsModified when child property state changes
+        if (e.PropertyName == nameof(IEntityProperty.IsModified)
+                || e.PropertyName == nameof(IEntityProperty.Value))
+        {
+            var wasModified = this.IsModified;
+            this.IsModified = this.PropertyBag.Any(p => p.Value.IsModified);
+            if (wasModified != this.IsModified)
+            {
+                RaisePropertyChanged(nameof(IsModified));
+            }
+        }
+
+        // Recalculate and cache IsSelfModified when child property state changes
+        if (e.PropertyName == nameof(IEntityProperty.IsSelfModified)
+                || e.PropertyName == nameof(IEntityProperty.Value))
+        {
+            var wasSelfModified = this.IsSelfModified;
+            this.IsSelfModified = this.PropertyBag.Any(p => p.Value.IsSelfModified);
+            if (wasSelfModified != this.IsSelfModified)
+            {
+                RaisePropertyChanged(nameof(IsSelfModified));
+            }
+        }
+
+        base.Property_PropertyChanged(sender, e);
+    }
+
     public override void OnDeserialized()
     {
         base.OnDeserialized();
@@ -133,6 +180,10 @@ public class EntityPropertyManager : ValidatePropertyManager<IEntityProperty>, I
                 kvp.Value.ApplyPropertyInfo(propertyInfo);
             }
         }
+
+        // Initialize cached IsModified/IsSelfModified from deserialized property state
+        this.IsModified = this.PropertyBag.Any(p => p.Value.IsModified);
+        this.IsSelfModified = this.PropertyBag.Any(p => p.Value.IsSelfModified);
     }
 }
 

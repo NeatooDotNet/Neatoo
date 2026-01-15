@@ -2,6 +2,12 @@
 
 Neatoo uses source-generated factories to manage entity lifecycle operations. This document covers the factory pattern and all operation types.
 
+## Aggregate Lifecycle
+
+This diagram shows a common lifecycle for a Neatoo aggregate entity graph to and from the database using a 3-tier infrastructure:
+
+![Lifecycle](https://raw.githubusercontent.com/NeatooDotNet/Neatoo/main/AggregateLifecycle_960.gif)
+
 ## Factory Overview
 
 For each class marked with `[Factory]`, Neatoo generates:

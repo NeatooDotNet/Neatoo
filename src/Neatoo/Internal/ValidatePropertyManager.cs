@@ -73,6 +73,11 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
     public event NeatooPropertyChanged? NeatooPropertyChanged;
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    protected void RaisePropertyChanged(string propertyName)
+    {
+        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
     private Task _Property_NeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
         return this.NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
