@@ -234,4 +234,51 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
     }
 
     #endregion
+
+    #region Diagnostic Tests - Server Side Check
+
+    /// <summary>
+    /// DIAGNOSTIC: Checks if IsModified is already true on the SERVER side
+    /// right after Fetch completes, BEFORE any serialization to the client.
+    /// This helps determine if the bug is in the factory/fetch logic or in serialization.
+    /// </summary>
+    [TestMethod]
+    public async Task Fetch_ServerSideOnly_IsModified_ReturnsFalse()
+    {
+        // Arrange - Use SERVER scope directly, bypassing serialization entirely
+        var factory = GetServerService<IEntityObjectFactory>();
+        var id = Guid.NewGuid();
+        var name = "Server Fetched Entity";
+
+        // Act - Fetch directly on server (no client-server boundary crossed)
+        var entity = await factory.Fetch(id, name);
+
+        // Assert - If this fails, the bug is in FactoryComplete/Fetch, not serialization
+        Assert.IsFalse(entity.IsNew, "Server-side entity should not be new after Fetch");
+        Assert.IsFalse(entity.IsModified, $"Server-side entity should not be modified after Fetch. ModifiedProperties: [{string.Join(", ", entity.ModifiedProperties)}]");
+        Assert.IsFalse(entity.IsSelfModified, "Server-side entity should not be self-modified after Fetch");
+        Assert.AreEqual(0, entity.ModifiedProperties.Count(), $"Server-side entity should have no modified properties. Found: [{string.Join(", ", entity.ModifiedProperties)}]");
+    }
+
+    /// <summary>
+    /// DIAGNOSTIC: Checks if IsModified is already true on the SERVER side
+    /// after Create operation.
+    /// </summary>
+    [TestMethod]
+    public async Task Create_ServerSideOnly_IsModified_ReturnsTrue()
+    {
+        // Arrange - Use SERVER scope directly
+        var factory = GetServerService<IEntityObjectFactory>();
+        var id = Guid.NewGuid();
+        var name = "Server Created Entity";
+
+        // Act - Create directly on server
+        var entity = await factory.Create(id, name);
+
+        // Assert - Create should result in IsNew=true, IsModified=true
+        Assert.IsTrue(entity.IsNew, "Server-side entity should be new after Create");
+        Assert.IsTrue(entity.IsModified, "Server-side entity should be modified after Create");
+    }
+
+    #endregion
 }
