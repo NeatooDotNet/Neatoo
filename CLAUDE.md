@@ -128,6 +128,7 @@ dotnet list package | findstr RemoteFactory
 
 | Date | Commit | Description | Breaking? | Plan |
 |------|--------|-------------|-----------|------|
+| 2026-01-16 | N/A | 10.11.0 - Updated from 10.9.0 | No | N/A |
 | 2026-01-13 | N/A | 10.9.0 - FactoryMode.RemoteOnly for client-server separation | No | N/A |
 | 2026-01-13 | N/A | 10.8.0 - Optional CancellationToken on all factory methods | No* | N/A |
 | 2026-01-11 | N/A | 10.7.0 - Fix duplicate Save with CancellationToken | No | N/A |
@@ -141,7 +142,7 @@ dotnet list package | findstr RemoteFactory
 
 ### Current Version
 
-**Neatoo.RemoteFactory 10.9.0** (updated 2026-01-13)
+**Neatoo.RemoteFactory 10.11.0** (updated 2026-01-16)
 
 ### Breaking Change Notes
 
