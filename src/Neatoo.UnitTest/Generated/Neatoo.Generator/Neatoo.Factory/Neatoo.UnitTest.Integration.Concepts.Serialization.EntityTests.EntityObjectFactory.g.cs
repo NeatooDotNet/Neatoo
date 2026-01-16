@@ -12,7 +12,7 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests
 {
     public interface IEntityObjectFactory
     {
-        Task<IEntityObject> Create(Guid ID, string Name, CancellationToken cancellationToken = default);
+        IEntityObject Create(Guid ID, string Name, CancellationToken cancellationToken = default);
         Task<IEntityObject> Fetch(Guid ID, string Name, CancellationToken cancellationToken = default);
         Task<IEntityObject> Save(IEntityObject target, CancellationToken cancellationToken = default);
     }
@@ -34,15 +34,15 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
-        public virtual Task<IEntityObject> Create(Guid ID, string Name, CancellationToken cancellationToken = default)
+        public virtual IEntityObject Create(Guid ID, string Name, CancellationToken cancellationToken = default)
         {
             return LocalCreate(ID, Name, cancellationToken);
         }
 
-        public Task<IEntityObject> LocalCreate(Guid ID, string Name, CancellationToken cancellationToken = default)
+        public IEntityObject LocalCreate(Guid ID, string Name, CancellationToken cancellationToken = default)
         {
-            var target = ServiceProvider.GetRequiredService<EntityObject>();
-            return DoFactoryMethodCallAsync(target, FactoryOperation.Create, () => target.Create(ID, Name));
+            var services = ServiceProvider.GetRequiredService<IEntityBaseServices<EntityObject>>();
+            return DoFactoryMethodCall(FactoryOperation.Create, () => new EntityObject(services, ID, Name));
         }
 
         public virtual Task<IEntityObject> Fetch(Guid ID, string Name, CancellationToken cancellationToken = default)

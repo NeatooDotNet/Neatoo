@@ -24,9 +24,21 @@ public interface IEntityObject : IEntityBase
 [Factory]
 public partial class EntityObject : EntityBase<EntityObject>, IEntityObject
 {
+    // Default constructor for DI (Fetch scenarios)
+    // Use LoadValue() to avoid tracking modifications - constructor runs outside factory pause
     public EntityObject(IEntityBaseServices<EntityObject> services) : base(services)
     {
-        Required = 1;
+        RequiredProperty.LoadValue(1);
+    }
+
+    // Create constructor - all initialization happens here, wrapped by factory
+    // Use LoadValue() to ensure consistent behavior whether called via factory or directly in tests
+    [Create]
+    public EntityObject([Service] IEntityBaseServices<EntityObject> services, Guid ID, string Name) : base(services)
+    {
+        RequiredProperty.LoadValue(1);
+        IDProperty.LoadValue(ID);
+        NameProperty.LoadValue(Name);
     }
 
     public partial Guid ID { get; set; }
@@ -59,14 +71,6 @@ public partial class EntityObject : EntityBase<EntityObject>, IEntityObject
     void IEntityObject.MarkUnmodified()
     {
         this.MarkUnmodified();
-    }
-
-    [Create]
-    public Task Create(Guid ID, string Name)
-    {
-        this.ID = ID;
-        this.Name = Name;
-        return Task.CompletedTask;
     }
 
     [Fetch]

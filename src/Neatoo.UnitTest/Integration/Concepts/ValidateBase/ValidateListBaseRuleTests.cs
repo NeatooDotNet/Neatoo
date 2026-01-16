@@ -11,7 +11,7 @@ public partial class ParentObj : ValidateBase<ParentObj>
 {
     public ParentObj() : base(new ValidateBaseServices<ParentObj>())
     {
-        ChildObjList = new ChildObjList();
+        ChildObjListProperty.LoadValue(new ChildObjList());
         this.RuleManager.AddActionAsync(p =>
         {
             return p.ChildObjList.RunUniqueRule();

@@ -29,7 +29,7 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
     /// IsNew is true (entity hasn't been persisted yet).
     /// </summary>
     [TestMethod]
-    public async Task Create_TwoContainer_IsNew_ReturnsTrue()
+    public void Create_TwoContainer_IsNew_ReturnsTrue()
     {
         // Arrange
         var factory = GetClientService<IEntityObjectFactory>();
@@ -37,7 +37,7 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
         var name = "Test Entity";
 
         // Act
-        var entity = await factory.Create(id, name);
+        var entity = factory.Create(id, name);
 
         // Assert
         Assert.IsTrue(entity.IsNew, "Entity should be new after Create operation");
@@ -48,7 +48,7 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
     /// IsModified is true (new entities are considered modified).
     /// </summary>
     [TestMethod]
-    public async Task Create_TwoContainer_IsModified_ReturnsTrue()
+    public void Create_TwoContainer_IsModified_ReturnsTrue()
     {
         // Arrange
         var factory = GetClientService<IEntityObjectFactory>();
@@ -56,7 +56,7 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
         var name = "Test Entity";
 
         // Act
-        var entity = await factory.Create(id, name);
+        var entity = factory.Create(id, name);
 
         // Assert
         Assert.IsTrue(entity.IsModified, "Entity should be modified after Create operation (new entities are modified)");
@@ -75,7 +75,7 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
         var name = "Test Entity";
 
         // Act
-        var entity = await factory.Create(id, name);
+        var entity = factory.Create(id, name);
         await entity.WaitForTasks(); // Ensure validation is complete
 
         // Assert
@@ -265,7 +265,7 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
     /// after Create operation.
     /// </summary>
     [TestMethod]
-    public async Task Create_ServerSideOnly_IsModified_ReturnsTrue()
+    public void Create_ServerSideOnly_IsModified_ReturnsTrue()
     {
         // Arrange - Use SERVER scope directly
         var factory = GetServerService<IEntityObjectFactory>();
@@ -273,7 +273,7 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
         var name = "Server Created Entity";
 
         // Act - Create directly on server
-        var entity = await factory.Create(id, name);
+        var entity = factory.Create(id, name);
 
         // Assert - Create should result in IsNew=true, IsModified=true
         Assert.IsTrue(entity.IsNew, "Server-side entity should be new after Create");

@@ -22,6 +22,8 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Neatoo.BaseGenerator\Neatoo.BaseGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\Neatoo.Analyzers\Neatoo.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\Neatoo.CodeFixes\Neatoo.CodeFixes.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\Neatoo\Neatoo.csproj" />
 	</ItemGroup>
 
