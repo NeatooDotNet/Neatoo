@@ -77,6 +77,7 @@ Neatoo provides bindable, serializable domain objects for Blazor and WPF applica
 
 ### Internals
 
+- [Event System](advanced/event-system.md) - PropertyChanged vs NeatooPropertyChanged internals
 - [Rule Identification](advanced/rule-identification.md) - How rules get stable IDs for serialization
 
 ### Testing
