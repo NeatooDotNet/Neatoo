@@ -351,8 +351,8 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
             }
         }
 
-        // Fire event with ChangeReason.Load - SetParent will be called but rules will be skipped
-        this.OnPropertyChanged(nameof(Value));
+        // Fire NeatooPropertyChanged with ChangeReason.Load - SetParent will be called but rules will be skipped
+        // Note: We intentionally do NOT fire PropertyChanged here to avoid triggering UI updates during load
         this.Task = this.OnValueNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(this, ChangeReason.Load));
     }
 
