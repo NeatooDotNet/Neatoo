@@ -12,16 +12,16 @@ namespace Neatoo.UnitTest.Unit.Core;
 /// Uses SuppressFactory to avoid requiring the full factory infrastructure.
 /// </summary>
 [SuppressFactory]
-public class ValidatePropertyManagerTestObject : ValidateBase<ValidatePropertyManagerTestObject>
+public partial class ValidatePropertyManagerTestObject : ValidateBase<ValidatePropertyManagerTestObject>
 {
     public ValidatePropertyManagerTestObject() : base(new ValidateBaseServices<ValidatePropertyManagerTestObject>())
     {
         PauseAllActions();
     }
 
-    public string? Name { get => Getter<string?>(); set => Setter(value); }
-    public int Age { get => Getter<int>(); set => Setter(value); }
-    public string? Description { get => Getter<string?>(); set => Setter(value); }
+    public partial string? Name { get; set; }
+    public partial int Age { get; set; }
+    public partial string? Description { get; set; }
 
     /// <summary>
     /// Exposes the RuleManager for testing.
@@ -57,15 +57,15 @@ public class ValidatePropertyManagerTestObject : ValidateBase<ValidatePropertyMa
 /// A child ValidateBase object for testing child validation scenarios.
 /// </summary>
 [SuppressFactory]
-public class ValidatePropertyManagerChildObject : ValidateBase<ValidatePropertyManagerChildObject>
+public partial class ValidatePropertyManagerChildObject : ValidateBase<ValidatePropertyManagerChildObject>
 {
     public ValidatePropertyManagerChildObject() : base(new ValidateBaseServices<ValidatePropertyManagerChildObject>())
     {
         PauseAllActions();
     }
 
-    public string? ChildName { get => Getter<string?>(); set => Setter(value); }
-    public int ChildValue { get => Getter<int>(); set => Setter(value); }
+    public partial string? ChildName { get; set; }
+    public partial int ChildValue { get; set; }
 
     /// <summary>
     /// Exposes the RuleManager for testing.
@@ -88,15 +88,15 @@ public class ValidatePropertyManagerChildObject : ValidateBase<ValidatePropertyM
 /// A parent ValidateBase object that contains a child ValidateBase property for testing child validation.
 /// </summary>
 [SuppressFactory]
-public class ValidatePropertyManagerParentObject : ValidateBase<ValidatePropertyManagerParentObject>
+public partial class ValidatePropertyManagerParentObject : ValidateBase<ValidatePropertyManagerParentObject>
 {
     public ValidatePropertyManagerParentObject() : base(new ValidateBaseServices<ValidatePropertyManagerParentObject>())
     {
         PauseAllActions();
     }
 
-    public string? ParentName { get => Getter<string?>(); set => Setter(value); }
-    public ValidatePropertyManagerChildObject? Child { get => Getter<ValidatePropertyManagerChildObject?>(); set => Setter(value); }
+    public partial string? ParentName { get; set; }
+    public partial ValidatePropertyManagerChildObject? Child { get; set; }
 
     /// <summary>
     /// Exposes the RuleManager for testing.

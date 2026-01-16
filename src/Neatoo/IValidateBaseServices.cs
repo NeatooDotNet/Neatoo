@@ -25,6 +25,15 @@ public interface IValidateBaseServices<T>
     IValidatePropertyManager<IValidateProperty> ValidatePropertyManager { get; }
 
     /// <summary>
+    /// Gets the property factory for creating strongly-typed property backing fields.
+    /// </summary>
+    /// <remarks>
+    /// The property factory is used by generated code to create property backing fields
+    /// during object initialization.
+    /// </remarks>
+    IPropertyFactory<T> PropertyFactory { get; }
+
+    /// <summary>
     /// Creates a new rule manager for the specified target object.
     /// </summary>
     /// <param name="target">The target object for which to create the rule manager.</param>

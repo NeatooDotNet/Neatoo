@@ -17,8 +17,36 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
 
     internal partial class AsyncActionPerson
     {
-        public partial string? ZipCode { get => Getter<string?>(); set => Setter(value); }
-        public partial decimal TaxRate { get => Getter<decimal>(); set => Setter(value); }
+        protected IValidateProperty<string?> ZipCodeProperty => (IValidateProperty<string?>)PropertyManager[nameof(ZipCode)]!;
+        protected IValidateProperty<decimal> TaxRateProperty => (IValidateProperty<decimal>)PropertyManager[nameof(TaxRate)]!;
+
+        public partial string? ZipCode
+        {
+            get => ZipCodeProperty.Value;
+            set
+            {
+                ZipCodeProperty.Value = value;
+                if (!ZipCodeProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ZipCodeProperty.Task);
+                    RunningTasks.AddTask(ZipCodeProperty.Task);
+                }
+            }
+        }
+
+        public partial decimal TaxRate
+        {
+            get => TaxRateProperty.Value;
+            set
+            {
+                TaxRateProperty.Value = value;
+                if (!TaxRateProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(TaxRateProperty.Task);
+                    RunningTasks.AddTask(TaxRateProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -31,6 +59,17 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
                 @"async target => target.TaxRate = await GetTaxRateAsync(target.ZipCode)" => 1u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage.AsyncActionPerson> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(ZipCode)));
+            PropertyManager.Register(factory.Create<decimal>(this, nameof(TaxRate)));
         }
     }
 }

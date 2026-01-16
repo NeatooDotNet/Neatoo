@@ -17,7 +17,46 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
 
     internal partial class OrderSearchCriteria
     {
-        public partial string? CustomerName { get => Getter<string?>(); set => Setter(value); }
-        public partial DateTime? OrderDate { get => Getter<DateTime?>(); set => Setter(value); }
+        protected IValidateProperty<string?> CustomerNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(CustomerName)]!;
+        protected IValidateProperty<DateTime?> OrderDateProperty => (IValidateProperty<DateTime?>)PropertyManager[nameof(OrderDate)]!;
+
+        public partial string? CustomerName
+        {
+            get => CustomerNameProperty.Value;
+            set
+            {
+                CustomerNameProperty.Value = value;
+                if (!CustomerNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(CustomerNameProperty.Task);
+                    RunningTasks.AddTask(CustomerNameProperty.Task);
+                }
+            }
+        }
+
+        public partial DateTime? OrderDate
+        {
+            get => OrderDateProperty.Value;
+            set
+            {
+                OrderDateProperty.Value = value;
+                if (!OrderDateProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(OrderDateProperty.Task);
+                    RunningTasks.AddTask(OrderDateProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.AggregatesAndEntities.OrderSearchCriteria> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(CustomerName)));
+            PropertyManager.Register(factory.Create<DateTime?>(this, nameof(OrderDate)));
+        }
     }
 }

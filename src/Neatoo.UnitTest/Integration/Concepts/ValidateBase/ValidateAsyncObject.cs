@@ -15,7 +15,7 @@ public interface IValidateAsyncObject : IPersonBase
 }
 
 [Factory]
-internal class ValidateAsyncObject : PersonValidateBase<ValidateAsyncObject>, IValidateAsyncObject
+internal partial class ValidateAsyncObject : PersonValidateBase<ValidateAsyncObject>, IValidateAsyncObject
 {
     public IShortNameAsyncRule ShortNameRule { get; }
     public IFullNameAsyncRule FullNameRule { get; }
@@ -38,10 +38,10 @@ internal class ValidateAsyncObject : PersonValidateBase<ValidateAsyncObject>, IV
         RuleManager.AddActionAsync((v) => Task.Delay(10), _ => _.Child);
     }
 
-    public string aLabel { get => Getter<string>(); set => Setter(value); }
-    public IValidateAsyncObject Child { get { return Getter<IValidateAsyncObject>(); } set { Setter(value); } }
+    public partial string aLabel { get; set; }
+    public partial IValidateAsyncObject Child { get; set; }
 
-    public string ThrowException { get => Getter<string>(); set => Setter(value); }
+    public partial string ThrowException { get; set; }
 
     [Fetch]
     public async Task Fetch(PersonDto person, [Service] IValidateAsyncObjectFactory portal, [Service] IReadOnlyList<PersonDto> personTable)

@@ -15,7 +15,21 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase.ValidateListBaseRule
 {
     public partial class ParentObj
     {
-        public partial ChildObjList ChildObjList { get => Getter<ChildObjList>(); set => Setter(value); }
+        protected IValidateProperty<ChildObjList> ChildObjListProperty => (IValidateProperty<ChildObjList>)PropertyManager[nameof(ChildObjList)]!;
+
+        public partial ChildObjList ChildObjList
+        {
+            get => ChildObjListProperty.Value;
+            set
+            {
+                ChildObjListProperty.Value = value;
+                if (!ChildObjListProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ChildObjListProperty.Task);
+                    RunningTasks.AddTask(ChildObjListProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -28,6 +42,16 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase.ValidateListBaseRule
                 @"p => { return p.ChildObjList.RunUniqueRule(); }" => 1u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.UnitTest.Integration.Concepts.ValidateBase.ValidateListBaseRule.ParentObj> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<ChildObjList>(this, nameof(ChildObjList)));
         }
     }
 }

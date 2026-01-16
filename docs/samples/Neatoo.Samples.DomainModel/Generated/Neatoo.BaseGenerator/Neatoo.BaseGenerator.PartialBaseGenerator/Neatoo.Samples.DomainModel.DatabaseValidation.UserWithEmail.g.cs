@@ -18,9 +18,51 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
 
     internal partial class UserWithEmail
     {
-        public partial Guid Id { get => Getter<Guid>(); set => Setter(value); }
-        public partial string? Email { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Name { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<Guid> IdProperty => (IValidateProperty<Guid>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> EmailProperty => (IValidateProperty<string?>)PropertyManager[nameof(Email)]!;
+        protected IValidateProperty<string?> NameProperty => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+
+        public partial Guid Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Email
+        {
+            get => EmailProperty.Value;
+            set
+            {
+                EmailProperty.Value = value;
+                if (!EmailProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(EmailProperty.Task);
+                    RunningTasks.AddTask(EmailProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Name
+        {
+            get => NameProperty.Value;
+            set
+            {
+                NameProperty.Value = value;
+                if (!NameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NameProperty.Task);
+                    RunningTasks.AddTask(NameProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -33,6 +75,18 @@ namespace Neatoo.Samples.DomainModel.DatabaseValidation
                 @"uniqueEmailRule" => 1u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.DatabaseValidation.UserWithEmail> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<Guid>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Email)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
         }
     }
 }

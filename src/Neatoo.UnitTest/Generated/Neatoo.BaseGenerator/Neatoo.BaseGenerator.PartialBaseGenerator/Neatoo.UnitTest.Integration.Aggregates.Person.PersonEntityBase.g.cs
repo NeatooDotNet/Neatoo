@@ -11,11 +11,113 @@ namespace Neatoo.UnitTest.Integration.Aggregates.Person
 {
     public abstract partial class PersonEntityBase<T>
     {
-        public partial string FirstName { get => Getter<string>(); set => Setter(value); }
-        public partial string LastName { get => Getter<string>(); set => Setter(value); }
-        public partial string ShortName { get => Getter<string>(); set => Setter(value); }
-        public partial string Title { get => Getter<string>(); set => Setter(value); }
-        public partial string FullName { get => Getter<string>(); set => Setter(value); }
-        public partial uint? Age { get => Getter<uint?>(); set => Setter(value); }
+        protected IValidateProperty<Guid> IdProperty => (IValidateProperty<Guid>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string> FirstNameProperty => (IValidateProperty<string>)PropertyManager[nameof(FirstName)]!;
+        protected IValidateProperty<string> LastNameProperty => (IValidateProperty<string>)PropertyManager[nameof(LastName)]!;
+        protected IValidateProperty<string> ShortNameProperty => (IValidateProperty<string>)PropertyManager[nameof(ShortName)]!;
+        protected IValidateProperty<string> TitleProperty => (IValidateProperty<string>)PropertyManager[nameof(Title)]!;
+        protected IValidateProperty<string> FullNameProperty => (IValidateProperty<string>)PropertyManager[nameof(FullName)]!;
+        protected IValidateProperty<uint?> AgeProperty => (IValidateProperty<uint?>)PropertyManager[nameof(Age)]!;
+        public partial Guid Id { get => IdProperty.Value; }
+
+        public partial string FirstName
+        {
+            get => FirstNameProperty.Value;
+            set
+            {
+                FirstNameProperty.Value = value;
+                if (!FirstNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(FirstNameProperty.Task);
+                    RunningTasks.AddTask(FirstNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string LastName
+        {
+            get => LastNameProperty.Value;
+            set
+            {
+                LastNameProperty.Value = value;
+                if (!LastNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(LastNameProperty.Task);
+                    RunningTasks.AddTask(LastNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string ShortName
+        {
+            get => ShortNameProperty.Value;
+            set
+            {
+                ShortNameProperty.Value = value;
+                if (!ShortNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ShortNameProperty.Task);
+                    RunningTasks.AddTask(ShortNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string Title
+        {
+            get => TitleProperty.Value;
+            set
+            {
+                TitleProperty.Value = value;
+                if (!TitleProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(TitleProperty.Task);
+                    RunningTasks.AddTask(TitleProperty.Task);
+                }
+            }
+        }
+
+        public partial string FullName
+        {
+            get => FullNameProperty.Value;
+            set
+            {
+                FullNameProperty.Value = value;
+                if (!FullNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(FullNameProperty.Task);
+                    RunningTasks.AddTask(FullNameProperty.Task);
+                }
+            }
+        }
+
+        public partial uint? Age
+        {
+            get => AgeProperty.Value;
+            set
+            {
+                AgeProperty.Value = value;
+                if (!AgeProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(AgeProperty.Task);
+                    RunningTasks.AddTask(AgeProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<Guid>((T)this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string>((T)this, nameof(FirstName)));
+            PropertyManager.Register(factory.Create<string>((T)this, nameof(LastName)));
+            PropertyManager.Register(factory.Create<string>((T)this, nameof(ShortName)));
+            PropertyManager.Register(factory.Create<string>((T)this, nameof(Title)));
+            PropertyManager.Register(factory.Create<string>((T)this, nameof(FullName)));
+            PropertyManager.Register(factory.Create<uint?>((T)this, nameof(Age)));
+        }
     }
 }

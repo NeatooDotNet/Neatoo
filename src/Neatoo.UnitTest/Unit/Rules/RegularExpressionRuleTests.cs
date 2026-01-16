@@ -10,15 +10,15 @@ namespace Neatoo.UnitTest.Unit.Rules;
 #region Test Helper Classes
 
 [SuppressFactory]
-public class RegularExpressionRuleTestTarget : ValidateBase<RegularExpressionRuleTestTarget>
+public partial class RegularExpressionRuleTestTarget : ValidateBase<RegularExpressionRuleTestTarget>
 {
     public RegularExpressionRuleTestTarget() : base(new ValidateBaseServices<RegularExpressionRuleTestTarget>())
     {
     }
 
-    public string? StringProperty { get => Getter<string>(); set => Setter(value); }
-    public string? EmailProperty { get => Getter<string>(); set => Setter(value); }
-    public string? PhoneProperty { get => Getter<string>(); set => Setter(value); }
+    public partial string? StringProperty { get; set; }
+    public partial string? EmailProperty { get; set; }
+    public partial string? PhoneProperty { get; set; }
 }
 
 #endregion

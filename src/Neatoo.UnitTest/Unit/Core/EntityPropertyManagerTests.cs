@@ -51,9 +51,9 @@ public class EntityPropertyManagerTests
     /// Test entity with a child entity property for testing nested modification tracking.
     /// </summary>
     [SuppressFactory]
-    private class TestParentEntity : EntityBase<TestParentEntity>
+    private class PropertyTestParentEntity : EntityBase<PropertyTestParentEntity>
     {
-        public TestParentEntity() : base(new EntityBaseServices<TestParentEntity>(null))
+        public PropertyTestParentEntity() : base(new EntityBaseServices<PropertyTestParentEntity>(null))
         {
             PauseAllActions();
         }
@@ -146,7 +146,7 @@ public class EntityPropertyManagerTests
     public void IsModified_WithModifiedEntityChild_ReturnsTrue()
     {
         // Arrange
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child = new TestChildEntity();
         parent.ResumeAllActions();
         parent.Child = child;
@@ -165,7 +165,7 @@ public class EntityPropertyManagerTests
     public void IsModified_WithUnmodifiedEntityChild_ReturnsFalse()
     {
         // Arrange
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child = new TestChildEntity();
         parent.ResumeAllActions();
         parent.Child = child;
@@ -225,7 +225,7 @@ public class EntityPropertyManagerTests
     public void IsSelfModified_WithModifiedEntityChild_ReturnsFalse()
     {
         // Arrange - IsSelfModified should NOT include child modifications
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child = new TestChildEntity();
         parent.ResumeAllActions();
         parent.Child = child;
@@ -244,7 +244,7 @@ public class EntityPropertyManagerTests
     public void IsSelfModified_SettingEntityChildProperty_ReturnsFalse()
     {
         // Arrange - Setting an entity child property should NOT mark self as modified
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child = new TestChildEntity();
         parent.ResumeAllActions();
 
@@ -282,7 +282,7 @@ public class EntityPropertyManagerTests
     public void MarkSelfUnmodified_DoesNotAffectEntityChildModification()
     {
         // Arrange
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child = new TestChildEntity();
         parent.ResumeAllActions();
         parent.Child = child;
@@ -404,7 +404,7 @@ public class EntityPropertyManagerTests
     public void ModifiedProperties_WithModifiedEntityChild_IncludesChildProperty()
     {
         // Arrange
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child = new TestChildEntity();
         parent.ResumeAllActions();
         parent.Child = child;
@@ -665,7 +665,7 @@ public class EntityPropertyManagerTests
     public void EntityChild_SettingChild_DoesNotMarkSelfModified()
     {
         // Arrange
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child = new TestChildEntity();
         parent.ResumeAllActions();
 
@@ -680,7 +680,7 @@ public class EntityPropertyManagerTests
     public void EntityChild_SettingChildThenModifyingChild_ParentIsModified()
     {
         // Arrange
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child = new TestChildEntity();
         parent.ResumeAllActions();
         parent.Child = child;
@@ -698,7 +698,7 @@ public class EntityPropertyManagerTests
     public void EntityChild_ReplacingChild_UpdatesModificationTracking()
     {
         // Arrange
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child1 = new TestChildEntity();
         var child2 = new TestChildEntity();
 
@@ -721,7 +721,7 @@ public class EntityPropertyManagerTests
     public void EntityChild_SettingToNull_MarksAsModified()
     {
         // Arrange
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child = new TestChildEntity();
         parent.ResumeAllActions();
         parent.Child = child;
@@ -740,7 +740,7 @@ public class EntityPropertyManagerTests
     public void EntityChild_Property_ReturnsCorrectChild()
     {
         // Arrange
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child = new TestChildEntity();
         parent.ResumeAllActions();
         parent.Child = child;
@@ -1104,7 +1104,7 @@ public class EntityPropertyManagerTests
     {
         // This scenario tests a parent entity with a single child property
         // Arrange
-        var parent = new TestParentEntity();
+        var parent = new PropertyTestParentEntity();
         var child1 = new TestChildEntity();
         var child2 = new TestChildEntity();
 

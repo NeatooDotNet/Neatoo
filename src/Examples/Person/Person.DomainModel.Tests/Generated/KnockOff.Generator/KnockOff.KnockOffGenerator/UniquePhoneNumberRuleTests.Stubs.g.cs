@@ -592,6 +592,26 @@ partial class UniquePhoneNumberRuleTests
 			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
 		}
 
+		/// <summary>Interceptor for IPerson.AddChildTask.</summary>
+		public sealed class IPerson_AddChildTaskInterceptor
+		{
+			/// <summary>Number of times this method was called.</summary>
+			public int CallCount { get; private set; }
+
+			/// <summary>Whether this method was called at least once.</summary>
+			public bool WasCalled => CallCount > 0;
+
+			/// <summary>The argument from the last call.</summary>
+			public global::System.Threading.Tasks.Task? LastCallArg { get; private set; }
+
+			/// <summary>Callback invoked when method is called.</summary>
+			public global::System.Action<Stubs.IPerson, global::System.Threading.Tasks.Task>? OnCall { get; set; }
+
+			public void RecordCall(global::System.Threading.Tasks.Task task) { CallCount++; LastCallArg = task; }
+
+			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
+		}
+
 		/// <summary>Interceptor for IPerson.WaitForTasks.</summary>
 		public sealed class IPerson_WaitForTasksInterceptor
 		{
@@ -794,6 +814,9 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for TryGetProperty.</summary>
 			public IPerson_TryGetPropertyInterceptor TryGetProperty { get; } = new();
 
+			/// <summary>Interceptor for AddChildTask.</summary>
+			public IPerson_AddChildTaskInterceptor AddChildTask { get; } = new();
+
 			/// <summary>Interceptor for WaitForTasks.</summary>
 			public IPerson_WaitForTasksInterceptor WaitForTasks { get; } = new();
 
@@ -977,6 +1000,12 @@ partial class UniquePhoneNumberRuleTests
 				TryGetProperty.RecordCall(propertyName);
 				if (TryGetProperty.OnCall is { } onCall) return onCall(this, propertyName);
 				return default!;
+			}
+
+			void global::Neatoo.IValidateBase.AddChildTask(global::System.Threading.Tasks.Task task)
+			{
+				AddChildTask.RecordCall(task);
+				if (AddChildTask.OnCall is { } onCall) onCall(this, task);
 			}
 
 			global::Neatoo.IValidateBase? global::Neatoo.IValidateBase.Parent
@@ -2733,6 +2762,26 @@ partial class UniquePhoneNumberRuleTests
 			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
 		}
 
+		/// <summary>Interceptor for IPersonPhone.AddChildTask.</summary>
+		public sealed class IPersonPhone_AddChildTaskInterceptor
+		{
+			/// <summary>Number of times this method was called.</summary>
+			public int CallCount { get; private set; }
+
+			/// <summary>Whether this method was called at least once.</summary>
+			public bool WasCalled => CallCount > 0;
+
+			/// <summary>The argument from the last call.</summary>
+			public global::System.Threading.Tasks.Task? LastCallArg { get; private set; }
+
+			/// <summary>Callback invoked when method is called.</summary>
+			public global::System.Action<Stubs.IPersonPhone, global::System.Threading.Tasks.Task>? OnCall { get; set; }
+
+			public void RecordCall(global::System.Threading.Tasks.Task task) { CallCount++; LastCallArg = task; }
+
+			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
+		}
+
 		/// <summary>Interceptor for IPersonPhone.WaitForTasks.</summary>
 		public sealed class IPersonPhone_WaitForTasksInterceptor
 		{
@@ -2929,6 +2978,9 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for TryGetProperty.</summary>
 			public IPersonPhone_TryGetPropertyInterceptor TryGetProperty { get; } = new();
 
+			/// <summary>Interceptor for AddChildTask.</summary>
+			public IPersonPhone_AddChildTaskInterceptor AddChildTask { get; } = new();
+
 			/// <summary>Interceptor for WaitForTasks.</summary>
 			public IPersonPhone_WaitForTasksInterceptor WaitForTasks { get; } = new();
 
@@ -3074,6 +3126,12 @@ partial class UniquePhoneNumberRuleTests
 				TryGetProperty.RecordCall(propertyName);
 				if (TryGetProperty.OnCall is { } onCall) return onCall(this, propertyName);
 				return default!;
+			}
+
+			void global::Neatoo.IValidateBase.AddChildTask(global::System.Threading.Tasks.Task task)
+			{
+				AddChildTask.RecordCall(task);
+				if (AddChildTask.OnCall is { } onCall) onCall(this, task);
 			}
 
 			global::Neatoo.IValidateBase? global::Neatoo.IValidateBase.Parent

@@ -15,8 +15,36 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase.ValidateListBaseRule
 {
     public partial class ChildObj
     {
-        public partial string Identifier { get => Getter<string>(); set => Setter(value); }
-        public partial string UniqueValue { get => Getter<string>(); set => Setter(value); }
+        protected IValidateProperty<string> IdentifierProperty => (IValidateProperty<string>)PropertyManager[nameof(Identifier)]!;
+        protected IValidateProperty<string> UniqueValueProperty => (IValidateProperty<string>)PropertyManager[nameof(UniqueValue)]!;
+
+        public partial string Identifier
+        {
+            get => IdentifierProperty.Value;
+            set
+            {
+                IdentifierProperty.Value = value;
+                if (!IdentifierProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdentifierProperty.Task);
+                    RunningTasks.AddTask(IdentifierProperty.Task);
+                }
+            }
+        }
+
+        public partial string UniqueValue
+        {
+            get => UniqueValueProperty.Value;
+            set
+            {
+                UniqueValueProperty.Value = value;
+                if (!UniqueValueProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(UniqueValueProperty.Task);
+                    RunningTasks.AddTask(UniqueValueProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -29,6 +57,17 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase.ValidateListBaseRule
                 @"new ChildObjUniqueValue()" => 1u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.UnitTest.Integration.Concepts.ValidateBase.ValidateListBaseRule.ChildObj> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string>(this, nameof(Identifier)));
+            PropertyManager.Register(factory.Create<string>(this, nameof(UniqueValue)));
         }
     }
 }

@@ -56,6 +56,16 @@ public interface IValidateBase : INeatooObject, INotifyPropertyChanged, INotifyN
 	/// <param name="validateProperty">When this method returns, contains the validation property if found; otherwise, <c>null</c>.</param>
 	/// <returns><c>true</c> if the property was found; otherwise, <c>false</c>.</returns>
 	bool TryGetProperty(string propertyName, out IValidateProperty validateProperty);
+
+	/// <summary>
+	/// Adds a child task to be tracked for completion.
+	/// </summary>
+	/// <param name="task">The task to track.</param>
+	/// <remarks>
+	/// Tasks added through this method are propagated up the object graph hierarchy
+	/// to ensure the root object can await all pending operations via <see cref="INeatooObject.WaitForTasks"/>.
+	/// </remarks>
+	void AddChildTask(Task task);
 }
 
 /// <summary>
@@ -88,9 +98,9 @@ public interface IValidateBase : INeatooObject, INotifyPropertyChanged, INotifyN
 /// </remarks>
 /// <example>
 /// <code>
-/// public class Customer : ValidateBase&lt;Customer&gt;
+/// public partial class Customer : ValidateBase&lt;Customer&gt;
 /// {
-///     public string Name { get =&gt; Getter&lt;string&gt;(); set =&gt; Setter(value); }
+///     public partial string Name { get; set; }
 ///
 ///     public Customer(IValidateBaseServices&lt;Customer&gt; services) : base(services)
 ///     {
@@ -170,6 +180,14 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	protected IRuleManager<T> RuleManager { get; private set; }
 
 	/// <summary>
+	/// Gets the services provided to this instance during construction.
+	/// </summary>
+	/// <remarks>
+	/// Contains the property factory, property info list, and other infrastructure services.
+	/// </remarks>
+	protected IValidateBaseServices<T> Services { get; private set; }
+
+	/// <summary>
 	/// Initializes a new instance of the <see cref="ValidateBase{T}"/> class.
 	/// </summary>
 	/// <param name="services">The validation services containing the property manager and rule manager factory.</param>
@@ -178,6 +196,7 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	{
 		ArgumentNullException.ThrowIfNull(services, nameof(services));
 
+		this.Services = services;
 		this.PropertyManager = services.ValidatePropertyManager ?? throw new ArgumentNullException("ValidatePropertyManager");
 
 		this.PropertyManager.NeatooPropertyChanged += this._PropertyManager_NeatooPropertyChanged;
@@ -200,7 +219,33 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 			return string.Empty;
 		}, (t) => t.ObjectInvalid);
 
+		// Initialize generated property backing fields
+		this.InitializePropertyBackingFields(services.PropertyFactory);
+
 		this.ResetMetaState();
+	}
+
+	/// <summary>
+	/// Initializes the generated property backing fields for this instance.
+	/// </summary>
+	/// <param name="factory">The property factory used to create property instances.</param>
+	/// <remarks>
+	/// <para>
+	/// This method is called by the base constructor after services are configured.
+	/// The source generator overrides this method to create and register all property backing fields.
+	/// </para>
+	/// <para>
+	/// When implementing in derived classes that add properties, call <c>base.InitializePropertyBackingFields(factory)</c>
+	/// first to ensure inherited properties are initialized.
+	/// </para>
+	/// <para>
+	/// The default implementation is empty for backward compatibility.
+	/// </para>
+	/// </remarks>
+	protected virtual void InitializePropertyBackingFields(IPropertyFactory<T> factory)
+	{
+		// Default empty implementation for classes without generated property backing fields.
+		// The source generator overrides this method for partial classes with partial properties.
 	}
 
 	/// <summary>
@@ -369,14 +414,10 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// <param name="propertyName">The name of the property. Automatically populated by the compiler when called from a property getter.</param>
 	/// <returns>The property value, or <c>default</c> if the property is not set.</returns>
 	/// <remarks>
-	/// Use this method in property getters to retrieve values from the property manager.
-	/// The property name is automatically captured from the calling member.
+	/// <para><strong>Deprecated:</strong> Use partial properties instead. This method will be removed in a future version.</para>
+	/// <para>This method exists for backward compatibility with nested private test classes that cannot use source generators.</para>
 	/// </remarks>
-	/// <example>
-	/// <code>
-	/// public string Name { get => Getter&lt;string&gt;(); set => Setter(value); }
-	/// </code>
-	/// </example>
+	[Obsolete("Use partial properties instead. This method exists for nested private test classes.")]
 	protected virtual P? Getter<P>([System.Runtime.CompilerServices.CallerMemberName] string propertyName = "")
 	{
 		return (P?)this.PropertyManager[propertyName]?.Value;
@@ -389,21 +430,10 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// <param name="value">The new value for the property.</param>
 	/// <param name="propertyName">The name of the property. Automatically populated by the compiler when called from a property setter.</param>
 	/// <remarks>
-	/// <para>
-	/// Use this method in property setters to store values through the property manager.
-	/// The property name is automatically captured from the calling member.
-	/// </para>
-	/// <para>
-	/// Setting a property value may trigger asynchronous operations such as validation rules.
-	/// These tasks are automatically tracked and can be awaited via <see cref="WaitForTasks()"/>.
-	/// </para>
+	/// <para><strong>Deprecated:</strong> Use partial properties instead. This method will be removed in a future version.</para>
+	/// <para>This method exists for backward compatibility with nested private test classes that cannot use source generators.</para>
 	/// </remarks>
-	/// <exception cref="AggregateException">Thrown if the property setter task fails.</exception>
-	/// <example>
-	/// <code>
-	/// public string Name { get => Getter&lt;string&gt;(); set => Setter(value); }
-	/// </code>
-	/// </example>
+	[Obsolete("Use partial properties instead. This method exists for nested private test classes.")]
 	protected virtual void Setter<P>(P? value, [System.Runtime.CompilerServices.CallerMemberName] string propertyName = "")
 	{
 		var property = this.PropertyManager[propertyName];
@@ -517,12 +547,14 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// <remarks>
 	/// <para>
 	/// This method should be called after setting properties to ensure all asynchronous
-	/// operations (such as validation rules) have completed before proceeding.
+	/// operations (such as validation rules and lazy property loads) have completed before proceeding.
 	/// </para>
 	/// </remarks>
 	public virtual async Task WaitForTasks()
 	{
 		await this.RunningTasks.AllDone;
+		// Also wait for property-level tasks (e.g., lazy loading)
+		await this.PropertyManager.WaitForTasks();
 	}
 
 	/// <summary>
@@ -583,7 +615,37 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// Gets or sets the object-level validation error message.
 	/// </summary>
 	/// <value>The error message, or <c>null</c> if the object is valid at the object level.</value>
-	public string? ObjectInvalid { get => this.Getter<string>(); protected set => this.Setter(value); }
+	public string? ObjectInvalid
+	{
+		get => (string?)this.PropertyManager[nameof(ObjectInvalid)]?.Value;
+		protected set
+		{
+			var property = this.PropertyManager[nameof(ObjectInvalid)];
+			if (property != null)
+			{
+				Task task;
+				if (property is IValidatePropertyInternal propertyInternal)
+				{
+					task = propertyInternal.SetPrivateValue(value);
+				}
+				else
+				{
+					task = property.SetValue(value);
+				}
+
+				if (!task.IsCompleted)
+				{
+					this.AddChildTask(task);
+					this.RunningTasks.AddTask(task);
+				}
+
+				if (task.Exception != null)
+				{
+					throw task.Exception;
+				}
+			}
+		}
+	}
 
 	/// <summary>
 	/// Explicit interface implementation for IValidateBaseInternal.ObjectInvalid.

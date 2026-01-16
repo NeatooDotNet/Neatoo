@@ -10,13 +10,13 @@ namespace Neatoo.UnitTest.Unit.Rules;
 #region Test Helper Classes
 
 [SuppressFactory]
-public class EmailAddressRuleTestTarget : ValidateBase<EmailAddressRuleTestTarget>
+public partial class EmailAddressRuleTestTarget : ValidateBase<EmailAddressRuleTestTarget>
 {
     public EmailAddressRuleTestTarget() : base(new ValidateBaseServices<EmailAddressRuleTestTarget>())
     {
     }
 
-    public string? EmailProperty { get => Getter<string>(); set => Setter(value); }
+    public partial string? EmailProperty { get; set; }
 }
 
 #endregion

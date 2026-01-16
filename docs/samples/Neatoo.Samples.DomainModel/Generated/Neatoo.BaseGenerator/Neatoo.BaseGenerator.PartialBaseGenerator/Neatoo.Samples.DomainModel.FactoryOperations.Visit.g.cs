@@ -16,11 +16,81 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
 
     internal partial class Visit
     {
-        public partial Guid Id { get => Getter<Guid>(); set => Setter(value); }
-        public partial string? PatientName { get => Getter<string?>(); set => Setter(value); }
-        public partial VisitStatus Status { get => Getter<VisitStatus>(); set => Setter(value); }
-        public partial bool Archived { get => Getter<bool>(); set => Setter(value); }
-        public partial DateTime LastUpdated { get => Getter<DateTime>(); set => Setter(value); }
+        protected IValidateProperty<Guid> IdProperty => (IValidateProperty<Guid>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> PatientNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(PatientName)]!;
+        protected IValidateProperty<VisitStatus> StatusProperty => (IValidateProperty<VisitStatus>)PropertyManager[nameof(Status)]!;
+        protected IValidateProperty<bool> ArchivedProperty => (IValidateProperty<bool>)PropertyManager[nameof(Archived)]!;
+        protected IValidateProperty<DateTime> LastUpdatedProperty => (IValidateProperty<DateTime>)PropertyManager[nameof(LastUpdated)]!;
+
+        public partial Guid Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? PatientName
+        {
+            get => PatientNameProperty.Value;
+            set
+            {
+                PatientNameProperty.Value = value;
+                if (!PatientNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(PatientNameProperty.Task);
+                    RunningTasks.AddTask(PatientNameProperty.Task);
+                }
+            }
+        }
+
+        public partial VisitStatus Status
+        {
+            get => StatusProperty.Value;
+            set
+            {
+                StatusProperty.Value = value;
+                if (!StatusProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(StatusProperty.Task);
+                    RunningTasks.AddTask(StatusProperty.Task);
+                }
+            }
+        }
+
+        public partial bool Archived
+        {
+            get => ArchivedProperty.Value;
+            set
+            {
+                ArchivedProperty.Value = value;
+                if (!ArchivedProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ArchivedProperty.Task);
+                    RunningTasks.AddTask(ArchivedProperty.Task);
+                }
+            }
+        }
+
+        public partial DateTime LastUpdated
+        {
+            get => LastUpdatedProperty.Value;
+            set
+            {
+                LastUpdatedProperty.Value = value;
+                if (!LastUpdatedProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(LastUpdatedProperty.Task);
+                    RunningTasks.AddTask(LastUpdatedProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -33,6 +103,20 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
                 @"RequiredAttribute_PatientName" => 1u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.FactoryOperations.Visit> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<Guid>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(PatientName)));
+            PropertyManager.Register(factory.Create<VisitStatus>(this, nameof(Status)));
+            PropertyManager.Register(factory.Create<bool>(this, nameof(Archived)));
+            PropertyManager.Register(factory.Create<DateTime>(this, nameof(LastUpdated)));
         }
     }
 }

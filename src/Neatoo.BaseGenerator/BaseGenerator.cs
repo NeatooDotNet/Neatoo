@@ -73,17 +73,192 @@ namespace Neatoo.BaseGenerator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            var classesToGenerate = context.SyntaxProvider.ForAttributeWithMetadataName("Neatoo.RemoteFactory.FactoryAttribute",
+            // Pipeline 1: Classes with [Factory] attribute - full generation (properties, backing fields, init method, etc.)
+            var factoryClasses = context.SyntaxProvider.ForAttributeWithMetadataName("Neatoo.RemoteFactory.FactoryAttribute",
                 predicate: static (s, _) => IsSyntaxTargetForGeneration(s),
                 transform: static (ctx, _) => PartialBaseGenerator.GetSemanticTargetForGeneration(ctx));
 
-            context.RegisterSourceOutput(classesToGenerate,
+            context.RegisterSourceOutput(factoryClasses,
                 static (ctx, source) => Execute(ctx, source));
+
+            // Pipeline 2: Partial Neatoo classes WITHOUT [Factory] attribute - only generate InitializePropertyBackingFields
+            var nonFactoryNeatooClasses = context.SyntaxProvider.CreateSyntaxProvider(
+                predicate: static (s, _) => IsPartialClassSyntax(s),
+                transform: static (ctx, _) => GetNonFactoryNeatooClass(ctx))
+                .Where(static result => result.IsSuccess);
+
+            context.RegisterSourceOutput(nonFactoryNeatooClasses,
+                static (ctx, source) => ExecuteMinimalGeneration(ctx, source));
+        }
+
+        /// <summary>
+        /// Checks if the syntax node is a partial class declaration.
+        /// </summary>
+        private static bool IsPartialClassSyntax(SyntaxNode node)
+        {
+            return node is ClassDeclarationSyntax classDeclaration
+                && classDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword));
+        }
+
+        /// <summary>
+        /// Transforms partial classes that inherit from Neatoo base classes but don't have [Factory] attribute.
+        /// </summary>
+        private static SemanticTargetResult GetNonFactoryNeatooClass(GeneratorSyntaxContext context)
+        {
+            var classDeclaration = (ClassDeclarationSyntax)context.Node;
+            var className = classDeclaration.Identifier.Text;
+
+            try
+            {
+                var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration) as INamedTypeSymbol;
+                if (classSymbol == null)
+                {
+                    return SemanticTargetResult.Empty;
+                }
+
+                // Skip if class has [Factory] attribute (handled by pipeline 1)
+                if (HasFactoryAttribute(classSymbol))
+                {
+                    return SemanticTargetResult.Empty;
+                }
+
+                // Check if it inherits from a Neatoo base class
+                if (!ClassOrBaseClassIsNeatooBaseClass(classSymbol))
+                {
+                    return SemanticTargetResult.Empty;
+                }
+
+                return SemanticTargetResult.Success(classDeclaration, context.SemanticModel);
+            }
+            catch (Exception ex)
+            {
+                return SemanticTargetResult.Error(
+                    className,
+                    ex.Message,
+#if DEBUG
+                    ex.StackTrace
+#else
+                    null
+#endif
+                );
+            }
+        }
+
+        /// <summary>
+        /// Checks if the class has the [Factory] attribute.
+        /// </summary>
+        private static bool HasFactoryAttribute(INamedTypeSymbol classSymbol)
+        {
+            return classSymbol.GetAttributes().Any(a =>
+                a.AttributeClass?.ToDisplayString() == "Neatoo.RemoteFactory.FactoryAttribute");
+        }
+
+        /// <summary>
+        /// Generates code for non-factory Neatoo classes (property backing fields and InitializePropertyBackingFields).
+        /// </summary>
+        private static void ExecuteMinimalGeneration(SourceProductionContext context, SemanticTargetResult result)
+        {
+            if (result.IsError)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    GeneratorDiagnostics.SemanticTargetException,
+                    Location.None,
+                    result.ClassName ?? "Unknown",
+                    result.ErrorMessage));
+                return;
+            }
+
+            if (result.IsEmpty || result.ClassDeclaration == null || result.SemanticModel == null)
+            {
+                return;
+            }
+
+            var classDeclarationSyntax = result.ClassDeclaration;
+            var semanticModel = result.SemanticModel;
+
+            try
+            {
+                var classNamedSymbol = semanticModel.GetDeclaredSymbol(classDeclarationSyntax);
+                if (classNamedSymbol == null)
+                {
+                    return;
+                }
+
+                var namespaceName = FindNamespace(classDeclarationSyntax) ?? "MissingNamespace";
+                var targetClassName = classNamedSymbol.Name;
+
+                var partialText = new PartialBaseText()
+                {
+                    ClassDeclarationSyntax = classDeclarationSyntax,
+                    ClassNamedSymbol = classNamedSymbol,
+                    SemanticModel = semanticModel
+                };
+
+                var messages = new List<string>();
+
+                // Process partial properties (generates backing fields and property implementations)
+                AddPartialProperties(partialText);
+
+                // Generate InitializePropertyBackingFields override
+                var initMethod = GenerateInitializePropertyBackingFields(partialText, messages);
+
+                var classDeclaration = GetClassDeclarationText(classDeclarationSyntax);
+
+                var source = $@"
+                #nullable enable
+
+                using Neatoo;
+
+                /*
+                DO NOT MODIFY
+                Generated by Neatoo.BaseGenerator (minimal)
+                */
+
+                namespace {namespaceName}
+                {{
+                    {classDeclaration} {{
+                        {partialText.PropertyBackingFields}
+                        {partialText.PropertyDeclarations}
+{initMethod}
+                    }}
+                }}
+                ";
+
+                source = CSharpSyntaxTree.ParseText(source).GetRoot().NormalizeWhitespace().SyntaxTree.GetText().ToString();
+                context.AddSource($"{namespaceName}.{targetClassName}.Minimal.g.cs", source);
+            }
+            catch (Exception ex)
+            {
+                GeneratorDiagnostics.ReportExceptionWithStackTrace(
+                    context,
+                    GeneratorDiagnostics.GeneratorException,
+                    ex,
+                    classDeclarationSyntax.GetLocation(),
+                    classDeclarationSyntax.Identifier.Text);
+            }
+        }
+
+        /// <summary>
+        /// Gets the class declaration text for the generated partial class.
+        /// </summary>
+        private static string GetClassDeclarationText(ClassDeclarationSyntax classDeclarationSyntax)
+        {
+            var classDeclaration = classDeclarationSyntax.ToFullString().Substring(
+                classDeclarationSyntax.Modifiers.FullSpan.Start - classDeclarationSyntax.FullSpan.Start,
+                classDeclarationSyntax.Identifier.FullSpan.End - classDeclarationSyntax.Modifiers.FullSpan.Start);
+
+            if (classDeclarationSyntax.TypeParameterList != null)
+            {
+                classDeclaration = classDeclarationSyntax.ToFullString().Substring(
+                    classDeclarationSyntax.Modifiers.FullSpan.Start - classDeclarationSyntax.FullSpan.Start,
+                    classDeclarationSyntax.TypeParameterList.FullSpan.End - classDeclarationSyntax.Modifiers.FullSpan.Start);
+            }
+
+            return classDeclaration;
         }
 
         public static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax classDeclarationSyntax
-                    && classDeclarationSyntax.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword))
-                    && classDeclarationSyntax.Members.OfType<PropertyDeclarationSyntax>().Any(p => p.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)));
+                    && classDeclarationSyntax.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword));
 
         internal static SemanticTargetResult GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context)
         {
@@ -141,6 +316,8 @@ namespace Neatoo.BaseGenerator
             public InterfaceDeclarationSyntax? InterfaceDeclarationSyntax { get; set; }
             public string AccessModifier { get; set; } = "public";
             public StringBuilder PropertyDeclarations { get; set; } = new();
+            public StringBuilder PropertyBackingFields { get; set; } = new();
+            public List<(string PropertyName, string PropertyType)> BackingFieldsToInitialize { get; set; } = new();
             public StringBuilder? InterfacePropertyDeclarations { get; set; }
             public StringBuilder MapperMethods { get; set; } = new();
         }
@@ -214,6 +391,9 @@ namespace Neatoo.BaseGenerator
                     // Generate GetRuleId override for stable rule identification
                     var getRuleIdMethod = GenerateGetRuleIdMethod(partialText, messages);
 
+                    // Generate InitializePropertyBackingFields override
+                    var initPropertyBackingFieldsMethod = GenerateInitializePropertyBackingFields(partialText, messages);
+
                     var interfaceSource = "";
 
                     if (partialText.InterfaceDeclarationSyntax != null)
@@ -237,9 +417,11 @@ namespace Neatoo.BaseGenerator
                     {{
                         {interfaceSource}
                         {classDeclaration} {{
+                            {partialText.PropertyBackingFields}
                             {partialText.PropertyDeclarations}
 {partialText.MapperMethods}
 {getRuleIdMethod}
+{initPropertyBackingFieldsMethod}
                         }}
 
                     }}
@@ -311,12 +493,36 @@ namespace Neatoo.BaseGenerator
                 var propertyType = property.Type.ToString();
                 var propertyName = property.Identifier.Text;
 
-                partialBaseText.PropertyDeclarations.AppendLine($"{accessibility} partial {propertyType} {propertyName} {{ get => Getter<{propertyType}>();  set=>Setter(value); }}");
+                // Check if the property has a setter accessor
+                var hasSetter = property.AccessorList?.Accessors
+                    .Any(a => a.IsKind(SyntaxKind.SetAccessorDeclaration) || a.IsKind(SyntaxKind.InitAccessorDeclaration)) ?? false;
+
+                // Generate the backing field as a computed property that fetches from PropertyManager
+                // This ensures the property always reflects the current PropertyManager state,
+                // which is crucial for deserialization where PropertyManager.SetProperties replaces the properties
+                partialBaseText.PropertyBackingFields.AppendLine($"protected IValidateProperty<{propertyType}> {propertyName}Property => (IValidateProperty<{propertyType}>)PropertyManager[nameof({propertyName})]!;");
+
+                // Track for initialization
+                partialBaseText.BackingFieldsToInitialize.Add((propertyName, propertyType));
+
+                // Generate the property implementation using the backing field
+                // The setter must track the task for async rule execution to work properly
+                // Tasks are propagated to parent (if any) to ensure WaitForTasks works across the object graph
+                if (hasSetter)
+                {
+                    partialBaseText.PropertyDeclarations.AppendLine($"{accessibility} partial {propertyType} {propertyName} {{ get => {propertyName}Property.Value; set {{ {propertyName}Property.Value = value; if (!{propertyName}Property.Task.IsCompleted) {{ Parent?.AddChildTask({propertyName}Property.Task); RunningTasks.AddTask({propertyName}Property.Task); }} }} }}");
+                }
+                else
+                {
+                    // Get-only property - no setter generated
+                    partialBaseText.PropertyDeclarations.AppendLine($"{accessibility} partial {propertyType} {propertyName} {{ get => {propertyName}Property.Value; }}");
+                }
 
                 if (partialBaseText.InterfacePropertyDeclarations != null &&
                         !interfaceProperties.Contains(propertyName))
                 {
-                    partialBaseText.InterfacePropertyDeclarations.AppendLine($"{propertyType} {propertyName} {{ get; set; }}");
+                    var interfaceAccessors = hasSetter ? "get; set;" : "get;";
+                    partialBaseText.InterfacePropertyDeclarations.AppendLine($"{propertyType} {propertyName} {{ {interfaceAccessors} }}");
                 }
             }
         }
@@ -511,6 +717,129 @@ namespace Neatoo.BaseGenerator
                 return null;
             }
         }
+
+        #region Property Backing Fields Initialization
+
+        /// <summary>
+        /// Generates the InitializePropertyBackingFields override method.
+        /// </summary>
+        internal static string GenerateInitializePropertyBackingFields(PartialBaseText partialBaseText, List<string> messages)
+        {
+            var backingFields = partialBaseText.BackingFieldsToInitialize;
+            var className = partialBaseText.ClassNamedSymbol.Name;
+
+            // Get the type parameter from the class (e.g., Person from ValidateBase<Person>)
+            var typeParameter = GetNeatooBaseTypeParameter(partialBaseText.ClassNamedSymbol);
+
+            if (typeParameter == null)
+            {
+                messages.Add("Could not determine Neatoo base type parameter, using class name");
+                typeParameter = className;
+            }
+
+            // Determine if the immediate base class is ValidateBase<T> or EntityBase<T>
+            // If so, we don't call base (it's abstract). Otherwise, we call base to initialize inherited properties.
+            var shouldCallBase = !IsDirectlyInheritingNeatooBase(partialBaseText.ClassNamedSymbol);
+            messages.Add($"ShouldCallBase: {shouldCallBase}");
+
+            // For CRTP generic classes (where T : SomeBase<T>), we need to cast 'this' to T
+            // because IPropertyFactory<T>.Create expects T, not the generic class type
+            var needsCastToT = NeedsCastToTypeParameter(partialBaseText.ClassNamedSymbol, typeParameter);
+            var thisRef = needsCastToT ? $"({typeParameter})this" : "this";
+            messages.Add($"NeedsCastToT: {needsCastToT}, thisRef: {thisRef}");
+
+            var sb = new StringBuilder();
+            sb.AppendLine();
+            sb.AppendLine("        /// <summary>");
+            sb.AppendLine("        /// Generated override to initialize property backing fields.");
+            sb.AppendLine("        /// </summary>");
+            sb.AppendLine($"        protected override void InitializePropertyBackingFields(IPropertyFactory<{typeParameter}> factory)");
+            sb.AppendLine("        {");
+
+            if (shouldCallBase)
+            {
+                sb.AppendLine("            // Initialize inherited properties first");
+                sb.AppendLine("            base.InitializePropertyBackingFields(factory);");
+                sb.AppendLine();
+            }
+
+            if (backingFields.Count > 0)
+            {
+                sb.AppendLine("            // Initialize and register this class's properties");
+                sb.AppendLine("            // The backing field properties are computed and fetch from PropertyManager");
+                foreach (var (propertyName, propertyType) in backingFields)
+                {
+                    sb.AppendLine($"            PropertyManager.Register(factory.Create<{propertyType}>({thisRef}, nameof({propertyName})));");
+                    messages.Add($"Generated backing field init: {propertyName}Property");
+                }
+            }
+
+            sb.AppendLine("        }");
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Determines if the generated code needs to cast 'this' to the type parameter.
+        /// This is needed for CRTP-style generic classes where the type parameter is not the class itself.
+        /// </summary>
+        private static bool NeedsCastToTypeParameter(INamedTypeSymbol classSymbol, string typeParameter)
+        {
+            // If the class has type parameters and the type parameter is one of them, we need a cast
+            // e.g., PersonEntityBase<T> where T : PersonEntityBase<T> - typeParameter is "T", need cast
+            // e.g., Person : ValidateBase<Person> - typeParameter is "Person", no cast needed
+            if (classSymbol.TypeParameters.Length > 0)
+            {
+                return classSymbol.TypeParameters.Any(tp => tp.Name == typeParameter);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if the class directly inherits from ValidateBase&lt;T&gt; or EntityBase&lt;T&gt;.
+        /// </summary>
+        private static bool IsDirectlyInheritingNeatooBase(INamedTypeSymbol classSymbol)
+        {
+            var baseType = classSymbol.BaseType;
+            if (baseType == null)
+            {
+                return false;
+            }
+
+            var baseTypeName = baseType.Name;
+            var baseNamespace = baseType.ContainingNamespace?.ToDisplayString();
+
+            return (baseTypeName == "ValidateBase" || baseTypeName == "EntityBase") &&
+                   baseNamespace == "Neatoo";
+        }
+
+        /// <summary>
+        /// Gets the type parameter passed to the Neatoo base class (ValidateBase&lt;T&gt; or EntityBase&lt;T&gt;).
+        /// </summary>
+        private static string? GetNeatooBaseTypeParameter(INamedTypeSymbol classSymbol)
+        {
+            var currentType = classSymbol;
+            while (currentType != null)
+            {
+                if (currentType.BaseType != null)
+                {
+                    var baseTypeName = currentType.BaseType.Name;
+                    if ((baseTypeName == "ValidateBase" || baseTypeName == "EntityBase") &&
+                        currentType.BaseType.ContainingNamespace?.Name == "Neatoo")
+                    {
+                        // Get the type argument passed to ValidateBase<T> or EntityBase<T>
+                        if (currentType.BaseType.TypeArguments.Length > 0)
+                        {
+                            return currentType.BaseType.TypeArguments[0].ToDisplayString();
+                        }
+                    }
+                }
+                currentType = currentType.BaseType;
+            }
+            return null;
+        }
+
+        #endregion
 
         #region Stable Rule ID Generation
 

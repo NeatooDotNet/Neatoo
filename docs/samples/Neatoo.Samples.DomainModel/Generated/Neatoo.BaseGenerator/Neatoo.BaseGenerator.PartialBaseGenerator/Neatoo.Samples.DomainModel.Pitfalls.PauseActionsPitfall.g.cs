@@ -17,7 +17,46 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
 
     internal partial class PauseActionsPitfall
     {
-        public partial string? FirstName { get => Getter<string?>(); set => Setter(value); }
-        public partial string? LastName { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<string?> FirstNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(FirstName)]!;
+        protected IValidateProperty<string?> LastNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(LastName)]!;
+
+        public partial string? FirstName
+        {
+            get => FirstNameProperty.Value;
+            set
+            {
+                FirstNameProperty.Value = value;
+                if (!FirstNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(FirstNameProperty.Task);
+                    RunningTasks.AddTask(FirstNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? LastName
+        {
+            get => LastNameProperty.Value;
+            set
+            {
+                LastNameProperty.Value = value;
+                if (!LastNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(LastNameProperty.Task);
+                    RunningTasks.AddTask(LastNameProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.Pitfalls.PauseActionsPitfall> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(FirstName)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(LastName)));
+        }
     }
 }

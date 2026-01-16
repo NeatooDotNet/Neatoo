@@ -10,15 +10,15 @@ namespace Neatoo.UnitTest.Unit.Rules;
 #region Test Helper Classes
 
 [SuppressFactory]
-public class MaxLengthRuleTestTarget : ValidateBase<MaxLengthRuleTestTarget>
+public partial class MaxLengthRuleTestTarget : ValidateBase<MaxLengthRuleTestTarget>
 {
     public MaxLengthRuleTestTarget() : base(new ValidateBaseServices<MaxLengthRuleTestTarget>())
     {
     }
 
-    public string? StringProperty { get => Getter<string>(); set => Setter(value); }
-    public List<string>? ListProperty { get => Getter<List<string>>(); set => Setter(value); }
-    public string[]? ArrayProperty { get => Getter<string[]>(); set => Setter(value); }
+    public partial string? StringProperty { get; set; }
+    public partial List<string>? ListProperty { get; set; }
+    public partial string[]? ArrayProperty { get; set; }
 }
 
 #endregion

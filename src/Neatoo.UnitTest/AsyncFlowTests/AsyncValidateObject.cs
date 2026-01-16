@@ -111,7 +111,7 @@ internal class AsyncRuleCanWaitNested : AsyncRuleBase<AsyncValidateObject>
 }
 
 [SuppressFactory]
-internal class AsyncValidateObject : ValidateBase<AsyncValidateObject>
+internal partial class AsyncValidateObject : ValidateBase<AsyncValidateObject>
 {
     public AsyncValidateObject(IValidateBaseServices<AsyncValidateObject> services) : base(services)
     {
@@ -127,22 +127,22 @@ internal class AsyncValidateObject : ValidateBase<AsyncValidateObject>
     public SyncRuleA SyncRuleA { get; private set; }
     public NestedSyncRuleB NestedSyncRuleB { get; private set; }
 
-    public string? HasNoRules { get => Getter<string>(); set => Setter(value); }
+    public partial string? HasNoRules { get; set; }
 
-    public string? SyncA { get => Getter<string>(); set => Setter(value); }
+    public partial string? SyncA { get; set; }
 
-    public string? NestedSyncB { get => Getter<string>(); set => Setter(value); }
+    public partial string? NestedSyncB { get; set; }
 
-    public string? AsyncDelayUpdateChildRuleValue { get => Getter<string>(); set => Setter(value); }
+    public partial string? AsyncDelayUpdateChildRuleValue { get; set; }
 
     public IValidateProperty AsyncRuleCanWaitProperty => this[nameof(AsyncRulesCanWait)];
 
-    public string? AsyncRulesCanWait { get => Getter<string>(); set => Setter(value); }
-    public string? AsyncRulesCanWaitNested { get => Getter<string>(); set => Setter(value); }
+    public partial string? AsyncRulesCanWait { get; set; }
+    public partial string? AsyncRulesCanWaitNested { get; set; }
 
-    public int? AsyncDelayRuleValue { get => Getter<int>(); set => Setter(value); }
+    public partial int? AsyncDelayRuleValue { get; set; }
 
-    public AsyncValidateObject Child { get => Getter<AsyncValidateObject>()!; set => Setter(value); }
+    public partial AsyncValidateObject Child { get; set; }
 
     protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {

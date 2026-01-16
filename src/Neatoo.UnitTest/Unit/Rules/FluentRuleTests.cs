@@ -6,22 +6,20 @@ using System.Linq.Expressions;
 
 namespace Neatoo.UnitTest.Unit.Rules;
 
-#region Test Helper Classes
-
 /// <summary>
 /// A simple ValidateBase implementation for testing fluent rules.
 /// Uses real Neatoo infrastructure instead of mocks.
 /// </summary>
-public class TestValidateTarget : ValidateBase<TestValidateTarget>
+public partial class TestValidateTarget : ValidateBase<TestValidateTarget>
 {
     public TestValidateTarget(IValidateBaseServices<TestValidateTarget> services) : base(services)
     {
     }
 
-    public string? Name { get => Getter<string?>(); set => Setter(value); }
-    public string? Description { get => Getter<string?>(); set => Setter(value); }
-    public int Value { get => Getter<int>(); set => Setter(value); }
-    public int Count { get => Getter<int>(); set => Setter(value); }
+    public partial string? Name { get; set; }
+    public partial string? Description { get; set; }
+    public partial int Value { get; set; }
+    public partial int Count { get; set; }
 }
 
 /// <summary>
@@ -56,8 +54,6 @@ public static class TestTargetFactory
         return scope.ServiceProvider.GetRequiredService<TestValidateTarget>();
     }
 }
-
-#endregion
 
 #region ActionFluentRule Tests
 

@@ -12,11 +12,81 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests
 {
     public partial class EntityObject
     {
-        public partial Guid ID { get => Getter<Guid>(); set => Setter(value); }
-        public partial string Name { get => Getter<string>(); set => Setter(value); }
-        public partial IEntityObject Child { get => Getter<IEntityObject>(); set => Setter(value); }
-        public partial IEntityObjectList ChildList { get => Getter<IEntityObjectList>(); set => Setter(value); }
-        public partial int? Required { get => Getter<int?>(); set => Setter(value); }
+        protected IValidateProperty<Guid> IDProperty => (IValidateProperty<Guid>)PropertyManager[nameof(ID)]!;
+        protected IValidateProperty<string> NameProperty => (IValidateProperty<string>)PropertyManager[nameof(Name)]!;
+        protected IValidateProperty<IEntityObject> ChildProperty => (IValidateProperty<IEntityObject>)PropertyManager[nameof(Child)]!;
+        protected IValidateProperty<IEntityObjectList> ChildListProperty => (IValidateProperty<IEntityObjectList>)PropertyManager[nameof(ChildList)]!;
+        protected IValidateProperty<int?> RequiredProperty => (IValidateProperty<int?>)PropertyManager[nameof(Required)]!;
+
+        public partial Guid ID
+        {
+            get => IDProperty.Value;
+            set
+            {
+                IDProperty.Value = value;
+                if (!IDProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IDProperty.Task);
+                    RunningTasks.AddTask(IDProperty.Task);
+                }
+            }
+        }
+
+        public partial string Name
+        {
+            get => NameProperty.Value;
+            set
+            {
+                NameProperty.Value = value;
+                if (!NameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NameProperty.Task);
+                    RunningTasks.AddTask(NameProperty.Task);
+                }
+            }
+        }
+
+        public partial IEntityObject Child
+        {
+            get => ChildProperty.Value;
+            set
+            {
+                ChildProperty.Value = value;
+                if (!ChildProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ChildProperty.Task);
+                    RunningTasks.AddTask(ChildProperty.Task);
+                }
+            }
+        }
+
+        public partial IEntityObjectList ChildList
+        {
+            get => ChildListProperty.Value;
+            set
+            {
+                ChildListProperty.Value = value;
+                if (!ChildListProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ChildListProperty.Task);
+                    RunningTasks.AddTask(ChildListProperty.Task);
+                }
+            }
+        }
+
+        public partial int? Required
+        {
+            get => RequiredProperty.Value;
+            set
+            {
+                RequiredProperty.Value = value;
+                if (!RequiredProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(RequiredProperty.Task);
+                    RunningTasks.AddTask(RequiredProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -29,6 +99,20 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests
                 @"RequiredAttribute_Required" => 1u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests.EntityObject> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<Guid>(this, nameof(ID)));
+            PropertyManager.Register(factory.Create<string>(this, nameof(Name)));
+            PropertyManager.Register(factory.Create<IEntityObject>(this, nameof(Child)));
+            PropertyManager.Register(factory.Create<IEntityObjectList>(this, nameof(ChildList)));
+            PropertyManager.Register(factory.Create<int?>(this, nameof(Required)));
         }
     }
 }

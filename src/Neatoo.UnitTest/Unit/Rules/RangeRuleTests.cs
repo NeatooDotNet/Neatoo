@@ -10,17 +10,17 @@ namespace Neatoo.UnitTest.Unit.Rules;
 #region Test Helper Classes
 
 [SuppressFactory]
-public class RangeRuleTestTarget : ValidateBase<RangeRuleTestTarget>
+public partial class RangeRuleTestTarget : ValidateBase<RangeRuleTestTarget>
 {
     public RangeRuleTestTarget() : base(new ValidateBaseServices<RangeRuleTestTarget>())
     {
     }
 
-    public int IntProperty { get => Getter<int>(); set => Setter(value); }
-    public int? NullableIntProperty { get => Getter<int?>(); set => Setter(value); }
-    public double DoubleProperty { get => Getter<double>(); set => Setter(value); }
-    public decimal DecimalProperty { get => Getter<decimal>(); set => Setter(value); }
-    public DateTime DateTimeProperty { get => Getter<DateTime>(); set => Setter(value); }
+    public partial int IntProperty { get; set; }
+    public partial int? NullableIntProperty { get; set; }
+    public partial double DoubleProperty { get; set; }
+    public partial decimal DecimalProperty { get; set; }
+    public partial DateTime DateTimeProperty { get; set; }
 }
 
 #endregion

@@ -11,7 +11,7 @@ public abstract partial class PersonValidateBase<T> : ValidateBase<T>, IPersonBa
     {
     }
 
-    public Guid Id { get { return Getter<Guid>(); } }
+    public partial Guid Id { get; }
 
     public partial string FirstName { get; set; }
 

@@ -15,10 +15,66 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
 
     internal partial class UpdatableRecord
     {
-        public partial int Id { get => Getter<int>(); set => Setter(value); }
-        public partial string? Title { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Content { get => Getter<string?>(); set => Setter(value); }
-        public partial DateTime? LastModified { get => Getter<DateTime?>(); set => Setter(value); }
+        protected IValidateProperty<int> IdProperty => (IValidateProperty<int>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> TitleProperty => (IValidateProperty<string?>)PropertyManager[nameof(Title)]!;
+        protected IValidateProperty<string?> ContentProperty => (IValidateProperty<string?>)PropertyManager[nameof(Content)]!;
+        protected IValidateProperty<DateTime?> LastModifiedProperty => (IValidateProperty<DateTime?>)PropertyManager[nameof(LastModified)]!;
+
+        public partial int Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Title
+        {
+            get => TitleProperty.Value;
+            set
+            {
+                TitleProperty.Value = value;
+                if (!TitleProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(TitleProperty.Task);
+                    RunningTasks.AddTask(TitleProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Content
+        {
+            get => ContentProperty.Value;
+            set
+            {
+                ContentProperty.Value = value;
+                if (!ContentProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ContentProperty.Task);
+                    RunningTasks.AddTask(ContentProperty.Task);
+                }
+            }
+        }
+
+        public partial DateTime? LastModified
+        {
+            get => LastModifiedProperty.Value;
+            set
+            {
+                LastModifiedProperty.Value = value;
+                if (!LastModifiedProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(LastModifiedProperty.Task);
+                    RunningTasks.AddTask(LastModifiedProperty.Task);
+                }
+            }
+        }
 
         // MapModifiedTo is source-generated - only updates IsModified properties
         public partial void MapModifiedTo(RecordEntity entity)
@@ -42,6 +98,19 @@ namespace Neatoo.Samples.DomainModel.MapperMethods
             {
                 entity.LastModified = this.LastModified;
             }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.MapperMethods.UpdatableRecord> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<int>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Title)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Content)));
+            PropertyManager.Register(factory.Create<DateTime?>(this, nameof(LastModified)));
         }
     }
 }

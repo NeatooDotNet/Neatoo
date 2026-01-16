@@ -16,8 +16,62 @@ namespace Neatoo.Samples.DomainModel.BestPractices
 
     internal partial class BpVisit
     {
-        public partial Guid? Id { get => Getter<Guid?>(); set => Setter(value); }
-        public partial string? Status { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Notes { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<Guid?> IdProperty => (IValidateProperty<Guid?>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> StatusProperty => (IValidateProperty<string?>)PropertyManager[nameof(Status)]!;
+        protected IValidateProperty<string?> NotesProperty => (IValidateProperty<string?>)PropertyManager[nameof(Notes)]!;
+
+        public partial Guid? Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Status
+        {
+            get => StatusProperty.Value;
+            set
+            {
+                StatusProperty.Value = value;
+                if (!StatusProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(StatusProperty.Task);
+                    RunningTasks.AddTask(StatusProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Notes
+        {
+            get => NotesProperty.Value;
+            set
+            {
+                NotesProperty.Value = value;
+                if (!NotesProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NotesProperty.Task);
+                    RunningTasks.AddTask(NotesProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.BestPractices.BpVisit> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<Guid?>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Status)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Notes)));
+        }
     }
 }

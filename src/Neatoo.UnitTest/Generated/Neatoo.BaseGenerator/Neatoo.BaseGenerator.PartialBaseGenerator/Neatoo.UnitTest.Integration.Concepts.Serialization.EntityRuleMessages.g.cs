@@ -17,8 +17,36 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization
 {
     public partial class EntityRuleMessages
     {
-        public partial int Id { get => Getter<int>(); set => Setter(value); }
-        public partial int? Required { get => Getter<int?>(); set => Setter(value); }
+        protected IValidateProperty<int> IdProperty => (IValidateProperty<int>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<int?> RequiredProperty => (IValidateProperty<int?>)PropertyManager[nameof(Required)]!;
+
+        public partial int Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial int? Required
+        {
+            get => RequiredProperty.Value;
+            set
+            {
+                RequiredProperty.Value = value;
+                if (!RequiredProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(RequiredProperty.Task);
+                    RunningTasks.AddTask(RequiredProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -34,6 +62,17 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization
                 @"RequiredAttribute_Required" => 4u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.UnitTest.Integration.Concepts.Serialization.EntityRuleMessages> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<int>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<int?>(this, nameof(Required)));
         }
     }
 }

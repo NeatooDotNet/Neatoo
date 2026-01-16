@@ -17,7 +17,21 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
 
     internal partial class RequiredWhitespacePitfall
     {
-        public partial string? Name { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<string?> NameProperty => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+
+        public partial string? Name
+        {
+            get => NameProperty.Value;
+            set
+            {
+                NameProperty.Value = value;
+                if (!NameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NameProperty.Task);
+                    RunningTasks.AddTask(NameProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -30,6 +44,16 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
                 @"RequiredAttribute_Name" => 1u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.Pitfalls.RequiredWhitespacePitfall> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
         }
     }
 }

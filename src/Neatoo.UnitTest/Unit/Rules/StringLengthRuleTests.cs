@@ -10,13 +10,13 @@ namespace Neatoo.UnitTest.Unit.Rules;
 #region Test Helper Classes
 
 [SuppressFactory]
-public class StringLengthRuleTestTarget : ValidateBase<StringLengthRuleTestTarget>
+public partial class StringLengthRuleTestTarget : ValidateBase<StringLengthRuleTestTarget>
 {
     public StringLengthRuleTestTarget() : base(new ValidateBaseServices<StringLengthRuleTestTarget>())
     {
     }
 
-    public string? StringProperty { get => Getter<string>(); set => Setter(value); }
+    public partial string? StringProperty { get; set; }
 }
 
 #endregion

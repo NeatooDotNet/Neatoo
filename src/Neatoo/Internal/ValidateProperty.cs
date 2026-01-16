@@ -16,6 +16,13 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
     private readonly object _isMarkedBusyLock = new object();
     private readonly List<long> _isMarkedBusy = new List<long>();
 
+    // Lazy loading fields
+    private readonly object _lazyLoadLock = new object();
+    private Func<Task<T?>>? _onLoad;
+    private Task<T?>? _loadTask;
+    private bool _isLoaded = true; // Default true for non-lazy properties
+    private const uint LazyLoadRuleId = 0xFFFFFFFF; // Reserved rule ID for lazy load failures
+
     public ValidateProperty(IPropertyInfo propertyInfo)
     {
         this.Name = propertyInfo.Name;
@@ -33,13 +40,146 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
     public string Name { get; }
 
+    /// <summary>
+    /// Gets or sets the lazy load handler for this property.
+    /// </summary>
+    [JsonIgnore]
+    public Func<Task<T?>>? OnLoad
+    {
+        get => this._onLoad;
+        set
+        {
+            this._onLoad = value;
+            // When OnLoad is configured, mark as not loaded until first access
+            if (value != null && this._value == null)
+            {
+                this._isLoaded = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the property value has been loaded.
+    /// </summary>
+    [JsonIgnore]
+    public bool IsLoaded => this._isLoaded;
+
+    /// <summary>
+    /// Gets the task representing a pending lazy load operation.
+    /// </summary>
+    [JsonIgnore]
+    public Task? LoadTask => this._loadTask;
+
     public virtual T? Value
     {
-        get => this._value;
+        get
+        {
+            // Fire-and-forget lazy loading: trigger load if not loaded and OnLoad is configured
+            // Use lock to prevent multiple concurrent load triggers
+            if (!this._isLoaded && this._onLoad != null && this._loadTask == null)
+            {
+                lock (this._lazyLoadLock)
+                {
+                    // Double-check inside lock
+                    if (!this._isLoaded && this._onLoad != null && this._loadTask == null)
+                    {
+                        _ = this.TriggerLazyLoadAsync();
+                    }
+                }
+            }
+            return this._value;
+        }
         set
         {
             this.SetValue(value);
         }
+    }
+
+    /// <summary>
+    /// Triggers lazy loading asynchronously (fire-and-forget from getter).
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Lazy loading can fail for various reasons (network, database, etc.). All failures are captured as broken rules.")]
+    private async Task TriggerLazyLoadAsync()
+    {
+        if (this._onLoad == null || this._loadTask != null)
+        {
+            return;
+        }
+
+        try
+        {
+            // Clear any previous load failure messages
+            this.ClearLazyLoadError();
+
+            this._loadTask = this._onLoad();
+            this.OnPropertyChanged(nameof(LoadTask));
+            this.OnPropertyChanged(nameof(IsBusy));
+
+            var loadedValue = await this._loadTask;
+
+            // Set the value (this will trigger PropertyChanged and rules)
+            this._isLoaded = true;
+            this.OnPropertyChanged(nameof(IsLoaded));
+
+            // Use SetPrivateValue to properly handle value assignment
+            await this.SetPrivateValue(loadedValue);
+        }
+        catch (Exception ex)
+        {
+            // Load failed - add a broken rule
+            this._isLoaded = true; // Mark as "loaded" (attempted) to prevent retry loops
+            this.OnPropertyChanged(nameof(IsLoaded));
+            this.SetLazyLoadError($"Failed to load: {ex.Message}");
+        }
+        finally
+        {
+            this._loadTask = null;
+            this.OnPropertyChanged(nameof(LoadTask));
+            this.OnPropertyChanged(nameof(IsBusy));
+        }
+    }
+
+    /// <summary>
+    /// Explicitly triggers lazy loading and returns the loaded value.
+    /// </summary>
+    public async Task<T?> LoadAsync()
+    {
+        if (this._isLoaded)
+        {
+            return this._value;
+        }
+
+        if (this._onLoad == null)
+        {
+            this._isLoaded = true;
+            return this._value;
+        }
+
+        // If load is already in progress, await it
+        if (this._loadTask != null)
+        {
+            return await this._loadTask;
+        }
+
+        await this.TriggerLazyLoadAsync();
+        return this._value;
+    }
+
+    /// <summary>
+    /// Explicit interface implementation for non-generic LoadAsync.
+    /// </summary>
+    Task IValidateProperty.LoadAsync() => this.LoadAsync();
+
+    private void SetLazyLoadError(string message)
+    {
+        var ruleMessage = new RuleMessage(this.Name, message) { RuleId = LazyLoadRuleId };
+        this.SetMessagesForRule(new[] { ruleMessage });
+    }
+
+    private void ClearLazyLoadError()
+    {
+        this.RuleMessages.RemoveAll(rm => rm.RuleId == LazyLoadRuleId);
     }
 
     object? IValidateProperty.Value { get => this.Value; set => this.SetValue(value); }
@@ -61,13 +201,31 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
         {
             lock (this._isMarkedBusyLock)
             {
-                return this.ValueAsBase?.IsBusy ?? false || this.IsSelfBusy || this._isMarkedBusy.Count > 0;
+                return this.ValueAsBase?.IsBusy ?? false
+                    || this.IsSelfBusy
+                    || this._isMarkedBusy.Count > 0
+                    || this._loadTask != null; // Include pending lazy load
             }
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Load errors are captured as broken rules; we just need to wait for completion here.")]
     public async Task WaitForTasks()
     {
+        // Wait for any pending lazy load
+        if (this._loadTask != null)
+        {
+            try
+            {
+                await this._loadTask;
+            }
+            catch
+            {
+                // Load errors are captured as broken rules, don't throw here
+            }
+        }
+
         await (this.ValueAsBase?.WaitForTasks() ?? Task.CompletedTask);
     }
 

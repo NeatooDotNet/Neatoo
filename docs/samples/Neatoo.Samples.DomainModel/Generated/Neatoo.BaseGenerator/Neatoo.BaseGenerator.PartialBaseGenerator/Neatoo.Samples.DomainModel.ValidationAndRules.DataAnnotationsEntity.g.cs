@@ -16,29 +16,351 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules
 
     internal partial class DataAnnotationsEntity
     {
-        public partial Guid? Id { get => Getter<Guid?>(); set => Setter(value); }
-        public partial string? FirstName { get => Getter<string?>(); set => Setter(value); }
-        public partial string? CustomerName { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Description { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Username { get => Getter<string?>(); set => Setter(value); }
-        public partial string? NameWithLength { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Code { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Notes { get => Getter<string?>(); set => Setter(value); }
-        public partial List<string>? Tags { get => Getter<List<string>?>(); set => Setter(value); }
-        public partial string[]? Categories { get => Getter<string[]?>(); set => Setter(value); }
-        public partial int Quantity { get => Getter<int>(); set => Setter(value); }
-        public partial double Percentage { get => Getter<double>(); set => Setter(value); }
-        public partial decimal Price { get => Getter<decimal>(); set => Setter(value); }
-        public partial DateTime AppointmentDate { get => Getter<DateTime>(); set => Setter(value); }
-        public partial int Age { get => Getter<int>(); set => Setter(value); }
-        public partial string? ProductCode { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Phone { get => Getter<string?>(); set => Setter(value); }
-        public partial string? UsernameAlphanumeric { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Email { get => Getter<string?>(); set => Setter(value); }
-        public partial string? ContactEmail { get => Getter<string?>(); set => Setter(value); }
-        public partial string? CombinedEmail { get => Getter<string?>(); set => Setter(value); }
-        public partial int CombinedQuantity { get => Getter<int>(); set => Setter(value); }
-        public partial string? FullName { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<Guid?> IdProperty => (IValidateProperty<Guid?>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> FirstNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(FirstName)]!;
+        protected IValidateProperty<string?> CustomerNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(CustomerName)]!;
+        protected IValidateProperty<string?> DescriptionProperty => (IValidateProperty<string?>)PropertyManager[nameof(Description)]!;
+        protected IValidateProperty<string?> UsernameProperty => (IValidateProperty<string?>)PropertyManager[nameof(Username)]!;
+        protected IValidateProperty<string?> NameWithLengthProperty => (IValidateProperty<string?>)PropertyManager[nameof(NameWithLength)]!;
+        protected IValidateProperty<string?> CodeProperty => (IValidateProperty<string?>)PropertyManager[nameof(Code)]!;
+        protected IValidateProperty<string?> NotesProperty => (IValidateProperty<string?>)PropertyManager[nameof(Notes)]!;
+        protected IValidateProperty<List<string>?> TagsProperty => (IValidateProperty<List<string>?>)PropertyManager[nameof(Tags)]!;
+        protected IValidateProperty<string[]?> CategoriesProperty => (IValidateProperty<string[]?>)PropertyManager[nameof(Categories)]!;
+        protected IValidateProperty<int> QuantityProperty => (IValidateProperty<int>)PropertyManager[nameof(Quantity)]!;
+        protected IValidateProperty<double> PercentageProperty => (IValidateProperty<double>)PropertyManager[nameof(Percentage)]!;
+        protected IValidateProperty<decimal> PriceProperty => (IValidateProperty<decimal>)PropertyManager[nameof(Price)]!;
+        protected IValidateProperty<DateTime> AppointmentDateProperty => (IValidateProperty<DateTime>)PropertyManager[nameof(AppointmentDate)]!;
+        protected IValidateProperty<int> AgeProperty => (IValidateProperty<int>)PropertyManager[nameof(Age)]!;
+        protected IValidateProperty<string?> ProductCodeProperty => (IValidateProperty<string?>)PropertyManager[nameof(ProductCode)]!;
+        protected IValidateProperty<string?> PhoneProperty => (IValidateProperty<string?>)PropertyManager[nameof(Phone)]!;
+        protected IValidateProperty<string?> UsernameAlphanumericProperty => (IValidateProperty<string?>)PropertyManager[nameof(UsernameAlphanumeric)]!;
+        protected IValidateProperty<string?> EmailProperty => (IValidateProperty<string?>)PropertyManager[nameof(Email)]!;
+        protected IValidateProperty<string?> ContactEmailProperty => (IValidateProperty<string?>)PropertyManager[nameof(ContactEmail)]!;
+        protected IValidateProperty<string?> CombinedEmailProperty => (IValidateProperty<string?>)PropertyManager[nameof(CombinedEmail)]!;
+        protected IValidateProperty<int> CombinedQuantityProperty => (IValidateProperty<int>)PropertyManager[nameof(CombinedQuantity)]!;
+        protected IValidateProperty<string?> FullNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(FullName)]!;
+
+        public partial Guid? Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? FirstName
+        {
+            get => FirstNameProperty.Value;
+            set
+            {
+                FirstNameProperty.Value = value;
+                if (!FirstNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(FirstNameProperty.Task);
+                    RunningTasks.AddTask(FirstNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? CustomerName
+        {
+            get => CustomerNameProperty.Value;
+            set
+            {
+                CustomerNameProperty.Value = value;
+                if (!CustomerNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(CustomerNameProperty.Task);
+                    RunningTasks.AddTask(CustomerNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Description
+        {
+            get => DescriptionProperty.Value;
+            set
+            {
+                DescriptionProperty.Value = value;
+                if (!DescriptionProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(DescriptionProperty.Task);
+                    RunningTasks.AddTask(DescriptionProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Username
+        {
+            get => UsernameProperty.Value;
+            set
+            {
+                UsernameProperty.Value = value;
+                if (!UsernameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(UsernameProperty.Task);
+                    RunningTasks.AddTask(UsernameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? NameWithLength
+        {
+            get => NameWithLengthProperty.Value;
+            set
+            {
+                NameWithLengthProperty.Value = value;
+                if (!NameWithLengthProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NameWithLengthProperty.Task);
+                    RunningTasks.AddTask(NameWithLengthProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Code
+        {
+            get => CodeProperty.Value;
+            set
+            {
+                CodeProperty.Value = value;
+                if (!CodeProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(CodeProperty.Task);
+                    RunningTasks.AddTask(CodeProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Notes
+        {
+            get => NotesProperty.Value;
+            set
+            {
+                NotesProperty.Value = value;
+                if (!NotesProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NotesProperty.Task);
+                    RunningTasks.AddTask(NotesProperty.Task);
+                }
+            }
+        }
+
+        public partial List<string>? Tags
+        {
+            get => TagsProperty.Value;
+            set
+            {
+                TagsProperty.Value = value;
+                if (!TagsProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(TagsProperty.Task);
+                    RunningTasks.AddTask(TagsProperty.Task);
+                }
+            }
+        }
+
+        public partial string[]? Categories
+        {
+            get => CategoriesProperty.Value;
+            set
+            {
+                CategoriesProperty.Value = value;
+                if (!CategoriesProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(CategoriesProperty.Task);
+                    RunningTasks.AddTask(CategoriesProperty.Task);
+                }
+            }
+        }
+
+        public partial int Quantity
+        {
+            get => QuantityProperty.Value;
+            set
+            {
+                QuantityProperty.Value = value;
+                if (!QuantityProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(QuantityProperty.Task);
+                    RunningTasks.AddTask(QuantityProperty.Task);
+                }
+            }
+        }
+
+        public partial double Percentage
+        {
+            get => PercentageProperty.Value;
+            set
+            {
+                PercentageProperty.Value = value;
+                if (!PercentageProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(PercentageProperty.Task);
+                    RunningTasks.AddTask(PercentageProperty.Task);
+                }
+            }
+        }
+
+        public partial decimal Price
+        {
+            get => PriceProperty.Value;
+            set
+            {
+                PriceProperty.Value = value;
+                if (!PriceProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(PriceProperty.Task);
+                    RunningTasks.AddTask(PriceProperty.Task);
+                }
+            }
+        }
+
+        public partial DateTime AppointmentDate
+        {
+            get => AppointmentDateProperty.Value;
+            set
+            {
+                AppointmentDateProperty.Value = value;
+                if (!AppointmentDateProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(AppointmentDateProperty.Task);
+                    RunningTasks.AddTask(AppointmentDateProperty.Task);
+                }
+            }
+        }
+
+        public partial int Age
+        {
+            get => AgeProperty.Value;
+            set
+            {
+                AgeProperty.Value = value;
+                if (!AgeProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(AgeProperty.Task);
+                    RunningTasks.AddTask(AgeProperty.Task);
+                }
+            }
+        }
+
+        public partial string? ProductCode
+        {
+            get => ProductCodeProperty.Value;
+            set
+            {
+                ProductCodeProperty.Value = value;
+                if (!ProductCodeProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ProductCodeProperty.Task);
+                    RunningTasks.AddTask(ProductCodeProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Phone
+        {
+            get => PhoneProperty.Value;
+            set
+            {
+                PhoneProperty.Value = value;
+                if (!PhoneProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(PhoneProperty.Task);
+                    RunningTasks.AddTask(PhoneProperty.Task);
+                }
+            }
+        }
+
+        public partial string? UsernameAlphanumeric
+        {
+            get => UsernameAlphanumericProperty.Value;
+            set
+            {
+                UsernameAlphanumericProperty.Value = value;
+                if (!UsernameAlphanumericProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(UsernameAlphanumericProperty.Task);
+                    RunningTasks.AddTask(UsernameAlphanumericProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Email
+        {
+            get => EmailProperty.Value;
+            set
+            {
+                EmailProperty.Value = value;
+                if (!EmailProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(EmailProperty.Task);
+                    RunningTasks.AddTask(EmailProperty.Task);
+                }
+            }
+        }
+
+        public partial string? ContactEmail
+        {
+            get => ContactEmailProperty.Value;
+            set
+            {
+                ContactEmailProperty.Value = value;
+                if (!ContactEmailProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ContactEmailProperty.Task);
+                    RunningTasks.AddTask(ContactEmailProperty.Task);
+                }
+            }
+        }
+
+        public partial string? CombinedEmail
+        {
+            get => CombinedEmailProperty.Value;
+            set
+            {
+                CombinedEmailProperty.Value = value;
+                if (!CombinedEmailProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(CombinedEmailProperty.Task);
+                    RunningTasks.AddTask(CombinedEmailProperty.Task);
+                }
+            }
+        }
+
+        public partial int CombinedQuantity
+        {
+            get => CombinedQuantityProperty.Value;
+            set
+            {
+                CombinedQuantityProperty.Value = value;
+                if (!CombinedQuantityProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(CombinedQuantityProperty.Task);
+                    RunningTasks.AddTask(CombinedQuantityProperty.Task);
+                }
+            }
+        }
+
+        public partial string? FullName
+        {
+            get => FullNameProperty.Value;
+            set
+            {
+                FullNameProperty.Value = value;
+                if (!FullNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(FullNameProperty.Task);
+                    RunningTasks.AddTask(FullNameProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -76,6 +398,38 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules
                 @"StringLengthAttribute_Username" => 26u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.ValidationAndRules.DataAnnotationsEntity> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<Guid?>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(FirstName)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(CustomerName)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Description)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Username)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(NameWithLength)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Code)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Notes)));
+            PropertyManager.Register(factory.Create<List<string>?>(this, nameof(Tags)));
+            PropertyManager.Register(factory.Create<string[]?>(this, nameof(Categories)));
+            PropertyManager.Register(factory.Create<int>(this, nameof(Quantity)));
+            PropertyManager.Register(factory.Create<double>(this, nameof(Percentage)));
+            PropertyManager.Register(factory.Create<decimal>(this, nameof(Price)));
+            PropertyManager.Register(factory.Create<DateTime>(this, nameof(AppointmentDate)));
+            PropertyManager.Register(factory.Create<int>(this, nameof(Age)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(ProductCode)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Phone)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(UsernameAlphanumeric)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Email)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(ContactEmail)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(CombinedEmail)));
+            PropertyManager.Register(factory.Create<int>(this, nameof(CombinedQuantity)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(FullName)));
         }
     }
 }

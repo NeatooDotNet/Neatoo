@@ -14,7 +14,7 @@ namespace Neatoo.UnitTest.Unit.Rules;
 /// Uses SuppressFactory to avoid requiring the full factory infrastructure.
 /// </summary>
 [SuppressFactory]
-public class AllRequiredRulesTestTarget : ValidateBase<AllRequiredRulesTestTarget>
+public partial class AllRequiredRulesTestTarget : ValidateBase<AllRequiredRulesTestTarget>
 {
     public AllRequiredRulesTestTarget() : base(new ValidateBaseServices<AllRequiredRulesTestTarget>())
     {
@@ -24,24 +24,24 @@ public class AllRequiredRulesTestTarget : ValidateBase<AllRequiredRulesTestTarge
     }
 
     [Required]
-    public string? RequiredString { get => Getter<string>(); set => Setter(value); }
+    public partial string? RequiredString { get; set; }
 
     [Required]
-    public int RequiredInt { get => Getter<int>(); set => Setter(value); }
+    public partial int RequiredInt { get; set; }
 
     [Required]
-    public object? RequiredObject { get => Getter<object>(); set => Setter(value); }
+    public partial object? RequiredObject { get; set; }
 
-    public string? OptionalString { get => Getter<string>(); set => Setter(value); }
+    public partial string? OptionalString { get; set; }
 
-    public int OptionalInt { get => Getter<int>(); set => Setter(value); }
+    public partial int OptionalInt { get; set; }
 }
 
 /// <summary>
 /// A ValidateBase implementation with no required properties.
 /// </summary>
 [SuppressFactory]
-public class NoRequiredPropertiesTarget : ValidateBase<NoRequiredPropertiesTarget>
+public partial class NoRequiredPropertiesTarget : ValidateBase<NoRequiredPropertiesTarget>
 {
     public NoRequiredPropertiesTarget() : base(new ValidateBaseServices<NoRequiredPropertiesTarget>())
     {
@@ -50,16 +50,16 @@ public class NoRequiredPropertiesTarget : ValidateBase<NoRequiredPropertiesTarge
         RuleManager.AddRule(allRequiredRulesExecuted);
     }
 
-    public string? OptionalString { get => Getter<string>(); set => Setter(value); }
+    public partial string? OptionalString { get; set; }
 
-    public int OptionalInt { get => Getter<int>(); set => Setter(value); }
+    public partial int OptionalInt { get; set; }
 }
 
 /// <summary>
 /// A ValidateBase implementation with a single required property.
 /// </summary>
 [SuppressFactory]
-public class SingleRequiredPropertyTarget : ValidateBase<SingleRequiredPropertyTarget>
+public partial class SingleRequiredPropertyTarget : ValidateBase<SingleRequiredPropertyTarget>
 {
     public SingleRequiredPropertyTarget() : base(new ValidateBaseServices<SingleRequiredPropertyTarget>())
     {
@@ -69,16 +69,16 @@ public class SingleRequiredPropertyTarget : ValidateBase<SingleRequiredPropertyT
     }
 
     [Required]
-    public string? RequiredName { get => Getter<string>(); set => Setter(value); }
+    public partial string? RequiredName { get; set; }
 
-    public string? OptionalDescription { get => Getter<string>(); set => Setter(value); }
+    public partial string? OptionalDescription { get; set; }
 }
 
 /// <summary>
 /// A ValidateBase implementation without AllRequiredRulesExecuted for comparison testing.
 /// </summary>
 [SuppressFactory]
-public class TargetWithoutAllRequiredRulesExecuted : ValidateBase<TargetWithoutAllRequiredRulesExecuted>
+public partial class TargetWithoutAllRequiredRulesExecuted : ValidateBase<TargetWithoutAllRequiredRulesExecuted>
 {
     public TargetWithoutAllRequiredRulesExecuted() : base(new ValidateBaseServices<TargetWithoutAllRequiredRulesExecuted>())
     {
@@ -87,7 +87,7 @@ public class TargetWithoutAllRequiredRulesExecuted : ValidateBase<TargetWithoutA
     }
 
     [Required]
-    public string? RequiredString { get => Getter<string>(); set => Setter(value); }
+    public partial string? RequiredString { get; set; }
 }
 
 #endregion

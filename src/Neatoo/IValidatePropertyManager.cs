@@ -61,6 +61,24 @@ public interface IValidatePropertyManager<out P> : INotifyNeatooPropertyChanged,
     void SetProperties(IEnumerable<IValidateProperty> properties);
 
     /// <summary>
+    /// Registers a property with the property manager.
+    /// </summary>
+    /// <param name="property">The property to register.</param>
+    /// <remarks>
+    /// <para>
+    /// This method is called by generated code to register property backing fields
+    /// created via <see cref="IPropertyFactory{TOwner}"/>. Registration enables:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>Name-based property lookup via indexer</description></item>
+    /// <item><description>Property enumeration for serialization</description></item>
+    /// <item><description>Aggregate state tracking (IsBusy, IsValid)</description></item>
+    /// <item><description>Property change event propagation</description></item>
+    /// </list>
+    /// </remarks>
+    void Register(IValidateProperty property);
+
+    /// <summary>
     /// Gets a value indicating whether all properties are valid, without considering child objects.
     /// </summary>
     /// <value><c>true</c> if all properties are valid; otherwise, <c>false</c>.</value>

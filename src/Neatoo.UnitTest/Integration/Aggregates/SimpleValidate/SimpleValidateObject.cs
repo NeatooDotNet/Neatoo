@@ -1,7 +1,7 @@
 namespace Neatoo.UnitTest.Integration.Aggregates.SimpleValidate;
 
 
-public class SimpleValidateObject : ValidateBase<SimpleValidateObject>, ISimpleValidateObject
+public partial class SimpleValidateObject : ValidateBase<SimpleValidateObject>, ISimpleValidateObject
 {
     public SimpleValidateObject(IValidateBaseServices<SimpleValidateObject> services,
                                 IShortNameRule shortNameRule) : base(services)
@@ -9,13 +9,13 @@ public class SimpleValidateObject : ValidateBase<SimpleValidateObject>, ISimpleV
         RuleManager.AddRule(shortNameRule);
     }
 
-    public Guid Id { get { return Getter<Guid>(); } }
+    public partial Guid Id { get; }
 
-    public string FirstName { get { return Getter<string>(); } set { Setter(value); } }
+    public partial string FirstName { get; set; }
 
-    public string LastName { get { return Getter<string>(); } set { Setter(value); } }
+    public partial string LastName { get; set; }
 
-    public string ShortName { get { return Getter<string>(); } set { Setter(value); } }
+    public partial string ShortName { get; set; }
 
     public new IValidateProperty this[string propertyName] { get => GetProperty(propertyName); }
 }

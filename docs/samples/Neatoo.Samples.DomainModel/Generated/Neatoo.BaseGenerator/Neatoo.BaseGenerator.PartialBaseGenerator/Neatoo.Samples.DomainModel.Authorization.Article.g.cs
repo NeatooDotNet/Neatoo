@@ -16,6 +16,30 @@ namespace Neatoo.Samples.DomainModel.Authorization
 
     internal partial class Article
     {
-        public partial string? Title { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<string?> TitleProperty => (IValidateProperty<string?>)PropertyManager[nameof(Title)]!;
+
+        public partial string? Title
+        {
+            get => TitleProperty.Value;
+            set
+            {
+                TitleProperty.Value = value;
+                if (!TitleProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(TitleProperty.Task);
+                    RunningTasks.AddTask(TitleProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.Authorization.Article> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Title)));
+        }
     }
 }

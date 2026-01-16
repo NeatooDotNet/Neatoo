@@ -17,10 +17,66 @@ namespace Neatoo.Samples.DomainModel.SampleDomain
 
     internal partial class Event
     {
-        public partial Guid? Id { get => Getter<Guid?>(); set => Setter(value); }
-        public partial string? Name { get => Getter<string?>(); set => Setter(value); }
-        public partial DateTime StartDate { get => Getter<DateTime>(); set => Setter(value); }
-        public partial DateTime EndDate { get => Getter<DateTime>(); set => Setter(value); }
+        protected IValidateProperty<Guid?> IdProperty => (IValidateProperty<Guid?>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> NameProperty => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+        protected IValidateProperty<DateTime> StartDateProperty => (IValidateProperty<DateTime>)PropertyManager[nameof(StartDate)]!;
+        protected IValidateProperty<DateTime> EndDateProperty => (IValidateProperty<DateTime>)PropertyManager[nameof(EndDate)]!;
+
+        public partial Guid? Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Name
+        {
+            get => NameProperty.Value;
+            set
+            {
+                NameProperty.Value = value;
+                if (!NameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NameProperty.Task);
+                    RunningTasks.AddTask(NameProperty.Task);
+                }
+            }
+        }
+
+        public partial DateTime StartDate
+        {
+            get => StartDateProperty.Value;
+            set
+            {
+                StartDateProperty.Value = value;
+                if (!StartDateProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(StartDateProperty.Task);
+                    RunningTasks.AddTask(StartDateProperty.Task);
+                }
+            }
+        }
+
+        public partial DateTime EndDate
+        {
+            get => EndDateProperty.Value;
+            set
+            {
+                EndDateProperty.Value = value;
+                if (!EndDateProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(EndDateProperty.Task);
+                    RunningTasks.AddTask(EndDateProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -34,6 +90,19 @@ namespace Neatoo.Samples.DomainModel.SampleDomain
                 @"RequiredAttribute_Name" => 2u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.SampleDomain.Event> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<Guid?>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
+            PropertyManager.Register(factory.Create<DateTime>(this, nameof(StartDate)));
+            PropertyManager.Register(factory.Create<DateTime>(this, nameof(EndDate)));
         }
     }
 }

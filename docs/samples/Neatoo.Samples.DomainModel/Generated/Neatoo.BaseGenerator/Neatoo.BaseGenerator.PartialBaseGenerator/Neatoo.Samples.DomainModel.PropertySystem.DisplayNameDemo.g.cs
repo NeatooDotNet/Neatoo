@@ -17,9 +17,51 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
 
     internal partial class DisplayNameDemo
     {
-        public partial string? FirstName { get => Getter<string?>(); set => Setter(value); }
-        public partial string? LastName { get => Getter<string?>(); set => Setter(value); }
-        public partial string? EmailAddress { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<string?> FirstNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(FirstName)]!;
+        protected IValidateProperty<string?> LastNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(LastName)]!;
+        protected IValidateProperty<string?> EmailAddressProperty => (IValidateProperty<string?>)PropertyManager[nameof(EmailAddress)]!;
+
+        public partial string? FirstName
+        {
+            get => FirstNameProperty.Value;
+            set
+            {
+                FirstNameProperty.Value = value;
+                if (!FirstNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(FirstNameProperty.Task);
+                    RunningTasks.AddTask(FirstNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? LastName
+        {
+            get => LastNameProperty.Value;
+            set
+            {
+                LastNameProperty.Value = value;
+                if (!LastNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(LastNameProperty.Task);
+                    RunningTasks.AddTask(LastNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? EmailAddress
+        {
+            get => EmailAddressProperty.Value;
+            set
+            {
+                EmailAddressProperty.Value = value;
+                if (!EmailAddressProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(EmailAddressProperty.Task);
+                    RunningTasks.AddTask(EmailAddressProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -33,6 +75,18 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
                 @"RequiredAttribute_LastName" => 2u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.PropertySystem.DisplayNameDemo> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(FirstName)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(LastName)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(EmailAddress)));
         }
     }
 }

@@ -15,21 +15,21 @@ namespace Neatoo.UnitTest.Unit.Rules;
 /// Properties use the Getter/Setter pattern to integrate with the Neatoo property system.
 /// </summary>
 [SuppressFactory]
-public class RequiredRuleTestTarget : ValidateBase<RequiredRuleTestTarget>
+public partial class RequiredRuleTestTarget : ValidateBase<RequiredRuleTestTarget>
 {
     public RequiredRuleTestTarget() : base(new ValidateBaseServices<RequiredRuleTestTarget>())
     {
     }
 
-    public string? StringProperty { get => Getter<string>(); set => Setter(value); }
-    public int IntProperty { get => Getter<int>(); set => Setter(value); }
-    public int? NullableIntProperty { get => Getter<int?>(); set => Setter(value); }
-    public double DoubleProperty { get => Getter<double>(); set => Setter(value); }
-    public bool BoolProperty { get => Getter<bool>(); set => Setter(value); }
-    public DateTime DateTimeProperty { get => Getter<DateTime>(); set => Setter(value); }
-    public Guid GuidProperty { get => Getter<Guid>(); set => Setter(value); }
-    public object? ObjectProperty { get => Getter<object?>(); set => Setter(value); }
-    public List<string>? ListProperty { get => Getter<List<string>>(); set => Setter(value); }
+    public partial string? StringProperty { get; set; }
+    public partial int IntProperty { get; set; }
+    public partial int? NullableIntProperty { get; set; }
+    public partial double DoubleProperty { get; set; }
+    public partial bool BoolProperty { get; set; }
+    public partial DateTime DateTimeProperty { get; set; }
+    public partial Guid GuidProperty { get; set; }
+    public partial object? ObjectProperty { get; set; }
+    public partial List<string>? ListProperty { get; set; }
 }
 
 /// <summary>
