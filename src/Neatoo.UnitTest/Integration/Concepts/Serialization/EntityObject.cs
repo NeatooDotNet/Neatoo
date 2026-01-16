@@ -69,6 +69,14 @@ public partial class EntityObject : EntityBase<EntityObject>, IEntityObject
         return Task.CompletedTask;
     }
 
+    [Fetch]
+    public Task Fetch(Guid ID, string Name)
+    {
+        this.ID = ID;
+        this.Name = Name;
+        return Task.CompletedTask;
+    }
+
     [Update]
     [Insert]
     public Task Update()

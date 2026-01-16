@@ -13,6 +13,7 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests
     public interface IEntityObjectFactory
     {
         Task<IEntityObject> Create(Guid ID, string Name, CancellationToken cancellationToken = default);
+        Task<IEntityObject> Fetch(Guid ID, string Name, CancellationToken cancellationToken = default);
         Task<IEntityObject> Save(IEntityObject target, CancellationToken cancellationToken = default);
     }
 
@@ -42,6 +43,17 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests
         {
             var target = ServiceProvider.GetRequiredService<EntityObject>();
             return DoFactoryMethodCallAsync(target, FactoryOperation.Create, () => target.Create(ID, Name));
+        }
+
+        public virtual Task<IEntityObject> Fetch(Guid ID, string Name, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(ID, Name, cancellationToken);
+        }
+
+        public Task<IEntityObject> LocalFetch(Guid ID, string Name, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<EntityObject>();
+            return DoFactoryMethodCallAsync(target, FactoryOperation.Fetch, () => target.Fetch(ID, Name));
         }
 
         public Task<IEntityObject> LocalUpdate(IEntityObject target, CancellationToken cancellationToken = default)
