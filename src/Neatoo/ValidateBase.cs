@@ -373,7 +373,9 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// </remarks>
 	protected virtual async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
 	{
-		if (!this.IsPaused)
+		// Skip rules and bubbling for Load operations (only SetParent is needed, which happens in _PropertyManager_NeatooPropertyChanged)
+		// Also skip when paused (during factory operations or deserialization)
+		if (!this.IsPaused && eventArgs.OriginalEventArgs.Reason != ChangeReason.Load)
 		{
 			await this.RunRules(eventArgs.FullPropertyName);
 
@@ -396,7 +398,9 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 				child.SetParent(this);
 			}
 
-			// This isn't meant to go to parent Neatoo objects, thru the tree, just immediate outside listeners
+			// The property fires PropertyChanged("Value"), but UI binds to entity.Name (not entity.NameProperty.Value).
+			// Translate property-level event to entity-level event for UI binding.
+			// This goes to immediate outside listeners only, not up the Neatoo parent tree.
 			this.RaisePropertyChanged(eventArgs.FullPropertyName);
 		}
 
