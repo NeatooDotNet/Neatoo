@@ -28,7 +28,6 @@
     <PackageVersion Include="Neatoo" Version="9.10.1" />
     <PackageVersion Include="Neatoo.RemoteFactory" Version="10.9.0" />
     <PackageVersion Include="Neatoo.RemoteFactory.AspNetCore" Version="10.9.0" />
-    <PackageVersion Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <!-- Testing - MSTest -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="MSTest.TestAdapter" Version="3.9.1" />

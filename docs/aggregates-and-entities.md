@@ -258,7 +258,7 @@ public Customer(IEntityBaseServices<Customer> services) : base(services) { }
 
 1. **`[Factory]` attribute** - Required for factory code generation
 2. **`internal` visibility** - The concrete class is internal; the interface is public
-3. **`partial` class** - Neatoo source generators extend the class
+3. **`partial` class** - **Required.** The source generator creates `InitializePropertyBackingFields()` to initialize property backing fields
 4. **`partial` properties** - Required for state tracking and serialization
 5. **Constructor with services** - DI provides the entity services
 

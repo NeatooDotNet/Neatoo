@@ -43,6 +43,30 @@ This guide covers common issues and solutions when working with Neatoo.
 5. **Restart IDE**
    Sometimes the analyzer host needs a restart.
 
+### Properties Not Working (Class Not Partial)
+
+**Symptoms:**
+- Properties return default values
+- `IsModified` never becomes `true`
+- Validation rules don't run
+- No compile errors, but entity doesn't behave correctly
+
+**Cause:** The entity class is missing the `partial` keyword. The source generator cannot extend non-partial classes.
+
+**Solution:**
+
+Add `partial` to the class declaration:
+
+```csharp
+// Wrong - will compile but properties won't work
+[Factory]
+internal class Person : EntityBase<Person>, IPerson { }
+
+// Correct
+[Factory]
+internal partial class Person : EntityBase<Person>, IPerson { }
+```
+
 ### Factory Hint Name Too Long
 
 **Symptoms:**
@@ -93,6 +117,39 @@ Typical values:
    [Factory]  // Required for factory generation
    internal partial class Person : EntityBase<Person>, IPerson { }
    ```
+
+### Analyzer Warnings
+
+#### NEATOO010: Constructor Property Assignment
+
+**Symptoms:**
+- Warning NEATOO010 on property assignments in constructors
+- Message: "Property 'X' should be assigned using LoadValue() or XProperty.LoadValue() instead of direct assignment in constructor"
+
+**Why It Matters:**
+
+Direct property assignment in constructors marks the entity as modified (`IsModified = true`), which causes incorrect behavior:
+- Entity appears "dirty" immediately after creation
+- May trigger unnecessary saves
+- Rules execute during construction (before entity is fully initialized)
+
+**Solution:**
+
+Use `LoadValue()` instead of direct assignment:
+
+```csharp
+// Warning: Direct assignment marks entity as modified
+public Person(IEntityBaseServices<Person> services) : base(services)
+{
+    Status = "Active";  // NEATOO010 warning
+}
+
+// Correct: LoadValue sets the value without triggering modification tracking
+public Person(IEntityBaseServices<Person> services) : base(services)
+{
+    StatusProperty.LoadValue("Active");  // No warning
+}
+```
 
 ## Validation Issues
 
@@ -685,7 +742,9 @@ See [Aggregates and Entities](aggregates-and-entities.md#why-interfaces-are-requ
 | "Object is not valid" | Validation errors | Check PropertyMessages |
 | "Factory method not found" | Missing [Insert]/[Update] | Add factory methods |
 | "Property not found" | Non-partial property | Make property partial |
+| Properties don't work | Non-partial class | Add `partial` to class declaration |
 | "Hint name too long" | Type name > 50 chars | Add `[assembly: FactoryHintNameLength(100)]` |
+| NEATOO010 | Property assigned in constructor | Use `XProperty.LoadValue()` instead |
 
 ### Diagnostic Code
 

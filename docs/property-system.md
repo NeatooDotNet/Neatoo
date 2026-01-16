@@ -264,6 +264,15 @@ Use `LoadValue` when:
 - Explicitly loading values outside factory operations without triggering rules
 - Setting identity fields that should never be marked as modified
 
+### Event Differences
+
+| Operation | `PropertyChanged` | `NeatooPropertyChanged` | `ChangeReason` |
+|-----------|-------------------|-------------------------|----------------|
+| `property.Value = x` | Yes | Yes | `UserEdit` |
+| `property.LoadValue(x)` | No | Yes | `Load` |
+
+When `LoadValue` is called, `NeatooPropertyChanged` fires with `Reason = ChangeReason.Load`. This allows the framework to establish parent-child relationships without running rules.
+
 > **Note:** You generally don't need `LoadValue` in `[Fetch]`, `[Create]`, or other factory methods.
 > Rules are automatically paused during factory operations via `FactoryStart()`.
 > Regular property setters work fine in these contexts.
@@ -947,14 +956,14 @@ protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEv
 
 ### When Events Are Raised
 
-| Scenario | PropertyChanged | NeatooPropertyChanged |
-|----------|-----------------|----------------------|
-| Direct property set | Yes | Yes |
-| `SetValue()` call | Yes | Yes |
-| `LoadValue()` call | No | No |
-| During `PauseAllActions()` | No | No |
-| Child property changes | Yes (if configured) | Yes (bubbles up) |
-| Meta-property changes (IsValid, etc.) | Yes | Yes |
+| Scenario | PropertyChanged | NeatooPropertyChanged | ChangeReason |
+|----------|-----------------|----------------------|--------------|
+| Direct property set | Yes | Yes | `UserEdit` |
+| `SetValue()` call | Yes | Yes | `UserEdit` |
+| `LoadValue()` call | No | Yes | `Load` |
+| During `PauseAllActions()` | No | No | - |
+| Child property changes | Yes (if configured) | Yes (bubbles up) | Inherited |
+| Meta-property changes (IsValid, etc.) | Yes | Yes | - |
 
 ### Event Flow Example
 

@@ -121,8 +121,40 @@ public record NeatooPropertyChangedEventArgs
     public string FullPropertyName { get; }       // "Address.City" for nested
     public NeatooPropertyChangedEventArgs? InnerEventArgs { get; }  // For bubbling
     public NeatooPropertyChangedEventArgs OriginalEventArgs { get; } // Root of chain
+    public ChangeReason Reason { get; }           // UserEdit or Load
 }
 ```
+
+### ChangeReason
+
+The `Reason` property distinguishes between user edits and data loading:
+
+| Value | Description | Rule Execution |
+|-------|-------------|----------------|
+| `UserEdit` | Normal setter assignment | Yes - runs rules |
+| `Load` | `LoadValue()` call | No - structural only |
+
+```csharp
+protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+{
+    // Skip custom processing for data loads
+    if (eventArgs.Reason == ChangeReason.Load)
+    {
+        await base.ChildNeatooPropertyChanged(eventArgs);
+        return;
+    }
+
+    // Only react to user edits
+    if (eventArgs.FullPropertyName.StartsWith("OrderLines"))
+    {
+        RecalculateTotal();
+    }
+
+    await base.ChildNeatooPropertyChanged(eventArgs);
+}
+```
+
+This enables handlers to distinguish between a user changing a value (which should trigger business logic) and the system loading data (which should not).
 
 ### Nested Property Names
 
