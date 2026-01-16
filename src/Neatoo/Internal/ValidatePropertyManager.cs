@@ -196,6 +196,36 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
         }
     }
 
+    /// <summary>
+    /// Registers a property with the property manager.
+    /// </summary>
+    /// <param name="property">The property to register.</param>
+    /// <remarks>
+    /// Called by generated code during InitializePropertyBackingFields to register
+    /// properties created via IPropertyFactory.
+    /// If the property is already registered, this method does nothing (idempotent).
+    /// </remarks>
+    public virtual void Register(IValidateProperty property)
+    {
+        ArgumentNullException.ThrowIfNull(property, nameof(property));
+
+        lock (this._propertyBagLock)
+        {
+            // Skip if already registered (idempotent - allows sharing services between instances)
+            if (this.PropertyBag.ContainsKey(property.Name))
+            {
+                return;
+            }
+
+            // Subscribe to property events
+            property.NeatooPropertyChanged += this._Property_NeatooPropertyChanged;
+            property.PropertyChanged += this._Property_PropertyChanged;
+
+            // Add to property bag
+            this.PropertyBag[property.Name] = (P)property;
+        }
+    }
+
     public virtual void OnDeserialized()
     {
         foreach (var p in this.PropertyBag)

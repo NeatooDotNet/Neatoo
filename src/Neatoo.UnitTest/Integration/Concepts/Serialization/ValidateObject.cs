@@ -18,7 +18,7 @@ public interface IValidateObject : IValidateBase
     //new IValidateProperty this[string propertyName] { get => GetProperty(propertyName); }
 }
 
-public class ValidateObject : ValidateBase<ValidateObject>, IValidateObject
+public partial class ValidateObject : ValidateBase<ValidateObject>, IValidateObject
 {
     public ValidateObject(IValidateBaseServices<ValidateObject> services) : base(services)
     {
@@ -30,10 +30,10 @@ public class ValidateObject : ValidateBase<ValidateObject>, IValidateObject
         }, _ => _.Name);
     }
 
-    public int RuleRunCount { get => Getter<int>(); set => Setter(value); }
-    public Guid ID { get => Getter<Guid>(); set => Setter(value); }
-    public string Name { get => Getter<string>(); set => Setter(value); }
-    public IValidateObject Child { get => Getter<IValidateObject>(); set => Setter(value); }
+    public partial int RuleRunCount { get; set; }
+    public partial Guid ID { get; set; }
+    public partial string Name { get; set; }
+    public partial IValidateObject Child { get; set; }
 
     public IEnumerable<IRule> Rules => RuleManager.Rules;
     void IValidateObject.MarkInvalid(string message)

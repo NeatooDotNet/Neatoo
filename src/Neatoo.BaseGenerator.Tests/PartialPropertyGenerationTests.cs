@@ -4,8 +4,8 @@ namespace Neatoo.BaseGenerator.Tests;
 
 /// <summary>
 /// Tests for partial property generation.
-/// Verifies that the generator correctly generates Getter/Setter implementations
-/// for partial properties.
+/// Verifies that the generator correctly generates property backing fields
+/// and property implementations for partial properties.
 /// </summary>
 [TestClass]
 public class PartialPropertyGenerationTests
@@ -39,8 +39,9 @@ public class PartialPropertyGenerationTests
 
         Assert.IsNotNull(generated, "Should generate code for TestEntity");
         Assert.IsTrue(generated.Contains("partial string? Name"), "Should have partial property");
-        Assert.IsTrue(generated.Contains("Getter<string?>()"), "Should call Getter<T>");
-        Assert.IsTrue(generated.Contains("Setter(value)"), "Should call Setter");
+        Assert.IsTrue(generated.Contains("NameProperty"), "Should have backing field property");
+        Assert.IsTrue(generated.Contains("IValidateProperty<string?>"), "Should have typed backing field");
+        Assert.IsTrue(generated.Contains("NameProperty.Value"), "Should access backing field Value");
     }
 
     [TestMethod]
@@ -76,9 +77,9 @@ public class PartialPropertyGenerationTests
         Assert.IsTrue(generated.Contains("partial string? Name"), "Should generate Name property");
         Assert.IsTrue(generated.Contains("partial int Age"), "Should generate Age property");
         Assert.IsTrue(generated.Contains("partial bool IsActive"), "Should generate IsActive property");
-        Assert.IsTrue(generated.Contains("Getter<string?>()"), "Should have string getter");
-        Assert.IsTrue(generated.Contains("Getter<int>()"), "Should have int getter");
-        Assert.IsTrue(generated.Contains("Getter<bool>()"), "Should have bool getter");
+        Assert.IsTrue(generated.Contains("NameProperty"), "Should have string backing field");
+        Assert.IsTrue(generated.Contains("AgeProperty"), "Should have int backing field");
+        Assert.IsTrue(generated.Contains("IsActiveProperty"), "Should have bool backing field");
     }
 
     #endregion
@@ -113,8 +114,10 @@ public class PartialPropertyGenerationTests
         var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
 
         Assert.IsNotNull(generated);
-        Assert.IsTrue(generated.Contains("Getter<int?>()"), "Should have nullable int getter");
-        Assert.IsTrue(generated.Contains("Getter<DateTime?>()"), "Should have nullable DateTime getter");
+        Assert.IsTrue(generated.Contains("IValidateProperty<int?>"), "Should have nullable int backing field type");
+        Assert.IsTrue(generated.Contains("IValidateProperty<DateTime?>"), "Should have nullable DateTime backing field type");
+        Assert.IsTrue(generated.Contains("NullableIntProperty"), "Should have NullableIntProperty");
+        Assert.IsTrue(generated.Contains("NullableDateProperty"), "Should have NullableDateProperty");
     }
 
     [TestMethod]
@@ -147,8 +150,10 @@ public class PartialPropertyGenerationTests
         var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
 
         Assert.IsNotNull(generated);
-        Assert.IsTrue(generated.Contains("Getter<Address?>()"), "Should have Address getter");
-        Assert.IsTrue(generated.Contains("Getter<List<string>?>()"), "Should have List<string> getter");
+        Assert.IsTrue(generated.Contains("IValidateProperty<Address?>"), "Should have Address backing field type");
+        Assert.IsTrue(generated.Contains("IValidateProperty<List<string>?>"), "Should have List<string> backing field type");
+        Assert.IsTrue(generated.Contains("HomeAddressProperty"), "Should have HomeAddressProperty");
+        Assert.IsTrue(generated.Contains("TagsProperty"), "Should have TagsProperty");
     }
 
     #endregion
@@ -242,11 +247,11 @@ public class PartialPropertyGenerationTests
         var result = GeneratorTestHelper.RunGenerator(source);
         var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
 
-        // Generator should still produce output but without Getter/Setter for non-partial
+        // Generator should still produce output but without backing field for non-partial
         if (generated != null)
         {
-            Assert.IsFalse(generated.Contains("Getter<string?>()"),
-                "Should not generate getter for non-partial property");
+            Assert.IsFalse(generated.Contains("NameProperty"),
+                "Should not generate backing field for non-partial property");
         }
     }
 

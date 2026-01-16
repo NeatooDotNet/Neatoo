@@ -39,6 +39,10 @@
 	  <None Include="..\..\neatoo_icon.png" Pack="true" PackagePath="" Visible="false" />
 	  <!-- Generator targets netstandard2.0 - path is relative to this project -->
 	  <None Include="..\Neatoo.BaseGenerator\bin\$(Configuration)\netstandard2.0\Neatoo.BaseGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	  <!-- Analyzer targets netstandard2.0 - path is relative to this project -->
+	  <None Include="..\Neatoo.Analyzers\bin\$(Configuration)\netstandard2.0\Neatoo.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	  <!-- Code fixes target netstandard2.0 - path is relative to this project -->
+	  <None Include="..\Neatoo.CodeFixes\bin\$(Configuration)\netstandard2.0\Neatoo.CodeFixes.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <!-- Framework-specific package references for multi-targeting -->
@@ -53,7 +57,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
     <PackageReference Include="Neatoo.RemoteFactory" />
-    <PackageReference Include="System.ComponentModel.Annotations" />
   </ItemGroup>
 
 	<ItemGroup>
@@ -69,5 +72,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Neatoo.BaseGenerator\Neatoo.BaseGenerator.csproj" PrivateAssets="all" />
+	  <ProjectReference Include="..\Neatoo.Analyzers\Neatoo.Analyzers.csproj" PrivateAssets="all" />
+	  <ProjectReference Include="..\Neatoo.CodeFixes\Neatoo.CodeFixes.csproj" PrivateAssets="all" />
 	</ItemGroup>
   </Project>

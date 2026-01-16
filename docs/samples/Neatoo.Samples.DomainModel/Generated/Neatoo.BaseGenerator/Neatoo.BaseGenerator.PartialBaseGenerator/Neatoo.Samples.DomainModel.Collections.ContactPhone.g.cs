@@ -16,8 +16,62 @@ namespace Neatoo.Samples.DomainModel.Collections
 
     internal partial class ContactPhone
     {
-        public partial Guid Id { get => Getter<Guid>(); set => Setter(value); }
-        public partial string? PhoneNumber { get => Getter<string?>(); set => Setter(value); }
-        public partial string? PhoneType { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<Guid> IdProperty => (IValidateProperty<Guid>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> PhoneNumberProperty => (IValidateProperty<string?>)PropertyManager[nameof(PhoneNumber)]!;
+        protected IValidateProperty<string?> PhoneTypeProperty => (IValidateProperty<string?>)PropertyManager[nameof(PhoneType)]!;
+
+        public partial Guid Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? PhoneNumber
+        {
+            get => PhoneNumberProperty.Value;
+            set
+            {
+                PhoneNumberProperty.Value = value;
+                if (!PhoneNumberProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(PhoneNumberProperty.Task);
+                    RunningTasks.AddTask(PhoneNumberProperty.Task);
+                }
+            }
+        }
+
+        public partial string? PhoneType
+        {
+            get => PhoneTypeProperty.Value;
+            set
+            {
+                PhoneTypeProperty.Value = value;
+                if (!PhoneTypeProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(PhoneTypeProperty.Task);
+                    RunningTasks.AddTask(PhoneTypeProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.Collections.ContactPhone> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<Guid>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(PhoneNumber)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(PhoneType)));
+        }
     }
 }

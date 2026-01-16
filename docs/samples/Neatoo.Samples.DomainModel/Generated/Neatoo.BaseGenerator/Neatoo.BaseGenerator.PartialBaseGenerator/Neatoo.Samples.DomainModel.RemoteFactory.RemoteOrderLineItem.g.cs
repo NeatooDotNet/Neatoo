@@ -18,8 +18,62 @@ namespace Neatoo.Samples.DomainModel.RemoteFactory
 
     internal partial class RemoteOrderLineItem
     {
-        public partial int Id { get => Getter<int>(); set => Setter(value); }
-        public partial string? ProductName { get => Getter<string?>(); set => Setter(value); }
-        public partial int Quantity { get => Getter<int>(); set => Setter(value); }
+        protected IValidateProperty<int> IdProperty => (IValidateProperty<int>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> ProductNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(ProductName)]!;
+        protected IValidateProperty<int> QuantityProperty => (IValidateProperty<int>)PropertyManager[nameof(Quantity)]!;
+
+        public partial int Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? ProductName
+        {
+            get => ProductNameProperty.Value;
+            set
+            {
+                ProductNameProperty.Value = value;
+                if (!ProductNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ProductNameProperty.Task);
+                    RunningTasks.AddTask(ProductNameProperty.Task);
+                }
+            }
+        }
+
+        public partial int Quantity
+        {
+            get => QuantityProperty.Value;
+            set
+            {
+                QuantityProperty.Value = value;
+                if (!QuantityProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(QuantityProperty.Task);
+                    RunningTasks.AddTask(QuantityProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.RemoteFactory.RemoteOrderLineItem> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<int>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(ProductName)));
+            PropertyManager.Register(factory.Create<int>(this, nameof(Quantity)));
+        }
     }
 }

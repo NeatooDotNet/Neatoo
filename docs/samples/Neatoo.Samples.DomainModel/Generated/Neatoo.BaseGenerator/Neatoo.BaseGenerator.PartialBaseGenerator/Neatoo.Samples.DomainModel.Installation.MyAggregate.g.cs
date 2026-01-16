@@ -16,6 +16,30 @@ namespace Neatoo.Samples.DomainModel.Installation
 
     internal partial class MyAggregate
     {
-        public partial string? Name { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<string?> NameProperty => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+
+        public partial string? Name
+        {
+            get => NameProperty.Value;
+            set
+            {
+                NameProperty.Value = value;
+                if (!NameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NameProperty.Task);
+                    RunningTasks.AddTask(NameProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.Installation.MyAggregate> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
+        }
     }
 }

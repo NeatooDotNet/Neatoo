@@ -12,8 +12,36 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase
 {
     internal partial class ValidateObject
     {
-        public partial IValidateObject Child { get => Getter<IValidateObject>(); set => Setter(value); }
-        public partial IValidateObjectList ChildList { get => Getter<IValidateObjectList>(); set => Setter(value); }
+        protected IValidateProperty<IValidateObject> ChildProperty => (IValidateProperty<IValidateObject>)PropertyManager[nameof(Child)]!;
+        protected IValidateProperty<IValidateObjectList> ChildListProperty => (IValidateProperty<IValidateObjectList>)PropertyManager[nameof(ChildList)]!;
+
+        public partial IValidateObject Child
+        {
+            get => ChildProperty.Value;
+            set
+            {
+                ChildProperty.Value = value;
+                if (!ChildProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ChildProperty.Task);
+                    RunningTasks.AddTask(ChildProperty.Task);
+                }
+            }
+        }
+
+        public partial IValidateObjectList ChildList
+        {
+            get => ChildListProperty.Value;
+            set
+            {
+                ChildListProperty.Value = value;
+                if (!ChildListProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ChildListProperty.Task);
+                    RunningTasks.AddTask(ChildListProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -29,6 +57,19 @@ namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase
                 @"shortNameRule" => 4u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.UnitTest.Integration.Concepts.ValidateBase.ValidateObject> factory)
+        {
+            // Initialize inherited properties first
+            base.InitializePropertyBackingFields(factory);
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<IValidateObject>(this, nameof(Child)));
+            PropertyManager.Register(factory.Create<IValidateObjectList>(this, nameof(ChildList)));
         }
     }
 }

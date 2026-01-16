@@ -17,9 +17,51 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
 
     internal partial class PersonSearchCriteria
     {
-        public partial string? SearchTerm { get => Getter<string?>(); set => Setter(value); }
-        public partial DateTime? FromDate { get => Getter<DateTime?>(); set => Setter(value); }
-        public partial DateTime? ToDate { get => Getter<DateTime?>(); set => Setter(value); }
+        protected IValidateProperty<string?> SearchTermProperty => (IValidateProperty<string?>)PropertyManager[nameof(SearchTerm)]!;
+        protected IValidateProperty<DateTime?> FromDateProperty => (IValidateProperty<DateTime?>)PropertyManager[nameof(FromDate)]!;
+        protected IValidateProperty<DateTime?> ToDateProperty => (IValidateProperty<DateTime?>)PropertyManager[nameof(ToDate)]!;
+
+        public partial string? SearchTerm
+        {
+            get => SearchTermProperty.Value;
+            set
+            {
+                SearchTermProperty.Value = value;
+                if (!SearchTermProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(SearchTermProperty.Task);
+                    RunningTasks.AddTask(SearchTermProperty.Task);
+                }
+            }
+        }
+
+        public partial DateTime? FromDate
+        {
+            get => FromDateProperty.Value;
+            set
+            {
+                FromDateProperty.Value = value;
+                if (!FromDateProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(FromDateProperty.Task);
+                    RunningTasks.AddTask(FromDateProperty.Task);
+                }
+            }
+        }
+
+        public partial DateTime? ToDate
+        {
+            get => ToDateProperty.Value;
+            set
+            {
+                ToDateProperty.Value = value;
+                if (!ToDateProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ToDateProperty.Task);
+                    RunningTasks.AddTask(ToDateProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -34,6 +76,18 @@ namespace Neatoo.Samples.DomainModel.AggregatesAndEntities
                 @"t => t.FromDate.HasValue && t.ToDate.HasValue && t.FromDate > t.ToDate ? ""To date must be after From date"" : """"" => 3u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.AggregatesAndEntities.PersonSearchCriteria> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(SearchTerm)));
+            PropertyManager.Register(factory.Create<DateTime?>(this, nameof(FromDate)));
+            PropertyManager.Register(factory.Create<DateTime?>(this, nameof(ToDate)));
         }
     }
 }

@@ -119,6 +119,33 @@ public interface IValidateProperty : INotifyPropertyChanged, INotifyNeatooProper
     /// </summary>
     /// <value>A read-only collection of <see cref="IPropertyMessage"/> instances.</value>
     IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the property value has been loaded.
+    /// </summary>
+    /// <remarks>
+    /// For properties with lazy loading configured, this returns <c>true</c> after the value
+    /// has been loaded (either explicitly or via auto-load on first access).
+    /// For properties without lazy loading, this always returns <c>true</c>.
+    /// </remarks>
+    /// <value><c>true</c> if the value is loaded; otherwise, <c>false</c>.</value>
+    bool IsLoaded { get; }
+
+    /// <summary>
+    /// Gets the task representing a pending lazy load operation.
+    /// </summary>
+    /// <value>The load task if a load is in progress; otherwise, <c>null</c>.</value>
+    Task? LoadTask { get; }
+
+    /// <summary>
+    /// Explicitly triggers lazy loading of the property value.
+    /// </summary>
+    /// <returns>A task that completes when the value is loaded.</returns>
+    /// <remarks>
+    /// If no <c>OnLoad</c> handler is configured, this method completes immediately.
+    /// If the value is already loaded, this method completes immediately.
+    /// </remarks>
+    Task LoadAsync();
 }
 
 /// <summary>
@@ -132,6 +159,34 @@ public interface IValidateProperty<T> : IValidateProperty
     /// </summary>
     /// <value>The current value of the property.</value>
     new T? Value { get; set; }
+
+    /// <summary>
+    /// Gets or sets the lazy load handler for this property.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// When configured, the handler is invoked automatically on first access to <see cref="Value"/>
+    /// if the value is <c>null</c>. The load is fire-and-forget; the getter returns immediately
+    /// with the current value while loading occurs in the background.
+    /// </para>
+    /// <para>
+    /// Configure this in the entity constructor after calling the base constructor:
+    /// </para>
+    /// <code>
+    /// public Person(IEntityBaseServices&lt;Person&gt; services, IPhoneDbContext context)
+    ///     : base(services)
+    /// {
+    ///     PhonesProperty.OnLoad = async () => await context.LoadPhones(this.Id);
+    /// }
+    /// </code>
+    /// </remarks>
+    Func<Task<T?>>? OnLoad { get; set; }
+
+    /// <summary>
+    /// Explicitly triggers lazy loading and returns the loaded value.
+    /// </summary>
+    /// <returns>A task containing the loaded value.</returns>
+    new Task<T?> LoadAsync();
 }
 
 /// <summary>

@@ -14,13 +14,111 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization
 {
     public partial class StableRuleIdEntity
     {
-        public partial string? Name { get => Getter<string?>(); set => Setter(value); }
-        public partial string? FirstName { get => Getter<string?>(); set => Setter(value); }
-        public partial string? LastName { get => Getter<string?>(); set => Setter(value); }
-        public partial string? FullName { get => Getter<string?>(); set => Setter(value); }
-        public partial int Value { get => Getter<int>(); set => Setter(value); }
-        public partial string? Email { get => Getter<string?>(); set => Setter(value); }
-        public partial int? RequiredField { get => Getter<int?>(); set => Setter(value); }
+        protected IValidateProperty<string?> NameProperty => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+        protected IValidateProperty<string?> FirstNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(FirstName)]!;
+        protected IValidateProperty<string?> LastNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(LastName)]!;
+        protected IValidateProperty<string?> FullNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(FullName)]!;
+        protected IValidateProperty<int> ValueProperty => (IValidateProperty<int>)PropertyManager[nameof(Value)]!;
+        protected IValidateProperty<string?> EmailProperty => (IValidateProperty<string?>)PropertyManager[nameof(Email)]!;
+        protected IValidateProperty<int?> RequiredFieldProperty => (IValidateProperty<int?>)PropertyManager[nameof(RequiredField)]!;
+
+        public partial string? Name
+        {
+            get => NameProperty.Value;
+            set
+            {
+                NameProperty.Value = value;
+                if (!NameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NameProperty.Task);
+                    RunningTasks.AddTask(NameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? FirstName
+        {
+            get => FirstNameProperty.Value;
+            set
+            {
+                FirstNameProperty.Value = value;
+                if (!FirstNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(FirstNameProperty.Task);
+                    RunningTasks.AddTask(FirstNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? LastName
+        {
+            get => LastNameProperty.Value;
+            set
+            {
+                LastNameProperty.Value = value;
+                if (!LastNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(LastNameProperty.Task);
+                    RunningTasks.AddTask(LastNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? FullName
+        {
+            get => FullNameProperty.Value;
+            set
+            {
+                FullNameProperty.Value = value;
+                if (!FullNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(FullNameProperty.Task);
+                    RunningTasks.AddTask(FullNameProperty.Task);
+                }
+            }
+        }
+
+        public partial int Value
+        {
+            get => ValueProperty.Value;
+            set
+            {
+                ValueProperty.Value = value;
+                if (!ValueProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ValueProperty.Task);
+                    RunningTasks.AddTask(ValueProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Email
+        {
+            get => EmailProperty.Value;
+            set
+            {
+                EmailProperty.Value = value;
+                if (!EmailProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(EmailProperty.Task);
+                    RunningTasks.AddTask(EmailProperty.Task);
+                }
+            }
+        }
+
+        public partial int? RequiredField
+        {
+            get => RequiredFieldProperty.Value;
+            set
+            {
+                RequiredFieldProperty.Value = value;
+                if (!RequiredFieldProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(RequiredFieldProperty.Task);
+                    RunningTasks.AddTask(RequiredFieldProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -40,6 +138,22 @@ namespace Neatoo.UnitTest.Integration.Concepts.Serialization
                 @"RequiredAttribute_RequiredField" => 8u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.UnitTest.Integration.Concepts.Serialization.StableRuleIdEntity> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(FirstName)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(LastName)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(FullName)));
+            PropertyManager.Register(factory.Create<int>(this, nameof(Value)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Email)));
+            PropertyManager.Register(factory.Create<int?>(this, nameof(RequiredField)));
         }
     }
 }

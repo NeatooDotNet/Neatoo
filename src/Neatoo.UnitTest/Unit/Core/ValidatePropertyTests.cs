@@ -24,10 +24,10 @@ public class ValidateTestPoco
 /// <summary>
 /// A real ValidateBase implementation for testing child validation behavior.
 /// Uses SuppressFactory to avoid requiring the full factory infrastructure.
-/// Properties use the Getter/Setter pattern to integrate with the Neatoo property system.
+/// Properties use partial property declarations which get backing fields generated.
 /// </summary>
 [SuppressFactory]
-public class ValidatePropertyTestChild : ValidateBase<ValidatePropertyTestChild>
+public partial class ValidatePropertyTestChild : ValidateBase<ValidatePropertyTestChild>
 {
     public ValidatePropertyTestChild() : base(new ValidateBaseServices<ValidatePropertyTestChild>())
     {
@@ -35,8 +35,8 @@ public class ValidatePropertyTestChild : ValidateBase<ValidatePropertyTestChild>
         PauseAllActions();
     }
 
-    public string? ChildName { get => Getter<string?>(); set => Setter(value); }
-    public int ChildValue { get => Getter<int>(); set => Setter(value); }
+    public partial string? ChildName { get; set; }
+    public partial int ChildValue { get; set; }
 
     /// <summary>
     /// Adds a validation error to make the object invalid.

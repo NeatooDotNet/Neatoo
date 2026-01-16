@@ -16,9 +16,51 @@ namespace Neatoo.Samples.DomainModel.Authorization
 
     internal partial class Document
     {
-        public partial Guid Id { get => Getter<Guid>(); set => Setter(value); }
-        public partial string? Title { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Content { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<Guid> IdProperty => (IValidateProperty<Guid>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> TitleProperty => (IValidateProperty<string?>)PropertyManager[nameof(Title)]!;
+        protected IValidateProperty<string?> ContentProperty => (IValidateProperty<string?>)PropertyManager[nameof(Content)]!;
+
+        public partial Guid Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Title
+        {
+            get => TitleProperty.Value;
+            set
+            {
+                TitleProperty.Value = value;
+                if (!TitleProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(TitleProperty.Task);
+                    RunningTasks.AddTask(TitleProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Content
+        {
+            get => ContentProperty.Value;
+            set
+            {
+                ContentProperty.Value = value;
+                if (!ContentProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ContentProperty.Task);
+                    RunningTasks.AddTask(ContentProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -31,6 +73,18 @@ namespace Neatoo.Samples.DomainModel.Authorization
                 @"RequiredAttribute_Title" => 1u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.Authorization.Document> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<Guid>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Title)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Content)));
         }
     }
 }

@@ -16,7 +16,46 @@ namespace Neatoo.Samples.DomainModel.FactoryOperations
 
     internal partial class Order
     {
-        public partial OrderStatus Status { get => Getter<OrderStatus>(); set => Setter(value); }
-        public partial DateTime? CompletedDate { get => Getter<DateTime?>(); set => Setter(value); }
+        protected IValidateProperty<OrderStatus> StatusProperty => (IValidateProperty<OrderStatus>)PropertyManager[nameof(Status)]!;
+        protected IValidateProperty<DateTime?> CompletedDateProperty => (IValidateProperty<DateTime?>)PropertyManager[nameof(CompletedDate)]!;
+
+        public partial OrderStatus Status
+        {
+            get => StatusProperty.Value;
+            set
+            {
+                StatusProperty.Value = value;
+                if (!StatusProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(StatusProperty.Task);
+                    RunningTasks.AddTask(StatusProperty.Task);
+                }
+            }
+        }
+
+        public partial DateTime? CompletedDate
+        {
+            get => CompletedDateProperty.Value;
+            set
+            {
+                CompletedDateProperty.Value = value;
+                if (!CompletedDateProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(CompletedDateProperty.Task);
+                    RunningTasks.AddTask(CompletedDateProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.FactoryOperations.Order> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<OrderStatus>(this, nameof(Status)));
+            PropertyManager.Register(factory.Create<DateTime?>(this, nameof(CompletedDate)));
+        }
     }
 }

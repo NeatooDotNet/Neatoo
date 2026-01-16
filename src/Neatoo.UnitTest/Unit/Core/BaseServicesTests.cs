@@ -13,7 +13,7 @@ namespace Neatoo.UnitTest.Unit.Core;
 /// A simple ValidateBase for testing ValidateBaseServices.
 /// </summary>
 [SuppressFactory]
-public class ValidateServicesTestTarget : ValidateBase<ValidateServicesTestTarget>
+public partial class ValidateServicesTestTarget : ValidateBase<ValidateServicesTestTarget>
 {
     public ValidateServicesTestTarget() : base(new ValidateBaseServices<ValidateServicesTestTarget>())
     {
@@ -25,19 +25,19 @@ public class ValidateServicesTestTarget : ValidateBase<ValidateServicesTestTarge
         PauseAllActions();
     }
 
-    public string? Name { get => Getter<string>(); set => Setter(value); }
+    public partial string? Name { get; set; }
 
     [Required]
-    public string? RequiredField { get => Getter<string>(); set => Setter(value); }
+    public partial string? RequiredField { get; set; }
 
-    public int Age { get => Getter<int>(); set => Setter(value); }
+    public partial int Age { get; set; }
 }
 
 /// <summary>
 /// A simple EntityBase for testing EntityBaseServices.
 /// </summary>
 [SuppressFactory]
-public class EntityServicesTestTarget : EntityBase<EntityServicesTestTarget>
+public partial class EntityServicesTestTarget : EntityBase<EntityServicesTestTarget>
 {
     public EntityServicesTestTarget() : base(new EntityBaseServices<EntityServicesTestTarget>(null))
     {
@@ -49,12 +49,12 @@ public class EntityServicesTestTarget : EntityBase<EntityServicesTestTarget>
         PauseAllActions();
     }
 
-    public string? Name { get => Getter<string>(); set => Setter(value); }
+    public partial string? Name { get; set; }
 
     [Required]
-    public string? RequiredField { get => Getter<string>(); set => Setter(value); }
+    public partial string? RequiredField { get; set; }
 
-    public int Age { get => Getter<int>(); set => Setter(value); }
+    public partial int Age { get; set; }
 
     // Expose MarkUnmodified for testing
     public new void MarkUnmodified() => base.MarkUnmodified();

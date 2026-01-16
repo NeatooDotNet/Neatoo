@@ -17,9 +17,51 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
 
     internal partial class PropertyAccessDemo
     {
-        public partial string? Name { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Email { get => Getter<string?>(); set => Setter(value); }
-        public partial int Age { get => Getter<int>(); set => Setter(value); }
+        protected IValidateProperty<string?> NameProperty => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+        protected IValidateProperty<string?> EmailProperty => (IValidateProperty<string?>)PropertyManager[nameof(Email)]!;
+        protected IValidateProperty<int> AgeProperty => (IValidateProperty<int>)PropertyManager[nameof(Age)]!;
+
+        public partial string? Name
+        {
+            get => NameProperty.Value;
+            set
+            {
+                NameProperty.Value = value;
+                if (!NameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NameProperty.Task);
+                    RunningTasks.AddTask(NameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Email
+        {
+            get => EmailProperty.Value;
+            set
+            {
+                EmailProperty.Value = value;
+                if (!EmailProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(EmailProperty.Task);
+                    RunningTasks.AddTask(EmailProperty.Task);
+                }
+            }
+        }
+
+        public partial int Age
+        {
+            get => AgeProperty.Value;
+            set
+            {
+                AgeProperty.Value = value;
+                if (!AgeProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(AgeProperty.Task);
+                    RunningTasks.AddTask(AgeProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -32,6 +74,18 @@ namespace Neatoo.Samples.DomainModel.PropertySystem
                 @"EmailAddressAttribute_Email" => 1u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.PropertySystem.PropertyAccessDemo> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Email)));
+            PropertyManager.Register(factory.Create<int>(this, nameof(Age)));
         }
     }
 }

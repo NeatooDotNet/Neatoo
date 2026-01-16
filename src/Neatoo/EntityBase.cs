@@ -84,9 +84,9 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
 /// </remarks>
 /// <example>
 /// <code>
-/// public class Customer : EntityBase&lt;Customer&gt;
+/// public partial class Customer : EntityBase&lt;Customer&gt;
 /// {
-///     public string Name { get =&gt; Getter&lt;string&gt;(); set =&gt; Setter(value); }
+///     public partial string Name { get; set; }
 ///
 ///     public Customer(IEntityBaseServices&lt;Customer&gt; services) : base(services) { }
 ///

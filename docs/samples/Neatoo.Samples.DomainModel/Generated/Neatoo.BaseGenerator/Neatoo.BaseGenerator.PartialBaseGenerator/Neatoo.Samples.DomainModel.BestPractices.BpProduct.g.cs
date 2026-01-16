@@ -15,8 +15,62 @@ namespace Neatoo.Samples.DomainModel.BestPractices
 
     internal partial class BpProduct
     {
-        public partial Guid? Id { get => Getter<Guid?>(); set => Setter(value); }
-        public partial string? Name { get => Getter<string?>(); set => Setter(value); }
-        public partial decimal Price { get => Getter<decimal>(); set => Setter(value); }
+        protected IValidateProperty<Guid?> IdProperty => (IValidateProperty<Guid?>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> NameProperty => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+        protected IValidateProperty<decimal> PriceProperty => (IValidateProperty<decimal>)PropertyManager[nameof(Price)]!;
+
+        public partial Guid? Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Name
+        {
+            get => NameProperty.Value;
+            set
+            {
+                NameProperty.Value = value;
+                if (!NameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NameProperty.Task);
+                    RunningTasks.AddTask(NameProperty.Task);
+                }
+            }
+        }
+
+        public partial decimal Price
+        {
+            get => PriceProperty.Value;
+            set
+            {
+                PriceProperty.Value = value;
+                if (!PriceProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(PriceProperty.Task);
+                    RunningTasks.AddTask(PriceProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.BestPractices.BpProduct> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<Guid?>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
+            PropertyManager.Register(factory.Create<decimal>(this, nameof(Price)));
+        }
     }
 }

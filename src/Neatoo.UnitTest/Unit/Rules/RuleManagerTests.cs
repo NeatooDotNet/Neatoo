@@ -13,21 +13,21 @@ namespace Neatoo.UnitTest.Unit.Rules;
 /// A ValidateBase target for RuleManager testing.
 /// </summary>
 [SuppressFactory]
-public class RuleManagerTestTarget : ValidateBase<RuleManagerTestTarget>
+public partial class RuleManagerTestTarget : ValidateBase<RuleManagerTestTarget>
 {
     public RuleManagerTestTarget() : base(new ValidateBaseServices<RuleManagerTestTarget>())
     {
         PauseAllActions();
     }
 
-    public string? Name { get => Getter<string>(); set => Setter(value); }
+    public partial string? Name { get; set; }
 
     [Required]
-    public string? RequiredField { get => Getter<string>(); set => Setter(value); }
+    public partial string? RequiredField { get; set; }
 
-    public int Age { get => Getter<int>(); set => Setter(value); }
+    public partial int Age { get; set; }
 
-    public string? Description { get => Getter<string>(); set => Setter(value); }
+    public partial string? Description { get; set; }
 
     // Expose RuleManager for testing
     public IRuleManager<RuleManagerTestTarget> GetRuleManager() =>
@@ -40,15 +40,15 @@ public class RuleManagerTestTarget : ValidateBase<RuleManagerTestTarget>
 /// Target without any attribute-based rules.
 /// </summary>
 [SuppressFactory]
-public class NoAttributeRulesTarget : ValidateBase<NoAttributeRulesTarget>
+public partial class NoAttributeRulesTarget : ValidateBase<NoAttributeRulesTarget>
 {
     public NoAttributeRulesTarget() : base(new ValidateBaseServices<NoAttributeRulesTarget>())
     {
         PauseAllActions();
     }
 
-    public string? Name { get => Getter<string>(); set => Setter(value); }
-    public int Value { get => Getter<int>(); set => Setter(value); }
+    public partial string? Name { get; set; }
+    public partial int Value { get; set; }
 
     public IRuleManager<NoAttributeRulesTarget> GetRuleManager() =>
         (IRuleManager<NoAttributeRulesTarget>)typeof(ValidateBase<NoAttributeRulesTarget>)

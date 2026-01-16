@@ -17,6 +17,30 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
 
     internal partial class ParentContact
     {
-        public partial IContactPhoneList PhoneList { get => Getter<IContactPhoneList>(); set => Setter(value); }
+        protected IValidateProperty<IContactPhoneList> PhoneListProperty => (IValidateProperty<IContactPhoneList>)PropertyManager[nameof(PhoneList)]!;
+
+        public partial IContactPhoneList PhoneList
+        {
+            get => PhoneListProperty.Value;
+            set
+            {
+                PhoneListProperty.Value = value;
+                if (!PhoneListProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(PhoneListProperty.Task);
+                    RunningTasks.AddTask(PhoneListProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage.ParentContact> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<IContactPhoneList>(this, nameof(PhoneList)));
+        }
     }
 }

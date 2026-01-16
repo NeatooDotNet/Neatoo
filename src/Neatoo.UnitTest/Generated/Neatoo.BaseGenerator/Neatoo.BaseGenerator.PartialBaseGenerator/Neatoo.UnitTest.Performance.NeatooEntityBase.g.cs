@@ -23,10 +23,66 @@ namespace Neatoo.UnitTest.Performance
 {
     public partial class NeatooEntityBase
     {
-        public partial int Id { get => Getter<int>(); set => Setter(value); }
-        public partial string? Description { get => Getter<string?>(); set => Setter(value); }
-        public partial NeatooEntityBase? ChildA { get => Getter<NeatooEntityBase?>(); set => Setter(value); }
-        public partial NeatooEntityBase? ChildB { get => Getter<NeatooEntityBase?>(); set => Setter(value); }
+        protected IValidateProperty<int> IdProperty => (IValidateProperty<int>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> DescriptionProperty => (IValidateProperty<string?>)PropertyManager[nameof(Description)]!;
+        protected IValidateProperty<NeatooEntityBase?> ChildAProperty => (IValidateProperty<NeatooEntityBase?>)PropertyManager[nameof(ChildA)]!;
+        protected IValidateProperty<NeatooEntityBase?> ChildBProperty => (IValidateProperty<NeatooEntityBase?>)PropertyManager[nameof(ChildB)]!;
+
+        public partial int Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Description
+        {
+            get => DescriptionProperty.Value;
+            set
+            {
+                DescriptionProperty.Value = value;
+                if (!DescriptionProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(DescriptionProperty.Task);
+                    RunningTasks.AddTask(DescriptionProperty.Task);
+                }
+            }
+        }
+
+        public partial NeatooEntityBase? ChildA
+        {
+            get => ChildAProperty.Value;
+            set
+            {
+                ChildAProperty.Value = value;
+                if (!ChildAProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ChildAProperty.Task);
+                    RunningTasks.AddTask(ChildAProperty.Task);
+                }
+            }
+        }
+
+        public partial NeatooEntityBase? ChildB
+        {
+            get => ChildBProperty.Value;
+            set
+            {
+                ChildBProperty.Value = value;
+                if (!ChildBProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ChildBProperty.Task);
+                    RunningTasks.AddTask(ChildBProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -40,6 +96,19 @@ namespace Neatoo.UnitTest.Performance
                 @"RequiredAttribute_Id" => 2u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.UnitTest.Performance.NeatooEntityBase> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<int>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Description)));
+            PropertyManager.Register(factory.Create<NeatooEntityBase?>(this, nameof(ChildA)));
+            PropertyManager.Register(factory.Create<NeatooEntityBase?>(this, nameof(ChildB)));
         }
     }
 }

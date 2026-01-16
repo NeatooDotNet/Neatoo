@@ -17,9 +17,51 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
 
     internal partial class PauseActionsPerson
     {
-        public partial string? FirstName { get => Getter<string?>(); set => Setter(value); }
-        public partial string? LastName { get => Getter<string?>(); set => Setter(value); }
-        public partial string? Email { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<string?> FirstNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(FirstName)]!;
+        protected IValidateProperty<string?> LastNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(LastName)]!;
+        protected IValidateProperty<string?> EmailProperty => (IValidateProperty<string?>)PropertyManager[nameof(Email)]!;
+
+        public partial string? FirstName
+        {
+            get => FirstNameProperty.Value;
+            set
+            {
+                FirstNameProperty.Value = value;
+                if (!FirstNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(FirstNameProperty.Task);
+                    RunningTasks.AddTask(FirstNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? LastName
+        {
+            get => LastNameProperty.Value;
+            set
+            {
+                LastNameProperty.Value = value;
+                if (!LastNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(LastNameProperty.Task);
+                    RunningTasks.AddTask(LastNameProperty.Task);
+                }
+            }
+        }
+
+        public partial string? Email
+        {
+            get => EmailProperty.Value;
+            set
+            {
+                EmailProperty.Value = value;
+                if (!EmailProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(EmailProperty.Task);
+                    RunningTasks.AddTask(EmailProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -32,6 +74,18 @@ namespace Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage
                 @"t => string.IsNullOrEmpty(t.FirstName) ? ""First name required"" : """"" => 1u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.ValidationAndRules.RuleUsage.PauseActionsPerson> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(FirstName)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(LastName)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Email)));
         }
     }
 }

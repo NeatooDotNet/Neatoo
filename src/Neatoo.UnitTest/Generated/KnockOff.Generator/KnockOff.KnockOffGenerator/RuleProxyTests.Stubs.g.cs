@@ -181,6 +181,26 @@ partial class RuleProxyTests
 			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
 		}
 
+		/// <summary>Interceptor for IValidateBase.AddChildTask.</summary>
+		public sealed class IValidateBase_AddChildTaskInterceptor
+		{
+			/// <summary>Number of times this method was called.</summary>
+			public int CallCount { get; private set; }
+
+			/// <summary>Whether this method was called at least once.</summary>
+			public bool WasCalled => CallCount > 0;
+
+			/// <summary>The argument from the last call.</summary>
+			public global::System.Threading.Tasks.Task? LastCallArg { get; private set; }
+
+			/// <summary>Callback invoked when method is called.</summary>
+			public global::System.Action<Stubs.IValidateBase, global::System.Threading.Tasks.Task>? OnCall { get; set; }
+
+			public void RecordCall(global::System.Threading.Tasks.Task task) { CallCount++; LastCallArg = task; }
+
+			public void Reset() { CallCount = 0; LastCallArg = default; OnCall = null; }
+		}
+
 		/// <summary>Interceptor for IValidateBase.WaitForTasks.</summary>
 		public sealed class IValidateBase_WaitForTasksInterceptor
 		{
@@ -329,6 +349,9 @@ partial class RuleProxyTests
 			/// <summary>Interceptor for TryGetProperty.</summary>
 			public IValidateBase_TryGetPropertyInterceptor TryGetProperty { get; } = new();
 
+			/// <summary>Interceptor for AddChildTask.</summary>
+			public IValidateBase_AddChildTaskInterceptor AddChildTask { get; } = new();
+
 			/// <summary>Interceptor for WaitForTasks.</summary>
 			public IValidateBase_WaitForTasksInterceptor WaitForTasks { get; } = new();
 
@@ -360,6 +383,12 @@ partial class RuleProxyTests
 				TryGetProperty.RecordCall(propertyName);
 				if (TryGetProperty.OnCall is { } onCall) return onCall(this, propertyName);
 				return default!;
+			}
+
+			void global::Neatoo.IValidateBase.AddChildTask(global::System.Threading.Tasks.Task task)
+			{
+				AddChildTask.RecordCall(task);
+				if (AddChildTask.OnCall is { } onCall) onCall(this, task);
 			}
 
 			global::Neatoo.IValidateBase? global::Neatoo.IValidateBase.Parent

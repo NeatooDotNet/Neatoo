@@ -15,6 +15,30 @@ namespace Neatoo.Samples.DomainModel.BestPractices
 
     internal partial class BpPhone
     {
-        public partial string? Number { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<string?> NumberProperty => (IValidateProperty<string?>)PropertyManager[nameof(Number)]!;
+
+        public partial string? Number
+        {
+            get => NumberProperty.Value;
+            set
+            {
+                NumberProperty.Value = value;
+                if (!NumberProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(NumberProperty.Task);
+                    RunningTasks.AddTask(NumberProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.BestPractices.BpPhone> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Number)));
+        }
     }
 }

@@ -23,30 +23,42 @@ public class EntityBaseServices<T> : ValidateBaseServices<T>, IEntityBaseService
     public EntityBaseServices() : base()
     {
         this.PropertyInfoList = new PropertyInfoList<T>((System.Reflection.PropertyInfo pi) => new PropertyInfoWrapper(pi));
-        this.EntityPropertyManager = new EntityPropertyManager(this.PropertyInfoList, new DefaultFactory());
+        var factory = new DefaultFactory();
+        this.EntityPropertyManager = new EntityPropertyManager(this.PropertyInfoList, factory);
+        this.PropertyFactory = new EntityPropertyFactory<T>(this.PropertyInfoList, factory);
         this.Factory = null;
     }
 
-    public EntityBaseServices(IFactorySave<T>? factory) : base() {
-
+    public EntityBaseServices(IFactorySave<T>? factory) : base()
+    {
         this.PropertyInfoList = new PropertyInfoList<T>((System.Reflection.PropertyInfo pi) => new PropertyInfoWrapper(pi));
-
-        this.EntityPropertyManager = new EntityPropertyManager(this.PropertyInfoList, new DefaultFactory());
+        var internalFactory = new DefaultFactory();
+        this.EntityPropertyManager = new EntityPropertyManager(this.PropertyInfoList, internalFactory);
+        this.PropertyFactory = new EntityPropertyFactory<T>(this.PropertyInfoList, internalFactory);
         this.Factory = factory;
     }
+
     public EntityBaseServices(CreateEntityPropertyManager propertyManager, IPropertyInfoList<T> propertyInfoList, RuleManagerFactory<T> ruleManager)
     {
         this.PropertyInfoList = propertyInfoList;
         this.ruleManagerFactory = ruleManager;
+        var factory = new DefaultFactory();
         this.EntityPropertyManager = propertyManager(propertyInfoList);
+        this.PropertyFactory = new EntityPropertyFactory<T>(propertyInfoList, factory);
     }
 
-    public EntityBaseServices(CreateEntityPropertyManager propertyManager, IPropertyInfoList<T> propertyInfoList, RuleManagerFactory<T> ruleManager, IFactorySave<T> factory)
+    public EntityBaseServices(
+        CreateEntityPropertyManager propertyManager,
+        IPropertyInfoList<T> propertyInfoList,
+        RuleManagerFactory<T> ruleManager,
+        IFactorySave<T>? factory)
     {
         this.PropertyInfoList = propertyInfoList;
         this.ruleManagerFactory = ruleManager;
+        var internalFactory = new DefaultFactory();
         this.EntityPropertyManager = propertyManager(propertyInfoList);
+        // EntityBase classes require EntityPropertyFactory to create EntityProperty instances
+        this.PropertyFactory = new EntityPropertyFactory<T>(propertyInfoList, internalFactory);
         this.Factory = factory;
     }
-
 }

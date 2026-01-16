@@ -24,10 +24,66 @@ namespace Neatoo.UnitTest.Integration.Concepts.EntityBase
 
     public partial class EntityPerson
     {
-        public partial List<int> InitiallyNull { get => Getter<List<int>>(); set => Setter(value); }
-        public partial List<int> InitiallyDefined { get => Getter<List<int>>(); set => Setter(value); }
-        public partial IEntityPerson Child { get => Getter<IEntityPerson>(); set => Setter(value); }
-        public partial IEntityPersonList ChildList { get => Getter<IEntityPersonList>(); set => Setter(value); }
+        protected IValidateProperty<List<int>> InitiallyNullProperty => (IValidateProperty<List<int>>)PropertyManager[nameof(InitiallyNull)]!;
+        protected IValidateProperty<List<int>> InitiallyDefinedProperty => (IValidateProperty<List<int>>)PropertyManager[nameof(InitiallyDefined)]!;
+        protected IValidateProperty<IEntityPerson> ChildProperty => (IValidateProperty<IEntityPerson>)PropertyManager[nameof(Child)]!;
+        protected IValidateProperty<IEntityPersonList> ChildListProperty => (IValidateProperty<IEntityPersonList>)PropertyManager[nameof(ChildList)]!;
+
+        public partial List<int> InitiallyNull
+        {
+            get => InitiallyNullProperty.Value;
+            set
+            {
+                InitiallyNullProperty.Value = value;
+                if (!InitiallyNullProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(InitiallyNullProperty.Task);
+                    RunningTasks.AddTask(InitiallyNullProperty.Task);
+                }
+            }
+        }
+
+        public partial List<int> InitiallyDefined
+        {
+            get => InitiallyDefinedProperty.Value;
+            set
+            {
+                InitiallyDefinedProperty.Value = value;
+                if (!InitiallyDefinedProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(InitiallyDefinedProperty.Task);
+                    RunningTasks.AddTask(InitiallyDefinedProperty.Task);
+                }
+            }
+        }
+
+        public partial IEntityPerson Child
+        {
+            get => ChildProperty.Value;
+            set
+            {
+                ChildProperty.Value = value;
+                if (!ChildProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ChildProperty.Task);
+                    RunningTasks.AddTask(ChildProperty.Task);
+                }
+            }
+        }
+
+        public partial IEntityPersonList ChildList
+        {
+            get => ChildListProperty.Value;
+            set
+            {
+                ChildListProperty.Value = value;
+                if (!ChildListProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(ChildListProperty.Task);
+                    RunningTasks.AddTask(ChildListProperty.Task);
+                }
+            }
+        }
 
         /// <summary>
         /// Generated override for stable rule identification.
@@ -42,6 +98,21 @@ namespace Neatoo.UnitTest.Integration.Concepts.EntityBase
                 @"person => person.FirstName == ""Error"" ? ""Error"" : string.Empty" => 3u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.UnitTest.Integration.Concepts.EntityBase.EntityPerson> factory)
+        {
+            // Initialize inherited properties first
+            base.InitializePropertyBackingFields(factory);
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<List<int>>(this, nameof(InitiallyNull)));
+            PropertyManager.Register(factory.Create<List<int>>(this, nameof(InitiallyDefined)));
+            PropertyManager.Register(factory.Create<IEntityPerson>(this, nameof(Child)));
+            PropertyManager.Register(factory.Create<IEntityPersonList>(this, nameof(ChildList)));
         }
     }
 }

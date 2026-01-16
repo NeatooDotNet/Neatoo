@@ -341,7 +341,14 @@ Bind child collections:
 
 ## Change Notifications
 
-Subscribe to property changes:
+Neatoo entities fire two types of property change events:
+
+| Event | Use For | Sync/Async |
+|-------|---------|------------|
+| `PropertyChanged` | UI binding, triggering re-renders | Synchronous |
+| `NeatooPropertyChanged` | Custom async processing, audit logging | Asynchronous |
+
+For most Blazor scenarios, subscribe to `PropertyChanged`:
 
 ```razor
 @implements IDisposable
@@ -368,26 +375,7 @@ Subscribe to property changes:
 }
 ```
 
-### NeatooPropertyChanged
-
-For more detailed change information:
-
-```razor
-@code {
-    protected override void OnInitialized()
-    {
-        person = PersonFactory.Create();
-        person.NeatooPropertyChanged += OnNeatooPropertyChanged;
-    }
-
-    private Task OnNeatooPropertyChanged(NeatooPropertyChangedEventArgs e)
-    {
-        Console.WriteLine($"Property changed: {e.FullPropertyName}");
-        Console.WriteLine($"Source: {e.Source}");
-        return InvokeAsync(StateHasChanged);
-    }
-}
-```
+For advanced scenarios like async change tracking or accessing nested property paths, see [Event System Internals](advanced/event-system.md).
 
 ## Authorization UI
 
@@ -575,3 +563,4 @@ else if (person != null)
 - [Property System](property-system.md) - IEntityProperty details
 - [Meta-Properties Reference](meta-properties.md) - IsBusy, IsValid, IsSavable
 - [Validation and Rules](validation-and-rules.md) - Validation message sources
+- [Event System Internals](advanced/event-system.md) - PropertyChanged vs NeatooPropertyChanged details

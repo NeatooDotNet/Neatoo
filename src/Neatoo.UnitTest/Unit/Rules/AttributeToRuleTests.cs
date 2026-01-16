@@ -37,33 +37,33 @@ public class MockPropertyInfo : IPropertyInfo
 /// Uses SuppressFactory to avoid requiring the full factory infrastructure.
 /// </summary>
 [SuppressFactory]
-public class TestValidateObject : ValidateBase<TestValidateObject>
+public partial class TestValidateObject : ValidateBase<TestValidateObject>
 {
     public TestValidateObject() : base(new ValidateBaseServices<TestValidateObject>())
     {
     }
 
-    public string? StringProperty { get => Getter<string>(); set => Setter(value); }
-    public int IntProperty { get => Getter<int>(); set => Setter(value); }
-    public bool BoolProperty { get => Getter<bool>(); set => Setter(value); }
-    public DateTime? DateTimeProperty { get => Getter<DateTime?>(); set => Setter(value); }
-    public object? ObjectProperty { get => Getter<object?>(); set => Setter(value); }
-    public List<string>? ListProperty { get => Getter<List<string>>(); set => Setter(value); }
-    public decimal DecimalProperty { get => Getter<decimal>(); set => Setter(value); }
+    public partial string? StringProperty { get; set; }
+    public partial int IntProperty { get; set; }
+    public partial bool BoolProperty { get; set; }
+    public partial DateTime? DateTimeProperty { get; set; }
+    public partial object? ObjectProperty { get; set; }
+    public partial List<string>? ListProperty { get; set; }
+    public partial decimal DecimalProperty { get; set; }
 }
 
 /// <summary>
 /// Another test object with different properties for testing generic type parameters.
 /// </summary>
 [SuppressFactory]
-public class AnotherTestValidateObject : ValidateBase<AnotherTestValidateObject>
+public partial class AnotherTestValidateObject : ValidateBase<AnotherTestValidateObject>
 {
     public AnotherTestValidateObject() : base(new ValidateBaseServices<AnotherTestValidateObject>())
     {
     }
 
-    public string? Name { get => Getter<string>(); set => Setter(value); }
-    public decimal Amount { get => Getter<decimal>(); set => Setter(value); }
+    public partial string? Name { get; set; }
+    public partial decimal Amount { get; set; }
 }
 
 #endregion

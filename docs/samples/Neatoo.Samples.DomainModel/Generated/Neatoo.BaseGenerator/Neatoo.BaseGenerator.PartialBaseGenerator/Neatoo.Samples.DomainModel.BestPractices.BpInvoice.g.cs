@@ -15,8 +15,62 @@ namespace Neatoo.Samples.DomainModel.BestPractices
 
     internal partial class BpInvoice
     {
-        public partial long? Id { get => Getter<long?>(); set => Setter(value); }
-        public partial string? CustomerName { get => Getter<string?>(); set => Setter(value); }
-        public partial IBpInvoiceLineList Lines { get => Getter<IBpInvoiceLineList>(); set => Setter(value); }
+        protected IValidateProperty<long?> IdProperty => (IValidateProperty<long?>)PropertyManager[nameof(Id)]!;
+        protected IValidateProperty<string?> CustomerNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(CustomerName)]!;
+        protected IValidateProperty<IBpInvoiceLineList> LinesProperty => (IValidateProperty<IBpInvoiceLineList>)PropertyManager[nameof(Lines)]!;
+
+        public partial long? Id
+        {
+            get => IdProperty.Value;
+            set
+            {
+                IdProperty.Value = value;
+                if (!IdProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(IdProperty.Task);
+                    RunningTasks.AddTask(IdProperty.Task);
+                }
+            }
+        }
+
+        public partial string? CustomerName
+        {
+            get => CustomerNameProperty.Value;
+            set
+            {
+                CustomerNameProperty.Value = value;
+                if (!CustomerNameProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(CustomerNameProperty.Task);
+                    RunningTasks.AddTask(CustomerNameProperty.Task);
+                }
+            }
+        }
+
+        public partial IBpInvoiceLineList Lines
+        {
+            get => LinesProperty.Value;
+            set
+            {
+                LinesProperty.Value = value;
+                if (!LinesProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(LinesProperty.Task);
+                    RunningTasks.AddTask(LinesProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.BestPractices.BpInvoice> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<long?>(this, nameof(Id)));
+            PropertyManager.Register(factory.Create<string?>(this, nameof(CustomerName)));
+            PropertyManager.Register(factory.Create<IBpInvoiceLineList>(this, nameof(Lines)));
+        }
     }
 }

@@ -100,6 +100,9 @@ public static class AddNeatooServicesExtension
             };
         });
 
+        // Property factory for generated backing fields (open generic registration)
+        services.AddTransient(typeof(IPropertyFactory<>), typeof(DefaultPropertyFactory<>));
+
         // Simple wrapper - Always InstancePerDependency
         services.AddTransient(typeof(IValidateBaseServices<>), typeof(ValidateBaseServices<>));
         services.AddTransient(typeof(IEntityBaseServices<>), typeof(EntityBaseServices<>));

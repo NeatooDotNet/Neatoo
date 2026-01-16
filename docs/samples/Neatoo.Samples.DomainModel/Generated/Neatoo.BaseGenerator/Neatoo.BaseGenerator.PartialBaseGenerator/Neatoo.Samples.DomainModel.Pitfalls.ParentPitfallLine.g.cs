@@ -17,6 +17,30 @@ namespace Neatoo.Samples.DomainModel.Pitfalls
 
     internal partial class ParentPitfallLine
     {
-        public partial string? Description { get => Getter<string?>(); set => Setter(value); }
+        protected IValidateProperty<string?> DescriptionProperty => (IValidateProperty<string?>)PropertyManager[nameof(Description)]!;
+
+        public partial string? Description
+        {
+            get => DescriptionProperty.Value;
+            set
+            {
+                DescriptionProperty.Value = value;
+                if (!DescriptionProperty.Task.IsCompleted)
+                {
+                    Parent?.AddChildTask(DescriptionProperty.Task);
+                    RunningTasks.AddTask(DescriptionProperty.Task);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generated override to initialize property backing fields.
+        /// </summary>
+        protected override void InitializePropertyBackingFields(IPropertyFactory<Neatoo.Samples.DomainModel.Pitfalls.ParentPitfallLine> factory)
+        {
+            // Initialize and register this class's properties
+            // The backing field properties are computed and fetch from PropertyManager
+            PropertyManager.Register(factory.Create<string?>(this, nameof(Description)));
+        }
     }
 }
