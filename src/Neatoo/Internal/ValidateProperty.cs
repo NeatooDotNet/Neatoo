@@ -317,8 +317,43 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
     public virtual void LoadValue(object? value)
     {
-        this.SetPrivateValue((T?)value, true);
+        if (value == null && this._value == null) { return; }
+
+        // Handle old value cleanup (unsubscribe events, clear parent)
+        if (this._value != null && !ReferenceEquals(this._value, value))
+        {
+            if (this._value is INotifyNeatooPropertyChanged neatooPropertyChanged)
+            {
+                neatooPropertyChanged.NeatooPropertyChanged -= this.PassThruValueNeatooPropertyChanged;
+            }
+            if (this._value is INotifyPropertyChanged notifyPropertyChanged)
+            {
+                notifyPropertyChanged.PropertyChanged -= this.PassThruValuePropertyChanged;
+            }
+            if (this._value is ISetParent oldSetParent)
+            {
+                oldSetParent.SetParent(null);
+            }
+        }
+
         this._value = (T?)value;
+
+        // Handle new value setup (subscribe events)
+        if (value != null)
+        {
+            if (value is INotifyNeatooPropertyChanged valueNeatooPropertyChanged)
+            {
+                valueNeatooPropertyChanged.NeatooPropertyChanged += this.PassThruValueNeatooPropertyChanged;
+            }
+            if (value is INotifyPropertyChanged valueNotifyPropertyChanged)
+            {
+                valueNotifyPropertyChanged.PropertyChanged += this.PassThruValuePropertyChanged;
+            }
+        }
+
+        // Fire event with ChangeReason.Load - SetParent will be called but rules will be skipped
+        this.OnPropertyChanged(nameof(Value));
+        this.Task = this.OnValueNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(this, ChangeReason.Load));
     }
 
     protected virtual void HandleNullValue(bool quietly = false)
