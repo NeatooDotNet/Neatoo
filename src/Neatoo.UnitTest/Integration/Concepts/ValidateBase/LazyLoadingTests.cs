@@ -460,4 +460,45 @@ public class LazyLoadingTests
         Assert.AreEqual("Manual Value", value);
         Assert.AreEqual(1, loadCount, "Load should not retrigger after manual value change");
     }
+
+    [TestMethod]
+    public void LazyLoad_SynchronousLoadReturnsValueImmediately()
+    {
+        // Arrange - OnLoad returns a completed task (no async fork)
+        var services = new ValidateBaseServices<LazyLoadTestEntity>();
+        var entity = new LazyLoadTestEntity(services, nameLoadFunc: () => Task.FromResult<string?>("Sync Value"));
+        entity.ResumeAllActions();
+        entity.ConfigureLazyLoadingForName();
+
+        // Act - access the property (no await needed for sync load)
+        var value = entity.Name;
+
+        // Assert - value should be available immediately for synchronous loads
+        Assert.AreEqual("Sync Value", value, "Synchronous loads should return value on first access");
+        Assert.IsTrue(entity.ExposedNameProperty.IsLoaded, "IsLoaded should be true after sync load");
+    }
+
+    [TestMethod]
+    public void LazyLoad_SynchronousLoadWithChildEntity()
+    {
+        // Arrange
+        var child = new LazyLoadChildEntity();
+        child.ResumeAllActions();
+        child.ChildName = "Sync Child";
+        child.Value = 99;
+
+        var services = new ValidateBaseServices<LazyLoadTestEntity>();
+        var entity = new LazyLoadTestEntity(services, childLoadFunc: () => Task.FromResult<LazyLoadChildEntity?>(child));
+        entity.ResumeAllActions();
+        entity.ConfigureLazyLoadingForChild();
+
+        // Act - access the property (no await needed for sync load)
+        var loadedChild = entity.Child;
+
+        // Assert - child should be available immediately
+        Assert.IsNotNull(loadedChild, "Synchronous child load should return value on first access");
+        Assert.AreSame(child, loadedChild);
+        Assert.AreEqual("Sync Child", loadedChild.ChildName);
+        Assert.AreEqual(99, loadedChild.Value);
+    }
 }
