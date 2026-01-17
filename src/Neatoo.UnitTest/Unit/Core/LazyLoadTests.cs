@@ -351,6 +351,40 @@ public class LazyLoadTests
     }
 
     #endregion
+
+    #region Factory Tests
+
+    [TestMethod]
+    public async Task Factory_Create_WithLoader_CreatesLazyLoad()
+    {
+        // Arrange
+        var factory = new LazyLoadFactory();
+        var expected = new TestValue("loaded");
+
+        // Act
+        var lazyLoad = factory.Create(() => Task.FromResult<TestValue?>(expected));
+        var result = await lazyLoad;
+
+        // Assert
+        Assert.AreSame(expected, result);
+    }
+
+    [TestMethod]
+    public void Factory_Create_WithValue_CreatesPreLoadedLazyLoad()
+    {
+        // Arrange
+        var factory = new LazyLoadFactory();
+        var expected = new TestValue("preloaded");
+
+        // Act
+        var lazyLoad = factory.Create(expected);
+
+        // Assert
+        Assert.IsTrue(lazyLoad.IsLoaded);
+        Assert.AreSame(expected, lazyLoad.Value);
+    }
+
+    #endregion
 }
 
 public class TestValue

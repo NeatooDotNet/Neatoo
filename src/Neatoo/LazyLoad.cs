@@ -49,6 +49,17 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
     }
 
     /// <summary>
+    /// Creates a new lazy load wrapper with a pre-loaded value.
+    /// </summary>
+    /// <param name="value">The pre-loaded value.</param>
+    public LazyLoad(T? value)
+    {
+        _loader = () => Task.FromResult(value);
+        _value = value;
+        _isLoaded = true;
+    }
+
+    /// <summary>
     /// Gets the current value. Returns <c>null</c> if not yet loaded.
     /// Never triggers a load - use <c>await</c> or <see cref="LoadAsync"/> to load.
     /// </summary>
