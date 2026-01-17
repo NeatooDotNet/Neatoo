@@ -74,7 +74,7 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
     {
         get
         {
-            // Fire-and-forget lazy loading: trigger load if not loaded and OnLoad is configured
+            // Lazy loading: trigger load if not loaded and OnLoad is configured
             // Use lock to prevent multiple concurrent load triggers
             if (!this._isLoaded && this._onLoad != null && this._loadTask == null)
             {
@@ -83,7 +83,15 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
                     // Double-check inside lock
                     if (!this._isLoaded && this._onLoad != null && this._loadTask == null)
                     {
-                        _ = this.TriggerLazyLoadAsync();
+                        var loadTask = this.TriggerLazyLoadAsync();
+
+                        // If load completed synchronously, _value is already updated
+                        // Return immediately with the loaded value
+                        if (loadTask.IsCompletedSuccessfully)
+                        {
+                            return this._value;
+                        }
+                        // Otherwise, fire-and-forget: PropertyChanged will fire when load completes
                     }
                 }
             }

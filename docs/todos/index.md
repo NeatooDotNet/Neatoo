@@ -27,6 +27,7 @@ This directory contains detailed action items from the comprehensive framework r
 | [L4](L4-specification-pattern.md) | Low | Specification Pattern Support | High | Evaluation |
 | [L5](L5-internal-interface-pattern.md) | Low | Internal Interface Pattern - Document & Simplify | Medium | Not Started |
 | [L6](L6-consolidate-lifecycle-interfaces.md) | Low | Consolidate Lifecycle Interfaces | Low | Not Started |
+| [LL1](lazy-loading-entities.md) | Medium | Add Lazy Loading for Child Entities | High | Not Started |
 | [M7](M7-analyze-documentation-patterns.md) | Medium | Analyze Documentation Sample Patterns | Low | Not Started |
 | [M8](M8-document-child-property-cascade.md) | Medium | Document Child Property Cascade Behavior | Low | Not Started |
 | [CT1](completed/cancellation-token-support.md) | Medium | Add CancellationToken Support | High | **Completed** |
@@ -40,6 +41,7 @@ This directory contains detailed action items from the comprehensive framework r
 - [M2](M2-value-object-base.md) - Value Object Base Type
 - [M5](M5-aggregate-root-marker.md) - IAggregateRoot Marker Interface
 - [L4](L4-specification-pattern.md) - Specification Pattern Support
+- [LL1](lazy-loading-entities.md) - Lazy Loading for Child Entities
 
 ### Code Bugs
 - ~~[H1](completed/H1-fix-rulemanager-assertion.md) - RuleManager Assertion Logic~~ **DONE**
@@ -98,6 +100,7 @@ This directory contains detailed action items from the comprehensive framework r
 - [C1](C1-domain-events-support.md) - Domain Events (Low effort with RemoteFactory 10.6.0)
 - [M2](M2-value-object-base.md) - Value Object support
 - [M5](M5-aggregate-root-marker.md) - IAggregateRoot marker
+- [LL1](lazy-loading-entities.md) - Lazy Loading for Child Entities (High effort)
 
 ---
 
