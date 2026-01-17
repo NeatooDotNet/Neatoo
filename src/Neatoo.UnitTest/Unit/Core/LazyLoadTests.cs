@@ -44,6 +44,35 @@ public class LazyLoadTests
         Assert.AreSame(expected, lazyLoad.Value);
         Assert.IsTrue(lazyLoad.IsLoaded);
     }
+
+    [TestMethod]
+    public async Task IsLoading_DuringLoad_ReturnsTrue()
+    {
+        // Arrange
+        var loadStarted = new TaskCompletionSource<bool>();
+        var continueLoad = new TaskCompletionSource<TestValue?>();
+
+        var lazyLoad = new LazyLoad<TestValue>(async () =>
+        {
+            loadStarted.SetResult(true);
+            return await continueLoad.Task;
+        });
+
+        // Act
+        var loadTask = lazyLoad.LoadAsync();
+        await loadStarted.Task;  // Wait for load to start
+
+        // Assert
+        Assert.IsTrue(lazyLoad.IsLoading);
+        Assert.IsFalse(lazyLoad.IsLoaded);
+
+        // Cleanup
+        continueLoad.SetResult(new TestValue("loaded"));
+        await loadTask;
+
+        Assert.IsFalse(lazyLoad.IsLoading);
+        Assert.IsTrue(lazyLoad.IsLoaded);
+    }
 }
 
 public class TestValue

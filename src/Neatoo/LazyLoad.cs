@@ -20,6 +20,7 @@ public class LazyLoad<T> where T : class
 
     private T? _value;
     private bool _isLoaded;
+    private bool _isLoading;
 
     /// <summary>
     /// Creates a new lazy load wrapper with the specified loader delegate.
@@ -42,14 +43,27 @@ public class LazyLoad<T> where T : class
     public bool IsLoaded => _isLoaded;
 
     /// <summary>
+    /// Gets whether a load operation is currently in progress.
+    /// </summary>
+    public bool IsLoading => _isLoading;
+
+    /// <summary>
     /// Loads the value asynchronously by invoking the loader delegate.
     /// Sets <see cref="IsLoaded"/> to <c>true</c> and updates <see cref="Value"/>.
     /// </summary>
     /// <returns>The loaded value, or <c>null</c> if the loader returns null.</returns>
     public async Task<T?> LoadAsync()
     {
-        _value = await _loader();
-        _isLoaded = true;
-        return _value;
+        _isLoading = true;
+        try
+        {
+            _value = await _loader();
+            _isLoaded = true;
+            return _value;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 }
