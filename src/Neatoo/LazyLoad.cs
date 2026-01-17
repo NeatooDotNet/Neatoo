@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using Neatoo.Rules;
 
 namespace Neatoo;
@@ -20,13 +21,19 @@ namespace Neatoo;
 /// </remarks>
 public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEntityMetaProperties where T : class
 {
-    private readonly Func<Task<T?>> _loader;
+    [JsonIgnore]
+    private readonly Func<Task<T?>>? _loader;
+
+    [JsonIgnore]
     private readonly object _loadLock = new();
 
     private T? _value;
     private bool _isLoaded;
     private bool _isLoading;
+
+    [JsonIgnore]
     private Task<T?>? _loadTask;
+
     private string? _loadError;
 
     /// <summary>
@@ -37,6 +44,16 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
     private void OnPropertyChanged(string propertyName)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    /// <summary>
+    /// Parameterless constructor for JSON deserialization.
+    /// </summary>
+    [JsonConstructor]
+    public LazyLoad()
+    {
+        _loader = null;
+        _isLoaded = false;
     }
 
     /// <summary>
@@ -63,26 +80,39 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
     /// Gets the current value. Returns <c>null</c> if not yet loaded.
     /// Never triggers a load - use <c>await</c> or <see cref="LoadAsync"/> to load.
     /// </summary>
-    public T? Value => _value;
+    [JsonInclude]
+    public T? Value
+    {
+        get => _value;
+        private set => _value = value;
+    }
 
     /// <summary>
     /// Gets whether the value has been loaded.
     /// </summary>
-    public bool IsLoaded => _isLoaded;
+    [JsonInclude]
+    public bool IsLoaded
+    {
+        get => _isLoaded;
+        private set => _isLoaded = value;
+    }
 
     /// <summary>
     /// Gets whether a load operation is currently in progress.
     /// </summary>
+    [JsonIgnore]
     public bool IsLoading => _isLoading;
 
     /// <summary>
     /// Gets whether a load error occurred.
     /// </summary>
+    [JsonIgnore]
     public bool HasLoadError => _loadError != null;
 
     /// <summary>
     /// Gets the error message from the last failed load attempt, or <c>null</c> if no error.
     /// </summary>
+    [JsonIgnore]
     public string? LoadError => _loadError;
 
     /// <summary>
@@ -98,6 +128,11 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
     {
         if (_isLoaded)
             return Task.FromResult(_value);
+
+        if (_loader == null)
+            throw new InvalidOperationException(
+                "Cannot load: no loader delegate is configured. " +
+                "This LazyLoad instance was likely deserialized without a pre-loaded value.");
 
         lock (_loadLock)
         {
@@ -115,7 +150,7 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
         OnPropertyChanged(nameof(IsLoading));
         try
         {
-            _value = await _loader();
+            _value = await _loader!();
             _isLoaded = true;
             OnPropertyChanged(nameof(Value));
             OnPropertyChanged(nameof(IsLoaded));

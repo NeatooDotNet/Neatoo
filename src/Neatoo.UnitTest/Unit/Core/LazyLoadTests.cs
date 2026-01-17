@@ -5,6 +5,7 @@ using Neatoo.Rules;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -354,6 +355,27 @@ public class LazyLoadTests
 
     #endregion
 
+    #region Serialization Tests
+
+    [TestMethod]
+    public void Serialization_PreserveValueAndLoadedState()
+    {
+        // Arrange
+        var factory = new LazyLoadFactory();
+        var original = factory.Create(new TestValue("serialized"));
+
+        // Act
+        var json = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<LazyLoad<TestValue>>(json);
+
+        // Assert
+        Assert.IsNotNull(deserialized);
+        Assert.IsTrue(deserialized.IsLoaded);
+        Assert.AreEqual("serialized", deserialized.Value?.Name);
+    }
+
+    #endregion
+
     #region Factory Tests
 
     [TestMethod]
@@ -407,7 +429,9 @@ public class LazyLoadTests
 
 public class TestValue
 {
-    public string Name { get; }
+    public string Name { get; set; }
+
+    public TestValue() => Name = string.Empty;
     public TestValue(string name) => Name = name;
 }
 
