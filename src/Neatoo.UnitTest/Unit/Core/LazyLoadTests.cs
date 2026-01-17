@@ -121,6 +121,26 @@ public class LazyLoadTests
         Assert.AreEqual(1, loadCount);
         Assert.IsTrue(results.All(r => ReferenceEquals(r, expected)));
     }
+
+    [TestMethod]
+    public async Task LoadAsync_WhenAlreadyLoaded_ReturnsImmediately()
+    {
+        // Arrange
+        var loadCount = 0;
+        var lazyLoad = new LazyLoad<TestValue>(() =>
+        {
+            Interlocked.Increment(ref loadCount);
+            return Task.FromResult<TestValue?>(new TestValue("loaded"));
+        });
+
+        // Act
+        await lazyLoad.LoadAsync();  // First load
+        await lazyLoad.LoadAsync();  // Should not trigger another load
+        await lazyLoad.LoadAsync();  // Should not trigger another load
+
+        // Assert
+        Assert.AreEqual(1, loadCount);
+    }
 }
 
 public class TestValue
