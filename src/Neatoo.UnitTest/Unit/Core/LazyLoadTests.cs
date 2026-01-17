@@ -28,6 +28,22 @@ public class LazyLoadTests
         // Act & Assert
         Assert.IsFalse(lazyLoad.IsLoaded);
     }
+
+    [TestMethod]
+    public async Task LoadAsync_LoadsValue()
+    {
+        // Arrange
+        var expected = new TestValue("loaded");
+        var lazyLoad = new LazyLoad<TestValue>(() => Task.FromResult<TestValue?>(expected));
+
+        // Act
+        var result = await lazyLoad.LoadAsync();
+
+        // Assert
+        Assert.AreSame(expected, result);
+        Assert.AreSame(expected, lazyLoad.Value);
+        Assert.IsTrue(lazyLoad.IsLoaded);
+    }
 }
 
 public class TestValue

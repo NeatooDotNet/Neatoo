@@ -18,10 +18,8 @@ public class LazyLoad<T> where T : class
 {
     private readonly Func<Task<T?>> _loader;
 
-#pragma warning disable CS0649 // Field is never assigned to - will be assigned by LoadAsync in future implementation
     private T? _value;
     private bool _isLoaded;
-#pragma warning restore CS0649
 
     /// <summary>
     /// Creates a new lazy load wrapper with the specified loader delegate.
@@ -42,4 +40,16 @@ public class LazyLoad<T> where T : class
     /// Gets whether the value has been loaded.
     /// </summary>
     public bool IsLoaded => _isLoaded;
+
+    /// <summary>
+    /// Loads the value asynchronously by invoking the loader delegate.
+    /// Sets <see cref="IsLoaded"/> to <c>true</c> and updates <see cref="Value"/>.
+    /// </summary>
+    /// <returns>The loaded value, or <c>null</c> if the loader returns null.</returns>
+    public async Task<T?> LoadAsync()
+    {
+        _value = await _loader();
+        _isLoaded = true;
+        return _value;
+    }
 }
