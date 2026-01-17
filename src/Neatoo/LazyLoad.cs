@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Neatoo;
 
 /// <summary>
@@ -66,4 +68,10 @@ public class LazyLoad<T> where T : class
             _isLoading = false;
         }
     }
+
+    /// <summary>
+    /// Gets an awaiter for this lazy load, enabling <c>await lazyLoad</c> syntax.
+    /// </summary>
+    /// <returns>A task awaiter that loads the value when awaited.</returns>
+    public TaskAwaiter<T?> GetAwaiter() => LoadAsync().GetAwaiter();
 }

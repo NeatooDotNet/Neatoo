@@ -73,6 +73,21 @@ public class LazyLoadTests
         Assert.IsFalse(lazyLoad.IsLoading);
         Assert.IsTrue(lazyLoad.IsLoaded);
     }
+
+    [TestMethod]
+    public async Task Await_LoadsValue()
+    {
+        // Arrange
+        var expected = new TestValue("loaded");
+        var lazyLoad = new LazyLoad<TestValue>(() => Task.FromResult<TestValue?>(expected));
+
+        // Act
+        var result = await lazyLoad;  // Uses GetAwaiter
+
+        // Assert
+        Assert.AreSame(expected, result);
+        Assert.IsTrue(lazyLoad.IsLoaded);
+    }
 }
 
 public class TestValue
