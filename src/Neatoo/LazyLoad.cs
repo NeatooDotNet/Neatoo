@@ -19,10 +19,12 @@ namespace Neatoo;
 public class LazyLoad<T> where T : class
 {
     private readonly Func<Task<T?>> _loader;
+    private readonly object _loadLock = new();
 
     private T? _value;
     private bool _isLoaded;
     private bool _isLoading;
+    private Task<T?>? _loadTask;
 
     /// <summary>
     /// Creates a new lazy load wrapper with the specified loader delegate.
@@ -54,7 +56,26 @@ public class LazyLoad<T> where T : class
     /// Sets <see cref="IsLoaded"/> to <c>true</c> and updates <see cref="Value"/>.
     /// </summary>
     /// <returns>The loaded value, or <c>null</c> if the loader returns null.</returns>
-    public async Task<T?> LoadAsync()
+    /// <remarks>
+    /// Thread-safe: Multiple concurrent calls share a single load operation.
+    /// If a load is already in progress, subsequent calls return the same task.
+    /// </remarks>
+    public Task<T?> LoadAsync()
+    {
+        if (_isLoaded)
+            return Task.FromResult(_value);
+
+        lock (_loadLock)
+        {
+            if (_loadTask != null)
+                return _loadTask;
+
+            _loadTask = LoadAsyncCore();
+            return _loadTask;
+        }
+    }
+
+    private async Task<T?> LoadAsyncCore()
     {
         _isLoading = true;
         try
