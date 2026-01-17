@@ -18,6 +18,16 @@ public class LazyLoadTests
         // Assert
         Assert.IsNull(value);
     }
+
+    [TestMethod]
+    public void IsLoaded_BeforeLoad_ReturnsFalse()
+    {
+        // Arrange
+        var lazyLoad = new LazyLoad<TestValue>(() => Task.FromResult<TestValue?>(new TestValue("loaded")));
+
+        // Act & Assert
+        Assert.IsFalse(lazyLoad.IsLoaded);
+    }
 }
 
 public class TestValue
