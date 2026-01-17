@@ -57,6 +57,7 @@ This guide covers common issues and solutions when working with Neatoo.
 
 Add `partial` to the class declaration:
 
+<!-- pseudo:partial-class-fix -->
 ```csharp
 // Wrong - will compile but properties won't work
 [Factory]
@@ -66,6 +67,7 @@ internal class Person : EntityBase<Person>, IPerson { }
 [Factory]
 internal partial class Person : EntityBase<Person>, IPerson { }
 ```
+<!-- /snippet -->
 
 ### Factory Hint Name Too Long
 
@@ -137,6 +139,7 @@ Direct property assignment in constructors marks the entity as modified (`IsModi
 
 Use `LoadValue()` instead of direct assignment:
 
+<!-- pseudo:loadvalue-constructor-fix -->
 ```csharp
 // Warning: Direct assignment marks entity as modified
 public Person(IEntityBaseServices<Person> services) : base(services)
@@ -150,6 +153,7 @@ public Person(IEntityBaseServices<Person> services) : base(services)
     StatusProperty.LoadValue("Active");  // No warning
 }
 ```
+<!-- /snippet -->
 
 ## Validation Issues
 
