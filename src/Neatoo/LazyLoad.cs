@@ -25,6 +25,7 @@ public class LazyLoad<T> where T : class
     private bool _isLoaded;
     private bool _isLoading;
     private Task<T?>? _loadTask;
+    private string? _loadError;
 
     /// <summary>
     /// Creates a new lazy load wrapper with the specified loader delegate.
@@ -50,6 +51,16 @@ public class LazyLoad<T> where T : class
     /// Gets whether a load operation is currently in progress.
     /// </summary>
     public bool IsLoading => _isLoading;
+
+    /// <summary>
+    /// Gets whether a load error occurred.
+    /// </summary>
+    public bool HasLoadError => _loadError != null;
+
+    /// <summary>
+    /// Gets the error message from the last failed load attempt, or <c>null</c> if no error.
+    /// </summary>
+    public string? LoadError => _loadError;
 
     /// <summary>
     /// Loads the value asynchronously by invoking the loader delegate.
@@ -83,6 +94,11 @@ public class LazyLoad<T> where T : class
             _value = await _loader();
             _isLoaded = true;
             return _value;
+        }
+        catch (Exception ex)
+        {
+            _loadError = ex.Message;
+            throw;
         }
         finally
         {

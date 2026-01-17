@@ -141,6 +141,32 @@ public class LazyLoadTests
         // Assert
         Assert.AreEqual(1, loadCount);
     }
+
+    [TestMethod]
+    public async Task LoadAsync_OnFailure_SetsErrorState()
+    {
+        // Arrange
+        var expectedException = new InvalidOperationException("Load failed");
+        var lazyLoad = new LazyLoad<TestValue>(() => throw expectedException);
+
+        // Act
+        TestValue? result = null;
+        try
+        {
+            result = await lazyLoad.LoadAsync();
+        }
+        catch (InvalidOperationException)
+        {
+            // Expected
+        }
+
+        // Assert
+        Assert.IsTrue(lazyLoad.HasLoadError);
+        Assert.AreEqual("Load failed", lazyLoad.LoadError);
+        Assert.IsFalse(lazyLoad.IsLoading);
+        Assert.IsFalse(lazyLoad.IsLoaded);
+        Assert.IsNull(lazyLoad.Value);
+    }
 }
 
 public class TestValue
