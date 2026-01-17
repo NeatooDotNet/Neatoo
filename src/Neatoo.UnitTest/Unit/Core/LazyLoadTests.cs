@@ -1,4 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System;
 using System.Collections.Generic;
@@ -382,6 +384,22 @@ public class LazyLoadTests
         // Assert
         Assert.IsTrue(lazyLoad.IsLoaded);
         Assert.AreSame(expected, lazyLoad.Value);
+    }
+
+    [TestMethod]
+    public void Factory_RegisteredInDI()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddNeatooServices(NeatooFactory.Logical, typeof(LazyLoadTests).Assembly);
+        var provider = services.BuildServiceProvider();
+
+        // Act
+        var factory = provider.GetService<ILazyLoadFactory>();
+
+        // Assert
+        Assert.IsNotNull(factory);
+        Assert.IsInstanceOfType(factory, typeof(LazyLoadFactory));
     }
 
     #endregion
