@@ -18,7 +18,7 @@ namespace Neatoo;
 /// Always use <see cref="ILazyLoadFactory"/> to create instances. Do not instantiate directly.
 /// </para>
 /// </remarks>
-public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties where T : class
+public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEntityMetaProperties where T : class
 {
     private readonly Func<Task<T?>> _loader;
     private readonly object _loadLock = new();
@@ -187,6 +187,31 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties where
     {
         _loadError = null;
     }
+
+    #endregion
+
+    #region IEntityMetaProperties
+
+    /// <inheritdoc />
+    public bool IsChild => (_value as IEntityMetaProperties)?.IsChild ?? false;
+
+    /// <inheritdoc />
+    public bool IsModified => (_value as IEntityMetaProperties)?.IsModified ?? false;
+
+    /// <inheritdoc />
+    public bool IsSelfModified => false;  // LazyLoad itself is never modified
+
+    /// <inheritdoc />
+    public bool IsMarkedModified => (_value as IEntityMetaProperties)?.IsMarkedModified ?? false;
+
+    /// <inheritdoc />
+    public bool IsSavable => (_value as IEntityMetaProperties)?.IsSavable ?? false;
+
+    /// <inheritdoc />
+    public bool IsNew => (_value as IEntityMetaProperties)?.IsNew ?? false;
+
+    /// <inheritdoc />
+    public bool IsDeleted => (_value as IEntityMetaProperties)?.IsDeleted ?? false;
 
     #endregion
 }

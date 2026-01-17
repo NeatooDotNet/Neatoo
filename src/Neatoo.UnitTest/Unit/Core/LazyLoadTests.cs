@@ -231,6 +231,126 @@ public class LazyLoadTests
         // Assert
         Assert.IsFalse(((IValidateMetaProperties)lazyLoad).IsValid);
     }
+
+    #region IEntityMetaProperties Tests
+
+    [TestMethod]
+    public async Task IsModified_DelegatesToValue_WhenLoaded()
+    {
+        // Arrange
+        var modifiedValue = new TestEntityValue { IsModifiedValue = true };
+        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(modifiedValue));
+
+        // Act
+        await lazyLoad.LoadAsync();
+
+        // Assert
+        Assert.IsTrue(((IEntityMetaProperties)lazyLoad).IsModified);
+    }
+
+    [TestMethod]
+    public void IsModified_BeforeLoad_ReturnsFalse()
+    {
+        // Arrange
+        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
+
+        // Assert
+        Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsModified);
+    }
+
+    [TestMethod]
+    public async Task IsSavable_DelegatesToValue_WhenLoaded()
+    {
+        // Arrange
+        var savableValue = new TestEntityValue { IsSavableValue = true };
+        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(savableValue));
+
+        // Act
+        await lazyLoad.LoadAsync();
+
+        // Assert
+        Assert.IsTrue(((IEntityMetaProperties)lazyLoad).IsSavable);
+    }
+
+    [TestMethod]
+    public void IsSavable_BeforeLoad_ReturnsFalse()
+    {
+        // Arrange
+        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
+
+        // Assert
+        Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsSavable);
+    }
+
+    [TestMethod]
+    public void IsChild_BeforeLoad_ReturnsFalse()
+    {
+        // Arrange
+        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
+
+        // Assert
+        Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsChild);
+    }
+
+    [TestMethod]
+    public void IsSelfModified_AlwaysReturnsFalse()
+    {
+        // Arrange - LazyLoad wrapper itself is never modified
+        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue { IsModifiedValue = true }));
+
+        // Assert
+        Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsSelfModified);
+    }
+
+    [TestMethod]
+    public async Task IsNew_DelegatesToValue_WhenLoaded()
+    {
+        // Arrange
+        var newValue = new TestEntityValue { IsNewValue = true };
+        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(newValue));
+
+        // Act
+        await lazyLoad.LoadAsync();
+
+        // Assert
+        Assert.IsTrue(((IEntityMetaProperties)lazyLoad).IsNew);
+    }
+
+    [TestMethod]
+    public void IsNew_BeforeLoad_ReturnsFalse()
+    {
+        // Arrange
+        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
+
+        // Assert
+        Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsNew);
+    }
+
+    [TestMethod]
+    public async Task IsDeleted_DelegatesToValue_WhenLoaded()
+    {
+        // Arrange
+        var deletedValue = new TestEntityValue { IsDeletedValue = true };
+        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(deletedValue));
+
+        // Act
+        await lazyLoad.LoadAsync();
+
+        // Assert
+        Assert.IsTrue(((IEntityMetaProperties)lazyLoad).IsDeleted);
+    }
+
+    [TestMethod]
+    public void IsDeleted_BeforeLoad_ReturnsFalse()
+    {
+        // Arrange
+        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
+
+        // Assert
+        Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsDeleted);
+    }
+
+    #endregion
 }
 
 public class TestValue
@@ -247,6 +367,35 @@ public class TestValidateValue : IValidateMetaProperties
     public bool IsBusy => IsBusyValue;
     public bool IsValid => IsValidValue;
     public bool IsSelfValid => IsValidValue;
+    public IReadOnlyCollection<IPropertyMessage> PropertyMessages => Array.Empty<IPropertyMessage>();
+    public Task WaitForTasks() => Task.CompletedTask;
+    public Task WaitForTasks(CancellationToken token) => Task.CompletedTask;
+    public Task RunRules(string propertyName, CancellationToken? token = null) => Task.CompletedTask;
+    public Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null) => Task.CompletedTask;
+    public void ClearAllMessages() { }
+    public void ClearSelfMessages() { }
+}
+
+public class TestEntityValue : IEntityMetaProperties, IValidateMetaProperties
+{
+    public bool IsModifiedValue { get; set; }
+    public bool IsSavableValue { get; set; }
+    public bool IsNewValue { get; set; }
+    public bool IsDeletedValue { get; set; }
+
+    // IEntityMetaProperties
+    public bool IsChild => false;
+    public bool IsModified => IsModifiedValue;
+    public bool IsSelfModified => IsModifiedValue;
+    public bool IsMarkedModified => false;
+    public bool IsSavable => IsSavableValue;
+    public bool IsNew => IsNewValue;
+    public bool IsDeleted => IsDeletedValue;
+
+    // IValidateMetaProperties (required for interface)
+    public bool IsBusy => false;
+    public bool IsValid => true;
+    public bool IsSelfValid => true;
     public IReadOnlyCollection<IPropertyMessage> PropertyMessages => Array.Empty<IPropertyMessage>();
     public Task WaitForTasks() => Task.CompletedTask;
     public Task WaitForTasks(CancellationToken token) => Task.CompletedTask;
