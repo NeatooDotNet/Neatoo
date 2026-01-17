@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Neatoo.Rules;
 
 namespace Neatoo;
 
@@ -17,7 +18,7 @@ namespace Neatoo;
 /// Always use <see cref="ILazyLoadFactory"/> to create instances. Do not instantiate directly.
 /// </para>
 /// </remarks>
-public class LazyLoad<T> : INotifyPropertyChanged where T : class
+public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties where T : class
 {
     private readonly Func<Task<T?>> _loader;
     private readonly object _loadLock = new();
@@ -128,4 +129,64 @@ public class LazyLoad<T> : INotifyPropertyChanged where T : class
     /// </summary>
     /// <returns>A task awaiter that loads the value when awaited.</returns>
     public TaskAwaiter<T?> GetAwaiter() => LoadAsync().GetAwaiter();
+
+    #region IValidateMetaProperties
+
+    /// <inheritdoc />
+    public bool IsBusy => IsLoading || ((_value as IValidateMetaProperties)?.IsBusy ?? false);
+
+    /// <inheritdoc />
+    bool IValidateMetaProperties.IsValid => !HasLoadError && ((_value as IValidateMetaProperties)?.IsValid ?? true);
+
+    /// <inheritdoc />
+    public bool IsSelfValid => !HasLoadError;
+
+    /// <inheritdoc />
+    public IReadOnlyCollection<IPropertyMessage> PropertyMessages
+    {
+        get
+        {
+            // Delegate to value's messages if loaded
+            return (_value as IValidateMetaProperties)?.PropertyMessages ?? Array.Empty<IPropertyMessage>();
+        }
+    }
+
+    /// <inheritdoc />
+    public Task WaitForTasks()
+    {
+        if (_loadTask != null && !_loadTask.IsCompleted)
+            return _loadTask;
+        return (_value as IValidateMetaProperties)?.WaitForTasks() ?? Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task WaitForTasks(CancellationToken token)
+    {
+        if (_loadTask != null && !_loadTask.IsCompleted)
+            return _loadTask.WaitAsync(token);
+        return (_value as IValidateMetaProperties)?.WaitForTasks(token) ?? Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task RunRules(string propertyName, CancellationToken? token = null)
+        => (_value as IValidateMetaProperties)?.RunRules(propertyName, token) ?? Task.CompletedTask;
+
+    /// <inheritdoc />
+    public Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null)
+        => (_value as IValidateMetaProperties)?.RunRules(runRules, token) ?? Task.CompletedTask;
+
+    /// <inheritdoc />
+    public void ClearAllMessages()
+    {
+        _loadError = null;
+        (_value as IValidateMetaProperties)?.ClearAllMessages();
+    }
+
+    /// <inheritdoc />
+    public void ClearSelfMessages()
+    {
+        _loadError = null;
+    }
+
+    #endregion
 }

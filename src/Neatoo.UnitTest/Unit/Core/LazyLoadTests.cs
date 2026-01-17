@@ -1,4 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neatoo.Rules;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -185,10 +187,71 @@ public class LazyLoadTests
         CollectionAssert.Contains(changedProperties, nameof(LazyLoad<TestValue>.IsLoaded));
         CollectionAssert.Contains(changedProperties, nameof(LazyLoad<TestValue>.IsLoading));
     }
+
+    [TestMethod]
+    public async Task IsBusy_DelegatesToValue_WhenLoaded()
+    {
+        // Arrange
+        var busyValue = new TestValidateValue { IsBusyValue = true };
+        var lazyLoad = new LazyLoad<TestValidateValue>(() => Task.FromResult<TestValidateValue?>(busyValue));
+
+        // Act
+        await lazyLoad.LoadAsync();
+
+        // Assert
+        Assert.IsTrue(((IValidateMetaProperties)lazyLoad).IsBusy);
+    }
+
+    [TestMethod]
+    public void IsBusy_WhenLoading_ReturnsTrue()
+    {
+        // Arrange
+        var continueLoad = new TaskCompletionSource<TestValue?>();
+        var lazyLoad = new LazyLoad<TestValue>(async () => await continueLoad.Task);
+
+        // Act
+        var _ = lazyLoad.LoadAsync();
+
+        // Assert
+        Assert.IsTrue(((IValidateMetaProperties)lazyLoad).IsBusy);
+
+        // Cleanup
+        continueLoad.SetResult(null);
+    }
+
+    [TestMethod]
+    public void IsValid_WhenHasLoadError_ReturnsFalse()
+    {
+        // Arrange
+        var lazyLoad = new LazyLoad<TestValue>(() => throw new Exception("fail"));
+
+        // Act
+        try { lazyLoad.LoadAsync().GetAwaiter().GetResult(); } catch { }
+
+        // Assert
+        Assert.IsFalse(((IValidateMetaProperties)lazyLoad).IsValid);
+    }
 }
 
 public class TestValue
 {
     public string Name { get; }
     public TestValue(string name) => Name = name;
+}
+
+public class TestValidateValue : IValidateMetaProperties
+{
+    public bool IsBusyValue { get; set; }
+    public bool IsValidValue { get; set; } = true;
+
+    public bool IsBusy => IsBusyValue;
+    public bool IsValid => IsValidValue;
+    public bool IsSelfValid => IsValidValue;
+    public IReadOnlyCollection<IPropertyMessage> PropertyMessages => Array.Empty<IPropertyMessage>();
+    public Task WaitForTasks() => Task.CompletedTask;
+    public Task WaitForTasks(CancellationToken token) => Task.CompletedTask;
+    public Task RunRules(string propertyName, CancellationToken? token = null) => Task.CompletedTask;
+    public Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null) => Task.CompletedTask;
+    public void ClearAllMessages() { }
+    public void ClearSelfMessages() { }
 }
