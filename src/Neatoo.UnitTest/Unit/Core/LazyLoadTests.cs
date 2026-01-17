@@ -1,4 +1,5 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -166,6 +167,23 @@ public class LazyLoadTests
         Assert.IsFalse(lazyLoad.IsLoading);
         Assert.IsFalse(lazyLoad.IsLoaded);
         Assert.IsNull(lazyLoad.Value);
+    }
+
+    [TestMethod]
+    public async Task LoadAsync_RaisesPropertyChangedForAllStateProperties()
+    {
+        // Arrange
+        var changedProperties = new List<string>();
+        var lazyLoad = new LazyLoad<TestValue>(() => Task.FromResult<TestValue?>(new TestValue("loaded")));
+        lazyLoad.PropertyChanged += (s, e) => changedProperties.Add(e.PropertyName!);
+
+        // Act
+        await lazyLoad.LoadAsync();
+
+        // Assert
+        CollectionAssert.Contains(changedProperties, nameof(LazyLoad<TestValue>.Value));
+        CollectionAssert.Contains(changedProperties, nameof(LazyLoad<TestValue>.IsLoaded));
+        CollectionAssert.Contains(changedProperties, nameof(LazyLoad<TestValue>.IsLoading));
     }
 }
 

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace Neatoo;
@@ -16,7 +17,7 @@ namespace Neatoo;
 /// Always use <see cref="ILazyLoadFactory"/> to create instances. Do not instantiate directly.
 /// </para>
 /// </remarks>
-public class LazyLoad<T> where T : class
+public class LazyLoad<T> : INotifyPropertyChanged where T : class
 {
     private readonly Func<Task<T?>> _loader;
     private readonly object _loadLock = new();
@@ -26,6 +27,16 @@ public class LazyLoad<T> where T : class
     private bool _isLoading;
     private Task<T?>? _loadTask;
     private string? _loadError;
+
+    /// <summary>
+    /// Occurs when a property value changes.
+    /// </summary>
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 
     /// <summary>
     /// Creates a new lazy load wrapper with the specified loader delegate.
@@ -89,20 +100,26 @@ public class LazyLoad<T> where T : class
     private async Task<T?> LoadAsyncCore()
     {
         _isLoading = true;
+        OnPropertyChanged(nameof(IsLoading));
         try
         {
             _value = await _loader();
             _isLoaded = true;
+            OnPropertyChanged(nameof(Value));
+            OnPropertyChanged(nameof(IsLoaded));
             return _value;
         }
         catch (Exception ex)
         {
             _loadError = ex.Message;
+            OnPropertyChanged(nameof(HasLoadError));
+            OnPropertyChanged(nameof(LoadError));
             throw;
         }
         finally
         {
             _isLoading = false;
+            OnPropertyChanged(nameof(IsLoading));
         }
     }
 
