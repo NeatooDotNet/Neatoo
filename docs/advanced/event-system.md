@@ -24,6 +24,7 @@ Fires for any property change:
 - Meta-property changes (`IsBusy`, `IsValid`, `IsModified`, etc.)
 - Any other bindable property
 
+<!-- pseudo:property-changed-subscription -->
 ```csharp
 // Blazor/WPF binding automatically subscribes
 <MudTextField @bind-Value="person.Name" />
@@ -34,6 +35,7 @@ person.PropertyChanged += (sender, e) =>
     Console.WriteLine($"Property changed: {e.PropertyName}");
 };
 ```
+<!-- /snippet -->
 
 ### NeatooPropertyChanged (Internal Logic)
 
@@ -44,6 +46,7 @@ Fires when a managed property's `Value` changes. Triggers:
 3. **Bubbling** - Propagates change notification up the parent hierarchy
 4. **UI Translation** - Fires `PropertyChanged` for the property name on the entity
 
+<!-- pseudo:neatoo-property-changed-subscription -->
 ```csharp
 // Subscribe for custom async processing
 person.NeatooPropertyChanged += async (args) =>
@@ -51,6 +54,7 @@ person.NeatooPropertyChanged += async (args) =>
     await LogChangeAsync(args.FullPropertyName, args.Source);
 };
 ```
+<!-- /snippet -->
 
 ## Event Flow
 
@@ -99,6 +103,7 @@ The property fires `PropertyChanged("Value")` (the property's own value changed)
 
 ValidateBase translates this by firing `PropertyChanged("Name")` on the entity when it receives `NeatooPropertyChanged`. This tells the UI "the Name property on this entity changed."
 
+<!-- pseudo:property-changed-translation -->
 ```csharp
 // In ValidateBase._PropertyManager_NeatooPropertyChanged:
 
@@ -107,11 +112,13 @@ ValidateBase translates this by firing `PropertyChanged("Name")` on the entity w
 // This goes to immediate outside listeners only, not up the Neatoo parent tree.
 this.RaisePropertyChanged(eventArgs.FullPropertyName);
 ```
+<!-- /snippet -->
 
 ## NeatooPropertyChangedEventArgs
 
 The async event provides richer information than standard `PropertyChangedEventArgs`:
 
+<!-- pseudo:neatoo-event-args -->
 ```csharp
 public record NeatooPropertyChangedEventArgs
 {
@@ -124,6 +131,7 @@ public record NeatooPropertyChangedEventArgs
     public ChangeReason Reason { get; }           // UserEdit or Load
 }
 ```
+<!-- /snippet -->
 
 ### ChangeReason
 
@@ -134,6 +142,7 @@ The `Reason` property distinguishes between user edits and data loading:
 | `UserEdit` | Normal setter assignment | Yes - runs rules |
 | `Load` | `LoadValue()` call | No - structural only |
 
+<!-- pseudo:change-reason-example -->
 ```csharp
 protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
 {
@@ -153,6 +162,7 @@ protected override async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEv
     await base.ChildNeatooPropertyChanged(eventArgs);
 }
 ```
+<!-- /snippet -->
 
 This enables handlers to distinguish between a user changing a value (which should trigger business logic) and the system loading data (which should not).
 
@@ -216,6 +226,7 @@ After factory completes, `IsPaused = false` and rules run normally.
 
 ### Async Change Tracking
 
+<!-- pseudo:async-change-tracking -->
 ```csharp
 public class ChangeTracker
 {
@@ -231,9 +242,11 @@ public class ChangeTracker
     }
 }
 ```
+<!-- /snippet -->
 
 ### Override Child Change Handling
 
+<!-- pseudo:override-child-change -->
 ```csharp
 public partial class Order : EntityBase<Order>, IOrder
 {
@@ -249,6 +262,7 @@ public partial class Order : EntityBase<Order>, IOrder
     }
 }
 ```
+<!-- /snippet -->
 
 ## See Also
 

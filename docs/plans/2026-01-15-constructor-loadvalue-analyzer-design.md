@@ -6,6 +6,7 @@ When properties are assigned in constructors using normal setters (`Name = "valu
 
 This bug is extremely difficult to diagnose. The correct pattern is to use `LoadValue()` in constructors:
 
+<!-- pseudo:loadvalue-constructor-pattern -->
 ```csharp
 // Wrong - tracks modification
 public EntityObject(IEntityBaseServices<EntityObject> services) : base(services)
@@ -19,6 +20,7 @@ public EntityObject(IEntityBaseServices<EntityObject> services) : base(services)
     RequiredProperty.LoadValue(1);  // IsModified stays false
 }
 ```
+<!-- /snippet -->
 
 ## Solution
 
@@ -74,6 +76,7 @@ From existing `BaseGenerator.cs`:
 
 ### Code Fix Transformation
 
+<!-- pseudo:code-fix-transformation -->
 ```csharp
 // Input
 Name = "value";
@@ -85,6 +88,7 @@ NameProperty.LoadValue("value");
 CountProperty.LoadValue(42);
 ChildProperty.LoadValue(someObject);
 ```
+<!-- /snippet -->
 
 ## Test Cases
 

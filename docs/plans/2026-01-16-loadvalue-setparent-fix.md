@@ -29,6 +29,7 @@
 
 **Step 1: Create the enum file**
 
+<!-- pseudo:change-reason-enum -->
 ```csharp
 namespace Neatoo;
 
@@ -62,6 +63,7 @@ public enum ChangeReason
     Load
 }
 ```
+<!-- /snippet -->
 
 **Step 2: Verify file created**
 
@@ -92,6 +94,7 @@ Read `src/Neatoo/NeatooPropertyChangedEventArgs.cs` to confirm current structure
 
 Replace entire file with:
 
+<!-- pseudo:neatoo-property-changed-event-args -->
 ```csharp
 namespace Neatoo;
 
@@ -151,6 +154,7 @@ public record NeatooPropertyChangedEventArgs
     public ChangeReason Reason { get; init; } = ChangeReason.UserEdit;
 }
 ```
+<!-- /snippet -->
 
 **Step 3: Build to verify no compilation errors**
 
@@ -179,6 +183,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 **Step 1: Review current LoadValue implementation**
 
 Current (lines 318-322):
+<!-- pseudo:loadvalue-current -->
 ```csharp
 public virtual void LoadValue(object? value)
 {
@@ -186,11 +191,13 @@ public virtual void LoadValue(object? value)
     this._value = (T?)value;
 }
 ```
+<!-- /snippet -->
 
 **Step 2: Update LoadValue to fire event with ChangeReason.Load**
 
 Replace LoadValue method with:
 
+<!-- pseudo:loadvalue-updated -->
 ```csharp
 public virtual void LoadValue(object? value)
 {
@@ -233,6 +240,7 @@ public virtual void LoadValue(object? value)
     this.Task = this.OnValueNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(this, ChangeReason.Load));
 }
 ```
+<!-- /snippet -->
 
 **Step 3: Build to verify no compilation errors**
 
@@ -262,6 +270,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 **Step 1: Review current implementation**
 
 Current (lines 374-388):
+<!-- pseudo:child-neatoo-property-changed-current -->
 ```csharp
 protected virtual async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
 {
@@ -279,11 +288,13 @@ protected virtual async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEve
     }
 }
 ```
+<!-- /snippet -->
 
 **Step 2: Update to check ChangeReason**
 
 Replace ChildNeatooPropertyChanged method with:
 
+<!-- pseudo:child-neatoo-property-changed-updated -->
 ```csharp
 protected virtual async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
 {
@@ -303,6 +314,7 @@ protected virtual async Task ChildNeatooPropertyChanged(NeatooPropertyChangedEve
     }
 }
 ```
+<!-- /snippet -->
 
 **Step 3: Build to verify no compilation errors**
 
@@ -370,6 +382,7 @@ Possible issues:
 
 **Step 1: Create test file**
 
+<!-- pseudo:loadvalue-tests -->
 ```csharp
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Neatoo.Internal;
@@ -488,6 +501,7 @@ public class ValidatePropertyLoadValueTests
     }
 }
 ```
+<!-- /snippet -->
 
 **Step 2: Run new tests**
 

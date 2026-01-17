@@ -13,6 +13,7 @@
 ## Background
 
 **Current pattern (string-based):**
+<!-- pseudo:current-pattern -->
 ```csharp
 public string Name
 {
@@ -20,8 +21,10 @@ public string Name
     set => Setter(value);        // Dictionary lookup + cast
 }
 ```
+<!-- /snippet -->
 
 **New pattern (typed backing fields):**
+<!-- pseudo:new-pattern -->
 ```csharp
 // Generator creates:
 protected Property<string> NameProperty { get; private set; } = null!;
@@ -33,6 +36,7 @@ public string Name
     set => NameProperty.Value = value;
 }
 ```
+<!-- /snippet -->
 
 **Key insight:** Task tracking moves from `Setter()` to `_PropertyManager_NeatooPropertyChanged` event handler, where `eventArgs.Property.Task` is already available.
 
@@ -48,6 +52,7 @@ public string Name
 
 **Step 1: Write the failing test**
 
+<!-- pseudo:property-factory-test -->
 ```csharp
 // src/Neatoo.UnitTest/Unit/Core/PropertyFactoryTests.cs
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -87,6 +92,7 @@ public class TestOwner : IBase
     // Stub implementation
 }
 ```
+<!-- /snippet -->
 
 **Step 2: Run test to verify it fails**
 
@@ -95,6 +101,7 @@ Expected: FAIL - IPropertyFactory does not exist
 
 **Step 3: Write IPropertyFactory interface**
 
+<!-- pseudo:iproperty-factory -->
 ```csharp
 // src/Neatoo/IPropertyFactory.cs
 namespace Neatoo;
@@ -116,6 +123,7 @@ public interface IPropertyFactory<TOwner> where TOwner : IBase
     IValidatePropertyManager<IValidateProperty> CreatePropertyManager(TOwner owner);
 }
 ```
+<!-- /snippet -->
 
 **Step 4: Build to verify interface compiles**
 
@@ -148,6 +156,7 @@ EOF
 
 **Step 1: Write additional failing tests**
 
+<!-- pseudo:additional-factory-tests -->
 ```csharp
 // Add to PropertyFactoryTests.cs
 [TestMethod]
@@ -172,6 +181,7 @@ public void CreatePropertyManager_ReturnsValidManager()
     Assert.IsNotNull(manager);
 }
 ```
+<!-- /snippet -->
 
 **Step 2: Run tests to verify they fail**
 
@@ -180,6 +190,7 @@ Expected: FAIL - DefaultPropertyFactory does not exist
 
 **Step 3: Write DefaultPropertyFactory implementation**
 
+<!-- pseudo:default-property-factory -->
 ```csharp
 // src/Neatoo/Internal/DefaultPropertyFactory.cs
 using Neatoo.Internal;
@@ -215,6 +226,7 @@ public class DefaultPropertyFactory<TOwner> : IPropertyFactory<TOwner> where TOw
     }
 }
 ```
+<!-- /snippet -->
 
 **Step 4: Build and run tests**
 
@@ -246,19 +258,23 @@ EOF
 
 **Step 1: Update IValidateBaseServices interface**
 
+<!-- pseudo:ivalidate-base-services-update -->
 ```csharp
 // In IValidateBaseServices.cs, add property:
 IPropertyFactory<T> PropertyFactory { get; }
 ```
+<!-- /snippet -->
 
 **Step 2: Update ValidateBaseServices implementation**
 
+<!-- pseudo:validate-base-services-update -->
 ```csharp
 // In ValidateBaseServices.cs, add:
 public IPropertyFactory<T> PropertyFactory { get; }
 
 // Update constructor to accept and store IPropertyFactory<T>
 ```
+<!-- /snippet -->
 
 **Step 3: Build to verify changes compile**
 
@@ -289,10 +305,12 @@ EOF
 
 **Step 1: Add open generic registration**
 
+<!-- pseudo:di-registration -->
 ```csharp
 // In DI setup:
 services.AddSingleton(typeof(IPropertyFactory<>), typeof(DefaultPropertyFactory<>));
 ```
+<!-- /snippet -->
 
 **Step 2: Build and verify**
 
@@ -326,6 +344,7 @@ EOF
 
 **Step 1: Write failing tests for lazy loading**
 
+<!-- pseudo:lazy-load-tests -->
 ```csharp
 // src/Neatoo.UnitTest/Unit/Core/PropertyLazyLoadTests.cs
 [TestClass]
@@ -363,6 +382,7 @@ public class PropertyLazyLoadTests
     }
 }
 ```
+<!-- /snippet -->
 
 **Step 2: Run tests to verify they fail**
 
@@ -371,6 +391,7 @@ Expected: FAIL - OnLoad, IsLoaded, LoadTask do not exist
 
 **Step 3: Add lazy loading members to IValidateProperty**
 
+<!-- pseudo:ivalidate-property-lazy -->
 ```csharp
 // Add to IValidateProperty.cs:
 
@@ -395,6 +416,7 @@ Task? LoadTask { get; }
 /// </summary>
 Task LoadAsync();
 ```
+<!-- /snippet -->
 
 **Step 4: Build to verify interface compiles**
 
@@ -425,6 +447,7 @@ EOF
 
 **Step 1: Add lazy loading fields and implementation**
 
+<!-- pseudo:validate-property-lazy -->
 ```csharp
 // Add fields to ValidateProperty<T>:
 private Func<Task<T?>>? _onLoad;
@@ -498,6 +521,7 @@ private async Task LoadAsyncCore()
     // Fire PropertyChanged via existing mechanism
 }
 ```
+<!-- /snippet -->
 
 **Step 2: Build and run lazy load tests**
 
@@ -555,12 +579,15 @@ Note in this plan:
 **Step 1: Update generator to produce backing fields**
 
 For each partial property detected, generate:
+<!-- pseudo:generated-backing-field -->
 ```csharp
 protected Property<{PropertyType}> {PropertyName}Property { get; private set; } = null!;
 ```
+<!-- /snippet -->
 
 **Step 2: Generate InitializePropertyBackingFields override**
 
+<!-- pseudo:generated-initialize-method -->
 ```csharp
 protected override void InitializePropertyBackingFields(IPropertyFactory<{ClassName}> factory)
 {
@@ -569,18 +596,23 @@ protected override void InitializePropertyBackingFields(IPropertyFactory<{ClassN
     PropertyManager.Register({PropertyName}Property);
 }
 ```
+<!-- /snippet -->
 
 **Step 3: Update property getter/setter generation**
 
 Change from:
+<!-- pseudo:old-getter-setter -->
 ```csharp
 public partial {Type} {Name} { get => Getter<{Type}>(); set => Setter(value); }
 ```
+<!-- /snippet -->
 
 To:
+<!-- pseudo:new-getter-setter -->
 ```csharp
 public partial {Type} {Name} { get => {Name}Property.Value; set => {Name}Property.Value = value; }
 ```
+<!-- /snippet -->
 
 **Step 4: Build and verify generated output**
 
@@ -614,13 +646,16 @@ EOF
 
 **Step 1: Add abstract InitializePropertyBackingFields method**
 
+<!-- pseudo:abstract-initialize -->
 ```csharp
 // In ValidateBase<T>:
 protected abstract void InitializePropertyBackingFields(IPropertyFactory<T> factory);
 ```
+<!-- /snippet -->
 
 **Step 2: Call from constructor**
 
+<!-- pseudo:constructor-call -->
 ```csharp
 // In ValidateBase<T> constructor:
 public ValidateBase(IValidateBaseServices<T> services)
@@ -631,6 +666,7 @@ public ValidateBase(IValidateBaseServices<T> services)
     // ... rest of constructor
 }
 ```
+<!-- /snippet -->
 
 **Step 3: Build to verify (will fail - entities don't have override yet)**
 
@@ -661,6 +697,7 @@ EOF
 
 **Step 1: Update event handler to track property tasks**
 
+<!-- pseudo:property-changed-handler -->
 ```csharp
 // In _PropertyManager_NeatooPropertyChanged:
 private Task _PropertyManager_NeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
@@ -678,6 +715,7 @@ private Task _PropertyManager_NeatooPropertyChanged(NeatooPropertyChangedEventAr
     return this.ChildNeatooPropertyChanged(eventArgs);
 }
 ```
+<!-- /snippet -->
 
 **Step 2: Build and run existing tests**
 
@@ -710,18 +748,22 @@ EOF
 **Step 1: Remove Getter<T> method**
 
 Delete or mark obsolete:
+<!-- pseudo:obsolete-getter -->
 ```csharp
 [Obsolete("Use {PropertyName}Property.Value instead")]
 protected virtual P? Getter<P>([CallerMemberName] string propertyName = "")
 ```
+<!-- /snippet -->
 
 **Step 2: Remove Setter<T> method**
 
 Delete or mark obsolete:
+<!-- pseudo:obsolete-setter -->
 ```csharp
 [Obsolete("Use {PropertyName}Property.Value = value instead")]
 protected virtual void Setter<P>(P? value, [CallerMemberName] string propertyName = "")
 ```
+<!-- /snippet -->
 
 **Step 3: Build (will fail - generated code still uses Getter/Setter)**
 
@@ -754,6 +796,7 @@ EOF
 
 **Step 1: Add Register method**
 
+<!-- pseudo:register-method -->
 ```csharp
 // In ValidatePropertyManager<P>:
 public void Register(P property)
@@ -773,6 +816,7 @@ public void Register(P property)
     property.PropertyChanged += PropertyPropertyChanged;
 }
 ```
+<!-- /snippet -->
 
 **Step 2: Build and test**
 
@@ -806,6 +850,7 @@ EOF
 **Step 1: Update tests to use new pattern**
 
 For each test that creates properties manually, update to use factory:
+<!-- pseudo:test-update-pattern -->
 ```csharp
 // Old:
 var property = new ValidateProperty<string>(propertyInfo);
@@ -814,6 +859,7 @@ var property = new ValidateProperty<string>(propertyInfo);
 var factory = new DefaultPropertyFactory<TestEntity>(propertyInfoList);
 var property = factory.Create<string>(owner, "Name");
 ```
+<!-- /snippet -->
 
 **Step 2: Run all unit tests**
 
@@ -873,6 +919,7 @@ EOF
 
 **Step 1: Write comprehensive lazy loading tests**
 
+<!-- pseudo:lazy-load-integration -->
 ```csharp
 [TestClass]
 public class LazyLoadIntegrationTests : IntegrationTestBase
@@ -896,6 +943,7 @@ public class LazyLoadIntegrationTests : IntegrationTestBase
     }
 }
 ```
+<!-- /snippet -->
 
 **Step 2: Run tests**
 
