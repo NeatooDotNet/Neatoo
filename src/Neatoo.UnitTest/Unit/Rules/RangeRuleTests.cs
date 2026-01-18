@@ -9,7 +9,7 @@ namespace Neatoo.UnitTest.Unit.Rules;
 
 #region Test Helper Classes
 
-[SuppressFactory]
+[Factory]
 public partial class RangeRuleTestTarget : ValidateBase<RangeRuleTestTarget>
 {
     public RangeRuleTestTarget() : base(new ValidateBaseServices<RangeRuleTestTarget>())

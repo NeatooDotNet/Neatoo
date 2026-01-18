@@ -11,7 +11,7 @@ namespace Neatoo.UnitTest.Unit.Core;
 /// A real ValidateBase implementation for testing ValidatePropertyManager behavior.
 /// Uses SuppressFactory to avoid requiring the full factory infrastructure.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class ValidatePropertyManagerTestObject : ValidateBase<ValidatePropertyManagerTestObject>
 {
     public ValidatePropertyManagerTestObject() : base(new ValidateBaseServices<ValidatePropertyManagerTestObject>())
@@ -56,7 +56,7 @@ public partial class ValidatePropertyManagerTestObject : ValidateBase<ValidatePr
 /// <summary>
 /// A child ValidateBase object for testing child validation scenarios.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class ValidatePropertyManagerChildObject : ValidateBase<ValidatePropertyManagerChildObject>
 {
     public ValidatePropertyManagerChildObject() : base(new ValidateBaseServices<ValidatePropertyManagerChildObject>())
@@ -87,7 +87,7 @@ public partial class ValidatePropertyManagerChildObject : ValidateBase<ValidateP
 /// <summary>
 /// A parent ValidateBase object that contains a child ValidateBase property for testing child validation.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class ValidatePropertyManagerParentObject : ValidateBase<ValidatePropertyManagerParentObject>
 {
     public ValidatePropertyManagerParentObject() : base(new ValidateBaseServices<ValidatePropertyManagerParentObject>())

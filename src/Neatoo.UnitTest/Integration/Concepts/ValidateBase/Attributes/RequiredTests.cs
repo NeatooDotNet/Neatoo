@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.UnitTest.Integration.Concepts.ValidateBase.Attributes;
 
-[SuppressFactory]
+[Factory]
 public class RequiredObject : ValidateBase<RequiredObject>
 {
     public RequiredObject() : base(new ValidateBaseServices<RequiredObject>())

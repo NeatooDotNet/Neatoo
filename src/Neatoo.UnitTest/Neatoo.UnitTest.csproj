@@ -18,6 +18,7 @@
 		<PackageReference Include="MSTest.TestAdapter" />
 		<PackageReference Include="MSTest.TestFramework" />
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
+		<PackageReference Include="Neatoo.RemoteFactory" />
 	</ItemGroup>
 
 	<ItemGroup>

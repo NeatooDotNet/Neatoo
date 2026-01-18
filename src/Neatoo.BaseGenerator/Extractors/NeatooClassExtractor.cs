@@ -203,13 +203,4 @@ internal static class NeatooClassExtractor
 
         return false;
     }
-
-    /// <summary>
-    /// Checks if the class has the [Factory] attribute.
-    /// </summary>
-    public static bool HasFactoryAttribute(INamedTypeSymbol classSymbol)
-    {
-        return classSymbol.GetAttributes().Any(a =>
-            a.AttributeClass?.ToDisplayString() == "Neatoo.RemoteFactory.FactoryAttribute");
-    }
 }

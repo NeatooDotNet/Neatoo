@@ -9,7 +9,7 @@ namespace Neatoo.UnitTest.Unit.Rules;
 
 #region Test Helper Classes
 
-[SuppressFactory]
+[Factory]
 public partial class MinLengthRuleTestTarget : ValidateBase<MinLengthRuleTestTarget>
 {
     public MinLengthRuleTestTarget() : base(new ValidateBaseServices<MinLengthRuleTestTarget>())

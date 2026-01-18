@@ -36,7 +36,7 @@ public class MockPropertyInfo : IPropertyInfo
 /// Simple test object that inherits from ValidateBase for testing rule creation.
 /// Uses SuppressFactory to avoid requiring the full factory infrastructure.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class TestValidateObject : ValidateBase<TestValidateObject>
 {
     public TestValidateObject() : base(new ValidateBaseServices<TestValidateObject>())
@@ -55,7 +55,7 @@ public partial class TestValidateObject : ValidateBase<TestValidateObject>
 /// <summary>
 /// Another test object with different properties for testing generic type parameters.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class AnotherTestValidateObject : ValidateBase<AnotherTestValidateObject>
 {
     public AnotherTestValidateObject() : base(new ValidateBaseServices<AnotherTestValidateObject>())

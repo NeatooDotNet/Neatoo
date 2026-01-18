@@ -26,7 +26,7 @@ public class ValidateTestPoco
 /// Uses SuppressFactory to avoid requiring the full factory infrastructure.
 /// Properties use partial property declarations which get backing fields generated.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class ValidatePropertyTestChild : ValidateBase<ValidatePropertyTestChild>
 {
     public ValidatePropertyTestChild() : base(new ValidateBaseServices<ValidatePropertyTestChild>())

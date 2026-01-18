@@ -14,7 +14,7 @@ namespace Neatoo.UnitTest.Unit.Rules;
 /// Uses SuppressFactory to avoid requiring the full factory infrastructure.
 /// Properties use the Getter/Setter pattern to integrate with the Neatoo property system.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class RequiredRuleTestTarget : ValidateBase<RequiredRuleTestTarget>
 {
     public RequiredRuleTestTarget() : base(new ValidateBaseServices<RequiredRuleTestTarget>())

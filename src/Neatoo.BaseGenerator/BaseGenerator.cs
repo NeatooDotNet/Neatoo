@@ -34,16 +34,6 @@ public class PartialBaseGenerator : IIncrementalGenerator
 
         context.RegisterSourceOutput(factoryClasses,
             static (ctx, source) => Execute(ctx, source));
-
-        // Pipeline 2: Partial Neatoo classes WITHOUT [Factory] attribute - minimal generation
-        var nonFactoryNeatooClasses = context.SyntaxProvider
-            .CreateSyntaxProvider(
-                predicate: static (s, _) => IsPartialClass(s),
-                transform: static (ctx, _) => TransformNonFactoryClass(ctx))
-            .Where(static info => info.IsSuccess);
-
-        context.RegisterSourceOutput(nonFactoryNeatooClasses,
-            static (ctx, source) => Execute(ctx, source));
     }
 
     /// <summary>
@@ -77,48 +67,6 @@ public class PartialBaseGenerator : IIncrementalGenerator
                 classSymbol,
                 context.SemanticModel,
                 isMinimalGeneration: false);
-        }
-        catch (Exception ex)
-        {
-            return NeatooClassInfo.Error(
-                classDeclaration.Identifier.Text,
-                ex.Message,
-#if DEBUG
-                ex.StackTrace
-#else
-                null
-#endif
-            );
-        }
-    }
-
-    /// <summary>
-    /// Transform phase for partial Neatoo classes without [Factory] attribute.
-    /// Extracts data needed for minimal generation (property backing fields + initialization only).
-    /// </summary>
-    private static NeatooClassInfo TransformNonFactoryClass(GeneratorSyntaxContext context)
-    {
-        var classDeclaration = (ClassDeclarationSyntax)context.Node;
-
-        try
-        {
-            var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration) as INamedTypeSymbol;
-            if (classSymbol == null)
-                return NeatooClassInfo.Empty;
-
-            // Skip if class has [Factory] attribute (handled by pipeline 1)
-            if (NeatooClassExtractor.HasFactoryAttribute(classSymbol))
-                return NeatooClassInfo.Empty;
-
-            // Check if it inherits from a Neatoo base class
-            if (!NeatooClassExtractor.ClassOrBaseClassIsNeatooBaseClass(classSymbol))
-                return NeatooClassInfo.Empty;
-
-            return NeatooClassExtractor.Extract(
-                classDeclaration,
-                classSymbol,
-                context.SemanticModel,
-                isMinimalGeneration: true);
         }
         catch (Exception ex)
         {

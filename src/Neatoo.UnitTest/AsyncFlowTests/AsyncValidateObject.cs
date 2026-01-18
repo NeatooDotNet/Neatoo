@@ -110,7 +110,7 @@ internal class AsyncRuleCanWaitNested : AsyncRuleBase<AsyncValidateObject>
 
 }
 
-[SuppressFactory]
+[Factory]
 internal partial class AsyncValidateObject : ValidateBase<AsyncValidateObject>
 {
     public AsyncValidateObject(IValidateBaseServices<AsyncValidateObject> services) : base(services)

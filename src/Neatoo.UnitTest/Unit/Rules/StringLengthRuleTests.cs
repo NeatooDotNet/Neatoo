@@ -9,7 +9,7 @@ namespace Neatoo.UnitTest.Unit.Rules;
 
 #region Test Helper Classes
 
-[SuppressFactory]
+[Factory]
 public partial class StringLengthRuleTestTarget : ValidateBase<StringLengthRuleTestTarget>
 {
     public StringLengthRuleTestTarget() : base(new ValidateBaseServices<StringLengthRuleTestTarget>())

@@ -9,7 +9,7 @@ namespace Neatoo.UnitTest.Unit.Rules;
 
 #region Test Helper Classes
 
-[SuppressFactory]
+[Factory]
 public partial class EmailAddressRuleTestTarget : ValidateBase<EmailAddressRuleTestTarget>
 {
     public EmailAddressRuleTestTarget() : base(new ValidateBaseServices<EmailAddressRuleTestTarget>())
