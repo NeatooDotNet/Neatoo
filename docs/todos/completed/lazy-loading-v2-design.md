@@ -163,7 +163,7 @@ if (entity.History.IsLoaded && entity.History.Value!.IsModified)
 - [x] Register factory in DI
 - [x] Remove old lazy loading from `ValidateProperty<T>`
 - [x] Serialization strategy for `LazyLoad<T>` across client-server boundary
-- [ ] Update documentation and examples
+- [x] Update documentation and examples
 
 ---
 
