@@ -1,6 +1,7 @@
 using KnockOff;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System.Linq.Expressions;
 
@@ -10,6 +11,7 @@ namespace Neatoo.UnitTest.Unit.Rules;
 /// A simple ValidateBase implementation for testing fluent rules.
 /// Uses real Neatoo infrastructure instead of mocks.
 /// </summary>
+[Factory]
 public partial class TestValidateTarget : ValidateBase<TestValidateTarget>
 {
     public TestValidateTarget(IValidateBaseServices<TestValidateTarget> services) : base(services)

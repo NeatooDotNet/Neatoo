@@ -12,7 +12,7 @@ namespace Neatoo.UnitTest.Unit.Rules;
 /// <summary>
 /// A ValidateBase target for RuleManager testing.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class RuleManagerTestTarget : ValidateBase<RuleManagerTestTarget>
 {
     public RuleManagerTestTarget() : base(new ValidateBaseServices<RuleManagerTestTarget>())
@@ -39,7 +39,7 @@ public partial class RuleManagerTestTarget : ValidateBase<RuleManagerTestTarget>
 /// <summary>
 /// Target without any attribute-based rules.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class NoAttributeRulesTarget : ValidateBase<NoAttributeRulesTarget>
 {
     public NoAttributeRulesTarget() : base(new ValidateBaseServices<NoAttributeRulesTarget>())

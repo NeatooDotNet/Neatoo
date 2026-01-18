@@ -12,7 +12,7 @@ namespace Neatoo.UnitTest.Unit.Core;
 /// <summary>
 /// A simple ValidateBase for testing ValidateBaseServices.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class ValidateServicesTestTarget : ValidateBase<ValidateServicesTestTarget>
 {
     public ValidateServicesTestTarget() : base(new ValidateBaseServices<ValidateServicesTestTarget>())
@@ -36,7 +36,7 @@ public partial class ValidateServicesTestTarget : ValidateBase<ValidateServicesT
 /// <summary>
 /// A simple EntityBase for testing EntityBaseServices.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class EntityServicesTestTarget : EntityBase<EntityServicesTestTarget>
 {
     public EntityServicesTestTarget() : base(new EntityBaseServices<EntityServicesTestTarget>(null))

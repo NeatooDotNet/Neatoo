@@ -9,7 +9,7 @@ namespace Neatoo.UnitTest.Unit.Rules;
 
 #region Test Helper Classes
 
-[SuppressFactory]
+[Factory]
 public partial class MaxLengthRuleTestTarget : ValidateBase<MaxLengthRuleTestTarget>
 {
     public MaxLengthRuleTestTarget() : base(new ValidateBaseServices<MaxLengthRuleTestTarget>())

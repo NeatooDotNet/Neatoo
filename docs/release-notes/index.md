@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 10.10.0** (2026-01-16)
+**Neatoo 10.11.0** (2026-01-18)
 
 ---
 
@@ -12,6 +12,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [10.11.0](v10.11.0.md) | 2026-01-18 | Feature | LazyLoad&lt;T&gt; wrapper type for explicit async lazy loading |
 | [10.10.0](v10.10.0.md) | 2026-01-16 | Feature | Source-generated property backing fields, lazy loading |
 | [10.7.1](v10.7.1.md) | 2026-01-11 | Patch | List IsValid/IsBusy/IsModified caching optimization |
 | [10.7.0](v10.7.0.md) | 2026-01-11 | Feature | Stable rule identification via source generation |
@@ -31,6 +32,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [10.11.0](v10.11.0.md) | 2026-01-18 |
 | [10.10.0](v10.10.0.md) | 2026-01-16 |
 | [10.7.1](v10.7.1.md) | 2026-01-11 |
 | [10.7.0](v10.7.0.md) | 2026-01-11 |

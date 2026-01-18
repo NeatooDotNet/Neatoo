@@ -1,6 +1,8 @@
+using Neatoo.RemoteFactory;
+
 namespace Neatoo.UnitTest.Integration.Aggregates.SimpleValidate;
 
-
+[Factory]
 public partial class SimpleValidateObject : ValidateBase<SimpleValidateObject>, ISimpleValidateObject
 {
     public SimpleValidateObject(IValidateBaseServices<SimpleValidateObject> services,

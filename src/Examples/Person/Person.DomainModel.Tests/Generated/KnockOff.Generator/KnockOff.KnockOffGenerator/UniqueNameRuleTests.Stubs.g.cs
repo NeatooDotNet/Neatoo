@@ -1492,44 +1492,6 @@ partial class UniqueNameRuleTests
 			public void Reset() { GetCount = 0; OnGet = null; Value = default!; }
 		}
 
-		/// <summary>Interceptor for IEntityProperty.IsLoaded.</summary>
-		public sealed class IEntityProperty_IsLoadedInterceptor
-		{
-			/// <summary>Number of times the getter was accessed.</summary>
-			public int GetCount { get; private set; }
-
-			/// <summary>Callback for getter. If set, returns its value.</summary>
-			public global::System.Func<Stubs.IEntityProperty, bool>? OnGet { get; set; }
-
-			/// <summary>Value returned by getter when OnGet is not set.</summary>
-			public bool Value { get; set; } = default!;
-
-			/// <summary>Records a getter access.</summary>
-			public void RecordGet() => GetCount++;
-
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { GetCount = 0; OnGet = null; Value = default!; }
-		}
-
-		/// <summary>Interceptor for IEntityProperty.LoadTask.</summary>
-		public sealed class IEntityProperty_LoadTaskInterceptor
-		{
-			/// <summary>Number of times the getter was accessed.</summary>
-			public int GetCount { get; private set; }
-
-			/// <summary>Callback for getter. If set, returns its value.</summary>
-			public global::System.Func<Stubs.IEntityProperty, global::System.Threading.Tasks.Task?>? OnGet { get; set; }
-
-			/// <summary>Value returned by getter when OnGet is not set.</summary>
-			public global::System.Threading.Tasks.Task? Value { get; set; } = default!;
-
-			/// <summary>Records a getter access.</summary>
-			public void RecordGet() => GetCount++;
-
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { GetCount = 0; OnGet = null; Value = default!; }
-		}
-
 		/// <summary>Interceptor for IEntityProperty.MarkSelfUnmodified.</summary>
 		public sealed class IEntityProperty_MarkSelfUnmodifiedInterceptor
 		{
@@ -1701,23 +1663,6 @@ partial class UniqueNameRuleTests
 			public void Reset() { CallCount = 0; LastCallArgs = default; OnCall = null; }
 		}
 
-		/// <summary>Interceptor for IEntityProperty.LoadAsync.</summary>
-		public sealed class IEntityProperty_LoadAsyncInterceptor
-		{
-			/// <summary>Number of times this method was called.</summary>
-			public int CallCount { get; private set; }
-
-			/// <summary>Whether this method was called at least once.</summary>
-			public bool WasCalled => CallCount > 0;
-
-			/// <summary>Callback invoked when method is called.</summary>
-			public global::System.Func<Stubs.IEntityProperty, global::System.Threading.Tasks.Task>? OnCall { get; set; }
-
-			public void RecordCall() { CallCount++; }
-
-			public void Reset() { CallCount = 0; OnCall = null; }
-		}
-
 		/// <summary>Interceptor for IEntityProperty.PropertyChanged event.</summary>
 		public sealed class IEntityProperty_PropertyChangedInterceptor
 		{
@@ -1807,12 +1752,6 @@ partial class UniqueNameRuleTests
 			/// <summary>Interceptor for PropertyMessages.</summary>
 			public IEntityProperty_PropertyMessagesInterceptor PropertyMessages { get; } = new();
 
-			/// <summary>Interceptor for IsLoaded.</summary>
-			public IEntityProperty_IsLoadedInterceptor IsLoaded { get; } = new();
-
-			/// <summary>Interceptor for LoadTask.</summary>
-			public IEntityProperty_LoadTaskInterceptor LoadTask { get; } = new();
-
 			/// <summary>Interceptor for MarkSelfUnmodified.</summary>
 			public IEntityProperty_MarkSelfUnmodifiedInterceptor MarkSelfUnmodified { get; } = new();
 
@@ -1839,9 +1778,6 @@ partial class UniqueNameRuleTests
 
 			/// <summary>Interceptor for RunRules.</summary>
 			public IEntityProperty_RunRulesInterceptor RunRules { get; } = new();
-
-			/// <summary>Interceptor for LoadAsync.</summary>
-			public IEntityProperty_LoadAsyncInterceptor LoadAsync { get; } = new();
 
 			/// <summary>Interceptor for PropertyChanged event.</summary>
 			public IEntityProperty_PropertyChangedInterceptor PropertyChangedInterceptor { get; } = new();
@@ -1953,13 +1889,6 @@ partial class UniqueNameRuleTests
 				return global::System.Threading.Tasks.Task.CompletedTask;
 			}
 
-			global::System.Threading.Tasks.Task global::Neatoo.IValidateProperty.LoadAsync()
-			{
-				LoadAsync.RecordCall();
-				if (LoadAsync.OnCall is { } onCall) return onCall(this);
-				return global::System.Threading.Tasks.Task.CompletedTask;
-			}
-
 			string global::Neatoo.IValidateProperty.Name
 			{
 				get
@@ -2063,26 +1992,6 @@ partial class UniqueNameRuleTests
 					PropertyMessages.RecordGet();
 					if (PropertyMessages.OnGet is { } onGet) return onGet(this);
 					return PropertyMessages.Value;
-				}
-			}
-
-			bool global::Neatoo.IValidateProperty.IsLoaded
-			{
-				get
-				{
-					IsLoaded.RecordGet();
-					if (IsLoaded.OnGet is { } onGet) return onGet(this);
-					return IsLoaded.Value;
-				}
-			}
-
-			global::System.Threading.Tasks.Task? global::Neatoo.IValidateProperty.LoadTask
-			{
-				get
-				{
-					LoadTask.RecordGet();
-					if (LoadTask.OnGet is { } onGet) return onGet(this);
-					return LoadTask.Value;
 				}
 			}
 

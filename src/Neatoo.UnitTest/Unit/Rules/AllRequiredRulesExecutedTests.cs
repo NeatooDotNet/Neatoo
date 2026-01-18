@@ -13,7 +13,7 @@ namespace Neatoo.UnitTest.Unit.Rules;
 /// A ValidateBase implementation with multiple required properties for AllRequiredRulesExecuted testing.
 /// Uses SuppressFactory to avoid requiring the full factory infrastructure.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class AllRequiredRulesTestTarget : ValidateBase<AllRequiredRulesTestTarget>
 {
     public AllRequiredRulesTestTarget() : base(new ValidateBaseServices<AllRequiredRulesTestTarget>())
@@ -40,7 +40,7 @@ public partial class AllRequiredRulesTestTarget : ValidateBase<AllRequiredRulesT
 /// <summary>
 /// A ValidateBase implementation with no required properties.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class NoRequiredPropertiesTarget : ValidateBase<NoRequiredPropertiesTarget>
 {
     public NoRequiredPropertiesTarget() : base(new ValidateBaseServices<NoRequiredPropertiesTarget>())
@@ -58,7 +58,7 @@ public partial class NoRequiredPropertiesTarget : ValidateBase<NoRequiredPropert
 /// <summary>
 /// A ValidateBase implementation with a single required property.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class SingleRequiredPropertyTarget : ValidateBase<SingleRequiredPropertyTarget>
 {
     public SingleRequiredPropertyTarget() : base(new ValidateBaseServices<SingleRequiredPropertyTarget>())
@@ -77,7 +77,7 @@ public partial class SingleRequiredPropertyTarget : ValidateBase<SingleRequiredP
 /// <summary>
 /// A ValidateBase implementation without AllRequiredRulesExecuted for comparison testing.
 /// </summary>
-[SuppressFactory]
+[Factory]
 public partial class TargetWithoutAllRequiredRulesExecuted : ValidateBase<TargetWithoutAllRequiredRulesExecuted>
 {
     public TargetWithoutAllRequiredRulesExecuted() : base(new ValidateBaseServices<TargetWithoutAllRequiredRulesExecuted>())
