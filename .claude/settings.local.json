@@ -34,7 +34,16 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\KeithVoels\\\\.claude\\\\skills\" -Recurse)",
       "Bash(Select-Object FullName, PSIsContainer)",
       "Bash(Format-Table -AutoSize)",
-      "Skill(release-notes)"
+      "Skill(release-notes)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs: mark documentation task complete in LazyLoad<T> todo\n\nAll LazyLoad<T> implementation tasks are now complete including documentation and examples.\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(gh pr create:*)",
+      "Bash(where gh:*)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" --version)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" auth status)",
+      "Bash(echo $GITHUB_TOKEN)",
+      "Bash(gh:*)",
+      "Skill(commit-commands:commit-push-pr)"
     ]
   }
 }
