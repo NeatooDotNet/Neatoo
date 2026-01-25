@@ -12,15 +12,15 @@ namespace DomainModel.Tests.UnitTests
         private Stubs.IPerson CreatePersonStub(string firstName, string lastName, bool isModified)
         {
             var firstNameProp = new Stubs.IEntityProperty();
-            firstNameProp.IsModified.OnGet = (ko) => isModified;
+            firstNameProp.IsModified.OnGet = () => isModified;
 
             var lastNameProp = new Stubs.IEntityProperty();
-            lastNameProp.IsModified.OnGet = (ko) => isModified;
+            lastNameProp.IsModified.OnGet = () => isModified;
 
             var personStub = new Stubs.IPerson();
-            personStub.FirstName.OnGet = (ko) => firstName;
-            personStub.LastName.OnGet = (ko) => lastName;
-            personStub.StringIndexer.OnGet = (ko, propName) => propName switch
+            personStub.FirstName.OnGet = () => firstName;
+            personStub.LastName.OnGet = () => lastName;
+            personStub.Indexer.OnGet = (propName) => propName switch
             {
                 nameof(IPerson.FirstName) => firstNameProp,
                 nameof(IPerson.LastName) => lastNameProp,
@@ -35,7 +35,7 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange - KnockOff stubs
             var isUniqueStub = new Stubs.IsUniqueName();
-            isUniqueStub.Interceptor.OnCall = (ko, id, firstName, lastName, token) => Task.FromResult(true);
+            isUniqueStub.Interceptor.OnCall = (id, firstName, lastName, token) => Task.FromResult(true);
 
             var rule = new UniqueNameRule(isUniqueStub);
             var personStub = CreatePersonStub("Jane", "Doe", isModified: true);
@@ -52,7 +52,7 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange - KnockOff stubs
             var isUniqueStub = new Stubs.IsUniqueName();
-            isUniqueStub.Interceptor.OnCall = (ko, id, firstName, lastName, token) => Task.FromResult(false);
+            isUniqueStub.Interceptor.OnCall = (id, firstName, lastName, token) => Task.FromResult(false);
 
             var rule = new UniqueNameRule(isUniqueStub);
             var personStub = CreatePersonStub("John", "Doe", isModified: true);
@@ -79,8 +79,7 @@ namespace DomainModel.Tests.UnitTests
 
             // Assert
             Assert.Equal(RuleMessages.None, result);
-            Assert.False(isUniqueStub.Interceptor.WasCalled);
-            Assert.Equal(0, isUniqueStub.Interceptor.CallCount);
+            isUniqueStub.Interceptor.Verify(Times.Never);
         }
     }
 }

@@ -11,36 +11,106 @@ partial class PersonAuthTests
 		/// <summary>Interceptor for IUser.Role.</summary>
 		public sealed class IUser_RoleInterceptor
 		{
-			/// <summary>Number of times the getter was accessed.</summary>
-			public int GetCount { get; private set; }
+			private bool _isVerifiable;
+			private global::KnockOff.Times? _verifiableTimes;
+			private bool _valueSet;
+
+			private int _getCount;
 
 			/// <summary>Callback for getter. If set, returns its value.</summary>
-			public global::System.Func<Stubs.IUser, global::DomainModel.Role>? OnGet { get; set; }
+			public global::System.Func<global::DomainModel.Role>? OnGet { get; set; }
 
-			/// <summary>Number of times the setter was accessed.</summary>
-			public int SetCount { get; private set; }
+			private int _setCount;
 
 			/// <summary>The last value passed to the setter.</summary>
 			public global::DomainModel.Role? LastSetValue { get; private set; }
 
 			/// <summary>Callback for setter.</summary>
-			public global::System.Action<Stubs.IUser, global::DomainModel.Role>? OnSet { get; set; }
+			public global::System.Action<global::DomainModel.Role>? OnSet { get; set; }
 
-			/// <summary>Value returned by getter when OnGet is not set.</summary>
-			public global::DomainModel.Role Value { get; set; } = default!;
+			private global::DomainModel.Role _value = default!;
+			/// <summary>Value returned by getter when OnGet is not set. Setting this marks the property as configured.</summary>
+			public global::DomainModel.Role Value
+			{
+				get => _value;
+				set { _value = value; _valueSet = true; }
+			}
+
+			/// <summary>Source object for delegation when OnGet is not set.</summary>
+			internal global::DomainModel.IUser? _source;
 
 			/// <summary>Records a getter access.</summary>
-			public void RecordGet() => GetCount++;
+			public void RecordGet() => _getCount++;
 
 			/// <summary>Records a setter access.</summary>
-			public void RecordSet(global::DomainModel.Role? value) { SetCount++; LastSetValue = value; }
+			public void RecordSet(global::DomainModel.Role? value) { _setCount++; LastSetValue = value; }
 
-			/// <summary>Resets all tracking state.</summary>
-			public void Reset() { GetCount = 0; OnGet = null; SetCount = 0; LastSetValue = default; OnSet = null; Value = default!; }
+			/// <summary>Resets tracking state (counts, LastSetValue) but preserves configuration (OnGet, OnSet, Value) and verifiable marking.</summary>
+			public void Reset() { _getCount = 0; _setCount = 0; LastSetValue = default; _source = null; }
+
+			/// <summary>Marks this property for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
+			public IUser_RoleInterceptor Verifiable() { _isVerifiable = true; _verifiableTimes = null; return this; }
+
+			/// <summary>Marks this property for verification by Stub.Verify() with Times constraint. Returns this for fluent chaining.</summary>
+			public IUser_RoleInterceptor Verifiable(global::KnockOff.Times times) { _isVerifiable = true; _verifiableTimes = times; return this; }
+
+			/// <summary>Verifies the property was accessed at least once. Throws VerificationException if not.</summary>
+			public void Verify() => Verify(global::KnockOff.Times.AtLeastOnce);
+
+			/// <summary>Verifies total access count satisfies the Times constraint. Throws VerificationException if not.</summary>
+			public void Verify(global::KnockOff.Times times)
+			{
+				var totalCount = _getCount + _setCount;
+				if (!times.Validate(totalCount))
+					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("Role", times, totalCount));
+			}
+
+			/// <summary>Verifies the getter was accessed at least once. Throws VerificationException if not.</summary>
+			public void VerifyGet() => VerifyGet(global::KnockOff.Times.AtLeastOnce);
+
+			/// <summary>Verifies getter access count satisfies the Times constraint. Throws VerificationException if not.</summary>
+			public void VerifyGet(global::KnockOff.Times times)
+			{
+				if (!times.Validate(_getCount))
+					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("Role (get)", times, _getCount));
+			}
+
+			/// <summary>Verifies the setter was accessed at least once. Throws VerificationException if not.</summary>
+			public void VerifySet() => VerifySet(global::KnockOff.Times.AtLeastOnce);
+
+			/// <summary>Verifies setter access count satisfies the Times constraint. Throws VerificationException if not.</summary>
+			public void VerifySet(global::KnockOff.Times times)
+			{
+				if (!times.Validate(_setCount))
+					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("Role (set)", times, _setCount));
+			}
+
+			/// <summary>Whether this property was marked with Verifiable().</summary>
+			internal bool IsVerifiable => _isVerifiable;
+
+			/// <summary>Whether this property has been configured (Value set or callbacks registered).</summary>
+			internal bool IsConfigured => _valueSet || OnGet != null || OnSet != null;
+
+			/// <summary>Checks verification for Stub.Verify() - only checks if marked verifiable.</summary>
+			internal global::KnockOff.VerificationFailure? CheckVerification()
+			{
+				if (!_isVerifiable) return null;
+				var times = _verifiableTimes ?? global::KnockOff.Times.AtLeastOnce;
+				var totalCount = _getCount + _setCount;
+				return times.Validate(totalCount) ? null : new global::KnockOff.VerificationFailure("Role", times, totalCount);
+			}
+
+			/// <summary>Checks verification for Stub.VerifyAll() - checks if configured.</summary>
+			internal global::KnockOff.VerificationFailure? CheckVerificationAll()
+			{
+				if (!IsConfigured) return null;
+				var totalCount = _getCount + _setCount;
+				return totalCount >= 1 ? null : new global::KnockOff.VerificationFailure("Role", global::KnockOff.Times.AtLeastOnce, totalCount);
+			}
 		}
 
 		/// <summary>Stub implementation of global::DomainModel.IUser.</summary>
-		public class IUser : global::DomainModel.IUser
+		public class IUser : global::DomainModel.IUser, global::KnockOff.IKnockOffStub
 		{
 			/// <summary>Interceptor for Role.</summary>
 			public IUser_RoleInterceptor Role { get; } = new();
@@ -50,15 +120,60 @@ partial class PersonAuthTests
 				get
 				{
 					Role.RecordGet();
-					if (Role.OnGet is { } onGet) return onGet(this);
+					if (Role.OnGet is { } onGet) return onGet();
+					if (Role._source is { } src) return src.Role;
+					if (Strict) throw global::KnockOff.StubException.NotConfigured("IUser", "Role");
 					return Role.Value;
 				}
 				set
 				{
 					Role.RecordSet(value);
-					if (Role.OnSet is { } onSet) onSet(this, value);
-					else Role.Value = value;
+					if (Role.OnSet is { } onSet) { onSet(value); return; }
+					if (Role._source is { } src) { src.Role = value; return; }
+					if (Strict) throw global::KnockOff.StubException.NotConfigured("IUser", "Role");
+					Role.Value = value;
 				}
+			}
+
+			/// <summary>The global::DomainModel.IUser instance. Use for passing to code expecting the interface.</summary>
+			public global::DomainModel.IUser Object => this;
+
+			/// <summary>When true, unconfigured method calls throw StubException instead of returning default.</summary>
+			public bool Strict { get; set; } = false;
+
+			/// <summary>Creates a new instance of the stub.</summary>
+			/// <param name="strict">When true, unconfigured method calls throw StubException.</param>
+			public IUser(bool strict = false)
+			{
+				Strict = strict;
+			}
+
+			/// <summary>Sets the source object for global::DomainModel.IUser delegation.</summary>
+			public void Source(global::DomainModel.IUser? source)
+			{
+				Role._source = source;
+			}
+
+			/// <summary>Verifies all members marked with .Verifiable() were invoked as expected. Throws VerificationException with all failures if any fail.</summary>
+			public void Verify()
+			{
+				var failures = new global::System.Collections.Generic.List<global::KnockOff.VerificationFailure>();
+
+				if (Role.CheckVerification() is { } roleFailure) failures.Add(roleFailure);
+
+				if (failures.Count > 0)
+					throw new global::KnockOff.VerificationException(failures);
+			}
+
+			/// <summary>Verifies ALL configured members were invoked at least once. Throws VerificationException with all failures if any fail.</summary>
+			public void VerifyAll()
+			{
+				var failures = new global::System.Collections.Generic.List<global::KnockOff.VerificationFailure>();
+
+				if (Role.CheckVerificationAll() is { } roleFailure) failures.Add(roleFailure);
+
+				if (failures.Count > 0)
+					throw new global::KnockOff.VerificationException(failures);
 			}
 
 		}
