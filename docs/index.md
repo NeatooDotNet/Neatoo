@@ -1,182 +1,46 @@
 # Neatoo Framework Documentation
 
-Neatoo provides bindable, serializable domain objects for Blazor and WPF applications with shared business logic across client and server. Define validation rules and domain behavior once - they execute identically in the browser and on the server.
+Welcome to the Neatoo documentation. Neatoo is a DDD framework for .NET providing base classes for aggregates, entities, value objects, and collections with validation, change tracking, and client-server state transfer.
 
-> **Primary UI Integration:** Blazor (with optional MudNeatoo component library)
->
-> **WPF Support:** The core framework works with WPF through standard `INotifyPropertyChanged` binding. See [Blazor Binding](blazor-binding.md) for patterns that apply to WPF with standard XAML bindings.
+## Documentation Structure
 
-## Key Features
+This documentation is organized into guides and reference material for expert .NET developers familiar with Domain-Driven Design.
 
-| Feature | Description |
-|---------|-------------|
-| **Bindable Properties** | INotifyPropertyChanged for UI binding |
-| **Meta-Properties** | IsBusy, IsValid, IsModified, IsSavable |
-| **Validation Rules** | Sync and async business rules |
-| **3-Tier Factory** | Source-generated factories for client-server transfer |
-| **Mapper Methods** | MapModifiedTo auto-generated; MapFrom/MapTo manually implemented |
-| **Authorization** | Declarative authorization via [RemoteFactory](https://github.com/NeatooDotNet/RemoteFactory) |
+### Folders
 
----
-
-## Quick Navigation
-
-| Section | Description |
-|---------|-------------|
-| [Documentation Index](#documentation-index) | All documentation pages organized by topic |
-| [Class Hierarchy](#class-hierarchy) | Base classes and when to use each |
-| [Quick Example](#quick-example) | Complete aggregate root example |
-
----
-
-## I Want To...
-
-| Task | Go To |
-|------|-------|
-| **Get started quickly** | [Quick Start](quick-start.md) |
-| **Follow best practices** | [Best Practices](best-practices.md) |
-| **Create a domain entity** | [Aggregates and Entities](aggregates-and-entities.md) |
-| **Add validation rules** | [Validation and Rules](validation-and-rules.md) |
-| **Load/save data** | [Factory Operations](factory-operations.md) |
-| **Bind to Blazor UI** | [Blazor Binding](blazor-binding.md) |
-| **Create child collections** | [Entity Collections](collections.md) |
-| **Set up client-server** | [Remote Factory](remote-factory.md) |
-| **Test rules and entities** | [Testing](testing.md) |
-| **Debug an issue** | [Troubleshooting](troubleshooting.md) |
-
----
-
-## Documentation Index
+- **[guides/](guides/)** - Feature-specific guides covering validation, entities, collections, properties, business rules, change tracking, async patterns, parent-child relationships, Blazor integration, and RemoteFactory
+- **[reference/](reference/)** - API reference documentation for core classes and interfaces
 
 ### Getting Started
 
-- [Quick Start](quick-start.md) - Get up and running in 10 minutes
-- [Installation](installation.md) - NuGet packages and project setup
-- [Best Practices](best-practices.md) - Interface-first design and recommended patterns
+- **[getting-started.md](getting-started.md)** - Installation and first working aggregate with ValidateBase and EntityBase
 
-### Core Concepts
+## Quick Navigation
 
-- [Aggregates and Entities](aggregates-and-entities.md) - Creating domain model classes with EntityBase
-- [Validation and Rules](validation-and-rules.md) - Business rule implementation with RuleBase
-- [Factory Operations](factory-operations.md) - Create, Fetch, Insert, Update, Delete lifecycle
-- [Property System](property-system.md) - Getter/Setter, IProperty, meta-properties
+**New to Neatoo?** Start with [Getting Started](getting-started.md) to install the package and create your first aggregate.
 
-### Collections
+**Looking for specific features?** Browse the [guides/](guides/) folder for in-depth coverage of:
+- Validation and business rules
+- Entity and aggregate patterns
+- Collection management
+- Property system and source generators
+- Change tracking and async validation
+- Blazor UI integration
+- Client-server state transfer with RemoteFactory
 
-- [Entity Collections](collections.md) - EntityListBase for child entity collections
+**Need API details?** See [reference/](reference/) for comprehensive API documentation.
 
-### UI Integration
+## Framework Overview
 
-- [Blazor Binding](blazor-binding.md) - Data binding and MudNeatoo components
-- [Meta-Properties Reference](meta-properties.md) - IsBusy, IsValid, IsModified, IsSavable
-
-### Advanced Topics
-
-- [Remote Factory Pattern](remote-factory.md) - Client-server state transfer
-- [Mapper Methods](mapper-methods.md) - MapFrom, MapTo, MapModifiedTo
-
-### Internals
-
-- [Event System](advanced/event-system.md) - PropertyChanged vs NeatooPropertyChanged internals
-- [Rule Identification](advanced/rule-identification.md) - How rules get stable IDs for serialization
-
-### Testing
-
-- [Testing](testing.md) - Unit testing rules and domain objects
-
-### Reference
-
-- [Exceptions](exceptions.md) - Exception handling guide
-- [Troubleshooting](troubleshooting.md) - Common issues and solutions
-- [Release Notes](release-notes/index.md) - Version history and changelog
-
-### Architecture
-
-- [DDD Analysis](DDD-Analysis.md) - How Neatoo aligns with Domain-Driven Design
+Neatoo provides:
+- **ValidateBase&lt;T&gt;** - Base class for value objects with validation rules
+- **EntityBase&lt;T&gt;** - Base class for entities and aggregate roots
+- **EntityListBase&lt;T&gt;** - Collections of entities with parent-child relationships
+- **ValidateListBase&lt;T&gt;** - Collections of value objects with validation
+- **Source generators** - Automatic property backing fields and factory methods
+- **RemoteFactory integration** - Client-server state transfer and dependency injection
+- **MudNeatoo** - Blazor components for two-way binding and validation display
 
 ---
 
-## Class Hierarchy
-
-Neatoo provides a class hierarchy for building domain models. Users typically inherit from `ValidateBase<T>` or `EntityBase<T>`:
-
-```
-ValidateBase<T>              - Foundation for validated objects (criteria, filters, form input)
-    |
-EntityBase<T>                - For entities with identity, modification tracking, persistence
-
-
-ValidateListBase<I>          - Foundation for lists of validated objects
-    |
-EntityListBase<I>            - For child entity collections with deleted item tracking
-```
-
-**Note:** Value Objects in Neatoo are simple POCO classes with `[Factory]` attribute - they do not inherit from any Neatoo base class. See [Aggregates and Entities](aggregates-and-entities.md) for details.
-
-## Quick Example
-
-<!-- pseudo:index-quick-example -->
-```csharp
-// Define interface (required for factory generation)
-public partial interface ICustomer : IEntityBase { }
-
-// Define aggregate root
-[Factory]
-internal partial class Customer : EntityBase<Customer>, ICustomer
-{
-    public Customer(IEntityBaseServices<Customer> services) : base(services)
-    {
-        // Inline validation rule
-        RuleManager.AddValidation(
-            t => t.Email?.Contains("@company.com") == false ? "Must use company email" : "",
-            t => t.Email);
-    }
-
-    // Partial properties - Neatoo generates backing code
-    [Required]
-    public partial string? Name { get; set; }
-
-    [Required]
-    [EmailAddress]
-    public partial string? Email { get; set; }
-
-    // Mapper methods - manually implemented
-    public void MapFrom(CustomerEntity entity)
-    {
-        Name = entity.Name;
-        Email = entity.Email;
-    }
-
-    public void MapTo(CustomerEntity entity)
-    {
-        entity.Name = Name;
-        entity.Email = Email;
-    }
-
-    // Factory operations
-    [Remote]
-    [Fetch]
-    public async Task Fetch(int id, [Service] IDbContext db)
-    {
-        var entity = await db.Customers.FindAsync(id);
-        if (entity != null)
-        {
-            MapFrom(entity);
-        }
-    }
-
-    [Remote]
-    [Insert]
-    public async Task Insert([Service] IDbContext db)
-    {
-        await RunRules();
-        if (!IsSavable) return;
-
-        var entity = new CustomerEntity();
-        MapTo(entity);
-        db.Customers.Add(entity);
-        await db.SaveChangesAsync();
-    }
-}
-```
-<!-- /snippet -->
+**UPDATED:** 2026-01-24

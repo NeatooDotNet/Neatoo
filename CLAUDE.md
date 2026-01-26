@@ -68,9 +68,8 @@ Tests are organized into:
 
 Neatoo depends on **RemoteFactory** (`C:\src\neatoodotnet\RemoteFactory`) for source generation of factory methods. Track analyzed commits to catch breaking changes.
 
-### Audience Assumptions
+## Documentation and Project Management
 
-When writing markdown documentation **ASSUME** readers already understand:
-- Domain-Driven Design (aggregates, entities, value objects, repositories)
-- C# and .NET (async/await, generics, attributes, DI)
-- Data modeling and persistence patterns
+- **Framework documentation**: Use `/csharp-docs` skill for creating user-facing docs with MarkdownSnippets
+- **Project todos/plans**: Use `/project-todos` skill for tracking work and design documents
+- **DDD terminology**: See global CLAUDE.md for DDD documentation guidelines
