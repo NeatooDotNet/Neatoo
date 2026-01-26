@@ -16,6 +16,7 @@ namespace Samples
 {
     public interface ICustomerSearchFactory
     {
+        CustomerSearch Create(CancellationToken cancellationToken = default);
     }
 
     internal class CustomerSearchFactory : FactoryBase<CustomerSearch>, ICustomerSearchFactory
@@ -35,10 +36,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual CustomerSearch Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public CustomerSearch LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<CustomerSearch>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<CustomerSearchFactory>();
             services.AddScoped<ICustomerSearchFactory, CustomerSearchFactory>();
+            services.AddTransient<CustomerSearch>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

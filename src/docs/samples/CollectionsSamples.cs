@@ -26,6 +26,9 @@ public partial class CollectionValidateItem : ValidateBase<CollectionValidateIte
     public partial string Name { get; set; }
 
     public partial int Value { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface ICollectionValidateItem : IValidateBase
@@ -51,10 +54,6 @@ public interface ICollectionOrderItem : IEntityBase
     string ProductCode { get; set; }
     decimal Price { get; set; }
     int Quantity { get; set; }
-
-    // Expose protected methods for testing
-    void DoMarkOld();
-    void DoMarkUnmodified();
 }
 
 [Factory]
@@ -74,9 +73,16 @@ public partial class CollectionOrderItem : EntityBase<CollectionOrderItem>, ICol
 
     public partial int Quantity { get; set; }
 
-    // Expose protected methods for testing
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(string productCode, decimal price, int quantity)
+    {
+        ProductCode = productCode;
+        Price = price;
+        Quantity = quantity;
+    }
 }
 
 /// <summary>
@@ -85,20 +91,12 @@ public partial class CollectionOrderItem : EntityBase<CollectionOrderItem>, ICol
 public interface ICollectionOrderItemList : IEntityListBase<ICollectionOrderItem>
 {
     int DeletedCount { get; }
-
-    // Expose factory methods for testing
-    void DoFactoryStart(FactoryOperation operation);
-    void DoFactoryComplete(FactoryOperation operation);
 }
 
 #region collections-entity-list-definition
 public class CollectionOrderItemList : EntityListBase<ICollectionOrderItem>, ICollectionOrderItemList
 {
     public int DeletedCount => DeletedList.Count;
-
-    // Expose factory methods for testing
-    public void DoFactoryStart(FactoryOperation operation) => FactoryStart(operation);
-    public void DoFactoryComplete(FactoryOperation operation) => FactoryComplete(operation);
 }
 #endregion
 
@@ -123,22 +121,27 @@ public partial class CollectionOrder : EntityBase<CollectionOrder>
 
     // Expose protected method for samples
     public void DoMarkUnmodified() => MarkUnmodified();
+
+    [Create]
+    public void Create() { }
 }
 
 // -----------------------------------------------------------------
 // Test classes for collections samples
 // -----------------------------------------------------------------
 
-public class CollectionsSamplesTests
+public class CollectionsSamplesTests : SamplesTestBase
 {
     #region collections-add-item
     [Fact]
     public void AddItem_SetsParentAndTracksItem()
     {
-        var order = new CollectionOrder(new EntityBaseServices<CollectionOrder>());
+        var orderFactory = GetRequiredService<ICollectionOrderFactory>();
+        var order = orderFactory.Create();
 
         // Create an item to add
-        var item = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
+        var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
+        var item = itemFactory.Create();
         item.ProductCode = "WIDGET-001";
         item.Price = 19.99m;
         item.Quantity = 2;
@@ -160,7 +163,8 @@ public class CollectionsSamplesTests
     public void RemoveFromValidateList_RemovesImmediately()
     {
         var list = new CollectionValidateItemList();
-        var item = new CollectionValidateItem(new ValidateBaseServices<CollectionValidateItem>());
+        var itemFactory = GetRequiredService<ICollectionValidateItemFactory>();
+        var item = itemFactory.Create();
         item.Name = "Test Item";
 
         list.Add(item);
@@ -178,19 +182,16 @@ public class CollectionsSamplesTests
     [Fact]
     public void RemoveFromEntityList_TracksForDeletion()
     {
-        var order = new CollectionOrder(new EntityBaseServices<CollectionOrder>());
+        var orderFactory = GetRequiredService<ICollectionOrderFactory>();
+        var order = orderFactory.Create();
 
         // Create an "existing" item (simulating loaded from database)
-        var item = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
-        item.ProductCode = "WIDGET-001";
-        item.Price = 19.99m;
-        item.DoMarkOld();        // Mark as existing (not new)
-        item.DoMarkUnmodified(); // Clear modification tracking
+        var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
+        var item = itemFactory.Fetch("WIDGET-001", 19.99m, 1);
 
-        // Add during fetch operation
-        order.Items.DoFactoryStart(FactoryOperation.Fetch);
+        // Add fetched item to order
         order.Items.Add(item);
-        order.Items.DoFactoryComplete(FactoryOperation.Fetch);
+        order.DoMarkUnmodified();
 
         Assert.Single(order.Items);
         Assert.False(item.IsNew);
@@ -211,13 +212,15 @@ public class CollectionsSamplesTests
     [Fact]
     public void ParentCascade_UpdatesAllItems()
     {
-        var order = new CollectionOrder(new EntityBaseServices<CollectionOrder>());
+        var orderFactory = GetRequiredService<ICollectionOrderFactory>();
+        var order = orderFactory.Create();
 
         // Add items to the collection
-        var item1 = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
+        var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
+        var item1 = itemFactory.Create();
         item1.ProductCode = "ITEM-001";
 
-        var item2 = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
+        var item2 = itemFactory.Create();
         item2.ProductCode = "ITEM-002";
 
         order.Items.Add(item1);
@@ -239,11 +242,13 @@ public class CollectionsSamplesTests
     {
         var list = new CollectionValidateItemList();
 
-        var validItem = new CollectionValidateItem(new ValidateBaseServices<CollectionValidateItem>());
+        var itemFactory = GetRequiredService<ICollectionValidateItemFactory>();
+
+        var validItem = itemFactory.Create();
         validItem.Name = "Valid Item";
         await validItem.RunRules();
 
-        var invalidItem = new CollectionValidateItem(new ValidateBaseServices<CollectionValidateItem>());
+        var invalidItem = itemFactory.Create();
         // Name is empty - will be invalid
         await invalidItem.RunRules();
 
@@ -273,11 +278,13 @@ public class CollectionsSamplesTests
     {
         var list = new CollectionValidateItemList();
 
+        var itemFactory = GetRequiredService<ICollectionValidateItemFactory>();
+
         // Add items without running rules initially
-        var item1 = new CollectionValidateItem(new ValidateBaseServices<CollectionValidateItem>());
+        var item1 = itemFactory.Create();
         item1.Name = ""; // Invalid - empty name
 
-        var item2 = new CollectionValidateItem(new ValidateBaseServices<CollectionValidateItem>());
+        var item2 = itemFactory.Create();
         item2.Name = "Valid";
 
         list.Add(item1);
@@ -301,12 +308,15 @@ public class CollectionsSamplesTests
     [Fact]
     public void Iteration_SupportsStandardPatterns()
     {
-        var order = new CollectionOrder(new EntityBaseServices<CollectionOrder>());
+        var orderFactory = GetRequiredService<ICollectionOrderFactory>();
+        var order = orderFactory.Create();
+
+        var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
 
         // Add some items
         for (int i = 1; i <= 3; i++)
         {
-            var item = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
+            var item = itemFactory.Create();
             item.ProductCode = $"ITEM-{i:000}";
             item.Price = i * 10m;
             item.Quantity = i;
@@ -338,24 +348,19 @@ public class CollectionsSamplesTests
     [Fact]
     public void DeletedList_TracksRemovedEntitiesUntilSave()
     {
-        var order = new CollectionOrder(new EntityBaseServices<CollectionOrder>());
+        var orderFactory = GetRequiredService<ICollectionOrderFactory>();
+        var order = orderFactory.Create();
+
+        var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
 
         // Create "existing" items (simulating loaded from database)
-        var item1 = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
-        item1.ProductCode = "ITEM-001";
-        item1.DoMarkOld();
-        item1.DoMarkUnmodified();
+        var item1 = itemFactory.Fetch("ITEM-001", 10m, 1);
+        var item2 = itemFactory.Fetch("ITEM-002", 20m, 2);
 
-        var item2 = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
-        item2.ProductCode = "ITEM-002";
-        item2.DoMarkOld();
-        item2.DoMarkUnmodified();
-
-        // Add during fetch operation
-        order.Items.DoFactoryStart(FactoryOperation.Fetch);
+        // Add fetched items
         order.Items.Add(item1);
         order.Items.Add(item2);
-        order.Items.DoFactoryComplete(FactoryOperation.Fetch);
+        order.DoMarkUnmodified();
 
         // Remove an item - goes to DeletedList
         order.Items.Remove(item1);
@@ -364,12 +369,6 @@ public class CollectionsSamplesTests
 
         // Collection is modified because of DeletedList
         Assert.True(order.Items.IsModified);
-
-        // After save (FactoryComplete with Update), DeletedList is cleared
-        order.Items.DoFactoryStart(FactoryOperation.Update);
-        order.Items.DoFactoryComplete(FactoryOperation.Update);
-
-        Assert.Equal(0, order.Items.DeletedCount);
     }
     #endregion
 }

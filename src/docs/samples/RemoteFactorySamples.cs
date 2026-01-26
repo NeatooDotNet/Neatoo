@@ -443,8 +443,6 @@ public interface IRfOrderItem : IEntityBase
     string ProductCode { get; set; }
     decimal Price { get; set; }
     int Quantity { get; set; }
-    void DoMarkOld();
-    void DoMarkUnmodified();
 }
 
 /// <summary>
@@ -469,8 +467,14 @@ public partial class RfOrderItem : EntityBase<RfOrderItem>, IRfOrderItem
         Quantity = 0;
     }
 
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
+    [Fetch]
+    public void Fetch(int id, string productCode, decimal price, int quantity)
+    {
+        Id = id;
+        ProductCode = productCode;
+        Price = price;
+        Quantity = quantity;
+    }
 }
 
 /// <summary>
@@ -518,13 +522,8 @@ public partial class RfOrder : EntityBase<RfOrder>
         var itemsData = await repository.FetchItemsAsync(id);
         foreach (var itemData in itemsData)
         {
-            var item = itemFactory.Create();
-            item.Id = itemData.Id;
-            item.ProductCode = itemData.ProductCode;
-            item.Price = itemData.Price;
-            item.Quantity = itemData.Quantity;
-            item.DoMarkOld();
-            item.DoMarkUnmodified();
+            // Use factory.Fetch to load existing items
+            var item = itemFactory.Fetch(itemData.Id, itemData.ProductCode, itemData.Price, itemData.Quantity);
             Items.Add(item);
         }
     }
@@ -609,7 +608,7 @@ public partial class RfCustomerAuthorized : EntityBase<RfCustomerAuthorized>
 // Test classes for RemoteFactory guide samples
 // -----------------------------------------------------------------
 
-public class RemoteFactorySamplesTests
+public class RemoteFactorySamplesTests : SamplesTestBase
 {
     #region remotefactory-generated-interface
     [Fact]
@@ -623,20 +622,14 @@ public class RemoteFactorySamplesTests
         //     Task<RfCustomer?> SaveAsync(RfCustomer target, CancellationToken cancellationToken = default);
         // }
 
-        // Verify the interface type exists
-        var interfaceType = typeof(IRfCustomerFactory);
-        Assert.NotNull(interfaceType);
-        Assert.True(interfaceType.IsInterface);
+        // Verify the factory is available via DI
+        var factory = GetRequiredService<IRfCustomerFactory>();
+        Assert.NotNull(factory);
 
-        // Verify expected methods exist
-        var createMethod = interfaceType.GetMethod("Create");
-        Assert.NotNull(createMethod);
-
-        var fetchMethod = interfaceType.GetMethod("FetchById");
-        Assert.NotNull(fetchMethod);
-
-        var saveMethod = interfaceType.GetMethod("SaveAsync");
-        Assert.NotNull(saveMethod);
+        // Verify we can use the factory methods
+        var customer = factory.Create();
+        Assert.NotNull(customer);
+        Assert.True(customer.IsNew);
     }
     #endregion
 
@@ -644,52 +637,33 @@ public class RemoteFactorySamplesTests
     [Fact]
     public void GeneratedImplementation_HandlesLifecycle()
     {
-        // The source generator creates an internal implementation:
-        // internal class RfCustomerFactory : FactorySaveBase<RfCustomer>,
-        //     IFactorySave<RfCustomer>, IRfCustomerFactory
-        // {
-        //     public virtual RfCustomer Create(CancellationToken cancellationToken = default)
-        //     {
-        //         return LocalCreate(cancellationToken);
-        //     }
-        //
-        //     public RfCustomer LocalCreate(CancellationToken cancellationToken = default)
-        //     {
-        //         var target = ServiceProvider.GetRequiredService<RfCustomer>();
-        //         return DoFactoryMethodCall(target, FactoryOperation.Create,
-        //             () => target.Create());
-        //     }
-        // }
+        // The source generator creates an internal implementation that
+        // handles the entity lifecycle automatically
 
-        // Create entity directly for demonstration
-        var customer = new RfCustomer(new EntityBaseServices<RfCustomer>());
+        var factory = GetRequiredService<IRfCustomerFactory>();
+        var customer = factory.Create();
 
-        // Factory coordinates lifecycle - FactoryComplete sets state
-        customer.FactoryComplete(FactoryOperation.Create);
-
+        // Factory coordinates lifecycle - IsNew is set automatically
         Assert.True(customer.IsNew);
+        Assert.Equal(0, customer.Id);
+        Assert.Equal("", customer.Name);
     }
     #endregion
 
     #region remotefactory-serialization
     [Fact]
-    public void Serialization_PreservesPropertyValues()
+    public async Task Serialization_PreservesPropertyValues()
     {
-        // Create and populate entity
-        var customer = new RfCustomer(new EntityBaseServices<RfCustomer>());
-        using (customer.PauseAllActions())
-        {
-            customer.Id = 42;
-            customer.Name = "Acme Corp";
-            customer.Email = "contact@acme.com";
-        }
-        customer.FactoryComplete(FactoryOperation.Fetch);
+        var factory = GetRequiredService<IRfCustomerFactory>();
+
+        // Fetch creates a populated entity
+        var customer = await factory.FetchById(1);
 
         // Serialize to JSON
         var json = JsonSerializer.Serialize(customer);
 
         // Property values are preserved in JSON
-        Assert.Contains("\"Id\":42", json);
+        Assert.Contains("\"Id\":1", json);
         Assert.Contains("\"Name\":\"Acme Corp\"", json);
         Assert.Contains("\"Email\":\"contact@acme.com\"", json);
 
@@ -700,23 +674,18 @@ public class RemoteFactorySamplesTests
 
     #region remotefactory-dto-pattern
     [Fact]
-    public void DirectSerialization_NoIntermediateDtos()
+    public async Task DirectSerialization_NoIntermediateDtos()
     {
-        // Neatoo serializes domain models directly without DTOs
-        var customer = new RfCustomer(new EntityBaseServices<RfCustomer>());
-        using (customer.PauseAllActions())
-        {
-            customer.Id = 1;
-            customer.Name = "Direct Corp";
-            customer.Email = "direct@example.com";
-        }
-        customer.FactoryComplete(FactoryOperation.Fetch);
+        var factory = GetRequiredService<IRfCustomerFactory>();
+
+        // Fetch entity via factory
+        var customer = await factory.FetchById(1);
 
         // Serialize entity directly - no DTO mapping needed
         var json = JsonSerializer.Serialize(customer);
 
         // Client and server share same domain model contract
-        Assert.Contains("Direct Corp", json);
+        Assert.Contains("Acme Corp", json);
 
         // When to add DTOs:
         // - Different client/server model versions
@@ -729,23 +698,14 @@ public class RemoteFactorySamplesTests
     [Fact]
     public void DiSetup_RegistersFactoryServices()
     {
-        var services = new ServiceCollection();
-
-        // Add Neatoo core services
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomer).Assembly);
-
-        // Generated FactoryServiceRegistrar registers:
-        // - IRfCustomerFactory (interface)
-        // - RfCustomerFactory (implementation)
-        // - IFactorySave<RfCustomer> (save interface)
-        // - RfCustomer (entity type)
-        RfCustomerFactory.FactoryServiceRegistrar(services, NeatooFactory.Logical);
-
-        var provider = services.BuildServiceProvider();
-
-        // Factory is now available via DI
-        var factory = provider.GetService<IRfCustomerFactory>();
+        // AddNeatooServices automatically registers all factories in the assembly
+        // Factory is available via DI
+        var factory = GetRequiredService<IRfCustomerFactory>();
         Assert.NotNull(factory);
+
+        // Can also resolve other factories
+        var orderFactory = GetRequiredService<IRfOrderFactory>();
+        Assert.NotNull(orderFactory);
     }
     #endregion
 
@@ -754,20 +714,14 @@ public class RemoteFactorySamplesTests
     public void DiStartup_CallsRegistrarDuringStartup()
     {
         // In Program.cs or Startup.cs:
-        var services = new ServiceCollection();
+        // services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomer).Assembly);
 
-        // Register Neatoo core services
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomer).Assembly);
-
-        // Each entity's factory has a generated registrar method
         // NeatooFactory modes:
         // - Logical: All factory methods execute locally
         // - Remote: [Remote] methods execute on server via HTTP
         // - Server: Server-side, all methods execute locally
-        RfCustomerFactory.FactoryServiceRegistrar(services, NeatooFactory.Logical);
 
-        var provider = services.BuildServiceProvider();
-        var factory = provider.GetRequiredService<IRfCustomerFactory>();
+        var factory = GetRequiredService<IRfCustomerFactory>();
 
         // Use factory in application code
         var customer = factory.Create();
@@ -779,22 +733,17 @@ public class RemoteFactorySamplesTests
     [Fact]
     public void CoreServices_ProvidedByNeatoo()
     {
-        var services = new ServiceCollection();
-
-        // AddNeatooServices registers core infrastructure:
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomer).Assembly);
-
-        var provider = services.BuildServiceProvider();
-
         // IEntityBaseServices<T> - property management, rule execution
-        var entityServices = provider.GetService<IEntityBaseServices<RfCustomer>>();
+        var entityServices = GetRequiredService<IEntityBaseServices<RfCustomer>>();
         Assert.NotNull(entityServices);
 
         // IValidateBaseServices<T> - validation services
-        var validateServices = provider.GetService<IValidateBaseServices<RfCustomer>>();
+        var validateServices = GetRequiredService<IValidateBaseServices<RfCustomer>>();
         Assert.NotNull(validateServices);
 
         // Application code injects factory interfaces, not core services
+        var factory = GetRequiredService<IRfCustomerFactory>();
+        Assert.NotNull(factory);
     }
     #endregion
 
@@ -802,38 +751,28 @@ public class RemoteFactorySamplesTests
     [Fact]
     public void Lifecycle_ManagedByFactory()
     {
-        var customer = new RfCustomer(new EntityBaseServices<RfCustomer>());
+        var factory = GetRequiredService<IRfCustomerFactory>();
 
-        // Phase 1: FactoryStart - before method executes
-        // - Sets FactoryOperation
-        // - Calls PauseAllActions (for Fetch/Create)
-        customer.FactoryStart(FactoryOperation.Create);
-        Assert.True(customer.IsPaused);
+        // Factory manages the entire lifecycle:
+        // Phase 1: Prepare - suspends validation during data loading
+        // Phase 2: Method execution (e.g., Create)
+        // Phase 3: Finalize - resumes validation, updates entity state
 
-        // Phase 2: Method execution
-        // - Services injected, persistence operations run
-        customer.Create();
+        var customer = factory.Create();
 
-        // Phase 3: FactoryComplete - after method completes
-        // - Calls Resume (for Fetch/Create)
-        // - Updates IsNew, IsModified based on operation
-        customer.FactoryComplete(FactoryOperation.Create);
-
-        Assert.False(customer.IsPaused);
+        // After Create: entity is new and ready for use
         Assert.True(customer.IsNew);
+        Assert.False(customer.IsPaused);
     }
     #endregion
 
     [Fact]
     public void FactoryMethods_DeclaredOnEntity()
     {
-        // Entity declares lifecycle methods with attributes
-        var customer = new RfCustomer(new EntityBaseServices<RfCustomer>());
+        var factory = GetRequiredService<IRfCustomerFactory>();
 
-        // Factory would call Create() and manage lifecycle
-        customer.FactoryStart(FactoryOperation.Create);
-        customer.Create();
-        customer.FactoryComplete(FactoryOperation.Create);
+        // Factory calls the Create method and manages lifecycle
+        var customer = factory.Create();
 
         Assert.True(customer.IsNew);
         Assert.Equal(0, customer.Id);
@@ -843,13 +782,7 @@ public class RemoteFactorySamplesTests
     [Fact]
     public async Task ServiceInjection_ResolvedAtRuntime()
     {
-        var services = new ServiceCollection();
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomerWithServices).Assembly);
-        services.AddTransient<IRfCustomerRepository, MockRfCustomerRepository>();
-        RfCustomerWithServicesFactory.FactoryServiceRegistrar(services, NeatooFactory.Logical);
-
-        var provider = services.BuildServiceProvider();
-        var factory = provider.GetRequiredService<IRfCustomerWithServicesFactory>();
+        var factory = GetRequiredService<IRfCustomerWithServicesFactory>();
 
         // Factory resolves [Service] parameters from DI
         var customer = await factory.FetchAsync(1);
@@ -861,13 +794,7 @@ public class RemoteFactorySamplesTests
     [Fact]
     public async Task Fetch_LoadsEntityState()
     {
-        var services = new ServiceCollection();
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomerFetch).Assembly);
-        services.AddTransient<IRfCustomerRepository, MockRfCustomerRepository>();
-        RfCustomerFetchFactory.FactoryServiceRegistrar(services, NeatooFactory.Logical);
-
-        var provider = services.BuildServiceProvider();
-        var factory = provider.GetRequiredService<IRfCustomerFetchFactory>();
+        var factory = GetRequiredService<IRfCustomerFetchFactory>();
 
         // Factory wraps Fetch with PauseAllActions
         var customer = await factory.FetchAsync(1);
@@ -881,13 +808,7 @@ public class RemoteFactorySamplesTests
     [Fact]
     public async Task Save_RoutesToInsertOrUpdate()
     {
-        var services = new ServiceCollection();
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomerSave).Assembly);
-        services.AddTransient<IRfCustomerRepository, MockRfCustomerRepository>();
-        RfCustomerSaveFactory.FactoryServiceRegistrar(services, NeatooFactory.Logical);
-
-        var provider = services.BuildServiceProvider();
-        var factory = provider.GetRequiredService<IRfCustomerSaveFactory>();
+        var factory = GetRequiredService<IRfCustomerSaveFactory>();
 
         // Create new customer
         var customer = factory.Create();
@@ -905,13 +826,7 @@ public class RemoteFactorySamplesTests
     [Fact]
     public async Task Delete_MarksAndRemoves()
     {
-        var services = new ServiceCollection();
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomerDelete).Assembly);
-        services.AddTransient<IRfCustomerRepository, MockRfCustomerRepository>();
-        RfCustomerDeleteFactory.FactoryServiceRegistrar(services, NeatooFactory.Logical);
-
-        var provider = services.BuildServiceProvider();
-        var factory = provider.GetRequiredService<IRfCustomerDeleteFactory>();
+        var factory = GetRequiredService<IRfCustomerDeleteFactory>();
 
         // Fetch existing customer
         var customer = await factory.FetchAsync(1);
@@ -930,13 +845,7 @@ public class RemoteFactorySamplesTests
     [Fact]
     public async Task MultipleFetchOverloads_SupportDifferentQueries()
     {
-        var services = new ServiceCollection();
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomerMultiFetch).Assembly);
-        services.AddTransient<IRfCustomerRepository, MockRfCustomerRepository>();
-        RfCustomerMultiFetchFactory.FactoryServiceRegistrar(services, NeatooFactory.Logical);
-
-        var provider = services.BuildServiceProvider();
-        var factory = provider.GetRequiredService<IRfCustomerMultiFetchFactory>();
+        var factory = GetRequiredService<IRfCustomerMultiFetchFactory>();
 
         // Fetch by ID
         var byId = await factory.FetchById(1);
@@ -950,14 +859,7 @@ public class RemoteFactorySamplesTests
     [Fact]
     public async Task ChildFactories_LoadAggregateGraph()
     {
-        var services = new ServiceCollection();
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(RfOrder).Assembly);
-        services.AddTransient<IRfOrderRepository, MockRfOrderRepository>();
-        RfOrderFactory.FactoryServiceRegistrar(services, NeatooFactory.Logical);
-        RfOrderItemFactory.FactoryServiceRegistrar(services, NeatooFactory.Logical);
-
-        var provider = services.BuildServiceProvider();
-        var factory = provider.GetRequiredService<IRfOrderFactory>();
+        var factory = GetRequiredService<IRfOrderFactory>();
 
         // Parent factory uses child factory to load items
         var order = await factory.FetchAsync(1);
@@ -973,14 +875,10 @@ public class RemoteFactorySamplesTests
     [Fact]
     public void RemoteAttribute_MarksServerMethods()
     {
-        // [Remote] attribute marks methods for server execution
-        var customer = new RfCustomerRemote(new EntityBaseServices<RfCustomerRemote>());
+        var factory = GetRequiredService<IRfCustomerRemoteFactory>();
 
         // Create executes locally (no [Remote])
-        customer.FactoryStart(FactoryOperation.Create);
-        customer.Create();
-        customer.FactoryComplete(FactoryOperation.Create);
-
+        var customer = factory.Create();
         Assert.True(customer.IsNew);
 
         // In NeatooFactory.Remote mode:

@@ -18,6 +18,9 @@ public partial class CustomerValidator : ValidateBase<CustomerValidator>
 
     [MaxLength(100)]
     public partial string Email { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -25,7 +28,20 @@ public partial class CustomerValidator : ValidateBase<CustomerValidator>
 // Mock repository interface for the sample
 public interface IEmployeeRepository
 {
-    Task<EmployeeEntity> FetchAsync(int id);
+    Task<EmployeeData> FetchDataAsync(int id);
+    Task InsertAsync(EmployeeEntity employee);
+    Task UpdateAsync(EmployeeEntity employee);
+}
+
+/// <summary>
+/// Data transfer object for employee data.
+/// </summary>
+public class EmployeeData
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string Email { get; set; } = "";
+    public decimal Salary { get; set; }
 }
 
 [Factory]
@@ -43,28 +59,51 @@ public partial class EmployeeEntity : EntityBase<EmployeeEntity>
 
     public partial decimal Salary { get; set; }
 
+    [Create]
+    public void Create()
+    {
+        // Initialize new employee with defaults
+        Id = 0;
+        Name = "";
+        Email = "";
+        Salary = 0;
+    }
+
     [Fetch]
     public async Task FetchAsync(int id, [Service] IEmployeeRepository repository)
     {
-        var employee = await repository.FetchAsync(id);
-        Id = employee.Id;
-        Name = employee.Name;
-        Email = employee.Email;
-        Salary = employee.Salary;
+        var data = await repository.FetchDataAsync(id);
+        Id = data.Id;
+        Name = data.Name;
+        Email = data.Email;
+        Salary = data.Salary;
+    }
+
+    [Insert]
+    public async Task InsertAsync([Service] IEmployeeRepository repository)
+    {
+        await repository.InsertAsync(this);
+    }
+
+    [Update]
+    public async Task UpdateAsync([Service] IEmployeeRepository repository)
+    {
+        await repository.UpdateAsync(this);
     }
 }
 #endregion
 
 /// <summary>
-/// Tests for getting-started.md snippets.
+/// Tests for getting-started.md snippets demonstrating DI-based factory usage.
 /// </summary>
-public class GettingStartedSamplesTests
+public class GettingStartedSamplesTests : SamplesTestBase
 {
     #region getting-started-validate-check
     [Fact]
     public void ValidateBase_CheckValidationState()
     {
-        var customer = new CustomerValidator(new ValidateBaseServices<CustomerValidator>());
+        var factory = GetRequiredService<ICustomerValidatorFactory>();
+        var customer = factory.Create();
 
         // Empty required field is invalid
         customer.Name = "";
@@ -84,7 +123,8 @@ public class GettingStartedSamplesTests
     [Fact]
     public void ValidateBase_MaxLengthValidation()
     {
-        var customer = new CustomerValidator(new ValidateBaseServices<CustomerValidator>());
+        var factory = GetRequiredService<ICustomerValidatorFactory>();
+        var customer = factory.Create();
 
         // Set required field first
         customer.Name = "Test Customer";
@@ -100,7 +140,8 @@ public class GettingStartedSamplesTests
     [Fact]
     public void EntityBase_MetaProperties()
     {
-        var employee = new EmployeeEntity(new EntityBaseServices<EmployeeEntity>());
+        var factory = GetRequiredService<IEmployeeEntityFactory>();
+        var employee = factory.Create();
 
         // New entities start as not modified (no property changes yet)
         Assert.False(employee.IsSelfModified);
@@ -114,12 +155,18 @@ public class GettingStartedSamplesTests
     [Fact]
     public void EntityBase_ValidationWithAttributes()
     {
-        var employee = new EmployeeEntity(new EntityBaseServices<EmployeeEntity>());
+        var factory = GetRequiredService<IEmployeeEntityFactory>();
+        var employee = factory.Create();
 
-        // Required validation
+        // Set valid name first
+        employee.Name = "Bob Smith";
+        Assert.True(employee.IsValid);
+
+        // Required validation - clear name to empty
         employee.Name = "";
         Assert.False(employee.IsValid);
 
+        // Restore valid name
         employee.Name = "Bob Smith";
         Assert.True(employee.IsValid);
 
@@ -135,9 +182,9 @@ public class GettingStartedSamplesTests
     [Fact]
     public void EntityBase_UseEntity()
     {
-        // Create entity for testing
-        // (In production, the factory's Create method sets IsNew automatically)
-        var employee = new EmployeeEntity(new EntityBaseServices<EmployeeEntity>());
+        // Use factory to create new employee
+        var factory = GetRequiredService<IEmployeeEntityFactory>();
+        var employee = factory.Create();
 
         // Set properties
         employee.Name = "Alice Johnson";
@@ -153,6 +200,49 @@ public class GettingStartedSamplesTests
         Assert.Contains("Name", employee.ModifiedProperties);
         Assert.Contains("Email", employee.ModifiedProperties);
         Assert.Contains("Salary", employee.ModifiedProperties);
+    }
+    #endregion
+
+    #region getting-started-factory-usage
+    [Fact]
+    public async Task Factory_FetchEmployee()
+    {
+        // Resolve factory from DI
+        var factory = GetRequiredService<IEmployeeEntityFactory>();
+
+        // Use factory to fetch existing employee
+        var employee = await factory.FetchAsync(1);
+
+        // Employee data loaded from repository
+        Assert.Equal(1, employee.Id);
+        Assert.Equal("Employee 1", employee.Name);
+        Assert.False(employee.IsNew);
+    }
+    #endregion
+
+    #region getting-started-save-entity
+    [Fact]
+    public async Task Factory_SaveEmployee()
+    {
+        var factory = GetRequiredService<IEmployeeEntityFactory>();
+
+        // Create new employee
+        var employee = factory.Create();
+        employee.Name = "New Employee";
+        employee.Email = "new@example.com";
+        employee.Salary = 60000m;
+
+        // Verify IsSavable before save
+        Assert.True(employee.IsNew);
+        Assert.True(employee.IsValid);
+        Assert.True(employee.IsSavable);
+
+        // Save the employee (calls InsertAsync for new entities)
+        var saved = await factory.SaveAsync(employee);
+
+        // After save, entity is no longer new
+        Assert.False(saved.IsNew);
+        Assert.False(saved.IsSelfModified);
     }
     #endregion
 
@@ -185,15 +275,27 @@ public class GettingStartedSamplesTests
 /// </summary>
 public class MockEmployeeRepository : IEmployeeRepository
 {
-    public Task<EmployeeEntity> FetchAsync(int id)
+    public Task<EmployeeData> FetchDataAsync(int id)
     {
-        var employee = new EmployeeEntity(new EntityBaseServices<EmployeeEntity>())
+        var data = new EmployeeData
         {
             Id = id,
             Name = $"Employee {id}",
             Email = $"employee{id}@example.com",
             Salary = 50000m + (id * 1000)
         };
-        return Task.FromResult(employee);
+        return Task.FromResult(data);
+    }
+
+    public Task InsertAsync(EmployeeEntity employee)
+    {
+        // Simulate insert - in real implementation would persist to database
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAsync(EmployeeEntity employee)
+    {
+        // Simulate update - in real implementation would persist to database
+        return Task.CompletedTask;
     }
 }

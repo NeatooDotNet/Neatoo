@@ -14,6 +14,8 @@ namespace Samples
 {
     public interface ITrackingInvoiceFactory
     {
+        TrackingInvoice Create(CancellationToken cancellationToken = default);
+        TrackingInvoice Fetch(string invoiceNumber, CancellationToken cancellationToken = default);
     }
 
     internal class TrackingInvoiceFactory : FactoryBase<TrackingInvoice>, ITrackingInvoiceFactory
@@ -33,10 +35,33 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual TrackingInvoice Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public TrackingInvoice LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<TrackingInvoice>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual TrackingInvoice Fetch(string invoiceNumber, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(invoiceNumber, cancellationToken);
+        }
+
+        public TrackingInvoice LocalFetch(string invoiceNumber, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<TrackingInvoice>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(invoiceNumber));
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<TrackingInvoiceFactory>();
             services.AddScoped<ITrackingInvoiceFactory, TrackingInvoiceFactory>();
+            services.AddTransient<TrackingInvoice>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

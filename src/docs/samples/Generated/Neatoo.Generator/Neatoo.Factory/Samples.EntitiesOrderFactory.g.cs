@@ -14,6 +14,8 @@ namespace Samples
 {
     public interface IEntitiesOrderFactory
     {
+        EntitiesOrder Create(CancellationToken cancellationToken = default);
+        EntitiesOrder Fetch(int id, string orderNumber, DateTime orderDate, CancellationToken cancellationToken = default);
     }
 
     internal class EntitiesOrderFactory : FactoryBase<EntitiesOrder>, IEntitiesOrderFactory
@@ -33,10 +35,33 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual EntitiesOrder Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public EntitiesOrder LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<EntitiesOrder>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual EntitiesOrder Fetch(int id, string orderNumber, DateTime orderDate, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(id, orderNumber, orderDate, cancellationToken);
+        }
+
+        public EntitiesOrder LocalFetch(int id, string orderNumber, DateTime orderDate, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<EntitiesOrder>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id, orderNumber, orderDate));
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<EntitiesOrderFactory>();
             services.AddScoped<IEntitiesOrderFactory, EntitiesOrderFactory>();
+            services.AddTransient<EntitiesOrder>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

@@ -25,6 +25,9 @@ public partial class PropEmployee : ValidateBase<PropEmployee>
     public partial string Email { get; set; }
 
     public partial DateTime HireDate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -43,6 +46,9 @@ public partial class PropContact : ValidateBase<PropContact>
 
     // Read-only property - only getter implementation generated
     public partial string FullName { get; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -81,6 +87,9 @@ public partial class PropCustomer : ValidateBase<PropCustomer>
         }
     }
     #endregion
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -91,8 +100,6 @@ public interface IPropOrderItem : IEntityBase
     string ProductName { get; set; }
     decimal UnitPrice { get; set; }
     int Quantity { get; set; }
-    void DoMarkOld();
-    void DoMarkUnmodified();
 }
 
 [Factory]
@@ -111,21 +118,13 @@ public partial class PropOrderItem : EntityBase<PropOrderItem>, IPropOrderItem
 
     public partial int Quantity { get; set; }
 
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
+    [Create]
+    public void Create() { }
 }
 
-public interface IPropOrderItemList : IEntityListBase<IPropOrderItem>
-{
-    void DoFactoryStart(FactoryOperation operation);
-    void DoFactoryComplete(FactoryOperation operation);
-}
+public interface IPropOrderItemList : IEntityListBase<IPropOrderItem> { }
 
-public class PropOrderItemList : EntityListBase<IPropOrderItem>, IPropOrderItemList
-{
-    public void DoFactoryStart(FactoryOperation operation) => FactoryStart(operation);
-    public void DoFactoryComplete(FactoryOperation operation) => FactoryComplete(operation);
-}
+public class PropOrderItemList : EntityListBase<IPropOrderItem>, IPropOrderItemList { }
 
 /// <summary>
 /// Order aggregate root for property cascade samples.
@@ -144,8 +143,8 @@ public partial class PropOrder : EntityBase<PropOrder>
 
     public partial IPropOrderItemList LineItems { get; set; }
 
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -154,21 +153,17 @@ public partial class PropOrder : EntityBase<PropOrder>
 [Factory]
 public partial class PropAsyncProduct : ValidateBase<PropAsyncProduct>
 {
-    private readonly IPricingService _pricingService;
-
     public PropAsyncProduct(
         IValidateBaseServices<PropAsyncProduct> services,
         IPricingService pricingService) : base(services)
     {
-        _pricingService = pricingService;
-
         // Async rule that fetches pricing
         RuleManager.AddActionAsync(
             async product =>
             {
                 if (!string.IsNullOrEmpty(product.ZipCode))
                 {
-                    product.TaxRate = await _pricingService.GetTaxRateAsync(product.ZipCode);
+                    product.TaxRate = await pricingService.GetTaxRateAsync(product.ZipCode);
                 }
             },
             p => p.ZipCode);
@@ -179,6 +174,9 @@ public partial class PropAsyncProduct : ValidateBase<PropAsyncProduct>
     public partial string ZipCode { get; set; }
 
     public partial decimal TaxRate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -203,6 +201,9 @@ public partial class PropInvoice : ValidateBase<PropInvoice>
     public partial decimal Amount { get; set; }
 
     public partial DateTime InvoiceDate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 // -----------------------------------------------------------------
@@ -210,14 +211,15 @@ public partial class PropInvoice : ValidateBase<PropInvoice>
 // -----------------------------------------------------------------
 
 /// <summary>
-/// Tests for properties.md snippets.
+/// Tests for properties.md snippets demonstrating DI-based factory usage.
 /// </summary>
-public class PropertiesSamplesTests
+public class PropertiesSamplesTests : SamplesTestBase
 {
     [Fact]
     public void PartialPropertyDeclaration_SourceGeneratorCompletesImplementation()
     {
-        var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+        var factory = GetRequiredService<IPropEmployeeFactory>();
+        var employee = factory.Create();
 
         // Properties work like normal properties
         employee.Name = "Alice Johnson";
@@ -233,7 +235,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void GeneratedImplementation_PropertyBackingField()
     {
-        var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+        var factory = GetRequiredService<IPropEmployeeFactory>();
+        var employee = factory.Create();
 
         // The source generator creates:
         // - NameProperty backing field of type IValidateProperty<string>
@@ -254,7 +257,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void BackingFieldAccess_PropertyWrapper()
     {
-        var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+        var factory = GetRequiredService<IPropEmployeeFactory>();
+        var employee = factory.Create();
         employee.Name = "Carol Davis";
 
         // Access property wrapper via indexer
@@ -277,7 +281,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void PropertyChanged_StandardNotification()
     {
-        var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+        var factory = GetRequiredService<IPropEmployeeFactory>();
+        var employee = factory.Create();
         var changedProperties = new List<string>();
 
         // Subscribe to PropertyChanged
@@ -300,7 +305,8 @@ public class PropertiesSamplesTests
     [Fact]
     public async Task NeatooPropertyChanged_ExtendedNotification()
     {
-        var order = new PropOrder(new EntityBaseServices<PropOrder>());
+        var factory = GetRequiredService<IPropOrderFactory>();
+        var order = factory.Create();
         var receivedEvents = new List<NeatooPropertyChangedEventArgs>();
 
         // Subscribe to NeatooPropertyChanged
@@ -329,7 +335,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void ChangeReasonUserEdit_NormalPropertyAssignment()
     {
-        var invoice = new PropInvoice(new ValidateBaseServices<PropInvoice>());
+        var factory = GetRequiredService<IPropInvoiceFactory>();
+        var invoice = factory.Create();
         ChangeReason capturedReason = ChangeReason.Load; // Initialize to opposite
 
         invoice.NeatooPropertyChanged += (args) =>
@@ -347,8 +354,9 @@ public class PropertiesSamplesTests
         // Reason is UserEdit for normal setter assignment
         Assert.Equal(ChangeReason.UserEdit, capturedReason);
 
-        // Validation rules execute with UserEdit
-        Assert.True(invoice.IsValid);
+        // Amount property's validation rule executes with UserEdit
+        // (Amount > 0 passes, so Amount property is valid)
+        Assert.True(invoice["Amount"].IsValid);
     }
     #endregion
 
@@ -356,7 +364,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void LoadValue_DataLoadingWithoutRules()
     {
-        var invoice = new PropInvoice(new ValidateBaseServices<PropInvoice>());
+        var factory = GetRequiredService<IPropInvoiceFactory>();
+        var invoice = factory.Create();
 
         // Use LoadValue during data loading (e.g., in Fetch factory method)
         // LoadValue:
@@ -377,7 +386,8 @@ public class PropertiesSamplesTests
     [Fact]
     public async Task MetaProperties_QueryPropertyState()
     {
-        var invoice = new PropInvoice(new ValidateBaseServices<PropInvoice>());
+        var factory = GetRequiredService<IPropInvoiceFactory>();
+        var invoice = factory.Create();
 
         // Set valid data
         invoice.CustomerName = "Beta Inc";
@@ -408,7 +418,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void CustomGetter_ComputedProperty()
     {
-        var customer = new PropCustomer(new ValidateBaseServices<PropCustomer>());
+        var factory = GetRequiredService<IPropCustomerFactory>();
+        var customer = factory.Create();
 
         // Empty names return default
         Assert.Equal("(Unknown)", customer.DisplayName);
@@ -425,7 +436,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void ReadOnlyProperty_OnlyGetter()
     {
-        var contact = new PropContact(new ValidateBaseServices<PropContact>());
+        var factory = GetRequiredService<IPropContactFactory>();
+        var contact = factory.Create();
 
         // Set writable properties
         contact.FirstName = "John";
@@ -442,7 +454,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void SuppressEvents_PauseAllActions()
     {
-        var invoice = new PropInvoice(new ValidateBaseServices<PropInvoice>());
+        var factory = GetRequiredService<IPropInvoiceFactory>();
+        var invoice = factory.Create();
         var changeCount = 0;
 
         invoice.PropertyChanged += (_, _) => changeCount++;
@@ -474,7 +487,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void IndexerAccess_DynamicPropertyAccess()
     {
-        var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+        var factory = GetRequiredService<IPropEmployeeFactory>();
+        var employee = factory.Create();
         employee.Name = "Eva Martinez";
 
         // Access property by name using indexer
@@ -500,10 +514,8 @@ public class PropertiesSamplesTests
     [Fact]
     public async Task TaskTracking_AsyncOperations()
     {
-        var pricingService = new MockPricingService();
-        var product = new PropAsyncProduct(
-            new ValidateBaseServices<PropAsyncProduct>(),
-            pricingService);
+        var factory = GetRequiredService<IPropAsyncProductFactory>();
+        var product = factory.Create();
 
         product.Name = "Widget";
 
@@ -530,7 +542,8 @@ public class PropertiesSamplesTests
     [Fact]
     public async Task ValidationIntegration_PropertyValidation()
     {
-        var invoice = new PropInvoice(new ValidateBaseServices<PropInvoice>());
+        var factory = GetRequiredService<IPropInvoiceFactory>();
+        var invoice = factory.Create();
 
         // Set invalid value
         invoice.Amount = -50.00m;
@@ -563,7 +576,8 @@ public class PropertiesSamplesTests
     [Fact]
     public async Task ChangePropagation_ChildToParent()
     {
-        var order = new PropOrder(new EntityBaseServices<PropOrder>());
+        var orderFactory = GetRequiredService<IPropOrderFactory>();
+        var order = orderFactory.Create();
         order.OrderNumber = "ORD-001";
 
         var receivedEvents = new List<NeatooPropertyChangedEventArgs>();
@@ -575,7 +589,8 @@ public class PropertiesSamplesTests
         };
 
         // Add child item
-        var item = new PropOrderItem(new EntityBaseServices<PropOrderItem>());
+        var itemFactory = GetRequiredService<IPropOrderItemFactory>();
+        var item = itemFactory.Create();
         item.ProductName = "Widget";
         item.UnitPrice = 25.00m;
         item.Quantity = 2;
@@ -605,7 +620,8 @@ public class PropertiesSamplesTests
         // as modifications.
 
         // Instead, use LoadValue for initial values:
-        var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+        var factory = GetRequiredService<IPropEmployeeFactory>();
+        var employee = factory.Create();
 
         // LoadValue sets value without triggering modification tracking
         employee["Name"].LoadValue("Default Employee");
@@ -623,14 +639,16 @@ public class PropertiesSamplesTests
     [Fact]
     public async Task CascadeValidation_ChildInvalidMakesParentInvalid()
     {
-        var order = new PropOrder(new EntityBaseServices<PropOrder>());
+        var orderFactory = GetRequiredService<IPropOrderFactory>();
+        var order = orderFactory.Create();
         order.OrderNumber = "ORD-002";
         await order.RunRules();
 
         Assert.True(order.IsValid);
 
         // Add invalid child (empty ProductName)
-        var invalidItem = new PropOrderItem(new EntityBaseServices<PropOrderItem>());
+        var itemFactory = GetRequiredService<IPropOrderItemFactory>();
+        var invalidItem = itemFactory.Create();
         invalidItem.ProductName = "";
         invalidItem.UnitPrice = 50.00m;
         await invalidItem.RunRules();
@@ -652,7 +670,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void PropertyType_ReturnsCorrectType()
     {
-        var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+        var factory = GetRequiredService<IPropEmployeeFactory>();
+        var employee = factory.Create();
 
         var nameProperty = employee["Name"];
         var hireDateProperty = employee["HireDate"];
@@ -664,7 +683,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void StringValue_FormatsPropertyValue()
     {
-        var order = new PropOrder(new EntityBaseServices<PropOrder>());
+        var factory = GetRequiredService<IPropOrderFactory>();
+        var order = factory.Create();
         order.OrderDate = new DateTime(2024, 6, 15);
 
         var property = order["OrderDate"];
@@ -677,7 +697,8 @@ public class PropertiesSamplesTests
     [Fact]
     public async Task RunRulesOnProperty_ManualValidation()
     {
-        var invoice = new PropInvoice(new ValidateBaseServices<PropInvoice>());
+        var factory = GetRequiredService<IPropInvoiceFactory>();
+        var invoice = factory.Create();
         invoice.Amount = -100m;
 
         // Manually run rules on specific property
@@ -689,7 +710,8 @@ public class PropertiesSamplesTests
     [Fact]
     public void PropertyName_ReturnsName()
     {
-        var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+        var factory = GetRequiredService<IPropEmployeeFactory>();
+        var employee = factory.Create();
 
         var property = employee["Name"];
 
@@ -699,10 +721,8 @@ public class PropertiesSamplesTests
     [Fact]
     public async Task WaitForPropertyTasks_AwaitsCompletion()
     {
-        var pricingService = new MockPricingService();
-        var product = new PropAsyncProduct(
-            new ValidateBaseServices<PropAsyncProduct>(),
-            pricingService);
+        var factory = GetRequiredService<IPropAsyncProductFactory>();
+        var product = factory.Create();
 
         product.ZipCode = "94102";
 

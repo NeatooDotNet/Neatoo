@@ -6,7 +6,7 @@ A .NET Domain Models framework for Blazor and WPF powered by Roslyn source gener
 
 ## Overview
 
-Neatoo provides a DDD-focused framework for building domain models with automatic property backing field generation, validation, business rules, parent-child relationships, and change tracking. Source generators eliminate boilerplate while preserving type safety. RemoteFactory integration enables seamless client-server state transfer for Blazor and distributed applications.
+Neatoo provides a DDD-focused framework for building domain models with source-generated properties, validation, business rules, parent-child relationships, and change tracking. Partial property declarations are completed by source generators that wire up backing fields, PropertyChanged events, and validation triggers. RemoteFactory integration enables seamless client-server state transfer for Blazor and distributed applications.
 
 Built for expert .NET developers working with Domain-Driven Design patterns.
 
@@ -41,6 +41,9 @@ public partial class Employee : EntityBase<Employee>
 
     // Child collection with automatic parent tracking
     public partial IAddressList Addresses { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IAddress : IEntityBase { }
@@ -54,6 +57,9 @@ public partial class Address : EntityBase<Address>, IAddress
     public partial string Street { get; set; }
 
     public partial string City { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IAddressList : IEntityListBase<IAddress> { }
@@ -62,16 +68,16 @@ public class AddressList : EntityListBase<IAddress>, IAddressList { }
 ```
 <!-- endSnippet -->
 
-The example above demonstrates Neatoo's core features: property declaration with Getter/Setter pattern, automatic validation, business rules, parent-child relationships, and change tracking. Source generators produce backing fields, factory methods, and metadata at compile time.
+The example above demonstrates Neatoo's core features: partial property declarations, automatic validation, business rules, parent-child relationships, and change tracking. Source generators produce backing fields, factory methods, and metadata at compile time.
 
 ## Key Features
 
-- **Source-generated properties** - Getter/Setter pattern generates backing fields, PropertyChanged events, and validation triggers
-- **Built-in validation** - Attribute-based validation with custom rules, async support, and automatic error aggregation
-- **Business rules engine** - Declarative business rules with cross-property validation, conditional execution, and rule ordering
-- **Parent-child graphs** - Automatic parent tracking, cascade validation, cascade dirty state, and aggregate boundaries
-- **Change tracking** - IsDirty, IsModified, IsNew, IsDeleted with cascade to aggregate root
-- **Entity lifecycle** - Insert/Update/Delete through RemoteFactory pattern with DI integration
+- **Source-generated properties** - Partial properties generate backing fields, PropertyChanged events, and validation triggers
+- **Validation system** - Attribute-based validation (Required, Range, etc.), custom validation rules, async validation with external service calls, automatic error aggregation across properties
+- **Business rules engine** - Declarative business rules with cross-property dependencies, action rules for computed properties, conditional execution, and rule ordering
+- **Parent-child graphs** - Automatic parent tracking, cascade validation, cascade modification state, and aggregate boundary enforcement
+- **Change tracking** - IsModified, IsSelfModified, IsNew, IsDeleted with cascade to aggregate root and ModifiedProperties collection
+- **Entity lifecycle** - IsNew/IsDeleted state management for persistence coordination, with optional RemoteFactory integration for client-server scenarios
 - **Blazor integration** - MudNeatoo package with two-way binding, validation display, and form integration
 - **Collection support** - EntityListBase and ValidateListBase with parent cascade and collection validation
 
@@ -93,7 +99,7 @@ Neatoo targets .NET 8.0, 9.0, and 10.0.
 
 ## Quick Start
 
-Create a domain object by inheriting from ValidateBase or EntityBase and using the Getter/Setter pattern for properties. Source generators handle the rest.
+Create a domain object by inheriting from ValidateBase or EntityBase and declaring partial properties. Source generators handle the rest.
 
 <!-- snippet: readme-quick-start -->
 ```cs
@@ -113,6 +119,9 @@ public partial class CustomerSearch : ValidateBase<CustomerSearch>
 
     [Range(1, 100)]
     public partial int MaxResults { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 // 2. EntityBase: For domain entities with full lifecycle support
@@ -138,6 +147,9 @@ public partial class Customer : EntityBase<Customer>
         // Persistence logic here
         return Task.CompletedTask;
     }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IOrder : IEntityBase { }
@@ -148,6 +160,9 @@ public partial class Order : EntityBase<Order>, IOrder
     public Order(IEntityBaseServices<Order> services) : base(services) { }
 
     public partial decimal Amount { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IOrderList : IEntityListBase<IOrder> { }
@@ -160,13 +175,13 @@ public interface ICustomerRepository { }
 <!-- endSnippet -->
 
 This example shows:
-- ValidateBase inheritance for validation support
-- EntityBase inheritance for persistence support
-- Property declarations with Getter/Setter pattern
-- Built-in validation attributes
-- Custom business rules
-- RemoteFactory methods for persistence
-- Parent-child relationships with automatic cascade
+- ValidateBase inheritance for validation, business rules, change tracking, and property metadata
+- EntityBase inheritance adds persistence lifecycle state (IsNew, IsDeleted, IsModified)
+- Partial property declarations with source-generated backing fields and change tracking
+- Attribute-based validation (Required, EmailAddress, Range)
+- Custom business rules (inline validation rules in constructor)
+- RemoteFactory methods for client-server persistence operations
+- Parent-child relationships with automatic parent tracking and cascade validation
 
 ## Documentation
 
@@ -178,7 +193,7 @@ Comprehensive guides are available in the [docs/](docs/) directory:
 - **[Collections Guide](docs/guides/collections.md)** - EntityListBase and ValidateListBase
 - **[Properties Guide](docs/guides/properties.md)** - Property system and source generators
 - **[Business Rules Guide](docs/guides/business-rules.md)** - Business rules engine and rule execution
-- **[Change Tracking Guide](docs/guides/change-tracking.md)** - IsDirty, state management, and cascade
+- **[Change Tracking Guide](docs/guides/change-tracking.md)** - IsModified, IsSelfModified, state management, and cascade
 - **[Async Guide](docs/guides/async.md)** - Async validation and task coordination
 - **[Parent-Child Guide](docs/guides/parent-child.md)** - Parent-child graphs and aggregate boundaries
 - **[Blazor Guide](docs/guides/blazor.md)** - MudNeatoo Blazor integration

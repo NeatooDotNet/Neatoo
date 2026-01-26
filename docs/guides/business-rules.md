@@ -2,11 +2,11 @@
 
 [← Blazor](blazor.md) | [↑ Guides](index.md) | [Change Tracking →](change-tracking.md)
 
-Business rules in Neatoo implement validation and side effects that execute when properties change. Rules are registered with the `RuleManager` and automatically execute when their trigger properties are modified.
+Business rules in Neatoo implement validation and side effects that execute when properties change. Rules are registered in the entity constructor via `RuleManager` fluent API or by adding custom rule class instances. The framework automatically executes rules when their trigger properties are modified.
 
 ## Fluent Action Rules
 
-Action rules perform side effects like calculating derived properties without producing validation messages.
+Action rules perform side effects like calculating derived properties. Action rules do not produce validation messages or affect the entity's `IsValid` state.
 
 Register synchronous actions with `AddAction`:
 
@@ -43,11 +43,11 @@ public RulesProduct(
 ```
 <!-- endSnippet -->
 
-Actions always return `RuleMessages.None` since they don't perform validation.
+The `RuleManager.AddAction` method creates an `ActionFluentRule<T>` internally that executes the lambda when trigger properties change. The lambda can modify other properties on the entity without creating validation messages.
 
 ## Fluent Validation Rules
 
-Validation rules return error messages when validation fails.
+Validation rules check business constraints and produce error messages when validation fails. Validation messages affect the entity's `IsValid` state and are displayed in the UI.
 
 Register synchronous validation with `AddValidation`:
 
@@ -63,7 +63,7 @@ public RulesInvoice(IValidateBaseServices<RulesInvoice> services) : base(service
 ```
 <!-- endSnippet -->
 
-Return an empty or null string to indicate validation passed. Any other value becomes the error message associated with the trigger property.
+The `RuleManager.AddValidation` method creates a `ValidationFluentRule<T>` internally that executes the lambda when trigger properties change. Return an empty or null string to indicate validation passed. Any other value becomes the error message associated with the trigger property.
 
 For async validation:
 
@@ -107,7 +107,7 @@ public RulesBooking(
 
 ## Cross-Property Validation
 
-Rules can trigger on multiple properties and validate relationships between them.
+Rules can trigger on multiple properties and validate relationships between them. Use custom rule classes that inherit from `RuleBase<T>` or `AsyncRuleBase<T>` and declare multiple trigger properties in the constructor.
 
 <!-- snippet: rules-cross-property -->
 ```cs
@@ -120,7 +120,7 @@ public RulesEvent(IValidateBaseServices<RulesEvent> services) : base(services)
 ```
 <!-- endSnippet -->
 
-The rule executes when either `StartDate` or `EndDate` changes and validates their relationship.
+The rule executes when either `StartDate` or `EndDate` changes and validates their relationship. See the Custom Rule Classes section below for implementation details.
 
 ## Custom Rule Classes
 
@@ -205,9 +205,9 @@ Custom rules support dependency injection through constructor parameters.
 
 ## Business Rule Attributes
 
-Neatoo automatically converts validation attributes to rules.
+Neatoo automatically converts DataAnnotations validation attributes to business rules. During ValidateBase construction, the `RuleManager` scans properties for validation attributes and converts them to rules using the `IAttributeToRule` service.
 
-Standard validation attributes work without registration:
+Standard validation attributes work without explicit registration:
 
 <!-- snippet: rules-attribute-standard -->
 ```cs
@@ -230,6 +230,9 @@ public partial class RulesAttributeEntity : ValidateBase<RulesAttributeEntity>
 
     [RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid ZIP code format")]
     public partial string ZipCode { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 ```
 <!-- endSnippet -->
@@ -238,7 +241,7 @@ Supported attributes include `[Required]`, `[StringLength]`, `[MinLength]`, `[Ma
 
 ## Aggregate-Level Rules
 
-Rules can access the entire aggregate and validate business invariants.
+Rules execute on an entity instance and can access the entire aggregate graph via navigation properties. This allows validation of business invariants that span multiple entities within the aggregate boundary.
 
 <!-- snippet: rules-aggregate-level -->
 ```cs
@@ -266,11 +269,11 @@ public class AggregateValidationRule : RuleBase<RulesAggregateRoot>
 ```
 <!-- endSnippet -->
 
-Aggregate-level rules receive the root entity and can traverse the entire object graph.
+The `Execute` method receives the target entity instance. Use navigation properties to traverse child entities and collections within the aggregate.
 
 ## Rule Execution Order
 
-Rules execute in order based on the `RuleOrder` property. Lower values execute first (default is 1).
+When a property changes, the framework identifies all rules with that property as a trigger, sorts them by `RuleOrder` (ascending), then executes them sequentially. Lower `RuleOrder` values execute first. Default is 1.
 
 <!-- snippet: rules-execution-order -->
 ```cs
@@ -328,13 +331,13 @@ public class ThirdExecutionRule : RuleBase<RulesOrderedEntity>
 ```
 <!-- endSnippet -->
 
-Set `RuleOrder` in the constructor to control execution sequence. This ensures dependencies between rules execute in the correct order.
+Set `RuleOrder` in the rule constructor to control execution sequence. This ensures rules with dependencies execute in the correct order. Within the same `RuleOrder` value, rules execute in registration order.
 
-Within the same order value, rules execute in registration order.
+Async rules also execute sequentially. Each async rule completes before the next rule begins, even if they have the same `RuleOrder`.
 
 ## Conditional Rules
 
-Rules can contain conditional logic to execute validation only when certain conditions are met.
+Rules always execute when their trigger properties change, but can use conditional logic to skip validation based on entity state. Return `None` from the `Execute` method to indicate no validation errors.
 
 <!-- snippet: rules-conditional -->
 ```cs
@@ -364,7 +367,7 @@ public class ConditionalValidationRule : RuleBase<RulesConditionalEntity>
 ```
 <!-- endSnippet -->
 
-Return `None` to skip validation. The rule still executes but produces no messages.
+The rule executes but produces no messages when returning `None`. This pattern is useful for state-dependent validation.
 
 For more complex scenarios, check conditions before executing expensive operations:
 
@@ -444,7 +447,7 @@ public class CancellableValidationRule : AsyncRuleBase<RulesCancellableEntity>
 
 The framework passes cancellation tokens through the entire rule execution chain, allowing rules to cooperate with cancellation.
 
-Async rules automatically mark properties as busy during execution, providing visual feedback in UI scenarios.
+Async rules automatically track busy state. The framework marks trigger properties as busy before execution and clears the busy state after completion. This provides automatic visual feedback in UI scenarios through the `IsBusy` property.
 
 ## LoadProperty - Preventing Rule Recursion
 
@@ -472,7 +475,7 @@ public class ComputedTotalRule : RuleBase<RulesOrderWithTotal>
 ```
 <!-- endSnippet -->
 
-`LoadProperty` bypasses the normal property setter, preventing cascading rule execution and infinite loops.
+`LoadProperty` is a protected method on `RuleBase<T>` that bypasses the normal property setter. It writes directly to the backing field via the property wrapper, preventing cascading rule execution and infinite loops. Use this when a rule needs to update a property without triggering rules registered on that property.
 
 ## Rule Registration Patterns
 
@@ -524,7 +527,7 @@ Custom rules injected via constructor support dependency injection and can be sh
 
 ## Trigger Properties
 
-Rules specify which properties trigger their execution.
+Rules declare which properties trigger their execution. When any trigger property changes, the rule executes. Trigger properties are specified in the rule constructor via lambda expressions.
 
 Single trigger property:
 
@@ -684,74 +687,56 @@ Messages are automatically associated with properties and displayed through the 
 
 ## Manual Rule Execution
 
-While rules execute automatically on property changes, you can also run them manually.
+Rules execute automatically when trigger properties change, but can also be run manually. Manual execution is useful for re-validating after external state changes, running validation before save operations, or executing rules that haven't fired yet.
 
 Run all rules:
 
 <!-- snippet: rules-run-all -->
 ```cs
-[Fact]
-public async Task RunAllRules_ExecutesAllRegisteredRules()
-{
-    var entity = new RulesManualEntity(new ValidateBaseServices<RulesManualEntity>());
-
-    // Set invalid value
-    entity.Value = -1;
-
-    // Manually run all rules
-    await entity.RunRules(RunRulesFlag.All);
-
-    Assert.False(entity.IsValid);
-}
+// Run all registered rules regardless of which properties changed
+await entity.RunRules(RunRulesFlag.All);
 ```
 <!-- endSnippet -->
+
+The `RunRulesFlag` enum supports different execution modes:
+- `All`: Run all rules
+- `NotExecuted`: Run only rules that haven't executed yet
+- `Executed`: Run only rules that have already executed
+- `NoMessages`: Run rules that produced no validation messages
+- `Messages`: Run rules that produced validation messages
 
 Run rules for a specific property:
 
 <!-- snippet: rules-run-property -->
 ```cs
-[Fact]
-public async Task RunRulesForProperty_ExecutesPropertyRules()
-{
-    var entity = new RulesManualEntity(new ValidateBaseServices<RulesManualEntity>());
-
-    entity.Value = -1;
-
-    // Run rules only for the Value property using public method
-    await entity.RunRules(nameof(entity.Value));
-
-    Assert.False(entity.IsValid);
-}
+// Run rules only for the specified property
+await entity.RunRules(nameof(entity.Value));
 ```
 <!-- endSnippet -->
 
-Run a specific rule instance:
+This executes only rules that have the specified property as a trigger. The framework looks up all rules registered with that property name as a trigger, sorts by `RuleOrder`, and executes them sequentially.
+
+Run a specific rule type:
 
 <!-- snippet: rules-run-specific -->
 ```cs
-[Fact]
-public async Task RunSpecificRule_ExecutesSingleRule()
-{
-    var salaryRule = new SalaryRangeRule(30000m, 200000m);
-    var employee = new RulesEmployee(new ValidateBaseServices<RulesEmployee>(), salaryRule);
-
-    employee.Salary = 25000m;
-
-    // Run only rules of a specific type
-    await employee.RunSalaryRangeRules();
-
-    Assert.False(employee.IsValid);
-}
+// Run rules of a specific type (custom method on entity)
+await employee.RunSalaryRangeRules();
 ```
 <!-- endSnippet -->
 
-Manual execution is useful when re-validating after external state changes or before saving.
+For targeted rule type execution, expose a custom method on the entity that calls `RuleManager.RunRule<TRule>()` to execute a specific rule class by type.
 
 ## Advanced: Stable Rule IDs
 
-Neatoo assigns deterministic rule IDs based on the source expression used to register rules. This ensures validation messages can be matched between client and server in RemoteFactory scenarios.
+Neatoo assigns deterministic rule IDs based on the source expression used to register rules. The `RuleManager` uses `CallerArgumentExpression` to capture the exact lambda expression text when calling `AddAction`, `AddValidation`, or `AddRule`.
 
-Rule IDs are generated automatically using `CallerArgumentExpression` and remain stable across application restarts.
+These stable IDs ensure:
+- Validation messages can be matched between client and server in RemoteFactory scenarios
+- Rule tracking remains consistent across application restarts
+- The same rule in different instances generates the same ID
+
+For custom rule classes, the rule ID is based on the rule's type name. For fluent rules, the ID is a hash of the source expression text.
 
 ---
 

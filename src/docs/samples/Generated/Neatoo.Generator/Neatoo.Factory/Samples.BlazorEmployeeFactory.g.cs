@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Neatoo;
-using Neatoo.Internal;
 using Neatoo.Rules;
 using Xunit;
 
@@ -17,6 +16,7 @@ namespace Samples
 {
     public interface IBlazorEmployeeFactory
     {
+        BlazorEmployee Create(CancellationToken cancellationToken = default);
     }
 
     internal class BlazorEmployeeFactory : FactoryBase<BlazorEmployee>, IBlazorEmployeeFactory
@@ -36,10 +36,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual BlazorEmployee Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public BlazorEmployee LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<BlazorEmployee>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<BlazorEmployeeFactory>();
             services.AddScoped<IBlazorEmployeeFactory, BlazorEmployeeFactory>();
+            services.AddTransient<BlazorEmployee>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

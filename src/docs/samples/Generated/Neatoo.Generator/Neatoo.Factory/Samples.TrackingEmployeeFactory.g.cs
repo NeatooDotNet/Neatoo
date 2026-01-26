@@ -14,6 +14,8 @@ namespace Samples
 {
     public interface ITrackingEmployeeFactory
     {
+        TrackingEmployee Create(CancellationToken cancellationToken = default);
+        TrackingEmployee Fetch(string name, string email, decimal salary, CancellationToken cancellationToken = default);
     }
 
     internal class TrackingEmployeeFactory : FactoryBase<TrackingEmployee>, ITrackingEmployeeFactory
@@ -33,10 +35,33 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual TrackingEmployee Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public TrackingEmployee LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<TrackingEmployee>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual TrackingEmployee Fetch(string name, string email, decimal salary, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(name, email, salary, cancellationToken);
+        }
+
+        public TrackingEmployee LocalFetch(string name, string email, decimal salary, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<TrackingEmployee>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(name, email, salary));
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<TrackingEmployeeFactory>();
             services.AddScoped<ITrackingEmployeeFactory, TrackingEmployeeFactory>();
+            services.AddTransient<TrackingEmployee>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

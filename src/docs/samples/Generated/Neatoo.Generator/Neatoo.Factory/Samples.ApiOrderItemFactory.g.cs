@@ -16,6 +16,8 @@ namespace Samples
 {
     public interface IApiOrderItemFactory
     {
+        IApiOrderItem Create(CancellationToken cancellationToken = default);
+        IApiOrderItem Fetch(string productCode, decimal price, int quantity, CancellationToken cancellationToken = default);
     }
 
     internal class ApiOrderItemFactory : FactoryBase<IApiOrderItem>, IApiOrderItemFactory
@@ -35,10 +37,34 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual IApiOrderItem Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public IApiOrderItem LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ApiOrderItem>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual IApiOrderItem Fetch(string productCode, decimal price, int quantity, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(productCode, price, quantity, cancellationToken);
+        }
+
+        public IApiOrderItem LocalFetch(string productCode, decimal price, int quantity, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ApiOrderItem>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(productCode, price, quantity));
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<ApiOrderItemFactory>();
             services.AddScoped<IApiOrderItemFactory, ApiOrderItemFactory>();
+            services.AddTransient<ApiOrderItem>();
+            services.AddTransient<IApiOrderItem, ApiOrderItem>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

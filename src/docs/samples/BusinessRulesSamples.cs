@@ -62,6 +62,9 @@ public partial class RulesContact : ValidateBase<RulesContact>
     public partial string LastName { get; set; }
 
     public partial string FullName { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -88,6 +91,9 @@ public partial class RulesProduct : ValidateBase<RulesProduct>
     public partial string ZipCode { get; set; }
 
     public partial decimal TaxRate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -107,6 +113,9 @@ public partial class RulesInvoice : ValidateBase<RulesInvoice>
     #endregion
 
     public partial decimal Amount { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -132,6 +141,9 @@ public partial class RulesOrder : ValidateBase<RulesOrder>
     #endregion
 
     public partial string ProductCode { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -157,6 +169,9 @@ public partial class RulesBooking : ValidateBase<RulesBooking>
     #endregion
 
     public partial string ResourceId { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -177,6 +192,9 @@ public partial class RulesEvent : ValidateBase<RulesEvent>
     public partial DateTime StartDate { get; set; }
 
     public partial DateTime EndDate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -640,6 +658,9 @@ public partial class RulesEmployee : ValidateBase<RulesEmployee>
     {
         return RuleManager.RunRule<SalaryRangeRule>(token);
     }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -661,6 +682,9 @@ public partial class RulesOrderItem : ValidateBase<RulesOrderItem>
     public partial string ProductCode { get; set; }
 
     public partial int Quantity { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -685,6 +709,9 @@ public partial class RulesOrderedEntity : ValidateBase<RulesOrderedEntity>
     public List<string> ExecutionLog { get; }
 
     public partial string Value { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -707,6 +734,9 @@ public partial class RulesConditionalEntity : ValidateBase<RulesConditionalEntit
     public partial string Value { get; set; }
 
     public partial string ProductCode { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -725,6 +755,9 @@ public partial class RulesCancellableEntity : ValidateBase<RulesCancellableEntit
     public partial string ZipCode { get; set; }
 
     public partial decimal ComputedTaxRate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -745,6 +778,9 @@ public partial class RulesOrderWithTotal : ValidateBase<RulesOrderWithTotal>
     public partial decimal UnitPrice { get; set; }
 
     public partial decimal Total { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -781,6 +817,9 @@ public partial class RulesTriggerEntity : ValidateBase<RulesTriggerEntity>
     public partial string LastName { get; set; }
 
     public partial string DisplayName { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -807,6 +846,9 @@ public partial class RulesMessageEntity : ValidateBase<RulesMessageEntity>
     public partial DateTime StartDate { get; set; }
 
     public partial DateTime EndDate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -823,6 +865,9 @@ public partial class RulesLineItem : ValidateBase<RulesLineItem>, IRulesLineItem
     public RulesLineItem(IValidateBaseServices<RulesLineItem> services) : base(services) { }
 
     public partial decimal Amount { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IRulesLineItemList : IValidateListBase<IRulesLineItem> { }
@@ -846,6 +891,9 @@ public partial class RulesAggregateRoot : ValidateBase<RulesAggregateRoot>
     public partial decimal TotalBudget { get; set; }
 
     public IRulesLineItemList LineItems { get; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -871,6 +919,9 @@ public partial class RulesAttributeEntity : ValidateBase<RulesAttributeEntity>
 
     [RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid ZIP code format")]
     public partial string ZipCode { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -890,6 +941,9 @@ public partial class RulesManualEntity : ValidateBase<RulesManualEntity>
     public partial int Value { get; set; }
 
     public partial string Name { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -931,6 +985,9 @@ public partial class RulesFluentEntity : ValidateBase<RulesFluentEntity>
     public partial int Age { get; set; }
 
     public partial bool Processed { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -950,6 +1007,9 @@ public partial class RulesCustomEntity : ValidateBase<RulesCustomEntity>
     #endregion
 
     public partial decimal Amount { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -974,14 +1034,15 @@ public class CustomBusinessRule : RuleBase<RulesCustomEntity>
 // -----------------------------------------------------------------
 
 /// <summary>
-/// Tests for business-rules.md snippets.
+/// Tests for business-rules.md snippets demonstrating DI-based factory usage.
 /// </summary>
-public class BusinessRulesSamplesTests
+public class BusinessRulesSamplesTests : SamplesTestBase
 {
     [Fact]
     public void AddAction_ComputesFullName()
     {
-        var contact = new RulesContact(new ValidateBaseServices<RulesContact>());
+        var factory = GetRequiredService<IRulesContactFactory>();
+        var contact = factory.Create();
 
         contact.FirstName = "John";
         contact.LastName = "Doe";
@@ -992,8 +1053,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public async Task AddActionAsync_FetchesTaxRate()
     {
-        var pricingService = new MockPricingService();
-        var product = new RulesProduct(new ValidateBaseServices<RulesProduct>(), pricingService);
+        var factory = GetRequiredService<IRulesProductFactory>();
+        var product = factory.Create();
 
         product.ZipCode = "90210";
         await product.WaitForTasks();
@@ -1004,7 +1065,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void AddValidation_ValidatesAmount()
     {
-        var invoice = new RulesInvoice(new ValidateBaseServices<RulesInvoice>());
+        var factory = GetRequiredService<IRulesInvoiceFactory>();
+        var invoice = factory.Create();
 
         invoice.Amount = -100;
         Assert.False(invoice.IsValid);
@@ -1016,8 +1078,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public async Task AddValidationAsync_ChecksInventory()
     {
-        var inventoryService = new MockInventoryService();
-        var order = new RulesOrder(new ValidateBaseServices<RulesOrder>(), inventoryService);
+        var factory = GetRequiredService<IRulesOrderFactory>();
+        var order = factory.Create();
 
         order.ProductCode = "OUT-001";
         await order.WaitForTasks();
@@ -1031,8 +1093,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public async Task AddValidationAsyncWithToken_SupportsCancellation()
     {
-        var inventoryService = new MockInventoryService();
-        var booking = new RulesBooking(new ValidateBaseServices<RulesBooking>(), inventoryService);
+        var factory = GetRequiredService<IRulesBookingFactory>();
+        var booking = factory.Create();
 
         booking.ResourceId = "ROOM-001";
         await booking.WaitForTasks();
@@ -1043,7 +1105,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void CrossPropertyValidation_ValidatesDateRange()
     {
-        var evt = new RulesEvent(new ValidateBaseServices<RulesEvent>());
+        var factory = GetRequiredService<IRulesEventFactory>();
+        var evt = factory.Create();
 
         evt.StartDate = new DateTime(2024, 6, 15);
         evt.EndDate = new DateTime(2024, 6, 10);
@@ -1056,8 +1119,9 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void CustomRuleClass_ValidatesSalaryRange()
     {
-        var salaryRule = new SalaryRangeRule(30000m, 200000m);
-        var employee = new RulesEmployee(new ValidateBaseServices<RulesEmployee>(), salaryRule);
+        // Factory resolves RulesEmployee with SalaryRangeRule injected from DI
+        var factory = GetRequiredService<IRulesEmployeeFactory>();
+        var employee = factory.Create();
 
         employee.Salary = 25000m;
         Assert.False(employee.IsValid);
@@ -1072,9 +1136,9 @@ public class BusinessRulesSamplesTests
     [Fact]
     public async Task AsyncCustomRuleClass_ValidatesAvailability()
     {
-        var inventoryService = new MockInventoryService();
-        var availabilityRule = new ProductAvailabilityRule(inventoryService);
-        var orderItem = new RulesOrderItem(new ValidateBaseServices<RulesOrderItem>(), availabilityRule);
+        // Factory resolves RulesOrderItem with ProductAvailabilityRule injected from DI
+        var factory = GetRequiredService<IRulesOrderItemFactory>();
+        var orderItem = factory.Create();
 
         orderItem.ProductCode = "OUT-001";
         await orderItem.WaitForTasks();
@@ -1088,7 +1152,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void AttributeValidation_EnforcesConstraints()
     {
-        var entity = new RulesAttributeEntity(new ValidateBaseServices<RulesAttributeEntity>());
+        var factory = GetRequiredService<IRulesAttributeEntityFactory>();
+        var entity = factory.Create();
 
         // Required validation
         entity.Name = "";
@@ -1115,14 +1180,17 @@ public class BusinessRulesSamplesTests
     [Fact]
     public async Task AggregateRule_ValidatesTotalBudget()
     {
-        var aggregateRule = new AggregateValidationRule();
-        var root = new RulesAggregateRoot(new ValidateBaseServices<RulesAggregateRoot>(), aggregateRule);
+        var rootFactory = GetRequiredService<IRulesAggregateRootFactory>();
+        var root = rootFactory.Create();
 
         root.TotalBudget = 1000m;
 
         // Add items within budget
-        var item1 = new RulesLineItem(new ValidateBaseServices<RulesLineItem>()) { Amount = 400m };
-        var item2 = new RulesLineItem(new ValidateBaseServices<RulesLineItem>()) { Amount = 300m };
+        var lineItemFactory = GetRequiredService<IRulesLineItemFactory>();
+        var item1 = lineItemFactory.Create();
+        item1.Amount = 400m;
+        var item2 = lineItemFactory.Create();
+        item2.Amount = 300m;
         root.LineItems.Add(item1);
         root.LineItems.Add(item2);
 
@@ -1132,7 +1200,8 @@ public class BusinessRulesSamplesTests
         Assert.True(root.IsValid);
 
         // Add item that exceeds budget
-        var item3 = new RulesLineItem(new ValidateBaseServices<RulesLineItem>()) { Amount = 500m };
+        var item3 = lineItemFactory.Create();
+        item3.Amount = 500m;
         root.LineItems.Add(item3);
 
         // Run rules again
@@ -1144,15 +1213,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void RuleExecutionOrder_RulesExecuteInOrder()
     {
-        var firstRule = new FirstExecutionRule();
-        var secondRule = new SecondExecutionRule();
-        var thirdRule = new ThirdExecutionRule();
-
-        var entity = new RulesOrderedEntity(
-            new ValidateBaseServices<RulesOrderedEntity>(),
-            firstRule,
-            secondRule,
-            thirdRule);
+        var factory = GetRequiredService<IRulesOrderedEntityFactory>();
+        var entity = factory.Create();
 
         entity.Value = "trigger";
 
@@ -1162,10 +1224,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void ConditionalRule_SkipsWhenInactive()
     {
-        var conditionalRule = new ConditionalValidationRule();
-        var entity = new RulesConditionalEntity(
-            new ValidateBaseServices<RulesConditionalEntity>(),
-            conditionalRule);
+        var factory = GetRequiredService<IRulesConditionalEntityFactory>();
+        var entity = factory.Create();
 
         // When inactive, empty value is allowed
         entity.IsActive = false;
@@ -1183,11 +1243,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public async Task EarlyExitRule_SkipsExpensiveCheck()
     {
-        var inventoryService = new MockInventoryService();
-        var earlyExitRule = new EarlyExitRule(inventoryService);
-        var entity = new RulesConditionalEntity(
-            new ValidateBaseServices<RulesConditionalEntity>(),
-            earlyExitRule: earlyExitRule);
+        var factory = GetRequiredService<IRulesConditionalEntityFactory>();
+        var entity = factory.Create();
 
         // Empty product code skips inventory check
         entity.ProductCode = "";
@@ -1203,11 +1260,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public async Task CancellableRule_ComputesTaxRate()
     {
-        var pricingService = new MockPricingService();
-        var cancellableRule = new CancellableValidationRule(pricingService);
-        var entity = new RulesCancellableEntity(
-            new ValidateBaseServices<RulesCancellableEntity>(),
-            cancellableRule);
+        var factory = GetRequiredService<IRulesCancellableEntityFactory>();
+        var entity = factory.Create();
 
         entity.ZipCode = "90210";
         await entity.WaitForTasks();
@@ -1218,10 +1272,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void LoadPropertyRule_ComputesTotalWithoutTriggeringRules()
     {
-        var totalRule = new ComputedTotalRule();
-        var order = new RulesOrderWithTotal(
-            new ValidateBaseServices<RulesOrderWithTotal>(),
-            totalRule);
+        var factory = GetRequiredService<IRulesOrderWithTotalFactory>();
+        var order = factory.Create();
 
         order.Quantity = 5;
         order.UnitPrice = 10.00m;
@@ -1232,10 +1284,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void SingleTriggerRule_TriggersOnEmail()
     {
-        var singleRule = new SingleTriggerRule();
-        var entity = new RulesTriggerEntity(
-            new ValidateBaseServices<RulesTriggerEntity>(),
-            singleRule);
+        var factory = GetRequiredService<IRulesTriggerEntityFactory>();
+        var entity = factory.Create();
 
         entity.Email = "TEST@Example.COM";
 
@@ -1245,10 +1295,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void MultipleTriggerRule_TriggersOnAnyProperty()
     {
-        var multipleRule = new MultipleTriggerRule();
-        var entity = new RulesTriggerEntity(
-            new ValidateBaseServices<RulesTriggerEntity>(),
-            multipleRule: multipleRule);
+        var factory = GetRequiredService<IRulesTriggerEntityFactory>();
+        var entity = factory.Create();
 
         entity.City = "Seattle";
         entity.State = "WA";
@@ -1260,10 +1308,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void DynamicTriggerRule_TriggersOnAddedProperties()
     {
-        var dynamicRule = new DynamicTriggerRule();
-        var entity = new RulesTriggerEntity(
-            new ValidateBaseServices<RulesTriggerEntity>(),
-            dynamicRule: dynamicRule);
+        var factory = GetRequiredService<IRulesTriggerEntityFactory>();
+        var entity = factory.Create();
 
         entity.FirstName = "Jane";
         entity.LastName = "Smith";
@@ -1274,10 +1320,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void PassingValidationRule_ReturnsNone()
     {
-        var passingRule = new PassingValidationRule();
-        var entity = new RulesMessageEntity(
-            new ValidateBaseServices<RulesMessageEntity>(),
-            passingRule);
+        var factory = GetRequiredService<IRulesMessageEntityFactory>();
+        var entity = factory.Create();
 
         entity.Status = "Active";
         Assert.True(entity["Status"].IsValid);
@@ -1289,10 +1333,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void SingleMessageRule_ReturnsOneMessage()
     {
-        var singleRule = new SingleMessageRule();
-        var entity = new RulesMessageEntity(
-            new ValidateBaseServices<RulesMessageEntity>(),
-            singleRule: singleRule);
+        var factory = GetRequiredService<IRulesMessageEntityFactory>();
+        var entity = factory.Create();
 
         entity.Age = -5;
         Assert.False(entity["Age"].IsValid);
@@ -1301,10 +1343,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public async Task MultipleMessagesRule_ReturnsMultipleMessages()
     {
-        var multipleRule = new MultipleMessagesRule();
-        var entity = new RulesMessageEntity(
-            new ValidateBaseServices<RulesMessageEntity>(),
-            multipleRule: multipleRule);
+        var factory = GetRequiredService<IRulesMessageEntityFactory>();
+        var entity = factory.Create();
 
         // Run rules to validate the default values
         await entity.RunRules(RunRulesFlag.All);
@@ -1313,57 +1353,60 @@ public class BusinessRulesSamplesTests
         Assert.False(entity["EndDate"].IsValid);
     }
 
-    #region rules-run-all
     [Fact]
     public async Task RunAllRules_ExecutesAllRegisteredRules()
     {
-        var entity = new RulesManualEntity(new ValidateBaseServices<RulesManualEntity>());
+        var factory = GetRequiredService<IRulesManualEntityFactory>();
+        var entity = factory.Create();
 
         // Set invalid value
         entity.Value = -1;
 
-        // Manually run all rules
+        #region rules-run-all
+        // Run all registered rules regardless of which properties changed
         await entity.RunRules(RunRulesFlag.All);
+        #endregion
 
         Assert.False(entity.IsValid);
     }
-    #endregion
 
-    #region rules-run-property
     [Fact]
     public async Task RunRulesForProperty_ExecutesPropertyRules()
     {
-        var entity = new RulesManualEntity(new ValidateBaseServices<RulesManualEntity>());
+        var factory = GetRequiredService<IRulesManualEntityFactory>();
+        var entity = factory.Create();
 
         entity.Value = -1;
 
-        // Run rules only for the Value property using public method
+        #region rules-run-property
+        // Run rules only for the specified property
         await entity.RunRules(nameof(entity.Value));
+        #endregion
 
         Assert.False(entity.IsValid);
     }
-    #endregion
 
-    #region rules-run-specific
     [Fact]
     public async Task RunSpecificRule_ExecutesSingleRule()
     {
-        var salaryRule = new SalaryRangeRule(30000m, 200000m);
-        var employee = new RulesEmployee(new ValidateBaseServices<RulesEmployee>(), salaryRule);
+        var factory = GetRequiredService<IRulesEmployeeFactory>();
+        var employee = factory.Create();
 
         employee.Salary = 25000m;
 
-        // Run only rules of a specific type
+        #region rules-run-specific
+        // Run rules of a specific type (custom method on entity)
         await employee.RunSalaryRangeRules();
+        #endregion
 
         Assert.False(employee.IsValid);
     }
-    #endregion
 
     [Fact]
     public async Task FluentEntity_AllRulesWork()
     {
-        var entity = new RulesFluentEntity(new ValidateBaseServices<RulesFluentEntity>());
+        var factory = GetRequiredService<IRulesFluentEntityFactory>();
+        var entity = factory.Create();
 
         entity.FirstName = "John";
         entity.LastName = "Doe";
@@ -1382,8 +1425,8 @@ public class BusinessRulesSamplesTests
     [Fact]
     public void CustomEntity_InjectedRuleWorks()
     {
-        var businessRule = new CustomBusinessRule();
-        var entity = new RulesCustomEntity(new ValidateBaseServices<RulesCustomEntity>(), businessRule);
+        var factory = GetRequiredService<IRulesCustomEntityFactory>();
+        var entity = factory.Create();
 
         entity.Amount = -100m;
         Assert.False(entity.IsValid);

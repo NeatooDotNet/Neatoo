@@ -16,6 +16,8 @@ namespace Samples
 {
     public interface IApiLeadFactory
     {
+        ApiLead Create(CancellationToken cancellationToken = default);
+        ApiLead Fetch(int id, string leadName, CancellationToken cancellationToken = default);
         Task<ApiLead> SaveAsync(ApiLead target, CancellationToken cancellationToken = default);
     }
 
@@ -34,6 +36,28 @@ namespace Samples
         {
             this.ServiceProvider = serviceProvider;
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
+        }
+
+        public virtual ApiLead Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public ApiLead LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ApiLead>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual ApiLead Fetch(int id, string leadName, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(id, leadName, cancellationToken);
+        }
+
+        public ApiLead LocalFetch(int id, string leadName, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ApiLead>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id, leadName));
         }
 
         public Task<ApiLead> LocalUpdateAsync(ApiLead target, CancellationToken cancellationToken = default)
@@ -73,6 +97,7 @@ namespace Samples
         {
             services.AddScoped<ApiLeadFactory>();
             services.AddScoped<IApiLeadFactory, ApiLeadFactory>();
+            services.AddTransient<ApiLead>();
             services.AddScoped<IFactorySave<ApiLead>, ApiLeadFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)

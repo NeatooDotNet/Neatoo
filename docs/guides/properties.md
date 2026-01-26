@@ -2,11 +2,11 @@
 
 [← Parent-Child](parent-child.md) | [↑ Guides](index.md) | [Remote Factory →](remote-factory.md)
 
-Neatoo's property system provides managed properties with source-generated backing fields, automatic change notifications, validation integration, and parent-child relationship tracking. Properties declared as partial are implemented by the BaseGenerator source generator, which creates property backing fields and wires up event handling, rule execution, and task tracking.
+Neatoo's property system provides managed properties with source-generated backing field properties, automatic change notifications, validation integration, and parent-child relationship tracking. Properties declared as partial are implemented by the BaseGenerator source generator, which creates backing field properties that access PropertyManager and wires up event handling, rule execution, and task tracking.
 
 ## Partial Property Declaration
 
-Properties in ValidateBase and EntityBase are declared as partial properties. The source generator completes the implementation by creating property wrappers and backing field access.
+Properties in ValidateBase and EntityBase are declared as partial properties. The source generator completes the implementation by creating backing field properties that access strongly-typed property wrappers from PropertyManager.
 
 Declare a partial property:
 
@@ -23,22 +23,27 @@ public partial class PropEmployee : ValidateBase<PropEmployee>
     public partial string Email { get; set; }
 
     public partial DateTime HireDate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 ```
 <!-- endSnippet -->
 
 The source generator creates:
-- A protected `NameProperty` field of type `IValidateProperty<string>`
-- Full getter/setter implementation
+- A protected `NameProperty` property that retrieves `IValidateProperty<string>` from PropertyManager
+- Full getter/setter implementation for the partial property
 - Automatic property change notifications
 - Task tracking for async operations
 - Parent cascade for child tasks
 
 Partial properties must be public and non-static. The generator analyzes the class during compilation and generates the implementation in a separate file.
 
+The source generator also creates an override of `InitializePropertyBackingFields` that registers each property with the PropertyManager during construction.
+
 ## Source-Generated Implementation
 
-The BaseGenerator creates the property implementation with backing field wrappers that integrate with the property management system.
+The BaseGenerator creates the property implementation with backing field properties that retrieve strongly-typed wrappers from PropertyManager. PropertyManager stores all IValidateProperty instances and handles registration, lookup, and lifecycle management.
 
 Generated property implementation:
 
@@ -47,7 +52,8 @@ Generated property implementation:
 [Fact]
 public void GeneratedImplementation_PropertyBackingField()
 {
-    var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+    var factory = GetRequiredService<IPropEmployeeFactory>();
+    var employee = factory.Create();
 
     // The source generator creates:
     // - NameProperty backing field of type IValidateProperty<string>
@@ -65,19 +71,18 @@ public void GeneratedImplementation_PropertyBackingField()
 ```
 <!-- endSnippet -->
 
-The generated code:
-- Accesses the property through PropertyManager
-- Provides a strongly-typed `NameProperty` wrapper
-- Sets values through `IValidateProperty<T>.Value`
-- Tracks async tasks when property setters run async rules
-- Propagates tasks up to Parent for aggregate-level task coordination
-- Maintains type safety through generic IValidateProperty<T>
+The generated code creates:
+- A strongly-typed `NameProperty` backing field property that retrieves from PropertyManager
+- Getter implementation that returns `NameProperty.Value`
+- Setter implementation that sets `NameProperty.Value` and tracks tasks
+- Task propagation up to Parent for aggregate-level coordination
+- Type safety through generic IValidateProperty<T>
 
-The property wrapper handles all validation, events, and state management behind the scenes.
+The PropertyManager stores the actual property instances and handles validation, events, and state management behind the scenes.
 
 ## Property Backing Fields
 
-Each partial property gets a generated backing field that wraps the underlying IValidateProperty instance from PropertyManager.
+Each partial property gets a generated backing field property that retrieves the underlying IValidateProperty instance from PropertyManager. The PropertyManager stores all property instances; the generated backing field properties provide strongly-typed access.
 
 Access the property wrapper:
 
@@ -86,7 +91,8 @@ Access the property wrapper:
 [Fact]
 public void BackingFieldAccess_PropertyWrapper()
 {
-    var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+    var factory = GetRequiredService<IPropEmployeeFactory>();
+    var employee = factory.Create();
     employee.Name = "Carol Davis";
 
     // Access property wrapper via indexer
@@ -114,7 +120,7 @@ Property wrappers provide:
 - **PropertyMessages**: Access validation error messages
 - **RunRules**: Manually trigger validation rules
 
-The wrapper is strongly typed (`IValidateProperty<string>`) for compile-time safety while accessing underlying property metadata.
+The backing field property is strongly typed (`IValidateProperty<string>`) for compile-time safety. The PropertyManager stores the actual IValidateProperty instances and manages their lifecycle.
 
 ## PropertyChanged Events
 
@@ -131,7 +137,8 @@ Subscribe to PropertyChanged:
 [Fact]
 public void PropertyChanged_StandardNotification()
 {
-    var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+    var factory = GetRequiredService<IPropEmployeeFactory>();
+    var employee = factory.Create();
     var changedProperties = new List<string>();
 
     // Subscribe to PropertyChanged
@@ -152,9 +159,9 @@ public void PropertyChanged_StandardNotification()
 <!-- endSnippet -->
 
 PropertyChanged behavior:
-- Fires after value changes
+- Fires after value changes via normal property setters
 - Includes property name in event args
-- Fires even during Load operations (for UI binding)
+- Does NOT fire during LoadValue operations (LoadValue only fires NeatooPropertyChanged)
 - Does not include old/new value comparison
 - Fires for meta-properties (IsValid, IsDirty, IsBusy)
 
@@ -171,7 +178,8 @@ Subscribe to NeatooPropertyChanged:
 [Fact]
 public async Task NeatooPropertyChanged_ExtendedNotification()
 {
-    var order = new PropOrder(new EntityBaseServices<PropOrder>());
+    var factory = GetRequiredService<IPropOrderFactory>();
+    var order = factory.Create();
     var receivedEvents = new List<NeatooPropertyChangedEventArgs>();
 
     // Subscribe to NeatooPropertyChanged
@@ -229,7 +237,8 @@ Standard property assignment uses UserEdit:
 [Fact]
 public void ChangeReasonUserEdit_NormalPropertyAssignment()
 {
-    var invoice = new PropInvoice(new ValidateBaseServices<PropInvoice>());
+    var factory = GetRequiredService<IPropInvoiceFactory>();
+    var invoice = factory.Create();
     ChangeReason capturedReason = ChangeReason.Load; // Initialize to opposite
 
     invoice.NeatooPropertyChanged += (args) =>
@@ -247,8 +256,9 @@ public void ChangeReasonUserEdit_NormalPropertyAssignment()
     // Reason is UserEdit for normal setter assignment
     Assert.Equal(ChangeReason.UserEdit, capturedReason);
 
-    // Validation rules execute with UserEdit
-    Assert.True(invoice.IsValid);
+    // Amount property's validation rule executes with UserEdit
+    // (Amount > 0 passes, so Amount property is valid)
+    Assert.True(invoice["Amount"].IsValid);
 }
 ```
 <!-- endSnippet -->
@@ -264,7 +274,8 @@ Use LoadValue during data loading:
 [Fact]
 public void LoadValue_DataLoadingWithoutRules()
 {
-    var invoice = new PropInvoice(new ValidateBaseServices<PropInvoice>());
+    var factory = GetRequiredService<IPropInvoiceFactory>();
+    var invoice = factory.Create();
 
     // Use LoadValue during data loading (e.g., in Fetch factory method)
     // LoadValue:
@@ -285,7 +296,7 @@ public void LoadValue_DataLoadingWithoutRules()
 LoadValue behavior:
 - Validation rules do NOT execute
 - Dirty state does NOT cascade to parent
-- PropertyChanged fires (for UI binding)
+- PropertyChanged does NOT fire (intentionally suppressed to avoid UI updates during data loading)
 - NeatooPropertyChanged fires with Reason = Load
 - Parent-child relationships ARE established (SetParent called on child objects)
 - IsModified remains false
@@ -303,7 +314,8 @@ Access property metadata:
 [Fact]
 public async Task MetaProperties_QueryPropertyState()
 {
-    var invoice = new PropInvoice(new ValidateBaseServices<PropInvoice>());
+    var factory = GetRequiredService<IPropInvoiceFactory>();
+    var invoice = factory.Create();
 
     // Set valid data
     invoice.CustomerName = "Beta Inc";
@@ -342,9 +354,9 @@ Available meta-properties:
 
 Meta-properties enable conditional UI rendering, save-enablement logic, and validation feedback.
 
-## Custom Getter Logic
+## Computed Properties
 
-Properties can override the getter to compute values from other properties. Setter behavior remains source-generated.
+Standard C# properties can compute values from partial properties. These are regular properties, not partial, and provide derived read-only values.
 
 Implement a computed property:
 
@@ -366,14 +378,13 @@ public string DisplayName
 ```
 <!-- endSnippet -->
 
-Custom getter patterns:
-- Getter computes value from other properties
-- Setter stores the value normally (source-generated)
-- Computed properties typically have no setter (read-only)
-- Use CallerMemberName to access the correct backing field
-- PropertyManager indexer returns the property wrapper
+Computed property patterns:
+- Derive values from other properties using standard C# getters
+- No setter means the property is read-only
+- PropertyChanged does not fire for computed properties (bind to source properties instead)
+- Computed properties do not use partial declarations
 
-Read-only properties only declare the getter. The source generator respects the partial property signature.
+Computed properties are useful for display values derived from multiple source properties.
 
 ## Read-Only Properties
 
@@ -394,15 +405,18 @@ public partial class PropContact : ValidateBase<PropContact>
 
     // Read-only property - only getter implementation generated
     public partial string FullName { get; }
+
+    [Create]
+    public void Create() { }
 }
 ```
 <!-- endSnippet -->
 
 Read-only properties:
-- Do not have setter implementation
-- Can still be set via LoadValue during deserialization
-- Throw PropertyReadOnlyException if Value setter is called directly
-- Are typically computed from other properties
+- Do not have setter implementation in the partial property
+- Can still be set via LoadValue during deserialization or data loading
+- Throw PropertyReadOnlyException if Value setter is called on the IValidateProperty wrapper
+- May be computed from other properties or set only during initialization
 - Have IsReadOnly == true
 
 Read-only properties are common for identity fields and computed values.
@@ -418,7 +432,8 @@ Pause property events during batch updates:
 [Fact]
 public void SuppressEvents_PauseAllActions()
 {
-    var invoice = new PropInvoice(new ValidateBaseServices<PropInvoice>());
+    var factory = GetRequiredService<IPropInvoiceFactory>();
+    var invoice = factory.Create();
     var changeCount = 0;
 
     invoice.PropertyChanged += (_, _) => changeCount++;
@@ -448,17 +463,18 @@ public void SuppressEvents_PauseAllActions()
 <!-- endSnippet -->
 
 PauseAllActions behavior:
-- PropertyChanged events are deferred
-- NeatooPropertyChanged events are deferred
+- PropertyChanged events are suppressed (not raised while paused)
+- NeatooPropertyChanged propagation to parent is suppressed
 - Validation rules do NOT execute
-- Dirty state tracking is deferred
+- Dirty state tracking is suppressed
 - Parent cascade is suppressed
 
 After Resume:
-- All deferred events fire
-- Validation rules execute for changed properties
-- Dirty state recalculates
+- PropertyChanged and NeatooPropertyChanged resume firing for new changes
+- Validation rules execute normally for new property changes
+- Dirty state tracking resumes
 - Parent cascade resumes
+- No catch-up events fire for changes made during pause
 
 Use PauseAllActions when setting multiple properties during initialization, deserialization, or bulk updates.
 
@@ -473,7 +489,8 @@ Access properties by name:
 [Fact]
 public void IndexerAccess_DynamicPropertyAccess()
 {
-    var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+    var factory = GetRequiredService<IPropEmployeeFactory>();
+    var employee = factory.Create();
     employee.Name = "Eva Martinez";
 
     // Access property by name using indexer
@@ -516,10 +533,8 @@ Wait for property tasks to complete:
 [Fact]
 public async Task TaskTracking_AsyncOperations()
 {
-    var pricingService = new MockPricingService();
-    var product = new PropAsyncProduct(
-        new ValidateBaseServices<PropAsyncProduct>(),
-        pricingService);
+    var factory = GetRequiredService<IPropAsyncProductFactory>();
+    var product = factory.Create();
 
     product.Name = "Widget";
 
@@ -563,7 +578,8 @@ Property validation coordination:
 [Fact]
 public async Task ValidationIntegration_PropertyValidation()
 {
-    var invoice = new PropInvoice(new ValidateBaseServices<PropInvoice>());
+    var factory = GetRequiredService<IPropInvoiceFactory>();
+    var invoice = factory.Create();
 
     // Set invalid value
     invoice.Amount = -50.00m;
@@ -613,7 +629,8 @@ Property change cascade:
 [Fact]
 public async Task ChangePropagation_ChildToParent()
 {
-    var order = new PropOrder(new EntityBaseServices<PropOrder>());
+    var orderFactory = GetRequiredService<IPropOrderFactory>();
+    var order = orderFactory.Create();
     order.OrderNumber = "ORD-001";
 
     var receivedEvents = new List<NeatooPropertyChangedEventArgs>();
@@ -625,7 +642,8 @@ public async Task ChangePropagation_ChildToParent()
     };
 
     // Add child item
-    var item = new PropOrderItem(new EntityBaseServices<PropOrderItem>());
+    var itemFactory = GetRequiredService<IPropOrderItemFactory>();
+    var item = itemFactory.Create();
     item.ProductName = "Widget";
     item.UnitPrice = 25.00m;
     item.Quantity = 2;
@@ -654,7 +672,7 @@ Cascade behavior:
 - Event bubbles to aggregate root
 - Root can react to any property change in the entire graph
 
-The FullPropertyName property builds the breadcrumb: "Order.LineItems[2].Quantity".
+The FullPropertyName property builds the breadcrumb path by concatenating property names with dots (e.g., "LineItems.UnitPrice"). Collection indexes are not included in the breadcrumb.
 
 ## Constructor Property Assignment
 
@@ -672,7 +690,8 @@ public void ConstructorAssignment_UseLoadValueInstead()
     // as modifications.
 
     // Instead, use LoadValue for initial values:
-    var employee = new PropEmployee(new ValidateBaseServices<PropEmployee>());
+    var factory = GetRequiredService<IPropEmployeeFactory>();
+    var employee = factory.Create();
 
     // LoadValue sets value without triggering modification tracking
     employee["Name"].LoadValue("Default Employee");

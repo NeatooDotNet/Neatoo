@@ -16,6 +16,8 @@ namespace Samples
 {
     public interface IApiProjectFactory
     {
+        ApiProject Create(CancellationToken cancellationToken = default);
+        ApiProject Fetch(int id, string projectName, CancellationToken cancellationToken = default);
         Task<ApiProject?> SaveAsync(ApiProject target, CancellationToken cancellationToken = default);
     }
 
@@ -34,6 +36,28 @@ namespace Samples
         {
             this.ServiceProvider = serviceProvider;
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
+        }
+
+        public virtual ApiProject Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public ApiProject LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ApiProject>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual ApiProject Fetch(int id, string projectName, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(id, projectName, cancellationToken);
+        }
+
+        public ApiProject LocalFetch(int id, string projectName, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ApiProject>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id, projectName));
         }
 
         public Task<ApiProject> LocalDeleteAsync(ApiProject target, CancellationToken cancellationToken = default)
@@ -78,6 +102,7 @@ namespace Samples
         {
             services.AddScoped<ApiProjectFactory>();
             services.AddScoped<IApiProjectFactory, ApiProjectFactory>();
+            services.AddTransient<ApiProject>();
             services.AddScoped<IFactorySave<ApiProject>, ApiProjectFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)

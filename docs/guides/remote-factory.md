@@ -2,7 +2,7 @@
 
 [← Properties](properties.md) | [↑ Guides](index.md) | [Validation →](validation.md)
 
-RemoteFactory is Neatoo's client-server state transfer system that generates factory methods for entity lifecycle operations (Create, Fetch, Save, Delete). The source generator analyzes factory method attributes and creates strongly-typed factory interfaces with automatic dependency injection, local/remote routing, and JSON serialization for transferring domain model state between client and server.
+RemoteFactory is Neatoo's source-generated factory system for entity lifecycle operations. The source generator analyzes attributes on entity methods ([Create], [Fetch], [Insert], [Update], [Delete]) and generates strongly-typed factory interfaces with dependency injection support. For distributed architectures, the [Remote] attribute enables client-server execution where marked methods run on the server while entity state transfers as JSON.
 
 ## Factory Method Attributes
 
@@ -63,15 +63,15 @@ public partial class RfCustomer : EntityBase<RfCustomer>
 <!-- endSnippet -->
 
 Factory method patterns:
-- **[Factory]** attribute on the class enables source generation
-- **[Create]** initializes a new entity instance
-- **[Fetch]** loads entity state from persistence
-- **[Insert]** persists a new entity
-- **[Update]** persists changes to an existing entity
-- **[Delete]** removes an entity from persistence
-- **[Service]** parameter attribute injects dependencies from IServiceProvider
+- **[Factory]** attribute on the entity class enables source generation
+- **[Create]** initializes a new entity instance (sets default values)
+- **[Fetch]** loads entity state from persistence (repository query)
+- **[Insert]** persists a new entity (IsNew == true)
+- **[Update]** persists changes to existing entity (IsNew == false && IsModified == true)
+- **[Delete]** removes entity from persistence (IsDeleted == true)
+- **[Service]** parameter attribute injects dependencies from DI container
 
-The source generator creates a factory interface (ICustomerFactory) and implementation (CustomerFactory) with methods matching the declared factory methods.
+The source generator creates a factory interface (IRfCustomerFactory) and internal implementation with methods matching the declared factory methods.
 
 ## Generated Factory Interface
 
@@ -92,33 +92,28 @@ public void GeneratedInterface_ExposesFactoryMethods()
     //     Task<RfCustomer?> SaveAsync(RfCustomer target, CancellationToken cancellationToken = default);
     // }
 
-    // Verify the interface type exists
-    var interfaceType = typeof(IRfCustomerFactory);
-    Assert.NotNull(interfaceType);
-    Assert.True(interfaceType.IsInterface);
+    // Verify the factory is available via DI
+    var factory = GetRequiredService<IRfCustomerFactory>();
+    Assert.NotNull(factory);
 
-    // Verify expected methods exist
-    var createMethod = interfaceType.GetMethod("Create");
-    Assert.NotNull(createMethod);
-
-    var fetchMethod = interfaceType.GetMethod("FetchById");
-    Assert.NotNull(fetchMethod);
-
-    var saveMethod = interfaceType.GetMethod("SaveAsync");
-    Assert.NotNull(saveMethod);
+    // Verify we can use the factory methods
+    var customer = factory.Create();
+    Assert.NotNull(customer);
+    Assert.True(customer.IsNew);
 }
 ```
 <!-- endSnippet -->
 
 Interface characteristics:
 - Public interface named I{ClassName}Factory
-- Contains methods for Create, Fetch, Save, and Delete operations
-- Save method unifies Insert/Update logic based on IsNew
-- Factory methods preserve parameter names and types
-- CancellationToken support for async operations
-- Registered in DI container for injection into application code
+- Create method returns new entity instance (synchronous)
+- Fetch methods return Task<T> with loaded entity
+- SaveAsync method unifies Insert/Update logic based on IsNew state
+- Generated method signatures match entity factory method parameters
+- CancellationToken parameter added automatically for async operations
+- Registered in DI container as scoped services
 
-Consumers inject ICustomerFactory to work with Customer entities without directly calling lifecycle methods.
+Application code injects the factory interface to create, fetch, and save entities without directly calling entity methods.
 
 ## Factory Method Generation
 
@@ -131,43 +126,29 @@ Generated factory implementation:
 [Fact]
 public void GeneratedImplementation_HandlesLifecycle()
 {
-    // The source generator creates an internal implementation:
-    // internal class RfCustomerFactory : FactorySaveBase<RfCustomer>,
-    //     IFactorySave<RfCustomer>, IRfCustomerFactory
-    // {
-    //     public virtual RfCustomer Create(CancellationToken cancellationToken = default)
-    //     {
-    //         return LocalCreate(cancellationToken);
-    //     }
-    //
-    //     public RfCustomer LocalCreate(CancellationToken cancellationToken = default)
-    //     {
-    //         var target = ServiceProvider.GetRequiredService<RfCustomer>();
-    //         return DoFactoryMethodCall(target, FactoryOperation.Create,
-    //             () => target.Create());
-    //     }
-    // }
+    // The source generator creates an internal implementation that
+    // handles the entity lifecycle automatically
 
-    // Create entity directly for demonstration
-    var customer = new RfCustomer(new EntityBaseServices<RfCustomer>());
+    var factory = GetRequiredService<IRfCustomerFactory>();
+    var customer = factory.Create();
 
-    // Factory coordinates lifecycle - FactoryComplete sets state
-    customer.FactoryComplete(FactoryOperation.Create);
-
+    // Factory coordinates lifecycle - IsNew is set automatically
     Assert.True(customer.IsNew);
+    Assert.Equal(0, customer.Id);
+    Assert.Equal("", customer.Name);
 }
 ```
 <!-- endSnippet -->
 
 Implementation details:
-- Inherits from FactorySaveBase<T> for save coordination
-- Constructor receives IServiceProvider for service resolution
-- Delegate properties (FetchProperty, SaveProperty) enable local/remote routing
-- DoFactoryMethodCallAsync wraps method execution with state management
-- FactoryStart/FactoryComplete manage entity state transitions (IsNew, IsModified)
-- PauseAllActions suspends validation during data loading
+- Internal class inheriting from FactorySaveBase<T> for SaveAsync coordination
+- Constructor receives IServiceProvider for [Service] parameter resolution
+- Entity lifecycle managed: suspends validation during Fetch, updates IsNew/IsModified after operations
+- Create method calls entity's [Create] method wrapped in factory lifecycle
+- Fetch methods call entity's [Fetch] methods with PauseAllActions during data loading
+- SaveAsync determines Insert vs Update based on IsNew state, routes to appropriate entity method
 
-The factory implementation is an internal class registered in the DI container and provided through the public interface.
+The factory implementation is registered in DI as scoped and provided through the public interface.
 
 ## Service Parameter Injection
 
@@ -205,14 +186,14 @@ public partial class RfCustomerWithServices : EntityBase<RfCustomerWithServices>
 <!-- endSnippet -->
 
 Service injection patterns:
-- **[Service]** parameters are resolved from DI container
-- Services can be interfaces or concrete types
-- Multiple services can be injected into a single method
-- Service resolution happens during factory method execution
-- Scoped services follow the factory's lifetime (typically scoped per request)
-- Missing services throw InvalidOperationException
+- **[Service]** parameters are resolved from DI container when factory method executes
+- Services can be interfaces or concrete types (e.g., ICustomerRepository, DbContext)
+- Multiple [Service] parameters can be declared in a single method
+- Service resolution uses IServiceProvider.GetRequiredService at runtime
+- Scoped services are resolved within the factory's scope (typically per HTTP request)
+- Missing services throw InvalidOperationException with clear error message
 
-Service injection enables separation between domain logic (entity methods) and infrastructure (repositories, DbContext).
+Service injection separates domain logic (entity validation and mapping) from infrastructure (persistence and external service calls).
 
 ## Fetch: Loading State from Persistence
 
@@ -251,19 +232,19 @@ public partial class RfCustomerFetch : EntityBase<RfCustomerFetch>
 <!-- endSnippet -->
 
 Fetch behavior:
-- FactoryStart called before Fetch method executes
-- PauseAllActions suspends validation, property change events, and dirty tracking
-- Property assignments use LoadValue internally (ChangeReason.Load)
-- Child entities can be fetched recursively through child factories
-- Parent-child relationships are established during loading
-- FactoryComplete called after Fetch completes
-- IsNew = false, IsModified = false after Fetch completes
+- Factory calls PauseAllActions before executing the entity's Fetch method
+- PauseAllActions suspends validation rules, business rules, and modification tracking
+- Property assignments during Fetch use ChangeReason.Load (no validation execution)
+- Child entities are loaded by injecting child factories and calling their Fetch methods
+- Parent-child relationships are established when child entities are added to parent collections
+- Factory automatically sets IsNew = false and IsModified = false after Fetch completes
+- Validation rules are not executed during data loading
 
-LoadValue vs direct assignment during Fetch:
-- Direct assignment within PauseAllActions defers all event handling
-- After Resume, PropertyChanged fires but validation does not execute
-- Parent-child structure is established correctly
-- Entity state reflects loaded data without modification tracking
+Property assignment during Fetch:
+- All property setters within PauseAllActions scope defer event handling
+- PropertyChanged events are queued and fire after PauseAllActions completes
+- Validation rules do not execute (even after resume) because ChangeReason is Load
+- Entity state is clean (IsModified = false) reflecting loaded data without triggering modification tracking
 
 ## Save: Persisting Entity Changes
 
@@ -312,14 +293,13 @@ public partial class RfCustomerSave : EntityBase<RfCustomerSave>
 <!-- endSnippet -->
 
 Save coordination:
-1. Application calls ICustomerFactory.Save(customer)
-2. Factory checks customer.IsNew
-3. If IsNew == true, factory calls Insert method
-4. If IsNew == false and IsModified == true, factory calls Update method
-5. FactoryStart called before Insert/Update
-6. Entity method executes (map to EF entity, call DbContext.SaveChanges)
-7. FactoryComplete called after Insert/Update
-8. IsModified = false, IsNew = false (after Insert)
+1. Application calls factory.SaveAsync(customer)
+2. Factory examines customer.IsDeleted, customer.IsNew, and customer.IsModified
+3. If IsDeleted == true, factory calls entity's [Delete] method
+4. If IsNew == true, factory calls entity's [Insert] method
+5. If IsNew == false and IsModified == true, factory calls entity's [Update] method
+6. Entity method executes persistence logic (typically maps to EF entity and calls SaveChanges)
+7. After successful save: IsModified = false, IsNew = false (if Insert), IsDeleted remains true (if Delete)
 
 Save methods should validate before persisting:
 
@@ -371,7 +351,7 @@ public partial class RfCustomerValidated : EntityBase<RfCustomerValidated>
 ```
 <!-- endSnippet -->
 
-IsSavable checks IsValid and !IsBusy. Returning null from Insert/Update signals validation failure to the caller.
+IsSavable is a computed property: IsModified && IsValid && !IsBusy && !IsChild. Checking IsSavable before persisting prevents invalid entities, busy entities (with running async rules), unmodified entities, and child entities (which must save through the aggregate root) from attempting direct persistence.
 
 ## Delete: Removing Entities
 
@@ -413,18 +393,18 @@ public partial class RfCustomerDelete : EntityBase<RfCustomerDelete>
 <!-- endSnippet -->
 
 Delete behavior:
-- Application calls entity.MarkForDeletion() before Save
-- Factory detects IsDeleted == true during Save
-- Factory calls Delete method instead of Insert/Update
-- Delete method removes the entity from persistence
-- FactoryComplete marks entity as deleted permanently
-- Deleted entities cannot be modified or saved again
+- Application calls entity.Delete() to mark for deletion
+- entity.Delete() sets IsDeleted = true and IsModified = true
+- Application calls factory.SaveAsync(entity)
+- Factory detects IsDeleted == true and routes to entity's [Delete] method
+- Delete method executes persistence removal logic (e.g., DbContext.Remove, repository.DeleteAsync)
+- After delete completes: IsDeleted remains true, entity cannot be modified further
 
-Delete pattern for aggregate roots:
-- Call MarkForDeletion() on the root
-- Call Save on the root
-- Factory routes to Delete method
-- Cascade delete to child entities if needed
+Aggregate root deletion pattern:
+1. Mark root entity for deletion: aggregateRoot.Delete()
+2. Handle child cascades in [Delete] method or via database cascade rules
+3. Call factory.SaveAsync(aggregateRoot) to execute deletion
+4. Factory routes to [Delete] method which removes root and cascades to children
 
 ## Remote vs Local Execution
 
@@ -491,23 +471,21 @@ public partial class RfCustomerRemote : EntityBase<RfCustomerRemote>
 ```
 <!-- endSnippet -->
 
-Local vs remote routing:
-- **NeatooFactory.Logical**: All factory methods execute locally (same process)
-- **NeatooFactory.Remote**: Methods marked [Remote] execute on server via HTTP
-- **NeatooFactory.Server**: Server-side configuration, all methods execute locally
-- Factory delegate properties (FetchProperty, SaveProperty) point to local or remote implementation
-- Remote execution serializes entity state as JSON, sends to server, deserializes response
+NeatooFactory execution modes:
+- **NeatooFactory.Logical**: All factory methods execute in-process (for server apps, console apps, tests)
+- **NeatooFactory.Remote**: Methods marked [Remote] execute on server via HTTP; methods without [Remote] execute locally (for Blazor WebAssembly clients)
+- **NeatooFactory.Server**: Server-side configuration where all methods execute locally, but infrastructure is configured to receive remote calls (for ASP.NET Core server hosting the API)
 
-Remote execution flow:
-1. Client calls ICustomerFactory.Fetch(id)
-2. FetchProperty points to RemoteFetch delegate
-3. RemoteFetch serializes parameters and entity state
-4. HTTP request sent to server endpoint
-5. Server deserializes request, resolves factory, calls LocalFetch
-6. Server serializes result entity
-7. Client deserializes response and returns entity
+Remote execution flow (Blazor WebAssembly calling server):
+1. Client calls factory.FetchById(id) on Blazor WebAssembly
+2. Factory implementation checks if [Remote] is present on method
+3. If [Remote]: serializes method parameters as JSON, sends HTTP POST to server endpoint
+4. Server receives request, deserializes parameters, resolves factory from DI
+5. Server factory executes entity's [Fetch] method locally (with database access)
+6. Server serializes result entity as JSON and returns HTTP response
+7. Client deserializes response entity and returns to caller
 
-The remote pattern enables Blazor WebAssembly clients to execute server-side persistence logic.
+The [Remote] pattern enables Blazor WebAssembly clients to execute server-side persistence logic without exposing repositories or DbContext to the client.
 
 ## Client-Server Serialization
 
@@ -518,23 +496,18 @@ JSON serialization preserves entity state:
 <!-- snippet: remotefactory-serialization -->
 ```cs
 [Fact]
-public void Serialization_PreservesPropertyValues()
+public async Task Serialization_PreservesPropertyValues()
 {
-    // Create and populate entity
-    var customer = new RfCustomer(new EntityBaseServices<RfCustomer>());
-    using (customer.PauseAllActions())
-    {
-        customer.Id = 42;
-        customer.Name = "Acme Corp";
-        customer.Email = "contact@acme.com";
-    }
-    customer.FactoryComplete(FactoryOperation.Fetch);
+    var factory = GetRequiredService<IRfCustomerFactory>();
+
+    // Fetch creates a populated entity
+    var customer = await factory.FetchById(1);
 
     // Serialize to JSON
     var json = JsonSerializer.Serialize(customer);
 
     // Property values are preserved in JSON
-    Assert.Contains("\"Id\":42", json);
+    Assert.Contains("\"Id\":1", json);
     Assert.Contains("\"Name\":\"Acme Corp\"", json);
     Assert.Contains("\"Email\":\"contact@acme.com\"", json);
 
@@ -545,20 +518,21 @@ public void Serialization_PreservesPropertyValues()
 <!-- endSnippet -->
 
 Serialization behavior:
-- Property values serialize normally
-- Meta-properties (IsDirty, IsValid, IsNew) are NOT serialized (client state is transient)
-- Validation messages are NOT serialized
-- Parent-child relationships are preserved through object graph structure
-- Child collections serialize as arrays
-- Custom JsonConverter for IValidateBase and IEntityBase types
+- Property values serialize as standard JSON properties
+- Meta-properties (IsModified, IsValid, IsNew, IsBusy) are NOT serialized (transient client state)
+- Validation messages (PropertyMessages) are NOT serialized
+- Parent-child relationships are preserved through nested object/array structure
+- Child collections serialize as JSON arrays
+- Custom JsonConverter handles IValidateBase and IEntityBase serialization
 
-After deserialization:
-- Property values are restored
-- IsValid recalculates based on validation rules
-- IsDirty starts as false (loaded state is clean)
-- Parent-child relationships reconnect during deserialization
+After deserialization on client:
+- Property values are restored from JSON
+- IsValid is recalculated by executing validation rules on the client
+- IsModified starts as false (deserialized entities are considered clean)
+- Parent-child relationships are re-established by walking object graph
+- Business rules are not automatically executed (only validation rules)
 
-The serialization model focuses on transferring data values, not transient state.
+The serialization model transfers domain data (property values and object structure) without transferring transient validation state or client-side UI concerns.
 
 ## DTOs vs Domain Models
 
@@ -569,23 +543,18 @@ Direct domain model serialization:
 <!-- snippet: remotefactory-dto-pattern -->
 ```cs
 [Fact]
-public void DirectSerialization_NoIntermediateDtos()
+public async Task DirectSerialization_NoIntermediateDtos()
 {
-    // Neatoo serializes domain models directly without DTOs
-    var customer = new RfCustomer(new EntityBaseServices<RfCustomer>());
-    using (customer.PauseAllActions())
-    {
-        customer.Id = 1;
-        customer.Name = "Direct Corp";
-        customer.Email = "direct@example.com";
-    }
-    customer.FactoryComplete(FactoryOperation.Fetch);
+    var factory = GetRequiredService<IRfCustomerFactory>();
+
+    // Fetch entity via factory
+    var customer = await factory.FetchById(1);
 
     // Serialize entity directly - no DTO mapping needed
     var json = JsonSerializer.Serialize(customer);
 
     // Client and server share same domain model contract
-    Assert.Contains("Direct Corp", json);
+    Assert.Contains("Acme Corp", json);
 
     // When to add DTOs:
     // - Different client/server model versions
@@ -595,19 +564,20 @@ public void DirectSerialization_NoIntermediateDtos()
 ```
 <!-- endSnippet -->
 
-When to use DTOs:
-- Client and server have different domain model versions
-- Domain model contains sensitive properties not for client consumption
-- Client needs a flattened view of a complex aggregate
-- API versioning requires stable contracts
+When to use DTOs (separate data transfer objects):
+- Client and server have different domain model versions (separate assemblies)
+- Domain model contains sensitive server-only properties (password hashes, internal IDs)
+- Client needs a flattened projection of a complex aggregate
+- API versioning requires stable contracts independent of domain model evolution
+- Public-facing API consumed by third parties
 
-When to serialize domain models directly:
-- Client and server share the same codebase (Blazor WebAssembly)
-- Domain model is designed for client consumption
-- No sensitive data in domain model
-- Rapid development with low mapping overhead
+When to serialize domain models directly (Neatoo default):
+- Client and server share the same codebase (Blazor WebAssembly with shared project)
+- Domain model is designed for client consumption (no sensitive properties)
+- First-party client only (no third-party API consumers)
+- Rapid development with minimal mapping overhead
 
-Neatoo's default pattern is direct serialization. Add a DTO layer when architectural boundaries require it.
+Neatoo's default pattern is direct domain model serialization. This reduces mapping code and keeps client and server synchronized. Add a DTO layer when architectural boundaries, security requirements, or versioning concerns require separation.
 
 ## Dependency Injection Setup
 
@@ -620,35 +590,26 @@ Register factories in DI container:
 [Fact]
 public void DiSetup_RegistersFactoryServices()
 {
-    var services = new ServiceCollection();
-
-    // Add Neatoo core services
-    services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomer).Assembly);
-
-    // Generated FactoryServiceRegistrar registers:
-    // - IRfCustomerFactory (interface)
-    // - RfCustomerFactory (implementation)
-    // - IFactorySave<RfCustomer> (save interface)
-    // - RfCustomer (entity type)
-    RfCustomerFactory.FactoryServiceRegistrar(services, NeatooFactory.Logical);
-
-    var provider = services.BuildServiceProvider();
-
-    // Factory is now available via DI
-    var factory = provider.GetService<IRfCustomerFactory>();
+    // AddNeatooServices automatically registers all factories in the assembly
+    // Factory is available via DI
+    var factory = GetRequiredService<IRfCustomerFactory>();
     Assert.NotNull(factory);
+
+    // Can also resolve other factories
+    var orderFactory = GetRequiredService<IRfOrderFactory>();
+    Assert.NotNull(orderFactory);
 }
 ```
 <!-- endSnippet -->
 
 DI registration details:
-- FactoryServiceRegistrar static method generated on each factory class
-- Registers ICustomerFactory, CustomerFactory, IFactorySave<Customer>
-- Registers factory method delegates for remote invocation
-- NeatooFactory enum selects local vs remote execution mode
-- Scoped lifetime recommended for factories (matches request scope)
+- AddNeatooServices scans assembly for [Factory] classes and registers factories automatically
+- Registers factory interface (IXxxFactory), internal implementation, and IFactorySave<T>
+- NeatooFactory mode determines execution routing (Logical, Remote, Server)
+- Factories are registered with scoped lifetime (per HTTP request or per Blazor circuit)
+- Entity base services (IEntityBaseServices<T>, IValidateBaseServices<T>) are also registered
 
-Call FactoryServiceRegistrar during application startup:
+Application startup registration:
 
 <!-- snippet: remotefactory-di-startup -->
 ```cs
@@ -656,20 +617,14 @@ Call FactoryServiceRegistrar during application startup:
 public void DiStartup_CallsRegistrarDuringStartup()
 {
     // In Program.cs or Startup.cs:
-    var services = new ServiceCollection();
+    // services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomer).Assembly);
 
-    // Register Neatoo core services
-    services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomer).Assembly);
-
-    // Each entity's factory has a generated registrar method
     // NeatooFactory modes:
     // - Logical: All factory methods execute locally
     // - Remote: [Remote] methods execute on server via HTTP
     // - Server: Server-side, all methods execute locally
-    RfCustomerFactory.FactoryServiceRegistrar(services, NeatooFactory.Logical);
 
-    var provider = services.BuildServiceProvider();
-    var factory = provider.GetRequiredService<IRfCustomerFactory>();
+    var factory = GetRequiredService<IRfCustomerFactory>();
 
     // Use factory in application code
     var customer = factory.Create();
@@ -691,34 +646,28 @@ Core services registration:
 [Fact]
 public void CoreServices_ProvidedByNeatoo()
 {
-    var services = new ServiceCollection();
-
-    // AddNeatooServices registers core infrastructure:
-    services.AddNeatooServices(NeatooFactory.Logical, typeof(RfCustomer).Assembly);
-
-    var provider = services.BuildServiceProvider();
-
     // IEntityBaseServices<T> - property management, rule execution
-    var entityServices = provider.GetService<IEntityBaseServices<RfCustomer>>();
+    var entityServices = GetRequiredService<IEntityBaseServices<RfCustomer>>();
     Assert.NotNull(entityServices);
 
     // IValidateBaseServices<T> - validation services
-    var validateServices = provider.GetService<IValidateBaseServices<RfCustomer>>();
+    var validateServices = GetRequiredService<IValidateBaseServices<RfCustomer>>();
     Assert.NotNull(validateServices);
 
     // Application code injects factory interfaces, not core services
+    var factory = GetRequiredService<IRfCustomerFactory>();
+    Assert.NotNull(factory);
 }
 ```
 <!-- endSnippet -->
 
 Core services provide:
-- **IEntityBaseServices<T>**: Property management, rule execution, task tracking
-- **IValidateBaseServices<T>**: Validation services for ValidateBase types
-- **IFactoryCore<T>**: Factory lifecycle coordination (FactoryStart/FactoryComplete)
-- **PropertyManager**: Property wrapper access and meta-property tracking
-- **RuleManager**: Business rule registration and execution
+- **IEntityBaseServices<T>**: Property management, rule execution, task tracking, and factory lifecycle coordination for EntityBase types
+- **IValidateBaseServices<T>**: Property management, validation services, and rule execution for ValidateBase types
+- **PropertyManager**: Property wrapper access (via indexer), meta-property aggregation (IsValid, IsBusy), and PropertyChanged events
+- **RuleManager**: Business rule registration (AddAction, AddValidation), trigger property tracking, and rule execution
 
-These services are internal infrastructure consumed by entities and factories. Application code injects ICustomerFactory, not IEntityBaseServices.
+These services are internal framework infrastructure. Entities receive them via constructor injection. Application code injects factory interfaces (ICustomerFactory), not core services.
 
 ## Factory Method Lifecycle
 
@@ -731,44 +680,39 @@ Factory lifecycle phases:
 [Fact]
 public void Lifecycle_ManagedByFactory()
 {
-    var customer = new RfCustomer(new EntityBaseServices<RfCustomer>());
+    var factory = GetRequiredService<IRfCustomerFactory>();
 
-    // Phase 1: FactoryStart - before method executes
-    // - Sets FactoryOperation
-    // - Calls PauseAllActions (for Fetch/Create)
-    customer.FactoryStart(FactoryOperation.Create);
-    Assert.True(customer.IsPaused);
+    // Factory manages the entire lifecycle:
+    // Phase 1: Prepare - suspends validation during data loading
+    // Phase 2: Method execution (e.g., Create)
+    // Phase 3: Finalize - resumes validation, updates entity state
 
-    // Phase 2: Method execution
-    // - Services injected, persistence operations run
-    customer.Create();
+    var customer = factory.Create();
 
-    // Phase 3: FactoryComplete - after method completes
-    // - Calls Resume (for Fetch/Create)
-    // - Updates IsNew, IsModified based on operation
-    customer.FactoryComplete(FactoryOperation.Create);
-
-    Assert.False(customer.IsPaused);
+    // After Create: entity is new and ready for use
     Assert.True(customer.IsNew);
+    Assert.False(customer.IsPaused);
 }
 ```
 <!-- endSnippet -->
 
 Lifecycle coordination:
-1. **FactoryStart**: Called before factory method executes
-   - Sets FactoryOperation (Create, Fetch, Insert, Update, Delete)
-   - Calls PauseAllActions (for Fetch/Create)
-2. **Method execution**: Entity factory method runs
-   - Services injected
-   - Persistence operations execute
-   - Properties modified
-3. **FactoryComplete**: Called after factory method completes
-   - Calls Resume (for Fetch/Create)
-   - Updates IsNew, IsModified based on operation
-   - Runs validation (for Create)
-   - Marks entity as clean (for Fetch)
+1. **Before method execution**: Factory prepares entity for the operation
+   - Calls PauseAllActions for data loading operations (Fetch) to suspend validation and modification tracking
+   - Calls BeginEdit for Create operations
+   - Tracks the current operation type internally
+2. **Method execution**: Entity's factory method runs
+   - [Service] parameters are resolved from DI container via IServiceProvider
+   - Persistence operations execute (repository calls, DbContext operations)
+   - Property setters are called to populate or initialize entity state
+3. **After method completion**: Factory finalizes entity state
+   - Resumes validation and events (completes PauseAllActions scope)
+   - Updates IsNew based on operation (false after Fetch/Insert)
+   - Updates IsModified based on operation (false after Fetch/Insert/Update)
+   - For Create: runs validation rules to establish initial validation state
+   - For Fetch: does not run validation rules (clean loaded state)
 
-The lifecycle ensures entities are in correct state after factory operations complete.
+The factory lifecycle ensures entities transition to correct state (IsNew, IsModified, IsValid) after each operation without requiring manual state management.
 
 ## Multiple Fetch Overloads
 
@@ -815,13 +759,14 @@ public partial class RfCustomerMultiFetch : EntityBase<RfCustomerMultiFetch>
 ```
 <!-- endSnippet -->
 
-Factory generates:
-- ICustomerFactory.FetchById(int id)
-- ICustomerFactory.FetchByEmail(string email)
-- Both methods set IsNew = false and IsModified = false
-- Both methods use PauseAllActions during loading
+Generated factory interface:
+- IRfCustomerMultiFetchFactory.FetchById(int id) → calls entity's FetchById(int id, repository)
+- IRfCustomerMultiFetchFactory.FetchByEmail(string email) → calls entity's FetchByEmail(string email, repository)
+- Both methods set IsNew = false and IsModified = false after completion
+- Both methods use PauseAllActions during data loading to suspend validation
+- Method overloads appear on the same factory interface
 
-Multiple Fetch overloads enable flexible query APIs without proliferating factory interfaces.
+Multiple Fetch overloads enable flexible query patterns (by ID, by email, by criteria) without creating separate factory interfaces for each query.
 
 ## Child Entity Factories
 
@@ -861,13 +806,8 @@ public partial class RfOrder : EntityBase<RfOrder>
         var itemsData = await repository.FetchItemsAsync(id);
         foreach (var itemData in itemsData)
         {
-            var item = itemFactory.Create();
-            item.Id = itemData.Id;
-            item.ProductCode = itemData.ProductCode;
-            item.Price = itemData.Price;
-            item.Quantity = itemData.Quantity;
-            item.DoMarkOld();
-            item.DoMarkUnmodified();
+            // Use factory.Fetch to load existing items
+            var item = itemFactory.Fetch(itemData.Id, itemData.ProductCode, itemData.Price, itemData.Quantity);
             Items.Add(item);
         }
     }
@@ -876,14 +816,15 @@ public partial class RfOrder : EntityBase<RfOrder>
 <!-- endSnippet -->
 
 Child factory patterns:
-- Parent factory injects IOrderItemListFactory
-- Child factory has a Fetch overload accepting a collection of EF entities
-- Child factory creates domain model child entities from EF entities
-- Parent assigns child collection to property
-- Parent-child relationship established during assignment
-- Child entities cascade validation and dirty state to parent
+- Parent Fetch method injects child factory as [Service] parameter (IRfOrderItemFactory)
+- For each child record from repository, call childFactory.Fetch(...) to create child entity
+- Child factory's Fetch method populates the child entity from persistence data
+- Parent adds child entity to collection property: Items.Add(item)
+- Parent-child relationship is established automatically during collection Add
+- Child validation state (IsValid, IsBusy) cascades to parent
+- Child modification state (IsModified) cascades to parent aggregate root
 
-Child factories are registered in DI alongside parent factories.
+Child factories are registered in DI by AddNeatooServices alongside parent factories. Each [Factory] entity gets its own factory interface.
 
 ## Factory Authorization
 
@@ -929,14 +870,19 @@ public partial class RfCustomerAuthorized : EntityBase<RfCustomerAuthorized>
 <!-- endSnippet -->
 
 Authorization flow:
-1. [AuthorizeFactory<ICustomerAuth>] applied to entity class
-2. ICustomerAuth service injected into factory
-3. Before each factory method executes, auth delegate is called
-4. Auth delegate checks permissions for the operation
-5. If authorized, factory method executes
-6. If not authorized, exception thrown
+1. [AuthorizeFactory<IRfCustomerAuth>] attribute applied to entity class
+2. IRfCustomerAuth service is resolved from DI when factory is constructed
+3. Before each factory method executes, factory checks authorization
+4. Factory calls corresponding IRfCustomerAuth method (CanCreate, CanFetch, etc.) based on operation
+5. If authorization method returns true, factory method executes normally
+6. If authorization method returns false, factory throws UnauthorizedAccessException
 
-Authorization delegates enable role-based access control for entity operations.
+Authorization attributes on IRfCustomerAuth interface methods:
+- [AuthorizeFactory(AuthorizeFactoryOperation.Create)] → checks before Create
+- [AuthorizeFactory(AuthorizeFactoryOperation.Fetch)] → checks before Fetch methods
+- [AuthorizeFactory(AuthorizeFactoryOperation.Read | AuthorizeFactoryOperation.Write)] → checks for both read and write operations
+
+Authorization delegates enable declarative role-based access control for entity lifecycle operations.
 
 ---
 

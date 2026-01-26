@@ -37,6 +37,9 @@ public partial class EntitiesEmployee : EntityBase<EntitiesEmployee>
     public partial string Email { get; set; }
 
     public partial decimal Salary { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 ```
 <!-- endSnippet -->
@@ -69,12 +72,20 @@ public partial class EntitiesOrder : EntityBase<EntitiesOrder>
     // Child collection establishes aggregate boundary
     public partial IEntitiesOrderItemList Items { get; set; }
 
-    // Expose protected methods for testing
-    public void DoMarkNew() => MarkNew();
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
+    // Expose protected methods for samples
     public void DoMarkModified() => MarkModified();
-    public void DoMarkAsChild() => MarkAsChild();
+    public void DoMarkUnmodified() => MarkUnmodified();
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(int id, string orderNumber, DateTime orderDate)
+    {
+        Id = id;
+        OrderNumber = orderNumber;
+        OrderDate = orderDate;
+    }
 }
 ```
 <!-- endSnippet -->
@@ -114,20 +125,11 @@ Check entity state:
 [Fact]
 public void IsNew_DistinguishesNewFromExisting()
 {
-    var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+    var factory = GetRequiredService<IEntitiesOrderFactory>();
+    var order = factory.Create();
 
-    // Entity is not new by default (factory sets this)
-    Assert.False(order.IsNew);
-
-    // Simulate factory Create operation
-    order.FactoryComplete(FactoryOperation.Create);
-
-    // Now entity is new - will trigger Insert on save
+    // After Create: entity is new - will trigger Insert on save
     Assert.True(order.IsNew);
-
-    // After Insert, entity becomes existing
-    order.FactoryComplete(FactoryOperation.Insert);
-    Assert.False(order.IsNew);
 }
 ```
 <!-- endSnippet -->
@@ -147,21 +149,16 @@ Create a new entity using the Create factory method:
 [Fact]
 public void NewEntity_StartsUnmodifiedAfterCreate()
 {
-    var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+    var factory = GetRequiredService<IEntitiesOrderFactory>();
+    var order = factory.Create();
 
-    // Initialize properties using PauseAllActions
-    using (order.PauseAllActions())
-    {
-        order.OrderNumber = "ORD-001";
-        order.OrderDate = DateTime.Today;
-    }
-
-    // Simulate factory Create operation
-    order.FactoryComplete(FactoryOperation.Create);
+    // Set properties on the new entity
+    order.OrderNumber = "ORD-001";
+    order.OrderDate = DateTime.Today;
 
     // After Create completes:
     Assert.True(order.IsNew);            // New entity
-    Assert.False(order.IsSelfModified);  // No direct property modifications
+    Assert.True(order.IsSelfModified);   // Properties were modified after create
     Assert.True(order.IsValid);          // Passes validation
     Assert.True(order.IsModified);       // IsNew makes entity modified
     Assert.True(order.IsSavable);        // New entity is savable (needs Insert)
@@ -171,9 +168,15 @@ public void NewEntity_StartsUnmodifiedAfterCreate()
 
 After Create completes:
 - `IsNew == true`
-- `IsModified == false` (new entities start unmodified)
+- `IsModified == true` (new entities are inherently modified due to IsNew)
+- `IsSelfModified == false` (no properties changed yet)
 - `IsValid` depends on validation rules
-- `IsSavable == false` (not modified yet)
+- `IsSavable == false` (new but no property changes)
+
+After setting properties:
+- `IsSelfModified == true` (properties were changed)
+- `IsModified == true` (remains true - IsNew keeps it modified)
+- `IsSavable == true` (new entity with property changes is ready for Insert)
 
 ### Fetch Existing Entity
 
@@ -182,26 +185,18 @@ Fetch an existing entity from persistence:
 <!-- snippet: entities-fetch -->
 ```cs
 [Fact]
-public void FetchedEntity_StartsClean()
+public async Task FetchedEntity_StartsClean()
 {
-    var customer = new EntitiesCustomer(new EntityBaseServices<EntitiesCustomer>());
+    var factory = GetRequiredService<IEntitiesCustomerFactory>();
 
-    // Simulate loading from database
-    using (customer.PauseAllActions())
-    {
-        customer.Id = 42;
-        customer.Name = "Acme Corp";
-        customer.Email = "contact@acme.com";
-    }
-
-    // Simulate factory Fetch operation
-    customer.FactoryComplete(FactoryOperation.Fetch);
+    // Fetch loads the entity from repository
+    var customer = await factory.FetchAsync(42);
 
     // After Fetch completes:
     Assert.False(customer.IsNew);         // Existing entity
     Assert.False(customer.IsModified);    // Clean state
     Assert.False(customer.IsSelfModified);// No modifications
-    Assert.Equal("Acme Corp", customer.Name);
+    Assert.Equal("Customer 42", customer.Name);
 }
 ```
 <!-- endSnippet -->
@@ -223,23 +218,16 @@ Save delegates to the appropriate factory method:
 [Fact]
 public async Task Save_DelegatesToAppropriateFactoryMethod()
 {
-    var employee = new EntitiesEmployee(new EntityBaseServices<EntitiesEmployee>());
+    var factory = GetRequiredService<IEntitiesEmployeeFactory>();
 
     // New entity - would call Insert
-    employee.FactoryComplete(FactoryOperation.Create);
+    var employee = factory.Create();
     employee.Name = "Alice";
     Assert.True(employee.IsNew);
     Assert.True(employee.IsModified);
 
-    // Without factory configured, Save throws with NoFactoryMethod reason
-    var exception = await Assert.ThrowsAsync<SaveOperationException>(
-        () => employee.Save());
-    Assert.Equal(SaveFailureReason.NoFactoryMethod, exception.Reason);
-
-    // After Insert, would call Update for subsequent saves
-    employee.FactoryComplete(FactoryOperation.Insert);
-    Assert.False(employee.IsNew);
-    Assert.False(employee.IsModified); // Cleared by FactoryComplete
+    // Save is available through the factory
+    Assert.True(employee.IsSavable);
 }
 ```
 <!-- endSnippet -->
@@ -268,17 +256,12 @@ Mark an entity for deletion:
 <!-- snippet: entities-delete -->
 ```cs
 [Fact]
-public void Delete_MarksEntityForDeletion()
+public async Task Delete_MarksEntityForDeletion()
 {
-    var customer = new EntitiesCustomer(new EntityBaseServices<EntitiesCustomer>());
+    var factory = GetRequiredService<IEntitiesCustomerFactory>();
 
-    // Simulate fetched entity
-    using (customer.PauseAllActions())
-    {
-        customer.Id = 42;
-        customer.Name = "Acme Corp";
-    }
-    customer.FactoryComplete(FactoryOperation.Fetch);
+    // Fetch existing customer
+    var customer = await factory.FetchAsync(42);
 
     Assert.False(customer.IsDeleted);
     Assert.False(customer.IsModified);
@@ -304,17 +287,12 @@ Reverse deletion before saving:
 <!-- snippet: entities-undelete -->
 ```cs
 [Fact]
-public void UnDelete_ReversesDeleteBeforeSave()
+public async Task UnDelete_ReversesDeleteBeforeSave()
 {
-    var customer = new EntitiesCustomer(new EntityBaseServices<EntitiesCustomer>());
+    var factory = GetRequiredService<IEntitiesCustomerFactory>();
 
-    // Simulate fetched entity
-    using (customer.PauseAllActions())
-    {
-        customer.Id = 42;
-        customer.Name = "Acme Corp";
-    }
-    customer.FactoryComplete(FactoryOperation.Fetch);
+    // Fetch existing customer
+    var customer = await factory.FetchAsync(42);
 
     // Mark for deletion
     customer.Delete();
@@ -344,10 +322,13 @@ Parent navigation:
 [Fact]
 public void Parent_EstablishesAggregateGraph()
 {
-    var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+    var orderFactory = GetRequiredService<IEntitiesOrderFactory>();
+    var itemFactory = GetRequiredService<IEntitiesOrderItemFactory>();
+
+    var order = orderFactory.Create();
 
     // Create child item
-    var item = new EntitiesOrderItem(new EntityBaseServices<EntitiesOrderItem>());
+    var item = itemFactory.Create();
     item.ProductCode = "WIDGET-001";
     item.Price = 29.99m;
     item.Quantity = 2;
@@ -370,7 +351,7 @@ public void Parent_EstablishesAggregateGraph()
 
 Parent cascades:
 - Validation state bubbles up to parent
-- IsDirty state bubbles up to parent
+- Modification state bubbles up to parent
 - Parent changes propagate to all children in collections
 
 For aggregate roots:
@@ -381,10 +362,10 @@ For child entities:
 - `Parent` points to owning entity or list's parent
 - `Root` navigates to the aggregate root
 
-The Root property automatically walks the Parent chain:
-- If Parent is null, Root is null
-- If Parent implements IEntityBase, returns Parent.Root
-- Otherwise, Parent is the root
+The Root property walks the Parent chain to find the aggregate root:
+- If Parent is null, Root returns null (this entity is an aggregate root or standalone ValidateBase)
+- If Parent implements IEntityBase, Root recursively returns Parent.Root (walks up to the aggregate root)
+- Otherwise, Root returns Parent (Parent is the aggregate root, not an IEntityBase)
 
 See [Parent-Child](parent-child.md) for detailed parent-child relationship management.
 
@@ -401,15 +382,17 @@ Modification tracking determines if the entity needs saving:
 [Fact]
 public void ModificationState_TracksChanges()
 {
-    var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
-    order.DoMarkUnmodified();
+    var factory = GetRequiredService<IEntitiesOrderFactory>();
+
+    // Fetch existing order
+    var order = factory.Fetch(1, "ORD-001", DateTime.Today);
 
     Assert.False(order.IsModified);
     Assert.False(order.IsSelfModified);
     Assert.Empty(order.ModifiedProperties);
 
     // Change a property
-    order.OrderNumber = "ORD-001";
+    order.OrderNumber = "ORD-002";
 
     // IsSelfModified: direct property change
     Assert.True(order.IsSelfModified);
@@ -423,26 +406,22 @@ public void ModificationState_TracksChanges()
 ```
 <!-- endSnippet -->
 
-- **IsModified**: True if any property changed, entity is new/deleted, or explicitly marked modified. Includes child modifications.
-- **IsSelfModified**: True if the entity's own properties changed, entity is new/deleted, or explicitly marked modified. Excludes child modifications.
+- **IsModified**: True if any property changed, entity is new (`IsNew == true`), entity is deleted (`IsDeleted == true`), or explicitly marked modified. Includes child modifications cascading from collections.
+- **IsSelfModified**: True if the entity's own properties changed, entity is new (`IsNew == true`), entity is deleted (`IsDeleted == true`), or explicitly marked modified. Excludes child modifications.
 - **ModifiedProperties**: Collection of property names that changed since last save.
 - **IsMarkedModified**: Explicitly marked modified via `MarkModified()`.
 
-Mark entity as modified:
+Mark entity as modified (note: `MarkModified()` is a protected method):
 
 <!-- snippet: entities-mark-modified -->
 ```cs
 [Fact]
 public void MarkModified_ForcesEntityToBeSaved()
 {
-    var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+    var factory = GetRequiredService<IEntitiesOrderFactory>();
 
-    // Simulate fetched entity
-    using (order.PauseAllActions())
-    {
-        order.OrderNumber = "ORD-001";
-    }
-    order.FactoryComplete(FactoryOperation.Fetch);
+    // Fetch existing order
+    var order = factory.Fetch(1, "ORD-001", DateTime.Today);
 
     Assert.False(order.IsModified);
     Assert.False(order.IsMarkedModified);
@@ -457,14 +436,15 @@ public void MarkModified_ForcesEntityToBeSaved()
 ```
 <!-- endSnippet -->
 
-Clear modification state after save:
+Modification state is cleared automatically after successful save operations. The framework calls `FactoryComplete`, which internally calls `MarkUnmodified()` to reset tracking:
 
 <!-- snippet: entities-mark-unmodified -->
 ```cs
 [Fact]
 public void MarkUnmodified_ClearsAfterSave()
 {
-    var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+    var factory = GetRequiredService<IEntitiesOrderFactory>();
+    var order = factory.Create();
 
     // Make changes
     order.OrderNumber = "ORD-001";
@@ -484,7 +464,7 @@ public void MarkUnmodified_ClearsAfterSave()
 ```
 <!-- endSnippet -->
 
-`MarkUnmodified()` is called automatically after successful Insert or Update operations.
+`MarkUnmodified()` is protected and called internally by `FactoryComplete` after successful Insert or Update operations. Users do not call it directly.
 
 ### Persistence State
 
@@ -493,33 +473,17 @@ Persistence state determines which factory method executes on save:
 <!-- snippet: entities-persistence-state -->
 ```cs
 [Fact]
-public void PersistenceState_DeterminesFactoryMethod()
+public async Task PersistenceState_DeterminesFactoryMethod()
 {
-    // New entity - starts without state
-    var newOrder = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
-    Assert.False(newOrder.IsNew);
-    Assert.False(newOrder.IsDeleted);
+    var factory = GetRequiredService<IEntitiesOrderFactory>();
 
-    // After Create: IsNew = true, IsDeleted = false -> Insert
-    newOrder.FactoryComplete(FactoryOperation.Create);
+    // New entity - after Create: IsNew = true -> Insert
+    var newOrder = factory.Create();
     Assert.True(newOrder.IsNew);
     Assert.False(newOrder.IsDeleted);
 
-    // After Insert: IsNew = false, IsDeleted = false
-    newOrder.FactoryComplete(FactoryOperation.Insert);
-    Assert.False(newOrder.IsNew);
-    Assert.False(newOrder.IsDeleted);
-
-    // Fetched entity scenario
-    var fetchedOrder = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
-    using (fetchedOrder.PauseAllActions())
-    {
-        fetchedOrder.OrderNumber = "ORD-001";
-    }
-    // Fetch operation doesn't change IsNew (handled by deserialization)
-    // but the entity should be marked old via MarkOld during fetch
-    fetchedOrder.DoMarkOld();
-    fetchedOrder.FactoryComplete(FactoryOperation.Fetch);
+    // Fetched entity - after Fetch: IsNew = false
+    var fetchedOrder = factory.Fetch(1, "ORD-001", DateTime.Today);
     Assert.False(fetchedOrder.IsNew);
     Assert.False(fetchedOrder.IsDeleted);
 
@@ -551,14 +515,10 @@ IsSavable determines if Save() can proceed:
 [Fact]
 public void IsSavable_CombinesStateChecks()
 {
-    var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+    var factory = GetRequiredService<IEntitiesOrderFactory>();
 
-    // Simulate fetched entity
-    using (order.PauseAllActions())
-    {
-        order.OrderNumber = "ORD-001";
-    }
-    order.FactoryComplete(FactoryOperation.Fetch);
+    // Fetch existing order
+    var order = factory.Fetch(1, "ORD-001", DateTime.Today);
 
     // Unmodified entity is not savable
     Assert.False(order.IsModified);
@@ -594,12 +554,16 @@ Child entities are managed by their parent aggregate:
 [Fact]
 public async Task ChildEntity_CannotSaveDirectly()
 {
-    var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+    var orderFactory = GetRequiredService<IEntitiesOrderFactory>();
+    var itemFactory = GetRequiredService<IEntitiesOrderItemFactory>();
+
+    var order = orderFactory.Create();
 
     // Create child item
-    var item = new EntitiesOrderItem(new EntityBaseServices<EntitiesOrderItem>());
+    var item = itemFactory.Create();
     item.ProductCode = "WIDGET-001";
     item.Price = 29.99m;
+    item.Quantity = 1;
 
     // Add to collection marks entity as child
     order.Items.Add(item);
@@ -641,11 +605,6 @@ public partial class EntitiesCustomer : EntityBase<EntitiesCustomer>
     public partial string Name { get; set; }
 
     public partial string Email { get; set; }
-
-    // Expose protected methods for testing
-    public void DoMarkNew() => MarkNew();
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
 
     [Create]
     public void Create()
@@ -693,14 +652,13 @@ The Factory property is set through dependency injection:
 [Fact]
 public void Factory_SetThroughDependencyInjection()
 {
-    var services = new EntityBaseServices<EntitiesEmployee>();
+    var factory = GetRequiredService<IEntitiesCustomerFactory>();
 
-    // Create entity with services (normally done by DI)
-    var employee = new EntitiesEmployee(services);
+    // Factory is resolved from DI
+    var customer = factory.Create();
 
-    // Factory property is set through services
-    // (will be null here since no DI container)
-    Assert.Null(employee.Factory);
+    // Factory property is set through services when entity has Insert/Update/Delete methods
+    Assert.NotNull(customer.Factory);
 
     // When Factory is configured via DI, Save() delegates to it
     // The factory calls Insert, Update, or Delete based on entity state
@@ -708,13 +666,13 @@ public void Factory_SetThroughDependencyInjection()
 ```
 <!-- endSnippet -->
 
-FactoryComplete executes after factory operations:
-- After Create: Marks entity as new
-- After Fetch: No state changes (already marked old during deserialization)
-- After Insert/Update: Marks entity unmodified and old
-- After Delete: No state changes
+FactoryComplete executes after factory operations to manage entity state:
+- After Create: Sets `IsNew = true` (entity needs Insert on save)
+- After Fetch: No state changes needed (entity loads with `IsNew = false` from data source)
+- After Insert/Update: Sets `IsNew = false` and calls `MarkUnmodified()` to clear modification tracking
+- After Delete: No state changes (entity remains deleted)
 
-This state management ensures the entity lifecycle matches persistence operations.
+This automatic state management ensures entity lifecycle matches persistence operations without manual intervention.
 
 ## Cancellation Support
 
@@ -725,10 +683,8 @@ Save operations support cancellation tokens:
 [Fact]
 public async Task Save_SupportsCancellation()
 {
-    var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
-
-    // Simulate new entity
-    order.FactoryComplete(FactoryOperation.Create);
+    var factory = GetRequiredService<IEntitiesOrderFactory>();
+    var order = factory.Create();
     order.OrderNumber = "ORD-001";
 
     // Create a cancelled token

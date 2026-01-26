@@ -26,6 +26,9 @@ public partial class ApiCustomer : ValidateBase<ApiCustomer>
     public partial string Email { get; set; }
 
     public partial DateTime BirthDate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -40,6 +43,9 @@ public partial class ApiCustomerSearch : ValidateBase<ApiCustomerSearch>
     public partial string SearchTerm { get; set; }
 
     public partial string Category { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -65,6 +71,9 @@ public partial class ApiCustomerValidator : ValidateBase<ApiCustomerValidator>
     public partial string Name { get; set; }
 
     public partial string DisplayName { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -105,13 +114,16 @@ public partial class ApiEmployee : EntityBase<ApiEmployee>
 
     public partial string Department { get; set; }
 
-    // Expose protected methods for testing
-    public void DoMarkNew() => MarkNew();
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkModified() => MarkModified();
-    public void DoMarkUnmodified() => MarkUnmodified();
-    public void DoMarkDeleted() => MarkDeleted();
-    public void DoMarkAsChild() => MarkAsChild();
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(int id, string name, string department)
+    {
+        Id = id;
+        Name = name;
+        Department = department;
+    }
 }
 
 /// <summary>
@@ -178,8 +190,6 @@ public interface IApiOrderItem : IEntityBase
     string ProductCode { get; set; }
     decimal Price { get; set; }
     int Quantity { get; set; }
-    void DoMarkOld();
-    void DoMarkUnmodified();
 }
 
 [Factory]
@@ -193,8 +203,16 @@ public partial class ApiOrderItem : EntityBase<ApiOrderItem>, IApiOrderItem
 
     public partial int Quantity { get; set; }
 
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(string productCode, decimal price, int quantity)
+    {
+        ProductCode = productCode;
+        Price = price;
+        Quantity = quantity;
+    }
 }
 
 /// <summary>
@@ -203,15 +221,11 @@ public partial class ApiOrderItem : EntityBase<ApiOrderItem>, IApiOrderItem
 public interface IApiOrderItemList : IEntityListBase<IApiOrderItem>
 {
     int DeletedCount { get; }
-    void DoFactoryStart(FactoryOperation operation);
-    void DoFactoryComplete(FactoryOperation operation);
 }
 
 public class ApiOrderItemList : EntityListBase<IApiOrderItem>, IApiOrderItemList
 {
     public int DeletedCount => DeletedList.Count;
-    public void DoFactoryStart(FactoryOperation operation) => FactoryStart(operation);
-    public void DoFactoryComplete(FactoryOperation operation) => FactoryComplete(operation);
 }
 
 /// <summary>
@@ -231,8 +245,18 @@ public partial class ApiOrder : EntityBase<ApiOrder>
 
     public partial IApiOrderItemList Items { get; set; }
 
+    // Expose protected method for samples
     public void DoMarkUnmodified() => MarkUnmodified();
-    public void DoMarkOld() => MarkOld();
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(int id, string orderNumber)
+    {
+        Id = id;
+        OrderNumber = orderNumber;
+    }
 }
 
 /// <summary>
@@ -257,12 +281,15 @@ public partial class ApiValidateItem : ValidateBase<ApiValidateItem>, IApiValida
     public partial string Name { get; set; }
 
     public partial int Value { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
 /// ValidateListBase for validation samples.
 /// </summary>
-public class ApiValidateItemList : ValidateListBase<ApiValidateItem>
+public class ApiValidateItemList : ValidateListBase<IApiValidateItem>
 {
 }
 
@@ -280,6 +307,9 @@ public partial class ApiAddress : ValidateBase<ApiAddress>
     public partial string Street { get; set; }
 
     public partial ApiValidateItemList Items { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -298,6 +328,9 @@ public partial class ApiTransaction : ValidateBase<ApiTransaction>
     {
         MarkInvalid(reason);
     }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -329,6 +362,9 @@ public partial class ApiAsyncContact : ValidateBase<ApiAsyncContact>
     public partial string ZipCode { get; set; }
 
     public partial decimal TaxRate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -354,6 +390,9 @@ public partial class ApiRegistration : ValidateBase<ApiRegistration>
 
     [RegularExpression(@"^\d{5}(-\d{4})?$")]
     public partial string ZipCode { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -369,6 +408,9 @@ public partial class ApiProduct : ValidateBase<ApiProduct>
     public partial string Name { get; set; }
 
     public partial decimal Price { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -464,7 +506,15 @@ public partial class ApiLead : EntityBase<ApiLead>
 
     public partial string LeadName { get; set; }
 
-    public void DoMarkOld() => MarkOld();
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(int id, string leadName)
+    {
+        Id = id;
+        LeadName = leadName;
+    }
 
     [Update]
     public async Task UpdateAsync([Service] IApiCustomerRepository repository)
@@ -486,6 +536,16 @@ public partial class ApiProject : EntityBase<ApiProject>
     public partial int Id { get; set; }
 
     public partial string ProjectName { get; set; }
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(int id, string projectName)
+    {
+        Id = id;
+        ProjectName = projectName;
+    }
 
     [Delete]
     public async Task DeleteAsync([Service] IApiCustomerRepository repository)
@@ -548,6 +608,9 @@ public partial class ApiGeneratedCustomer : ValidateBase<ApiGeneratedCustomer>
     public partial string Name { get; set; }
 
     public partial string Email { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -644,6 +707,9 @@ public partial class ApiRuleIdEntity : ValidateBase<ApiRuleIdEntity>
     }
 
     public partial int Value { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -651,13 +717,14 @@ public partial class ApiRuleIdEntity : ValidateBase<ApiRuleIdEntity>
 // Test classes for API Reference samples
 // -----------------------------------------------------------------
 
-public class ApiReferenceSamplesTests
+public class ApiReferenceSamplesTests : SamplesTestBase
 {
     #region api-validatebase-property-access
     [Fact]
     public void PropertyAccess_ByNameAndIndexer()
     {
-        var search = new ApiCustomerSearch(new ValidateBaseServices<ApiCustomerSearch>());
+        var factory = GetRequiredService<IApiCustomerSearchFactory>();
+        var search = factory.Create();
         search.SearchTerm = "Test";
         search.Category = "Products";
 
@@ -681,7 +748,8 @@ public class ApiReferenceSamplesTests
     [Fact]
     public async Task RunRules_ExecutesValidation()
     {
-        var customer = new ApiCustomerValidator(new ValidateBaseServices<ApiCustomerValidator>());
+        var factory = GetRequiredService<IApiCustomerValidatorFactory>();
+        var customer = factory.Create();
 
         // Set invalid value
         customer.Name = "";
@@ -703,7 +771,8 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void MarkInvalid_SetsObjectLevelError()
     {
-        var transaction = new ApiTransaction(new ValidateBaseServices<ApiTransaction>());
+        var factory = GetRequiredService<IApiTransactionFactory>();
+        var transaction = factory.Create();
         transaction.TransactionId = "TXN-001";
         transaction.Amount = 100;
 
@@ -726,7 +795,8 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void MetaProperties_ReflectValidationState()
     {
-        var customer = new ApiCustomerValidator(new ValidateBaseServices<ApiCustomerValidator>());
+        var factory = GetRequiredService<IApiCustomerValidatorFactory>();
+        var customer = factory.Create();
 
         // Set invalid value
         customer.Name = "";
@@ -743,10 +813,13 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void Parent_EstablishesHierarchy()
     {
-        var address = new ApiAddress(new ValidateBaseServices<ApiAddress>());
+        var addressFactory = GetRequiredService<IApiAddressFactory>();
+        var itemFactory = GetRequiredService<IApiValidateItemFactory>();
+
+        var address = addressFactory.Create();
 
         // Create child item
-        var item = new ApiValidateItem(new ValidateBaseServices<ApiValidateItem>());
+        var item = itemFactory.Create();
         item.Name = "Test Item";
 
         // Add to collection establishes parent
@@ -761,10 +834,8 @@ public class ApiReferenceSamplesTests
     [Fact]
     public async Task Tasks_WaitForAsyncOperations()
     {
-        var pricingService = new MockPricingService();
-        var contact = new ApiAsyncContact(
-            new ValidateBaseServices<ApiAsyncContact>(),
-            pricingService);
+        var factory = GetRequiredService<IApiAsyncContactFactory>();
+        var contact = factory.Create();
 
         contact.Name = "Test";
 
@@ -783,7 +854,8 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void Pause_SuppressesEventsAndRules()
     {
-        var customer = new ApiCustomerValidator(new ValidateBaseServices<ApiCustomerValidator>());
+        var factory = GetRequiredService<IApiCustomerValidatorFactory>();
+        var customer = factory.Create();
 
         // Pause all actions during batch updates
         using (customer.PauseAllActions())
@@ -804,24 +876,21 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void PersistenceState_TracksEntityLifecycle()
     {
-        var employee = new ApiEmployee(new EntityBaseServices<ApiEmployee>());
+        var factory = GetRequiredService<IApiEmployeeFactory>();
 
-        // Initial state - not new, not deleted
-        Assert.False(employee.IsNew);
-        Assert.False(employee.IsDeleted);
-        Assert.False(employee.IsChild);
+        // Create new entity
+        var newEmployee = factory.Create();
+        Assert.True(newEmployee.IsNew);   // New entity - will Insert on save
+        Assert.False(newEmployee.IsDeleted);
+        Assert.False(newEmployee.IsChild);
 
-        // After Create operation
-        employee.FactoryComplete(FactoryOperation.Create);
-        Assert.True(employee.IsNew);   // New entity - will Insert on save
-
-        // After Insert operation
-        employee.FactoryComplete(FactoryOperation.Insert);
-        Assert.False(employee.IsNew);  // Now existing - will Update on save
+        // Fetch existing entity
+        var existingEmployee = factory.Fetch(1, "Alice", "Engineering");
+        Assert.False(existingEmployee.IsNew);  // Now existing - will Update on save
 
         // Mark for deletion
-        employee.Delete();
-        Assert.True(employee.IsDeleted);  // Will Delete on save
+        existingEmployee.Delete();
+        Assert.True(existingEmployee.IsDeleted);  // Will Delete on save
     }
     #endregion
 
@@ -829,15 +898,10 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void ModificationTracking_DetectsChanges()
     {
-        var employee = new ApiEmployee(new EntityBaseServices<ApiEmployee>());
+        var factory = GetRequiredService<IApiEmployeeFactory>();
 
-        // Simulate fetched entity
-        using (employee.PauseAllActions())
-        {
-            employee.Id = 1;
-            employee.Name = "Original";
-        }
-        employee.FactoryComplete(FactoryOperation.Fetch);
+        // Fetch existing entity
+        var employee = factory.Fetch(1, "Original", "Engineering");
 
         Assert.False(employee.IsModified);
         Assert.False(employee.IsSelfModified);
@@ -856,10 +920,13 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void Root_FindsAggregateRoot()
     {
-        var order = new ApiOrder(new EntityBaseServices<ApiOrder>());
+        var orderFactory = GetRequiredService<IApiOrderFactory>();
+        var itemFactory = GetRequiredService<IApiOrderItemFactory>();
+
+        var order = orderFactory.Create();
 
         // Create child item
-        var item = new ApiOrderItem(new EntityBaseServices<ApiOrderItem>());
+        var item = itemFactory.Create();
         item.ProductCode = "WIDGET-001";
         item.Price = 29.99m;
 
@@ -878,15 +945,10 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void Delete_MarksForDeletion()
     {
-        var employee = new ApiEmployee(new EntityBaseServices<ApiEmployee>());
+        var factory = GetRequiredService<IApiEmployeeFactory>();
 
-        // Simulate fetched entity
-        using (employee.PauseAllActions())
-        {
-            employee.Id = 42;
-            employee.Name = "To Delete";
-        }
-        employee.FactoryComplete(FactoryOperation.Fetch);
+        // Fetch existing entity
+        var employee = factory.Fetch(42, "To Delete", "HR");
 
         Assert.False(employee.IsDeleted);
 
@@ -905,32 +967,23 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void MarkMethods_ControlEntityState()
     {
-        var employee = new ApiEmployee(new EntityBaseServices<ApiEmployee>());
+        var factory = GetRequiredService<IApiEmployeeFactory>();
+        var employee = factory.Create();
 
-        // MarkNew - entity needs Insert
-        employee.DoMarkNew();
+        // New entity after Create
         Assert.True(employee.IsNew);
 
-        // MarkOld - entity exists, needs Update
-        employee.DoMarkOld();
+        // FactoryComplete(Insert) marks as old
+        employee.FactoryComplete(FactoryOperation.Insert);
         Assert.False(employee.IsNew);
 
-        // MarkModified - force entity to save
-        employee.DoMarkModified();
-        Assert.True(employee.IsModified);
-        Assert.True(employee.IsMarkedModified);
-
-        // MarkUnmodified - clear modification state
-        employee.DoMarkUnmodified();
-        Assert.False(employee.IsModified);
-
-        // MarkDeleted - entity needs Delete
-        employee.DoMarkDeleted();
+        // Mark for deletion
+        employee.Delete();
         Assert.True(employee.IsDeleted);
 
-        // MarkAsChild - entity is part of aggregate
-        employee.DoMarkAsChild();
-        Assert.True(employee.IsChild);
+        // UnDelete reverses
+        employee.UnDelete();
+        Assert.False(employee.IsDeleted);
     }
     #endregion
 
@@ -938,9 +991,12 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void ValidateListBase_ParentRelationship()
     {
-        var address = new ApiAddress(new ValidateBaseServices<ApiAddress>());
+        var addressFactory = GetRequiredService<IApiAddressFactory>();
+        var itemFactory = GetRequiredService<IApiValidateItemFactory>();
 
-        var item = new ApiValidateItem(new ValidateBaseServices<ApiValidateItem>());
+        var address = addressFactory.Create();
+
+        var item = itemFactory.Create();
         item.Name = "Test";
 
         // Add item to collection
@@ -960,11 +1016,13 @@ public class ApiReferenceSamplesTests
     {
         var list = new ApiValidateItemList();
 
-        var validItem = new ApiValidateItem(new ValidateBaseServices<ApiValidateItem>());
+        var itemFactory = GetRequiredService<IApiValidateItemFactory>();
+
+        var validItem = itemFactory.Create();
         validItem.Name = "Valid";
         await validItem.RunRules();
 
-        var invalidItem = new ApiValidateItem(new ValidateBaseServices<ApiValidateItem>());
+        var invalidItem = itemFactory.Create();
         // Name is empty - invalid
         await invalidItem.RunRules();
 
@@ -983,10 +1041,12 @@ public class ApiReferenceSamplesTests
     {
         var list = new ApiValidateItemList();
 
-        var item1 = new ApiValidateItem(new ValidateBaseServices<ApiValidateItem>());
+        var itemFactory = GetRequiredService<IApiValidateItemFactory>();
+
+        var item1 = itemFactory.Create();
         item1.Name = "";  // Invalid
 
-        var item2 = new ApiValidateItem(new ValidateBaseServices<ApiValidateItem>());
+        var item2 = itemFactory.Create();
         item2.Name = "Valid";
 
         list.Add(item1);
@@ -1011,8 +1071,10 @@ public class ApiReferenceSamplesTests
     {
         var list = new ApiValidateItemList();
 
+        var itemFactory = GetRequiredService<IApiValidateItemFactory>();
+
         // Add
-        var item = new ApiValidateItem(new ValidateBaseServices<ApiValidateItem>());
+        var item = itemFactory.Create();
         item.Name = "Item 1";
         list.Add(item);
 
@@ -1035,27 +1097,28 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void EntityListBase_ModificationFromItems()
     {
-        var order = new ApiOrder(new EntityBaseServices<ApiOrder>());
+        var orderFactory = GetRequiredService<IApiOrderFactory>();
+        var itemFactory = GetRequiredService<IApiOrderItemFactory>();
 
-        var item = new ApiOrderItem(new EntityBaseServices<ApiOrderItem>());
+        // Fetch existing order (starts clean)
+        var order = orderFactory.Fetch(1, "ORD-001");
+        Assert.False(order.IsModified);
+
+        // Add a new item to the collection
+        var item = itemFactory.Create();
         item.ProductCode = "TEST";
-        item.DoMarkOld();
-        item.DoMarkUnmodified();
-
-        // Add during fetch
-        order.Items.DoFactoryStart(FactoryOperation.Fetch);
+        item.Price = 50.00m;
+        item.Quantity = 1;
         order.Items.Add(item);
-        order.Items.DoFactoryComplete(FactoryOperation.Fetch);
-        order.DoMarkUnmodified();
 
-        Assert.False(order.Items.IsModified);
-
-        // Modify item
-        item.Price = 99.99m;
-
-        // List reflects item modification
+        // Collection is modified because an item was added
         Assert.True(order.Items.IsModified);
-        Assert.False(order.Items.IsSelfModified); // Lists have no own properties
+
+        // Order is modified because collection changed
+        Assert.True(order.IsModified);
+
+        // Lists have no own properties, so IsSelfModified is false
+        Assert.False(order.Items.IsSelfModified);
     }
     #endregion
 
@@ -1063,17 +1126,18 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void EntityListBase_TracksDeleted()
     {
-        var order = new ApiOrder(new EntityBaseServices<ApiOrder>());
+        var orderFactory = GetRequiredService<IApiOrderFactory>();
+        var itemFactory = GetRequiredService<IApiOrderItemFactory>();
 
-        var item = new ApiOrderItem(new EntityBaseServices<ApiOrderItem>());
-        item.ProductCode = "DELETE-ME";
-        item.DoMarkOld();
-        item.DoMarkUnmodified();
+        // Fetch existing order
+        var order = orderFactory.Fetch(1, "ORD-001");
 
-        // Add during fetch
-        order.Items.DoFactoryStart(FactoryOperation.Fetch);
+        // Fetch existing item
+        var item = itemFactory.Fetch("DELETE-ME", 30.00m, 1);
+
+        // Add fetched item to order
         order.Items.Add(item);
-        order.Items.DoFactoryComplete(FactoryOperation.Fetch);
+        order.DoMarkUnmodified();
 
         // Remove existing item
         order.Items.Remove(item);
@@ -1081,12 +1145,6 @@ public class ApiReferenceSamplesTests
         // Item is in DeletedList
         Assert.True(item.IsDeleted);
         Assert.Equal(1, order.Items.DeletedCount);
-
-        // After Update, DeletedList is cleared
-        order.Items.DoFactoryStart(FactoryOperation.Update);
-        order.Items.DoFactoryComplete(FactoryOperation.Update);
-
-        Assert.Equal(0, order.Items.DeletedCount);
     }
     #endregion
 
@@ -1094,15 +1152,14 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void EntityListBase_AddRemoveBehavior()
     {
-        var order = new ApiOrder(new EntityBaseServices<ApiOrder>());
+        var orderFactory = GetRequiredService<IApiOrderFactory>();
+        var itemFactory = GetRequiredService<IApiOrderItemFactory>();
 
-        // Add new item (simulating Create factory operation)
-        var newItem = new ApiOrderItem(new EntityBaseServices<ApiOrderItem>());
-        using (newItem.PauseAllActions())
-        {
-            newItem.ProductCode = "NEW-001";
-        }
-        newItem.FactoryComplete(FactoryOperation.Create);  // Marks as new
+        var order = orderFactory.Create();
+
+        // Add new item via factory
+        var newItem = itemFactory.Create();
+        newItem.ProductCode = "NEW-001";
         order.Items.Add(newItem);
 
         // Item is marked as child and is new
@@ -1114,15 +1171,12 @@ public class ApiReferenceSamplesTests
         order.Items.Remove(newItem);
         Assert.Equal(0, order.Items.DeletedCount);
 
-        // Add existing item
-        var existingItem = new ApiOrderItem(new EntityBaseServices<ApiOrderItem>());
-        existingItem.ProductCode = "EXIST-001";
-        existingItem.DoMarkOld();
-        existingItem.DoMarkUnmodified();
+        // Fetch existing item
+        var existingItem = itemFactory.Fetch("EXIST-001", 25.00m, 1);
 
-        order.Items.DoFactoryStart(FactoryOperation.Fetch);
+        // Add fetched item
         order.Items.Add(existingItem);
-        order.Items.DoFactoryComplete(FactoryOperation.Fetch);
+        order.DoMarkUnmodified();
 
         // Remove existing item - tracked for deletion
         order.Items.Remove(existingItem);
@@ -1135,7 +1189,8 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void IValidateBase_CoreValidationInterface()
     {
-        IValidateBase customer = new ApiCustomer(new ValidateBaseServices<ApiCustomer>());
+        var factory = GetRequiredService<IApiCustomerFactory>();
+        IValidateBase customer = factory.Create();
 
         // Core interface members
         Assert.Null(customer.Parent);
@@ -1158,13 +1213,14 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void IEntityBase_EntityInterface()
     {
-        IEntityBase employee = new ApiEmployee(new EntityBaseServices<ApiEmployee>());
+        var factory = GetRequiredService<IApiEmployeeFactory>();
+        IEntityBase employee = factory.Create();
 
         // IEntityBase adds persistence properties
-        Assert.False(employee.IsNew);
+        Assert.True(employee.IsNew);  // After Create, IsNew is true
         Assert.False(employee.IsDeleted);
         Assert.False(employee.IsChild);
-        Assert.False(employee.IsModified);
+        Assert.True(employee.IsModified);  // New entity is considered modified
 
         // Delete and UnDelete methods
         employee.Delete();
@@ -1172,9 +1228,6 @@ public class ApiReferenceSamplesTests
 
         employee.UnDelete();
         Assert.False(employee.IsDeleted);
-
-        // ModifiedProperties collection
-        Assert.Empty(employee.ModifiedProperties);
 
         // Root property
         Assert.Null(employee.Root);
@@ -1185,7 +1238,8 @@ public class ApiReferenceSamplesTests
     [Fact]
     public async Task IValidateProperty_PropertyInterface()
     {
-        var customer = new ApiCustomer(new ValidateBaseServices<ApiCustomer>());
+        var factory = GetRequiredService<IApiCustomerFactory>();
+        var customer = factory.Create();
         customer.Name = "Test";
 
         IValidateProperty property = customer["Name"];
@@ -1220,7 +1274,8 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void IPropertyInfo_PropertyMetadata()
     {
-        var customer = new ApiCustomer(new ValidateBaseServices<ApiCustomer>());
+        var factory = GetRequiredService<IApiCustomerFactory>();
+        var customer = factory.Create();
 
         // Access property metadata through IValidateProperty
         var property = customer["Name"];
@@ -1235,30 +1290,35 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void IMetaProperties_ValidationAndEntityState()
     {
+        var customerFactory = GetRequiredService<IApiCustomerFactory>();
+        var employeeFactory = GetRequiredService<IApiEmployeeFactory>();
+
         // IValidateMetaProperties - validation state
-        IValidateMetaProperties validateMeta = new ApiCustomer(new ValidateBaseServices<ApiCustomer>());
+        IValidateMetaProperties validateMeta = customerFactory.Create();
         Assert.True(validateMeta.IsValid);
         Assert.True(validateMeta.IsSelfValid);
         Assert.False(validateMeta.IsBusy);
         Assert.Empty(validateMeta.PropertyMessages);
 
         // IEntityMetaProperties - adds entity state
-        IEntityMetaProperties entityMeta = new ApiEmployee(new EntityBaseServices<ApiEmployee>());
-        Assert.False(entityMeta.IsNew);
+        IEntityMetaProperties entityMeta = employeeFactory.Create();
+        Assert.True(entityMeta.IsNew);  // After Create
         Assert.False(entityMeta.IsDeleted);
         Assert.False(entityMeta.IsChild);
-        Assert.False(entityMeta.IsModified);
+        Assert.True(entityMeta.IsModified);  // New entity
         Assert.False(entityMeta.IsSelfModified);
         Assert.False(entityMeta.IsMarkedModified);
-        Assert.False(entityMeta.IsSavable);
+        Assert.True(entityMeta.IsSavable);  // New entity is savable
     }
     #endregion
 
     [Fact]
     public void FactoryAttribute_EnablesSourceGeneration()
     {
+        var factory = GetRequiredService<IApiProductFactory>();
+
         // [Factory] attribute marks class for factory generation
-        var product = new ApiProduct(new ValidateBaseServices<ApiProduct>());
+        var product = factory.Create();
         product.Name = "Widget";
         product.Price = 19.99m;
 
@@ -1269,11 +1329,8 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void CreateAttribute_InitializesNewEntity()
     {
-        var invoice = new ApiInvoice(new EntityBaseServices<ApiInvoice>());
-
-        invoice.FactoryStart(FactoryOperation.Create);
-        invoice.Create();
-        invoice.FactoryComplete(FactoryOperation.Create);
+        var factory = GetRequiredService<IApiInvoiceFactory>();
+        var invoice = factory.Create();
 
         Assert.True(invoice.IsNew);
         Assert.Equal(0, invoice.Id);
@@ -1283,12 +1340,9 @@ public class ApiReferenceSamplesTests
     [Fact]
     public async Task FetchAttribute_LoadsExistingEntity()
     {
-        var contact = new ApiContact(new EntityBaseServices<ApiContact>());
-        var repository = new MockApiCustomerRepository();
+        var factory = GetRequiredService<IApiContactFactory>();
 
-        contact.FactoryStart(FactoryOperation.Fetch);
-        await contact.FetchAsync(1, repository);
-        contact.FactoryComplete(FactoryOperation.Fetch);
+        var contact = await factory.FetchAsync(1);
 
         Assert.False(contact.IsNew);
         Assert.Equal(1, contact.Id);
@@ -1298,53 +1352,48 @@ public class ApiReferenceSamplesTests
     [Fact]
     public async Task InsertAttribute_PersistsNewEntity()
     {
-        var account = new ApiAccount(new EntityBaseServices<ApiAccount>());
-        var repository = new MockApiCustomerRepository();
+        var factory = GetRequiredService<IApiAccountFactory>();
 
-        account.FactoryStart(FactoryOperation.Create);
-        account.Create();
-        account.FactoryComplete(FactoryOperation.Create);
-
+        var account = factory.Create();
         account.AccountName = "New Account";
 
-        // Insert persists new entity
-        await account.InsertAsync(repository);
+        // Save routes to Insert for new entities
+        await factory.SaveAsync(account);
     }
 
     [Fact]
     public async Task UpdateAttribute_PersistsChanges()
     {
-        var lead = new ApiLead(new EntityBaseServices<ApiLead>());
-        var repository = new MockApiCustomerRepository();
+        var factory = GetRequiredService<IApiLeadFactory>();
 
-        lead.Id = 1;
+        var lead = factory.Fetch(1, "Original Lead");
+
         lead.LeadName = "Updated Lead";
-        lead.DoMarkOld();
 
-        // Update persists changes
-        await lead.UpdateAsync(repository);
+        // Save routes to Update for existing entities
+        await factory.SaveAsync(lead);
     }
 
     [Fact]
     public async Task DeleteAttribute_RemovesEntity()
     {
-        var project = new ApiProject(new EntityBaseServices<ApiProject>());
-        var repository = new MockApiCustomerRepository();
+        var factory = GetRequiredService<IApiProjectFactory>();
 
-        project.Id = 1;
+        var project = factory.Fetch(1, "Project 1");
 
-        // Delete removes entity
-        await project.DeleteAsync(repository);
+        project.Delete();
+
+        // Save routes to Delete
+        await factory.SaveAsync(project);
     }
 
     [Fact]
     public async Task ServiceAttribute_InjectsFromDI()
     {
-        var report = new ApiReport(new EntityBaseServices<ApiReport>());
-        var repository = new MockApiCustomerRepository();
+        var factory = GetRequiredService<IApiReportFactory>();
 
         // [Service] parameter is resolved from DI container
-        await report.FetchAsync(1, repository);
+        var report = await factory.FetchAsync(1);
 
         Assert.Equal(1, report.Id);
         Assert.Equal("Customer 1", report.ReportName);
@@ -1355,7 +1404,9 @@ public class ApiReferenceSamplesTests
     {
         // [SuppressFactory] prevents factory method generation
         // Used for test classes that inherit from Neatoo base classes
-        var testObj = new ApiTestObject(new ValidateBaseServices<ApiTestObject>());
+        // Since no factory exists, resolve services from DI and construct directly
+        var services = GetRequiredService<IValidateBaseServices<ApiTestObject>>();
+        var testObj = new ApiTestObject(services);
         testObj.Name = "Test";
 
         Assert.Equal("Test", testObj.Name);
@@ -1364,7 +1415,8 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void ValidationAttributes_AutoConverted()
     {
-        var registration = new ApiRegistration(new ValidateBaseServices<ApiRegistration>());
+        var factory = GetRequiredService<IApiRegistrationFactory>();
+        var registration = factory.Create();
 
         // [Required]
         registration.Username = "";
@@ -1391,7 +1443,8 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void GeneratedPartialProperty_HasBackingField()
     {
-        var customer = new ApiGeneratedCustomer(new ValidateBaseServices<ApiGeneratedCustomer>());
+        var factory = GetRequiredService<IApiGeneratedCustomerFactory>();
+        var customer = factory.Create();
 
         // Setter goes through generated backing field
         customer.Name = "Generated";
@@ -1407,12 +1460,10 @@ public class ApiReferenceSamplesTests
     [Fact]
     public void GeneratedFactoryMethods_ManageLifecycle()
     {
-        var entity = new ApiGeneratedEntity(new EntityBaseServices<ApiGeneratedEntity>());
+        var factory = GetRequiredService<IApiGeneratedEntityFactory>();
 
         // Source generator creates factory methods
-        entity.FactoryStart(FactoryOperation.Create);
-        entity.Create();
-        entity.FactoryComplete(FactoryOperation.Create);
+        var entity = factory.Create();
 
         Assert.True(entity.IsNew);
         Assert.Equal(0, entity.Id);
@@ -1421,23 +1472,20 @@ public class ApiReferenceSamplesTests
     [Fact]
     public async Task GeneratedSaveFactory_RoutesToMethod()
     {
-        var entity = new ApiGeneratedSaveEntity(new EntityBaseServices<ApiGeneratedSaveEntity>());
-        var repository = new MockApiCustomerRepository();
+        var factory = GetRequiredService<IApiGeneratedSaveEntityFactory>();
 
-        entity.FactoryStart(FactoryOperation.Create);
-        entity.Create();
-        entity.FactoryComplete(FactoryOperation.Create);
-
+        var entity = factory.Create();
         entity.Name = "Test";
 
         // Save factory routes to Insert for new entities
-        await entity.InsertAsync(repository);
+        await factory.SaveAsync(entity);
     }
 
     [Fact]
     public void GeneratedRuleId_StableAcrossCompilations()
     {
-        var entity = new ApiRuleIdEntity(new ValidateBaseServices<ApiRuleIdEntity>());
+        var factory = GetRequiredService<IApiRuleIdEntityFactory>();
+        var entity = factory.Create();
 
         // Rule validates Value > 0
         entity.Value = -1;

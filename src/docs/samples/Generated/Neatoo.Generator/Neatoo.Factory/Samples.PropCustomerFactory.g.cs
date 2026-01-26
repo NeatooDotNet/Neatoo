@@ -15,6 +15,7 @@ namespace Samples
 {
     public interface IPropCustomerFactory
     {
+        PropCustomer Create(CancellationToken cancellationToken = default);
     }
 
     internal class PropCustomerFactory : FactoryBase<PropCustomer>, IPropCustomerFactory
@@ -34,10 +35,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual PropCustomer Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public PropCustomer LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<PropCustomer>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<PropCustomerFactory>();
             services.AddScoped<IPropCustomerFactory, PropCustomerFactory>();
+            services.AddTransient<PropCustomer>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

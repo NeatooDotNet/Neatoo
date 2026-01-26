@@ -16,6 +16,7 @@ namespace Samples
 {
     public interface IAddressFactory
     {
+        IAddress Create(CancellationToken cancellationToken = default);
     }
 
     internal class AddressFactory : FactoryBase<IAddress>, IAddressFactory
@@ -35,10 +36,23 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual IAddress Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public IAddress LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<Address>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<AddressFactory>();
             services.AddScoped<IAddressFactory, AddressFactory>();
+            services.AddTransient<Address>();
+            services.AddTransient<IAddress, Address>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

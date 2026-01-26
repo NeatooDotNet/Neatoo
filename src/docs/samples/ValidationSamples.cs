@@ -1,5 +1,4 @@
 using Neatoo;
-using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System.ComponentModel.DataAnnotations;
@@ -23,6 +22,9 @@ public partial class ValidationCustomer : ValidateBase<ValidationCustomer>
     public partial string Name { get; set; }
 
     public partial string Email { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -45,6 +47,9 @@ public partial class ValidationEmployee : ValidateBase<ValidationEmployee>
 
     [Range(0, 200)]
     public partial int Age { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -72,6 +77,9 @@ public partial class ValidationContact : ValidateBase<ValidationContact>
 
     [RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid ZIP code")]
     public partial string ZipCode { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -94,6 +102,9 @@ public partial class ValidationInvoice : ValidateBase<ValidationInvoice>
     public partial decimal Amount { get; set; }
 
     public partial string CustomerName { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -134,6 +145,9 @@ public partial class ValidationDateRange : ValidateBase<ValidationDateRange>
     public partial DateTime StartDate { get; set; }
 
     public partial DateTime EndDate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -181,6 +195,9 @@ public partial class ValidationUser : ValidateBase<ValidationUser>
     public partial string Username { get; set; }
 
     public partial string Email { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -205,6 +222,9 @@ public partial class ValidationOrder : ValidateBase<ValidationOrder>
     public partial int Quantity { get; set; }
 
     public partial decimal UnitPrice { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -227,6 +247,9 @@ public partial class ValidationProduct : ValidateBase<ValidationProduct>
     public partial string Name { get; set; }
 
     public partial decimal Price { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -237,23 +260,20 @@ public partial class ValidationAccount : ValidateBase<ValidationAccount>
 {
     public ValidationAccount(
         IValidateBaseServices<ValidationAccount> services,
-        IValidationUniquenessService? uniquenessService = null) : base(services)
+        IValidationUniquenessService uniquenessService) : base(services)
     {
         RuleManager.AddValidation(
             a => !string.IsNullOrEmpty(a.AccountNumber) ? "" : "Account number is required",
             a => a.AccountNumber);
 
-        if (uniquenessService != null)
-        {
-            RuleManager.AddValidationAsync(
-                async a =>
-                {
-                    if (string.IsNullOrEmpty(a.Email)) return "";
-                    var isUnique = await uniquenessService.IsEmailUniqueAsync(a.Email);
-                    return isUnique ? "" : "Email is already in use";
-                },
-                a => a.Email);
-        }
+        RuleManager.AddValidationAsync(
+            async a =>
+            {
+                if (string.IsNullOrEmpty(a.Email)) return "";
+                var isUnique = await uniquenessService.IsEmailUniqueAsync(a.Email);
+                return isUnique ? "" : "Email is already in use";
+            },
+            a => a.Email);
     }
 
     public partial string AccountNumber { get; set; }
@@ -261,6 +281,9 @@ public partial class ValidationAccount : ValidateBase<ValidationAccount>
     public partial string Email { get; set; }
 
     public partial decimal Balance { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -282,6 +305,9 @@ public partial class ValidationTransaction : ValidateBase<ValidationTransaction>
     {
         MarkInvalid(reason);
     }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -306,6 +332,9 @@ public partial class ValidationLineItem : ValidateBase<ValidationLineItem>, IVal
     public partial string Description { get; set; }
 
     public partial decimal Amount { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IValidationLineItemList : IValidateListBase<IValidationLineItem> { }
@@ -326,6 +355,9 @@ public partial class ValidationInvoiceWithItems : ValidateBase<ValidationInvoice
     public partial string InvoiceNumber { get; set; }
 
     public partial IValidationLineItemList LineItems { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -377,6 +409,9 @@ public partial class ValidationRegistration : ValidateBase<ValidationRegistratio
 
     [Required]
     public partial string ConfirmPassword { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -388,24 +423,24 @@ public partial class ValidationAsyncOrder : ValidateBase<ValidationAsyncOrder>
 {
     public ValidationAsyncOrder(
         IValidateBaseServices<ValidationAsyncOrder> services,
-        IInventoryService? inventoryService = null) : base(services)
+        IInventoryService inventoryService) : base(services)
     {
-        if (inventoryService != null)
-        {
-            RuleManager.AddValidationAsync(
-                async (order, token) =>
-                {
-                    if (string.IsNullOrEmpty(order.ProductCode)) return "";
-                    var inStock = await inventoryService.IsInStockAsync(order.ProductCode, token);
-                    return inStock ? "" : "Product is out of stock";
-                },
-                o => o.ProductCode);
-        }
+        RuleManager.AddValidationAsync(
+            async (order, token) =>
+            {
+                if (string.IsNullOrEmpty(order.ProductCode)) return "";
+                var inStock = await inventoryService.IsInStockAsync(order.ProductCode, token);
+                return inStock ? "" : "Product is out of stock";
+            },
+            o => o.ProductCode);
     }
 
     public partial string ProductCode { get; set; }
 
     public partial int Quantity { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -425,8 +460,13 @@ public partial class ValidationSaveableOrder : EntityBase<ValidationSaveableOrde
 
     public partial int Quantity { get; set; }
 
-    // Expose protected methods for testing
-    public void DoMarkNew() => MarkNew();
+    [Create]
+    public void Create()
+    {
+        // Initialize new entity
+        OrderNumber = "";
+        Quantity = 0;
+    }
 }
 
 // -----------------------------------------------------------------
@@ -434,14 +474,16 @@ public partial class ValidationSaveableOrder : EntityBase<ValidationSaveableOrde
 // -----------------------------------------------------------------
 
 /// <summary>
-/// Tests for validation.md snippets.
+/// Tests for validation.md snippets demonstrating DI-based factory usage.
 /// </summary>
-public class ValidationSamplesTests
+public class ValidationSamplesTests : SamplesTestBase
 {
     [Fact]
     public void BasicValidateBase_ProvidesValidationInfrastructure()
     {
-        var customer = new ValidationCustomer(new ValidateBaseServices<ValidationCustomer>());
+        // Resolve factory from DI and create entity
+        var factory = GetRequiredService<IValidationCustomerFactory>();
+        var customer = factory.Create();
 
         // ValidateBase provides validation infrastructure
         Assert.True(customer.IsValid);      // No validation rules, so valid
@@ -458,7 +500,8 @@ public class ValidationSamplesTests
     [Fact]
     public void PartialProperties_WithValidationAttributes()
     {
-        var employee = new ValidationEmployee(new ValidateBaseServices<ValidationEmployee>());
+        var factory = GetRequiredService<IValidationEmployeeFactory>();
+        var employee = factory.Create();
 
         // [Required] attribute on Email
         employee.Email = "";
@@ -478,7 +521,8 @@ public class ValidationSamplesTests
     [Fact]
     public void DataAnnotations_StandardValidationAttributes()
     {
-        var contact = new ValidationContact(new ValidateBaseServices<ValidationContact>());
+        var factory = GetRequiredService<IValidationContactFactory>();
+        var contact = factory.Create();
 
         // [Required]
         contact.Name = "";
@@ -512,7 +556,8 @@ public class ValidationSamplesTests
     [Fact]
     public void CustomValidation_LambdaRule()
     {
-        var invoice = new ValidationInvoice(new ValidateBaseServices<ValidationInvoice>());
+        var factory = GetRequiredService<IValidationInvoiceFactory>();
+        var invoice = factory.Create();
 
         // Custom rule: Amount must be positive
         invoice.Amount = -100;
@@ -526,7 +571,8 @@ public class ValidationSamplesTests
     [Fact]
     public void CrossPropertyValidation_MultiplePropertyDependencies()
     {
-        var dateRange = new ValidationDateRange(new ValidateBaseServices<ValidationDateRange>());
+        var factory = GetRequiredService<IValidationDateRangeFactory>();
+        var dateRange = factory.Create();
 
         // Set dates out of order
         dateRange.StartDate = new DateTime(2024, 6, 15);
@@ -543,8 +589,9 @@ public class ValidationSamplesTests
     [Fact]
     public async Task AsyncValidation_ExternalServiceCall()
     {
-        var uniquenessService = new MockUniquenessService();
-        var user = new ValidationUser(new ValidateBaseServices<ValidationUser>(), uniquenessService);
+        // Factory resolves ValidationUser with IValidationUniquenessService injected
+        var factory = GetRequiredService<IValidationUserFactory>();
+        var user = factory.Create();
 
         // Email that's "taken"
         user.Email = "taken@example.com";
@@ -564,7 +611,8 @@ public class ValidationSamplesTests
     [Fact]
     public async Task RunRulesManually_RevalidateEntity()
     {
-        var order = new ValidationOrder(new ValidateBaseServices<ValidationOrder>());
+        var factory = GetRequiredService<IValidationOrderFactory>();
+        var order = factory.Create();
 
         // Set invalid values
         order.Quantity = -5;
@@ -588,7 +636,8 @@ public class ValidationSamplesTests
     [Fact]
     public void AccessValidationMessages_PropertyAndObject()
     {
-        var product = new ValidationProduct(new ValidateBaseServices<ValidationProduct>());
+        var factory = GetRequiredService<IValidationProductFactory>();
+        var product = factory.Create();
 
         // Trigger validation failures
         product.Name = "";
@@ -614,10 +663,9 @@ public class ValidationSamplesTests
     [Fact]
     public async Task PropertyValidationState_IndividualPropertyTracking()
     {
-        var uniquenessService = new MockUniquenessService();
-        var account = new ValidationAccount(
-            new ValidateBaseServices<ValidationAccount>(),
-            uniquenessService);
+        // Factory resolves ValidationAccount with IValidationUniquenessService injected
+        var factory = GetRequiredService<IValidationAccountFactory>();
+        var account = factory.Create();
 
         // Set valid account number
         account.AccountNumber = "ACC-001";
@@ -644,7 +692,8 @@ public class ValidationSamplesTests
     [Fact]
     public void MarkObjectInvalid_ObjectLevelValidation()
     {
-        var transaction = new ValidationTransaction(new ValidateBaseServices<ValidationTransaction>());
+        var factory = GetRequiredService<IValidationTransactionFactory>();
+        var transaction = factory.Create();
         transaction.TransactionId = "TXN-001";
         transaction.Amount = 100;
 
@@ -670,7 +719,8 @@ public class ValidationSamplesTests
     [Fact]
     public void PauseAllActions_BatchUpdatesWithoutValidation()
     {
-        var order = new ValidationOrder(new ValidateBaseServices<ValidationOrder>());
+        var factory = GetRequiredService<IValidationOrderFactory>();
+        var order = factory.Create();
 
         // Pause validation during batch updates
         using (order.PauseAllActions())
@@ -696,7 +746,8 @@ public class ValidationSamplesTests
     [Fact]
     public void LoadValue_DataLoadingWithoutValidation()
     {
-        var invoice = new ValidationInvoice(new ValidateBaseServices<ValidationInvoice>());
+        var factory = GetRequiredService<IValidationInvoiceFactory>();
+        var invoice = factory.Create();
 
         // LoadValue sets property without triggering validation
         // Typically used during Fetch factory operations
@@ -715,14 +766,16 @@ public class ValidationSamplesTests
     [Fact]
     public void ValidationCascade_ChildToParent()
     {
-        var invoice = new ValidationInvoiceWithItems(new ValidateBaseServices<ValidationInvoiceWithItems>());
+        var invoiceFactory = GetRequiredService<IValidationInvoiceWithItemsFactory>();
+        var invoice = invoiceFactory.Create();
         invoice.InvoiceNumber = "INV-001";
 
         // Parent starts valid
         Assert.True(invoice.IsValid);
 
         // Add invalid child (empty description)
-        var lineItem = new ValidationLineItem(new ValidateBaseServices<ValidationLineItem>());
+        var lineItemFactory = GetRequiredService<IValidationLineItemFactory>();
+        var lineItem = lineItemFactory.Create();
         lineItem.Description = ""; // Triggers validation failure
         invoice.LineItems.Add(lineItem);
 
@@ -744,10 +797,8 @@ public class ValidationSamplesTests
     [Fact]
     public async Task MetaProperties_TrackValidationState()
     {
-        var uniquenessService = new MockUniquenessService();
-        var account = new ValidationAccount(
-            new ValidateBaseServices<ValidationAccount>(),
-            uniquenessService);
+        var factory = GetRequiredService<IValidationAccountFactory>();
+        var account = factory.Create();
 
         // Set required field
         account.AccountNumber = "ACC-001";
@@ -776,8 +827,9 @@ public class ValidationSamplesTests
     [Fact]
     public async Task ValidateBeforeSave_IsSavableCheck()
     {
-        var order = new ValidationSaveableOrder(new EntityBaseServices<ValidationSaveableOrder>());
-        order.DoMarkNew(); // Mark as new entity needing insert
+        // Use factory to create new entity with proper lifecycle
+        var factory = GetRequiredService<IValidationSaveableOrderFactory>();
+        var order = factory.Create();
 
         // Set invalid quantity (negative to trigger validation)
         order.Quantity = -5;
@@ -803,10 +855,8 @@ public class ValidationSamplesTests
     [Fact]
     public async Task CancellationToken_CancelAsyncValidation()
     {
-        var inventoryService = new MockInventoryService();
-        var order = new ValidationAsyncOrder(
-            new ValidateBaseServices<ValidationAsyncOrder>(),
-            inventoryService);
+        var factory = GetRequiredService<IValidationAsyncOrderFactory>();
+        var order = factory.Create();
 
         // Set product code to trigger async validation
         order.ProductCode = "PROD-001";
@@ -832,7 +882,8 @@ public class ValidationSamplesTests
     [Fact]
     public async Task WorkWithValidationMessages_FilterAndAccess()
     {
-        var product = new ValidationProduct(new ValidateBaseServices<ValidationProduct>());
+        var factory = GetRequiredService<IValidationProductFactory>();
+        var product = factory.Create();
 
         // Trigger multiple validation failures
         product.Name = "";
@@ -863,7 +914,8 @@ public class ValidationSamplesTests
     [Fact]
     public void CombinedValidation_AttributesAndCustomRules()
     {
-        var registration = new ValidationRegistration(new ValidateBaseServices<ValidationRegistration>());
+        var factory = GetRequiredService<IValidationRegistrationFactory>();
+        var registration = factory.Create();
 
         // Attribute validation: Required
         registration.Username = "";
@@ -904,7 +956,8 @@ public class ValidationSamplesTests
     [Fact]
     public void PropertyMessagesContainErrorDetails()
     {
-        var contact = new ValidationContact(new ValidateBaseServices<ValidationContact>());
+        var factory = GetRequiredService<IValidationContactFactory>();
+        var contact = factory.Create();
 
         contact.Name = "";
         contact.Age = 200;
@@ -922,7 +975,8 @@ public class ValidationSamplesTests
     [Fact]
     public async Task RunRulesForSpecificProperty()
     {
-        var order = new ValidationOrder(new ValidateBaseServices<ValidationOrder>());
+        var factory = GetRequiredService<IValidationOrderFactory>();
+        var order = factory.Create();
         order.Quantity = 0;
         order.UnitPrice = -10;
 
@@ -943,10 +997,12 @@ public class ValidationSamplesTests
     [Fact]
     public async Task RunRulesFlagOptions()
     {
-        var invoice = new ValidationInvoiceWithItems(new ValidateBaseServices<ValidationInvoiceWithItems>());
+        var invoiceFactory = GetRequiredService<IValidationInvoiceWithItemsFactory>();
+        var invoice = invoiceFactory.Create();
 
         // Add child with validation error
-        var item = new ValidationLineItem(new ValidateBaseServices<ValidationLineItem>());
+        var lineItemFactory = GetRequiredService<IValidationLineItemFactory>();
+        var item = lineItemFactory.Create();
         item.Description = "";
         invoice.LineItems.Add(item);
 
@@ -962,11 +1018,13 @@ public class ValidationSamplesTests
     [Fact]
     public void IsSelfValidVsIsValid()
     {
-        var invoice = new ValidationInvoiceWithItems(new ValidateBaseServices<ValidationInvoiceWithItems>());
+        var invoiceFactory = GetRequiredService<IValidationInvoiceWithItemsFactory>();
+        var invoice = invoiceFactory.Create();
         invoice.InvoiceNumber = "INV-001";
 
         // Add invalid child
-        var item = new ValidationLineItem(new ValidateBaseServices<ValidationLineItem>());
+        var lineItemFactory = GetRequiredService<IValidationLineItemFactory>();
+        var item = lineItemFactory.Create();
         item.Description = "";
         invoice.LineItems.Add(item);
 
@@ -980,10 +1038,12 @@ public class ValidationSamplesTests
     [Fact]
     public async Task ClearMessagesOptions()
     {
-        var invoice = new ValidationInvoiceWithItems(new ValidateBaseServices<ValidationInvoiceWithItems>());
+        var invoiceFactory = GetRequiredService<IValidationInvoiceWithItemsFactory>();
+        var invoice = invoiceFactory.Create();
 
         // Add invalid child
-        var item = new ValidationLineItem(new ValidateBaseServices<ValidationLineItem>());
+        var lineItemFactory = GetRequiredService<IValidationLineItemFactory>();
+        var item = lineItemFactory.Create();
         item.Description = "";
         invoice.LineItems.Add(item);
 

@@ -15,12 +15,15 @@ Set the parent property during child creation:
 [Fact]
 public void Parent_SetDuringChildCreation()
 {
+    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
     // Create aggregate root (order)
-    var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+    var order = orderFactory.Create();
     order.CustomerName = "Acme Corp";
 
     // Create child entity (line item)
-    var lineItem = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+    var lineItem = itemFactory.Create();
     lineItem.ProductName = "Widget Pro";
     lineItem.UnitPrice = 49.99m;
     lineItem.Quantity = 5;
@@ -34,11 +37,10 @@ public void Parent_SetDuringChildCreation()
 ```
 <!-- endSnippet -->
 
-Parent is of type object to accommodate different parent types:
-- Another ValidateBase or EntityBase instance
-- A collection (ValidateListBase or EntityListBase)
-- An aggregate root
-- Null for aggregate roots
+Parent is of type `IValidateBase?` and can reference:
+- Another ValidateBase or EntityBase instance (the owning entity)
+- An aggregate root (when this is a direct child)
+- Null for aggregate roots themselves
 
 The framework uses Parent to navigate the aggregate tree and cascade state changes upward.
 
@@ -53,16 +55,19 @@ Navigate the aggregate graph:
 [Fact]
 public void Navigation_FromChildToRoot()
 {
-    var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+    var order = orderFactory.Create();
     order.CustomerName = "Beta Inc";
 
     // Add multiple children
-    var item1 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+    var item1 = itemFactory.Create();
     item1.ProductName = "Gadget A";
     item1.UnitPrice = 25.00m;
     item1.Quantity = 2;
 
-    var item2 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+    var item2 = itemFactory.Create();
     item2.ProductName = "Gadget B";
     item2.UnitPrice = 35.00m;
     item2.Quantity = 1;
@@ -86,11 +91,11 @@ public void Navigation_FromChildToRoot()
 <!-- endSnippet -->
 
 Root calculation:
-- If Parent is null, Root is null (object is an aggregate root)
-- If Parent implements IEntityBase, returns Parent.Root
-- Otherwise Parent is the root
+- If Parent is null, Root returns null (this object is the aggregate root)
+- If Parent implements IEntityBase, Root recursively calls Parent.Root
+- Otherwise, Parent is the root (direct child of aggregate root)
 
-This recursive navigation walks the Parent chain to find the top-level aggregate root. Root is cached and recalculated when Parent changes.
+Root is computed on each access by walking the Parent chain until reaching the aggregate root. This recursive traversal ensures Root always reflects the current aggregate structure, even as entities move between collections within the aggregate.
 
 ## Aggregate Boundaries
 
@@ -103,12 +108,15 @@ Define an aggregate with children:
 [Fact]
 public void AggregateBoundary_EnforcedByParentProperty()
 {
+    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
     // Order aggregate root
-    var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+    var order = orderFactory.Create();
     order.CustomerName = "Gamma LLC";
 
     // Child entity in the aggregate
-    var lineItem = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+    var lineItem = itemFactory.Create();
     lineItem.ProductName = "Component X";
     lineItem.UnitPrice = 100.00m;
     lineItem.Quantity = 3;
@@ -153,7 +161,10 @@ Child validation cascades to parent:
 [Fact]
 public async Task CascadeValidation_ChildInvalidMakesParentInvalid()
 {
-    var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+    var order = orderFactory.Create();
     order.CustomerName = "Delta Corp";
     await order.RunRules();
 
@@ -161,7 +172,7 @@ public async Task CascadeValidation_ChildInvalidMakesParentInvalid()
     Assert.True(order.IsValid);
 
     // Create child with invalid state (empty ProductName)
-    var invalidItem = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+    var invalidItem = itemFactory.Create();
     invalidItem.ProductName = ""; // Invalid - empty
     invalidItem.UnitPrice = 50.00m;
     invalidItem.Quantity = 1;
@@ -206,37 +217,28 @@ Child modifications cascade to parent:
 [Fact]
 public void CascadeDirty_ChildModificationCascadesToParent()
 {
-    var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
 
-    // Create "existing" child (simulating loaded from database)
-    var item = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
-    item.ProductName = "Existing Product";
+    // Fetch existing order (starts clean)
+    var order = orderFactory.Fetch(1, "Order 1", DateTime.Today);
+    Assert.False(order.IsModified);
+
+    // Add a new child item
+    var item = itemFactory.Create();
+    item.ProductName = "New Product";
     item.UnitPrice = 75.00m;
     item.Quantity = 2;
-    item.DoMarkOld();        // Mark as existing (not new)
-    item.DoMarkUnmodified(); // Clear modification tracking
-
-    // Add during fetch operation
-    order.LineItems.DoFactoryStart(FactoryOperation.Fetch);
     order.LineItems.Add(item);
-    order.LineItems.DoFactoryComplete(FactoryOperation.Fetch);
-    order.DoMarkUnmodified();
 
-    // Order starts unmodified
-    Assert.False(order.IsModified);
-    Assert.False(order.IsSelfModified);
-
-    // Modify the child's price
-    item.UnitPrice = 80.00m;
-
-    // Child is now modified
-    Assert.True(item.IsSelfModified);
-
-    // Parent's IsModified reflects child change
+    // Order is modified because child was added
     Assert.True(order.IsModified);
 
     // Parent itself not modified (IsSelfModified is false)
     Assert.False(order.IsSelfModified);
+
+    // The item's modification also contributes
+    Assert.True(item.IsModified);
 }
 ```
 <!-- endSnippet -->
@@ -246,8 +248,10 @@ Cascade rules for IsDirty:
 - When a child's IsDirty changes to false, parent recalculates IsDirty from all children
 - Collections aggregate IsDirty from all items
 - EntityBase distinguishes IsSelfModified (entity's own properties) from IsModified (includes children)
+- Adding a new child to a collection marks the parent as modified (IsModified becomes true)
+- Removing an existing child marks the parent as modified
 
-Calling MarkClean() on the parent cascades down to all children, clearing the entire aggregate's dirty state. This is useful after successful save operations.
+After a successful save operation, the factory completion flow clears the modified state for the entity and all children in the aggregate.
 
 ## Child Entity Lifecycle
 
@@ -260,10 +264,13 @@ Child entity lifecycle tracking:
 [Fact]
 public async Task ChildLifecycle_MarkedWhenAddedToCollection()
 {
-    var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+    var order = orderFactory.Create();
 
     // Create child entity
-    var item = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+    var item = itemFactory.Create();
     item.ProductName = "New Product";
     item.UnitPrice = 99.99m;
     item.Quantity = 1;
@@ -297,39 +304,43 @@ public async Task ChildLifecycle_MarkedWhenAddedToCollection()
 <!-- endSnippet -->
 
 Child entity restrictions:
-- Cannot call Save() directly (throws SaveOperationException)
+- Cannot call Save() directly (throws SaveOperationException with SaveFailureReason.IsChildObject)
 - IsSavable is always false
 - Must be saved through the aggregate root
 - Marked as IsChild when added to a collection
-- ContainingList references the owning collection
+- Cannot be added to a different aggregate while already belonging to one
 
-When a child is added to a collection:
-1. Parent is set to the collection's Parent
-2. Root is recalculated from Parent
+When a child entity is added to a collection:
+1. Parent is set to the collection's Parent (the owning entity)
+2. Root is recalculated from Parent (recursively to aggregate root)
 3. IsChild is set to true
 4. ContainingList is set to the collection
 5. Validation and dirty state cascade to parent
+6. Cross-aggregate validation ensures Root compatibility
 
-## ContainingList Property
+## Collection Navigation
 
-ContainingList provides a back-reference from a child entity to its owning collection. This enables navigating from entity to collection to sibling entities.
+Child entities navigate to sibling entities through their parent's collection property. The internal ContainingList property (protected, framework use only) tracks the owning collection for delete consistency and intra-aggregate moves, but application code accesses siblings by casting Parent to the entity type and accessing its collection property.
 
-Use ContainingList to access the owning collection:
+Navigate to sibling entities through the parent collection:
 
 <!-- snippet: parent-child-containing-list -->
 ```cs
 [Fact]
-public void ContainingList_BackReferenceToOwningCollection()
+public void CollectionNavigation_AccessSiblingsThroughParent()
 {
-    var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+    var order = orderFactory.Create();
 
     // Add items
-    var item1 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+    var item1 = itemFactory.Create();
     item1.ProductName = "Product 1";
     item1.UnitPrice = 10.00m;
     item1.Quantity = 1;
 
-    var item2 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+    var item2 = itemFactory.Create();
     item2.ProductName = "Product 2";
     item2.UnitPrice = 20.00m;
     item2.Quantity = 2;
@@ -356,20 +367,16 @@ public void ContainingList_BackReferenceToOwningCollection()
 ```
 <!-- endSnippet -->
 
-ContainingList is set when:
-- An item is added to EntityListBase
-- An item is removed from EntityListBase (remains set until persistence completes)
-- An item is moved to DeletedList
+Navigation patterns:
+- Access siblings via `((ParentChildOrder)item.Parent).LineItems[index]`
+- Count siblings via `((ParentChildOrder)item.Parent).LineItems.Count`
+- Iterate siblings via `foreach (var sibling in ((ParentChildOrder)item.Parent).LineItems)`
+- Cast Parent to the specific parent entity type to access collection properties
 
-ContainingList is cleared when:
-- FactoryComplete fires after successful save (for deleted items)
-- Item's parent changes to a different collection
-
-This property enables scenarios like:
-- Removing an item from its current collection
-- Moving an item to a different collection within the same aggregate
-- Accessing sibling entities through the parent collection
-- Implementing collection-level validation rules
+The internal ContainingList property (protected, not directly accessible in application code) tracks ownership for:
+- Delete consistency (calling Delete() on a child delegates to the owning collection's Remove())
+- Intra-aggregate moves between collections (framework validates Root compatibility)
+- Cleanup after save operations (clearing deleted items from DeletedList)
 
 ## Root Access from Children
 
@@ -382,11 +389,14 @@ Access the aggregate root from a child:
 [Fact]
 public void RootAccess_FromChildEntity()
 {
-    var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+    var order = orderFactory.Create();
     order.CustomerName = "Epsilon Ltd";
     order.OrderDate = new DateTime(2024, 6, 15);
 
-    var item = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+    var item = itemFactory.Create();
     item.ProductName = "Enterprise Widget";
     item.UnitPrice = 500.00m;
     item.Quantity = 10;
@@ -409,32 +419,35 @@ public void RootAccess_FromChildEntity()
 <!-- endSnippet -->
 
 Root access patterns:
-- Cast Root to the specific aggregate type when needed
+- Cast Root to the specific aggregate root type for property access
 - Access aggregate-level properties from child business rules
-- Coordinate cross-entity validation at the root
-- Implement aggregate-level invariants in child rules
+- Coordinate cross-entity validation at the root level
+- Implement aggregate-level invariants in child validation rules
 
-Root is recalculated whenever Parent changes, ensuring it always reflects the current aggregate structure.
+Root is computed on each access by recursively walking the Parent chain to the aggregate root, so it always reflects the current aggregate structure even as entities are reparented within the aggregate.
 
-## Parent Change Restrictions
+## Aggregate Boundary Enforcement
 
-Changing a child's Parent is restricted to prevent aggregate corruption. The framework enforces rules to maintain aggregate consistency.
+The framework enforces aggregate boundaries when adding entities to collections. Parent is managed internally and cannot be set directly by application code.
 
-Allowed parent changes:
-- Setting Parent from null to an entity (adding to aggregate)
-- Setting Parent to null (removing from aggregate)
-- Setting Parent to a different entity within the same aggregate (same Root)
+Allowed operations:
+- Adding an entity with Root == null (not yet in any aggregate)
+- Adding an entity from the same aggregate (same Root reference)
+- Moving an entity between collections within the same aggregate
+- Removing an entity from a collection
 
-Prohibited parent changes:
-- Setting Parent to an entity with a different Root (cross-aggregate move)
-- Changing Parent while the entity is busy (IsBusy == true)
+Prohibited operations:
+- Adding an entity from a different aggregate (throws InvalidOperationException with message "belongs to aggregate")
+- Adding an entity while it is busy (IsBusy == true)
+- Setting Parent directly (Parent is managed internally by the framework)
 
-Attempting prohibited changes throws InvalidOperationException. To move an entity across aggregates:
-1. Remove from the source aggregate (set Parent = null)
-2. Clear any state that ties it to the source aggregate
-3. Add to the destination aggregate (set Parent to new owner)
+To move an entity across aggregates:
+1. Remove from the source collection (entity goes to DeletedList if persisted)
+2. After save completes, the entity is no longer in any aggregate
+3. Create a new entity instance or re-fetch from persistence
+4. Add to the destination aggregate
 
-This two-step process ensures clean aggregate boundaries.
+The cross-aggregate restriction enforces the DDD principle that aggregate boundaries are consistency boundaries. An entity cannot belong to multiple aggregates simultaneously, as this would create ambiguous ownership and state coordination.
 
 ## Parent in Collections
 
@@ -447,15 +460,18 @@ Collections manage parent references:
 [Fact]
 public void CollectionParent_AutomaticManagement()
 {
-    var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+    var order = orderFactory.Create();
 
     // Add items to collection
-    var item1 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+    var item1 = itemFactory.Create();
     item1.ProductName = "Item A";
     item1.UnitPrice = 15.00m;
     item1.Quantity = 3;
 
-    var item2 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+    var item2 = itemFactory.Create();
     item2.ProductName = "Item B";
     item2.UnitPrice = 25.00m;
     item2.Quantity = 2;
@@ -478,12 +494,13 @@ public void CollectionParent_AutomaticManagement()
 <!-- endSnippet -->
 
 Collection parent propagation:
-- When an item is added, item.Parent is set to collection.Parent
-- When collection.Parent changes, all items receive the new parent
-- Removed items retain Parent until persistence completes (for deleted entities)
-- Collections themselves have a Parent property to participate in the aggregate graph
+- When an item is added to a collection, item.Parent is set to collection.Parent (the owning entity)
+- When collection.Parent changes, all items in the collection receive the new parent reference
+- Removed items that were persisted retain Parent and move to DeletedList until save completes
+- New items (IsNew == true) are removed entirely without going to DeletedList
+- Collections themselves have a Parent property to participate in the aggregate graph hierarchy
 
-This automatic management eliminates manual parent tracking in most scenarios.
+This automatic parent management eliminates the need for manual parent tracking while maintaining aggregate consistency.
 
 ## Paused Parent Cascade
 

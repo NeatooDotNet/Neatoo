@@ -14,6 +14,8 @@ namespace Samples
 {
     public interface IParentChildLineItemFactory
     {
+        IParentChildLineItem Create(CancellationToken cancellationToken = default);
+        IParentChildLineItem Fetch(string productName, decimal unitPrice, int quantity, CancellationToken cancellationToken = default);
     }
 
     internal class ParentChildLineItemFactory : FactoryBase<IParentChildLineItem>, IParentChildLineItemFactory
@@ -33,10 +35,34 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual IParentChildLineItem Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public IParentChildLineItem LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ParentChildLineItem>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual IParentChildLineItem Fetch(string productName, decimal unitPrice, int quantity, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(productName, unitPrice, quantity, cancellationToken);
+        }
+
+        public IParentChildLineItem LocalFetch(string productName, decimal unitPrice, int quantity, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ParentChildLineItem>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(productName, unitPrice, quantity));
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<ParentChildLineItemFactory>();
             services.AddScoped<IParentChildLineItemFactory, ParentChildLineItemFactory>();
+            services.AddTransient<ParentChildLineItem>();
+            services.AddTransient<IParentChildLineItem, ParentChildLineItem>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

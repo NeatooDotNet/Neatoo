@@ -3,7 +3,6 @@ using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Neatoo;
-using Neatoo.Internal;
 using Neatoo.Rules;
 using System.ComponentModel.DataAnnotations;
 using Xunit;
@@ -16,6 +15,7 @@ namespace Samples
 {
     public interface IValidationCustomerFactory
     {
+        ValidationCustomer Create(CancellationToken cancellationToken = default);
     }
 
     internal class ValidationCustomerFactory : FactoryBase<ValidationCustomer>, IValidationCustomerFactory
@@ -35,10 +35,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual ValidationCustomer Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public ValidationCustomer LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ValidationCustomer>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<ValidationCustomerFactory>();
             services.AddScoped<IValidationCustomerFactory, ValidationCustomerFactory>();
+            services.AddTransient<ValidationCustomer>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

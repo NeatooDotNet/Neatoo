@@ -16,6 +16,7 @@ namespace Samples
 {
     public interface IAsyncRecursiveContactFactory
     {
+        AsyncRecursiveContact Create(CancellationToken cancellationToken = default);
     }
 
     internal class AsyncRecursiveContactFactory : FactoryBase<AsyncRecursiveContact>, IAsyncRecursiveContactFactory
@@ -35,10 +36,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual AsyncRecursiveContact Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public AsyncRecursiveContact LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<AsyncRecursiveContact>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<AsyncRecursiveContactFactory>();
             services.AddScoped<IAsyncRecursiveContactFactory, AsyncRecursiveContactFactory>();
+            services.AddTransient<AsyncRecursiveContact>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

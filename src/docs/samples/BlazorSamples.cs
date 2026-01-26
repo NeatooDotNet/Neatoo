@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Neatoo;
-using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using Xunit;
@@ -78,6 +77,9 @@ public partial class BlazorEmployee : EntityBase<BlazorEmployee>
 
     [DisplayName("Notes")]
     public partial string Notes { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
@@ -96,6 +98,9 @@ public partial class BlazorAuditedEntity : EntityBase<BlazorAuditedEntity>
 
     [DisplayName("Created By")]
     public partial string CreatedBy { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 // ============================================================================
@@ -106,17 +111,8 @@ public partial class BlazorAuditedEntity : EntityBase<BlazorAuditedEntity>
 /// <summary>
 /// Blazor documentation samples showing MudNeatoo component usage patterns.
 /// </summary>
-public class BlazorSamples
+public class BlazorSamples : SamplesTestBase
 {
-    #region blazor-installation
-    // Package installation commands (run in terminal):
-    // dotnet add package Neatoo.Blazor.MudNeatoo
-    // dotnet add package MudBlazor
-
-    // In Program.cs, add MudBlazor services:
-    // builder.Services.AddMudServices();
-    #endregion
-
     #region blazor-text-field-basic
     // Razor component markup:
     // <MudNeatooTextField T="string" EntityProperty="@employee["Name"]" />
@@ -124,7 +120,8 @@ public class BlazorSamples
     [Fact]
     public void TextFieldBindsToEntityProperty()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         // Access the property through indexer
         var nameProperty = employee["Name"];
@@ -149,7 +146,8 @@ public class BlazorSamples
     [Fact]
     public void ValidationDisplaysInlineErrors()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         // Invalid email format triggers validation error
         employee.Email = "not-an-email";
@@ -173,7 +171,8 @@ public class BlazorSamples
     [Fact]
     public void ValidationSummaryShowsAllErrors()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         // Create multiple validation errors
         employee.Name = "";
@@ -215,7 +214,8 @@ public class BlazorSamples
     [Fact]
     public async Task FormValidationPreventsInvalidSubmit()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         // Run validation to trigger required field checks
         await employee.RunRules();
@@ -250,7 +250,8 @@ public class BlazorSamples
     [Fact]
     public async Task BusyStateDisablesComponent()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         // Wait for any initial async operations to complete
         await employee.WaitForTasks();
@@ -282,7 +283,8 @@ public class BlazorSamples
     [Fact]
     public void ReadOnlyPropertyBindsToComponent()
     {
-        var entity = new BlazorAuditedEntity(new EntityBaseServices<BlazorAuditedEntity>());
+        var factory = GetRequiredService<IBlazorAuditedEntityFactory>();
+        var entity = factory.Create();
 
         // Set value
         entity.CreatedBy = "admin";
@@ -309,7 +311,8 @@ public class BlazorSamples
     [Fact]
     public void SelectBindsToEnumProperty()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         // Set enum value
         employee.Priority = Priority.High;
@@ -329,7 +332,8 @@ public class BlazorSamples
     [Fact]
     public void CheckboxBindsToBooleanProperty()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         // Toggle boolean value
         employee.IsActive = true;
@@ -357,7 +361,8 @@ public class BlazorSamples
     [Fact]
     public void DatePickerBindsToDateProperty()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         var startDate = new DateTime(2024, 1, 15);
         employee.StartDate = startDate;
@@ -383,7 +388,8 @@ public class BlazorSamples
     [Fact]
     public void NumericFieldBindsToDecimalProperty()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         employee.Salary = 75000.50m;
 
@@ -421,7 +427,8 @@ public class BlazorSamples
     [Fact]
     public void AutocompleteBindsToStringProperty()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         employee.Department = "Engineering";
 
@@ -452,7 +459,8 @@ public class BlazorSamples
     [Fact]
     public void ChangeTrackingDetectsModifications()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         // New entity starts unmodified
         Assert.False(employee.IsSelfModified);
@@ -490,7 +498,8 @@ public class BlazorSamples
     [Fact]
     public void ComponentAcceptsStyleParameters()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
 
         // Properties are accessible for binding
         var nameProperty = employee["Name"];
@@ -516,7 +525,8 @@ public class BlazorSamples
     [Fact]
     public void ExtensionMethodsProvideValidationInfo()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
         employee.Email = "invalid";
 
         var emailProperty = employee["Email"];
@@ -556,7 +566,8 @@ public class BlazorSamples
     [Fact]
     public void PropertyChangesNotifyComponents()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
         var nameProperty = employee["Name"];
 
         var changedProperties = new List<string>();
@@ -595,7 +606,8 @@ public class BlazorSamples
     [Fact]
     public async Task ManualBindingUsesSetValueAsync()
     {
-        var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+        var factory = GetRequiredService<IBlazorEmployeeFactory>();
+        var employee = factory.Create();
         var nameProperty = employee["Name"];
 
         // Manual binding pattern: use SetValue for async

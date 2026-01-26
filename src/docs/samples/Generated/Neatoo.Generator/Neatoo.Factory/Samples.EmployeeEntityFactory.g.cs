@@ -15,10 +15,12 @@ namespace Samples
 {
     public interface IEmployeeEntityFactory
     {
+        EmployeeEntity Create(CancellationToken cancellationToken = default);
         Task<EmployeeEntity> FetchAsync(int id, CancellationToken cancellationToken = default);
+        Task<EmployeeEntity> SaveAsync(EmployeeEntity target, CancellationToken cancellationToken = default);
     }
 
-    internal class EmployeeEntityFactory : FactoryBase<EmployeeEntity>, IEmployeeEntityFactory
+    internal class EmployeeEntityFactory : FactorySaveBase<EmployeeEntity>, IFactorySave<EmployeeEntity>, IEmployeeEntityFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
@@ -35,6 +37,17 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual EmployeeEntity Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public EmployeeEntity LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<EmployeeEntity>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public virtual Task<EmployeeEntity> FetchAsync(int id, CancellationToken cancellationToken = default)
         {
             return LocalFetchAsync(id, cancellationToken);
@@ -47,11 +60,52 @@ namespace Samples
             return DoFactoryMethodCallAsync(target, FactoryOperation.Fetch, () => target.FetchAsync(id, repository));
         }
 
+        public Task<EmployeeEntity> LocalInsertAsync(EmployeeEntity target, CancellationToken cancellationToken = default)
+        {
+            var cTarget = (EmployeeEntity)target ?? throw new Exception("EmployeeEntity must implement EmployeeEntity");
+            var repository = ServiceProvider.GetRequiredService<IEmployeeRepository>();
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.InsertAsync(repository));
+        }
+
+        public Task<EmployeeEntity> LocalUpdateAsync(EmployeeEntity target, CancellationToken cancellationToken = default)
+        {
+            var cTarget = (EmployeeEntity)target ?? throw new Exception("EmployeeEntity must implement EmployeeEntity");
+            var repository = ServiceProvider.GetRequiredService<IEmployeeRepository>();
+            return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.UpdateAsync(repository));
+        }
+
+        public virtual Task<EmployeeEntity> SaveAsync(EmployeeEntity target, CancellationToken cancellationToken = default)
+        {
+            return LocalSaveAsync(target, cancellationToken);
+        }
+
+        public virtual Task<EmployeeEntity> LocalSaveAsync(EmployeeEntity target, CancellationToken cancellationToken = default)
+        {
+            if (target.IsDeleted)
+            {
+                throw new NotImplementedException();
+            }
+            else if (target.IsNew)
+            {
+                return LocalInsertAsync(target, cancellationToken);
+            }
+            else
+            {
+                return LocalUpdateAsync(target, cancellationToken);
+            }
+        }
+
+        async Task<IFactorySaveMeta?> IFactorySave<EmployeeEntity>.Save(EmployeeEntity target, CancellationToken cancellationToken)
+        {
+            return (IFactorySaveMeta? )await SaveAsync(target, cancellationToken);
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<EmployeeEntityFactory>();
             services.AddScoped<IEmployeeEntityFactory, EmployeeEntityFactory>();
             services.AddTransient<EmployeeEntity>();
+            services.AddScoped<IFactorySave<EmployeeEntity>, EmployeeEntityFactory>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

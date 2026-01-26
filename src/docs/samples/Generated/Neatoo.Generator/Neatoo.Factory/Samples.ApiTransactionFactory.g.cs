@@ -16,6 +16,7 @@ namespace Samples
 {
     public interface IApiTransactionFactory
     {
+        ApiTransaction Create(CancellationToken cancellationToken = default);
     }
 
     internal class ApiTransactionFactory : FactoryBase<ApiTransaction>, IApiTransactionFactory
@@ -35,10 +36,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual ApiTransaction Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public ApiTransaction LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ApiTransaction>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<ApiTransactionFactory>();
             services.AddScoped<IApiTransactionFactory, ApiTransactionFactory>();
+            services.AddTransient<ApiTransaction>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

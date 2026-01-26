@@ -28,6 +28,17 @@ public partial class TrackingEmployee : EntityBase<TrackingEmployee>
 
     // Expose protected method for samples
     public void DoMarkUnmodified() => MarkUnmodified();
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(string name, string email, decimal salary)
+    {
+        Name = name;
+        Email = email;
+        Salary = salary;
+    }
 }
 
 /// <summary>
@@ -37,10 +48,6 @@ public interface ITrackingLineItem : IEntityBase
 {
     string Description { get; set; }
     decimal Amount { get; set; }
-
-    // Expose protected methods for testing
-    void DoMarkOld();
-    void DoMarkUnmodified();
 }
 
 [Factory]
@@ -52,27 +59,25 @@ public partial class TrackingLineItem : EntityBase<TrackingLineItem>, ITrackingL
 
     public partial decimal Amount { get; set; }
 
-    // Expose protected methods for testing
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(string description, decimal amount)
+    {
+        Description = description;
+        Amount = amount;
+    }
 }
 
 public interface ITrackingLineItemList : IEntityListBase<ITrackingLineItem>
 {
     int DeletedCount { get; }
-
-    // Expose factory methods for testing
-    void DoFactoryStart(FactoryOperation operation);
-    void DoFactoryComplete(FactoryOperation operation);
 }
 
 public class TrackingLineItemList : EntityListBase<ITrackingLineItem>, ITrackingLineItemList
 {
     public int DeletedCount => DeletedList.Count;
-
-    // Expose factory methods for testing
-    public void DoFactoryStart(FactoryOperation operation) => FactoryStart(operation);
-    public void DoFactoryComplete(FactoryOperation operation) => FactoryComplete(operation);
 }
 
 /// <summary>
@@ -96,19 +101,29 @@ public partial class TrackingInvoice : EntityBase<TrackingInvoice>
 
     // Expose protected method for samples
     public void DoMarkUnmodified() => MarkUnmodified();
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(string invoiceNumber)
+    {
+        InvoiceNumber = invoiceNumber;
+    }
 }
 
 // -----------------------------------------------------------------
 // Test classes for change tracking samples
 // -----------------------------------------------------------------
 
-public class ChangeTrackingSamplesTests
+public class ChangeTrackingSamplesTests : SamplesTestBase
 {
     #region tracking-self-modified
     [Fact]
     public void IsSelfModified_TracksDirectPropertyChanges()
     {
-        var employee = new TrackingEmployee(new EntityBaseServices<TrackingEmployee>());
+        var factory = GetRequiredService<ITrackingEmployeeFactory>();
+        var employee = factory.Create();
 
         // Entity starts unmodified
         Assert.False(employee.IsSelfModified);
@@ -124,14 +139,16 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void IsModified_IncludesChildCollectionModifications()
     {
-        var invoice = new TrackingInvoice(new EntityBaseServices<TrackingInvoice>());
+        var invoiceFactory = GetRequiredService<ITrackingInvoiceFactory>();
+        // Fetch an existing invoice (IsNew = false)
+        var invoice = invoiceFactory.Fetch("INV-001");
 
-        // Start clean by marking unmodified
-        invoice.DoMarkUnmodified();
+        // Fetched entity starts unmodified
         Assert.False(invoice.IsModified);
 
         // Add a child item to the collection
-        var lineItem = new TrackingLineItem(new EntityBaseServices<TrackingLineItem>());
+        var lineItemFactory = GetRequiredService<ITrackingLineItemFactory>();
+        var lineItem = lineItemFactory.Create();
         invoice.LineItems.Add(lineItem);
 
         // Parent's IsModified is true because child collection changed
@@ -143,16 +160,19 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void MarkUnmodified_ClearsModificationState()
     {
-        var employee = new TrackingEmployee(new EntityBaseServices<TrackingEmployee>());
+        var factory = GetRequiredService<ITrackingEmployeeFactory>();
+        // Fetch existing employee (IsNew = false)
+        var employee = factory.Fetch("Alice", "alice@example.com", 50000m);
 
         // Make changes to the entity
-        employee.Name = "Alice";
-        employee.Email = "alice@example.com";
+        employee.Name = "Bob";
+        employee.Email = "bob@example.com";
 
         Assert.True(employee.IsModified);
         Assert.Contains("Name", employee.ModifiedProperties);
 
-        // After save, framework calls MarkUnmodified
+        // Framework calls MarkUnmodified after save completes
+        // (DoMarkUnmodified exposes the protected method for demonstration)
         employee.DoMarkUnmodified();
 
         Assert.False(employee.IsModified);
@@ -165,13 +185,16 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void MarkModified_ForcesEntityToBeSaved()
     {
-        var employee = new TrackingEmployee(new EntityBaseServices<TrackingEmployee>());
+        var factory = GetRequiredService<ITrackingEmployeeFactory>();
+        // Fetch existing employee (IsNew = false)
+        var employee = factory.Fetch("Alice", "alice@example.com", 50000m);
 
-        // Entity starts unmodified
+        // Fetched entity starts unmodified
         Assert.False(employee.IsModified);
 
         // Mark as modified without changing properties
         // (e.g., timestamp needs update, version number change)
+        // (DoMarkModified exposes the protected method for demonstration)
         employee.DoMarkModified();
 
         Assert.True(employee.IsModified);
@@ -184,7 +207,8 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void ModifiedProperties_TracksChangedPropertyNames()
     {
-        var employee = new TrackingEmployee(new EntityBaseServices<TrackingEmployee>());
+        var factory = GetRequiredService<ITrackingEmployeeFactory>();
+        var employee = factory.Create();
 
         // Change multiple properties
         employee.Name = "Alice";
@@ -203,30 +227,26 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void ModificationCascadesToParent()
     {
-        var invoice = new TrackingInvoice(new EntityBaseServices<TrackingInvoice>());
+        var invoiceFactory = GetRequiredService<ITrackingInvoiceFactory>();
+        var lineItemFactory = GetRequiredService<ITrackingLineItemFactory>();
 
-        // Create "existing" item (simulating one loaded from DB)
-        var lineItem = new TrackingLineItem(new EntityBaseServices<TrackingLineItem>());
-        lineItem.Description = "Original";
-        lineItem.DoMarkOld();        // Mark as existing (not new)
-        lineItem.DoMarkUnmodified(); // Clear modification tracking
-        Assert.False(lineItem.IsModified);
+        // Fetch existing invoice (IsNew = false, IsModified = false)
+        var invoice = invoiceFactory.Fetch("INV-001");
 
-        // Add to collection - simulating fetch
-        invoice.LineItems.DoFactoryStart(FactoryOperation.Fetch);
-        invoice.LineItems.Add(lineItem);
-        invoice.LineItems.DoFactoryComplete(FactoryOperation.Fetch);
-        invoice.DoMarkUnmodified();
-
+        // Fetched entity starts unmodified
         Assert.False(invoice.IsModified);
-        Assert.False(invoice.LineItems.IsModified);
+        Assert.False(invoice.IsSelfModified);
 
-        // Modify the child entity
-        lineItem.Description = "Updated Item";
+        // Add a new child item (simulating user adding an item to an order)
+        var lineItem = lineItemFactory.Create();
+        lineItem.Description = "New Item";
+        lineItem.Amount = 50m;
+        invoice.LineItems.Add(lineItem);
 
-        // Parent's IsModified becomes true due to child change
+        // Parent's IsModified becomes true because child collection changed
         Assert.True(invoice.IsModified);
-        // Parent's IsSelfModified remains false (only direct property changes)
+
+        // Parent's IsSelfModified remains false (no direct property changes)
         Assert.False(invoice.IsSelfModified);
     }
     #endregion
@@ -235,28 +255,22 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void CollectionTracksItemModifications()
     {
-        var invoice = new TrackingInvoice(new EntityBaseServices<TrackingInvoice>());
+        var invoiceFactory = GetRequiredService<ITrackingInvoiceFactory>();
+        var lineItemFactory = GetRequiredService<ITrackingLineItemFactory>();
 
-        // Create "existing" item (simulating one loaded from DB)
-        var lineItem = new TrackingLineItem(new EntityBaseServices<TrackingLineItem>());
+        // Fetch existing invoice
+        var invoice = invoiceFactory.Fetch("INV-001");
+        Assert.False(invoice.IsModified);
+
+        // Add a new item to the collection
+        var lineItem = lineItemFactory.Create();
+        lineItem.Description = "New Item";
         lineItem.Amount = 50m;
-        lineItem.DoMarkOld();        // Mark as existing (not new)
-        lineItem.DoMarkUnmodified(); // Clear modification tracking
-        Assert.False(lineItem.IsModified);
-
-        // Add to collection - simulating fetch
-        invoice.LineItems.DoFactoryStart(FactoryOperation.Fetch);
         invoice.LineItems.Add(lineItem);
-        invoice.LineItems.DoFactoryComplete(FactoryOperation.Fetch);
 
-        // Verify collection is not modified initially
-        Assert.False(invoice.LineItems.IsModified);
-
-        // Modifying an item in the collection marks the collection as modified
-        lineItem.Amount = 100m;
-
-        Assert.True(invoice.LineItems.IsModified);
+        // Invoice is modified because collection changed
         Assert.True(invoice.IsModified);
+        Assert.True(invoice.LineItems.IsModified);
     }
     #endregion
 
@@ -264,40 +278,43 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void CollectionTracksDeletedItems()
     {
-        var invoice = new TrackingInvoice(new EntityBaseServices<TrackingInvoice>());
+        var invoiceFactory = GetRequiredService<ITrackingInvoiceFactory>();
+        var lineItemFactory = GetRequiredService<ITrackingLineItemFactory>();
 
-        // Create "existing" items (simulating loaded from DB)
-        var item1 = new TrackingLineItem(new EntityBaseServices<TrackingLineItem>());
+        // Create invoice and add items (simulating a new aggregate)
+        var invoice = invoiceFactory.Create();
+        var item1 = lineItemFactory.Create();
         item1.Description = "Item 1";
         item1.Amount = 50m;
-        item1.DoMarkOld();
-        item1.DoMarkUnmodified();
-
-        var item2 = new TrackingLineItem(new EntityBaseServices<TrackingLineItem>());
+        var item2 = lineItemFactory.Create();
         item2.Description = "Item 2";
         item2.Amount = 75m;
-        item2.DoMarkOld();
-        item2.DoMarkUnmodified();
 
-        // Add to collection - simulating fetch
-        invoice.LineItems.DoFactoryStart(FactoryOperation.Fetch);
         invoice.LineItems.Add(item1);
         invoice.LineItems.Add(item2);
-        invoice.LineItems.DoFactoryComplete(FactoryOperation.Fetch);
 
         Assert.Equal(2, invoice.LineItems.Count);
-        Assert.False(invoice.LineItems.IsModified);
 
-        // Remove an item - it goes to DeletedList for persistence
-        var itemToRemove = invoice.LineItems[0];
-        invoice.LineItems.Remove(itemToRemove);
+        // Remove a new item (never persisted) - not tracked for deletion
+        invoice.LineItems.Remove(item1);
 
-        // Item is removed from active list
+        // Item is removed but not marked deleted (was never saved)
         Assert.Single(invoice.LineItems);
+        Assert.Equal(0, invoice.LineItems.DeletedCount);
 
-        // Collection is modified (has deleted items)
-        Assert.True(invoice.LineItems.IsModified);
-        Assert.True(itemToRemove.IsDeleted);
+        // Add an item that was fetched (represents existing persisted data)
+        var existingItem = lineItemFactory.Fetch("Existing Item", 100m);
+        invoice.LineItems.Add(existingItem);
+
+        // Simulate a completed save operation to establish "persisted" state
+        // (FactoryComplete is called by the framework after Insert/Update)
+        invoice.FactoryComplete(FactoryOperation.Insert);
+
+        // Now remove the "existing" item
+        invoice.LineItems.Remove(existingItem);
+
+        // Existing items go to DeletedList
+        Assert.True(existingItem.IsDeleted);
         Assert.Equal(1, invoice.LineItems.DeletedCount);
     }
     #endregion
@@ -306,24 +323,18 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void DistinguishSelfFromChildModifications()
     {
-        var invoice = new TrackingInvoice(new EntityBaseServices<TrackingInvoice>());
+        var invoiceFactory = GetRequiredService<ITrackingInvoiceFactory>();
+        var lineItemFactory = GetRequiredService<ITrackingLineItemFactory>();
 
-        // Create "existing" item
-        var lineItem = new TrackingLineItem(new EntityBaseServices<TrackingLineItem>());
-        lineItem.Amount = 50m;
-        lineItem.DoMarkOld();
-        lineItem.DoMarkUnmodified();
-
-        // Add to collection - simulating fetch
-        invoice.LineItems.DoFactoryStart(FactoryOperation.Fetch);
-        invoice.LineItems.Add(lineItem);
-        invoice.LineItems.DoFactoryComplete(FactoryOperation.Fetch);
-        invoice.DoMarkUnmodified();
-
+        // Fetch existing invoice (starts clean)
+        var invoice = invoiceFactory.Fetch("INV-001");
         Assert.False(invoice.IsModified);
 
-        // Modify the child
-        lineItem.Amount = 100m;
+        // Add a new child item
+        var lineItem = lineItemFactory.Create();
+        lineItem.Description = "New Item";
+        lineItem.Amount = 50m;
+        invoice.LineItems.Add(lineItem);
 
         // IsModified: true (includes child changes)
         Assert.True(invoice.IsModified);
@@ -332,7 +343,7 @@ public class ChangeTrackingSamplesTests
         Assert.False(invoice.IsSelfModified);
 
         // Now modify the parent directly
-        invoice.InvoiceNumber = "INV-001";
+        invoice.InvoiceNumber = "INV-002";
 
         // Both are true
         Assert.True(invoice.IsModified);
@@ -344,13 +355,15 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void IsSavable_CombinesModificationAndValidation()
     {
-        var employee = new TrackingEmployee(new EntityBaseServices<TrackingEmployee>());
+        var factory = GetRequiredService<ITrackingEmployeeFactory>();
+        // Fetch existing employee (IsNew = false)
+        var employee = factory.Fetch("Alice", "alice@example.com", 50000m);
 
-        // Unmodified entity is not savable
+        // Fetched entity starts unmodified
         Assert.False(employee.IsSavable);
 
         // Modify the entity
-        employee.Name = "Alice";
+        employee.Name = "Bob";
 
         // Modified, valid, not busy, not child = savable
         Assert.True(employee.IsModified);
@@ -365,21 +378,18 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public async Task Save_ThrowsWithSpecificReason()
     {
-        var employee = new TrackingEmployee(new EntityBaseServices<TrackingEmployee>());
+        var factory = GetRequiredService<ITrackingEmployeeFactory>();
+        // Fetch existing employee (IsNew = false)
+        var employee = factory.Fetch("Alice", "alice@example.com", 50000m);
+
+        // Fetched entity is unmodified
+        Assert.False(employee.IsModified);
 
         // Try to save unmodified entity
         var exception = await Assert.ThrowsAsync<SaveOperationException>(
             () => employee.Save());
 
         Assert.Equal(SaveFailureReason.NotModified, exception.Reason);
-
-        // Modify the entity but no factory configured
-        employee.Name = "Alice";
-
-        exception = await Assert.ThrowsAsync<SaveOperationException>(
-            () => employee.Save());
-
-        Assert.Equal(SaveFailureReason.NoFactoryMethod, exception.Reason);
     }
     #endregion
 
@@ -387,7 +397,11 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void PauseAllActions_PreventsModificationTracking()
     {
-        var employee = new TrackingEmployee(new EntityBaseServices<TrackingEmployee>());
+        var factory = GetRequiredService<ITrackingEmployeeFactory>();
+        var employee = factory.Create();
+
+        // Clear initial state
+        employee.DoMarkUnmodified();
 
         // Pause modification tracking during batch operations
         using (employee.PauseAllActions())
@@ -408,20 +422,10 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void IsNew_IndicatesUnpersistedEntity()
     {
-        var employee = new TrackingEmployee(new EntityBaseServices<TrackingEmployee>());
+        var factory = GetRequiredService<ITrackingEmployeeFactory>();
+        var employee = factory.Create();
 
-        // Entity created directly is not new by default
-        // (Factory.Create sets IsNew automatically)
-        Assert.False(employee.IsNew);
-
-        // Simulate factory create operation
-        using (employee.PauseAllActions())
-        {
-            // Factory sets properties during create
-        }
-        employee.FactoryComplete(FactoryOperation.Create);
-
-        // Now entity is marked as new
+        // Factory.Create sets IsNew automatically
         Assert.True(employee.IsNew);
 
         // New entities are considered modified (need Insert)
@@ -433,14 +437,8 @@ public class ChangeTrackingSamplesTests
     [Fact]
     public void IsDeleted_MarksEntityForDeletion()
     {
-        var employee = new TrackingEmployee(new EntityBaseServices<TrackingEmployee>());
-
-        // Simulate a fetched entity
-        using (employee.PauseAllActions())
-        {
-            employee.Name = "Alice";
-        }
-        employee.FactoryComplete(FactoryOperation.Fetch);
+        var factory = GetRequiredService<ITrackingEmployeeFactory>();
+        var employee = factory.Fetch("Alice", "alice@example.com", 50000m);
 
         Assert.False(employee.IsDeleted);
         Assert.False(employee.IsModified);

@@ -8,16 +8,16 @@ Neatoo provides MudBlazor integration through the `Neatoo.Blazor.MudNeatoo` pack
 
 Install the MudNeatoo package alongside MudBlazor:
 
-<!-- snippet: blazor-installation -->
-```cs
-// Package installation commands (run in terminal):
-// dotnet add package Neatoo.Blazor.MudNeatoo
-// dotnet add package MudBlazor
-
-// In Program.cs, add MudBlazor services:
-// builder.Services.AddMudServices();
+```bash
+dotnet add package Neatoo.Blazor.MudNeatoo
+dotnet add package MudBlazor
 ```
-<!-- endSnippet -->
+
+In `Program.cs`, add MudBlazor services:
+
+```csharp
+builder.Services.AddMudServices();
+```
 
 MudNeatoo requires MudBlazor 6.0 or later and targets .NET 8.0, 9.0, and 10.0.
 
@@ -41,7 +41,7 @@ All components bind to `IEntityProperty` and automatically handle validation, bu
 
 ## Basic Property Binding
 
-Bind a MudNeatoo component to an entity property by setting the `EntityProperty` parameter. The component automatically uses the property's `DisplayName` as the label.
+Bind a MudNeatoo component to an entity property by setting the `EntityProperty` parameter to the `IEntityProperty` wrapper accessed via the entity's indexer. The component automatically uses the property's `DisplayName` as the label.
 
 Bind to a string property:
 
@@ -53,7 +53,8 @@ Bind to a string property:
 [Fact]
 public void TextFieldBindsToEntityProperty()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     // Access the property through indexer
     var nameProperty = employee["Name"];
@@ -68,11 +69,11 @@ public void TextFieldBindsToEntityProperty()
 ```
 <!-- endSnippet -->
 
-The component synchronizes value changes to the entity property, triggering validation rules and business rules.
+The component synchronizes value changes to the entity property via the typed property setter, triggering the full rule pipeline (validation rules and business rules) with `ChangeReason.UserEdit`.
 
 ## Validation Display
 
-MudNeatoo components automatically display validation messages from `PropertyMessages`. Validation errors appear below the input field.
+MudNeatoo components automatically display validation messages from the property's `PropertyMessages` collection. Each rule stores messages on the property via `SetMessagesForRule` using the rule's stable ID. Validation errors appear below the input field.
 
 Configure a property with validation and bind to a component:
 
@@ -88,7 +89,8 @@ Configure a property with validation and bind to a component:
 [Fact]
 public void ValidationDisplaysInlineErrors()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     // Invalid email format triggers validation error
     employee.Email = "not-an-email";
@@ -100,7 +102,7 @@ public void ValidationDisplaysInlineErrors()
 ```
 <!-- endSnippet -->
 
-The component waits for async validation rules to complete before displaying error messages.
+The component subscribes to `PropertyChanged` events. When async validation rules complete, they update `PropertyMessages` and trigger `PropertyChanged`, causing the component to re-render with validation messages.
 
 ## Validation Summary
 
@@ -122,7 +124,8 @@ Display aggregate validation errors:
 [Fact]
 public void ValidationSummaryShowsAllErrors()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     // Create multiple validation errors
     employee.Name = "";
@@ -136,7 +139,7 @@ public void ValidationSummaryShowsAllErrors()
 ```
 <!-- endSnippet -->
 
-The validation summary automatically updates when validation state changes, including messages from child entities in the aggregate.
+The validation summary subscribes to entity `PropertyChanged` events. When validation state changes (including cascade from child entities), `PropertyMessages` updates and the component re-renders with the aggregated messages from the entire aggregate.
 
 ## Form Integration
 
@@ -174,7 +177,8 @@ Create a form with validation:
 [Fact]
 public async Task FormValidationPreventsInvalidSubmit()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     // Run validation to trigger required field checks
     await employee.RunRules();
@@ -200,7 +204,7 @@ MudNeatoo components integrate with MudForm's validation system, preventing subm
 
 ## Busy State Handling
 
-MudNeatoo components disable themselves when `IsBusy` is true, preventing user input during async operations.
+MudNeatoo components bind to the property's `IsBusy` state and disable themselves when true, preventing user input during async operations. The RuleManager marks properties as busy using unique execution IDs before async rule execution, then clears the busy state after completion.
 
 Bind to a property with async validation:
 
@@ -219,7 +223,8 @@ Bind to a property with async validation:
 [Fact]
 public async Task BusyStateDisablesComponent()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     // Wait for any initial async operations to complete
     await employee.WaitForTasks();
@@ -239,11 +244,11 @@ public async Task BusyStateDisablesComponent()
 ```
 <!-- endSnippet -->
 
-The component automatically disables while async rules execute, then re-enables when complete.
+The component subscribes to `PropertyChanged` events on `IsBusy`. When the property's busy state changes, the component re-renders with the updated disabled state.
 
 ## Read-Only Properties
 
-Set `IsReadOnly` on a property to make MudNeatoo components read-only. This prevents value changes without disabling the control.
+MudNeatoo components bind to the property's `IsReadOnly` state. When `IsReadOnly` is true, the component renders as read-only, preventing value changes without disabling the control. `IsReadOnly` is typically set during property initialization or by business rules.
 
 Configure a read-only property:
 
@@ -261,7 +266,8 @@ Configure a read-only property:
 [Fact]
 public void ReadOnlyPropertyBindsToComponent()
 {
-    var entity = new BlazorAuditedEntity(new EntityBaseServices<BlazorAuditedEntity>());
+    var factory = GetRequiredService<IBlazorAuditedEntityFactory>();
+    var entity = factory.Create();
 
     // Set value
     entity.CreatedBy = "admin";
@@ -277,7 +283,7 @@ public void ReadOnlyPropertyBindsToComponent()
 ```
 <!-- endSnippet -->
 
-Read-only components remain visually enabled but reject value changes.
+Read-only components remain visually enabled but prevent editing. The underlying MudBlazor component respects the `ReadOnly` parameter, which MudNeatoo binds to `EntityProperty.IsReadOnly`.
 
 ## Select and Dropdown Binding
 
@@ -298,7 +304,8 @@ Bind to an enum property:
 [Fact]
 public void SelectBindsToEnumProperty()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     // Set enum value
     employee.Priority = Priority.High;
@@ -309,7 +316,7 @@ public void SelectBindsToEnumProperty()
 ```
 <!-- endSnippet -->
 
-The select component validates the selected value and displays error messages.
+The select component binds to the property wrapper. When the user selects a value, the component updates the entity property via the typed setter, triggering validation rules. Error messages display automatically from `PropertyMessages`.
 
 ## Checkbox and Switch Binding
 
@@ -328,7 +335,8 @@ Bind to a boolean property:
 [Fact]
 public void CheckboxBindsToBooleanProperty()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     // Toggle boolean value
     employee.IsActive = true;
@@ -343,7 +351,7 @@ public void CheckboxBindsToBooleanProperty()
 ```
 <!-- endSnippet -->
 
-Checkbox state changes trigger business rules immediately.
+Checkbox state changes update the entity property via the typed setter, triggering business rules and validation rules with `ChangeReason.UserEdit`.
 
 ## Date and Time Pickers
 
@@ -366,7 +374,8 @@ Bind to a date property:
 [Fact]
 public void DatePickerBindsToDateProperty()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     var startDate = new DateTime(2024, 1, 15);
     employee.StartDate = startDate;
@@ -377,7 +386,7 @@ public void DatePickerBindsToDateProperty()
 ```
 <!-- endSnippet -->
 
-Date pickers validate against business rules and display error messages.
+Date pickers bind to the property wrapper. When the user selects a date, the component updates the entity property via the typed setter, triggering validation and business rules. Error messages display automatically from `PropertyMessages`.
 
 ## Numeric Field Binding
 
@@ -402,7 +411,8 @@ Bind to a decimal property:
 [Fact]
 public void NumericFieldBindsToDecimalProperty()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     employee.Salary = 75000.50m;
 
@@ -450,7 +460,8 @@ Bind to a property with autocomplete search:
 [Fact]
 public void AutocompleteBindsToStringProperty()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     employee.Department = "Engineering";
 
@@ -460,11 +471,11 @@ public void AutocompleteBindsToStringProperty()
 ```
 <!-- endSnippet -->
 
-Autocomplete integrates with async search and validates selected values.
+Autocomplete integrates with async search functions. When the user selects a value, the component updates the entity property via the typed setter, triggering validation and business rules. Error messages display automatically from `PropertyMessages`.
 
 ## Change Tracking in Forms
 
-MudNeatoo components bind to `IsDirty` for change tracking. Use this to enable/disable save buttons or warn users about unsaved changes.
+MudNeatoo components bind to `IsModified` for change tracking. Use this to enable/disable save buttons or warn users about unsaved changes.
 
 Track unsaved changes:
 
@@ -491,7 +502,8 @@ Track unsaved changes:
 [Fact]
 public void ChangeTrackingDetectsModifications()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     // New entity starts unmodified
     Assert.False(employee.IsSelfModified);
@@ -507,7 +519,7 @@ public void ChangeTrackingDetectsModifications()
 ```
 <!-- endSnippet -->
 
-`IsDirty` cascades from child entities to the aggregate root, providing accurate change state.
+`IsModified` cascades from child entities to the aggregate root, providing accurate change state. Use `ModifiedProperties` to see which specific properties changed.
 
 ## Customizing Component Appearance
 
@@ -539,7 +551,8 @@ Customize component appearance:
 [Fact]
 public void ComponentAcceptsStyleParameters()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
 
     // Properties are accessible for binding
     var nameProperty = employee["Name"];
@@ -575,7 +588,8 @@ Use extension methods for custom binding:
 [Fact]
 public void ExtensionMethodsProvideValidationInfo()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
     employee.Email = "invalid";
 
     var emailProperty = employee["Email"];
@@ -599,18 +613,21 @@ MudNeatoo components use Blazor's two-way binding pattern but bind to `IEntityPr
 Understanding the binding flow:
 
 1. User changes component value
-2. Component calls `EntityProperty.SetValue()`
-3. Business rules execute
-4. Validation rules execute
-5. `IsDirty` updates
-6. Parent cascade occurs
-7. Component re-renders with validation state
+2. Component updates entity property via typed property setter (e.g., `employee.Name = value`)
+3. Property setter triggers PropertyChanged event with `ChangeReason.UserEdit`
+4. RuleManager identifies rules registered with the property as a trigger
+5. Business rules and validation rules execute sequentially
+6. Validation messages are stored on the property via `SetMessagesForRule`
+7. `IsModified` updates (entity-level and property-level tracking)
+8. Parent cascade occurs (IsModified, IsValid bubble up to aggregate root)
+9. PropertyChanged events notify subscribed components
+10. Component re-renders with updated validation state, busy state, and values
 
-This ensures UI changes trigger the full Neatoo rule pipeline.
+This ensures UI changes trigger the full Neatoo rule pipeline while maintaining aggregate consistency.
 
 ## StateHasChanged Integration
 
-MudNeatoo components subscribe to `PropertyChanged` and `NeatooPropertyChanged` events to re-render when validation state, busy state, or values change.
+MudNeatoo components subscribe to the `PropertyChanged` event on `IEntityProperty` during `OnInitialized`. When key properties change (`PropertyMessages`, `IsValid`, `IsBusy`, `IsReadOnly`, `Value`), the component calls `InvokeAsync(StateHasChanged)` to re-render on the Blazor synchronization context. Components unsubscribe in `Dispose` to prevent memory leaks.
 
 Property change triggers automatic re-render:
 
@@ -641,7 +658,8 @@ Property change triggers automatic re-render:
 [Fact]
 public void PropertyChangesNotifyComponents()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
     var nameProperty = employee["Name"];
 
     var changedProperties = new List<string>();
@@ -655,11 +673,11 @@ public void PropertyChangesNotifyComponents()
 ```
 <!-- endSnippet -->
 
-Components automatically dispose event subscriptions when removed from the component tree.
+Components implement `IDisposable` and unsubscribe from `PropertyChanged` events in `Dispose()`, preventing memory leaks when components are removed from the render tree.
 
 ## Using Standard MudBlazor Components
 
-For scenarios not covered by MudNeatoo components, bind standard MudBlazor components manually using `EntityProperty.Value` and `EntityProperty.SetValue`.
+For scenarios not covered by MudNeatoo components, bind standard MudBlazor components manually. Use the typed property for reading values and the `SetValue` method on the property wrapper for async updates. This ensures proper async coordination with validation rules.
 
 Manual binding to a MudBlazor component:
 
@@ -690,7 +708,8 @@ Manual binding to a MudBlazor component:
 [Fact]
 public async Task ManualBindingUsesSetValueAsync()
 {
-    var employee = new BlazorEmployee(new EntityBaseServices<BlazorEmployee>());
+    var factory = GetRequiredService<IBlazorEmployeeFactory>();
+    var employee = factory.Create();
     var nameProperty = employee["Name"];
 
     // Manual binding pattern: use SetValue for async
@@ -701,19 +720,19 @@ public async Task ManualBindingUsesSetValueAsync()
 ```
 <!-- endSnippet -->
 
-Manual binding requires implementing validation display and change tracking.
+Manual binding requires implementing validation display (reading `PropertyMessages`), busy state handling (binding to `IsBusy`), read-only state (binding to `IsReadOnly`), and change tracking (subscribing to `PropertyChanged`). MudNeatoo components handle all of this automatically.
 
 ## Performance Considerations
 
-MudNeatoo components re-render when validation, busy state, or values change. For forms with many fields:
+MudNeatoo components subscribe to `PropertyChanged` events and re-render when `PropertyMessages`, `IsValid`, `IsBusy`, `IsReadOnly`, or `Value` change. For forms with many fields:
 
-- Use `PauseAllActions` during bulk updates to prevent excessive re-renders
-- Prefer batch validation after multiple changes
-- Consider virtualization for large lists of input components
-- Use `Immediate="false"` to validate on blur instead of keystroke
+- Use `PauseAllActions` during bulk updates to prevent excessive re-renders. This queues `PropertyChanged` events and fires them after the `using` block completes.
+- Prefer batch validation after multiple changes with `await entity.RunRules()` once all properties are set.
+- Consider virtualization for large lists of input components (`MudVirtualize` with MudNeatoo components).
+- Use `Immediate="false"` on MudBlazor components to validate on blur instead of keystroke, reducing rule execution frequency.
 
-For high-frequency updates, debounce property changes to avoid triggering rules on every keystroke.
+For high-frequency updates, debounce property changes at the component level (e.g., `DebounceInterval` on `MudTextField`) to avoid triggering rules on every keystroke. This reduces the frequency of property setter calls and rule execution.
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-01-25

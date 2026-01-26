@@ -17,6 +17,7 @@ namespace Samples
     public interface IRfOrderItemFactory
     {
         IRfOrderItem Create(CancellationToken cancellationToken = default);
+        IRfOrderItem Fetch(int id, string productCode, decimal price, int quantity, CancellationToken cancellationToken = default);
     }
 
     internal class RfOrderItemFactory : FactoryBase<IRfOrderItem>, IRfOrderItemFactory
@@ -45,6 +46,17 @@ namespace Samples
         {
             var target = ServiceProvider.GetRequiredService<RfOrderItem>();
             return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual IRfOrderItem Fetch(int id, string productCode, decimal price, int quantity, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(id, productCode, price, quantity, cancellationToken);
+        }
+
+        public IRfOrderItem LocalFetch(int id, string productCode, decimal price, int quantity, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<RfOrderItem>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id, productCode, price, quantity));
         }
 
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)

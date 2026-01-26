@@ -16,6 +16,8 @@ namespace Samples
 {
     public interface IApiOrderFactory
     {
+        ApiOrder Create(CancellationToken cancellationToken = default);
+        ApiOrder Fetch(int id, string orderNumber, CancellationToken cancellationToken = default);
     }
 
     internal class ApiOrderFactory : FactoryBase<ApiOrder>, IApiOrderFactory
@@ -35,10 +37,33 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual ApiOrder Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public ApiOrder LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ApiOrder>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual ApiOrder Fetch(int id, string orderNumber, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(id, orderNumber, cancellationToken);
+        }
+
+        public ApiOrder LocalFetch(int id, string orderNumber, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ApiOrder>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id, orderNumber));
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<ApiOrderFactory>();
             services.AddScoped<IApiOrderFactory, ApiOrderFactory>();
+            services.AddTransient<ApiOrder>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

@@ -68,7 +68,7 @@ namespace Samples
         {
             return sourceExpression switch
             {
-                @"async product => { if (!string.IsNullOrEmpty(product.ZipCode)) { product.TaxRate = await _pricingService.GetTaxRateAsync(product.ZipCode); } }" => 1u,
+                @"async product => { if (!string.IsNullOrEmpty(product.ZipCode)) { product.TaxRate = await pricingService.GetTaxRateAsync(product.ZipCode); } }" => 1u,
                 _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
             };
         }

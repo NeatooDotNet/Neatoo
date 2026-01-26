@@ -16,6 +16,7 @@ namespace Samples
 {
     public interface IRulesCustomEntityFactory
     {
+        RulesCustomEntity Create(CancellationToken cancellationToken = default);
     }
 
     internal class RulesCustomEntityFactory : FactoryBase<RulesCustomEntity>, IRulesCustomEntityFactory
@@ -35,10 +36,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual RulesCustomEntity Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public RulesCustomEntity LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<RulesCustomEntity>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<RulesCustomEntityFactory>();
             services.AddScoped<IRulesCustomEntityFactory, RulesCustomEntityFactory>();
+            services.AddTransient<RulesCustomEntity>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

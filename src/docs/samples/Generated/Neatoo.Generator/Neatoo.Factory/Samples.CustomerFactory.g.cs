@@ -16,6 +16,7 @@ namespace Samples
 {
     public interface ICustomerFactory
     {
+        Customer Create(CancellationToken cancellationToken = default);
         Task<Customer> Save(Customer target, CancellationToken cancellationToken = default);
     }
 
@@ -46,6 +47,17 @@ namespace Samples
             var cTarget = (Customer)target ?? throw new Exception("Customer must implement Customer");
             var repo = ServiceProvider.GetRequiredService<ICustomerRepository>();
             return DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(repo));
+        }
+
+        public virtual Customer Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public Customer LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<Customer>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
         }
 
         public virtual Task<Customer> Save(Customer target, CancellationToken cancellationToken = default)
@@ -83,6 +95,7 @@ namespace Samples
         {
             services.AddScoped<CustomerFactory>();
             services.AddScoped<ICustomerFactory, CustomerFactory>();
+            services.AddTransient<Customer>();
             services.AddScoped<IFactorySave<Customer>, CustomerFactory>();
             services.AddScoped<SaveDelegate>(cc =>
             {

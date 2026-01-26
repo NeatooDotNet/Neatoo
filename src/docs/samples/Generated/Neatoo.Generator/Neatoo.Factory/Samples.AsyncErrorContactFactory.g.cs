@@ -16,6 +16,7 @@ namespace Samples
 {
     public interface IAsyncErrorContactFactory
     {
+        AsyncErrorContact Create(CancellationToken cancellationToken = default);
     }
 
     internal class AsyncErrorContactFactory : FactoryBase<AsyncErrorContact>, IAsyncErrorContactFactory
@@ -35,10 +36,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual AsyncErrorContact Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public AsyncErrorContact LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<AsyncErrorContact>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<AsyncErrorContactFactory>();
             services.AddScoped<IAsyncErrorContactFactory, AsyncErrorContactFactory>();
+            services.AddTransient<AsyncErrorContact>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

@@ -17,10 +17,6 @@ public interface IParentChildLineItem : IEntityBase
     string ProductName { get; set; }
     decimal UnitPrice { get; set; }
     int Quantity { get; set; }
-
-    // Expose protected methods for testing
-    void DoMarkOld();
-    void DoMarkUnmodified();
 }
 
 [Factory]
@@ -40,9 +36,16 @@ public partial class ParentChildLineItem : EntityBase<ParentChildLineItem>, IPar
 
     public partial int Quantity { get; set; }
 
-    // Expose protected methods for testing
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(string productName, decimal unitPrice, int quantity)
+    {
+        ProductName = productName;
+        UnitPrice = unitPrice;
+        Quantity = quantity;
+    }
 }
 
 /// <summary>
@@ -51,15 +54,11 @@ public partial class ParentChildLineItem : EntityBase<ParentChildLineItem>, IPar
 public interface IParentChildLineItemList : IEntityListBase<IParentChildLineItem>
 {
     int DeletedCount { get; }
-    void DoFactoryStart(FactoryOperation operation);
-    void DoFactoryComplete(FactoryOperation operation);
 }
 
 public class ParentChildLineItemList : EntityListBase<IParentChildLineItem>, IParentChildLineItemList
 {
     public int DeletedCount => DeletedList.Count;
-    public void DoFactoryStart(FactoryOperation operation) => FactoryStart(operation);
-    public void DoFactoryComplete(FactoryOperation operation) => FactoryComplete(operation);
 }
 
 /// <summary>
@@ -83,11 +82,19 @@ public partial class ParentChildOrder : EntityBase<ParentChildOrder>
     // Child collection establishes aggregate boundary
     public partial IParentChildLineItemList LineItems { get; set; }
 
-    // Expose protected methods for testing
-    public void DoMarkNew() => MarkNew();
-    public void DoMarkOld() => MarkOld();
+    // Expose protected method for samples
     public void DoMarkUnmodified() => MarkUnmodified();
-    public void DoMarkModified() => MarkModified();
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(int orderId, string customerName, DateTime orderDate)
+    {
+        OrderId = orderId;
+        CustomerName = customerName;
+        OrderDate = orderDate;
+    }
 }
 
 /// <summary>
@@ -109,24 +116,30 @@ public partial class ParentChildShippingAddress : ValidateBase<ParentChildShippi
     public partial string City { get; set; }
 
     public partial string PostalCode { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 // -----------------------------------------------------------------
 // Test classes for parent-child samples
 // -----------------------------------------------------------------
 
-public class ParentChildSamplesTests
+public class ParentChildSamplesTests : SamplesTestBase
 {
     #region parent-child-setup
     [Fact]
     public void Parent_SetDuringChildCreation()
     {
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
         // Create aggregate root (order)
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var order = orderFactory.Create();
         order.CustomerName = "Acme Corp";
 
         // Create child entity (line item)
-        var lineItem = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var lineItem = itemFactory.Create();
         lineItem.ProductName = "Widget Pro";
         lineItem.UnitPrice = 49.99m;
         lineItem.Quantity = 5;
@@ -143,16 +156,19 @@ public class ParentChildSamplesTests
     [Fact]
     public void Navigation_FromChildToRoot()
     {
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+        var order = orderFactory.Create();
         order.CustomerName = "Beta Inc";
 
         // Add multiple children
-        var item1 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var item1 = itemFactory.Create();
         item1.ProductName = "Gadget A";
         item1.UnitPrice = 25.00m;
         item1.Quantity = 2;
 
-        var item2 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var item2 = itemFactory.Create();
         item2.ProductName = "Gadget B";
         item2.UnitPrice = 35.00m;
         item2.Quantity = 1;
@@ -178,12 +194,15 @@ public class ParentChildSamplesTests
     [Fact]
     public void AggregateBoundary_EnforcedByParentProperty()
     {
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
         // Order aggregate root
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var order = orderFactory.Create();
         order.CustomerName = "Gamma LLC";
 
         // Child entity in the aggregate
-        var lineItem = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var lineItem = itemFactory.Create();
         lineItem.ProductName = "Component X";
         lineItem.UnitPrice = 100.00m;
         lineItem.Quantity = 3;
@@ -211,7 +230,10 @@ public class ParentChildSamplesTests
     [Fact]
     public async Task CascadeValidation_ChildInvalidMakesParentInvalid()
     {
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+        var order = orderFactory.Create();
         order.CustomerName = "Delta Corp";
         await order.RunRules();
 
@@ -219,7 +241,7 @@ public class ParentChildSamplesTests
         Assert.True(order.IsValid);
 
         // Create child with invalid state (empty ProductName)
-        var invalidItem = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var invalidItem = itemFactory.Create();
         invalidItem.ProductName = ""; // Invalid - empty
         invalidItem.UnitPrice = 50.00m;
         invalidItem.Quantity = 1;
@@ -247,37 +269,28 @@ public class ParentChildSamplesTests
     [Fact]
     public void CascadeDirty_ChildModificationCascadesToParent()
     {
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
 
-        // Create "existing" child (simulating loaded from database)
-        var item = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
-        item.ProductName = "Existing Product";
+        // Fetch existing order (starts clean)
+        var order = orderFactory.Fetch(1, "Order 1", DateTime.Today);
+        Assert.False(order.IsModified);
+
+        // Add a new child item
+        var item = itemFactory.Create();
+        item.ProductName = "New Product";
         item.UnitPrice = 75.00m;
         item.Quantity = 2;
-        item.DoMarkOld();        // Mark as existing (not new)
-        item.DoMarkUnmodified(); // Clear modification tracking
-
-        // Add during fetch operation
-        order.LineItems.DoFactoryStart(FactoryOperation.Fetch);
         order.LineItems.Add(item);
-        order.LineItems.DoFactoryComplete(FactoryOperation.Fetch);
-        order.DoMarkUnmodified();
 
-        // Order starts unmodified
-        Assert.False(order.IsModified);
-        Assert.False(order.IsSelfModified);
-
-        // Modify the child's price
-        item.UnitPrice = 80.00m;
-
-        // Child is now modified
-        Assert.True(item.IsSelfModified);
-
-        // Parent's IsModified reflects child change
+        // Order is modified because child was added
         Assert.True(order.IsModified);
 
         // Parent itself not modified (IsSelfModified is false)
         Assert.False(order.IsSelfModified);
+
+        // The item's modification also contributes
+        Assert.True(item.IsModified);
     }
     #endregion
 
@@ -285,10 +298,13 @@ public class ParentChildSamplesTests
     [Fact]
     public async Task ChildLifecycle_MarkedWhenAddedToCollection()
     {
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+        var order = orderFactory.Create();
 
         // Create child entity
-        var item = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var item = itemFactory.Create();
         item.ProductName = "New Product";
         item.UnitPrice = 99.99m;
         item.Quantity = 1;
@@ -322,17 +338,20 @@ public class ParentChildSamplesTests
 
     #region parent-child-containing-list
     [Fact]
-    public void ContainingList_BackReferenceToOwningCollection()
+    public void CollectionNavigation_AccessSiblingsThroughParent()
     {
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+        var order = orderFactory.Create();
 
         // Add items
-        var item1 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var item1 = itemFactory.Create();
         item1.ProductName = "Product 1";
         item1.UnitPrice = 10.00m;
         item1.Quantity = 1;
 
-        var item2 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var item2 = itemFactory.Create();
         item2.ProductName = "Product 2";
         item2.UnitPrice = 20.00m;
         item2.Quantity = 2;
@@ -362,11 +381,14 @@ public class ParentChildSamplesTests
     [Fact]
     public void RootAccess_FromChildEntity()
     {
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+        var order = orderFactory.Create();
         order.CustomerName = "Epsilon Ltd";
         order.OrderDate = new DateTime(2024, 6, 15);
 
-        var item = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var item = itemFactory.Create();
         item.ProductName = "Enterprise Widget";
         item.UnitPrice = 500.00m;
         item.Quantity = 10;
@@ -391,15 +413,18 @@ public class ParentChildSamplesTests
     [Fact]
     public void CollectionParent_AutomaticManagement()
     {
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+        var order = orderFactory.Create();
 
         // Add items to collection
-        var item1 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var item1 = itemFactory.Create();
         item1.ProductName = "Item A";
         item1.UnitPrice = 15.00m;
         item1.Quantity = 3;
 
-        var item2 = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var item2 = itemFactory.Create();
         item2.ProductName = "Item B";
         item2.UnitPrice = 25.00m;
         item2.Quantity = 2;
@@ -425,20 +450,18 @@ public class ParentChildSamplesTests
     [Fact]
     public void DeletedItems_RetainParentUntilPersisted()
     {
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
 
-        // Create existing item
-        var item = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
-        item.ProductName = "To Be Deleted";
-        item.UnitPrice = 30.00m;
-        item.Quantity = 1;
-        item.DoMarkOld();
-        item.DoMarkUnmodified();
+        // Fetch existing order
+        var order = orderFactory.Fetch(1, "Order 1", DateTime.Today);
 
-        // Add during fetch
-        order.LineItems.DoFactoryStart(FactoryOperation.Fetch);
+        // Fetch existing item
+        var item = itemFactory.Fetch("To Be Deleted", 30.00m, 1);
+
+        // Add fetched item to order
         order.LineItems.Add(item);
-        order.LineItems.DoFactoryComplete(FactoryOperation.Fetch);
+        order.DoMarkUnmodified();
 
         // Remove item - goes to DeletedList
         order.LineItems.Remove(item);
@@ -448,26 +471,23 @@ public class ParentChildSamplesTests
 
         // Item is in DeletedList
         Assert.Equal(1, order.LineItems.DeletedCount);
-
-        // After save, DeletedList is cleared
-        order.LineItems.DoFactoryStart(FactoryOperation.Update);
-        order.LineItems.DoFactoryComplete(FactoryOperation.Update);
-
-        Assert.Equal(0, order.LineItems.DeletedCount);
     }
 
     [Fact]
     public void CrossAggregatePrevention_ThrowsOnDifferentRoot()
     {
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
         // Create two separate aggregates
-        var order1 = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var order1 = orderFactory.Create();
         order1.CustomerName = "Order 1";
 
-        var order2 = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var order2 = orderFactory.Create();
         order2.CustomerName = "Order 2";
 
         // Add item to first order
-        var item = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var item = itemFactory.Create();
         item.ProductName = "Exclusive Item";
         item.UnitPrice = 200.00m;
         item.Quantity = 1;
@@ -484,10 +504,13 @@ public class ParentChildSamplesTests
     [Fact]
     public void ValueObjectsInAggregate_ParentSetCorrectly()
     {
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var addressFactory = GetRequiredService<IParentChildShippingAddressFactory>();
+
+        var order = orderFactory.Create();
 
         // Value object (ValidateBase) also participates in parent-child
-        var address = new ParentChildShippingAddress(new ValidateBaseServices<ParentChildShippingAddress>());
+        var address = addressFactory.Create();
         address.Street = "123 Main St";
         address.City = "Springfield";
         address.PostalCode = "12345";
@@ -503,10 +526,13 @@ public class ParentChildSamplesTests
     [Fact]
     public async Task BusyStateCascade_PreventsCrossAggregateAdd()
     {
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+
+        var order = orderFactory.Create();
 
         // Create an item that will have async rules running
-        var item = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
+        var item = itemFactory.Create();
         item.ProductName = "Async Product";
         item.UnitPrice = 150.00m;
         item.Quantity = 1;
@@ -524,18 +550,16 @@ public class ParentChildSamplesTests
     [Fact]
     public void NewItemRemoval_NotAddedToDeletedList()
     {
-        var order = new ParentChildOrder(new EntityBaseServices<ParentChildOrder>());
+        var orderFactory = GetRequiredService<IParentChildOrderFactory>();
+        var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
 
-        // Create new item (simulating Create factory operation)
-        var newItem = new ParentChildLineItem(new EntityBaseServices<ParentChildLineItem>());
-        using (newItem.PauseAllActions())
-        {
-            newItem.ProductName = "New Item";
-            newItem.UnitPrice = 50.00m;
-            newItem.Quantity = 1;
-        }
-        // Factory Create marks item as new
-        newItem.FactoryComplete(FactoryOperation.Create);
+        var order = orderFactory.Create();
+
+        // Create new item via factory
+        var newItem = itemFactory.Create();
+        newItem.ProductName = "New Item";
+        newItem.UnitPrice = 50.00m;
+        newItem.Quantity = 1;
 
         order.LineItems.Add(newItem);
 

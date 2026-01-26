@@ -16,6 +16,7 @@ namespace Samples
 {
     public interface IEmployeeFactory
     {
+        Employee Create(CancellationToken cancellationToken = default);
     }
 
     internal class EmployeeFactory : FactoryBase<Employee>, IEmployeeFactory
@@ -35,10 +36,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual Employee Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public Employee LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<Employee>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<EmployeeFactory>();
             services.AddScoped<IEmployeeFactory, EmployeeFactory>();
+            services.AddTransient<Employee>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

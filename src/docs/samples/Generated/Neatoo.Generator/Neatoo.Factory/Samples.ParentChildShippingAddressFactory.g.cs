@@ -14,6 +14,7 @@ namespace Samples
 {
     public interface IParentChildShippingAddressFactory
     {
+        ParentChildShippingAddress Create(CancellationToken cancellationToken = default);
     }
 
     internal class ParentChildShippingAddressFactory : FactoryBase<ParentChildShippingAddress>, IParentChildShippingAddressFactory
@@ -33,10 +34,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual ParentChildShippingAddress Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public ParentChildShippingAddress LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ParentChildShippingAddress>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<ParentChildShippingAddressFactory>();
             services.AddScoped<IParentChildShippingAddressFactory, ParentChildShippingAddressFactory>();
+            services.AddTransient<ParentChildShippingAddress>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

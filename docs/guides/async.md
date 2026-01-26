@@ -6,7 +6,7 @@ Neatoo provides comprehensive async support for validation rules, business rules
 
 ## Async Validation Rules
 
-Business rules can execute async operations by inheriting from `AsyncRuleBase<T>`. Async rules support cancellation tokens and track busy state automatically.
+Validation rules can execute async operations by inheriting from `AsyncRuleBase<T>`. Async rules support cancellation tokens and the framework automatically tracks busy state during execution.
 
 Create an async validation rule by inheriting from `AsyncRuleBase<T>` and implementing the `Execute` method:
 
@@ -28,7 +28,7 @@ public class UniqueEmailRule : AsyncRuleBase<AsyncContact>
     {
         // Perform async validation
         var isUnique = await _emailService.IsEmailUniqueAsync(
-            target.Email,
+            target.Email ?? "",
             token ?? CancellationToken.None);
 
         if (!isUnique)
@@ -42,11 +42,11 @@ public class UniqueEmailRule : AsyncRuleBase<AsyncContact>
 ```
 <!-- endSnippet -->
 
-The framework tracks async rule execution and sets `IsBusy` to `true` while rules are running.
+The framework marks trigger properties as busy using unique execution IDs. While an async rule executes, `IsBusy` returns `true` on both the property and the entity. After completion, the same execution ID is used to clear the busy state, ensuring concurrent rules don't interfere with each other's tracking.
 
 ## Async Business Rules
 
-Use `AddActionAsync` to create inline async business rules that execute when properties change. These rules perform side effects without producing validation messages.
+Use `AddActionAsync` to create inline async business rules that execute when properties change. These rules perform side effects (computed properties, external service calls) without producing validation messages or affecting the entity's `IsValid` state. The `RuleManager.AddActionAsync` method creates an `AsyncActionFluentRule<T>` internally that executes the lambda when trigger properties change.
 
 Register an async action rule in your constructor:
 
@@ -92,7 +92,7 @@ public AsyncCancellableContact(IValidateBaseServices<AsyncCancellableContact> se
 
 ## WaitForTasks
 
-`WaitForTasks` ensures all pending async operations complete before proceeding. This is essential before saving, serializing, or inspecting validation state.
+`WaitForTasks` waits for all currently executing async rules to complete. The method returns a `Task` that completes when all tracked async operations finish. This is essential before saving, serializing, or inspecting validation state to ensure consistency.
 
 Wait for all async operations to complete:
 
@@ -101,7 +101,8 @@ Wait for all async operations to complete:
 [Fact]
 public async Task WaitForTasks_EnsuresAsyncRulesComplete()
 {
-    var contact = new AsyncActionContact(new ValidateBaseServices<AsyncActionContact>());
+    var factory = GetRequiredService<IAsyncActionContactFactory>();
+    var contact = factory.Create();
 
     // Setting ZipCode triggers an async rule
     contact.ZipCode = "90210";
@@ -115,16 +116,15 @@ public async Task WaitForTasks_EnsuresAsyncRulesComplete()
 ```
 <!-- endSnippet -->
 
-The framework automatically propagates tasks up the parent hierarchy, so calling `WaitForTasks` on a parent waits for all children.
+The framework automatically propagates task tracking up the parent hierarchy through the `Parent` property. When you call `WaitForTasks` on a parent entity, it recursively waits for all child entities and collections to complete their async operations.
 
 ## IsBusy State
 
-Neatoo automatically tracks async operation state through the `IsBusy` property. An object is busy when:
+Neatoo automatically tracks async operation state through the `IsBusy` property. The framework uses execution IDs to track which operations are in progress. An object is busy when:
 
-- Async validation rules are executing
-- Async business rules are running
-- Property lazy-loading is in progress
-- Any child object is busy
+- Async validation rules are executing (trigger properties marked busy with unique execution ID)
+- Async action rules are running (trigger properties marked busy with unique execution ID)
+- Any child object is busy (busy state cascades up the parent hierarchy)
 
 Check busy state before performing operations:
 
@@ -133,7 +133,8 @@ Check busy state before performing operations:
 [Fact]
 public async Task IsBusy_TracksAsyncOperationState()
 {
-    var contact = new AsyncActionContact(new ValidateBaseServices<AsyncActionContact>());
+    var factory = GetRequiredService<IAsyncActionContactFactory>();
+    var contact = factory.Create();
 
     // Trigger async rule
     contact.ZipCode = "90210";
@@ -150,11 +151,11 @@ public async Task IsBusy_TracksAsyncOperationState()
 ```
 <!-- endSnippet -->
 
-`IsBusy` cascades to parent objects, ensuring aggregate roots reflect the busy state of all children.
+`IsBusy` cascades through the parent hierarchy via the `Parent` property. Aggregate roots reflect the busy state of all children, ensuring the UI can disable save operations or show loading indicators for the entire aggregate.
 
 ## CancellationToken Support
 
-All async operations accept an optional `CancellationToken` to enable cancellation. When cancellation is requested, validation is marked invalid and must be re-validated.
+All async operations accept an optional `CancellationToken` to enable cancellation. When cancellation is requested during `WaitForTasks`, the wait operation throws `OperationCanceledException`. Running async rules continue executing to completion to avoid inconsistent entity state.
 
 Pass cancellation tokens to async operations:
 
@@ -163,7 +164,8 @@ Pass cancellation tokens to async operations:
 [Fact]
 public async Task CancellationToken_CancelsWaitForTasks()
 {
-    var contact = new AsyncCancellableContact(new ValidateBaseServices<AsyncCancellableContact>());
+    var factory = GetRequiredService<IAsyncCancellableContactFactory>();
+    var contact = factory.Create();
 
     contact.Email = "test@example.com";
 
@@ -180,11 +182,11 @@ public async Task CancellationToken_CancelsWaitForTasks()
 ```
 <!-- endSnippet -->
 
-Cancellation only affects waiting—running tasks complete to avoid inconsistent state. After cancellation, call `RunRules(RunRulesFlag.All)` to clear the invalid state.
+After catching `OperationCanceledException`, the entity may have partially completed rules. Call `RunRules(RunRulesFlag.All)` to re-execute all rules and establish consistent validation state.
 
 ## Task Coordination in Collections
 
-`ValidateListBase` and `EntityListBase` coordinate tasks across all items in the collection. `WaitForTasks` on a list waits for all child items to complete.
+`ValidateListBase` and `EntityListBase` coordinate async operations across all items in the collection. When you call `WaitForTasks` on a list, it iterates through all items and recursively waits for each item's async operations to complete.
 
 Wait for all items in a collection:
 
@@ -195,8 +197,9 @@ public async Task ListWaitForTasks_WaitsForAllItems()
 {
     var list = new AsyncContactItemList();
 
-    var item1 = new AsyncContactItem(new EntityBaseServices<AsyncContactItem>());
-    var item2 = new AsyncContactItem(new EntityBaseServices<AsyncContactItem>());
+    var itemFactory = GetRequiredService<IAsyncContactItemFactory>();
+    var item1 = itemFactory.Create();
+    var item2 = itemFactory.Create();
 
     list.Add(item1);
     list.Add(item2);
@@ -216,11 +219,11 @@ public async Task ListWaitForTasks_WaitsForAllItems()
 ```
 <!-- endSnippet -->
 
-Collections report `IsBusy` when any child item is busy, providing aggregate busy state.
+Collections report `IsBusy == true` when any child item is busy. This busy state cascades up through the parent hierarchy, allowing aggregate roots to reflect the busy state of deeply nested collections.
 
 ## RunRules with Async
 
-`RunRules` executes all validation rules, including async rules, and waits for completion. Use this to manually trigger validation after batch property changes.
+`RunRules` executes validation rules and returns a `Task` that completes when all async rules finish. The method identifies which rules to execute based on the `RunRulesFlag` parameter, executes them sequentially, and waits for async rules to complete. Use this to manually trigger validation after batch property changes.
 
 Manually run all validation rules:
 
@@ -229,7 +232,8 @@ Manually run all validation rules:
 [Fact]
 public async Task RunRules_ExecutesAllValidationRules()
 {
-    var contact = new AsyncActionContact(new ValidateBaseServices<AsyncActionContact>());
+    var factory = GetRequiredService<IAsyncActionContactFactory>();
+    var contact = factory.Create();
 
     // Set properties without waiting
     contact.ZipCode = "90210";
@@ -248,7 +252,7 @@ public async Task RunRules_ExecutesAllValidationRules()
 
 ## Async Rule Execution Order
 
-Async rules execute in the order they were registered via `RuleManager.AddRule`. Rules with lower `RuleOrder` values execute first.
+When a property changes, the framework identifies all rules with that property as a trigger, sorts them by `RuleOrder` (ascending), then executes them sequentially. Async rules do not execute in parallel—each async rule completes before the next rule begins, even if they have the same `RuleOrder`.
 
 Control rule execution order:
 
@@ -257,7 +261,8 @@ Control rule execution order:
 [Fact]
 public async Task RuleOrder_ControlsExecutionSequence()
 {
-    var contact = new AsyncOrderedRulesContact(new ValidateBaseServices<AsyncOrderedRulesContact>());
+    var factory = GetRequiredService<IAsyncOrderedRulesContactFactory>();
+    var contact = factory.Create();
 
     contact.Value = "test";
     await contact.WaitForTasks();
@@ -269,11 +274,11 @@ public async Task RuleOrder_ControlsExecutionSequence()
 ```
 <!-- endSnippet -->
 
-Multiple async rules triggered by the same property change execute sequentially, not in parallel.
+This sequential execution ensures consistent entity state and prevents race conditions when rules modify the same properties.
 
 ## Error Handling
 
-Exceptions thrown in async rules are captured and surfaced when calling `WaitForTasks`. The framework aggregates exceptions from all rules.
+Exceptions thrown in async rules are captured and wrapped in an `AggregateException` when calling `WaitForTasks`. The framework collects exceptions from all rules and surfaces them together, allowing you to handle multiple failures at once.
 
 Handle exceptions from async rules:
 
@@ -282,7 +287,8 @@ Handle exceptions from async rules:
 [Fact]
 public async Task AsyncRule_ExceptionsAreCaptured()
 {
-    var contact = new AsyncErrorContact(new ValidateBaseServices<AsyncErrorContact>());
+    var factory = GetRequiredService<IAsyncErrorContactFactory>();
+    var contact = factory.Create();
 
     // This value causes the rule to throw
     contact.Value = "error";
@@ -300,11 +306,11 @@ public async Task AsyncRule_ExceptionsAreCaptured()
 ```
 <!-- endSnippet -->
 
-When a rule throws an exception, the property is marked invalid with the exception message.
+When a rule throws an exception, the framework marks the trigger properties as invalid using `MarkInvalid` and stores the exception message in `PropertyMessages`. The entity's `IsValid` becomes `false` and `IsSavable` becomes `false`.
 
 ## Recursive Async Rules
 
-Async rules can modify properties that trigger other async rules. The framework tracks all cascading rule executions.
+Async rules can modify properties that trigger other async rules, creating a chain of cascading rule executions. The framework tracks all cascading operations and `WaitForTasks` waits for the entire chain to complete, including recursively triggered rules.
 
 Create a rule that triggers another async rule:
 
@@ -313,7 +319,8 @@ Create a rule that triggers another async rule:
 [Fact]
 public async Task RecursiveRules_ChainedRulesExecute()
 {
-    var contact = new AsyncRecursiveContact(new ValidateBaseServices<AsyncRecursiveContact>());
+    var factory = GetRequiredService<IAsyncRecursiveContactFactory>();
+    var contact = factory.Create();
 
     // Setting FirstName triggers FullName rule
     contact.FirstName = "John";
@@ -331,11 +338,11 @@ public async Task RecursiveRules_ChainedRulesExecute()
 ```
 <!-- endSnippet -->
 
-`WaitForTasks` waits for the entire rule chain to complete, including recursively triggered rules.
+Each rule in the chain executes sequentially. When rule A modifies a property that triggers rule B, rule B starts executing only after rule A completes.
 
 ## Async with PauseAllActions
 
-Combine `PauseAllActions` with async operations to batch property changes and execute rules once after resuming.
+Combine `PauseAllActions` with async operations to batch property changes without triggering rules. After calling `ResumeAllActions` (or disposing the pause scope), rules do not automatically execute. Call `RunRules(RunRulesFlag.All)` manually to execute rules for all properties, then wait for async operations to complete.
 
 Batch async property changes:
 
@@ -344,7 +351,8 @@ Batch async property changes:
 [Fact]
 public async Task PauseAllActions_BatchesPropertyChanges()
 {
-    var contact = new AsyncRecursiveContact(new ValidateBaseServices<AsyncRecursiveContact>());
+    var factory = GetRequiredService<IAsyncRecursiveContactFactory>();
+    var contact = factory.Create();
 
     // Pause to batch changes
     using (contact.PauseAllActions())
@@ -366,11 +374,11 @@ public async Task PauseAllActions_BatchesPropertyChanges()
 ```
 <!-- endSnippet -->
 
-Async rules triggered during pause execute when `ResumeAllActions` is called, then you can wait for completion.
+This pattern avoids triggering rules multiple times during batch updates. After resume, `RunRules` executes rules once for all changed properties, and `WaitForTasks` ensures all async operations complete before proceeding.
 
 ## Save with Async Validation
 
-`EntityBase.Save` automatically calls `WaitForTasks` before persistence, ensuring all validation completes.
+When using `RemoteFactory`, the generated `SaveAsync` method automatically calls `WaitForTasks` before executing your `[Insert]` or `[Update]` method. This ensures all async validation rules complete and the entity has consistent validation state before persistence.
 
 Save waits for async validation:
 
@@ -379,14 +387,9 @@ Save waits for async validation:
 [Fact]
 public async Task Save_WaitsForAsyncValidation()
 {
-    var emailService = new MockEmailValidationService();
-    var rule = new UniqueEmailRule(emailService);
-
-    // Inject rule via constructor
-    var contact = new AsyncContact(new EntityBaseServices<AsyncContact>(), rule);
-
-    // Simulate Create factory operation to mark as new
-    ((IFactoryOnComplete)contact).FactoryComplete(FactoryOperation.Create);
+    // Factory resolves AsyncContact with UniqueEmailRule injected from DI
+    var factory = GetRequiredService<IAsyncContactFactory>();
+    var contact = factory.Create();
 
     contact.Name = "Test Contact";
     contact.Email = "valid@example.com";
@@ -402,7 +405,7 @@ public async Task Save_WaitsForAsyncValidation()
 ```
 <!-- endSnippet -->
 
-If validation fails or the object is invalid after waiting, save throws `SaveException`.
+If async rules are still executing (`IsBusy == true`) or the entity is invalid (`IsValid == false`) after `WaitForTasks`, the factory does not call your persistence method. Instead, it relies on `IsSavable` to determine if persistence should proceed. Since `IsSavable == IsModified && IsValid && !IsBusy && !IsChild`, an invalid or busy entity cannot be saved.
 
 ## Performance Considerations
 

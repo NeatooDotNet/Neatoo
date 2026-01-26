@@ -14,6 +14,8 @@ namespace Samples
 {
     public interface IParentChildOrderFactory
     {
+        ParentChildOrder Create(CancellationToken cancellationToken = default);
+        ParentChildOrder Fetch(int orderId, string customerName, DateTime orderDate, CancellationToken cancellationToken = default);
     }
 
     internal class ParentChildOrderFactory : FactoryBase<ParentChildOrder>, IParentChildOrderFactory
@@ -33,10 +35,33 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual ParentChildOrder Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public ParentChildOrder LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ParentChildOrder>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual ParentChildOrder Fetch(int orderId, string customerName, DateTime orderDate, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(orderId, customerName, orderDate, cancellationToken);
+        }
+
+        public ParentChildOrder LocalFetch(int orderId, string customerName, DateTime orderDate, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ParentChildOrder>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(orderId, customerName, orderDate));
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<ParentChildOrderFactory>();
             services.AddScoped<IParentChildOrderFactory, ParentChildOrderFactory>();
+            services.AddTransient<ParentChildOrder>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

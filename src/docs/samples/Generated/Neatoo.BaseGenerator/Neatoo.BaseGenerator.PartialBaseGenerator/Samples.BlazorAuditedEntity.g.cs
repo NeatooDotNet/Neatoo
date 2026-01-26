@@ -3,7 +3,6 @@ using Neatoo;
 using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using Xunit;

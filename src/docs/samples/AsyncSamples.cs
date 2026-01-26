@@ -52,7 +52,7 @@ public class UniqueEmailRule : AsyncRuleBase<AsyncContact>
     {
         // Perform async validation
         var isUnique = await _emailService.IsEmailUniqueAsync(
-            target.Email,
+            target.Email ?? "",
             token ?? CancellationToken.None);
 
         if (!isUnique)
@@ -100,6 +100,9 @@ public partial class AsyncContact : EntityBase<AsyncContact>
 
     // Child collection for list samples
     public partial IAsyncContactItemList Items { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IAsyncContactItem : IEntityBase
@@ -117,6 +120,9 @@ public partial class AsyncContactItem : EntityBase<AsyncContactItem>, IAsyncCont
     public partial string Description { get; set; }
 
     public partial string AsyncValue { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IAsyncContactItemList : IEntityListBase<IAsyncContactItem> { }
@@ -146,6 +152,9 @@ public partial class AsyncActionContact : ValidateBase<AsyncActionContact>
     public partial string ZipCode { get; set; }
 
     public partial decimal TaxRate { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 // Contact with cancellation token support
@@ -173,6 +182,9 @@ public partial class AsyncCancellableContact : ValidateBase<AsyncCancellableCont
     public partial string Email { get; set; }
 
     public partial string Status { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 // Contact with ordered rules for demonstration
@@ -209,6 +221,9 @@ public partial class AsyncOrderedRulesContact : ValidateBase<AsyncOrderedRulesCo
     }
 
     public partial string Value { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 // Contact with recursive rule chain
@@ -246,6 +261,9 @@ public partial class AsyncRecursiveContact : ValidateBase<AsyncRecursiveContact>
     public partial string FullName { get; set; }
 
     public partial string Initials { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 // Contact for error handling demonstration
@@ -271,21 +289,22 @@ public partial class AsyncErrorContact : ValidateBase<AsyncErrorContact>
     public partial string Value { get; set; }
 
     public partial string ProcessedValue { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 /// <summary>
-/// Tests for async.md snippets demonstrating async rule behavior.
+/// Tests for async.md snippets demonstrating DI-based factory usage.
 /// </summary>
-public class AsyncSamplesTests
+public class AsyncSamplesTests : SamplesTestBase
 {
     [Fact]
     public async Task AsyncValidationRule_ValidatesEmailUniqueness()
     {
-        var emailService = new MockEmailValidationService();
-        var rule = new UniqueEmailRule(emailService);
-
-        // Inject rule via constructor
-        var contact = new AsyncContact(new EntityBaseServices<AsyncContact>(), rule);
+        // Factory resolves AsyncContact with UniqueEmailRule injected from DI
+        var factory = GetRequiredService<IAsyncContactFactory>();
+        var contact = factory.Create();
 
         // Set a unique email
         contact.Email = "unique@example.com";
@@ -304,7 +323,8 @@ public class AsyncSamplesTests
     [Fact]
     public async Task AsyncActionRule_UpdatesTaxRateFromZipCode()
     {
-        var contact = new AsyncActionContact(new ValidateBaseServices<AsyncActionContact>());
+        var factory = GetRequiredService<IAsyncActionContactFactory>();
+        var contact = factory.Create();
 
         contact.ZipCode = "90210"; // California
         await contact.WaitForTasks();
@@ -321,7 +341,8 @@ public class AsyncSamplesTests
     [Fact]
     public async Task WaitForTasks_EnsuresAsyncRulesComplete()
     {
-        var contact = new AsyncActionContact(new ValidateBaseServices<AsyncActionContact>());
+        var factory = GetRequiredService<IAsyncActionContactFactory>();
+        var contact = factory.Create();
 
         // Setting ZipCode triggers an async rule
         contact.ZipCode = "90210";
@@ -338,7 +359,8 @@ public class AsyncSamplesTests
     [Fact]
     public async Task IsBusy_TracksAsyncOperationState()
     {
-        var contact = new AsyncActionContact(new ValidateBaseServices<AsyncActionContact>());
+        var factory = GetRequiredService<IAsyncActionContactFactory>();
+        var contact = factory.Create();
 
         // Trigger async rule
         contact.ZipCode = "90210";
@@ -358,7 +380,8 @@ public class AsyncSamplesTests
     [Fact]
     public async Task CancellationToken_CancelsWaitForTasks()
     {
-        var contact = new AsyncCancellableContact(new ValidateBaseServices<AsyncCancellableContact>());
+        var factory = GetRequiredService<IAsyncCancellableContactFactory>();
+        var contact = factory.Create();
 
         contact.Email = "test@example.com";
 
@@ -380,8 +403,9 @@ public class AsyncSamplesTests
     {
         var list = new AsyncContactItemList();
 
-        var item1 = new AsyncContactItem(new EntityBaseServices<AsyncContactItem>());
-        var item2 = new AsyncContactItem(new EntityBaseServices<AsyncContactItem>());
+        var itemFactory = GetRequiredService<IAsyncContactItemFactory>();
+        var item1 = itemFactory.Create();
+        var item2 = itemFactory.Create();
 
         list.Add(item1);
         list.Add(item2);
@@ -404,7 +428,8 @@ public class AsyncSamplesTests
     [Fact]
     public async Task RunRules_ExecutesAllValidationRules()
     {
-        var contact = new AsyncActionContact(new ValidateBaseServices<AsyncActionContact>());
+        var factory = GetRequiredService<IAsyncActionContactFactory>();
+        var contact = factory.Create();
 
         // Set properties without waiting
         contact.ZipCode = "90210";
@@ -422,7 +447,8 @@ public class AsyncSamplesTests
     [Fact]
     public async Task RuleOrder_ControlsExecutionSequence()
     {
-        var contact = new AsyncOrderedRulesContact(new ValidateBaseServices<AsyncOrderedRulesContact>());
+        var factory = GetRequiredService<IAsyncOrderedRulesContactFactory>();
+        var contact = factory.Create();
 
         contact.Value = "test";
         await contact.WaitForTasks();
@@ -437,7 +463,8 @@ public class AsyncSamplesTests
     [Fact]
     public async Task AsyncRule_ExceptionsAreCaptured()
     {
-        var contact = new AsyncErrorContact(new ValidateBaseServices<AsyncErrorContact>());
+        var factory = GetRequiredService<IAsyncErrorContactFactory>();
+        var contact = factory.Create();
 
         // This value causes the rule to throw
         contact.Value = "error";
@@ -458,7 +485,8 @@ public class AsyncSamplesTests
     [Fact]
     public async Task RecursiveRules_ChainedRulesExecute()
     {
-        var contact = new AsyncRecursiveContact(new ValidateBaseServices<AsyncRecursiveContact>());
+        var factory = GetRequiredService<IAsyncRecursiveContactFactory>();
+        var contact = factory.Create();
 
         // Setting FirstName triggers FullName rule
         contact.FirstName = "John";
@@ -479,7 +507,8 @@ public class AsyncSamplesTests
     [Fact]
     public async Task PauseAllActions_BatchesPropertyChanges()
     {
-        var contact = new AsyncRecursiveContact(new ValidateBaseServices<AsyncRecursiveContact>());
+        var factory = GetRequiredService<IAsyncRecursiveContactFactory>();
+        var contact = factory.Create();
 
         // Pause to batch changes
         using (contact.PauseAllActions())
@@ -504,14 +533,9 @@ public class AsyncSamplesTests
     [Fact]
     public async Task Save_WaitsForAsyncValidation()
     {
-        var emailService = new MockEmailValidationService();
-        var rule = new UniqueEmailRule(emailService);
-
-        // Inject rule via constructor
-        var contact = new AsyncContact(new EntityBaseServices<AsyncContact>(), rule);
-
-        // Simulate Create factory operation to mark as new
-        ((IFactoryOnComplete)contact).FactoryComplete(FactoryOperation.Create);
+        // Factory resolves AsyncContact with UniqueEmailRule injected from DI
+        var factory = GetRequiredService<IAsyncContactFactory>();
+        var contact = factory.Create();
 
         contact.Name = "Test Contact";
         contact.Email = "valid@example.com";
@@ -529,7 +553,8 @@ public class AsyncSamplesTests
     [Fact]
     public async Task AsyncCancellableContact_WithToken_Completes()
     {
-        var contact = new AsyncCancellableContact(new ValidateBaseServices<AsyncCancellableContact>());
+        var factory = GetRequiredService<IAsyncCancellableContactFactory>();
+        var contact = factory.Create();
 
         contact.Email = "test@example.com";
 

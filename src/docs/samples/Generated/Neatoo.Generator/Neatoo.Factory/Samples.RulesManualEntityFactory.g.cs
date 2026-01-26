@@ -16,6 +16,7 @@ namespace Samples
 {
     public interface IRulesManualEntityFactory
     {
+        RulesManualEntity Create(CancellationToken cancellationToken = default);
     }
 
     internal class RulesManualEntityFactory : FactoryBase<RulesManualEntity>, IRulesManualEntityFactory
@@ -35,10 +36,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual RulesManualEntity Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public RulesManualEntity LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<RulesManualEntity>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<RulesManualEntityFactory>();
             services.AddScoped<IRulesManualEntityFactory, RulesManualEntityFactory>();
+            services.AddTransient<RulesManualEntity>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

@@ -14,6 +14,8 @@ namespace Samples
 {
     public interface ITrackingLineItemFactory
     {
+        ITrackingLineItem Create(CancellationToken cancellationToken = default);
+        ITrackingLineItem Fetch(string description, decimal amount, CancellationToken cancellationToken = default);
     }
 
     internal class TrackingLineItemFactory : FactoryBase<ITrackingLineItem>, ITrackingLineItemFactory
@@ -33,10 +35,34 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual ITrackingLineItem Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public ITrackingLineItem LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<TrackingLineItem>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual ITrackingLineItem Fetch(string description, decimal amount, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(description, amount, cancellationToken);
+        }
+
+        public ITrackingLineItem LocalFetch(string description, decimal amount, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<TrackingLineItem>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(description, amount));
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<TrackingLineItemFactory>();
             services.AddScoped<ITrackingLineItemFactory, TrackingLineItemFactory>();
+            services.AddTransient<TrackingLineItem>();
+            services.AddTransient<ITrackingLineItem, TrackingLineItem>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

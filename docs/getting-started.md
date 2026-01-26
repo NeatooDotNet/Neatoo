@@ -27,7 +27,7 @@ The package includes:
 
 ## Your First Validation Object
 
-Create a class that inherits from `ValidateBase<T>`. Properties use the `Getter<T>()` and `Setter(value)` pattern, which triggers source generation for backing fields and property change notifications.
+Create a class that inherits from `ValidateBase<T>`. Use `partial` properties - Neatoo's source generator creates backing fields and wires up property change notifications and validation automatically.
 
 <!-- snippet: getting-started-validate -->
 ```cs
@@ -41,6 +41,9 @@ public partial class CustomerValidator : ValidateBase<CustomerValidator>
 
     [MaxLength(100)]
     public partial string Email { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 ```
 <!-- endSnippet -->
@@ -64,14 +67,17 @@ You should see generated files with names like `CustomerValidator.g.cs` containi
 
 ## Run Validation
 
-Validation rules execute automatically when properties change. Access validation state through meta-properties:
+Validation rules execute automatically when properties change. Access validation state through meta-properties.
+
+> **Note:** The code samples below are integration tests that resolve factories from DI. The `GetRequiredService<T>()` helper retrieves services from a configured `IServiceProvider`. In your application, you would inject the factory interface directly into your controllers, services, or Blazor components.
 
 <!-- snippet: getting-started-validate-check -->
 ```cs
 [Fact]
 public void ValidateBase_CheckValidationState()
 {
-    var customer = new CustomerValidator(new ValidateBaseServices<CustomerValidator>());
+    var factory = GetRequiredService<ICustomerValidatorFactory>();
+    var customer = factory.Create();
 
     // Empty required field is invalid
     customer.Name = "";
@@ -95,16 +101,29 @@ Key validation meta-properties:
 - `BrokenRules` - Collection of all validation errors
 - `[propertyName]` indexer - Access property-specific validation messages
 
-## Your First Entity Aggregate
+## Your First Entity
 
-Entities extend validation objects with persistence, identity, and modification tracking. Create an entity by inheriting from `EntityBase<T>`:
+Entities are domain objects with identity and lifecycle management. `EntityBase<T>` extends `ValidateBase<T>` to add persistence state tracking, modification tracking, and save operations:
 
 <!-- snippet: getting-started-entity -->
 ```cs
 // Mock repository interface for the sample
 public interface IEmployeeRepository
 {
-    Task<EmployeeEntity> FetchAsync(int id);
+    Task<EmployeeData> FetchDataAsync(int id);
+    Task InsertAsync(EmployeeEntity employee);
+    Task UpdateAsync(EmployeeEntity employee);
+}
+
+/// <summary>
+/// Data transfer object for employee data.
+/// </summary>
+public class EmployeeData
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string Email { get; set; } = "";
+    public decimal Salary { get; set; }
 }
 
 [Factory]
@@ -122,40 +141,61 @@ public partial class EmployeeEntity : EntityBase<EmployeeEntity>
 
     public partial decimal Salary { get; set; }
 
+    [Create]
+    public void Create()
+    {
+        // Initialize new employee with defaults
+        Id = 0;
+        Name = "";
+        Email = "";
+        Salary = 0;
+    }
+
     [Fetch]
     public async Task FetchAsync(int id, [Service] IEmployeeRepository repository)
     {
-        var employee = await repository.FetchAsync(id);
-        Id = employee.Id;
-        Name = employee.Name;
-        Email = employee.Email;
-        Salary = employee.Salary;
+        var data = await repository.FetchDataAsync(id);
+        Id = data.Id;
+        Name = data.Name;
+        Email = data.Email;
+        Salary = data.Salary;
+    }
+
+    [Insert]
+    public async Task InsertAsync([Service] IEmployeeRepository repository)
+    {
+        await repository.InsertAsync(this);
+    }
+
+    [Update]
+    public async Task UpdateAsync([Service] IEmployeeRepository repository)
+    {
+        await repository.UpdateAsync(this);
     }
 }
 ```
 <!-- endSnippet -->
 
-Entity objects provide:
-- `IsNew` - True for newly created entities (no identity)
-- `IsModified` - True if any property has changed since load/save
-- `IsDirty` - True if modified OR any child is dirty
+Entity state tracking properties:
+- `IsNew` - True for newly created entities that have not been persisted
+- `IsModified` - True if any property has changed since load/save (cascades from children)
 - `IsDeleted` - True if marked for deletion
-- `IsSavable` - True if valid and dirty
+- `IsSavable` - Computed property: true if `IsModified && IsValid && !IsBusy && !IsChild`
 
-The `[Fetch]` attribute marks a factory method that loads the entity from persistence. RemoteFactory generates the factory infrastructure and wiring. The `[Service]` parameter instructs dependency injection to provide the repository.
+The `[Fetch]` attribute marks a data access method. RemoteFactory generates a factory interface (`IEmployeeEntityFactory`) with a corresponding `FetchAsync(int id)` method that resolves the repository from DI and calls your method. The `[Service]` attribute indicates the parameter should be injected from the service provider.
 
 ## Use the Generated Factory
 
-RemoteFactory generates factory methods based on your attributes. Create and fetch entities through the factory:
+RemoteFactory generates factory methods based on your `[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, and `[Delete]` attributes. Create and fetch entities through the generated factory interface:
 
 <!-- snippet: getting-started-entity-use -->
 ```cs
 [Fact]
 public void EntityBase_UseEntity()
 {
-    // Create entity for testing
-    // (In production, the factory's Create method sets IsNew automatically)
-    var employee = new EmployeeEntity(new EntityBaseServices<EmployeeEntity>());
+    // Use factory to create new employee
+    var factory = GetRequiredService<IEmployeeEntityFactory>();
+    var employee = factory.Create();
 
     // Set properties
     employee.Name = "Alice Johnson";
@@ -175,7 +215,7 @@ public void EntityBase_UseEntity()
 ```
 <!-- endSnippet -->
 
-The factory method name comes from the method decorated with `[Fetch]`. In this example, `FetchAsync` becomes `Employee.FetchAsync()` on the generated factory.
+Each method you mark with an attribute becomes a method on the generated factory interface. Your `FetchAsync(int id, ...)` method becomes `IEmployeeEntityFactory.FetchAsync(int id)`.
 
 ## Configure Dependency Injection
 
@@ -206,14 +246,40 @@ public void ConfigureDependencyInjection()
 ```
 <!-- endSnippet -->
 
-`AddNeatoo()` registers core Neatoo services. `AddRemoteFactory<T>()` registers the factory for the specified type.
+`AddNeatooServices()` registers all Neatoo services including factories for types in the specified assembly. The `NeatooFactory.Logical` option means all operations run locally (no client-server split).
+
+To use the generated factory in your code, inject the typed factory interface (e.g., `IEmployeeEntityFactory`) into your services, controllers, or Blazor components:
+
+```csharp
+public class EmployeeService
+{
+    private readonly IEmployeeEntityFactory _factory;
+
+    public EmployeeService(IEmployeeEntityFactory factory)
+    {
+        _factory = factory;
+    }
+
+    public async Task<EmployeeEntity> GetEmployeeAsync(int id)
+    {
+        return await _factory.FetchAsync(id);
+    }
+}
+```
 
 ## Next Steps
 
-You now have a working Neatoo domain object with validation and persistence. Explore deeper:
+You now have working validation objects (`ValidateBase<T>`) and entities (`EntityBase<T>`).
+
+**Architectural Concepts:**
+- **ValidateBase** provides property management, validation rules, and change notification. Use for validation logic that doesn't need persistence (DTOs, view models, form models).
+- **EntityBase** extends ValidateBase with identity, persistence lifecycle, and modification tracking. Use for domain entities that map to database tables.
+- **Aggregate roots** are entities that define consistency boundaries. Child entities belong to the aggregate and are persisted with the root.
+
+**Explore deeper:**
 
 - **[Validation](guides/validation.md)** - Custom rules, async validation, rule execution control
-- **[Entities](guides/entities.md)** - Entity lifecycle, state management, aggregate patterns
+- **[Entities](guides/entities.md)** - Entity lifecycle, state management, persistence operations
 - **[Collections](guides/collections.md)** - EntityListBase and ValidateListBase for child collections
 - **[Properties](guides/properties.md)** - Property system internals, LoadValue, meta-properties
 - **[Business Rules](guides/business-rules.md)** - Cross-property validation, aggregate-level rules
@@ -223,4 +289,4 @@ You now have a working Neatoo domain object with validation and persistence. Exp
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-01-25

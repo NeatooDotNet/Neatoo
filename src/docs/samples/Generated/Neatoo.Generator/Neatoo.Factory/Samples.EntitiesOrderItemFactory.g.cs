@@ -14,6 +14,8 @@ namespace Samples
 {
     public interface IEntitiesOrderItemFactory
     {
+        IEntitiesOrderItem Create(CancellationToken cancellationToken = default);
+        IEntitiesOrderItem Fetch(string productCode, decimal price, int quantity, CancellationToken cancellationToken = default);
     }
 
     internal class EntitiesOrderItemFactory : FactoryBase<IEntitiesOrderItem>, IEntitiesOrderItemFactory
@@ -33,10 +35,34 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual IEntitiesOrderItem Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public IEntitiesOrderItem LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<EntitiesOrderItem>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual IEntitiesOrderItem Fetch(string productCode, decimal price, int quantity, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(productCode, price, quantity, cancellationToken);
+        }
+
+        public IEntitiesOrderItem LocalFetch(string productCode, decimal price, int quantity, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<EntitiesOrderItem>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(productCode, price, quantity));
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<EntitiesOrderItemFactory>();
             services.AddScoped<IEntitiesOrderItemFactory, EntitiesOrderItemFactory>();
+            services.AddTransient<EntitiesOrderItem>();
+            services.AddTransient<IEntitiesOrderItem, EntitiesOrderItem>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

@@ -16,6 +16,7 @@ namespace Samples
 {
     public interface IRulesInvoiceFactory
     {
+        RulesInvoice Create(CancellationToken cancellationToken = default);
     }
 
     internal class RulesInvoiceFactory : FactoryBase<RulesInvoice>, IRulesInvoiceFactory
@@ -35,10 +36,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual RulesInvoice Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public RulesInvoice LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<RulesInvoice>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<RulesInvoiceFactory>();
             services.AddScoped<IRulesInvoiceFactory, RulesInvoiceFactory>();
+            services.AddTransient<RulesInvoice>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

@@ -2,11 +2,13 @@
 
 [← Change Tracking](change-tracking.md) | [↑ Guides](index.md) | [Entities →](entities.md)
 
-Neatoo provides specialized collection base classes for managing lists of validatable objects and entities within aggregates. These collections automatically propagate parent references, aggregate validation state, track modifications, and manage deleted items for persistence.
+Neatoo provides specialized collection base classes for managing lists of validatable objects and entities within aggregates. These collections automatically propagate parent references to establish aggregate boundaries, aggregate validation state from all items, track modifications through the entity graph, and manage deleted items for persistence.
 
 ## ValidateListBase
 
-ValidateListBase provides observable collection functionality for value objects and validates items. It aggregates validation state from all child items and supports parent-child relationship management.
+ValidateListBase provides observable collection functionality for validatable objects. It aggregates validation state from all items and propagates parent references automatically when items are added.
+
+Unlike ValidateBase and EntityBase which require DI services, collection classes can be instantiated directly with `new`. Initialize child collections in entity constructors using `LoadValue()` to establish the parent-child relationship without triggering modification tracking.
 
 Inherit from ValidateListBase&lt;T&gt; where T implements IValidateBase:
 
@@ -26,7 +28,7 @@ The collection automatically tracks:
 
 ## EntityListBase
 
-EntityListBase extends ValidateListBase to add entity-specific persistence tracking. It manages deleted items, modification state, and entity lifecycle across the collection.
+EntityListBase extends ValidateListBase to add entity-specific persistence tracking. It enforces aggregate boundary rules, manages deleted items through the DeletedList, tracks modification state through the entity graph, and coordinates entity lifecycle events with the factory system.
 
 Inherit from EntityListBase&lt;T&gt; where T implements IEntityBase:
 
@@ -35,24 +37,20 @@ Inherit from EntityListBase&lt;T&gt; where T implements IEntityBase:
 public class CollectionOrderItemList : EntityListBase<ICollectionOrderItem>, ICollectionOrderItemList
 {
     public int DeletedCount => DeletedList.Count;
-
-    // Expose factory methods for testing
-    public void DoFactoryStart(FactoryOperation operation) => FactoryStart(operation);
-    public void DoFactoryComplete(FactoryOperation operation) => FactoryComplete(operation);
 }
 ```
 <!-- endSnippet -->
 
 In addition to validation state, EntityListBase tracks:
-- **IsModified** - True if any item is modified or items are in the deleted list
-- **IsSelfModified** - Always false (lists have no self state)
-- **IsNew** - Always false (collections don't have persistence state)
-- **IsSavable** - Always false (saved through parent aggregate)
-- **DeletedList** - Internal collection of removed items pending deletion
+- **IsModified** - True if any item is modified or any items are in the DeletedList
+- **IsSelfModified** - Always false (lists have no self state to modify)
+- **IsNew** - Always false (collections are not independently persisted)
+- **IsSavable** - Always false (collections are persisted through the aggregate root)
+- **DeletedList** - Protected collection of removed entities pending deletion during save
 
 ## Adding Items
 
-Items added to a collection automatically receive parent and root references. For entity lists, additional state management occurs.
+Items added to a collection automatically receive parent references, establishing them within the aggregate boundary. For entity lists, the framework enforces aggregate consistency rules and manages entity state transitions.
 
 Add items using standard collection methods:
 
@@ -61,10 +59,12 @@ Add items using standard collection methods:
 [Fact]
 public void AddItem_SetsParentAndTracksItem()
 {
-    var order = new CollectionOrder(new EntityBaseServices<CollectionOrder>());
+    var orderFactory = GetRequiredService<ICollectionOrderFactory>();
+    var order = orderFactory.Create();
 
     // Create an item to add
-    var item = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
+    var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
+    var item = itemFactory.Create();
     item.ProductCode = "WIDGET-001";
     item.Price = 19.99m;
     item.Quantity = 2;
@@ -83,22 +83,22 @@ public void AddItem_SetsParentAndTracksItem()
 <!-- endSnippet -->
 
 During insertion, ValidateListBase:
-- Sets the item's Parent property to the list's Parent
-- Subscribes to property change events
-- Updates cached validation state incrementally
+- Sets the item's Parent property to the list's Parent (establishing aggregate boundary)
+- Subscribes to property change events for validation state updates
+- Updates cached validation state incrementally (O(1) for becoming invalid)
 
-EntityListBase additionally:
-- Validates the item isn't already in the collection
-- Prevents adding busy items (with async rules running)
-- Prevents cross-aggregate moves (item.Root must match list.Root)
-- Marks existing items as modified
-- Marks items as child entities
-- Sets the item's ContainingList property
-- Handles re-adding previously deleted items (undeletes them)
+EntityListBase additionally enforces aggregate boundary rules:
+- Validates the item isn't already in the collection (no duplicates)
+- Prevents adding busy items (with async validation rules running)
+- Prevents cross-aggregate moves (item.Root must match list.Root or be null)
+- Marks existing entities as modified (they're being re-added to the graph)
+- Marks items as child entities (IsChild = true)
+- Sets the item's ContainingList property (tracks which collection owns the entity)
+- Handles intra-aggregate moves (removes from old list's DeletedList, undeletes item)
 
 ## Removing Items
 
-Removal behavior differs between ValidateListBase and EntityListBase. Value object lists simply remove items, while entity lists track deletions for persistence.
+Removal behavior differs between ValidateListBase and EntityListBase. ValidateListBase removes items immediately since they have no persistence state. EntityListBase tracks deletions for persistence, distinguishing between new items (remove immediately) and existing items (move to DeletedList for database deletion).
 
 Remove items from ValidateListBase:
 
@@ -108,7 +108,8 @@ Remove items from ValidateListBase:
 public void RemoveFromValidateList_RemovesImmediately()
 {
     var list = new CollectionValidateItemList();
-    var item = new CollectionValidateItem(new ValidateBaseServices<CollectionValidateItem>());
+    var itemFactory = GetRequiredService<ICollectionValidateItemFactory>();
+    var item = itemFactory.Create();
     item.Name = "Test Item";
 
     list.Add(item);
@@ -132,19 +133,16 @@ Remove items from EntityListBase:
 [Fact]
 public void RemoveFromEntityList_TracksForDeletion()
 {
-    var order = new CollectionOrder(new EntityBaseServices<CollectionOrder>());
+    var orderFactory = GetRequiredService<ICollectionOrderFactory>();
+    var order = orderFactory.Create();
 
     // Create an "existing" item (simulating loaded from database)
-    var item = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
-    item.ProductCode = "WIDGET-001";
-    item.Price = 19.99m;
-    item.DoMarkOld();        // Mark as existing (not new)
-    item.DoMarkUnmodified(); // Clear modification tracking
+    var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
+    var item = itemFactory.Fetch("WIDGET-001", 19.99m, 1);
 
-    // Add during fetch operation
-    order.Items.DoFactoryStart(FactoryOperation.Fetch);
+    // Add fetched item to order
     order.Items.Add(item);
-    order.Items.DoFactoryComplete(FactoryOperation.Fetch);
+    order.DoMarkUnmodified();
 
     Assert.Single(order.Items);
     Assert.False(item.IsNew);
@@ -162,31 +160,35 @@ public void RemoveFromEntityList_TracksForDeletion()
 ```
 <!-- endSnippet -->
 
-For entity lists:
-- New items (IsNew == true) are removed immediately
-- Existing items are marked deleted and moved to DeletedList
-- ContainingList remains set until persistence completes
-- Deleted items are persisted during save operations
-- DeletedList is cleared after successful save
+The sample uses `DoMarkUnmodified()`, a helper method that exposes the protected `MarkUnmodified()` for demonstration purposes. In production, `MarkUnmodified()` is called automatically by the framework after Fetch or successful save operations.
+
+For entity lists, removal behavior depends on entity state:
+- **New items (IsNew == true)** - Removed immediately since they don't exist in the database
+- **Existing items (IsNew == false)** - Marked deleted (IsDeleted = true) and moved to DeletedList
+- **ContainingList property** - Remains set to the owning list until persistence completes
+- **During save** - Repository deletes entities in DeletedList from the database
+- **After successful save** - FactoryComplete fires, clearing DeletedList and nulling ContainingList references
 
 ## Parent Property Cascade
 
-Collections automatically cascade parent references to child items. When a collection's parent changes, all items receive the updated parent.
+Collections automatically cascade parent references to establish aggregate boundaries. The Parent property connects items to their owning aggregate root (or intermediate entity), enabling Root navigation and aggregate consistency enforcement.
 
-Parent cascade occurs when:
+Parent references propagate when items are added:
 
 <!-- snippet: collections-parent-cascade -->
 ```cs
 [Fact]
 public void ParentCascade_UpdatesAllItems()
 {
-    var order = new CollectionOrder(new EntityBaseServices<CollectionOrder>());
+    var orderFactory = GetRequiredService<ICollectionOrderFactory>();
+    var order = orderFactory.Create();
 
     // Add items to the collection
-    var item1 = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
+    var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
+    var item1 = itemFactory.Create();
     item1.ProductCode = "ITEM-001";
 
-    var item2 = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
+    var item2 = itemFactory.Create();
     item2.ProductCode = "ITEM-002";
 
     order.Items.Add(item1);
@@ -203,11 +205,17 @@ public void ParentCascade_UpdatesAllItems()
 ```
 <!-- endSnippet -->
 
-This ensures all items in the aggregate graph maintain correct parent references. The Parent property points to the owning aggregate root (or intermediate entity), not the list itself.
+This establishes the aggregate boundary. All items within the collection belong to the same aggregate root, enabling:
+- **Aggregate consistency enforcement** - Cross-aggregate moves are prevented (item.Root must match list.Root)
+- **Transactional boundaries** - All entities in the aggregate are persisted together
+- **Validation propagation** - Validation state bubbles up through Parent references
 
-For entity lists, the Root property navigates from Parent:
-- If Parent implements IEntityBase, returns Parent.Root
-- Otherwise returns Parent (meaning Parent is the aggregate root)
+The Parent property points to the collection's Parent (typically the aggregate root), not to the collection itself. This enables direct Parent-to-root navigation.
+
+For entity lists, the Root property provides aggregate root access:
+- **If Parent is null** - Root is null (entity is standalone, not in an aggregate)
+- **If Parent implements IEntityBase** - Returns Parent.Root (recursive navigation up the graph)
+- **Otherwise** - Returns Parent (Parent is the aggregate root)
 
 ## Collection Validation
 
@@ -222,11 +230,13 @@ public async Task ValidationState_AggregatesFromChildren()
 {
     var list = new CollectionValidateItemList();
 
-    var validItem = new CollectionValidateItem(new ValidateBaseServices<CollectionValidateItem>());
+    var itemFactory = GetRequiredService<ICollectionValidateItemFactory>();
+
+    var validItem = itemFactory.Create();
     validItem.Name = "Valid Item";
     await validItem.RunRules();
 
-    var invalidItem = new CollectionValidateItem(new ValidateBaseServices<CollectionValidateItem>());
+    var invalidItem = itemFactory.Create();
     // Name is empty - will be invalid
     await invalidItem.RunRules();
 
@@ -265,11 +275,13 @@ public async Task RunRules_ExecutesOnAllItems()
 {
     var list = new CollectionValidateItemList();
 
+    var itemFactory = GetRequiredService<ICollectionValidateItemFactory>();
+
     // Add items without running rules initially
-    var item1 = new CollectionValidateItem(new ValidateBaseServices<CollectionValidateItem>());
+    var item1 = itemFactory.Create();
     item1.Name = ""; // Invalid - empty name
 
-    var item2 = new CollectionValidateItem(new ValidateBaseServices<CollectionValidateItem>());
+    var item2 = itemFactory.Create();
     item2.Name = "Valid";
 
     list.Add(item1);
@@ -303,12 +315,15 @@ Iterate over items:
 [Fact]
 public void Iteration_SupportsStandardPatterns()
 {
-    var order = new CollectionOrder(new EntityBaseServices<CollectionOrder>());
+    var orderFactory = GetRequiredService<ICollectionOrderFactory>();
+    var order = orderFactory.Create();
+
+    var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
 
     // Add some items
     for (int i = 1; i <= 3; i++)
     {
-        var item = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
+        var item = itemFactory.Create();
         item.ProductCode = $"ITEM-{i:000}";
         item.Price = i * 10m;
         item.Quantity = i;
@@ -347,33 +362,28 @@ Collections support:
 
 ## Deleted List Management
 
-EntityListBase maintains an internal DeletedList to track removed items that need deletion during persistence. This list is managed automatically during factory operations.
+EntityListBase maintains a protected DeletedList to track removed entities that need deletion during persistence. This enables the repository to delete entities from the database while maintaining aggregate consistency until the save operation completes.
 
-The deleted list lifecycle:
+The DeletedList lifecycle:
 
 <!-- snippet: collections-deleted-list -->
 ```cs
 [Fact]
 public void DeletedList_TracksRemovedEntitiesUntilSave()
 {
-    var order = new CollectionOrder(new EntityBaseServices<CollectionOrder>());
+    var orderFactory = GetRequiredService<ICollectionOrderFactory>();
+    var order = orderFactory.Create();
+
+    var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
 
     // Create "existing" items (simulating loaded from database)
-    var item1 = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
-    item1.ProductCode = "ITEM-001";
-    item1.DoMarkOld();
-    item1.DoMarkUnmodified();
+    var item1 = itemFactory.Fetch("ITEM-001", 10m, 1);
+    var item2 = itemFactory.Fetch("ITEM-002", 20m, 2);
 
-    var item2 = new CollectionOrderItem(new EntityBaseServices<CollectionOrderItem>());
-    item2.ProductCode = "ITEM-002";
-    item2.DoMarkOld();
-    item2.DoMarkUnmodified();
-
-    // Add during fetch operation
-    order.Items.DoFactoryStart(FactoryOperation.Fetch);
+    // Add fetched items
     order.Items.Add(item1);
     order.Items.Add(item2);
-    order.Items.DoFactoryComplete(FactoryOperation.Fetch);
+    order.DoMarkUnmodified();
 
     // Remove an item - goes to DeletedList
     order.Items.Remove(item1);
@@ -382,46 +392,48 @@ public void DeletedList_TracksRemovedEntitiesUntilSave()
 
     // Collection is modified because of DeletedList
     Assert.True(order.Items.IsModified);
-
-    // After save (FactoryComplete with Update), DeletedList is cleared
-    order.Items.DoFactoryStart(FactoryOperation.Update);
-    order.Items.DoFactoryComplete(FactoryOperation.Update);
-
-    Assert.Equal(0, order.Items.DeletedCount);
 }
 ```
 <!-- endSnippet -->
 
-Deleted items remain in DeletedList with their ContainingList set until FactoryComplete fires after a successful save. At that point:
-- DeletedList is cleared
-- ContainingList on deleted items is set to null
-- Deleted items have been persisted to the database
+Deleted items remain in DeletedList with their ContainingList property set until FactoryComplete fires after a successful save. This preserves aggregate boundaries during the save operation:
 
-If an item is re-added before save:
-- It's removed from the DeletedList
-- It's undeleted (IsDeleted = false)
-- It's marked modified (since it existed, was deleted, now exists again)
+**After successful save (FactoryComplete):**
+- DeletedList is cleared (entities were deleted from database)
+- ContainingList on deleted items is set to null (no longer owned)
+- Deleted items are no longer part of the aggregate
 
-This enables intra-aggregate moves where an item is removed from one child list and added to another without being deleted from the database.
+**If an item is re-added before save (intra-aggregate move):**
+- Removed from the old list's DeletedList
+- Undeleted (IsDeleted = false)
+- Marked modified (entity state changed: existed, was deleted, now exists again)
+- ContainingList updated to the new list
+
+This enables moving entities between child collections within the same aggregate without database deletion. The item remains within the aggregate boundary and is updated, not deleted, during save.
 
 ## Paused Operations
 
-Collections respect the IsPaused flag during deserialization and factory operations. While paused:
-- No validation state updates occur
-- No property change events fire
-- Entity state transitions are deferred
-- Items can be added to DeletedList if they're marked deleted during deserialization
+Collections respect the IsPaused flag during deserialization and factory operations. Pausing prevents premature validation and change tracking while the aggregate is being reconstructed.
 
-The framework automatically pauses during:
-- JSON deserialization (OnDeserializing)
-- Factory operations (FactoryStart)
+**While paused:**
+- No validation state updates occur (prevents incomplete object validation)
+- No property change events fire (avoids spurious notifications)
+- Entity state transitions are deferred (modification tracking suspended)
+- Deleted items can be added to DeletedList during deserialization (restoring persisted state)
 
-And resumes during:
-- JSON deserialization complete (OnDeserialized)
-- Factory operation complete (FactoryComplete)
+**Framework automatically pauses during:**
+- JSON deserialization (OnDeserializing attribute hook)
+- Factory operations (FactoryStart, before data loading begins)
 
-After resuming, cached validation and modification state is recalculated from all items.
+**Framework automatically resumes after:**
+- JSON deserialization complete (OnDeserialized attribute hook)
+- Factory operation complete (FactoryComplete, after entity state finalized)
+
+**After resuming:**
+- Cached validation state (IsValid, IsBusy) is recalculated from all items
+- Cached modification state (IsModified) is recalculated from all items and DeletedList
+- Change tracking resumes for future modifications
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-01-25

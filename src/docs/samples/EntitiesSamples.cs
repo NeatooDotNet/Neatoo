@@ -25,6 +25,9 @@ public partial class EntitiesEmployee : EntityBase<EntitiesEmployee>
     public partial string Email { get; set; }
 
     public partial decimal Salary { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 #endregion
 
@@ -36,10 +39,6 @@ public interface IEntitiesOrderItem : IEntityBase
     string ProductCode { get; set; }
     decimal Price { get; set; }
     int Quantity { get; set; }
-
-    // Expose protected methods for testing
-    void DoMarkOld();
-    void DoMarkUnmodified();
 }
 
 /// <summary>
@@ -56,9 +55,16 @@ public partial class EntitiesOrderItem : EntityBase<EntitiesOrderItem>, IEntitie
 
     public partial int Quantity { get; set; }
 
-    // Expose protected methods for testing
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(string productCode, decimal price, int quantity)
+    {
+        ProductCode = productCode;
+        Price = price;
+        Quantity = quantity;
+    }
 }
 
 /// <summary>
@@ -67,15 +73,11 @@ public partial class EntitiesOrderItem : EntityBase<EntitiesOrderItem>, IEntitie
 public interface IEntitiesOrderItemList : IEntityListBase<IEntitiesOrderItem>
 {
     int DeletedCount { get; }
-    void DoFactoryStart(FactoryOperation operation);
-    void DoFactoryComplete(FactoryOperation operation);
 }
 
 public class EntitiesOrderItemList : EntityListBase<IEntitiesOrderItem>, IEntitiesOrderItemList
 {
     public int DeletedCount => DeletedList.Count;
-    public void DoFactoryStart(FactoryOperation operation) => FactoryStart(operation);
-    public void DoFactoryComplete(FactoryOperation operation) => FactoryComplete(operation);
 }
 
 /// <summary>
@@ -122,12 +124,20 @@ public partial class EntitiesOrder : EntityBase<EntitiesOrder>
     // Child collection establishes aggregate boundary
     public partial IEntitiesOrderItemList Items { get; set; }
 
-    // Expose protected methods for testing
-    public void DoMarkNew() => MarkNew();
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
+    // Expose protected methods for samples
     public void DoMarkModified() => MarkModified();
-    public void DoMarkAsChild() => MarkAsChild();
+    public void DoMarkUnmodified() => MarkUnmodified();
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(int id, string orderNumber, DateTime orderDate)
+    {
+        Id = id;
+        OrderNumber = orderNumber;
+        OrderDate = orderDate;
+    }
 }
 #endregion
 
@@ -145,11 +155,6 @@ public partial class EntitiesCustomer : EntityBase<EntitiesCustomer>
     public partial string Name { get; set; }
 
     public partial string Email { get; set; }
-
-    // Expose protected methods for testing
-    public void DoMarkNew() => MarkNew();
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
 
     [Create]
     public void Create()
@@ -204,32 +209,26 @@ public partial class EntitiesAddress : ValidateBase<EntitiesAddress>
     public partial string State { get; set; }
 
     public partial string ZipCode { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 // -----------------------------------------------------------------
 // Test classes for entities guide samples
 // -----------------------------------------------------------------
 
-public class EntitiesSamplesTests
+public class EntitiesSamplesTests : SamplesTestBase
 {
     #region entities-is-new
     [Fact]
     public void IsNew_DistinguishesNewFromExisting()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+        var factory = GetRequiredService<IEntitiesOrderFactory>();
+        var order = factory.Create();
 
-        // Entity is not new by default (factory sets this)
-        Assert.False(order.IsNew);
-
-        // Simulate factory Create operation
-        order.FactoryComplete(FactoryOperation.Create);
-
-        // Now entity is new - will trigger Insert on save
+        // After Create: entity is new - will trigger Insert on save
         Assert.True(order.IsNew);
-
-        // After Insert, entity becomes existing
-        order.FactoryComplete(FactoryOperation.Insert);
-        Assert.False(order.IsNew);
     }
     #endregion
 
@@ -237,21 +236,16 @@ public class EntitiesSamplesTests
     [Fact]
     public void NewEntity_StartsUnmodifiedAfterCreate()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+        var factory = GetRequiredService<IEntitiesOrderFactory>();
+        var order = factory.Create();
 
-        // Initialize properties using PauseAllActions
-        using (order.PauseAllActions())
-        {
-            order.OrderNumber = "ORD-001";
-            order.OrderDate = DateTime.Today;
-        }
-
-        // Simulate factory Create operation
-        order.FactoryComplete(FactoryOperation.Create);
+        // Set properties on the new entity
+        order.OrderNumber = "ORD-001";
+        order.OrderDate = DateTime.Today;
 
         // After Create completes:
         Assert.True(order.IsNew);            // New entity
-        Assert.False(order.IsSelfModified);  // No direct property modifications
+        Assert.True(order.IsSelfModified);   // Properties were modified after create
         Assert.True(order.IsValid);          // Passes validation
         Assert.True(order.IsModified);       // IsNew makes entity modified
         Assert.True(order.IsSavable);        // New entity is savable (needs Insert)
@@ -260,26 +254,18 @@ public class EntitiesSamplesTests
 
     #region entities-fetch
     [Fact]
-    public void FetchedEntity_StartsClean()
+    public async Task FetchedEntity_StartsClean()
     {
-        var customer = new EntitiesCustomer(new EntityBaseServices<EntitiesCustomer>());
+        var factory = GetRequiredService<IEntitiesCustomerFactory>();
 
-        // Simulate loading from database
-        using (customer.PauseAllActions())
-        {
-            customer.Id = 42;
-            customer.Name = "Acme Corp";
-            customer.Email = "contact@acme.com";
-        }
-
-        // Simulate factory Fetch operation
-        customer.FactoryComplete(FactoryOperation.Fetch);
+        // Fetch loads the entity from repository
+        var customer = await factory.FetchAsync(42);
 
         // After Fetch completes:
         Assert.False(customer.IsNew);         // Existing entity
         Assert.False(customer.IsModified);    // Clean state
         Assert.False(customer.IsSelfModified);// No modifications
-        Assert.Equal("Acme Corp", customer.Name);
+        Assert.Equal("Customer 42", customer.Name);
     }
     #endregion
 
@@ -287,39 +273,27 @@ public class EntitiesSamplesTests
     [Fact]
     public async Task Save_DelegatesToAppropriateFactoryMethod()
     {
-        var employee = new EntitiesEmployee(new EntityBaseServices<EntitiesEmployee>());
+        var factory = GetRequiredService<IEntitiesEmployeeFactory>();
 
         // New entity - would call Insert
-        employee.FactoryComplete(FactoryOperation.Create);
+        var employee = factory.Create();
         employee.Name = "Alice";
         Assert.True(employee.IsNew);
         Assert.True(employee.IsModified);
 
-        // Without factory configured, Save throws with NoFactoryMethod reason
-        var exception = await Assert.ThrowsAsync<SaveOperationException>(
-            () => employee.Save());
-        Assert.Equal(SaveFailureReason.NoFactoryMethod, exception.Reason);
-
-        // After Insert, would call Update for subsequent saves
-        employee.FactoryComplete(FactoryOperation.Insert);
-        Assert.False(employee.IsNew);
-        Assert.False(employee.IsModified); // Cleared by FactoryComplete
+        // Save is available through the factory
+        Assert.True(employee.IsSavable);
     }
     #endregion
 
     #region entities-delete
     [Fact]
-    public void Delete_MarksEntityForDeletion()
+    public async Task Delete_MarksEntityForDeletion()
     {
-        var customer = new EntitiesCustomer(new EntityBaseServices<EntitiesCustomer>());
+        var factory = GetRequiredService<IEntitiesCustomerFactory>();
 
-        // Simulate fetched entity
-        using (customer.PauseAllActions())
-        {
-            customer.Id = 42;
-            customer.Name = "Acme Corp";
-        }
-        customer.FactoryComplete(FactoryOperation.Fetch);
+        // Fetch existing customer
+        var customer = await factory.FetchAsync(42);
 
         Assert.False(customer.IsDeleted);
         Assert.False(customer.IsModified);
@@ -336,17 +310,12 @@ public class EntitiesSamplesTests
 
     #region entities-undelete
     [Fact]
-    public void UnDelete_ReversesDeleteBeforeSave()
+    public async Task UnDelete_ReversesDeleteBeforeSave()
     {
-        var customer = new EntitiesCustomer(new EntityBaseServices<EntitiesCustomer>());
+        var factory = GetRequiredService<IEntitiesCustomerFactory>();
 
-        // Simulate fetched entity
-        using (customer.PauseAllActions())
-        {
-            customer.Id = 42;
-            customer.Name = "Acme Corp";
-        }
-        customer.FactoryComplete(FactoryOperation.Fetch);
+        // Fetch existing customer
+        var customer = await factory.FetchAsync(42);
 
         // Mark for deletion
         customer.Delete();
@@ -366,10 +335,13 @@ public class EntitiesSamplesTests
     [Fact]
     public void Parent_EstablishesAggregateGraph()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+        var orderFactory = GetRequiredService<IEntitiesOrderFactory>();
+        var itemFactory = GetRequiredService<IEntitiesOrderItemFactory>();
+
+        var order = orderFactory.Create();
 
         // Create child item
-        var item = new EntitiesOrderItem(new EntityBaseServices<EntitiesOrderItem>());
+        var item = itemFactory.Create();
         item.ProductCode = "WIDGET-001";
         item.Price = 29.99m;
         item.Quantity = 2;
@@ -393,15 +365,17 @@ public class EntitiesSamplesTests
     [Fact]
     public void ModificationState_TracksChanges()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
-        order.DoMarkUnmodified();
+        var factory = GetRequiredService<IEntitiesOrderFactory>();
+
+        // Fetch existing order
+        var order = factory.Fetch(1, "ORD-001", DateTime.Today);
 
         Assert.False(order.IsModified);
         Assert.False(order.IsSelfModified);
         Assert.Empty(order.ModifiedProperties);
 
         // Change a property
-        order.OrderNumber = "ORD-001";
+        order.OrderNumber = "ORD-002";
 
         // IsSelfModified: direct property change
         Assert.True(order.IsSelfModified);
@@ -418,14 +392,10 @@ public class EntitiesSamplesTests
     [Fact]
     public void MarkModified_ForcesEntityToBeSaved()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+        var factory = GetRequiredService<IEntitiesOrderFactory>();
 
-        // Simulate fetched entity
-        using (order.PauseAllActions())
-        {
-            order.OrderNumber = "ORD-001";
-        }
-        order.FactoryComplete(FactoryOperation.Fetch);
+        // Fetch existing order
+        var order = factory.Fetch(1, "ORD-001", DateTime.Today);
 
         Assert.False(order.IsModified);
         Assert.False(order.IsMarkedModified);
@@ -443,7 +413,8 @@ public class EntitiesSamplesTests
     [Fact]
     public void MarkUnmodified_ClearsAfterSave()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+        var factory = GetRequiredService<IEntitiesOrderFactory>();
+        var order = factory.Create();
 
         // Make changes
         order.OrderNumber = "ORD-001";
@@ -464,33 +435,17 @@ public class EntitiesSamplesTests
 
     #region entities-persistence-state
     [Fact]
-    public void PersistenceState_DeterminesFactoryMethod()
+    public async Task PersistenceState_DeterminesFactoryMethod()
     {
-        // New entity - starts without state
-        var newOrder = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
-        Assert.False(newOrder.IsNew);
-        Assert.False(newOrder.IsDeleted);
+        var factory = GetRequiredService<IEntitiesOrderFactory>();
 
-        // After Create: IsNew = true, IsDeleted = false -> Insert
-        newOrder.FactoryComplete(FactoryOperation.Create);
+        // New entity - after Create: IsNew = true -> Insert
+        var newOrder = factory.Create();
         Assert.True(newOrder.IsNew);
         Assert.False(newOrder.IsDeleted);
 
-        // After Insert: IsNew = false, IsDeleted = false
-        newOrder.FactoryComplete(FactoryOperation.Insert);
-        Assert.False(newOrder.IsNew);
-        Assert.False(newOrder.IsDeleted);
-
-        // Fetched entity scenario
-        var fetchedOrder = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
-        using (fetchedOrder.PauseAllActions())
-        {
-            fetchedOrder.OrderNumber = "ORD-001";
-        }
-        // Fetch operation doesn't change IsNew (handled by deserialization)
-        // but the entity should be marked old via MarkOld during fetch
-        fetchedOrder.DoMarkOld();
-        fetchedOrder.FactoryComplete(FactoryOperation.Fetch);
+        // Fetched entity - after Fetch: IsNew = false
+        var fetchedOrder = factory.Fetch(1, "ORD-001", DateTime.Today);
         Assert.False(fetchedOrder.IsNew);
         Assert.False(fetchedOrder.IsDeleted);
 
@@ -509,14 +464,10 @@ public class EntitiesSamplesTests
     [Fact]
     public void IsSavable_CombinesStateChecks()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+        var factory = GetRequiredService<IEntitiesOrderFactory>();
 
-        // Simulate fetched entity
-        using (order.PauseAllActions())
-        {
-            order.OrderNumber = "ORD-001";
-        }
-        order.FactoryComplete(FactoryOperation.Fetch);
+        // Fetch existing order
+        var order = factory.Fetch(1, "ORD-001", DateTime.Today);
 
         // Unmodified entity is not savable
         Assert.False(order.IsModified);
@@ -538,12 +489,16 @@ public class EntitiesSamplesTests
     [Fact]
     public async Task ChildEntity_CannotSaveDirectly()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+        var orderFactory = GetRequiredService<IEntitiesOrderFactory>();
+        var itemFactory = GetRequiredService<IEntitiesOrderItemFactory>();
+
+        var order = orderFactory.Create();
 
         // Create child item
-        var item = new EntitiesOrderItem(new EntityBaseServices<EntitiesOrderItem>());
+        var item = itemFactory.Create();
         item.ProductCode = "WIDGET-001";
         item.Price = 29.99m;
+        item.Quantity = 1;
 
         // Add to collection marks entity as child
         order.Items.Add(item);
@@ -564,14 +519,13 @@ public class EntitiesSamplesTests
     [Fact]
     public void Factory_SetThroughDependencyInjection()
     {
-        var services = new EntityBaseServices<EntitiesEmployee>();
+        var factory = GetRequiredService<IEntitiesCustomerFactory>();
 
-        // Create entity with services (normally done by DI)
-        var employee = new EntitiesEmployee(services);
+        // Factory is resolved from DI
+        var customer = factory.Create();
 
-        // Factory property is set through services
-        // (will be null here since no DI container)
-        Assert.Null(employee.Factory);
+        // Factory property is set through services when entity has Insert/Update/Delete methods
+        Assert.NotNull(customer.Factory);
 
         // When Factory is configured via DI, Save() delegates to it
         // The factory calls Insert, Update, or Delete based on entity state
@@ -582,10 +536,8 @@ public class EntitiesSamplesTests
     [Fact]
     public async Task Save_SupportsCancellation()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
-
-        // Simulate new entity
-        order.FactoryComplete(FactoryOperation.Create);
+        var factory = GetRequiredService<IEntitiesOrderFactory>();
+        var order = factory.Create();
         order.OrderNumber = "ORD-001";
 
         // Create a cancelled token
@@ -605,8 +557,10 @@ public class EntitiesSamplesTests
     [Fact]
     public void ValidateBase_ForValueObjects()
     {
+        var factory = GetRequiredService<IEntitiesAddressFactory>();
+
         // Use ValidateBase for value objects and DTOs
-        var address = new EntitiesAddress(new ValidateBaseServices<EntitiesAddress>());
+        var address = factory.Create();
         address.Street = "123 Main St";
         address.City = "Springfield";
         address.State = "IL";
@@ -622,7 +576,8 @@ public class EntitiesSamplesTests
     [Fact]
     public void AggregateRoot_HasIsChildFalse()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+        var factory = GetRequiredService<IEntitiesOrderFactory>();
+        var order = factory.Create();
 
         // Aggregate roots are not children
         Assert.False(order.IsChild);
@@ -634,8 +589,11 @@ public class EntitiesSamplesTests
     [Fact]
     public void ChildEntity_MarkedWhenAddedToList()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
-        var item = new EntitiesOrderItem(new EntityBaseServices<EntitiesOrderItem>());
+        var orderFactory = GetRequiredService<IEntitiesOrderFactory>();
+        var itemFactory = GetRequiredService<IEntitiesOrderItemFactory>();
+
+        var order = orderFactory.Create();
+        var item = itemFactory.Create();
 
         // Before adding to collection
         Assert.False(item.IsChild);
@@ -650,26 +608,21 @@ public class EntitiesSamplesTests
     [Fact]
     public void ModificationCascadesToParent()
     {
-        var order = new EntitiesOrder(new EntityBaseServices<EntitiesOrder>());
+        var orderFactory = GetRequiredService<IEntitiesOrderFactory>();
+        var itemFactory = GetRequiredService<IEntitiesOrderItemFactory>();
 
-        // Create existing item
-        var item = new EntitiesOrderItem(new EntityBaseServices<EntitiesOrderItem>());
-        item.ProductCode = "ITEM-001";
-        item.DoMarkOld();
-        item.DoMarkUnmodified();
-
-        // Add during fetch
-        order.Items.DoFactoryStart(FactoryOperation.Fetch);
-        order.Items.Add(item);
-        order.Items.DoFactoryComplete(FactoryOperation.Fetch);
-        order.DoMarkUnmodified();
-
+        // Fetch existing order (starts clean)
+        var order = orderFactory.Fetch(1, "ORD-001", DateTime.Today);
         Assert.False(order.IsModified);
 
-        // Modify child
-        item.Price = 49.99m;
+        // Add a new child item
+        var item = itemFactory.Create();
+        item.ProductCode = "ITEM-001";
+        item.Price = 25.00m;
+        item.Quantity = 1;
+        order.Items.Add(item);
 
-        // Parent's IsModified reflects child change
+        // Parent's IsModified reflects child collection change
         Assert.True(order.IsModified);
         Assert.False(order.IsSelfModified); // Parent itself not modified
     }

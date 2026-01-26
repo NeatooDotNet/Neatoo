@@ -15,6 +15,7 @@ namespace Samples
 {
     public interface ICustomerValidatorFactory
     {
+        CustomerValidator Create(CancellationToken cancellationToken = default);
     }
 
     internal class CustomerValidatorFactory : FactoryBase<CustomerValidator>, ICustomerValidatorFactory
@@ -34,10 +35,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual CustomerValidator Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public CustomerValidator LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<CustomerValidator>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<CustomerValidatorFactory>();
             services.AddScoped<ICustomerValidatorFactory, CustomerValidatorFactory>();
+            services.AddTransient<CustomerValidator>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

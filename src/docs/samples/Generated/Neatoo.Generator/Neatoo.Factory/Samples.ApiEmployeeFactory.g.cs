@@ -16,6 +16,8 @@ namespace Samples
 {
     public interface IApiEmployeeFactory
     {
+        ApiEmployee Create(CancellationToken cancellationToken = default);
+        ApiEmployee Fetch(int id, string name, string department, CancellationToken cancellationToken = default);
     }
 
     internal class ApiEmployeeFactory : FactoryBase<ApiEmployee>, IApiEmployeeFactory
@@ -35,10 +37,33 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual ApiEmployee Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public ApiEmployee LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ApiEmployee>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
+        public virtual ApiEmployee Fetch(int id, string name, string department, CancellationToken cancellationToken = default)
+        {
+            return LocalFetch(id, name, department, cancellationToken);
+        }
+
+        public ApiEmployee LocalFetch(int id, string name, string department, CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<ApiEmployee>();
+            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(id, name, department));
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<ApiEmployeeFactory>();
             services.AddScoped<IApiEmployeeFactory, ApiEmployeeFactory>();
+            services.AddTransient<ApiEmployee>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

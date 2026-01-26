@@ -16,6 +16,7 @@ namespace Samples
 {
     public interface IRulesAggregateRootFactory
     {
+        RulesAggregateRoot Create(CancellationToken cancellationToken = default);
     }
 
     internal class RulesAggregateRootFactory : FactoryBase<RulesAggregateRoot>, IRulesAggregateRootFactory
@@ -35,10 +36,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual RulesAggregateRoot Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public RulesAggregateRoot LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<RulesAggregateRoot>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<RulesAggregateRootFactory>();
             services.AddScoped<IRulesAggregateRootFactory, RulesAggregateRootFactory>();
+            services.AddTransient<RulesAggregateRoot>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

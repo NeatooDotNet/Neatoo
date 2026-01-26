@@ -37,6 +37,9 @@ public partial class Employee : EntityBase<Employee>
 
     // Child collection with automatic parent tracking
     public partial IAddressList Addresses { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IAddress : IEntityBase { }
@@ -50,6 +53,9 @@ public partial class Address : EntityBase<Address>, IAddress
     public partial string Street { get; set; }
 
     public partial string City { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IAddressList : IEntityListBase<IAddress> { }
@@ -74,6 +80,9 @@ public partial class CustomerSearch : ValidateBase<CustomerSearch>
 
     [Range(1, 100)]
     public partial int MaxResults { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 // 2. EntityBase: For domain entities with full lifecycle support
@@ -99,6 +108,9 @@ public partial class Customer : EntityBase<Customer>
         // Persistence logic here
         return Task.CompletedTask;
     }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IOrder : IEntityBase { }
@@ -109,6 +121,9 @@ public partial class Order : EntityBase<Order>, IOrder
     public Order(IEntityBaseServices<Order> services) : base(services) { }
 
     public partial decimal Amount { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 
 public interface IOrderList : IEntityListBase<IOrder> { }
@@ -122,13 +137,15 @@ public interface ICustomerRepository { }
 /// <summary>
 /// Tests for README.md snippets.
 /// </summary>
-public class ReadmeSamplesTests
+public class ReadmeSamplesTests : SamplesTestBase
 {
     [Fact]
     public void TeaserSample_BusinessRulesComputeFullName()
     {
-        // Create employee with real Neatoo infrastructure
-        var employee = new Employee(new EntityBaseServices<Employee>());
+        var factory = GetRequiredService<IEmployeeFactory>();
+
+        // Create employee via factory
+        var employee = factory.Create();
 
         // Set properties - business rule computes FullName
         employee.FirstName = "Alice";
@@ -140,7 +157,8 @@ public class ReadmeSamplesTests
     [Fact]
     public void TeaserSample_ValidationRulesEnforced()
     {
-        var employee = new Employee(new EntityBaseServices<Employee>());
+        var factory = GetRequiredService<IEmployeeFactory>();
+        var employee = factory.Create();
 
         // Invalid salary triggers validation
         employee.Salary = -1000;
@@ -151,7 +169,8 @@ public class ReadmeSamplesTests
     [Fact]
     public void TeaserSample_ValidEmployeeIsValid()
     {
-        var employee = new Employee(new EntityBaseServices<Employee>());
+        var factory = GetRequiredService<IEmployeeFactory>();
+        var employee = factory.Create();
 
         employee.FirstName = "Bob";
         employee.LastName = "Smith";
@@ -163,7 +182,8 @@ public class ReadmeSamplesTests
     [Fact]
     public void QuickStartSample_ValidateBaseValidation()
     {
-        var search = new CustomerSearch(new ValidateBaseServices<CustomerSearch>());
+        var factory = GetRequiredService<ICustomerSearchFactory>();
+        var search = factory.Create();
 
         // Empty search term is invalid
         search.SearchTerm = "";
@@ -178,7 +198,8 @@ public class ReadmeSamplesTests
     [Fact]
     public void QuickStartSample_EntityBaseRequiredValidation()
     {
-        var customer = new Customer(new EntityBaseServices<Customer>());
+        var factory = GetRequiredService<ICustomerFactory>();
+        var customer = factory.Create();
 
         // Missing required name
         customer.Name = "";
@@ -192,9 +213,13 @@ public class ReadmeSamplesTests
     [Fact]
     public void QuickStartSample_ChangeTrackingWorks()
     {
-        var customer = new Customer(new EntityBaseServices<Customer>());
+        var factory = GetRequiredService<ICustomerFactory>();
+        var customer = factory.Create();
 
-        // Entity tracks modifications when properties change
+        // New entity starts with properties modified from Create
+        // Clear to test subsequent modifications
+        customer.FactoryComplete(FactoryOperation.Fetch);
+
         Assert.False(customer.IsSelfModified);
 
         customer.Name = "Test Corp";

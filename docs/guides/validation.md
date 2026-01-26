@@ -20,6 +20,9 @@ public partial class ValidationCustomer : ValidateBase<ValidationCustomer>
     public partial string Name { get; set; }
 
     public partial string Email { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 ```
 <!-- endSnippet -->
@@ -28,7 +31,7 @@ ValidateBase provides:
 - **IsValid**: True if all properties and child objects pass validation
 - **IsSelfValid**: True if this object's properties pass validation (ignores children)
 - **PropertyMessages**: Collection of validation error messages
-- **RuleManager**: Registers validation rules in the constructor
+- **RuleManager**: Add validation and business rules using fluent API or custom rule classes
 - **PropertyManager**: Manages property state, change notifications, and validation
 - **PauseAllActions**: Suspends validation during batch updates
 
@@ -57,6 +60,9 @@ public partial class ValidationEmployee : ValidateBase<ValidationEmployee>
 
     [Range(0, 200)]
     public partial int Age { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 ```
 <!-- endSnippet -->
@@ -71,7 +77,7 @@ See [Properties](properties.md) for details on property implementation and sourc
 
 ## Built-In Validation Attributes
 
-Neatoo integrates with System.ComponentModel.DataAnnotations. Attributes like [Required], [MaxLength], [EmailAddress], and [Range] automatically generate validation rules that execute when properties change.
+Neatoo integrates with System.ComponentModel.DataAnnotations. The RuleManager scans properties for validation attributes during construction and converts them to rules using the IAttributeToRule service. Attributes like [Required], [MaxLength], [EmailAddress], and [Range] become validation rules that execute when properties change.
 
 Apply DataAnnotations attributes to properties:
 
@@ -97,6 +103,9 @@ public partial class ValidationContact : ValidateBase<ValidationContact>
 
     [RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid ZIP code")]
     public partial string ZipCode { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 ```
 <!-- endSnippet -->
@@ -116,7 +125,7 @@ Attribute validation rules execute automatically when the property changes. Erro
 
 ## Custom Validation Rules
 
-Register custom validation rules in the constructor using RuleManager.AddValidation. Validation rules are lambda expressions that return an error message (non-empty string indicates failure) or empty string for success.
+Register custom validation rules in the constructor using RuleManager.AddValidation. The fluent API creates a ValidationFluentRule internally that executes your validation lambda and associates error messages with the trigger property.
 
 Add a custom validation rule:
 
@@ -134,15 +143,15 @@ public ValidationInvoice(IValidateBaseServices<ValidationInvoice> services) : ba
 
 Validation rule patterns:
 - **Lambda expression**: Receives the entity instance, returns error message or empty string
-- **Dependencies**: Second parameter specifies which properties trigger the rule
-- **Error message**: Non-empty string indicates validation failure
-- **Multiple dependencies**: List all properties the rule depends on
+- **Trigger property**: Second parameter specifies which property triggers the rule when it changes
+- **Error message**: Non-empty string indicates validation failure, empty/null indicates success
+- **Automatic association**: Error messages are automatically associated with the trigger property
 
-Rules execute when dependent properties change. The rule manager tracks dependencies and ensures rules run in the correct order.
+Rules execute when the trigger property changes. The RuleManager assigns each rule a stable ID and tracks execution order.
 
 ## Cross-Property Validation
 
-Validation rules can depend on multiple properties. The rule executes when any dependent property changes, enabling cross-property constraints like "end date must be after start date".
+Custom rule classes inheriting from RuleBase<T> or AsyncRuleBase<T> can declare multiple trigger properties in their constructor. The rule executes when any trigger property changes, enabling cross-property constraints like "end date must be after start date".
 
 Register cross-property validation:
 
@@ -158,16 +167,16 @@ public ValidationDateRange(IValidateBaseServices<ValidationDateRange> services) 
 <!-- endSnippet -->
 
 Cross-property patterns:
-- **Multiple dependencies**: Pass multiple property expressions to the rule
-- **Dependency tracking**: Rule executes when ANY dependent property changes
-- **Execution order**: Rules execute in registration order
-- **Cascading validation**: Changes to one property can trigger validation of other properties
+- **Multiple trigger properties**: Rule constructor specifies which properties trigger the rule
+- **Dependency tracking**: Rule executes when ANY trigger property changes
+- **Execution order**: Rules execute based on RuleOrder property (lower values first)
+- **Custom rule classes**: Inherit from RuleBase<T> for sync or AsyncRuleBase<T> for async validation
 
-Cross-property rules ensure aggregate-level invariants hold as properties change.
+Cross-property rules ensure aggregate-level invariants hold as properties change. See [Business Rules](business-rules.md) for custom rule implementation details.
 
 ## Async Validation Rules
 
-Validation rules can execute asynchronously using RuleManager.AddValidationAsync. Async rules enable scenarios like database uniqueness checks, external service calls, and I/O-bound validation.
+Validation rules can execute asynchronously using RuleManager.AddValidationAsync. This creates an AsyncFluentRule internally that executes your async lambda and manages IsBusy state. Async rules enable scenarios like database uniqueness checks, external service calls, and I/O-bound validation.
 
 Add async validation rule:
 
@@ -194,14 +203,14 @@ public ValidationUser(
 
 Async validation behavior:
 - **Task-returning lambda**: Validation executes asynchronously
-- **IsBusy tracking**: Property and entity are busy until validation completes
-- **Property.Task**: Access the pending task for the property
-- **WaitForTasks()**: Await all pending validation tasks
-- **Parent cascade**: Async tasks propagate up to parent for aggregate-level coordination
+- **IsBusy tracking**: RuleManager marks trigger properties as busy until validation completes
+- **Property.Task**: Access the pending task for the property (or Task.CompletedTask if not busy)
+- **WaitForTasks()**: Await all pending validation tasks before saving
+- **Parent cascade**: Child tasks propagate up via AddChildTask for aggregate-level coordination
 
-Async rules return immediately when triggered. The entity tracks running tasks through IsBusy and Task properties.
+When an async rule executes, RuleManager marks all trigger properties as busy using a unique execution ID. After the rule completes, the same ID is used to clear the busy state, ensuring multiple concurrent rules don't interfere with each other's tracking.
 
-## RunRulesAsync
+## Manual Validation Execution
 
 Manually trigger validation using RunRules methods. This is useful after batch updates, during save operations, or to re-validate after external state changes.
 
@@ -212,7 +221,8 @@ Run validation manually:
 [Fact]
 public async Task RunRulesManually_RevalidateEntity()
 {
-    var order = new ValidationOrder(new ValidateBaseServices<ValidationOrder>());
+    var factory = GetRequiredService<IValidationOrderFactory>();
+    var order = factory.Create();
 
     // Set invalid values
     order.Quantity = -5;
@@ -253,7 +263,8 @@ Access validation messages:
 [Fact]
 public void AccessValidationMessages_PropertyAndObject()
 {
-    var product = new ValidationProduct(new ValidateBaseServices<ValidationProduct>());
+    var factory = GetRequiredService<IValidationProductFactory>();
+    var product = factory.Create();
 
     // Trigger validation failures
     product.Name = "";
@@ -277,9 +288,8 @@ public void AccessValidationMessages_PropertyAndObject()
 <!-- endSnippet -->
 
 Message metadata:
-- **PropertyName**: Name of the property that failed validation
+- **Property**: The IValidateProperty that failed validation (access name via `Property.Name`)
 - **Message**: The error message text
-- **Severity**: Information, Warning, or Error (extensible)
 - **PropertyMessages**: Collection of all messages across the object
 - **Property.PropertyMessages**: Messages specific to one property
 
@@ -296,10 +306,9 @@ Check property validation state:
 [Fact]
 public async Task PropertyValidationState_IndividualPropertyTracking()
 {
-    var uniquenessService = new MockUniquenessService();
-    var account = new ValidationAccount(
-        new ValidateBaseServices<ValidationAccount>(),
-        uniquenessService);
+    // Factory resolves ValidationAccount with IValidationUniquenessService injected
+    var factory = GetRequiredService<IValidationAccountFactory>();
+    var account = factory.Create();
 
     // Set valid account number
     account.AccountNumber = "ACC-001";
@@ -334,7 +343,7 @@ Property-level state enables granular validation feedback and selective validati
 
 ## Object-Level Validation
 
-Mark the entire object as invalid using MarkInvalid when validation errors exist at the aggregate level rather than individual properties. Object-level errors appear in PropertyMessages with propertyName equal to "ObjectInvalid".
+Mark the entire object as invalid using MarkInvalid when validation errors exist at the aggregate level rather than individual properties. Object-level errors appear in PropertyMessages with `Property.Name` equal to "ObjectInvalid".
 
 Mark object as invalid:
 
@@ -343,7 +352,8 @@ Mark object as invalid:
 [Fact]
 public void MarkObjectInvalid_ObjectLevelValidation()
 {
-    var transaction = new ValidationTransaction(new ValidateBaseServices<ValidationTransaction>());
+    var factory = GetRequiredService<IValidationTransactionFactory>();
+    var transaction = factory.Create();
     transaction.TransactionId = "TXN-001";
     transaction.Amount = 100;
 
@@ -385,7 +395,8 @@ Batch property updates without validation:
 [Fact]
 public void PauseAllActions_BatchUpdatesWithoutValidation()
 {
-    var order = new ValidationOrder(new ValidateBaseServices<ValidationOrder>());
+    var factory = GetRequiredService<IValidationOrderFactory>();
+    var order = factory.Create();
 
     // Pause validation during batch updates
     using (order.PauseAllActions())
@@ -429,7 +440,8 @@ Load data without triggering validation:
 [Fact]
 public void LoadValue_DataLoadingWithoutValidation()
 {
-    var invoice = new ValidationInvoice(new ValidateBaseServices<ValidationInvoice>());
+    var factory = GetRequiredService<IValidationInvoiceFactory>();
+    var invoice = factory.Create();
 
     // LoadValue sets property without triggering validation
     // Typically used during Fetch factory operations
@@ -464,14 +476,16 @@ Validation cascade behavior:
 [Fact]
 public void ValidationCascade_ChildToParent()
 {
-    var invoice = new ValidationInvoiceWithItems(new ValidateBaseServices<ValidationInvoiceWithItems>());
+    var invoiceFactory = GetRequiredService<IValidationInvoiceWithItemsFactory>();
+    var invoice = invoiceFactory.Create();
     invoice.InvoiceNumber = "INV-001";
 
     // Parent starts valid
     Assert.True(invoice.IsValid);
 
     // Add invalid child (empty description)
-    var lineItem = new ValidationLineItem(new ValidateBaseServices<ValidationLineItem>());
+    var lineItemFactory = GetRequiredService<IValidationLineItemFactory>();
+    var lineItem = lineItemFactory.Create();
     lineItem.Description = ""; // Triggers validation failure
     invoice.LineItems.Add(lineItem);
 
@@ -510,10 +524,8 @@ Validation meta-properties:
 [Fact]
 public async Task MetaProperties_TrackValidationState()
 {
-    var uniquenessService = new MockUniquenessService();
-    var account = new ValidationAccount(
-        new ValidateBaseServices<ValidationAccount>(),
-        uniquenessService);
+    var factory = GetRequiredService<IValidationAccountFactory>();
+    var account = factory.Create();
 
     // Set required field
     account.AccountNumber = "ACC-001";
@@ -544,13 +556,13 @@ Meta-property definitions:
 - **IsSelfValid**: True if this object's properties pass validation (ignores children)
 - **IsBusy**: True if any async validation tasks are running
 - **PropertyMessages**: Collection of ALL validation messages (this object + children)
-- **IsSavable**: (EntityBase only) True if IsValid && !IsBusy
+- **IsSavable**: (EntityBase only) True if IsModified && IsValid && !IsBusy && !IsChild
 
 Meta-properties fire PropertyChanged events when their values change, enabling UI binding for save button enablement and validation indicators.
 
 ## Validation During Save
 
-Validate entities before persisting changes. The IsSavable property (EntityBase only) combines IsValid and IsBusy to determine if the entity can be saved.
+Validate entities before persisting changes. The IsSavable property (EntityBase only) combines IsModified, IsValid, IsBusy, and IsChild to determine if the entity can be saved.
 
 Validate before save:
 
@@ -559,8 +571,9 @@ Validate before save:
 [Fact]
 public async Task ValidateBeforeSave_IsSavableCheck()
 {
-    var order = new ValidationSaveableOrder(new EntityBaseServices<ValidationSaveableOrder>());
-    order.DoMarkNew(); // Mark as new entity needing insert
+    // Use factory to create new entity with proper lifecycle
+    var factory = GetRequiredService<IValidationSaveableOrderFactory>();
+    var order = factory.Create();
 
     // Set invalid quantity (negative to trigger validation)
     order.Quantity = -5;
@@ -603,10 +616,8 @@ Use cancellation tokens with validation:
 [Fact]
 public async Task CancellationToken_CancelAsyncValidation()
 {
-    var inventoryService = new MockInventoryService();
-    var order = new ValidationAsyncOrder(
-        new ValidateBaseServices<ValidationAsyncOrder>(),
-        inventoryService);
+    var factory = GetRequiredService<IValidationAsyncOrderFactory>();
+    var order = factory.Create();
 
     // Set product code to trigger async validation
     order.ProductCode = "PROD-001";
@@ -640,23 +651,24 @@ Cancellation is useful for long-running validation operations like database quer
 
 ## Validation Rule Execution Order
 
-Validation rules execute in registration order. Rules registered first run before rules registered later. Cross-property rules execute when any dependent property changes.
+Rules execute based on their trigger property matching and RuleOrder property (lower values execute first, default is 1). When a property changes, the RuleManager identifies all rules with matching trigger properties and executes them sorted by RuleOrder.
 
-Rule execution sequence:
+Rule execution flow:
 1. Property value changes (via setter)
-2. DataAnnotations attribute rules execute for that property
-3. Custom rules dependent on that property execute (in registration order)
-4. Cross-property rules dependent on that property execute (in registration order)
-5. Parent's rules that depend on child state execute (if applicable)
-6. IsValid and IsSelfValid recalculate
-7. PropertyChanged events fire for meta-properties
-8. Validation state cascades to parent
+2. RuleManager.RunRules(propertyName) is called
+3. Rules with trigger properties matching propertyName are selected
+4. Selected rules are sorted by RuleOrder (ascending)
+5. Each rule executes sequentially (even async rules wait for previous rule to complete)
+6. Rule messages are applied to properties via SetMessagesForRule
+7. IsValid and IsSelfValid recalculate based on PropertyMessages
+8. PropertyChanged events fire for meta-properties
+9. Validation state cascades to parent via NeatooPropertyChanged
 
-Rule execution is synchronous unless AddValidationAsync is used. Async rules return immediately and track completion via Task properties.
+Synchronous rules (AddValidation, RuleBase) complete immediately. Async rules (AddValidationAsync, AsyncRuleBase) mark properties as IsBusy during execution and complete when the Task resolves.
 
 ## Validation Messages Collection
 
-PropertyMessages contains all validation errors across the object graph. Filter messages by property name or severity to provide targeted feedback.
+PropertyMessages contains all validation errors across the object graph. Filter messages by property name to provide targeted feedback.
 
 Work with validation messages:
 
@@ -665,7 +677,8 @@ Work with validation messages:
 [Fact]
 public async Task WorkWithValidationMessages_FilterAndAccess()
 {
-    var product = new ValidationProduct(new ValidateBaseServices<ValidationProduct>());
+    var factory = GetRequiredService<IValidationProductFactory>();
+    var product = factory.Create();
 
     // Trigger multiple validation failures
     product.Name = "";
@@ -696,10 +709,9 @@ public async Task WorkWithValidationMessages_FilterAndAccess()
 
 Message collection operations:
 - **PropertyMessages**: Read-only collection of all messages
-- **Filter by property**: `messages.Where(m => m.PropertyName == "Name")`
-- **Filter by severity**: `messages.Where(m => m.Severity == MessageSeverity.Error)`
+- **Filter by property**: `messages.Where(m => m.Property.Name == "Name")`
 - **Clear messages**: Use ClearAllMessages() or ClearSelfMessages()
-- **Object-level messages**: `messages.Where(m => m.PropertyName == "ObjectInvalid")`
+- **Object-level messages**: `messages.Where(m => m.Property.Name == "ObjectInvalid")`
 
 PropertyMessages updates automatically as validation rules execute and properties change.
 
@@ -739,6 +751,9 @@ public partial class ValidationRegistration : ValidateBase<ValidationRegistratio
 
     [Required]
     public partial string ConfirmPassword { get; set; }
+
+    [Create]
+    public void Create() { }
 }
 ```
 <!-- endSnippet -->

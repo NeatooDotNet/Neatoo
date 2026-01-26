@@ -14,6 +14,7 @@ namespace Samples
 {
     public interface ICollectionValidateItemFactory
     {
+        CollectionValidateItem Create(CancellationToken cancellationToken = default);
     }
 
     internal class CollectionValidateItemFactory : FactoryBase<CollectionValidateItem>, ICollectionValidateItemFactory
@@ -33,10 +34,22 @@ namespace Samples
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
         }
 
+        public virtual CollectionValidateItem Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public CollectionValidateItem LocalCreate(CancellationToken cancellationToken = default)
+        {
+            var target = ServiceProvider.GetRequiredService<CollectionValidateItem>();
+            return DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create());
+        }
+
         public static void FactoryServiceRegistrar(IServiceCollection services, NeatooFactory remoteLocal)
         {
             services.AddScoped<CollectionValidateItemFactory>();
             services.AddScoped<ICollectionValidateItemFactory, CollectionValidateItemFactory>();
+            services.AddTransient<CollectionValidateItem>();
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {
