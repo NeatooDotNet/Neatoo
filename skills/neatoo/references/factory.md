@@ -661,7 +661,9 @@ public partial class RfCustomerWithServices : EntityBase<RfCustomerWithServices>
 
 ## Remote Execution
 
-Add `[Remote]` to execute on the server:
+`[Remote]` marks **entry points from the client to the server**. Once execution crosses to the server, it stays there—subsequent method calls don't need `[Remote]`.
+
+Add `[Remote]` to aggregate root factory methods:
 
 <!-- snippet: remotefactory-remote-attribute -->
 <a id='snippet-remotefactory-remote-attribute'></a>
@@ -770,10 +772,22 @@ public partial class RfCustomerRemote : EntityBase<RfCustomerRemote>
 <sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L336-L391' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-remote-attribute-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Without `[Remote]`, methods execute locally (client-side). Use `[Remote]` when:
-- Accessing database or server-only resources
-- Performing operations that shouldn't run on the client
-- Needing server-side services
+**When to use `[Remote]`:**
+- Aggregate root factory methods that are entry points from the client
+- Top-level Execute operations initiated by UI
+
+**When `[Remote]` is NOT needed (the common case):**
+- Child entity operations within an aggregate
+- Any method called from server-side code (after already crossing the boundary via an aggregate root's `[Remote]` method)
+- Methods with method-injected services that are only called from server-side code
+
+**Constructor vs Method Injection:**
+- Constructor injection (`[Service]` on constructor): Services available on both client and server
+- Method injection (`[Service]` on method parameters): Server-only services—the common case for most factory methods
+
+**Entity duality:** An entity can be an aggregate root in one object graph and a child in another. The same class may have `[Remote]` methods for aggregate root scenarios while other methods are server-only.
+
+**Runtime enforcement:** Non-`[Remote]` methods compile for client assemblies but fail at runtime with a "not-registered" DI exception if called—server-only services aren't in the client container.
 
 ## Child Factories
 

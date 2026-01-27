@@ -150,15 +150,30 @@ public async Task Fetch(Guid id, [Service] IEmployeeRepository repo)
 
 ## Remote Execution
 
-Mark factory methods with `[Remote]` to execute on the server:
+`[Remote]` marks **entry points from the client to the server**. Once execution crosses to the server, it stays there—subsequent method calls don't need `[Remote]`.
 
 ```csharp
+// Aggregate root - needs [Remote] because it's called from client
 [Remote]
 [Fetch]
-public async Task Fetch(Guid id, [Service] IDbContext db) { }
+public async Task Fetch(Guid id, [Service] IEmployeeRepository repo) { }
+
+// Child entity - no [Remote] needed, called from server-side parent
+[Fetch]
+public void Fetch(int id, string name, [Service] IChildRepository repo) { }
 ```
 
-Without `[Remote]`, methods execute locally (client-side).
+**When to use `[Remote]`:**
+- Aggregate root factory methods (Create, Fetch, Save)
+- Top-level operations initiated by the UI
+
+**When `[Remote]` is NOT needed (the common case):**
+- Child entity operations within an aggregate
+- Any method called from server-side code after crossing the boundary
+
+**Constructor vs Method Injection:**
+- Constructor injection (`[Service]` on constructor): Services available on both client and server
+- Method injection (`[Service]` on method parameters): Server-only services (the common case)
 
 ## Testing
 

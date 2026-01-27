@@ -1,0 +1,59 @@
+@* Input control examples - demonstrates various MudNeatoo components *@
+
+@if (employee != null)
+{
+    @* begin-snippet: blazor-select-enum *@
+    <MudNeatooSelect T="SkillPriority" EntityProperty="@employee["Priority"]">
+        <MudSelectItem Value="SkillPriority.Low">Low</MudSelectItem>
+        <MudSelectItem Value="SkillPriority.Medium">Medium</MudSelectItem>
+        <MudSelectItem Value="SkillPriority.High">High</MudSelectItem>
+        <MudSelectItem Value="SkillPriority.Critical">Critical</MudSelectItem>
+    </MudNeatooSelect>
+    @* end-snippet *@
+
+    @* begin-snippet: blazor-checkbox-binding *@
+    <MudNeatooCheckBox T="bool" EntityProperty="@employee["IsActive"]" />
+
+    <MudNeatooSwitch T="bool" EntityProperty="@employee["IsActive"]" />
+    @* end-snippet *@
+
+    @* begin-snippet: blazor-date-picker *@
+    <MudNeatooDatePicker EntityProperty="@employee["StartDate"]" />
+    @* end-snippet *@
+
+    @* begin-snippet: blazor-numeric-field *@
+    <MudNeatooNumericField T="decimal"
+                           EntityProperty="@employee["Salary"]"
+                           Adornment="Adornment.Start"
+                           AdornmentText="$" />
+    @* end-snippet *@
+
+    @* begin-snippet: blazor-autocomplete *@
+    <MudNeatooAutocomplete T="string"
+                           EntityProperty="@employee["Department"]"
+                           SearchFunc="@SearchDepartments" />
+    @* end-snippet *@
+}
+
+@code {
+    private SkillBlazorEmployee? employee;
+
+    [Inject]
+    private ISkillBlazorEmployeeFactory EmployeeFactory { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        employee = EmployeeFactory.Create();
+    }
+
+    private Task<IEnumerable<string>> SearchDepartments(string value, CancellationToken token)
+    {
+        var departments = new[] { "Engineering", "Sales", "Marketing", "HR", "Finance" };
+
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult(departments.AsEnumerable());
+
+        return Task.FromResult(departments.Where(d =>
+            d.Contains(value, StringComparison.OrdinalIgnoreCase)));
+    }
+}

@@ -114,9 +114,6 @@ public partial class BlazorAuditedEntity : EntityBase<BlazorAuditedEntity>
 public class BlazorSamples : SamplesTestBase
 {
     #region blazor-text-field-basic
-    // Razor component markup:
-    // <MudNeatooTextField T="string" EntityProperty="@employee["Name"]" />
-
     [Fact]
     public void TextFieldBindsToEntityProperty()
     {
@@ -136,13 +133,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-validation-inline
-    // Razor component markup with validation:
-    // <MudNeatooTextField T="string" EntityProperty="@employee["Email"]" />
-    //
-    // Validation errors appear automatically below the input when the
-    // property fails validation. The component waits for async validation
-    // to complete before displaying error messages.
-
     [Fact]
     public void ValidationDisplaysInlineErrors()
     {
@@ -159,15 +149,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-validation-summary
-    // Razor component markup:
-    // <NeatooValidationSummary Entity="@employee" />
-    //
-    // Displays all validation errors in a MudAlert:
-    // <NeatooValidationSummary Entity="@employee"
-    //                          ShowHeader="true"
-    //                          HeaderText="Please fix these errors:"
-    //                          IncludePropertyNames="true" />
-
     [Fact]
     public void ValidationSummaryShowsAllErrors()
     {
@@ -186,31 +167,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-form-submit
-    // Razor component markup:
-    // <MudForm @ref="form">
-    //     <MudNeatooTextField T="string" EntityProperty="@employee["Name"]" />
-    //     <MudNeatooTextField T="string" EntityProperty="@employee["Email"]" />
-    //     <MudNeatooNumericField T="decimal" EntityProperty="@employee["Salary"]" />
-    //
-    //     <MudButton OnClick="@Submit"
-    //                Disabled="@(!employee.IsValid || employee.IsBusy)">
-    //         Save
-    //     </MudButton>
-    // </MudForm>
-    //
-    // @code {
-    //     private MudForm form;
-    //
-    //     private async Task Submit()
-    //     {
-    //         await form.Validate();
-    //         if (employee.IsValid)
-    //         {
-    //             // Save the entity
-    //         }
-    //     }
-    // }
-
     [Fact]
     public async Task FormValidationPreventsInvalidSubmit()
     {
@@ -237,16 +193,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-busy-state
-    // Razor component markup:
-    // <MudNeatooTextField T="string"
-    //                     EntityProperty="@employee["Email"]" />
-    //
-    // The component automatically disables while IsBusy is true.
-    // This prevents user input during async rule execution.
-    //
-    // Component renders as disabled:
-    // <MudTextField ... Disabled="@EntityProperty.IsBusy" ... />
-
     [Fact]
     public async Task BusyStateDisablesComponent()
     {
@@ -271,15 +217,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-readonly-property
-    // Razor component markup:
-    // <MudNeatooTextField T="string" EntityProperty="@entity["CreatedBy"]" />
-    //
-    // The component respects IsReadOnly:
-    // <MudTextField ... ReadOnly="@EntityProperty.IsReadOnly" ... />
-    //
-    // When IsReadOnly is true, the component displays as read-only.
-    // This is typically set during entity initialization or by business rules.
-
     [Fact]
     public void ReadOnlyPropertyBindsToComponent()
     {
@@ -300,14 +237,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-select-enum
-    // Razor component markup:
-    // <MudNeatooSelect T="Priority" EntityProperty="@employee["Priority"]">
-    //     <MudSelectItem Value="Priority.Low">Low</MudSelectItem>
-    //     <MudSelectItem Value="Priority.Medium">Medium</MudSelectItem>
-    //     <MudSelectItem Value="Priority.High">High</MudSelectItem>
-    //     <MudSelectItem Value="Priority.Critical">Critical</MudSelectItem>
-    // </MudNeatooSelect>
-
     [Fact]
     public void SelectBindsToEnumProperty()
     {
@@ -323,12 +252,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-checkbox-binding
-    // Razor component markup:
-    // <MudNeatooCheckBox T="bool" EntityProperty="@employee["IsActive"]" />
-    //
-    // Or with switch style:
-    // <MudNeatooSwitch T="bool" EntityProperty="@employee["IsActive"]" />
-
     [Fact]
     public void CheckboxBindsToBooleanProperty()
     {
@@ -348,16 +271,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-date-picker
-    // Razor component markup:
-    // <MudNeatooDatePicker EntityProperty="@employee["StartDate"]" />
-    //
-    // With additional options:
-    // <MudNeatooDatePicker EntityProperty="@employee["StartDate"]"
-    //                      DateFormat="yyyy-MM-dd"
-    //                      MinDate="@DateTime.Today"
-    //                      Editable="true"
-    //                      Clearable="true" />
-
     [Fact]
     public void DatePickerBindsToDateProperty()
     {
@@ -373,18 +286,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-numeric-field
-    // Razor component markup:
-    // <MudNeatooNumericField T="decimal" EntityProperty="@employee["Salary"]" />
-    //
-    // With formatting and constraints:
-    // <MudNeatooNumericField T="decimal"
-    //                        EntityProperty="@employee["Salary"]"
-    //                        Format="C2"
-    //                        Min="0"
-    //                        Max="1000000"
-    //                        Adornment="Adornment.Start"
-    //                        AdornmentText="$" />
-
     [Fact]
     public void NumericFieldBindsToDecimalProperty()
     {
@@ -403,27 +304,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-autocomplete
-    // Razor component markup:
-    // <MudNeatooAutocomplete T="string"
-    //                        EntityProperty="@employee["Department"]"
-    //                        SearchFunc="@SearchDepartments"
-    //                        MinCharacters="2"
-    //                        DebounceInterval="300" />
-    //
-    // @code {
-    //     private async Task<IEnumerable<string>> SearchDepartments(string value,
-    //         CancellationToken token)
-    //     {
-    //         var departments = new[] { "Engineering", "Sales", "Marketing", "HR" };
-    //
-    //         if (string.IsNullOrEmpty(value))
-    //             return departments;
-    //
-    //         return departments.Where(d =>
-    //             d.Contains(value, StringComparison.OrdinalIgnoreCase));
-    //     }
-    // }
-
     [Fact]
     public void AutocompleteBindsToStringProperty()
     {
@@ -438,24 +318,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-change-tracking
-    // Razor component markup:
-    // <MudButton OnClick="@Save"
-    //            Disabled="@(!employee.IsModified || !employee.IsValid)">
-    //     Save Changes
-    // </MudButton>
-    //
-    // <MudButton OnClick="@Cancel"
-    //            Disabled="@(!employee.IsModified)">
-    //     Cancel
-    // </MudButton>
-    //
-    // @if (employee.IsModified)
-    // {
-    //     <MudAlert Severity="Severity.Warning">
-    //         You have unsaved changes
-    //     </MudAlert>
-    // }
-
     [Fact]
     public void ChangeTrackingDetectsModifications()
     {
@@ -476,25 +338,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-customize-appearance
-    // Razor component markup with MudBlazor styling:
-    // <MudNeatooTextField T="string"
-    //                     EntityProperty="@employee["Name"]"
-    //                     Variant="Variant.Filled"
-    //                     Margin="Margin.Normal"
-    //                     HelperText="Enter your full legal name"
-    //                     Placeholder="John Doe"
-    //                     Adornment="Adornment.Start"
-    //                     AdornmentIcon="@Icons.Material.Filled.Person"
-    //                     Class="my-custom-field" />
-    //
-    // <MudNeatooNumericField T="decimal"
-    //                        EntityProperty="@employee["Salary"]"
-    //                        Variant="Variant.Outlined"
-    //                        Format="N2"
-    //                        Adornment="Adornment.Start"
-    //                        AdornmentText="$"
-    //                        HideSpinButtons="true" />
-
     [Fact]
     public void ComponentAcceptsStyleParameters()
     {
@@ -511,17 +354,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-property-extensions
-    // Using extension methods for custom binding to standard MudBlazor components:
-    //
-    // @using Neatoo.Blazor.MudNeatoo.Extensions
-    //
-    // <MudTextField T="string"
-    //               Value="@employee.Name"
-    //               ValueChanged="@(async v => await employee["Name"].SetValue(v))"
-    //               Error="@employee["Name"].HasErrors()"
-    //               ErrorText="@employee["Name"].GetErrorText()"
-    //               Validation="@employee["Name"].GetValidationFunc<string>()" />
-
     [Fact]
     public void ExtensionMethodsProvideValidationInfo()
     {
@@ -541,28 +373,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-statehaschanged
-    // MudNeatoo components automatically subscribe to property change events.
-    // When validation state, busy state, or values change, the component re-renders.
-    //
-    // Internal component lifecycle:
-    // protected override void OnInitialized()
-    // {
-    //     EntityProperty.PropertyChanged += OnPropertyChanged;
-    // }
-    //
-    // private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    // {
-    //     if (e.PropertyName is "PropertyMessages" or "IsValid" or "IsBusy" or "IsReadOnly")
-    //     {
-    //         InvokeAsync(StateHasChanged);
-    //     }
-    // }
-    //
-    // public void Dispose()
-    // {
-    //     EntityProperty.PropertyChanged -= OnPropertyChanged;
-    // }
-
     [Fact]
     public void PropertyChangesNotifyComponents()
     {
@@ -581,28 +391,6 @@ public class BlazorSamples : SamplesTestBase
     #endregion
 
     #region blazor-manual-binding
-    // For scenarios not covered by MudNeatoo components, bind manually:
-    //
-    // <MudTextField T="string"
-    //               Value="@employee.Name"
-    //               ValueChanged="@OnNameChanged"
-    //               Error="@(!employee["Name"].IsValid)"
-    //               ErrorText="@GetErrorText(employee["Name"])"
-    //               Disabled="@employee["Name"].IsBusy"
-    //               ReadOnly="@employee["Name"].IsReadOnly" />
-    //
-    // @code {
-    //     private async Task OnNameChanged(string value)
-    //     {
-    //         await employee["Name"].SetValue(value);
-    //     }
-    //
-    //     private string GetErrorText(IEntityProperty property)
-    //     {
-    //         return string.Join("; ", property.PropertyMessages.Select(m => m.Message));
-    //     }
-    // }
-
     [Fact]
     public async Task ManualBindingUsesSetValueAsync()
     {

@@ -671,9 +671,11 @@ Aggregate root deletion pattern:
 
 ## Remote vs Local Execution
 
-RemoteFactory supports both local (in-process) and remote (client-server) execution. The [Remote] attribute marks methods that should execute on the server when running in a distributed architecture.
+RemoteFactory supports both local (in-process) and remote (client-server) execution. The `[Remote]` attribute marks **entry points from the client to the server**. Once execution crosses to the server, it stays there—subsequent method calls don't need `[Remote]`.
 
-Mark factory methods for remote execution:
+**Key insight:** Most methods with method-injected services (`[Service]` on parameters) do NOT need `[Remote]`. They're called from server-side code after already crossing the boundary via an aggregate root's `[Remote]` method.
+
+Mark aggregate root factory methods for remote execution:
 
 <!-- snippet: remotefactory-remote-attribute -->
 <a id='snippet-remotefactory-remote-attribute'></a>
@@ -787,14 +789,32 @@ NeatooFactory execution modes:
 - **NeatooFactory.Remote**: Methods marked [Remote] execute on server via HTTP; methods without [Remote] execute locally (for Blazor WebAssembly clients)
 - **NeatooFactory.Server**: Server-side configuration where all methods execute locally, but infrastructure is configured to receive remote calls (for ASP.NET Core server hosting the API)
 
+**When to use `[Remote]`:**
+- Aggregate root factory methods that are entry points from the client (Create, Fetch, Save)
+- Top-level Execute operations initiated by UI
+
+**When `[Remote]` is NOT needed (the common case):**
+- Child entity operations within an aggregate
+- Any method called from server-side code (after already crossing the boundary)
+- Methods with method-injected services that are only called during aggregate loading/saving
+
+**Entity duality:** An entity can be an aggregate root in one object graph and a child in another. The same class may have `[Remote]` methods for aggregate root scenarios while other methods are server-only.
+
+**Constructor vs Method Injection:**
+- Constructor injection (`[Service]` on constructor): Services available on both client and server
+- Method injection (`[Service]` on method parameters): Server-only services—the common case
+
+**Runtime enforcement:** Non-`[Remote]` methods compile for client assemblies but fail at runtime with a "not-registered" DI exception if called from the client—server-only services aren't in the client container.
+
 Remote execution flow (Blazor WebAssembly calling server):
 1. Client calls factory.FetchById(id) on Blazor WebAssembly
 2. Factory implementation checks if [Remote] is present on method
 3. If [Remote]: serializes method parameters as JSON, sends HTTP POST to server endpoint
 4. Server receives request, deserializes parameters, resolves factory from DI
 5. Server factory executes entity's [Fetch] method locally (with database access)
-6. Server serializes result entity as JSON and returns HTTP response
-7. Client deserializes response entity and returns to caller
+6. During Fetch, server calls child factories—these do NOT need [Remote] because execution is already on the server
+7. Server serializes result entity (including children) as JSON and returns HTTP response
+8. Client deserializes response entity and returns to caller
 
 The [Remote] pattern enables Blazor WebAssembly clients to execute server-side persistence logic without exposing repositories or DbContext to the client.
 
@@ -1314,4 +1334,4 @@ Authorization delegates enable declarative role-based access control for entity 
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-01-27
