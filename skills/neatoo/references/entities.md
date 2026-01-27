@@ -245,15 +245,6 @@ New entities have `IsNew = true` until saved:
 <!-- snippet: entities-is-new -->
 <a id='snippet-entities-is-new'></a>
 ```cs
-// IsNew indicates whether the entity has been persisted:
-//
-// After Create():  entity.IsNew = true   → Will call Insert on Save
-// After Fetch():   entity.IsNew = false  → Will call Update on Save
-// After Insert():  entity.IsNew = false  → Now an existing entity
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L167-L173' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-is-new' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-is-new-1'></a>
-```cs
 [Fact]
 public void IsNew_DistinguishesNewFromExisting()
 {
@@ -264,7 +255,7 @@ public void IsNew_DistinguishesNewFromExisting()
     Assert.True(order.IsNew);
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L223-L233' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-is-new-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L223-L233' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-is-new' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 <!-- snippet: entities-lifecycle-new -->
 <!-- endSnippet -->
@@ -275,21 +266,6 @@ Load entities from persistence:
 
 <!-- snippet: entities-fetch -->
 <a id='snippet-entities-fetch'></a>
-```cs
-// Fetched entity lifecycle:
-//
-// var employee = await factory.Fetch(1);
-// Assert.False(employee.IsNew);      // Existing entity
-// Assert.False(employee.IsModified); // No changes yet
-//
-// employee.Salary = 55000;           // Make a change
-// Assert.True(employee.IsModified);  // Now modified
-//
-// await factory.SaveAsync(employee); // Routes to Update
-// Assert.False(employee.IsModified); // Clean again
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L189-L201' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-fetch' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-fetch-1'></a>
 ```cs
 [Fact]
 public async Task FetchedEntity_StartsClean()
@@ -306,7 +282,7 @@ public async Task FetchedEntity_StartsClean()
     Assert.Equal("Customer 42", customer.Name);
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L255-L270' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-fetch-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L255-L270' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-fetch' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Saving Entities
@@ -315,28 +291,6 @@ public async Task FetchedEntity_StartsClean()
 
 <!-- snippet: entities-save -->
 <a id='snippet-entities-save'></a>
-```cs
-// Save routing based on state:
-//
-// entity.IsNew && !entity.IsDeleted    → Insert
-// !entity.IsNew && !entity.IsDeleted   → Update
-// entity.IsDeleted                     → Delete
-//
-// // New entity → Insert
-// var newEmp = factory.Create();
-// await factory.SaveAsync(newEmp); // Calls InsertAsync
-//
-// // Existing entity → Update
-// var existing = await factory.Fetch(1);
-// existing.Name = "Updated";
-// await factory.SaveAsync(existing); // Calls UpdateAsync
-//
-// // Deleted entity → Delete
-// existing.Delete();
-// await factory.SaveAsync(existing); // Calls DeleteAsync
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L203-L222' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-save-1'></a>
 ```cs
 [Fact]
 public async Task Save_DelegatesToAppropriateFactoryMethod()
@@ -353,7 +307,7 @@ public async Task Save_DelegatesToAppropriateFactoryMethod()
     Assert.True(employee.IsSavable);
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L272-L287' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L272-L287' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Save Routing:**
@@ -367,20 +321,6 @@ Mark for deletion, then save:
 
 <!-- snippet: entities-delete -->
 <a id='snippet-entities-delete'></a>
-```cs
-// Delete marks entity for removal:
-//
-// var employee = await factory.Fetch(1);
-// Assert.False(employee.IsDeleted);
-//
-// employee.Delete();
-// Assert.True(employee.IsDeleted);
-// Assert.True(employee.IsModified);  // Deletion is a modification
-//
-// await factory.SaveAsync(employee); // Routes to DeleteAsync
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L224-L235' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-delete' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-delete-1'></a>
 ```cs
 [Fact]
 public async Task Delete_MarksEntityForDeletion()
@@ -402,7 +342,7 @@ public async Task Delete_MarksEntityForDeletion()
     Assert.True(customer.IsSavable);  // Ready for delete operation
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L289-L309' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-delete-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L289-L309' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Undeleting Entities
@@ -411,20 +351,6 @@ Restore a deleted entity before save:
 
 <!-- snippet: entities-undelete -->
 <a id='snippet-entities-undelete'></a>
-```cs
-// UnDelete reverses the deletion mark:
-//
-// employee.Delete();
-// Assert.True(employee.IsDeleted);
-//
-// employee.UnDelete();
-// Assert.False(employee.IsDeleted);
-//
-// // Now Save will route to Update instead of Delete
-// await factory.SaveAsync(employee);
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L237-L248' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-undelete' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-undelete-1'></a>
 ```cs
 [Fact]
 public async Task UnDelete_ReversesDeleteBeforeSave()
@@ -447,7 +373,7 @@ public async Task UnDelete_ReversesDeleteBeforeSave()
     Assert.False(customer.IsModified); // Back to clean state
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L311-L332' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-undelete-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L311-L332' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-undelete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Change Tracking
@@ -458,23 +384,6 @@ Track modification state:
 
 <!-- snippet: entities-modification-state -->
 <a id='snippet-entities-modification-state'></a>
-```cs
-// Modification tracking properties:
-//
-// entity.IsModified       - True if entity or children have changes
-// entity.IsSelfModified   - True if this entity's properties changed
-// entity.IsMarkedModified - True if explicitly marked modified
-// entity.ModifiedProperties - List of changed property names
-//
-// var emp = await factory.Fetch(1);
-// Assert.False(emp.IsModified);
-//
-// emp.Name = "Changed";
-// Assert.True(emp.IsModified);
-// Assert.Contains("Name", emp.ModifiedProperties);
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L250-L264' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-modification-state' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-modification-state-1'></a>
 ```cs
 [Fact]
 public void ModificationState_TracksChanges()
@@ -501,7 +410,7 @@ public void ModificationState_TracksChanges()
     Assert.Contains("OrderNumber", order.ModifiedProperties);
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L364-L389' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-modification-state-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L364-L389' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-modification-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Marking Clean/Dirty
@@ -510,20 +419,6 @@ Manually control dirty state:
 
 <!-- snippet: entities-mark-modified -->
 <a id='snippet-entities-mark-modified'></a>
-```cs
-// MarkModified forces entity to appear modified:
-//
-// var emp = await factory.Fetch(1);
-// Assert.False(emp.IsModified);
-//
-// emp.MarkModified();  // Force modified state
-// Assert.True(emp.IsMarkedModified);
-// Assert.True(emp.IsModified);
-//
-// // Useful when external changes require a save
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L266-L277' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-mark-modified' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-mark-modified-1'></a>
 ```cs
 [Fact]
 public void MarkModified_ForcesEntityToBeSaved()
@@ -544,7 +439,7 @@ public void MarkModified_ForcesEntityToBeSaved()
     Assert.True(order.IsMarkedModified);
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L391-L410' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-mark-modified-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L391-L410' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-mark-modified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 <!-- snippet: entities-mark-unmodified -->
 <!-- endSnippet -->
@@ -555,17 +450,6 @@ Entities track both modification and persistence state:
 
 <!-- snippet: entities-persistence-state -->
 <a id='snippet-entities-persistence-state'></a>
-```cs
-// Full persistence state properties:
-//
-// IsNew        - Not yet persisted
-// IsDeleted    - Marked for deletion
-// IsChild      - Part of another aggregate
-// IsModified   - Has changes (self or children)
-// IsSavable    - Can be saved (valid, modified, not busy, not child)
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L292-L300' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-persistence-state' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-persistence-state-1'></a>
 ```cs
 [Fact]
 public async Task PersistenceState_DeterminesFactoryMethod()
@@ -592,7 +476,7 @@ public async Task PersistenceState_DeterminesFactoryMethod()
     Assert.False(fetchedOrder.IsDeleted);
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L436-L461' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-persistence-state-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L436-L461' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-persistence-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## IsSavable
@@ -601,30 +485,6 @@ Check if an entity can be saved:
 
 <!-- snippet: entities-savable -->
 <a id='snippet-entities-savable'></a>
-```cs
-// IsSavable determines if Save will succeed:
-//
-// entity.IsSavable = entity.IsValid
-//                 && entity.IsModified
-//                 && !entity.IsBusy
-//                 && !entity.IsChild;
-//
-// // Check before save:
-// if (employee.IsSavable)
-// {
-//     await factory.SaveAsync(employee);
-// }
-// else if (!employee.IsValid)
-// {
-//     ShowValidationErrors(employee.PropertyMessages);
-// }
-// else if (employee.IsBusy)
-// {
-//     ShowBusyIndicator();
-// }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L302-L323' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-savable' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-savable-1'></a>
 ```cs
 [Fact]
 public void IsSavable_CombinesStateChecks()
@@ -649,7 +509,7 @@ public void IsSavable_CombinesStateChecks()
     Assert.True(order.IsSavable);     // Can save!
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L463-L486' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-savable-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L463-L486' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-savable' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `IsSavable` returns `true` when:
@@ -663,22 +523,6 @@ Parent entities reflect child state:
 
 <!-- snippet: entities-child-state -->
 <a id='snippet-entities-child-state'></a>
-```cs
-// Child entities are part of their parent aggregate:
-//
-// var dept = factory.Create<Department>();
-// var member = memberFactory.Create();
-// dept.Members.Add(member);
-//
-// Assert.True(member.IsChild);   // Part of aggregate
-// Assert.Same(dept, member.Parent);
-// Assert.Same(dept, member.Root);  // Aggregate root
-//
-// // Children are saved when their root is saved
-// await factory.SaveAsync(dept); // Saves dept AND all members
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L325-L338' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-child-state-1'></a>
 ```cs
 [Fact]
 public async Task ChildEntity_CannotSaveDirectly()
@@ -708,7 +552,7 @@ public async Task ChildEntity_CannotSaveDirectly()
     Assert.Equal(SaveFailureReason.IsChildObject, exception.Reason);
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L488-L516' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L488-L516' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Factory Services
@@ -717,22 +561,6 @@ Inject services into factory methods:
 
 <!-- snippet: entities-factory-services -->
 <a id='snippet-entities-factory-services'></a>
-```cs
-// Inject services into factory methods:
-//
-// [Fetch]
-// public async Task FetchAsync(
-//     int id,
-//     [Service] IEmployeeRepository repository,
-//     [Service] ILogger<Employee> logger)
-// {
-//     logger.LogInformation("Fetching employee {Id}", id);
-//     var data = await repository.FetchAsync(id);
-//     // ...
-// }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L340-L353' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-factory-services-1'></a>
 ```cs
 [Fact]
 public void Factory_SetThroughDependencyInjection()
@@ -749,7 +577,7 @@ public void Factory_SetThroughDependencyInjection()
     // The factory calls Insert, Update, or Delete based on entity state
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L518-L533' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L518-L533' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Save Cancellation
@@ -758,22 +586,6 @@ Handle cancellation during save operations:
 
 <!-- snippet: entities-save-cancellation -->
 <a id='snippet-entities-save-cancellation'></a>
-```cs
-// Save supports cancellation:
-//
-// using var cts = new CancellationTokenSource();
-//
-// try
-// {
-//     await factory.SaveAsync(employee, cts.Token);
-// }
-// catch (OperationCanceledException)
-// {
-//     // Save was cancelled
-// }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L355-L368' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-save-cancellation-1'></a>
 ```cs
 [Fact]
 public async Task Save_SupportsCancellation()
@@ -795,7 +607,7 @@ public async Task Save_SupportsCancellation()
     Assert.True(order.IsModified);
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L535-L555' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L535-L555' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Parent Property
@@ -804,23 +616,6 @@ Access the parent in child entities:
 
 <!-- snippet: entities-parent-property -->
 <a id='snippet-entities-parent-property'></a>
-```cs
-// Parent property tracks aggregate relationships:
-//
-// var dept = deptFactory.Create();
-// var member = memberFactory.Create();
-//
-// dept.Members.Add(member);
-//
-// Assert.Same(dept, member.Parent);
-// Assert.True(member.IsChild);
-//
-// // Root finds the aggregate root
-// Assert.Same(dept, member.Root);
-// Assert.Null(dept.Root); // Root has no parent
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L370-L384' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-parent-property' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-parent-property-1'></a>
 ```cs
 [Fact]
 public void Parent_EstablishesAggregateGraph()
@@ -850,7 +645,7 @@ public void Parent_EstablishesAggregateGraph()
     Assert.Null(order.Root);
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L334-L362' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-parent-property-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L334-L362' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-parent-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Related

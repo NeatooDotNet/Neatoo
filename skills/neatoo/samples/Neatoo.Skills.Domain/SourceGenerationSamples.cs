@@ -22,22 +22,6 @@ public partial class SkillGenCustomer : ValidateBase<SkillGenCustomer>
 {
     public SkillGenCustomer(IValidateBaseServices<SkillGenCustomer> services) : base(services) { }
 
-    // Source generator creates for each partial property:
-    //
-    // private IValidateProperty<string> _NameProperty;
-    //
-    // public partial string Name
-    // {
-    //     get => _NameProperty.Value;
-    //     set
-    //     {
-    //         _NameProperty.Value = value;
-    //         TaskManager.Add(_NameProperty.Task);
-    //     }
-    // }
-    //
-    // Access via indexer: entity["Name"] returns _NameProperty
-
     public partial string Name { get; set; }
 
     public partial string Email { get; set; }
@@ -66,18 +50,6 @@ public partial class SkillGenEntity : EntityBase<SkillGenEntity>
     public partial int Id { get; set; }
 
     public partial string Name { get; set; }
-
-    // Source generator creates:
-    //
-    // public interface ISkillGenEntityFactory
-    // {
-    //     SkillGenEntity Create();
-    //     Task<SkillGenEntity> FetchAsync(int id);
-    //     Task<SkillGenEntity?> SaveAsync(SkillGenEntity target);
-    // }
-    //
-    // Note: [Service] parameters are NOT in the interface
-    // They're resolved from DI at runtime
 
     [Create]
     public void Create()
@@ -137,20 +109,6 @@ public partial class SkillGenSaveEntity : EntityBase<SkillGenSaveEntity>
         Data = "";
     }
 
-    // Insert, Update, Delete with no non-service parameters
-    // generates IFactorySave<T> implementation:
-    //
-    // public interface ISkillGenSaveEntityFactory
-    // {
-    //     SkillGenSaveEntity Create();
-    //     Task<SkillGenSaveEntity?> SaveAsync(SkillGenSaveEntity target);
-    // }
-    //
-    // SaveAsync routes to Insert/Update/Delete based on:
-    // - IsNew && !IsDeleted → InsertAsync
-    // - !IsNew && !IsDeleted → UpdateAsync
-    // - IsDeleted → DeleteAsync
-
     [Insert]
     public Task InsertAsync([Service] ISkillGenRepository repository) =>
         repository.InsertAsync(Id, Data);
@@ -179,17 +137,6 @@ public partial class SkillGenRuleEntity : ValidateBase<SkillGenRuleEntity>
 {
     public SkillGenRuleEntity(IValidateBaseServices<SkillGenRuleEntity> services) : base(services)
     {
-        // Lambda validation rules generate RuleId entries in RuleIdRegistry.
-        // This ensures consistent rule identification across compilations.
-        //
-        // The generator creates something like:
-        // static readonly RuleId Rule_Value_1 = new RuleId("SkillGenRuleEntity", "Value", 1);
-        //
-        // This allows:
-        // - Suppressing specific rules by ID
-        // - Tracking which rules fired
-        // - Consistent serialization of broken rules
-
         RuleManager.AddValidation(
             entity => entity.Value > 0 ? "" : "Value must be positive",
             e => e.Value);
@@ -226,36 +173,10 @@ public class SkillGenTestObject : ValidateBase<SkillGenTestObject>
 
     public int Amount { get => Getter<int>(); set => Setter(value); }
 }
-// No ISkillGenTestObjectFactory is generated.
-// Create instances manually by resolving services from DI:
-//
-// var services = serviceProvider.GetRequiredService<IValidateBaseServices<SkillGenTestObject>>();
-// var testObj = new SkillGenTestObject(services);
 #endregion
 
 // -----------------------------------------------------------------------------
-// Generated Code Location
-// -----------------------------------------------------------------------------
-
-// Generated code is output to the Generated/ folder:
-//
-// MyProject/
-// ├── Domain/
-// │   └── Employee.cs              # Your code
-// ├── Generated/
-// │   └── Neatoo.BaseGenerator/
-// │       └── Employee.g.cs        # Generated code
-// └── MyProject.csproj
-//
-// The Generated/ folder is typically excluded from git (see .gitignore).
-//
-// To inspect generated code:
-// 1. Build the project
-// 2. Look in Generated/Neatoo.BaseGenerator/
-// 3. Or use IDE "Go to Definition" on generated members
-
-// -----------------------------------------------------------------------------
-// Repository Interface
+// Repository Interface (for samples above)
 // -----------------------------------------------------------------------------
 
 public interface ISkillGenRepository

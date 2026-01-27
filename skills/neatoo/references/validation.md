@@ -293,15 +293,6 @@ Rules run automatically on property change. Manually run rules when needed:
 <!-- snippet: validation-run-rules -->
 <a id='snippet-validation-run-rules'></a>
 ```cs
-// Manually run validation rules:
-//
-// await entity.RunRules("PropertyName");      // Run rules for one property
-// await entity.RunRules(RunRulesFlag.Self);   // Run this object's rules
-// await entity.RunRules(RunRulesFlag.All);    // Run all rules including children
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L288-L294' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-run-rules' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-run-rules-1'></a>
-```cs
 [Fact]
 public async Task RunRulesManually_RevalidateEntity()
 {
@@ -325,7 +316,7 @@ public async Task RunRulesManually_RevalidateEntity()
     Assert.True(order.IsValid);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L610-L633' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-run-rules-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/ValidationSamples.cs#L610-L633' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-run-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Checking Validation State
@@ -334,22 +325,6 @@ Access validation state through standard properties:
 
 <!-- snippet: validation-properties -->
 <a id='snippet-validation-properties'></a>
-```cs
-// Access validation state through these properties:
-//
-// entity.IsValid        - True if all properties pass validation
-// entity.IsSelfValid    - True if this object's properties pass (ignores children)
-// entity.IsBusy         - True while async validation is running
-// entity.PropertyMessages - Collection of all validation error messages
-//
-// Example:
-// if (entity.IsValid && !entity.IsBusy)
-// {
-//     // Safe to submit
-// }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L246-L259' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-properties' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-properties-1'></a>
 ```cs
 [Factory]
 public partial class ValidationEmployee : ValidateBase<ValidationEmployee>
@@ -371,7 +346,7 @@ public partial class ValidationEmployee : ValidateBase<ValidationEmployee>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L34-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-properties-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/ValidationSamples.cs#L34-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## BrokenRules Collection
@@ -380,21 +355,6 @@ Access detailed validation errors:
 
 <!-- snippet: validation-error-messages -->
 <a id='snippet-validation-error-messages'></a>
-```cs
-// Access error messages through PropertyMessages:
-//
-// foreach (var message in entity.PropertyMessages)
-// {
-//     Console.WriteLine($"{message.Property.Name}: {message.Message}");
-// }
-//
-// Filter by property:
-// var emailErrors = entity.PropertyMessages
-//     .Where(m => m.Property.Name == "Email")
-//     .ToList();
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L261-L273' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-error-messages' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-error-messages-1'></a>
 ```cs
 [Fact]
 public void AccessValidationMessages_PropertyAndObject()
@@ -421,7 +381,7 @@ public void AccessValidationMessages_PropertyAndObject()
     Assert.Contains(priceProperty.PropertyMessages, m => m.Message.Contains("negative"));
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L635-L660' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-error-messages-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/ValidationSamples.cs#L635-L660' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-error-messages' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Property-Level Validation State
@@ -430,20 +390,6 @@ Check validation state for individual properties:
 
 <!-- snippet: validation-property-state -->
 <a id='snippet-validation-property-state'></a>
-```cs
-// Access individual property validation state:
-//
-// var emailProperty = entity["Email"];
-// if (!emailProperty.IsValid)
-// {
-//     foreach (var msg in emailProperty.PropertyMessages)
-//     {
-//         Console.WriteLine(msg.Message);
-//     }
-// }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L275-L286' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-property-state' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-property-state-1'></a>
 ```cs
 [Fact]
 public async Task PropertyValidationState_IndividualPropertyTracking()
@@ -472,7 +418,7 @@ public async Task PropertyValidationState_IndividualPropertyTracking()
     Assert.NotEmpty(emailProperty.PropertyMessages);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L662-L689' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-property-state-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/ValidationSamples.cs#L662-L689' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-property-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Pausing Validation
@@ -481,20 +427,6 @@ Temporarily pause validation during bulk operations:
 
 <!-- snippet: validation-pause-actions -->
 <a id='snippet-validation-pause-actions'></a>
-```cs
-// Pause validation during bulk updates:
-//
-// using (entity.PauseAllActions())
-// {
-//     entity.Property1 = value1;
-//     entity.Property2 = value2;
-//     entity.Property3 = value3;
-//     // Rules don't run during pause
-// }
-// // Rules run automatically when pause ends
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L296-L307' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-pause-actions' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-pause-actions-1'></a>
 ```cs
 [Fact]
 public void PauseAllActions_BatchUpdatesWithoutValidation()
@@ -521,7 +453,7 @@ public void PauseAllActions_BatchUpdatesWithoutValidation()
     Assert.Equal("PROD-001", order.ProductCode);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L718-L743' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-pause-actions-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/ValidationSamples.cs#L718-L743' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-pause-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Cascading Validation
@@ -557,7 +489,7 @@ public partial class SkillValidInvoice : ValidateBase<SkillValidInvoice>
 // - If any child is invalid, parent.IsValid is false
 // - Parent.IsSelfValid only checks parent's own properties
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L344-L370' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cascade' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L277-L303' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cascade' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-validation-cascade-1'></a>
 ```cs
 [Fact]
@@ -607,7 +539,7 @@ Access validation metadata:
 // entity.PropertyMessages - All error messages
 // entity.ObjectInvalid    - Object-level error message (from MarkInvalid)
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L372-L380' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-meta-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L305-L313' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-meta-properties' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-validation-meta-properties-1'></a>
 ```cs
 [Fact]
@@ -654,7 +586,7 @@ Neatoo automatically checks `IsValid` before allowing save operations:
 //
 // Save() will fail if !IsSavable
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L382-L388' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L315-L321' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-validation-before-save-1'></a>
 ```cs
 [Fact]

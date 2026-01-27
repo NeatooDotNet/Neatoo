@@ -230,22 +230,6 @@ public static partial class SkillSendEmailCommand
         }
     }
 }
-// Usage (in a rule or other code):
-// public class MyRule : AsyncRuleBase<MyEntity>
-// {
-//     private readonly SkillSendEmailCommand.SendEmail _sendEmail;
-//
-//     public MyRule(SkillSendEmailCommand.SendEmail sendEmail) : base(e => e.Status)
-//     {
-//         _sendEmail = sendEmail;
-//     }
-//
-//     protected override async Task<IRuleMessages> ExecuteAsync(MyEntity target)
-//     {
-//         var success = await _sendEmail(target.Email, "Subject", "Body");
-//         // ...
-//     }
-// }
 #endregion
 
 // -----------------------------------------------------------------------------

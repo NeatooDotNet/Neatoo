@@ -77,27 +77,6 @@ Generated property implementation:
 <!-- snippet: properties-generated-implementation -->
 <a id='snippet-properties-generated-implementation'></a>
 ```cs
-// The source generator creates backing fields for each partial property:
-//
-// private IValidateProperty<string> NameProperty;
-//
-// public partial string Name
-// {
-//     get => NameProperty.Value;
-//     set
-//     {
-//         NameProperty.Value = value;
-//         TaskManager.Add(NameProperty.Task);
-//     }
-// }
-//
-// Access the generated property wrapper via indexer:
-// var property = entity["Name"];
-// property.Value, property.IsValid, property.PropertyMessages, etc.
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/PropertySamples.cs#L237-L255' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-generated-implementation' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-properties-generated-implementation-1'></a>
-```cs
 [Fact]
 public void GeneratedImplementation_PropertyBackingField()
 {
@@ -118,7 +97,7 @@ public void GeneratedImplementation_PropertyBackingField()
     Assert.Equal("Bob Smith", nameProperty.Value);
 }
 ```
-<sup><a href='/src/docs/samples/PropertiesSamples.cs#L234-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-generated-implementation-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L234-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-generated-implementation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The generated code creates:

@@ -85,24 +85,6 @@ Add items using standard collection methods:
 <!-- snippet: collections-add-item -->
 <a id='snippet-collections-add-item'></a>
 ```cs
-// Add items to entity collections:
-//
-// var order = orderFactory.Create();
-// var item = itemFactory.Create();
-// item.ProductCode = "WIDGET-001";
-// item.Price = 19.99m;
-// item.Quantity = 2;
-//
-// order.Items.Add(item);
-//
-// // Item is now in the collection with parent relationship
-// Assert.Single(order.Items);
-// Assert.Same(order, item.Parent);
-// Assert.True(item.IsChild);
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L155-L170' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-add-item' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-add-item-1'></a>
-```cs
 [Fact]
 public void AddItem_SetsParentAndTracksItem()
 {
@@ -127,7 +109,7 @@ public void AddItem_SetsParentAndTracksItem()
     Assert.Same(order, item.Parent);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L135-L159' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-add-item-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L135-L159' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-add-item' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 During insertion, ValidateListBase:
@@ -153,21 +135,6 @@ Remove items from ValidateListBase:
 <!-- snippet: collections-remove-validate -->
 <a id='snippet-collections-remove-validate'></a>
 ```cs
-// Remove from validate lists - items removed immediately:
-//
-// var list = new SkillCollPhoneNumberList();
-// var phone = phoneFactory.Create();
-// phone.Number = "555-1234";
-//
-// list.Add(phone);
-// Assert.Single(list);
-//
-// list.Remove(phone);
-// Assert.Empty(list);  // No deletion tracking
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L188-L200' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-validate' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-remove-validate-1'></a>
-```cs
 [Fact]
 public void RemoveFromValidateList_RemovesImmediately()
 {
@@ -186,7 +153,7 @@ public void RemoveFromValidateList_RemovesImmediately()
     Assert.Empty(list);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L161-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-validate-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L161-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-validate' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The item is unsubscribed from events and removed immediately.
@@ -195,23 +162,6 @@ Remove items from EntityListBase:
 
 <!-- snippet: collections-remove-entity -->
 <a id='snippet-collections-remove-entity'></a>
-```cs
-// Remove from entity lists - existing items tracked for deletion:
-//
-// var order = orderFactory.Create();
-// var item = itemFactory.Fetch(1, "WIDGET-001", 19.99m, 1);
-// order.Items.Add(item);
-// order.DoMarkUnmodified();  // Simulate loaded from DB
-//
-// order.Items.Remove(item);
-//
-// // Item is in DeletedList for persistence
-// Assert.True(item.IsDeleted);
-// Assert.Equal(1, order.Items.DeletedCount);
-// Assert.Empty(order.Items);  // Removed from active list
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L172-L186' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-entity' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-remove-entity-1'></a>
 ```cs
 [Fact]
 public void RemoveFromEntityList_TracksForDeletion()
@@ -241,7 +191,7 @@ public void RemoveFromEntityList_TracksForDeletion()
     Assert.Equal(1, order.Items.DeletedCount);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L181-L209' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-entity-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L181-L209' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-entity' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The sample uses `DoMarkUnmodified()`, a helper method that exposes the protected `MarkUnmodified()` for demonstration purposes. In production, `MarkUnmodified()` is called automatically by the framework after Fetch or successful save operations.
@@ -261,26 +211,6 @@ Parent references propagate when items are added:
 
 <!-- snippet: collections-parent-cascade -->
 <a id='snippet-collections-parent-cascade'></a>
-```cs
-// Parent relationship cascades to all items:
-//
-// var order = orderFactory.Create();
-// var item1 = itemFactory.Create();
-// var item2 = itemFactory.Create();
-//
-// order.Items.Add(item1);
-// order.Items.Add(item2);
-//
-// // All items have parent set to aggregate root
-// Assert.Same(order, item1.Parent);
-// Assert.Same(order, item2.Parent);
-//
-// // Root walks to aggregate root
-// Assert.Same(order, item1.Root);
-// Assert.Same(order, item2.Root);
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L202-L219' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-parent-cascade' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-parent-cascade-1'></a>
 ```cs
 [Fact]
 public void ParentCascade_UpdatesAllItems()
@@ -308,7 +238,7 @@ public void ParentCascade_UpdatesAllItems()
     Assert.Same(order, item2.Root);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L211-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-parent-cascade-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L211-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-parent-cascade' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This establishes the aggregate boundary. All items within the collection belong to the same aggregate root, enabling:
@@ -331,25 +261,6 @@ Validation state propagates through property change events:
 
 <!-- snippet: collections-validation -->
 <a id='snippet-collections-validation'></a>
-```cs
-// Validation state aggregates from children:
-//
-// var list = new SkillCollPhoneNumberList();
-// var validPhone = phoneFactory.Create();
-// validPhone.Number = "555-1234";
-//
-// var invalidPhone = phoneFactory.Create();
-// // Number is empty - invalid
-//
-// list.Add(validPhone);
-// Assert.True(list.IsValid);
-//
-// list.Add(invalidPhone);
-// Assert.False(list.IsValid);    // Child makes list invalid
-// Assert.True(list.IsSelfValid); // List itself has no validation
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L221-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validation' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-validation-1'></a>
 ```cs
 [Fact]
 public async Task ValidationState_AggregatesFromChildren()
@@ -385,7 +296,7 @@ public async Task ValidationState_AggregatesFromChildren()
     Assert.True(list.IsValid);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L239-L273' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validation-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L239-L273' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The collection uses cached meta properties with incremental updates:
@@ -397,21 +308,6 @@ Run validation rules on all items:
 
 <!-- snippet: collections-run-rules -->
 <a id='snippet-collections-run-rules'></a>
-```cs
-// RunRules executes on all items:
-//
-// var list = new SkillCollPhoneNumberList();
-// list.Add(phone1);
-// list.Add(phone2);
-//
-// await list.RunRules(RunRulesFlag.All);
-//
-// // Each item's rules have been executed
-// Assert.True(phone1.IsValid || !phone1.IsValid);  // State is determined
-// Assert.True(phone2.IsValid || !phone2.IsValid);
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L239-L251' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-run-rules' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-run-rules-1'></a>
 ```cs
 [Fact]
 public async Task RunRules_ExecutesOnAllItems()
@@ -443,7 +339,7 @@ public async Task RunRules_ExecutesOnAllItems()
     Assert.False(list.IsValid);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L275-L305' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-run-rules-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L275-L305' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-run-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This executes validation rules on every item in the collection and updates the aggregated validation state.
@@ -456,27 +352,6 @@ Iterate over items:
 
 <!-- snippet: collections-iteration -->
 <a id='snippet-collections-iteration'></a>
-```cs
-// Standard collection operations supported:
-//
-// // Count
-// Assert.Equal(3, order.Items.Count);
-//
-// // Indexer
-// var first = order.Items[0];
-//
-// // foreach
-// foreach (var item in order.Items)
-// {
-//     Console.WriteLine(item.ProductCode);
-// }
-//
-// // LINQ
-// var total = order.Items.Sum(i => i.Price * i.Quantity);
-// var expensive = order.Items.Where(i => i.Price > 100);
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L253-L271' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-iteration' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-iteration-1'></a>
 ```cs
 [Fact]
 public void Iteration_SupportsStandardPatterns()
@@ -516,7 +391,7 @@ public void Iteration_SupportsStandardPatterns()
     Assert.Equal(3, order.Items.Count);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L307-L345' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-iteration-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L307-L345' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-iteration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Collections support:
@@ -535,33 +410,6 @@ The DeletedList lifecycle:
 
 <!-- snippet: collections-deleted-list -->
 <a id='snippet-collections-deleted-list'></a>
-```cs
-// DeletedList tracks removed existing items:
-//
-// // Load existing items
-// order.Items.Add(itemFactory.Fetch(1, "A", 10m, 1));
-// order.Items.Add(itemFactory.Fetch(2, "B", 20m, 1));
-// order.DoMarkUnmodified();
-//
-// // Remove one
-// var removed = order.Items[0];
-// order.Items.Remove(removed);
-//
-// // Active list has 1 item
-// Assert.Single(order.Items);
-//
-// // DeletedList has the removed item
-// Assert.Equal(1, order.Items.DeletedCount);
-// Assert.True(removed.IsDeleted);
-//
-// // Removed NEW items are not tracked (never persisted)
-// var newItem = itemFactory.Create();
-// order.Items.Add(newItem);
-// order.Items.Remove(newItem);
-// Assert.Equal(1, order.Items.DeletedCount);  // Still 1
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L273-L297' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-deleted-list' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-deleted-list-1'></a>
 ```cs
 [Fact]
 public void DeletedList_TracksRemovedEntitiesUntilSave()
@@ -589,7 +437,7 @@ public void DeletedList_TracksRemovedEntitiesUntilSave()
     Assert.True(order.Items.IsModified);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L347-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-deleted-list-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L347-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-deleted-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Deleted items remain in DeletedList with their ContainingList property set until FactoryComplete fires after a successful save. This preserves aggregate boundaries during the save operation:

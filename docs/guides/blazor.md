@@ -48,19 +48,6 @@ Bind to a string property:
 <!-- snippet: blazor-text-field-basic -->
 <a id='snippet-blazor-text-field-basic'></a>
 ```cs
-// Basic text field binding:
-//
-// <MudNeatooTextField T="string" EntityProperty="@employee["Name"]" />
-//
-// The component:
-// - Binds to the property value
-// - Uses DisplayName from DataAnnotations
-// - Shows validation errors automatically
-// - Disables while IsBusy is true
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L114-L124' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-text-field-basic' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-text-field-basic-1'></a>
-```cs
 // Razor component markup:
 // <MudNeatooTextField T="string" EntityProperty="@employee["Name"]" />
 
@@ -81,7 +68,7 @@ public void TextFieldBindsToEntityProperty()
     Assert.Equal("Alice Johnson", nameProperty.Value);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L116-L136' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-text-field-basic-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L116-L136' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-text-field-basic' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The component synchronizes value changes to the entity property via the typed property setter, triggering the full rule pipeline (validation rules and business rules) with `ChangeReason.UserEdit`.
@@ -94,18 +81,6 @@ Configure a property with validation and bind to a component:
 
 <!-- snippet: blazor-validation-inline -->
 <a id='snippet-blazor-validation-inline'></a>
-```cs
-// Validation errors appear inline:
-//
-// <MudNeatooTextField T="string" EntityProperty="@employee["Email"]" />
-//
-// When property fails validation:
-// - Error styling applied to input
-// - Error message shown below field
-// - Component waits for async validation before showing errors
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L126-L135' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-validation-inline' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-validation-inline-1'></a>
 ```cs
 // Razor component markup with validation:
 // <MudNeatooTextField T="string" EntityProperty="@employee["Email"]" />
@@ -128,7 +103,7 @@ public void ValidationDisplaysInlineErrors()
     Assert.NotEmpty(emailProperty.PropertyMessages);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L138-L159' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-validation-inline-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L138-L159' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-validation-inline' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The component subscribes to `PropertyChanged` events. When async validation rules complete, they update `PropertyMessages` and trigger `PropertyChanged`, causing the component to re-render with validation messages.
@@ -141,21 +116,6 @@ Display aggregate validation errors:
 
 <!-- snippet: blazor-validation-summary -->
 <a id='snippet-blazor-validation-summary'></a>
-```cs
-// Show all validation errors in one place:
-//
-// <NeatooValidationSummary Entity="@employee" />
-//
-// With options:
-// <NeatooValidationSummary Entity="@employee"
-//                          ShowHeader="true"
-//                          HeaderText="Please fix these errors:"
-//                          IncludePropertyNames="true" />
-//
-// entity.PropertyMessages provides all error messages
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L137-L149' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-validation-summary' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-validation-summary-1'></a>
 ```cs
 // Razor component markup:
 // <NeatooValidationSummary Entity="@employee" />
@@ -182,7 +142,7 @@ public void ValidationSummaryShowsAllErrors()
     Assert.True(employee.PropertyMessages.Count >= 2);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L161-L186' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-validation-summary-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L161-L186' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-validation-summary' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The validation summary subscribes to entity `PropertyChanged` events. When validation state changes (including cascade from child entities), `PropertyMessages` updates and the component re-renders with the aggregated messages from the entire aggregate.
@@ -195,36 +155,6 @@ Create a form with validation:
 
 <!-- snippet: blazor-form-submit -->
 <a id='snippet-blazor-form-submit'></a>
-```cs
-// Form with validation and submit:
-//
-// <MudForm @ref="form">
-//     <MudNeatooTextField T="string" EntityProperty="@employee["Name"]" />
-//     <MudNeatooTextField T="string" EntityProperty="@employee["Email"]" />
-//     <MudNeatooNumericField T="decimal" EntityProperty="@employee["Salary"]" />
-//
-//     <MudButton OnClick="@Submit"
-//                Disabled="@(!employee.IsValid || employee.IsBusy)">
-//         Save
-//     </MudButton>
-// </MudForm>
-//
-// @code {
-//     private MudForm form;
-//     private SkillBlazorEmployee employee;
-//
-//     private async Task Submit()
-//     {
-//         await form.Validate();
-//         if (employee.IsValid)
-//         {
-//             await employeeFactory.SaveAsync(employee);
-//         }
-//     }
-// }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L151-L178' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-form-submit' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-form-submit-1'></a>
 ```cs
 // Razor component markup:
 // <MudForm @ref="form">
@@ -275,7 +205,7 @@ public async Task FormValidationPreventsInvalidSubmit()
     Assert.True(employee.IsValid);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L188-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-form-submit-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L188-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-form-submit' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 MudNeatoo components integrate with MudForm's validation system, preventing submission when invalid.
@@ -288,25 +218,6 @@ Bind to a property with async validation:
 
 <!-- snippet: blazor-busy-state -->
 <a id='snippet-blazor-busy-state'></a>
-```cs
-// Busy state during async validation:
-//
-// <MudNeatooTextField T="string"
-//                     EntityProperty="@employee["Email"]" />
-//
-// Component automatically:
-// - Sets Disabled="true" while IsBusy is true
-// - Shows loading indicator during async validation
-// - Re-enables when validation completes
-//
-// In code:
-// if (employee.IsBusy)
-// {
-//     // Show spinner, disable submit button
-// }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L180-L196' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-busy-state' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-busy-state-1'></a>
 ```cs
 // Razor component markup:
 // <MudNeatooTextField T="string"
@@ -340,7 +251,7 @@ public async Task BusyStateDisablesComponent()
     Assert.False(emailProperty.IsBusy);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L239-L271' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-busy-state-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L239-L271' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-busy-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The component subscribes to `PropertyChanged` events on `IsBusy`. When the property's busy state changes, the component re-renders with the updated disabled state.
@@ -353,19 +264,6 @@ Configure a read-only property:
 
 <!-- snippet: blazor-readonly-property -->
 <a id='snippet-blazor-readonly-property'></a>
-```cs
-// Read-only property binding:
-//
-// <MudNeatooTextField T="string"
-//                     EntityProperty="@entity["CreatedBy"]" />
-//
-// Component respects IsReadOnly property:
-// - ReadOnly="@EntityProperty.IsReadOnly"
-// - Field displays value but cannot be edited
-// - Typically set during entity initialization
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L198-L208' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-readonly-property' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-readonly-property-1'></a>
 ```cs
 // Razor component markup:
 // <MudNeatooTextField T="string" EntityProperty="@entity["CreatedBy"]" />
@@ -394,7 +292,7 @@ public void ReadOnlyPropertyBindsToComponent()
     Assert.Equal("admin", entity.CreatedBy);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L273-L300' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-readonly-property-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L273-L300' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-readonly-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Read-only components remain visually enabled but prevent editing. The underlying MudBlazor component respects the `ReadOnly` parameter, which MudNeatoo binds to `EntityProperty.IsReadOnly`.
@@ -407,24 +305,6 @@ Bind to an enum property:
 
 <!-- snippet: blazor-select-enum -->
 <a id='snippet-blazor-select-enum'></a>
-```cs
-// Dropdown for enum properties:
-//
-// <MudNeatooSelect T="SkillPriority" EntityProperty="@employee["Priority"]">
-//     <MudSelectItem Value="SkillPriority.Low">Low</MudSelectItem>
-//     <MudSelectItem Value="SkillPriority.Medium">Medium</MudSelectItem>
-//     <MudSelectItem Value="SkillPriority.High">High</MudSelectItem>
-//     <MudSelectItem Value="SkillPriority.Critical">Critical</MudSelectItem>
-// </MudNeatooSelect>
-//
-// Or generate items from enum:
-// @foreach (var priority in Enum.GetValues<SkillPriority>())
-// {
-//     <MudSelectItem Value="@priority">@priority.ToString()</MudSelectItem>
-// }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L210-L225' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-select-enum' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-select-enum-1'></a>
 ```cs
 // Razor component markup:
 // <MudNeatooSelect T="Priority" EntityProperty="@employee["Priority"]">
@@ -447,7 +327,7 @@ public void SelectBindsToEnumProperty()
     Assert.Equal(Priority.High, priorityProperty.Value);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L302-L323' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-select-enum-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L302-L323' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-select-enum' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The select component binds to the property wrapper. When the user selects a value, the component updates the entity property via the typed setter, triggering validation rules. Error messages display automatically from `PropertyMessages`.
@@ -460,18 +340,6 @@ Bind to a boolean property:
 
 <!-- snippet: blazor-checkbox-binding -->
 <a id='snippet-blazor-checkbox-binding'></a>
-```cs
-// Checkbox for boolean properties:
-//
-// <MudNeatooCheckBox T="bool" EntityProperty="@employee["IsActive"]" />
-//
-// Or switch style:
-// <MudNeatooSwitch T="bool" EntityProperty="@employee["IsActive"]" />
-//
-// Binds to bool property with automatic two-way binding
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L227-L236' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-checkbox-binding' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-checkbox-binding-1'></a>
 ```cs
 // Razor component markup:
 // <MudNeatooCheckBox T="bool" EntityProperty="@employee["IsActive"]" />
@@ -496,7 +364,7 @@ public void CheckboxBindsToBooleanProperty()
     Assert.Equal(false, isActiveProperty.Value);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L325-L348' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-checkbox-binding-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L325-L348' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-checkbox-binding' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Checkbox state changes update the entity property via the typed setter, triggering business rules and validation rules with `ChangeReason.UserEdit`.
@@ -509,20 +377,6 @@ Bind to a date property:
 
 <!-- snippet: blazor-date-picker -->
 <a id='snippet-blazor-date-picker'></a>
-```cs
-// Date picker binding:
-//
-// <MudNeatooDatePicker EntityProperty="@employee["StartDate"]" />
-//
-// With options:
-// <MudNeatooDatePicker EntityProperty="@employee["StartDate"]"
-//                      DateFormat="yyyy-MM-dd"
-//                      MinDate="@DateTime.Today"
-//                      Editable="true"
-//                      Clearable="true" />
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L238-L249' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-date-picker' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-date-picker-1'></a>
 ```cs
 // Razor component markup:
 // <MudNeatooDatePicker EntityProperty="@employee["StartDate"]" />
@@ -547,7 +401,7 @@ public void DatePickerBindsToDateProperty()
     Assert.Equal(startDate, startDateProperty.Value);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L350-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-date-picker-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L350-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-date-picker' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Date pickers bind to the property wrapper. When the user selects a date, the component updates the entity property via the typed setter, triggering validation and business rules. Error messages display automatically from `PropertyMessages`.
@@ -560,22 +414,6 @@ Bind to a decimal property:
 
 <!-- snippet: blazor-numeric-field -->
 <a id='snippet-blazor-numeric-field'></a>
-```cs
-// Numeric field binding:
-//
-// <MudNeatooNumericField T="decimal" EntityProperty="@employee["Salary"]" />
-//
-// With formatting:
-// <MudNeatooNumericField T="decimal"
-//                        EntityProperty="@employee["Salary"]"
-//                        Format="C2"
-//                        Min="0"
-//                        Max="1000000"
-//                        Adornment="Adornment.Start"
-//                        AdornmentText="$" />
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L251-L264' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-numeric-field' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-numeric-field-1'></a>
 ```cs
 // Razor component markup:
 // <MudNeatooNumericField T="decimal" EntityProperty="@employee["Salary"]" />
@@ -605,7 +443,7 @@ public void NumericFieldBindsToDecimalProperty()
     Assert.False(salaryProperty.IsValid);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L375-L403' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-numeric-field-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L375-L403' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-numeric-field' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Numeric fields support min/max validation and custom formatting.
@@ -618,29 +456,6 @@ Bind to a property with autocomplete search:
 
 <!-- snippet: blazor-autocomplete -->
 <a id='snippet-blazor-autocomplete'></a>
-```cs
-// Autocomplete binding:
-//
-// <MudNeatooAutocomplete T="string"
-//                        EntityProperty="@employee["Department"]"
-//                        SearchFunc="@SearchDepartments"
-//                        MinCharacters="2"
-//                        DebounceInterval="300" />
-//
-// @code {
-//     private async Task<IEnumerable<string>> SearchDepartments(
-//         string value, CancellationToken token)
-//     {
-//         var departments = new[] { "Engineering", "Sales", "Marketing", "HR" };
-//         if (string.IsNullOrEmpty(value))
-//             return departments;
-//         return departments.Where(d =>
-//             d.Contains(value, StringComparison.OrdinalIgnoreCase));
-//     }
-// }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L266-L286' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-autocomplete' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-autocomplete-1'></a>
 ```cs
 // Razor component markup:
 // <MudNeatooAutocomplete T="string"
@@ -675,7 +490,7 @@ public void AutocompleteBindsToStringProperty()
     Assert.Equal("Engineering", deptProperty.Value);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L405-L438' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-autocomplete-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L405-L438' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-autocomplete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Autocomplete integrates with async search functions. When the user selects a value, the component updates the entity property via the typed setter, triggering validation and business rules. Error messages display automatically from `PropertyMessages`.
@@ -688,34 +503,6 @@ Track unsaved changes:
 
 <!-- snippet: blazor-change-tracking -->
 <a id='snippet-blazor-change-tracking'></a>
-```cs
-// React to changes with IsModified:
-//
-// <MudButton OnClick="@Save"
-//            Disabled="@(!employee.IsModified || !employee.IsValid)">
-//     Save Changes
-// </MudButton>
-//
-// <MudButton OnClick="@Cancel"
-//            Disabled="@(!employee.IsModified)">
-//     Cancel
-// </MudButton>
-//
-// @if (employee.IsModified)
-// {
-//     <MudAlert Severity="Severity.Warning">
-//         You have unsaved changes
-//     </MudAlert>
-// }
-//
-// Track specific changes:
-// @if (employee.ModifiedProperties.Contains("Salary"))
-// {
-//     <MudText>Salary was changed</MudText>
-// }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L288-L313' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-change-tracking' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-change-tracking-1'></a>
 ```cs
 // Razor component markup:
 // <MudButton OnClick="@Save"
@@ -753,7 +540,7 @@ public void ChangeTrackingDetectsModifications()
     Assert.Contains("Name", employee.ModifiedProperties);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L440-L476' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-change-tracking-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L440-L476' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-change-tracking' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `IsModified` cascades from child entities to the aggregate root, providing accurate change state. Use `ModifiedProperties` to see which specific properties changed.
@@ -766,29 +553,6 @@ Customize component appearance:
 
 <!-- snippet: blazor-customize-appearance -->
 <a id='snippet-blazor-customize-appearance'></a>
-```cs
-// MudBlazor styling options pass through:
-//
-// <MudNeatooTextField T="string"
-//                     EntityProperty="@employee["Name"]"
-//                     Variant="Variant.Filled"
-//                     Margin="Margin.Normal"
-//                     HelperText="Enter your full legal name"
-//                     Placeholder="John Doe"
-//                     Adornment="Adornment.Start"
-//                     AdornmentIcon="@Icons.Material.Filled.Person"
-//                     Class="my-custom-field" />
-//
-// <MudNeatooNumericField T="decimal"
-//                        EntityProperty="@employee["Salary"]"
-//                        Variant="Variant.Outlined"
-//                        Format="N2"
-//                        Adornment="Adornment.Start"
-//                        AdornmentText="$"
-//                        HideSpinButtons="true" />
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L315-L335' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-customize-appearance' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-customize-appearance-1'></a>
 ```cs
 // Razor component markup with MudBlazor styling:
 // <MudNeatooTextField T="string"
@@ -823,7 +587,7 @@ public void ComponentAcceptsStyleParameters()
     // (Variant, Margin, HelperText, Adornment, etc.)
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L478-L511' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-customize-appearance-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L478-L511' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-customize-appearance' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 All MudBlazor styling parameters pass through to the underlying component.
@@ -836,25 +600,6 @@ Use extension methods for custom binding:
 
 <!-- snippet: blazor-property-extensions -->
 <a id='snippet-blazor-property-extensions'></a>
-```cs
-// Extension methods for custom binding:
-//
-// @using Neatoo.Blazor.MudNeatoo.Extensions
-//
-// <MudTextField T="string"
-//               Value="@employee.Name"
-//               ValueChanged="@(async v => await employee["Name"].SetValue(v))"
-//               Error="@employee["Name"].HasErrors()"
-//               ErrorText="@employee["Name"].GetErrorText()"
-//               Validation="@employee["Name"].GetValidationFunc<string>()" />
-//
-// Extension methods available:
-// - HasErrors() - returns true if property has validation errors
-// - GetErrorText() - returns error messages as string
-// - GetValidationFunc<T>() - returns validation function for MudBlazor
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L337-L353' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-property-extensions' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-property-extensions-1'></a>
 ```cs
 // Using extension methods for custom binding to standard MudBlazor components:
 //
@@ -884,7 +629,7 @@ public void ExtensionMethodsProvideValidationInfo()
     Assert.NotEmpty(errorText);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L513-L541' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-property-extensions-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L513-L541' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-property-extensions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Extensions include `GetValidationFunc`, `GetErrorText`, and `HasErrors`.
@@ -916,36 +661,6 @@ Property change triggers automatic re-render:
 
 <!-- snippet: blazor-statehaschanged -->
 <a id='snippet-blazor-statehaschanged'></a>
-```cs
-// Components auto-subscribe to property changes:
-//
-// MudNeatoo components handle PropertyChanged internally:
-//
-// protected override void OnInitialized()
-// {
-//     EntityProperty.PropertyChanged += OnPropertyChanged;
-// }
-//
-// private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
-// {
-//     if (e.PropertyName is "PropertyMessages" or "IsValid" or "IsBusy" or "IsReadOnly")
-//     {
-//         InvokeAsync(StateHasChanged);
-//     }
-// }
-//
-// public void Dispose()
-// {
-//     EntityProperty.PropertyChanged -= OnPropertyChanged;
-// }
-//
-// This ensures UI updates when:
-// - Validation state changes
-// - Async operations start/complete
-// - Property becomes read-only
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L355-L382' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-statehaschanged' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-statehaschanged-1'></a>
 ```cs
 // MudNeatoo components automatically subscribe to property change events.
 // When validation state, busy state, or values change, the component re-renders.
@@ -985,7 +700,7 @@ public void PropertyChangesNotifyComponents()
     Assert.NotEmpty(changedProperties);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L543-L581' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-statehaschanged-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L543-L581' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-statehaschanged' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Components implement `IDisposable` and unsubscribe from `PropertyChanged` events in `Dispose()`, preventing memory leaks when components are removed from the render tree.
@@ -998,35 +713,6 @@ Manual binding to a MudBlazor component:
 
 <!-- snippet: blazor-manual-binding -->
 <a id='snippet-blazor-manual-binding'></a>
-```cs
-// Manual binding for non-standard scenarios:
-//
-// <MudTextField T="string"
-//               Value="@employee.Name"
-//               ValueChanged="@OnNameChanged"
-//               Error="@(!employee["Name"].IsValid)"
-//               ErrorText="@GetErrorText(employee["Name"])"
-//               Disabled="@employee["Name"].IsBusy"
-//               ReadOnly="@employee["Name"].IsReadOnly" />
-//
-// @code {
-//     private async Task OnNameChanged(string value)
-//     {
-//         await employee["Name"].SetValue(value);
-//     }
-//
-//     private string GetErrorText(IEntityProperty property)
-//     {
-//         return string.Join("; ",
-//             property.PropertyMessages.Select(m => m.Message));
-//     }
-// }
-//
-// Use SetValue for async operations (triggers rules, waits for completion)
-// Use LoadValue for direct assignment (skips rules)
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BlazorSamples.cs#L384-L410' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-manual-binding' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-blazor-manual-binding-1'></a>
 ```cs
 // For scenarios not covered by MudNeatoo components, bind manually:
 //
@@ -1063,7 +749,7 @@ public async Task ManualBindingUsesSetValueAsync()
     Assert.Equal("Manual Value", employee.Name);
 }
 ```
-<sup><a href='/src/docs/samples/BlazorSamples.cs#L583-L618' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-manual-binding-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/BlazorSamples.cs#L583-L618' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-manual-binding' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Manual binding requires implementing validation display (reading `PropertyMessages`), busy state handling (binding to `IsBusy`), read-only state (binding to `IsReadOnly`), and change tracking (subscribing to `PropertyChanged`). MudNeatoo components handle all of this automatically.

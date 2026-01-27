@@ -224,24 +224,8 @@ public static partial class SkillSendEmailCommand
         }
     }
 }
-// Usage (in a rule or other code):
-// public class MyRule : AsyncRuleBase<MyEntity>
-// {
-//     private readonly SkillSendEmailCommand.SendEmail _sendEmail;
-//
-//     public MyRule(SkillSendEmailCommand.SendEmail sendEmail) : base(e => e.Status)
-//     {
-//         _sendEmail = sendEmail;
-//     }
-//
-//     protected override async Task<IRuleMessages> ExecuteAsync(MyEntity target)
-//     {
-//         var success = await _sendEmail(target.Email, "Subject", "Body");
-//         // ...
-//     }
-// }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BaseClassSamples.cs#L204-L249' title='Snippet source file'>snippet source</a> | <a href='#snippet-command-base-sample' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BaseClassSamples.cs#L204-L233' title='Snippet source file'>snippet source</a> | <a href='#snippet-command-base-sample' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Read Models (ValidateBase with [Fetch] Only)
@@ -293,7 +277,7 @@ public class SkillEmployeeSummaryList : ValidateListBase<SkillEmployeeSummary>
 {
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BaseClassSamples.cs#L255-L289' title='Snippet source file'>snippet source</a> | <a href='#snippet-readonly-base-sample' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BaseClassSamples.cs#L239-L273' title='Snippet source file'>snippet source</a> | <a href='#snippet-readonly-base-sample' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Inheritance Guidelines

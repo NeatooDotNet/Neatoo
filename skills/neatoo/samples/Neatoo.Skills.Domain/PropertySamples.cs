@@ -230,26 +230,3 @@ public interface ISkillAccountValidationService
     Task<bool> IsEmailValidAsync(string email);
 }
 
-// -----------------------------------------------------------------------------
-// Generated Implementation Sample (for source-generation.md)
-// -----------------------------------------------------------------------------
-
-#region properties-generated-implementation
-// The source generator creates backing fields for each partial property:
-//
-// private IValidateProperty<string> NameProperty;
-//
-// public partial string Name
-// {
-//     get => NameProperty.Value;
-//     set
-//     {
-//         NameProperty.Value = value;
-//         TaskManager.Add(NameProperty.Task);
-//     }
-// }
-//
-// Access the generated property wrapper via indexer:
-// var property = entity["Name"];
-// property.Value, property.IsValid, property.PropertyMessages, etc.
-#endregion

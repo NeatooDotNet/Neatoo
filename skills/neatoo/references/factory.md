@@ -137,21 +137,6 @@ Initialize new objects:
 <!-- snippet: entities-lifecycle-new -->
 <a id='snippet-entities-lifecycle-new'></a>
 ```cs
-// New entity lifecycle:
-//
-// var employee = factory.Create();
-// Assert.True(employee.IsNew);      // New entity
-// Assert.True(employee.IsModified); // New is considered modified
-//
-// employee.Name = "Alice";
-// employee.Salary = 50000;
-//
-// await factory.SaveAsync(employee); // Routes to Insert
-// Assert.False(employee.IsNew);      // Now existing
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/EntitySamples.cs#L175-L187' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-lifecycle-new' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-entities-lifecycle-new-1'></a>
-```cs
 [Fact]
 public void NewEntity_StartsUnmodifiedAfterCreate()
 {
@@ -170,7 +155,7 @@ public void NewEntity_StartsUnmodifiedAfterCreate()
     Assert.True(order.IsSavable);        // New entity is savable (needs Insert)
 }
 ```
-<sup><a href='/src/docs/samples/EntitiesSamples.cs#L235-L253' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-lifecycle-new-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/EntitiesSamples.cs#L235-L253' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-lifecycle-new' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Fetch Method
@@ -891,21 +876,6 @@ The generator creates:
 <!-- snippet: remotefactory-generated-interface -->
 <a id='snippet-remotefactory-generated-interface'></a>
 ```cs
-// The source generator creates a public interface:
-//
-// public interface ISkillFactoryCustomerFactory
-// {
-//     SkillFactoryCustomer Create();
-//     Task<SkillFactoryCustomer> FetchByIdAsync(int id);
-//     Task<SkillFactoryCustomer?> SaveAsync(SkillFactoryCustomer target);
-// }
-//
-// Note: [Service] parameters are NOT exposed in the interface
-// They are resolved from DI at runtime
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L472-L484' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-generated-interface' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-remotefactory-generated-interface-1'></a>
-```cs
 [Fact]
 public void GeneratedInterface_ExposesFactoryMethods()
 {
@@ -927,33 +897,12 @@ public void GeneratedInterface_ExposesFactoryMethods()
     Assert.True(customer.IsNew);
 }
 ```
-<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L613-L634' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-generated-interface-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L613-L634' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-generated-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Implementation:**
 <!-- snippet: remotefactory-generated-implementation -->
 <a id='snippet-remotefactory-generated-implementation'></a>
-```cs
-// The source generator creates an internal implementation:
-//
-// internal class SkillFactoryCustomerFactory : ISkillFactoryCustomerFactory
-// {
-//     private readonly IServiceProvider _serviceProvider;
-//
-//     public SkillFactoryCustomer Create()
-//     {
-//         var entity = CreateInstance();
-//         using (entity.PauseAllActions())
-//         {
-//             entity.Create();
-//         }
-//         entity.FactoryComplete(FactoryOperation.Create);
-//         return entity;
-//     }
-// }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L486-L504' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-generated-implementation' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-remotefactory-generated-implementation-1'></a>
 ```cs
 [Fact]
 public void GeneratedImplementation_HandlesLifecycle()
@@ -970,7 +919,7 @@ public void GeneratedImplementation_HandlesLifecycle()
     Assert.Equal("", customer.Name);
 }
 ```
-<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L636-L651' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-generated-implementation-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L636-L651' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-generated-implementation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Dependency Injection Setup
@@ -979,18 +928,6 @@ Register factory services:
 
 <!-- snippet: remotefactory-di-setup -->
 <a id='snippet-remotefactory-di-setup'></a>
-```cs
-// Factory services are registered automatically via AddNeatooServices:
-//
-// services.AddNeatooServices(NeatooFactory.Logical, typeof(Program).Assembly);
-//
-// This registers:
-// - All IXxxFactory interfaces and implementations
-// - Core Neatoo services (IEntityBaseServices, IValidateBaseServices, etc.)
-// - Authorization handlers
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L506-L515' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-di-setup' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-remotefactory-di-setup-1'></a>
 ```cs
 [Fact]
 public void DiSetup_RegistersFactoryServices()
@@ -1005,28 +942,12 @@ public void DiSetup_RegistersFactoryServices()
     Assert.NotNull(orderFactory);
 }
 ```
-<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L697-L710' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-di-setup-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L697-L710' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-di-setup' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Startup:**
 <!-- snippet: remotefactory-di-startup -->
 <a id='snippet-remotefactory-di-startup'></a>
-```cs
-// In Program.cs or Startup.cs:
-//
-// var builder = WebApplication.CreateBuilder(args);
-// builder.Services.AddNeatooServices(NeatooFactory.Logical, typeof(MyEntity).Assembly);
-//
-// // Register your repositories and services
-// builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-//
-// NeatooFactory modes:
-// - Logical: All factory methods execute locally
-// - Remote: [Remote] methods execute on server via HTTP
-// - Server: Server-side, all methods execute locally
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L517-L530' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-di-startup' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-remotefactory-di-startup-1'></a>
 ```cs
 [Fact]
 public void DiStartup_CallsRegistrarDuringStartup()
@@ -1046,7 +967,7 @@ public void DiStartup_CallsRegistrarDuringStartup()
     Assert.NotNull(customer);
 }
 ```
-<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L712-L730' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-di-startup-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L712-L730' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-di-startup' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Core Services
@@ -1055,19 +976,6 @@ Access Neatoo core services:
 
 <!-- snippet: remotefactory-core-services -->
 <a id='snippet-remotefactory-core-services'></a>
-```cs
-// Core services provided by Neatoo:
-//
-// IEntityBaseServices<T>   - Entity property management, rule execution
-// IValidateBaseServices<T> - Validation services
-//
-// Note: There are no ICommandBaseServices or IReadOnlyBaseServices.
-// Commands are static classes, read models use ValidateBase.
-//
-// Application code injects factory interfaces, not core services
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L532-L542' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-core-services' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-remotefactory-core-services-1'></a>
 ```cs
 [Fact]
 public void CoreServices_ProvidedByNeatoo()
@@ -1085,7 +993,7 @@ public void CoreServices_ProvidedByNeatoo()
     Assert.NotNull(factory);
 }
 ```
-<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L732-L748' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-core-services-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L732-L748' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-core-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Factory Lifecycle
@@ -1094,20 +1002,6 @@ Object creation and initialization flow:
 
 <!-- snippet: remotefactory-lifecycle -->
 <a id='snippet-remotefactory-lifecycle'></a>
-```cs
-// Factory lifecycle phases:
-//
-// 1. Prepare   - Suspends validation during data loading
-// 2. Execute   - Calls your factory method (Create/Fetch/Insert/Update/Delete)
-// 3. Finalize  - Resumes validation, updates entity state
-//
-// After Create: entity.IsNew = true
-// After Fetch:  entity.IsNew = false, entity.IsModified = false
-// After Insert: entity.IsNew = false, entity.IsModified = false
-// After Update: entity.IsModified = false
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L544-L555' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-lifecycle' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-remotefactory-lifecycle-1'></a>
 ```cs
 [Fact]
 public void Lifecycle_ManagedByFactory()
@@ -1126,7 +1020,7 @@ public void Lifecycle_ManagedByFactory()
     Assert.False(customer.IsPaused);
 }
 ```
-<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L750-L767' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-lifecycle-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L750-L767' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-lifecycle' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Related
