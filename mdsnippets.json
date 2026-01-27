@@ -3,7 +3,7 @@
   "LinkFormat": "GitHub",
   "UrlPrefix": "",
   "ReadOnly": false,
-  "OmitSnippetLinks": true,
+  "OmitSnippetLinks": false,
   "ExcludeDirectories": [
     "node_modules",
     "bin",

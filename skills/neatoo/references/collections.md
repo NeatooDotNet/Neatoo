@@ -1,49 +1,10 @@
 # Collections
 
-[← Change Tracking](change-tracking.md) | [↑ Guides](index.md) | [Entities →](entities.md)
+`EntityListBase<I>` provides a collection of child entities with automatic parent-child relationship management, validation cascading, and change tracking.
 
-Neatoo provides specialized collection base classes for managing lists of validatable objects and entities within aggregates. These collections automatically propagate parent references to establish aggregate boundaries, aggregate validation state from all items, track modifications through the entity graph, and manage deleted items for persistence.
+## Basic Collection Definition
 
-## ValidateListBase
-
-ValidateListBase provides observable collection functionality for validatable objects. It aggregates validation state from all items and propagates parent references automatically when items are added.
-
-Unlike ValidateBase and EntityBase which require DI services, collection classes can be instantiated directly with `new`. Initialize child collections in entity constructors using `LoadValue()` to establish the parent-child relationship without triggering modification tracking.
-
-Inherit from ValidateListBase&lt;T&gt; where T implements IValidateBase:
-
-<!-- snippet: collections-validate-list-definition -->
-<a id='snippet-collections-validate-list-definition'></a>
-```cs
-/// <summary>
-/// ValidateListBase for phone numbers (value object collection).
-/// No deletion tracking - items are simply removed.
-/// </summary>
-public class SkillCollPhoneNumberList : ValidateListBase<ISkillCollPhoneNumber>
-{
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L141-L149' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validate-list-definition' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-validate-list-definition-1'></a>
-```cs
-public class CollectionValidateItemList : ValidateListBase<CollectionValidateItem>
-{
-}
-```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L43-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validate-list-definition-1' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-The collection automatically tracks:
-- **IsValid** - True if all items in the collection are valid
-- **IsSelfValid** - Always true (lists have no self validation)
-- **IsBusy** - True if any item is busy executing async operations
-- **PropertyMessages** - Aggregated validation messages from all items
-
-## EntityListBase
-
-EntityListBase extends ValidateListBase to add entity-specific persistence tracking. It enforces aggregate boundary rules, manages deleted items through the DeletedList, tracks modification state through the entity graph, and coordinates entity lifecycle events with the factory system.
-
-Inherit from EntityListBase&lt;T&gt; where T implements IEntityBase:
+Inherit from `EntityListBase<I>`:
 
 <!-- snippet: collections-entity-list-definition -->
 <a id='snippet-collections-entity-list-definition'></a>
@@ -69,18 +30,9 @@ public class CollectionOrderItemList : EntityListBase<ICollectionOrderItem>, ICo
 <sup><a href='/src/docs/samples/CollectionsSamples.cs#L96-L101' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-entity-list-definition-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-In addition to validation state, EntityListBase tracks:
-- **IsModified** - True if any item is modified or any items are in the DeletedList
-- **IsSelfModified** - Always false (lists have no self state to modify)
-- **IsNew** - Always false (collections are not independently persisted)
-- **IsSavable** - Always false (collections are persisted through the aggregate root)
-- **DeletedList** - Protected collection of removed entities pending deletion during save
-
 ## Adding Items
 
-Items added to a collection automatically receive parent references, establishing them within the aggregate boundary. For entity lists, the framework enforces aggregate consistency rules and manages entity state transitions.
-
-Add items using standard collection methods:
+Add new items to the collection:
 
 <!-- snippet: collections-add-item -->
 <a id='snippet-collections-add-item'></a>
@@ -130,68 +82,9 @@ public void AddItem_SetsParentAndTracksItem()
 <sup><a href='/src/docs/samples/CollectionsSamples.cs#L135-L159' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-add-item-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-During insertion, ValidateListBase:
-- Sets the item's Parent property to the list's Parent (establishing aggregate boundary)
-- Subscribes to property change events for validation state updates
-- Updates cached validation state incrementally (O(1) for becoming invalid)
-
-EntityListBase additionally enforces aggregate boundary rules:
-- Validates the item isn't already in the collection (no duplicates)
-- Prevents adding busy items (with async validation rules running)
-- Prevents cross-aggregate moves (item.Root must match list.Root or be null)
-- Marks existing entities as modified (they're being re-added to the graph)
-- Marks items as child entities (IsChild = true)
-- Sets the item's ContainingList property (tracks which collection owns the entity)
-- Handles intra-aggregate moves (removes from old list's DeletedList, undeletes item)
-
 ## Removing Items
 
-Removal behavior differs between ValidateListBase and EntityListBase. ValidateListBase removes items immediately since they have no persistence state. EntityListBase tracks deletions for persistence, distinguishing between new items (remove immediately) and existing items (move to DeletedList for database deletion).
-
-Remove items from ValidateListBase:
-
-<!-- snippet: collections-remove-validate -->
-<a id='snippet-collections-remove-validate'></a>
-```cs
-// Remove from validate lists - items removed immediately:
-//
-// var list = new SkillCollPhoneNumberList();
-// var phone = phoneFactory.Create();
-// phone.Number = "555-1234";
-//
-// list.Add(phone);
-// Assert.Single(list);
-//
-// list.Remove(phone);
-// Assert.Empty(list);  // No deletion tracking
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L188-L200' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-validate' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-remove-validate-1'></a>
-```cs
-[Fact]
-public void RemoveFromValidateList_RemovesImmediately()
-{
-    var list = new CollectionValidateItemList();
-    var itemFactory = GetRequiredService<ICollectionValidateItemFactory>();
-    var item = itemFactory.Create();
-    item.Name = "Test Item";
-
-    list.Add(item);
-    Assert.Single(list);
-
-    // Remove from ValidateListBase - item is removed immediately
-    list.Remove(item);
-
-    // Item is no longer in the list
-    Assert.Empty(list);
-}
-```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L161-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-validate-1' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-The item is unsubscribed from events and removed immediately.
-
-Remove items from EntityListBase:
+Remove items from entity collections (tracks for deletion):
 
 <!-- snippet: collections-remove-entity -->
 <a id='snippet-collections-remove-entity'></a>
@@ -244,20 +137,50 @@ public void RemoveFromEntityList_TracksForDeletion()
 <sup><a href='/src/docs/samples/CollectionsSamples.cs#L181-L209' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-entity-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The sample uses `DoMarkUnmodified()`, a helper method that exposes the protected `MarkUnmodified()` for demonstration purposes. In production, `MarkUnmodified()` is called automatically by the framework after Fetch or successful save operations.
+For validate-only collections (ValidateListBase), items are simply removed:
 
-For entity lists, removal behavior depends on entity state:
-- **New items (IsNew == true)** - Removed immediately since they don't exist in the database
-- **Existing items (IsNew == false)** - Marked deleted (IsDeleted = true) and moved to DeletedList
-- **ContainingList property** - Remains set to the owning list until persistence completes
-- **During save** - Repository deletes entities in DeletedList from the database
-- **After successful save** - FactoryComplete fires, clearing DeletedList and nulling ContainingList references
+<!-- snippet: collections-remove-validate -->
+<a id='snippet-collections-remove-validate'></a>
+```cs
+// Remove from validate lists - items removed immediately:
+//
+// var list = new SkillCollPhoneNumberList();
+// var phone = phoneFactory.Create();
+// phone.Number = "555-1234";
+//
+// list.Add(phone);
+// Assert.Single(list);
+//
+// list.Remove(phone);
+// Assert.Empty(list);  // No deletion tracking
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L188-L200' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-validate' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-collections-remove-validate-1'></a>
+```cs
+[Fact]
+public void RemoveFromValidateList_RemovesImmediately()
+{
+    var list = new CollectionValidateItemList();
+    var itemFactory = GetRequiredService<ICollectionValidateItemFactory>();
+    var item = itemFactory.Create();
+    item.Name = "Test Item";
 
-## Parent Property Cascade
+    list.Add(item);
+    Assert.Single(list);
 
-Collections automatically cascade parent references to establish aggregate boundaries. The Parent property connects items to their owning aggregate root (or intermediate entity), enabling Root navigation and aggregate consistency enforcement.
+    // Remove from ValidateListBase - item is removed immediately
+    list.Remove(item);
 
-Parent references propagate when items are added:
+    // Item is no longer in the list
+    Assert.Empty(list);
+}
+```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L161-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-validate-1' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+## Parent Cascade
+
+Collections automatically set parent on items:
 
 <!-- snippet: collections-parent-cascade -->
 <a id='snippet-collections-parent-cascade'></a>
@@ -311,23 +234,9 @@ public void ParentCascade_UpdatesAllItems()
 <sup><a href='/src/docs/samples/CollectionsSamples.cs#L211-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-parent-cascade-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-This establishes the aggregate boundary. All items within the collection belong to the same aggregate root, enabling:
-- **Aggregate consistency enforcement** - Cross-aggregate moves are prevented (item.Root must match list.Root)
-- **Transactional boundaries** - All entities in the aggregate are persisted together
-- **Validation propagation** - Validation state bubbles up through Parent references
-
-The Parent property points to the collection's Parent (typically the aggregate root), not to the collection itself. This enables direct Parent-to-root navigation.
-
-For entity lists, the Root property provides aggregate root access:
-- **If Parent is null** - Root is null (entity is standalone, not in an aggregate)
-- **If Parent implements IEntityBase** - Returns Parent.Root (recursive navigation up the graph)
-- **Otherwise** - Returns Parent (Parent is the aggregate root)
-
 ## Collection Validation
 
-Collections aggregate validation state from all child items. When any child's validation state changes, the collection's state updates automatically.
-
-Validation state propagates through property change events:
+Collection validates all children:
 
 <!-- snippet: collections-validation -->
 <a id='snippet-collections-validation'></a>
@@ -388,12 +297,9 @@ public async Task ValidationState_AggregatesFromChildren()
 <sup><a href='/src/docs/samples/CollectionsSamples.cs#L239-L273' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validation-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The collection uses cached meta properties with incremental updates:
-- When a child becomes invalid, IsValid immediately becomes false (O(1))
-- When a child becomes valid and collection is invalid, checks if any other child is still invalid (O(k) where k = first invalid)
-- Same algorithm applies to IsBusy state
+## Running Rules on Collections
 
-Run validation rules on all items:
+Run rules across collection items:
 
 <!-- snippet: collections-run-rules -->
 <a id='snippet-collections-run-rules'></a>
@@ -446,13 +352,9 @@ public async Task RunRules_ExecutesOnAllItems()
 <sup><a href='/src/docs/samples/CollectionsSamples.cs#L275-L305' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-run-rules-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-This executes validation rules on every item in the collection and updates the aggregated validation state.
+## Iterating Collections
 
-## Iteration and Enumeration
-
-Collections implement IEnumerable&lt;T&gt; and support standard iteration patterns. They inherit from ObservableCollection&lt;T&gt;, providing collection change notifications.
-
-Iterate over items:
+Standard collection operations:
 
 <!-- snippet: collections-iteration -->
 <a id='snippet-collections-iteration'></a>
@@ -519,19 +421,9 @@ public void Iteration_SupportsStandardPatterns()
 <sup><a href='/src/docs/samples/CollectionsSamples.cs#L307-L345' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-iteration-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Collections support:
-- Standard foreach loops
-- LINQ queries
-- Index-based access with this[index]
-- Count property
-- Collection changed events (INotifyCollectionChanged)
-- Property changed events on collection properties like Count
+## Deleted Items
 
-## Deleted List Management
-
-EntityListBase maintains a protected DeletedList to track removed entities that need deletion during persistence. This enables the repository to delete entities from the database while maintaining aggregate consistency until the save operation completes.
-
-The DeletedList lifecycle:
+Entity collections track deleted items:
 
 <!-- snippet: collections-deleted-list -->
 <a id='snippet-collections-deleted-list'></a>
@@ -592,44 +484,41 @@ public void DeletedList_TracksRemovedEntitiesUntilSave()
 <sup><a href='/src/docs/samples/CollectionsSamples.cs#L347-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-deleted-list-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Deleted items remain in DeletedList with their ContainingList property set until FactoryComplete fires after a successful save. This preserves aggregate boundaries during the save operation:
+## ValidateListBase vs EntityListBase
 
-**After successful save (FactoryComplete):**
-- DeletedList is cleared (entities were deleted from database)
-- ContainingList on deleted items is set to null (no longer owned)
-- Deleted items are no longer part of the aggregate
+| Feature | ValidateListBase | EntityListBase |
+|---------|-----------------|----------------|
+| Change Tracking | Yes | Yes |
+| Validation | Yes | Yes |
+| Parent Reference | Yes | Yes |
+| Deleted List | No | Yes |
+| Persistence | No | Yes (via parent) |
 
-**If an item is re-added before save (intra-aggregate move):**
-- Removed from the old list's DeletedList
-- Undeleted (IsDeleted = false)
-- Marked modified (entity state changed: existed, was deleted, now exists again)
-- ContainingList updated to the new list
+Use `ValidateListBase<T>` for collections without persistence needs.
 
-This enables moving entities between child collections within the same aggregate without database deletion. The item remains within the aggregate boundary and is updated, not deleted, during save.
+<!-- snippet: collections-validate-list-definition -->
+<a id='snippet-collections-validate-list-definition'></a>
+```cs
+/// <summary>
+/// ValidateListBase for phone numbers (value object collection).
+/// No deletion tracking - items are simply removed.
+/// </summary>
+public class SkillCollPhoneNumberList : ValidateListBase<ISkillCollPhoneNumber>
+{
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L141-L149' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validate-list-definition' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-collections-validate-list-definition-1'></a>
+```cs
+public class CollectionValidateItemList : ValidateListBase<CollectionValidateItem>
+{
+}
+```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L43-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validate-list-definition-1' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-## Paused Operations
+## Related
 
-Collections respect the IsPaused flag during deserialization and factory operations. Pausing prevents premature validation and change tracking while the aggregate is being reconstructed.
-
-**While paused:**
-- No validation state updates occur (prevents incomplete object validation)
-- No property change events fire (avoids spurious notifications)
-- Entity state transitions are deferred (modification tracking suspended)
-- Deleted items can be added to DeletedList during deserialization (restoring persisted state)
-
-**Framework automatically pauses during:**
-- JSON deserialization (OnDeserializing attribute hook)
-- Factory operations (FactoryStart, before data loading begins)
-
-**Framework automatically resumes after:**
-- JSON deserialization complete (OnDeserialized attribute hook)
-- Factory operation complete (FactoryComplete, after entity state finalized)
-
-**After resuming:**
-- Cached validation state (IsValid, IsBusy) is recalculated from all items
-- Cached modification state (IsModified) is recalculated from all items and DeletedList
-- Change tracking resumes for future modifications
-
----
-
-**UPDATED:** 2026-01-25
+- [Entities](entities.md) - Parent entity patterns
+- [Validation](validation.md) - Collection validation
+- [Parent-Child](parent-child.md) - Parent navigation

@@ -11,6 +11,7 @@ EntityBase tracks modification state at two levels: self-modifications and child
 `IsSelfModified` indicates whether the entity's direct properties have changed, or if it has been deleted or explicitly marked modified:
 
 <!-- snippet: tracking-self-modified -->
+<a id='snippet-tracking-self-modified'></a>
 ```cs
 [Fact]
 public void IsSelfModified_TracksDirectPropertyChanges()
@@ -27,6 +28,7 @@ public void IsSelfModified_TracksDirectPropertyChanges()
     Assert.True(employee.IsSelfModified);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L121-L136' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-self-modified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `IsModified` aggregates modification state from the entity itself, child entities, and child collections. An entity is modified when any of the following are true:
@@ -37,6 +39,7 @@ public void IsSelfModified_TracksDirectPropertyChanges()
 - The entity's own properties changed, or it was explicitly marked modified (`IsSelfModified`)
 
 <!-- snippet: tracking-is-modified -->
+<a id='snippet-tracking-is-modified'></a>
 ```cs
 [Fact]
 public void IsModified_IncludesChildCollectionModifications()
@@ -57,6 +60,7 @@ public void IsModified_IncludesChildCollectionModifications()
     Assert.True(invoice.IsModified);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L138-L157' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-modified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## MarkUnmodified
@@ -64,6 +68,7 @@ public void IsModified_IncludesChildCollectionModifications()
 After a successful save operation, the framework automatically marks the entity as unmodified through `MarkUnmodified`:
 
 <!-- snippet: tracking-mark-clean -->
+<a id='snippet-tracking-mark-clean'></a>
 ```cs
 [Fact]
 public void MarkUnmodified_ClearsModificationState()
@@ -88,6 +93,7 @@ public void MarkUnmodified_ClearsModificationState()
     Assert.Empty(employee.ModifiedProperties);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L159-L182' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-mark-clean' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This method clears the modification tracking state on all properties and resets `IsMarkedModified`. The framework calls this automatically after Insert and Update operations complete.
@@ -99,6 +105,7 @@ You cannot mark an entity as unmodified while async operations are in progress. 
 Explicitly mark an entity as modified to force a save operation, even when no tracked properties have changed:
 
 <!-- snippet: tracking-mark-modified -->
+<a id='snippet-tracking-mark-modified'></a>
 ```cs
 [Fact]
 public void MarkModified_ForcesEntityToBeSaved()
@@ -120,6 +127,7 @@ public void MarkModified_ForcesEntityToBeSaved()
     Assert.True(employee.IsMarkedModified);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L184-L204' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-mark-modified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Use `MarkModified` when:
@@ -135,6 +143,7 @@ Setting `IsMarkedModified` affects both `IsSelfModified` and `IsModified`, ensur
 Track which specific properties have changed since the last save:
 
 <!-- snippet: tracking-modified-properties -->
+<a id='snippet-tracking-modified-properties'></a>
 ```cs
 [Fact]
 public void ModifiedProperties_TracksChangedPropertyNames()
@@ -154,6 +163,7 @@ public void ModifiedProperties_TracksChangedPropertyNames()
     Assert.DoesNotContain("Email", modified);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L206-L224' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-modified-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `ModifiedProperties` collection contains the names of all properties that have been set since the last save or creation. This is useful for optimistic concurrency, audit logging, or partial updates.
@@ -165,6 +175,7 @@ Modification state automatically cascades up the parent hierarchy to the aggrega
 When a child entity or collection becomes modified, the parent's `IsModified` becomes true through the PropertyManager's incremental cache updates:
 
 <!-- snippet: tracking-cascade-parent -->
+<a id='snippet-tracking-cascade-parent'></a>
 ```cs
 [Fact]
 public void ModificationCascadesToParent()
@@ -192,6 +203,7 @@ public void ModificationCascadesToParent()
     Assert.False(invoice.IsSelfModified);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L226-L252' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-cascade-parent' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This ensures the aggregate root can detect changes anywhere in the object graph. The modification cascade respects aggregate boundaries and does not cross into other aggregates.
@@ -203,6 +215,7 @@ EntityListBase tracks modifications across child items and manages deleted items
 Collection modification tracking uses an incremental cache to avoid O(n) scans on every property change. When a child's `IsModified` changes, the list updates its cached state in O(1) time:
 
 <!-- snippet: tracking-collections-modified -->
+<a id='snippet-tracking-collections-modified'></a>
 ```cs
 [Fact]
 public void CollectionTracksItemModifications()
@@ -225,11 +238,13 @@ public void CollectionTracksItemModifications()
     Assert.True(invoice.LineItems.IsModified);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L254-L275' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-collections-modified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The list maintains a separate `DeletedList` for items that have been removed but need to be deleted during persistence:
 
 <!-- snippet: tracking-collections-deleted -->
+<a id='snippet-tracking-collections-deleted'></a>
 ```cs
 [Fact]
 public void CollectionTracksDeletedItems()
@@ -274,6 +289,7 @@ public void CollectionTracksDeletedItems()
     Assert.Equal(1, invoice.LineItems.DeletedCount);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L277-L320' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-collections-deleted' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Items marked as deleted remain in the `DeletedList` until the save operation completes. New items removed from the list are not added to `DeletedList` since they don't exist in persistent storage.
@@ -285,6 +301,7 @@ Distinguish between modifications to the entity itself versus modifications to c
 Check if only the entity's direct properties have changed:
 
 <!-- snippet: tracking-self-vs-children -->
+<a id='snippet-tracking-self-vs-children'></a>
 ```cs
 [Fact]
 public void DistinguishSelfFromChildModifications()
@@ -316,6 +333,7 @@ public void DistinguishSelfFromChildModifications()
     Assert.True(invoice.IsSelfModified);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L322-L352' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-self-vs-children' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This distinction is useful when:
@@ -339,6 +357,7 @@ An entity is savable when all of the following are true:
 This architecture ensures child entities within an aggregate cannot be saved independently, maintaining aggregate consistency:
 
 <!-- snippet: tracking-is-savable -->
+<a id='snippet-tracking-is-savable'></a>
 ```cs
 [Fact]
 public void IsSavable_CombinesModificationAndValidation()
@@ -361,11 +380,13 @@ public void IsSavable_CombinesModificationAndValidation()
     Assert.True(employee.IsSavable);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L354-L375' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-savable' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `Save()` method checks `IsSavable` and throws `SaveOperationException` with a specific reason code if the preconditions are not met:
 
 <!-- snippet: tracking-save-checks -->
+<a id='snippet-tracking-save-checks'></a>
 ```cs
 [Fact]
 public async Task Save_ThrowsWithSpecificReason()
@@ -384,6 +405,7 @@ public async Task Save_ThrowsWithSpecificReason()
     Assert.Equal(SaveFailureReason.NotModified, exception.Reason);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L377-L394' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-save-checks' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Common `SaveFailureReason` values:
@@ -400,6 +422,7 @@ This design provides clear, actionable feedback when save preconditions are not 
 Use `PauseAllActions` to temporarily disable modification tracking, validation, and property change notifications during batch operations:
 
 <!-- snippet: tracking-pause-actions -->
+<a id='snippet-tracking-pause-actions'></a>
 ```cs
 [Fact]
 public void PauseAllActions_PreventsModificationTracking()
@@ -424,6 +447,7 @@ public void PauseAllActions_PreventsModificationTracking()
     Assert.Empty(employee.ModifiedProperties);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L396-L419' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-pause-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 While paused, property setters still execute but tracking mechanisms are disabled:
@@ -448,6 +472,7 @@ EntityBase tracks entity lifecycle state to determine which persistence operatio
 `IsNew` indicates the entity has not been persisted and requires an Insert operation:
 
 <!-- snippet: tracking-is-new -->
+<a id='snippet-tracking-is-new'></a>
 ```cs
 [Fact]
 public void IsNew_IndicatesUnpersistedEntity()
@@ -462,6 +487,7 @@ public void IsNew_IndicatesUnpersistedEntity()
     Assert.True(employee.IsModified);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L421-L434' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-new' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `IsNew` flag is automatically set by factory Create methods and cleared after successful Insert. New entities are always considered modified (`IsNew` contributes to `IsModified`).
@@ -469,6 +495,7 @@ The `IsNew` flag is automatically set by factory Create methods and cleared afte
 `IsDeleted` indicates the entity has been marked for deletion and requires a Delete operation:
 
 <!-- snippet: tracking-is-deleted -->
+<a id='snippet-tracking-is-deleted'></a>
 ```cs
 [Fact]
 public void IsDeleted_MarksEntityForDeletion()
@@ -493,6 +520,7 @@ public void IsDeleted_MarksEntityForDeletion()
     Assert.False(employee.IsModified);
 }
 ```
+<sup><a href='/src/docs/samples/ChangeTrackingSamples.cs#L436-L459' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-deleted' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `IsDeleted` flag is set by calling `Delete()` and can be reversed with `UnDelete()` before saving. Deleted entities contribute to both `IsModified` and `IsSelfModified`, ensuring they are recognized as changed and savable.

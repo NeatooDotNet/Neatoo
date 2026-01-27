@@ -1,6 +1,30 @@
 
 The Neatoo Solution is at src/Neatoo.sln
 
+## Neatoo Terminology
+
+### Base Classes
+- `EntityBase<T>` - Persistent entities with full CRUD lifecycle
+- `ValidateBase<T>` - Value objects, read models, validation-only objects
+- `EntityListBase<I>` - Collections of child entities within an aggregate
+- `ValidateListBase<I>` - Collections of read models
+- Static classes with `[Factory]` and `[Execute]` - Commands
+
+### State Properties
+- `IsModified` - True when object has unsaved changes
+- `IsSelfModified` - True when this object (not children) has changes
+- `IsNew` - True when object hasn't been persisted yet
+- `IsValid` - True when all validation rules pass
+- `IsSelfValid` - True when this object's rules pass (not children)
+
+### Factory Operations
+- `[Create]` - Initialize new object
+- `[Fetch]` - Load existing data
+- `[Insert]` - Persist new object
+- `[Update]` - Persist changes
+- `[Delete]` - Remove object
+- `[Execute]` - Run command
+
 ## Testing Philosophy
 
 ### Unit Tests - No Mocking Neatoo Classes

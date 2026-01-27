@@ -11,6 +11,7 @@ The Parent property establishes a reference from a child object to its owning pa
 Set the parent property during child creation:
 
 <!-- snippet: parent-child-setup -->
+<a id='snippet-parent-child-setup'></a>
 ```cs
 [Fact]
 public void Parent_SetDuringChildCreation()
@@ -35,6 +36,7 @@ public void Parent_SetDuringChildCreation()
     Assert.Same(order, lineItem.Parent);
 }
 ```
+<sup><a href='/src/docs/samples/ParentChildSamples.cs#L130-L153' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-setup' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Parent is of type `IValidateBase?` and can reference:
@@ -51,6 +53,7 @@ Parent enables navigation from child to parent, while the Root property navigate
 Navigate the aggregate graph:
 
 <!-- snippet: parent-child-navigation -->
+<a id='snippet-parent-child-navigation'></a>
 ```cs
 [Fact]
 public void Navigation_FromChildToRoot()
@@ -88,6 +91,7 @@ public void Navigation_FromChildToRoot()
     Assert.Null(order.Root);
 }
 ```
+<sup><a href='/src/docs/samples/ParentChildSamples.cs#L155-L191' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-navigation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Root calculation:
@@ -104,6 +108,7 @@ The Parent property defines aggregate boundaries. An aggregate root has Parent =
 Define an aggregate with children:
 
 <!-- snippet: parent-child-aggregate-boundary -->
+<a id='snippet-parent-child-aggregate-boundary'></a>
 ```cs
 [Fact]
 public void AggregateBoundary_EnforcedByParentProperty()
@@ -139,6 +144,7 @@ public void AggregateBoundary_EnforcedByParentProperty()
     Assert.False(order.IsChild);
 }
 ```
+<sup><a href='/src/docs/samples/ParentChildSamples.cs#L193-L227' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-aggregate-boundary' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Aggregate boundary rules:
@@ -157,6 +163,7 @@ Validation state cascades from children to parents through property change event
 Child validation cascades to parent:
 
 <!-- snippet: parent-child-cascade-validation -->
+<a id='snippet-parent-child-cascade-validation'></a>
 ```cs
 [Fact]
 public async Task CascadeValidation_ChildInvalidMakesParentInvalid()
@@ -195,6 +202,7 @@ public async Task CascadeValidation_ChildInvalidMakesParentInvalid()
     Assert.True(order.IsValid);
 }
 ```
+<sup><a href='/src/docs/samples/ParentChildSamples.cs#L229-L266' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade behavior:
@@ -213,6 +221,7 @@ Dirty state cascades from children to parents. When a child becomes dirty, the p
 Child modifications cascade to parent:
 
 <!-- snippet: parent-child-cascade-dirty -->
+<a id='snippet-parent-child-cascade-dirty'></a>
 ```cs
 [Fact]
 public void CascadeDirty_ChildModificationCascadesToParent()
@@ -241,6 +250,7 @@ public void CascadeDirty_ChildModificationCascadesToParent()
     Assert.True(item.IsModified);
 }
 ```
+<sup><a href='/src/docs/samples/ParentChildSamples.cs#L268-L295' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-dirty' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade rules for IsDirty:
@@ -260,6 +270,7 @@ Child entities are marked as children when added to EntityListBase. This affects
 Child entity lifecycle tracking:
 
 <!-- snippet: parent-child-lifecycle -->
+<a id='snippet-parent-child-lifecycle'></a>
 ```cs
 [Fact]
 public async Task ChildLifecycle_MarkedWhenAddedToCollection()
@@ -301,6 +312,7 @@ public async Task ChildLifecycle_MarkedWhenAddedToCollection()
     Assert.Equal(SaveFailureReason.IsChildObject, exception.Reason);
 }
 ```
+<sup><a href='/src/docs/samples/ParentChildSamples.cs#L297-L337' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-lifecycle' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Child entity restrictions:
@@ -325,6 +337,7 @@ Child entities navigate to sibling entities through their parent's collection pr
 Navigate to sibling entities through the parent collection:
 
 <!-- snippet: parent-child-containing-list -->
+<a id='snippet-parent-child-containing-list'></a>
 ```cs
 [Fact]
 public void CollectionNavigation_AccessSiblingsThroughParent()
@@ -365,6 +378,7 @@ public void CollectionNavigation_AccessSiblingsThroughParent()
     Assert.Equal(50.00m, total); // (10*1) + (20*2)
 }
 ```
+<sup><a href='/src/docs/samples/ParentChildSamples.cs#L339-L378' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-containing-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Navigation patterns:
@@ -385,6 +399,7 @@ The Root property provides direct access to the aggregate root from any child en
 Access the aggregate root from a child:
 
 <!-- snippet: parent-child-root-access -->
+<a id='snippet-parent-child-root-access'></a>
 ```cs
 [Fact]
 public void RootAccess_FromChildEntity()
@@ -416,6 +431,7 @@ public void RootAccess_FromChildEntity()
     Assert.Equal(new DateTime(2024, 6, 15), orderRoot.OrderDate);
 }
 ```
+<sup><a href='/src/docs/samples/ParentChildSamples.cs#L380-L410' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-root-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Root access patterns:
@@ -456,6 +472,7 @@ Collections set Parent on items automatically during Add operations. When a coll
 Collections manage parent references:
 
 <!-- snippet: parent-child-collection-parent -->
+<a id='snippet-parent-child-collection-parent'></a>
 ```cs
 [Fact]
 public void CollectionParent_AutomaticManagement()
@@ -491,6 +508,7 @@ public void CollectionParent_AutomaticManagement()
     Assert.Same(order, item2.Root);
 }
 ```
+<sup><a href='/src/docs/samples/ParentChildSamples.cs#L412-L446' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-collection-parent' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Collection parent propagation:
