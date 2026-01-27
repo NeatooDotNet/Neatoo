@@ -2,6 +2,22 @@
 
 This document captures important patterns and behaviors when working with Neatoo.
 
+## Common Mistakes
+
+| Mistake | Problem | Fix |
+|---------|---------|-----|
+| Checking `IsValid` without `await RunRules()` | Validation rules are async—`IsValid` may be stale | Always `await entity.RunRules()` before checking `IsValid` |
+| Calling `Save()` on child entities | Child entities don't save independently—they're saved with their aggregate root | Call `Save()` only on the aggregate root |
+| Missing `partial` keyword on class | Source generator won't generate factory methods | Add `partial` to class declaration |
+| Missing `partial` keyword on properties | Source generator won't implement change tracking | Add `partial` to property declarations |
+| Constructor injection for server-only services | Service unavailable on client causes DI failure | Use method injection (`[Service]` on method parameter) for server-only services |
+| Adding `[Remote]` to child entity factory methods | Unnecessary—child methods are called from server | Only use `[Remote]` on aggregate root entry points |
+| Expecting new items in DeletedList after remove | New items (IsNew=true) are removed entirely—nothing to delete from DB | Only existing items go to DeletedList |
+| Moving entities between aggregates directly | Throws `InvalidOperationException`—item.Root must match list.Root | Remove → Save → Re-fetch/create → Add to new aggregate |
+| Forgetting items are modified when added to collections | Adding a fetched (non-new) item marks both item and list as `IsModified` | Expected behavior—adding to a new parent is a state change |
+
+---
+
 ## Commands
 
 Commands are static partial classes with `[Factory]` and `[Execute]` methods:
@@ -193,3 +209,7 @@ var employee = factory.Create();  // Real Neatoo object
 | Change reason for loads | `ChangeReason.Load` |
 | Check validity | `await RunRules()` first |
 | Testing | Use real factories, mock external deps |
+| Remove new item | Gone entirely (not in DeletedList) |
+| Remove existing item | Goes to DeletedList, `IsDeleted = true` |
+| Re-add removed item | Removed from DeletedList, `UnDelete()` called |
+| Cross-aggregate transfer | Remove → Save → Re-fetch → Add to new aggregate |

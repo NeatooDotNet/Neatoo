@@ -8,6 +8,28 @@ version: 1.0.0
 
 Neatoo is a .NET framework for building domain models with automatic change tracking, validation, and persistence through Roslyn source generators. It provides base classes that map to DDD concepts with built-in support for client-server architectures.
 
+## Quick Start
+
+<!-- snippet: skill-quickstart -->
+<a id='snippet-skill-quickstart'></a>
+```cs
+[Factory]
+public partial class Product : EntityBase<Product>
+{
+    public Product(IEntityBaseServices<Product> services) : base(services) { }
+
+    [Required]
+    public partial string Name { get; set; }
+    public partial decimal Price { get; set; }
+
+    [Create] public void Create() { }
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/QuickStartSamples.cs#L11-L23' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quickstart' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+This generates a factory (`IProductFactory`) with a `Create()` method. Properties auto-track changes, trigger validation, and fire `PropertyChanged`.
+
 ## Base Class Quick Reference
 
 | DDD Concept | Neatoo Base Class | Use When |
@@ -152,6 +174,14 @@ public async Task Fetch(Guid id, [Service] IEmployeeRepository repo)
 
 `[Remote]` marks **entry points from the client to the server**. Once execution crosses to the server, it stays there—subsequent method calls don't need `[Remote]`.
 
+| Scenario | Use `[Remote]`? | Reason |
+|----------|-----------------|--------|
+| Aggregate root Create/Fetch/Save | **Yes** | Entry point from client |
+| Top-level UI-initiated operations | **Yes** | Entry point from client |
+| Child entity loading within aggregate | No | Called from server after crossing boundary |
+| Methods with `[Service]` method injection | No (usually) | Already on server when called |
+| Any method called from server-side code | No | Execution already on server |
+
 ```csharp
 // Aggregate root - needs [Remote] because it's called from client
 [Remote]
@@ -162,14 +192,6 @@ public async Task Fetch(Guid id, [Service] IEmployeeRepository repo) { }
 [Fetch]
 public void Fetch(int id, string name, [Service] IChildRepository repo) { }
 ```
-
-**When to use `[Remote]`:**
-- Aggregate root factory methods (Create, Fetch, Save)
-- Top-level operations initiated by the UI
-
-**When `[Remote]` is NOT needed (the common case):**
-- Child entity operations within an aggregate
-- Any method called from server-side code after crossing the boundary
 
 **Constructor vs Method Injection:**
 - Constructor injection (`[Service]` on constructor): Services available on both client and server
@@ -192,6 +214,17 @@ Assert.IsTrue(employee.IsModified);
 
 // DON'T: Mock Neatoo interfaces
 var mock = new Mock<IEntityBase>(); // Never do this
+```
+
+**For unit tests without factory generation:** Use `[SuppressFactory]` on test classes that inherit from Neatoo base classes. This prevents the source generator from creating factory methods for test-only classes.
+
+```csharp
+[SuppressFactory]
+public class TestEmployee : EntityBase<TestEmployee>
+{
+    public TestEmployee(IEntityBaseServices<TestEmployee> services) : base(services) { }
+    public partial string Name { get; set; }
+}
 ```
 
 See `references/testing.md` for integration test patterns and `references/pitfalls.md` for common mistakes.

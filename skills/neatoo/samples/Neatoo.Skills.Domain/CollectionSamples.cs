@@ -147,3 +147,79 @@ public class SkillCollPhoneNumberList : ValidateListBase<ISkillCollPhoneNumber>
 {
 }
 #endregion
+
+// -----------------------------------------------------------------------------
+// Collection Behavior Samples - For Skill Documentation
+// -----------------------------------------------------------------------------
+
+/// <summary>
+/// Demonstrates collection behavior patterns for the Neatoo skill documentation.
+/// These static methods contain code snippets that are extracted by MarkdownSnippets.
+/// </summary>
+public static class SkillCollectionBehaviorSamples
+{
+    /// <summary>
+    /// Shows the difference between removing new items (gone completely)
+    /// vs existing items (go to DeletedList) from EntityListBase.
+    /// </summary>
+    public static void NewVsExistingRemoval(
+        SkillCollOrder order,
+        ISkillCollOrderItemFactory itemFactory)
+    {
+        #region skill-coll-new-vs-existing-removal
+        // New item - created but never saved
+        var newItem = itemFactory.Create();
+        order.Items.Add(newItem);
+        order.Items.Remove(newItem);  // Gone completely, DeletedList unchanged
+
+        // Existing item - loaded from database
+        var existingItem = itemFactory.Fetch(1, "CODE", 10m, 1);
+        order.Items.Add(existingItem);
+        order.Items.Remove(existingItem);  // Goes to DeletedList, IsDeleted = true
+        #endregion
+    }
+
+    /// <summary>
+    /// Shows how re-adding a removed item restores it from DeletedList
+    /// and calls UnDelete().
+    /// </summary>
+    public static void IntraAggregateMove(
+        SkillCollOrder order,
+        SkillCollOrderItem existingItem)
+    {
+        #region skill-coll-intra-aggregate-move
+        order.Items.Remove(existingItem);  // Goes to DeletedList
+        // ... later ...
+        order.Items.Add(existingItem);     // Removed from DeletedList, UnDelete() called
+        #endregion
+    }
+
+    /// <summary>
+    /// Demonstrates that adding a fetched (non-new) item to a collection
+    /// marks both item and collection as modified.
+    /// </summary>
+    public static void AddExistingMarksModified(
+        SkillCollOrderItemList list,
+        ISkillCollOrderItemFactory itemFactory)
+    {
+        #region skill-coll-add-existing-marks-modified
+        var item = itemFactory.Fetch(1, "CODE", 10m, 1);  // IsNew = false, IsModified = false
+        list.Add(item);  // Now: item.IsModified = true, list.IsModified = true
+        #endregion
+    }
+
+    /// <summary>
+    /// Shows that adding an item already belonging to one aggregate
+    /// to another aggregate throws an exception.
+    /// </summary>
+    public static void CrossAggregateError(
+        SkillCollOrder order1,
+        SkillCollOrder order2,
+        SkillCollOrderItem item)
+    {
+        #region skill-coll-cross-aggregate-error
+        order1.Items.Add(item);
+        order2.Items.Add(item);  // THROWS: "item belongs to aggregate 'Order'"
+        #endregion
+    }
+}

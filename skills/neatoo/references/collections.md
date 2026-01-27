@@ -332,6 +332,101 @@ public void DeletedList_TracksRemovedEntitiesUntilSave()
 <sup><a href='/src/docs/samples/CollectionsSamples.cs#L347-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-deleted-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+## Deletion State Behavior
+
+Understanding how EntityListBase handles removal is critical for correct persistence:
+
+### New vs Existing Item Removal
+
+| Item State | On Remove | Result |
+|------------|-----------|--------|
+| `IsNew == true` | Removed entirely | Item is gone—nothing to delete from database |
+| `IsNew == false` | Moved to DeletedList | Item marked `IsDeleted`, tracked for DELETE |
+
+<!-- snippet: skill-coll-new-vs-existing-removal -->
+<a id='snippet-skill-coll-new-vs-existing-removal'></a>
+```cs
+// New item - created but never saved
+var newItem = itemFactory.Create();
+order.Items.Add(newItem);
+order.Items.Remove(newItem);  // Gone completely, DeletedList unchanged
+
+// Existing item - loaded from database
+var existingItem = itemFactory.Fetch(1, "CODE", 10m, 1);
+order.Items.Add(existingItem);
+order.Items.Remove(existingItem);  // Goes to DeletedList, IsDeleted = true
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L169-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-coll-new-vs-existing-removal' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### Intra-Aggregate Moves (Re-adding Removed Items)
+
+When you re-add an item that was removed from the same aggregate:
+
+<!-- snippet: skill-coll-intra-aggregate-move -->
+<a id='snippet-skill-coll-intra-aggregate-move'></a>
+```cs
+order.Items.Remove(existingItem);  // Goes to DeletedList
+// ... later ...
+order.Items.Add(existingItem);     // Removed from DeletedList, UnDelete() called
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L190-L194' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-coll-intra-aggregate-move' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+**What happens on re-add:**
+1. Item is removed from the old list's DeletedList
+2. `UnDelete()` is called → `IsDeleted = false`
+3. Item is marked modified (state changed)
+4. `ContainingList` updated to new list
+
+This enables moving items between collections within the same aggregate without database deletion.
+
+### After Save Completes
+
+When `FactoryComplete(FactoryOperation.Update)` fires:
+
+| Action | Purpose |
+|--------|---------|
+| `DeletedList.Clear()` | Entities were deleted from database |
+| `ContainingList = null` on deleted items | No longer owned by any collection |
+| Recalculate `_cachedChildrenModified` | Items may have been marked unmodified |
+
+### Adding Existing Items Marks Them Modified
+
+Adding a fetched (non-new) item to a collection marks both the item and collection as modified:
+
+<!-- snippet: skill-coll-add-existing-marks-modified -->
+<a id='snippet-skill-coll-add-existing-marks-modified'></a>
+```cs
+var item = itemFactory.Fetch(1, "CODE", 10m, 1);  // IsNew = false, IsModified = false
+list.Add(item);  // Now: item.IsModified = true, list.IsModified = true
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L205-L208' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-coll-add-existing-marks-modified' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+This is intentional—adding an existing entity to a new parent represents a state change that must be persisted.
+
+### Cross-Aggregate Transfer
+
+Entities cannot be moved directly between aggregates:
+
+<!-- snippet: skill-coll-cross-aggregate-error -->
+<a id='snippet-skill-coll-cross-aggregate-error'></a>
+```cs
+order1.Items.Add(item);
+order2.Items.Add(item);  // THROWS: "item belongs to aggregate 'Order'"
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L220-L223' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-coll-cross-aggregate-error' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+**Workaround for cross-aggregate transfer:**
+1. Remove from source collection (goes to DeletedList)
+2. Save the source aggregate (deletes from database)
+3. Re-fetch or create new entity
+4. Add to destination aggregate
+
+---
+
 ## ValidateListBase vs EntityListBase
 
 | Feature | ValidateListBase | EntityListBase |
@@ -341,6 +436,7 @@ public void DeletedList_TracksRemovedEntitiesUntilSave()
 | Parent Reference | Yes | Yes |
 | Deleted List | No | Yes |
 | Persistence | No | Yes (via parent) |
+| Cross-Aggregate Check | No | Yes |
 
 Use `ValidateListBase<T>` for collections without persistence needs.
 
@@ -369,4 +465,3 @@ public class CollectionValidateItemList : ValidateListBase<CollectionValidateIte
 
 - [Entities](entities.md) - Parent entity patterns
 - [Validation](validation.md) - Collection validation
-- [Parent-Child](parent-child.md) - Parent navigation

@@ -402,6 +402,40 @@ Collections support:
 - Collection changed events (INotifyCollectionChanged)
 - Property changed events on collection properties like Count
 
+## Deletion State Behavior
+
+EntityListBase handles removal differently based on entity state. Understanding these transitions is critical for correct persistence behavior.
+
+### New vs Existing Item Removal
+
+| Item State | On Remove | DeletedList | IsDeleted | ContainingList |
+|------------|-----------|-------------|-----------|----------------|
+| `IsNew == true` | Removed entirely | Unchanged | N/A | Cleared |
+| `IsNew == false` | Tracked for deletion | Item added | `true` | Stays set |
+
+New items (never persisted) are removed immediately since there's nothing to delete from the database. Existing items must be tracked for the DELETE operation during save.
+
+### Intra-Aggregate Moves
+
+When you re-add an item that was removed from the same aggregate (or a different collection within the aggregate):
+
+1. Item is removed from the old list's DeletedList
+2. `UnDelete()` is called → `IsDeleted = false`
+3. Item is marked modified (state transition occurred)
+4. `ContainingList` is updated to the new list
+
+This enables moving entities between child collections within the same aggregate without database deletion. The entity remains in the aggregate boundary and is updated (not deleted/re-inserted) during save.
+
+### Cross-Aggregate Transfer
+
+Entities cannot be moved directly between aggregates. Attempting to add an entity with a different `Root` throws `InvalidOperationException`.
+
+### Adding Existing Items Marks Them Modified
+
+Adding a fetched (non-new) item to a collection marks both the item and the collection as modified. This is intentional—adding an existing entity to a new parent represents a state change that must be persisted.
+
+---
+
 ## Deleted List Management
 
 EntityListBase maintains a protected DeletedList to track removed entities that need deletion during persistence. This enables the repository to delete entities from the database while maintaining aggregate consistency until the save operation completes.
@@ -480,4 +514,4 @@ Collections respect the IsPaused flag during deserialization and factory operati
 
 ---
 
-**UPDATED:** 2026-01-25
+**UPDATED:** 2026-01-27

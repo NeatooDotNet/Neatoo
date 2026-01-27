@@ -1,5 +1,7 @@
 # Blazor Integration
 
+> **Required package:** Install `Neatoo.Blazor.MudNeatoo` to use the MudNeatoo components shown below.
+
 Neatoo provides Blazor-specific components and patterns for building forms with automatic validation display, change tracking, and two-way binding.
 
 ## Basic Text Field
