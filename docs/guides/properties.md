@@ -11,6 +11,32 @@ Properties in ValidateBase and EntityBase are declared as partial properties. Th
 Declare a partial property:
 
 <!-- snippet: properties-partial-declaration -->
+<a id='snippet-properties-partial-declaration'></a>
+```cs
+/// <summary>
+/// Customer entity demonstrating partial property declarations.
+/// Partial properties let the source generator create backing fields.
+/// </summary>
+[Factory]
+public partial class SkillPropCustomer : ValidateBase<SkillPropCustomer>
+{
+    public SkillPropCustomer(IValidateBaseServices<SkillPropCustomer> services) : base(services) { }
+
+    // Partial properties - source generator completes the implementation
+    public partial string FirstName { get; set; }
+
+    public partial string LastName { get; set; }
+
+    public partial string Email { get; set; }
+
+    public partial DateTime BirthDate { get; set; }
+
+    [Create]
+    public void Create() { }
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/PropertySamples.cs#L16-L38' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-partial-declaration' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-properties-partial-declaration-1'></a>
 ```cs
 [Factory]
 public partial class PropEmployee : ValidateBase<PropEmployee>
@@ -28,6 +54,7 @@ public partial class PropEmployee : ValidateBase<PropEmployee>
     public void Create() { }
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L16-L32' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-partial-declaration-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The source generator creates:
@@ -48,6 +75,7 @@ The BaseGenerator creates the property implementation with backing field propert
 Generated property implementation:
 
 <!-- snippet: properties-generated-implementation -->
+<a id='snippet-properties-generated-implementation'></a>
 ```cs
 [Fact]
 public void GeneratedImplementation_PropertyBackingField()
@@ -69,6 +97,7 @@ public void GeneratedImplementation_PropertyBackingField()
     Assert.Equal("Bob Smith", nameProperty.Value);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L234-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-generated-implementation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The generated code creates:
@@ -87,6 +116,31 @@ Each partial property gets a generated backing field property that retrieves the
 Access the property wrapper:
 
 <!-- snippet: properties-backing-field-access -->
+<a id='snippet-properties-backing-field-access'></a>
+```cs
+/// <summary>
+/// Test accessing property via indexer.
+/// </summary>
+[TestMethod]
+public void BackingFieldAccess_ViaIndexer()
+{
+    var factory = GetRequiredService<ISkillPropCustomerFactory>();
+    var customer = factory.Create();
+
+    // Set via property
+    customer.FirstName = "John";
+
+    // Access via indexer returns the property wrapper
+    var property = customer["FirstName"];
+
+    Assert.IsNotNull(property);
+    Assert.AreEqual("FirstName", property.Name);
+    Assert.AreEqual("John", property.Value);
+    Assert.AreEqual(typeof(string), property.Type);
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L546-L567' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-backing-field-access' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-properties-backing-field-access-1'></a>
 ```cs
 [Fact]
 public void BackingFieldAccess_PropertyWrapper()
@@ -110,6 +164,7 @@ public void BackingFieldAccess_PropertyWrapper()
     Assert.Equal("Carol Davis", typedProperty.Value);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L256-L278' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-backing-field-access-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Property wrappers provide:
@@ -133,6 +188,32 @@ The standard PropertyChanged event fires when property values change. This event
 Subscribe to PropertyChanged:
 
 <!-- snippet: properties-property-changed -->
+<a id='snippet-properties-property-changed'></a>
+```cs
+/// <summary>
+/// Test standard PropertyChanged event.
+/// </summary>
+[TestMethod]
+public void PropertyChanged_NotifiesOnChange()
+{
+    var factory = GetRequiredService<ISkillPropNotifyEntityFactory>();
+    var entity = factory.Create();
+
+    var changedProperties = new List<string>();
+    entity.PropertyChanged += (s, e) =>
+    {
+        if (e.PropertyName != null)
+            changedProperties.Add(e.PropertyName);
+    };
+
+    entity.Name = "Test";
+
+    // PropertyChanged fired
+    Assert.IsTrue(changedProperties.Contains("Name"));
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L443-L465' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-property-changed' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-properties-property-changed-1'></a>
 ```cs
 [Fact]
 public void PropertyChanged_StandardNotification()
@@ -156,6 +237,7 @@ public void PropertyChanged_StandardNotification()
     Assert.Contains("Email", changedProperties);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L280-L302' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-property-changed-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 PropertyChanged behavior:
@@ -174,6 +256,35 @@ NeatooPropertyChanged is Neatoo's internal event for coordinating validation, di
 Subscribe to NeatooPropertyChanged:
 
 <!-- snippet: properties-neatoo-property-changed -->
+<a id='snippet-properties-neatoo-property-changed'></a>
+```cs
+/// <summary>
+/// Test NeatooPropertyChanged with ChangeReason.
+/// </summary>
+[TestMethod]
+public void NeatooPropertyChanged_IncludesChangeReason()
+{
+    var factory = GetRequiredService<ISkillPropNotifyEntityFactory>();
+    var entity = factory.Create();
+
+    var changes = new List<(string Property, ChangeReason Reason)>();
+    entity.NeatooPropertyChanged += (e) =>
+    {
+        changes.Add((e.PropertyName, e.Reason));
+        return Task.CompletedTask;
+    };
+
+    entity.Name = "Updated";
+
+    // Property setter fires NeatooPropertyChanged with UserEdit reason
+    // Filter for Name property changes (other properties may also fire)
+    var nameChanges = changes.Where(c => c.Property == "Name").ToList();
+    Assert.IsTrue(nameChanges.Count >= 1, "Name property should fire at least one change event");
+    Assert.AreEqual(ChangeReason.UserEdit, nameChanges.Last().Reason);
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L467-L492' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-properties-neatoo-property-changed-1'></a>
 ```cs
 [Fact]
 public async Task NeatooPropertyChanged_ExtendedNotification()
@@ -203,6 +314,7 @@ public async Task NeatooPropertyChanged_ExtendedNotification()
     Assert.Equal(ChangeReason.UserEdit, orderNumberEvent.Reason);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L304-L332' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-neatoo-property-changed-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 NeatooPropertyChanged provides:
@@ -233,6 +345,35 @@ UserEdit behavior:
 Standard property assignment uses UserEdit:
 
 <!-- snippet: properties-change-reason-useredit -->
+<a id='snippet-properties-change-reason-useredit'></a>
+```cs
+/// <summary>
+/// Test ChangeReason tracking.
+/// </summary>
+[TestMethod]
+public void ChangeReason_TracksUserEdits()
+{
+    var factory = GetRequiredService<ISkillPropNotifyEntityFactory>();
+    var entity = factory.Create();
+
+    var reasons = new List<(string Property, ChangeReason Reason)>();
+    entity.NeatooPropertyChanged += (e) =>
+    {
+        reasons.Add((e.PropertyName, e.Reason));
+        return Task.CompletedTask;
+    };
+
+    // Normal property set via setter = UserEdit
+    entity.Name = "Test";
+
+    // Filter for Name property changes
+    var nameReasons = reasons.Where(r => r.Property == "Name").ToList();
+    Assert.IsTrue(nameReasons.Any(), "Name property should fire change event");
+    Assert.AreEqual(ChangeReason.UserEdit, nameReasons.Last().Reason);
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L601-L626' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-properties-change-reason-useredit-1'></a>
 ```cs
 [Fact]
 public void ChangeReasonUserEdit_NormalPropertyAssignment()
@@ -261,6 +402,7 @@ public void ChangeReasonUserEdit_NormalPropertyAssignment()
     Assert.True(invoice["Amount"].IsValid);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L334-L361' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### ChangeReason.Load
@@ -270,6 +412,29 @@ Load indicates data loading from persistence or deserialization. LoadValue sets 
 Use LoadValue during data loading:
 
 <!-- snippet: properties-load-value -->
+<a id='snippet-properties-load-value'></a>
+```cs
+/// <summary>
+/// Test LoadValue for data loading without triggering rules.
+/// </summary>
+[TestMethod]
+public void LoadValue_DoesNotTriggerRules()
+{
+    var factory = GetRequiredService<ISkillPropInvoiceFactory>();
+    var invoice = factory.Create();
+
+    // LoadValue bypasses validation
+    invoice["Amount"].LoadValue(-100m);
+
+    // Value is set even though it would fail validation
+    Assert.AreEqual(-100m, invoice.Amount);
+
+    // Property hasn't been validated yet
+    // (LoadValue doesn't run rules)
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L494-L513' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-properties-load-value-1'></a>
 ```cs
 [Fact]
 public void LoadValue_DataLoadingWithoutRules()
@@ -291,6 +456,7 @@ public void LoadValue_DataLoadingWithoutRules()
     Assert.Equal(500.00m, invoice.Amount);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L363-L383' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 LoadValue behavior:
@@ -310,6 +476,39 @@ Properties expose meta-properties for querying their state beyond the current va
 Access property metadata:
 
 <!-- snippet: properties-meta-properties -->
+<a id='snippet-properties-meta-properties'></a>
+```cs
+/// <summary>
+/// Test property meta-properties.
+/// </summary>
+[TestMethod]
+public async Task MetaProperties_AvailableOnProperty()
+{
+    var factory = GetRequiredService<ISkillPropAccountFactory>();
+    var account = factory.Create();
+
+    var accountNumberProp = account["AccountNumber"];
+
+    // Set invalid value
+    account.AccountNumber = "";
+
+    await account.RunRules();
+
+    // Meta-properties reflect validation state
+    Assert.IsFalse(accountNumberProp.IsValid);
+    Assert.IsFalse(accountNumberProp.IsBusy);
+    Assert.IsTrue(accountNumberProp.PropertyMessages.Any());
+
+    // Fix value
+    account.AccountNumber = "ACCT-001";
+    await account.RunRules();
+
+    Assert.IsTrue(accountNumberProp.IsValid);
+    Assert.IsFalse(accountNumberProp.PropertyMessages.Any());
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L515-L544' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-properties-meta-properties-1'></a>
 ```cs
 [Fact]
 public async Task MetaProperties_QueryPropertyState()
@@ -342,6 +541,7 @@ public async Task MetaProperties_QueryPropertyState()
     Assert.True(invoice["Amount"].PropertyMessages.Any());
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L385-L416' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Available meta-properties:
@@ -361,6 +561,50 @@ Standard C# properties can compute values from partial properties. These are reg
 Implement a computed property:
 
 <!-- snippet: properties-custom-getter -->
+<a id='snippet-properties-custom-getter'></a>
+```cs
+/// <summary>
+/// Order entity demonstrating computed properties.
+/// </summary>
+[Factory]
+public partial class SkillPropOrder : ValidateBase<SkillPropOrder>
+{
+    public SkillPropOrder(IValidateBaseServices<SkillPropOrder> services) : base(services) { }
+
+    public partial int Quantity { get; set; }
+
+    public partial decimal UnitPrice { get; set; }
+
+    public partial decimal DiscountPercent { get; set; }
+
+    // Computed property with custom getter logic
+    public decimal TotalPrice
+    {
+        get
+        {
+            var subtotal = Quantity * UnitPrice;
+            var discount = subtotal * (DiscountPercent / 100);
+            return subtotal - discount;
+        }
+    }
+
+    // Formatted display property
+    public string DisplayName
+    {
+        get
+        {
+            if (Quantity == 0 || UnitPrice == 0)
+                return "(No items)";
+            return $"{Quantity} x {UnitPrice:C} = {TotalPrice:C}";
+        }
+    }
+
+    [Create]
+    public void Create() { }
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/PropertySamples.cs#L78-L118' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-custom-getter' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-properties-custom-getter-1'></a>
 ```cs
 // Computed property with custom getter logic
 public string DisplayName
@@ -376,6 +620,7 @@ public string DisplayName
     }
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L75-L89' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-custom-getter-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Computed property patterns:
@@ -393,6 +638,38 @@ Properties can be declared read-only by omitting the setter. The source generato
 Declare a read-only property:
 
 <!-- snippet: properties-read-only -->
+<a id='snippet-properties-read-only'></a>
+```cs
+/// <summary>
+/// Contact entity demonstrating read-only properties.
+/// </summary>
+[Factory]
+public partial class SkillPropContact : ValidateBase<SkillPropContact>
+{
+    public SkillPropContact(IValidateBaseServices<SkillPropContact> services) : base(services) { }
+
+    public partial string FirstName { get; set; }
+
+    public partial string LastName { get; set; }
+
+    // Read-only property - only getter, value set via LoadValue
+    public partial string FullName { get; }
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(string firstName, string lastName)
+    {
+        FirstName = firstName;
+        LastName = lastName;
+        // Use LoadValue to set read-only properties during fetch
+        this["FullName"].LoadValue($"{firstName} {lastName}");
+    }
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/PropertySamples.cs#L44-L72' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-read-only' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-properties-read-only-1'></a>
 ```cs
 [Factory]
 public partial class PropContact : ValidateBase<PropContact>
@@ -410,6 +687,7 @@ public partial class PropContact : ValidateBase<PropContact>
     public void Create() { }
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L37-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-read-only-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Read-only properties:
@@ -428,6 +706,40 @@ During batch operations, suppress property change events to improve performance 
 Pause property events during batch updates:
 
 <!-- snippet: properties-suppress-events -->
+<a id='snippet-properties-suppress-events'></a>
+```cs
+/// <summary>
+/// Test PauseAllActions for batch updates.
+/// </summary>
+[TestMethod]
+public void SuppressEvents_WithPauseAllActions()
+{
+    var factory = GetRequiredService<ISkillPropCustomerFactory>();
+    var customer = factory.Create();
+
+    var changeCount = 0;
+    customer.PropertyChanged += (s, e) => changeCount++;
+
+    // Batch update with pause
+    using (customer.PauseAllActions())
+    {
+        Assert.IsTrue(customer.IsPaused);
+
+        customer.FirstName = "John";
+        customer.LastName = "Doe";
+        customer.Email = "john@example.com";
+    }
+
+    // After pause ends
+    Assert.IsFalse(customer.IsPaused);
+
+    // Values are set
+    Assert.AreEqual("John", customer.FirstName);
+    Assert.AreEqual("Doe", customer.LastName);
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L569-L599' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-properties-suppress-events-1'></a>
 ```cs
 [Fact]
 public void SuppressEvents_PauseAllActions()
@@ -460,6 +772,7 @@ public void SuppressEvents_PauseAllActions()
     Assert.Equal(750.00m, invoice.Amount);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L453-L484' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 PauseAllActions behavior:
@@ -485,6 +798,7 @@ Properties can be accessed dynamically by name using the indexer syntax.
 Access properties by name:
 
 <!-- snippet: properties-indexer-access -->
+<a id='snippet-properties-indexer-access'></a>
 ```cs
 [Fact]
 public void IndexerAccess_DynamicPropertyAccess()
@@ -511,6 +825,7 @@ public void IndexerAccess_DynamicPropertyAccess()
     Assert.Equal("eva@example.com", employee.Email);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L486-L511' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-indexer-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Indexer patterns:
@@ -529,6 +844,7 @@ Properties track async operations through the Task property. When validation rul
 Wait for property tasks to complete:
 
 <!-- snippet: properties-task-tracking -->
+<a id='snippet-properties-task-tracking'></a>
 ```cs
 [Fact]
 public async Task TaskTracking_AsyncOperations()
@@ -556,6 +872,7 @@ public async Task TaskTracking_AsyncOperations()
     Assert.True(zipProperty.Task.IsCompleted);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L513-L539' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-task-tracking' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Task tracking behavior:
@@ -574,6 +891,7 @@ Properties integrate with the validation system. Validation rules execute when p
 Property validation coordination:
 
 <!-- snippet: properties-validation-integration -->
+<a id='snippet-properties-validation-integration'></a>
 ```cs
 [Fact]
 public async Task ValidationIntegration_PropertyValidation()
@@ -607,6 +925,7 @@ public async Task ValidationIntegration_PropertyValidation()
     Assert.True(invoice.IsValid);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L541-L573' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-validation-integration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Validation flow:
@@ -625,6 +944,7 @@ Property changes propagate up the parent-child graph through NeatooPropertyChang
 Property change cascade:
 
 <!-- snippet: properties-change-propagation -->
+<a id='snippet-properties-change-propagation'></a>
 ```cs
 [Fact]
 public async Task ChangePropagation_ChildToParent()
@@ -663,6 +983,7 @@ public async Task ChangePropagation_ChildToParent()
     Assert.NotNull(propagatedEvent);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L575-L612' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-propagation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade behavior:
@@ -681,6 +1002,7 @@ Properties set in constructors outside of factory methods are tracked as modific
 Avoid constructor property assignment:
 
 <!-- snippet: properties-constructor-assignment -->
+<a id='snippet-properties-constructor-assignment'></a>
 ```cs
 [Fact]
 public void ConstructorAssignment_UseLoadValueInstead()
@@ -703,6 +1025,7 @@ public void ConstructorAssignment_UseLoadValueInstead()
     Assert.Equal("default@example.com", employee.Email);
 }
 ```
+<sup><a href='/src/docs/samples/PropertiesSamples.cs#L614-L635' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-constructor-assignment' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The analyzer warns about constructor assignments and offers a code fix to convert to LoadValue. This ensures new entities start in an unmodified state.

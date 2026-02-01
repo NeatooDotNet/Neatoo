@@ -11,6 +11,7 @@ Neatoo provides a DDD-focused framework for building domain models with source-g
 Built for expert .NET developers working with Domain-Driven Design patterns.
 
 <!-- snippet: readme-teaser -->
+<a id='snippet-readme-teaser'></a>
 ```cs
 // Define an Employee aggregate root with validation and business rules
 [Factory]
@@ -66,6 +67,7 @@ public interface IAddressList : IEntityListBase<IAddress> { }
 
 public class AddressList : EntityListBase<IAddress>, IAddressList { }
 ```
+<sup><a href='/src/docs/samples/ReadmeSamples.cs#L10-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-readme-teaser' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The example above demonstrates Neatoo's core features: partial property declarations, automatic validation, business rules, parent-child relationships, and change tracking. Source generators produce backing fields, factory methods, and metadata at compile time.
@@ -102,6 +104,7 @@ Neatoo targets .NET 8.0, 9.0, and 10.0.
 Create a domain object by inheriting from ValidateBase or EntityBase and declaring partial properties. Source generators handle the rest.
 
 <!-- snippet: readme-quick-start -->
+<a id='snippet-readme-quick-start'></a>
 ```cs
 // 1. ValidateBase: For objects that need validation without persistence
 [Factory]
@@ -172,6 +175,7 @@ public class OrderList : EntityListBase<IOrder>, IOrderList { }
 // Mock repository interface for the sample
 public interface ICustomerRepository { }
 ```
+<sup><a href='/src/docs/samples/ReadmeSamples.cs#L66-L135' title='Snippet source file'>snippet source</a> | <a href='#snippet-readme-quick-start' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This example shows:

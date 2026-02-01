@@ -1,0 +1,20 @@
+@* Validation display examples - demonstrates NeatooValidationSummary *@
+
+@if (employee != null)
+{
+    @* begin-snippet: blazor-validation-summary *@
+    <NeatooValidationSummary Entity="@employee" />
+    @* end-snippet *@
+}
+
+@code {
+    private SkillBlazorEmployee? employee;
+
+    [Inject]
+    private ISkillBlazorEmployeeFactory EmployeeFactory { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        employee = EmployeeFactory.Create();
+    }
+}

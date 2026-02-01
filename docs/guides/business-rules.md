@@ -11,6 +11,7 @@ Action rules perform side effects like calculating derived properties. Action ru
 Register synchronous actions with `AddAction`:
 
 <!-- snippet: rules-add-action -->
+<a id='snippet-rules-add-action'></a>
 ```cs
 public RulesContact(IValidateBaseServices<RulesContact> services) : base(services)
 {
@@ -20,6 +21,7 @@ public RulesContact(IValidateBaseServices<RulesContact> services) : base(service
         c => c.FirstName, c => c.LastName);
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L50-L58' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-add-action' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The action executes whenever `FirstName` or `LastName` changes.
@@ -27,6 +29,7 @@ The action executes whenever `FirstName` or `LastName` changes.
 For async actions that call external services:
 
 <!-- snippet: rules-add-action-async -->
+<a id='snippet-rules-add-action-async'></a>
 ```cs
 public RulesProduct(
     IValidateBaseServices<RulesProduct> services,
@@ -41,6 +44,7 @@ public RulesProduct(
         p => p.ZipCode);
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L76-L89' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-add-action-async' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `RuleManager.AddAction` method creates an `ActionFluentRule<T>` internally that executes the lambda when trigger properties change. The lambda can modify other properties on the entity without creating validation messages.
@@ -52,6 +56,7 @@ Validation rules check business constraints and produce error messages when vali
 Register synchronous validation with `AddValidation`:
 
 <!-- snippet: rules-add-validation -->
+<a id='snippet-rules-add-validation'></a>
 ```cs
 public RulesInvoice(IValidateBaseServices<RulesInvoice> services) : base(services)
 {
@@ -61,6 +66,7 @@ public RulesInvoice(IValidateBaseServices<RulesInvoice> services) : base(service
         i => i.Amount);
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L105-L113' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-add-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `RuleManager.AddValidation` method creates a `ValidationFluentRule<T>` internally that executes the lambda when trigger properties change. Return an empty or null string to indicate validation passed. Any other value becomes the error message associated with the trigger property.
@@ -68,6 +74,7 @@ The `RuleManager.AddValidation` method creates a `ValidationFluentRule<T>` inter
 For async validation:
 
 <!-- snippet: rules-add-validation-async -->
+<a id='snippet-rules-add-validation-async'></a>
 ```cs
 public RulesOrder(
     IValidateBaseServices<RulesOrder> services,
@@ -83,11 +90,13 @@ public RulesOrder(
         o => o.ProductCode);
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L127-L141' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-add-validation-async' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Async validation with cancellation token support:
 
 <!-- snippet: rules-add-validation-async-token -->
+<a id='snippet-rules-add-validation-async-token'></a>
 ```cs
 public RulesBooking(
     IValidateBaseServices<RulesBooking> services,
@@ -103,6 +112,7 @@ public RulesBooking(
         b => b.ResourceId);
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L155-L169' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-add-validation-async-token' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Cross-Property Validation
@@ -110,6 +120,7 @@ public RulesBooking(
 Rules can trigger on multiple properties and validate relationships between them. Use custom rule classes that inherit from `RuleBase<T>` or `AsyncRuleBase<T>` and declare multiple trigger properties in the constructor.
 
 <!-- snippet: rules-cross-property -->
+<a id='snippet-rules-cross-property'></a>
 ```cs
 public RulesEvent(IValidateBaseServices<RulesEvent> services) : base(services)
 {
@@ -118,6 +129,7 @@ public RulesEvent(IValidateBaseServices<RulesEvent> services) : base(services)
     RuleManager.AddRule(new DateRangeValidationRule());
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L183-L190' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-cross-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The rule executes when either `StartDate` or `EndDate` changes and validates their relationship. See the Custom Rule Classes section below for implementation details.
@@ -129,6 +141,7 @@ For complex logic, inherit from `RuleBase<T>` or `AsyncRuleBase<T>`.
 Synchronous custom rule:
 
 <!-- snippet: rules-custom-class -->
+<a id='snippet-rules-custom-class'></a>
 ```cs
 /// <summary>
 /// Custom synchronous rule that validates salary is within range.
@@ -161,6 +174,7 @@ public class SalaryRangeRule : RuleBase<RulesEmployee>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L221-L252' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-custom-class' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Return `None` when validation passes. Create rule messages with the `AsRuleMessages()` extension.
@@ -168,6 +182,7 @@ Return `None` when validation passes. Create rule messages with the `AsRuleMessa
 Async custom rule with external dependencies:
 
 <!-- snippet: rules-async-custom-class -->
+<a id='snippet-rules-async-custom-class'></a>
 ```cs
 /// <summary>
 /// Custom async rule that validates product availability.
@@ -199,6 +214,7 @@ public class ProductAvailabilityRule : AsyncRuleBase<RulesOrderItem>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L254-L284' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-async-custom-class' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Custom rules support dependency injection through constructor parameters.
@@ -210,6 +226,7 @@ Neatoo automatically converts DataAnnotations validation attributes to business 
 Standard validation attributes work without explicit registration:
 
 <!-- snippet: rules-attribute-standard -->
+<a id='snippet-rules-attribute-standard'></a>
 ```cs
 [Factory]
 public partial class RulesAttributeEntity : ValidateBase<RulesAttributeEntity>
@@ -235,6 +252,7 @@ public partial class RulesAttributeEntity : ValidateBase<RulesAttributeEntity>
     public void Create() { }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L902-L926' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-attribute-standard' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Supported attributes include `[Required]`, `[StringLength]`, `[MinLength]`, `[MaxLength]`, `[RegularExpression]`, `[Range]`, and `[EmailAddress]`.
@@ -244,6 +262,7 @@ Supported attributes include `[Required]`, `[StringLength]`, `[MinLength]`, `[Ma
 Rules execute on an entity instance and can access the entire aggregate graph via navigation properties. This allows validation of business invariants that span multiple entities within the aggregate boundary.
 
 <!-- snippet: rules-aggregate-level -->
+<a id='snippet-rules-aggregate-level'></a>
 ```cs
 /// <summary>
 /// Rule that validates across the entire aggregate.
@@ -267,6 +286,7 @@ public class AggregateValidationRule : RuleBase<RulesAggregateRoot>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L606-L628' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-aggregate-level' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `Execute` method receives the target entity instance. Use navigation properties to traverse child entities and collections within the aggregate.
@@ -276,6 +296,7 @@ The `Execute` method receives the target entity instance. Use navigation propert
 When a property changes, the framework identifies all rules with that property as a trigger, sorts them by `RuleOrder` (ascending), then executes them sequentially. Lower `RuleOrder` values execute first. Default is 1.
 
 <!-- snippet: rules-execution-order -->
+<a id='snippet-rules-execution-order'></a>
 ```cs
 /// <summary>
 /// Rule with explicit order that executes first (order = 0).
@@ -329,6 +350,7 @@ public class ThirdExecutionRule : RuleBase<RulesOrderedEntity>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L290-L342' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-execution-order' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Set `RuleOrder` in the rule constructor to control execution sequence. This ensures rules with dependencies execute in the correct order. Within the same `RuleOrder` value, rules execute in registration order.
@@ -340,6 +362,7 @@ Async rules also execute sequentially. Each async rule completes before the next
 Rules always execute when their trigger properties change, but can use conditional logic to skip validation based on entity state. Return `None` from the `Execute` method to indicate no validation errors.
 
 <!-- snippet: rules-conditional -->
+<a id='snippet-rules-conditional'></a>
 ```cs
 /// <summary>
 /// Rule that only validates when entity is active.
@@ -365,6 +388,7 @@ public class ConditionalValidationRule : RuleBase<RulesConditionalEntity>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L348-L372' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-conditional' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The rule executes but produces no messages when returning `None`. This pattern is useful for state-dependent validation.
@@ -372,6 +396,7 @@ The rule executes but produces no messages when returning `None`. This pattern i
 For more complex scenarios, check conditions before executing expensive operations:
 
 <!-- snippet: rules-conditional-early-exit -->
+<a id='snippet-rules-conditional-early-exit'></a>
 ```cs
 /// <summary>
 /// Rule with early exit for performance optimization.
@@ -405,6 +430,7 @@ public class EarlyExitRule : AsyncRuleBase<RulesConditionalEntity>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L374-L406' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-conditional-early-exit' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Async Business Rules
@@ -412,6 +438,7 @@ public class EarlyExitRule : AsyncRuleBase<RulesConditionalEntity>
 Async rules support cancellation tokens and long-running operations.
 
 <!-- snippet: rules-async-cancellation -->
+<a id='snippet-rules-async-cancellation'></a>
 ```cs
 /// <summary>
 /// Async rule with proper cancellation token handling.
@@ -443,6 +470,7 @@ public class CancellableValidationRule : AsyncRuleBase<RulesCancellableEntity>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L412-L442' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-async-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The framework passes cancellation tokens through the entire rule execution chain, allowing rules to cooperate with cancellation.
@@ -454,6 +482,7 @@ Async rules automatically track busy state. The framework marks trigger properti
 When a rule needs to set a property without triggering other rules, use `LoadProperty`:
 
 <!-- snippet: rules-load-property -->
+<a id='snippet-rules-load-property'></a>
 ```cs
 /// <summary>
 /// Rule that uses LoadProperty to set values without triggering other rules.
@@ -473,6 +502,7 @@ public class ComputedTotalRule : RuleBase<RulesOrderWithTotal>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L448-L466' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-load-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `LoadProperty` is a protected method on `RuleBase<T>` that bypasses the normal property setter. It writes directly to the backing field via the property wrapper, preventing cascading rule execution and infinite loops. Use this when a rule needs to update a property without triggering rules registered on that property.
@@ -484,6 +514,7 @@ Rules are registered in the target class constructor.
 Fluent rules for simple scenarios:
 
 <!-- snippet: rules-registration-fluent -->
+<a id='snippet-rules-registration-fluent'></a>
 ```cs
 public RulesFluentEntity(IValidateBaseServices<RulesFluentEntity> services) : base(services)
 {
@@ -507,11 +538,13 @@ public RulesFluentEntity(IValidateBaseServices<RulesFluentEntity> services) : ba
         e => e.FirstName);
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L955-L977' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-registration-fluent' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Custom rule classes for complex logic with dependencies:
 
 <!-- snippet: rules-registration-custom -->
+<a id='snippet-rules-registration-custom'></a>
 ```cs
 public RulesCustomEntity(
     IValidateBaseServices<RulesCustomEntity> services,
@@ -521,6 +554,7 @@ public RulesCustomEntity(
     RuleManager.AddRule(businessRule);
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L999-L1007' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-registration-custom' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Custom rules injected via constructor support dependency injection and can be shared across multiple targets.
@@ -532,6 +566,7 @@ Rules declare which properties trigger their execution. When any trigger propert
 Single trigger property:
 
 <!-- snippet: rules-trigger-single -->
+<a id='snippet-rules-trigger-single'></a>
 ```cs
 /// <summary>
 /// Rule triggered by a single property.
@@ -547,11 +582,13 @@ public class SingleTriggerRule : RuleBase<RulesTriggerEntity>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L472-L486' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-trigger-single' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Multiple trigger properties:
 
 <!-- snippet: rules-trigger-multiple -->
+<a id='snippet-rules-trigger-multiple'></a>
 ```cs
 /// <summary>
 /// Rule triggered by multiple properties.
@@ -567,11 +604,13 @@ public class MultipleTriggerRule : RuleBase<RulesTriggerEntity>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L488-L502' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-trigger-multiple' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Add triggers after construction:
 
 <!-- snippet: rules-trigger-add-later -->
+<a id='snippet-rules-trigger-add-later'></a>
 ```cs
 /// <summary>
 /// Rule with triggers added after construction.
@@ -592,6 +631,7 @@ public class DynamicTriggerRule : RuleBase<RulesTriggerEntity>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L504-L523' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-trigger-add-later' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Rule Messages
@@ -601,6 +641,7 @@ Rules return `IRuleMessages` containing zero or more validation messages.
 Return no messages when validation passes:
 
 <!-- snippet: rules-messages-none -->
+<a id='snippet-rules-messages-none'></a>
 ```cs
 /// <summary>
 /// Rule that returns no messages when validation passes.
@@ -621,11 +662,13 @@ public class PassingValidationRule : RuleBase<RulesMessageEntity>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L529-L548' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-messages-none' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Return a single message:
 
 <!-- snippet: rules-messages-single -->
+<a id='snippet-rules-messages-single'></a>
 ```cs
 /// <summary>
 /// Rule that returns a single validation message.
@@ -645,11 +688,13 @@ public class SingleMessageRule : RuleBase<RulesMessageEntity>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L550-L568' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-messages-single' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Return multiple messages for different properties:
 
 <!-- snippet: rules-messages-multiple -->
+<a id='snippet-rules-messages-multiple'></a>
 ```cs
 /// <summary>
 /// Rule that returns multiple validation messages for different properties.
@@ -681,6 +726,7 @@ public class MultipleMessagesRule : RuleBase<RulesMessageEntity>
     }
 }
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L570-L600' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-messages-multiple' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Messages are automatically associated with properties and displayed through the validation UI.
@@ -692,10 +738,12 @@ Rules execute automatically when trigger properties change, but can also be run 
 Run all rules:
 
 <!-- snippet: rules-run-all -->
+<a id='snippet-rules-run-all'></a>
 ```cs
 // Run all registered rules regardless of which properties changed
 await entity.RunRules(RunRulesFlag.All);
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L1365-L1368' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-run-all' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `RunRulesFlag` enum supports different execution modes:
@@ -708,10 +756,12 @@ The `RunRulesFlag` enum supports different execution modes:
 Run rules for a specific property:
 
 <!-- snippet: rules-run-property -->
+<a id='snippet-rules-run-property'></a>
 ```cs
 // Run rules only for the specified property
 await entity.RunRules(nameof(entity.Value));
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L1381-L1384' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-run-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This executes only rules that have the specified property as a trigger. The framework looks up all rules registered with that property name as a trigger, sorts by `RuleOrder`, and executes them sequentially.
@@ -719,10 +769,12 @@ This executes only rules that have the specified property as a trigger. The fram
 Run a specific rule type:
 
 <!-- snippet: rules-run-specific -->
+<a id='snippet-rules-run-specific'></a>
 ```cs
 // Run rules of a specific type (custom method on entity)
 await employee.RunSalaryRangeRules();
 ```
+<sup><a href='/src/docs/samples/BusinessRulesSamples.cs#L1397-L1400' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-run-specific' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 For targeted rule type execution, expose a custom method on the entity that calls `RuleManager.RunRule<TRule>()` to execute a specific rule class by type.

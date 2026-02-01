@@ -11,6 +11,7 @@ Validation rules can execute async operations by inheriting from `AsyncRuleBase<
 Create an async validation rule by inheriting from `AsyncRuleBase<T>` and implementing the `Execute` method:
 
 <!-- snippet: async-validation-rule -->
+<a id='snippet-async-validation-rule'></a>
 ```cs
 public class UniqueEmailRule : AsyncRuleBase<AsyncContact>
 {
@@ -40,6 +41,7 @@ public class UniqueEmailRule : AsyncRuleBase<AsyncContact>
     }
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L38-L66' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-validation-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The framework marks trigger properties as busy using unique execution IDs. While an async rule executes, `IsBusy` returns `true` on both the property and the entity. After completion, the same execution ID is used to clear the busy state, ensuring concurrent rules don't interfere with each other's tracking.
@@ -51,6 +53,7 @@ Use `AddActionAsync` to create inline async business rules that execute when pro
 Register an async action rule in your constructor:
 
 <!-- snippet: async-action-rule -->
+<a id='snippet-async-action-rule'></a>
 ```cs
 public AsyncActionContact(IValidateBaseServices<AsyncActionContact> services)
     : base(services)
@@ -66,11 +69,13 @@ public AsyncActionContact(IValidateBaseServices<AsyncActionContact> services)
         c => c.ZipCode);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L136-L150' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-action-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 For rules that need cancellation support, use the overload that accepts `CancellationToken`:
 
 <!-- snippet: async-action-rule-with-token -->
+<a id='snippet-async-action-rule-with-token'></a>
 ```cs
 public AsyncCancellableContact(IValidateBaseServices<AsyncCancellableContact> services)
     : base(services)
@@ -88,6 +93,7 @@ public AsyncCancellableContact(IValidateBaseServices<AsyncCancellableContact> se
         c => c.Email);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L164-L180' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-action-rule-with-token' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## WaitForTasks
@@ -97,6 +103,7 @@ public AsyncCancellableContact(IValidateBaseServices<AsyncCancellableContact> se
 Wait for all async operations to complete:
 
 <!-- snippet: async-wait-for-tasks -->
+<a id='snippet-async-wait-for-tasks'></a>
 ```cs
 [Fact]
 public async Task WaitForTasks_EnsuresAsyncRulesComplete()
@@ -114,6 +121,7 @@ public async Task WaitForTasks_EnsuresAsyncRulesComplete()
     Assert.Equal(0.0825m, contact.TaxRate);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L340-L356' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-wait-for-tasks' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The framework automatically propagates task tracking up the parent hierarchy through the `Parent` property. When you call `WaitForTasks` on a parent entity, it recursively waits for all child entities and collections to complete their async operations.
@@ -129,6 +137,7 @@ Neatoo automatically tracks async operation state through the `IsBusy` property.
 Check busy state before performing operations:
 
 <!-- snippet: async-check-busy -->
+<a id='snippet-async-check-busy'></a>
 ```cs
 [Fact]
 public async Task IsBusy_TracksAsyncOperationState()
@@ -149,6 +158,7 @@ public async Task IsBusy_TracksAsyncOperationState()
     Assert.False(contact.IsBusy);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L358-L377' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-check-busy' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `IsBusy` cascades through the parent hierarchy via the `Parent` property. Aggregate roots reflect the busy state of all children, ensuring the UI can disable save operations or show loading indicators for the entire aggregate.
@@ -160,6 +170,7 @@ All async operations accept an optional `CancellationToken` to enable cancellati
 Pass cancellation tokens to async operations:
 
 <!-- snippet: async-cancellation-token -->
+<a id='snippet-async-cancellation-token'></a>
 ```cs
 [Fact]
 public async Task CancellationToken_CancelsWaitForTasks()
@@ -180,6 +191,7 @@ public async Task CancellationToken_CancelsWaitForTasks()
     await contact.RunRules(RunRulesFlag.All);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L379-L398' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-cancellation-token' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After catching `OperationCanceledException`, the entity may have partially completed rules. Call `RunRules(RunRulesFlag.All)` to re-execute all rules and establish consistent validation state.
@@ -191,6 +203,7 @@ After catching `OperationCanceledException`, the entity may have partially compl
 Wait for all items in a collection:
 
 <!-- snippet: async-list-wait-tasks -->
+<a id='snippet-async-list-wait-tasks'></a>
 ```cs
 [Fact]
 public async Task ListWaitForTasks_WaitsForAllItems()
@@ -217,6 +230,7 @@ public async Task ListWaitForTasks_WaitsForAllItems()
     Assert.False(item2.IsBusy);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L400-L425' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-list-wait-tasks' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Collections report `IsBusy == true` when any child item is busy. This busy state cascades up through the parent hierarchy, allowing aggregate roots to reflect the busy state of deeply nested collections.
@@ -228,6 +242,7 @@ Collections report `IsBusy == true` when any child item is busy. This busy state
 Manually run all validation rules:
 
 <!-- snippet: async-run-rules -->
+<a id='snippet-async-run-rules'></a>
 ```cs
 [Fact]
 public async Task RunRules_ExecutesAllValidationRules()
@@ -246,6 +261,7 @@ public async Task RunRules_ExecutesAllValidationRules()
     Assert.Equal(0.0825m, contact.TaxRate);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L427-L444' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-run-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `RunRules(RunRulesFlag.All)` clears all validation messages before running rules, providing a clean validation state.
@@ -257,6 +273,7 @@ When a property changes, the framework identifies all rules with that property a
 Control rule execution order:
 
 <!-- snippet: async-rule-order -->
+<a id='snippet-async-rule-order'></a>
 ```cs
 [Fact]
 public async Task RuleOrder_ControlsExecutionSequence()
@@ -272,6 +289,7 @@ public async Task RuleOrder_ControlsExecutionSequence()
     Assert.Equal(2, contact.SecondRuleExecutionOrder);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L446-L460' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-rule-order' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This sequential execution ensures consistent entity state and prevents race conditions when rules modify the same properties.
@@ -283,6 +301,7 @@ Exceptions thrown in async rules are captured and wrapped in an `AggregateExcept
 Handle exceptions from async rules:
 
 <!-- snippet: async-error-handling -->
+<a id='snippet-async-error-handling'></a>
 ```cs
 [Fact]
 public async Task AsyncRule_ExceptionsAreCaptured()
@@ -304,6 +323,7 @@ public async Task AsyncRule_ExceptionsAreCaptured()
     Assert.False(contact["Value"].IsValid);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L462-L482' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-error-handling' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 When a rule throws an exception, the framework marks the trigger properties as invalid using `MarkInvalid` and stores the exception message in `PropertyMessages`. The entity's `IsValid` becomes `false` and `IsSavable` becomes `false`.
@@ -315,6 +335,7 @@ Async rules can modify properties that trigger other async rules, creating a cha
 Create a rule that triggers another async rule:
 
 <!-- snippet: async-recursive-rules -->
+<a id='snippet-async-recursive-rules'></a>
 ```cs
 [Fact]
 public async Task RecursiveRules_ChainedRulesExecute()
@@ -336,6 +357,7 @@ public async Task RecursiveRules_ChainedRulesExecute()
     Assert.Equal("JD", contact.Initials);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L484-L504' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-recursive-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Each rule in the chain executes sequentially. When rule A modifies a property that triggers rule B, rule B starts executing only after rule A completes.
@@ -347,6 +369,7 @@ Combine `PauseAllActions` with async operations to batch property changes withou
 Batch async property changes:
 
 <!-- snippet: async-pause-actions -->
+<a id='snippet-async-pause-actions'></a>
 ```cs
 [Fact]
 public async Task PauseAllActions_BatchesPropertyChanges()
@@ -372,6 +395,7 @@ public async Task PauseAllActions_BatchesPropertyChanges()
     Assert.Equal("JS", contact.Initials);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L506-L530' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-pause-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This pattern avoids triggering rules multiple times during batch updates. After resume, `RunRules` executes rules once for all changed properties, and `WaitForTasks` ensures all async operations complete before proceeding.
@@ -383,6 +407,7 @@ When using `RemoteFactory`, the generated `SaveAsync` method automatically calls
 Save waits for async validation:
 
 <!-- snippet: async-save-entity -->
+<a id='snippet-async-save-entity'></a>
 ```cs
 [Fact]
 public async Task Save_WaitsForAsyncValidation()
@@ -403,6 +428,7 @@ public async Task Save_WaitsForAsyncValidation()
     Assert.False(contact.IsBusy);
 }
 ```
+<sup><a href='/src/docs/samples/AsyncSamples.cs#L532-L551' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-save-entity' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 If async rules are still executing (`IsBusy == true`) or the entity is invalid (`IsValid == false`) after `WaitForTasks`, the factory does not call your persistence method. Instead, it relies on `IsSavable` to determine if persistence should proceed. Since `IsSavable == IsModified && IsValid && !IsBusy && !IsChild`, an invalid or busy entity cannot be saved.

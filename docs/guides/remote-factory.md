@@ -11,6 +11,66 @@ Factory methods define entity lifecycle operations. The RemoteFactory source gen
 Declare factory methods on an EntityBase class:
 
 <!-- snippet: remotefactory-factory-methods -->
+<a id='snippet-remotefactory-factory-methods'></a>
+```cs
+/// <summary>
+/// Customer entity demonstrating factory method attributes.
+/// </summary>
+[Factory]
+public partial class SkillFactoryCustomer : EntityBase<SkillFactoryCustomer>
+{
+    public SkillFactoryCustomer(IEntityBaseServices<SkillFactoryCustomer> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string Name { get; set; }
+    public partial string Email { get; set; }
+
+    // [Create] - Initializes a new entity
+    [Create]
+    public void Create()
+    {
+        Id = 0;
+        Name = "";
+        Email = "";
+    }
+
+    // [Fetch] - Loads existing entity from persistence
+    [Fetch]
+    public async Task FetchByIdAsync(int id, [Service] ISkillCustomerRepository repository)
+    {
+        var data = await repository.FetchByIdAsync(id);
+        if (data != null)
+        {
+            Id = data.Id;
+            Name = data.Name;
+            Email = data.Email;
+        }
+    }
+
+    // [Insert] - Saves new entity (when IsNew = true)
+    [Insert]
+    public async Task InsertAsync([Service] ISkillCustomerRepository repository)
+    {
+        await repository.InsertAsync(Id, Name, Email);
+    }
+
+    // [Update] - Saves existing entity (when IsNew = false, IsDeleted = false)
+    [Update]
+    public async Task UpdateAsync([Service] ISkillCustomerRepository repository)
+    {
+        await repository.UpdateAsync(Id, Name, Email);
+    }
+
+    // [Delete] - Removes entity (when IsDeleted = true)
+    [Delete]
+    public async Task DeleteAsync([Service] ISkillCustomerRepository repository)
+    {
+        await repository.DeleteAsync(Id);
+    }
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L15-L71' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-factory-methods' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-remotefactory-factory-methods-1'></a>
 ```cs
 [Factory]
 public partial class RfCustomer : EntityBase<RfCustomer>
@@ -60,6 +120,7 @@ public partial class RfCustomer : EntityBase<RfCustomer>
     }
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L98-L146' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-factory-methods-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Factory method patterns:
@@ -80,6 +141,7 @@ RemoteFactory generates a public interface exposing the factory methods declared
 Generated factory interface:
 
 <!-- snippet: remotefactory-generated-interface -->
+<a id='snippet-remotefactory-generated-interface'></a>
 ```cs
 [Fact]
 public void GeneratedInterface_ExposesFactoryMethods()
@@ -102,6 +164,7 @@ public void GeneratedInterface_ExposesFactoryMethods()
     Assert.True(customer.IsNew);
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L613-L634' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-generated-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Interface characteristics:
@@ -122,6 +185,7 @@ The source generator creates both the factory interface and a concrete implement
 Generated factory implementation:
 
 <!-- snippet: remotefactory-generated-implementation -->
+<a id='snippet-remotefactory-generated-implementation'></a>
 ```cs
 [Fact]
 public void GeneratedImplementation_HandlesLifecycle()
@@ -138,6 +202,7 @@ public void GeneratedImplementation_HandlesLifecycle()
     Assert.Equal("", customer.Name);
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L636-L651' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-generated-implementation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Implementation details:
@@ -157,6 +222,37 @@ Factory methods can declare dependencies using the [Service] attribute. The fact
 Inject repository dependencies:
 
 <!-- snippet: remotefactory-service-injection -->
+<a id='snippet-remotefactory-service-injection'></a>
+```cs
+/// <summary>
+/// Entity demonstrating [Service] attribute for DI injection.
+/// </summary>
+[Factory]
+public partial class SkillFactoryReport : EntityBase<SkillFactoryReport>
+{
+    public SkillFactoryReport(IEntityBaseServices<SkillFactoryReport> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string ReportName { get; set; }
+    public partial byte[] ReportData { get; set; }
+
+    // [Service] parameters are resolved from DI container at runtime
+    // They are NOT exposed in the factory interface
+    [Fetch]
+    public async Task FetchAsync(
+        int id,
+        [Service] ISkillReportRepository repository,
+        [Service] ISkillReportGenerator generator)
+    {
+        var metadata = await repository.FetchMetadataAsync(id);
+        Id = metadata.Id;
+        ReportName = metadata.Name;
+        ReportData = await generator.GenerateAsync(id);
+    }
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L303-L330' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-service-injection' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-remotefactory-service-injection-1'></a>
 ```cs
 [Factory]
 public partial class RfCustomerWithServices : EntityBase<RfCustomerWithServices>
@@ -183,6 +279,7 @@ public partial class RfCustomerWithServices : EntityBase<RfCustomerWithServices>
     }
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L151-L176' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-service-injection-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Service injection patterns:
@@ -202,6 +299,38 @@ Fetch methods load entity state from persistence. The factory wraps the Fetch ca
 Implement a Fetch method:
 
 <!-- snippet: remotefactory-fetch -->
+<a id='snippet-remotefactory-fetch'></a>
+```cs
+/// <summary>
+/// Entity demonstrating [Fetch] implementation.
+/// </summary>
+[Factory]
+public partial class SkillFactoryProduct : EntityBase<SkillFactoryProduct>
+{
+    public SkillFactoryProduct(IEntityBaseServices<SkillFactoryProduct> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string Name { get; set; }
+    public partial decimal Price { get; set; }
+
+    // Fetch loads entity state from persistence
+    // Factory wraps with PauseAllActions to prevent validation during load
+    [Fetch]
+    public async Task FetchAsync(int id, [Service] ISkillProductRepository repository)
+    {
+        var data = await repository.FetchByIdAsync(id);
+        if (data != null)
+        {
+            Id = data.Id;
+            Name = data.Name;
+            Price = data.Price;
+        }
+        // After Fetch: IsNew = false, IsModified = false
+    }
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L77-L105' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-fetch' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-remotefactory-fetch-1'></a>
 ```cs
 [Factory]
 public partial class RfCustomerFetch : EntityBase<RfCustomerFetch>
@@ -229,6 +358,7 @@ public partial class RfCustomerFetch : EntityBase<RfCustomerFetch>
     }
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L181-L207' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-fetch-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Fetch behavior:
@@ -253,6 +383,63 @@ Save methods unify Insert/Update logic. The generated factory determines whether
 Implement Insert and Update methods:
 
 <!-- snippet: remotefactory-save -->
+<a id='snippet-remotefactory-save'></a>
+```cs
+/// <summary>
+/// Entity demonstrating save routing logic.
+/// </summary>
+[Factory]
+public partial class SkillFactoryAccount : EntityBase<SkillFactoryAccount>
+{
+    public SkillFactoryAccount(IEntityBaseServices<SkillFactoryAccount> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string AccountName { get; set; }
+    public partial decimal Balance { get; set; }
+
+    [Create]
+    public void Create()
+    {
+        Id = 0;
+        Balance = 0;
+    }
+
+    [Fetch]
+    public void Fetch(int id, string name, decimal balance)
+    {
+        Id = id;
+        AccountName = name;
+        Balance = balance;
+    }
+
+    // Save routing based on entity state:
+    // - IsNew == true           → Insert
+    // - IsNew == false, !Deleted → Update
+    // - IsDeleted == true       → Delete
+
+    [Insert]
+    public async Task InsertAsync([Service] ISkillAccountRepository repository)
+    {
+        await repository.InsertAsync(Id, AccountName, Balance);
+        // After Insert: IsNew = false
+    }
+
+    [Update]
+    public async Task UpdateAsync([Service] ISkillAccountRepository repository)
+    {
+        await repository.UpdateAsync(Id, AccountName, Balance);
+        // After Update: IsModified = false
+    }
+
+    [Delete]
+    public async Task DeleteAsync([Service] ISkillAccountRepository repository)
+    {
+        await repository.DeleteAsync(Id);
+    }
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L167-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-save' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-remotefactory-save-1'></a>
 ```cs
 [Factory]
 public partial class RfCustomerSave : EntityBase<RfCustomerSave>
@@ -290,6 +477,7 @@ public partial class RfCustomerSave : EntityBase<RfCustomerSave>
     }
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L212-L248' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-save-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Save coordination:
@@ -304,6 +492,44 @@ Save coordination:
 Save methods should validate before persisting:
 
 <!-- snippet: remotefactory-save-validation -->
+<a id='snippet-remotefactory-save-validation'></a>
+```cs
+/// <summary>
+/// Entity demonstrating validation before save.
+/// </summary>
+[Factory]
+public partial class SkillFactoryValidatedOrder : EntityBase<SkillFactoryValidatedOrder>
+{
+    public SkillFactoryValidatedOrder(IEntityBaseServices<SkillFactoryValidatedOrder> services) : base(services)
+    {
+        RuleManager.AddValidation(
+            order => order.Quantity > 0 ? "" : "Quantity must be positive",
+            o => o.Quantity);
+    }
+
+    public partial int Id { get; set; }
+    public partial int Quantity { get; set; }
+    public partial decimal UnitPrice { get; set; }
+
+    [Create]
+    public void Create() { }
+
+    [Insert]
+    public async Task InsertAsync([Service] ISkillOrderRepository repository)
+    {
+        // IsSavable verifies: IsValid && !IsBusy && IsModified && !IsChild
+        if (!IsSavable)
+        {
+            // Validation failed - don't persist
+            return;
+        }
+
+        await repository.InsertOrderAsync(Id, Quantity, UnitPrice);
+    }
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L226-L260' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-save-validation' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-remotefactory-save-validation-1'></a>
 ```cs
 [Factory]
 public partial class RfCustomerValidated : EntityBase<RfCustomerValidated>
@@ -349,6 +575,7 @@ public partial class RfCustomerValidated : EntityBase<RfCustomerValidated>
     }
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L253-L297' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-save-validation-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 IsSavable is a computed property: IsModified && IsValid && !IsBusy && !IsChild. Checking IsSavable before persisting prevents invalid entities, busy entities (with running async rules), unmodified entities, and child entities (which must save through the aggregate root) from attempting direct persistence.
@@ -360,6 +587,41 @@ Delete methods remove entities from persistence. The factory marks the entity as
 Implement a Delete method:
 
 <!-- snippet: remotefactory-delete -->
+<a id='snippet-remotefactory-delete'></a>
+```cs
+/// <summary>
+/// Entity demonstrating delete pattern.
+/// </summary>
+[Factory]
+public partial class SkillFactoryProject : EntityBase<SkillFactoryProject>
+{
+    public SkillFactoryProject(IEntityBaseServices<SkillFactoryProject> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string ProjectName { get; set; }
+
+    [Fetch]
+    public void Fetch(int id, string name)
+    {
+        Id = id;
+        ProjectName = name;
+    }
+
+    // Delete: Called when IsDeleted == true during Save
+    [Delete]
+    public async Task DeleteAsync([Service] ISkillProjectRepository repository)
+    {
+        await repository.DeleteAsync(Id);
+        // Entity cannot be modified or saved after delete completes
+    }
+}
+// Usage:
+// var project = await factory.Fetch(1, "My Project");
+// project.Delete();           // Marks for deletion
+// await factory.SaveAsync(project);  // Routes to DeleteAsync
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L266-L297' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-delete' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-remotefactory-delete-1'></a>
 ```cs
 [Factory]
 public partial class RfCustomerDelete : EntityBase<RfCustomerDelete>
@@ -390,6 +652,7 @@ public partial class RfCustomerDelete : EntityBase<RfCustomerDelete>
     }
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L302-L331' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-delete-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Delete behavior:
@@ -408,11 +671,60 @@ Aggregate root deletion pattern:
 
 ## Remote vs Local Execution
 
-RemoteFactory supports both local (in-process) and remote (client-server) execution. The [Remote] attribute marks methods that should execute on the server when running in a distributed architecture.
+RemoteFactory supports both local (in-process) and remote (client-server) execution. The `[Remote]` attribute marks **entry points from the client to the server**. Once execution crosses to the server, it stays there—subsequent method calls don't need `[Remote]`.
 
-Mark factory methods for remote execution:
+**Key insight:** Most methods with method-injected services (`[Service]` on parameters) do NOT need `[Remote]`. They're called from server-side code after already crossing the boundary via an aggregate root's `[Remote]` method.
+
+Mark aggregate root factory methods for remote execution:
 
 <!-- snippet: remotefactory-remote-attribute -->
+<a id='snippet-remotefactory-remote-attribute'></a>
+```cs
+/// <summary>
+/// Entity demonstrating [Remote] attribute for client-server execution.
+/// </summary>
+[Factory]
+public partial class SkillFactoryRemoteEntity : EntityBase<SkillFactoryRemoteEntity>
+{
+    public SkillFactoryRemoteEntity(IEntityBaseServices<SkillFactoryRemoteEntity> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string Data { get; set; }
+
+    // [Create] without [Remote] - executes locally on client
+    [Create]
+    public void Create()
+    {
+        Id = 0;
+        Data = "";
+    }
+
+    // [Remote] marks methods for server execution
+    // In NeatooFactory.Remote mode, this executes on server via HTTP
+    [Remote]
+    [Fetch]
+    public async Task FetchAsync(int id, [Service] ISkillDataRepository repository)
+    {
+        var data = await repository.FetchAsync(id);
+        Id = data.Id;
+        Data = data.Data;
+    }
+
+    [Remote]
+    [Insert]
+    public async Task InsertAsync([Service] ISkillDataRepository repository)
+    {
+        await repository.InsertAsync(Id, Data);
+    }
+}
+// Without [Remote], methods execute locally (client-side)
+// Use [Remote] when:
+// - Accessing database or server-only resources
+// - Performing operations that shouldn't run on the client
+// - Needing server-side services
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L336-L379' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-remote-attribute' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-remotefactory-remote-attribute-1'></a>
 ```cs
 [Factory]
 public partial class RfCustomerRemote : EntityBase<RfCustomerRemote>
@@ -469,6 +781,7 @@ public partial class RfCustomerRemote : EntityBase<RfCustomerRemote>
     }
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L336-L391' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-remote-attribute-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 NeatooFactory execution modes:
@@ -476,14 +789,32 @@ NeatooFactory execution modes:
 - **NeatooFactory.Remote**: Methods marked [Remote] execute on server via HTTP; methods without [Remote] execute locally (for Blazor WebAssembly clients)
 - **NeatooFactory.Server**: Server-side configuration where all methods execute locally, but infrastructure is configured to receive remote calls (for ASP.NET Core server hosting the API)
 
+**When to use `[Remote]`:**
+- Aggregate root factory methods that are entry points from the client (Create, Fetch, Save)
+- Top-level Execute operations initiated by UI
+
+**When `[Remote]` is NOT needed (the common case):**
+- Child entity operations within an aggregate
+- Any method called from server-side code (after already crossing the boundary)
+- Methods with method-injected services that are only called during aggregate loading/saving
+
+**Entity duality:** An entity can be an aggregate root in one object graph and a child in another. The same class may have `[Remote]` methods for aggregate root scenarios while other methods are server-only.
+
+**Constructor vs Method Injection:**
+- Constructor injection (`[Service]` on constructor): Services available on both client and server
+- Method injection (`[Service]` on method parameters): Server-only services—the common case
+
+**Runtime enforcement:** Non-`[Remote]` methods compile for client assemblies but fail at runtime with a "not-registered" DI exception if called from the client—server-only services aren't in the client container.
+
 Remote execution flow (Blazor WebAssembly calling server):
 1. Client calls factory.FetchById(id) on Blazor WebAssembly
 2. Factory implementation checks if [Remote] is present on method
 3. If [Remote]: serializes method parameters as JSON, sends HTTP POST to server endpoint
 4. Server receives request, deserializes parameters, resolves factory from DI
 5. Server factory executes entity's [Fetch] method locally (with database access)
-6. Server serializes result entity as JSON and returns HTTP response
-7. Client deserializes response entity and returns to caller
+6. During Fetch, server calls child factories—these do NOT need [Remote] because execution is already on the server
+7. Server serializes result entity (including children) as JSON and returns HTTP response
+8. Client deserializes response entity and returns to caller
 
 The [Remote] pattern enables Blazor WebAssembly clients to execute server-side persistence logic without exposing repositories or DbContext to the client.
 
@@ -494,6 +825,7 @@ Entities transfer between client and server as JSON. RemoteFactory includes cust
 JSON serialization preserves entity state:
 
 <!-- snippet: remotefactory-serialization -->
+<a id='snippet-remotefactory-serialization'></a>
 ```cs
 [Fact]
 public async Task Serialization_PreservesPropertyValues()
@@ -515,6 +847,7 @@ public async Task Serialization_PreservesPropertyValues()
     // They are recalculated after deserialization
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L653-L673' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-serialization' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Serialization behavior:
@@ -541,6 +874,7 @@ RemoteFactory serializes domain models directly without intermediate DTOs. This 
 Direct domain model serialization:
 
 <!-- snippet: remotefactory-dto-pattern -->
+<a id='snippet-remotefactory-dto-pattern'></a>
 ```cs
 [Fact]
 public async Task DirectSerialization_NoIntermediateDtos()
@@ -562,6 +896,7 @@ public async Task DirectSerialization_NoIntermediateDtos()
     // - API versioning requirements
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L675-L695' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-dto-pattern' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 When to use DTOs (separate data transfer objects):
@@ -586,6 +921,7 @@ RemoteFactory generates DI registration methods that register factory interfaces
 Register factories in DI container:
 
 <!-- snippet: remotefactory-di-setup -->
+<a id='snippet-remotefactory-di-setup'></a>
 ```cs
 [Fact]
 public void DiSetup_RegistersFactoryServices()
@@ -600,6 +936,7 @@ public void DiSetup_RegistersFactoryServices()
     Assert.NotNull(orderFactory);
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L697-L710' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-di-setup' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 DI registration details:
@@ -612,6 +949,7 @@ DI registration details:
 Application startup registration:
 
 <!-- snippet: remotefactory-di-startup -->
+<a id='snippet-remotefactory-di-startup'></a>
 ```cs
 [Fact]
 public void DiStartup_CallsRegistrarDuringStartup()
@@ -631,6 +969,7 @@ public void DiStartup_CallsRegistrarDuringStartup()
     Assert.NotNull(customer);
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L712-L730' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-di-startup' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The generated registrar integrates factories into ASP.NET Core or Blazor dependency injection.
@@ -642,6 +981,7 @@ Each entity requires IEntityBaseServices<T> for property management and IFactory
 Core services registration:
 
 <!-- snippet: remotefactory-core-services -->
+<a id='snippet-remotefactory-core-services'></a>
 ```cs
 [Fact]
 public void CoreServices_ProvidedByNeatoo()
@@ -659,6 +999,7 @@ public void CoreServices_ProvidedByNeatoo()
     Assert.NotNull(factory);
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L732-L748' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-core-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Core services provide:
@@ -676,6 +1017,7 @@ Factory methods execute within a controlled lifecycle that manages entity state 
 Factory lifecycle phases:
 
 <!-- snippet: remotefactory-lifecycle -->
+<a id='snippet-remotefactory-lifecycle'></a>
 ```cs
 [Fact]
 public void Lifecycle_ManagedByFactory()
@@ -694,6 +1036,7 @@ public void Lifecycle_ManagedByFactory()
     Assert.False(customer.IsPaused);
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L750-L767' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-lifecycle' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Lifecycle coordination:
@@ -721,6 +1064,60 @@ Entities can declare multiple Fetch overloads to support different query pattern
 Declare multiple Fetch methods:
 
 <!-- snippet: remotefactory-fetch-overloads -->
+<a id='snippet-remotefactory-fetch-overloads'></a>
+```cs
+/// <summary>
+/// Entity with multiple fetch methods for different query patterns.
+/// </summary>
+[Factory]
+public partial class SkillFactoryOrder : EntityBase<SkillFactoryOrder>
+{
+    public SkillFactoryOrder(IEntityBaseServices<SkillFactoryOrder> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string OrderNumber { get; set; }
+    public partial string CustomerEmail { get; set; }
+    public partial DateTime OrderDate { get; set; }
+
+    [Create]
+    public void Create()
+    {
+        OrderDate = DateTime.Today;
+    }
+
+    // Multiple Fetch overloads for different query patterns
+    [Fetch]
+    public void FetchById(int id)
+    {
+        Id = id;
+        OrderNumber = $"ORD-{id:D5}";
+        OrderDate = DateTime.Today;
+    }
+
+    [Fetch]
+    public void FetchByOrderNumber(string orderNumber)
+    {
+        OrderNumber = orderNumber;
+        Id = int.Parse(orderNumber.Replace("ORD-", ""));
+        OrderDate = DateTime.Today;
+    }
+
+    [Fetch]
+    public async Task FetchByCustomerAsync(string email, [Service] ISkillOrderRepository repository)
+    {
+        var data = await repository.FetchByCustomerEmailAsync(email);
+        if (data != null)
+        {
+            Id = data.Id;
+            OrderNumber = data.OrderNumber;
+            CustomerEmail = email;
+            OrderDate = data.OrderDate;
+        }
+    }
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L111-L161' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-fetch-overloads' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-remotefactory-fetch-overloads-1'></a>
 ```cs
 [Factory]
 public partial class RfCustomerMultiFetch : EntityBase<RfCustomerMultiFetch>
@@ -757,6 +1154,7 @@ public partial class RfCustomerMultiFetch : EntityBase<RfCustomerMultiFetch>
     }
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L396-L431' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-fetch-overloads-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Generated factory interface:
@@ -775,6 +1173,53 @@ Aggregate roots load child entities through child factories. Parent factories in
 Load child collections via child factory:
 
 <!-- snippet: remotefactory-child-factories -->
+<a id='snippet-remotefactory-child-factories'></a>
+```cs
+/// <summary>
+/// Order aggregate demonstrating child factory usage.
+/// </summary>
+[Factory]
+public partial class SkillFactoryOrderWithItems : EntityBase<SkillFactoryOrderWithItems>
+{
+    public SkillFactoryOrderWithItems(IEntityBaseServices<SkillFactoryOrderWithItems> services) : base(services)
+    {
+        ItemsProperty.LoadValue(new SkillFactoryOrderItemList());
+    }
+
+    public partial int Id { get; set; }
+    public partial string OrderNumber { get; set; }
+    public partial DateTime OrderDate { get; set; }
+    public partial ISkillFactoryOrderItemList Items { get; set; }
+
+    // Parent factory injects child factory as service
+    [Fetch]
+    public async Task FetchAsync(
+        int id,
+        [Service] ISkillOrderWithItemsRepository repository,
+        [Service] ISkillFactoryOrderItemFactory itemFactory)
+    {
+        var data = await repository.FetchAsync(id);
+        Id = data.Id;
+        OrderNumber = data.OrderNumber;
+        OrderDate = data.OrderDate;
+
+        // Load child collection via child factory
+        var itemsData = await repository.FetchItemsAsync(id);
+        foreach (var itemData in itemsData)
+        {
+            // Use factory.Fetch to load existing items
+            var item = itemFactory.Fetch(
+                itemData.Id,
+                itemData.ProductCode,
+                itemData.Price,
+                itemData.Quantity);
+            Items.Add(item);
+        }
+    }
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L423-L466' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-child-factories' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-remotefactory-child-factories-1'></a>
 ```cs
 [Factory]
 public partial class RfOrder : EntityBase<RfOrder>
@@ -813,6 +1258,7 @@ public partial class RfOrder : EntityBase<RfOrder>
     }
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L494-L531' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-child-factories-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Child factory patterns:
@@ -833,6 +1279,7 @@ RemoteFactory supports factory method authorization through the [AuthorizeFactor
 Authorize factory methods:
 
 <!-- snippet: remotefactory-authorization -->
+<a id='snippet-remotefactory-authorization'></a>
 ```cs
 [Factory]
 [AuthorizeFactory<IRfCustomerAuth>]
@@ -867,6 +1314,7 @@ public partial class RfCustomerAuthorized : EntityBase<RfCustomerAuthorized>
     }
 }
 ```
+<sup><a href='/src/docs/samples/RemoteFactorySamples.cs#L572-L605' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-authorization' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Authorization flow:
@@ -886,4 +1334,4 @@ Authorization delegates enable declarative role-based access control for entity 
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-01-27

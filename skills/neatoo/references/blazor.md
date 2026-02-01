@@ -1,49 +1,12 @@
 # Blazor Integration
 
-[Previous: Async Operations](async.md) | [Up](index.md) | [Next: Business Rules](business-rules.md)
+> **Required package:** Install `Neatoo.Blazor.MudNeatoo` to use the MudNeatoo components shown below.
 
-Neatoo provides MudBlazor integration through the `Neatoo.Blazor.MudNeatoo` package. MudNeatoo components automatically bind to `IEntityProperty`, display validation messages, track busy state, and respect read-only constraints.
+Neatoo provides Blazor-specific components and patterns for building forms with automatic validation display, change tracking, and two-way binding.
 
-## Installation
+## Basic Text Field
 
-Install the MudNeatoo package alongside MudBlazor:
-
-```bash
-dotnet add package Neatoo.Blazor.MudNeatoo
-dotnet add package MudBlazor
-```
-
-In `Program.cs`, add MudBlazor services:
-
-```csharp
-builder.Services.AddMudServices();
-```
-
-MudNeatoo requires MudBlazor 6.0 or later and targets .NET 8.0, 9.0, and 10.0.
-
-## Component Overview
-
-MudNeatoo provides typed wrappers for common MudBlazor input components:
-
-- `MudNeatooTextField<T>` - Text input for strings, numbers, dates
-- `MudNeatooNumericField<T>` - Numeric input with formatting
-- `MudNeatooSelect<T>` - Dropdown selection
-- `MudNeatooCheckBox` - Boolean checkbox
-- `MudNeatooSwitch` - Boolean toggle switch
-- `MudNeatooDatePicker` - Date selection
-- `MudNeatooTimePicker` - Time selection
-- `MudNeatooDateRangePicker` - Date range selection
-- `MudNeatooAutocomplete<T>` - Autocomplete input
-- `MudNeatooSlider<T>` - Numeric slider
-- `MudNeatooRadioGroup<T>` - Radio button group
-
-All components bind to `IEntityProperty` and automatically handle validation, busy state, and read-only mode.
-
-## Basic Property Binding
-
-Bind a MudNeatoo component to an entity property by setting the `EntityProperty` parameter to the `IEntityProperty` wrapper accessed via the entity's indexer. The component automatically uses the property's `DisplayName` as the label.
-
-Bind to a string property:
+Bind to Neatoo properties with automatic validation:
 
 <!-- snippet: blazor-text-field-basic -->
 <a id='snippet-blazor-text-field-basic'></a>
@@ -73,13 +36,11 @@ public void TextFieldBindsToEntityProperty()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L116-L133' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-text-field-basic-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The component synchronizes value changes to the entity property via the typed property setter, triggering the full rule pipeline (validation rules and business rules) with `ChangeReason.UserEdit`.
-
 ## Validation Display
 
-MudNeatoo components automatically display validation messages from the property's `PropertyMessages` collection. Each rule stores messages on the property via `SetMessagesForRule` using the rule's stable ID. Validation errors appear below the input field.
+### Inline Validation
 
-Configure a property with validation and bind to a component:
+Show validation errors next to fields:
 
 <!-- snippet: blazor-validation-inline -->
 <a id='snippet-blazor-validation-inline'></a>
@@ -106,13 +67,9 @@ public void ValidationDisplaysInlineErrors()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L135-L149' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-validation-inline-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The component subscribes to `PropertyChanged` events. When async validation rules complete, they update `PropertyMessages` and trigger `PropertyChanged`, causing the component to re-render with validation messages.
+### Validation Summary
 
-## Validation Summary
-
-Use `NeatooValidationSummary` to display all validation messages for an entity in a single location. The component shows a MudAlert with all property errors.
-
-Display aggregate validation errors:
+Show all validation errors in one place:
 
 <!-- snippet: blazor-validation-summary -->
 <a id='snippet-blazor-validation-summary'></a>
@@ -141,13 +98,9 @@ public void ValidationSummaryShowsAllErrors()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L151-L167' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-validation-summary-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The validation summary subscribes to entity `PropertyChanged` events. When validation state changes (including cascade from child entities), `PropertyMessages` updates and the component re-renders with the aggregated messages from the entire aggregate.
+## Form Submission
 
-## Form Integration
-
-Wrap MudNeatoo components in a `MudForm` for standard Blazor form handling. The form validates on submit.
-
-Create a form with validation:
+Handle form submission with validation:
 
 <!-- snippet: blazor-form-submit -->
 <a id='snippet-blazor-form-submit'></a>
@@ -193,13 +146,9 @@ public async Task FormValidationPreventsInvalidSubmit()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L169-L193' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-form-submit-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-MudNeatoo components integrate with MudForm's validation system, preventing submission when invalid.
+## Busy State
 
-## Busy State Handling
-
-MudNeatoo components bind to the property's `IsBusy` state and disable themselves when true, preventing user input during async operations. The RuleManager marks properties as busy using unique execution IDs before async rule execution, then clears the busy state after completion.
-
-Bind to a property with async validation:
+Show loading indicators during async operations:
 
 <!-- snippet: blazor-busy-state -->
 <a id='snippet-blazor-busy-state'></a>
@@ -239,13 +188,9 @@ public async Task BusyStateDisablesComponent()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L195-L217' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-busy-state-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The component subscribes to `PropertyChanged` events on `IsBusy`. When the property's busy state changes, the component re-renders with the updated disabled state.
-
 ## Read-Only Properties
 
-MudNeatoo components bind to the property's `IsReadOnly` state. When `IsReadOnly` is true, the component renders as read-only, preventing value changes without disabling the control. `IsReadOnly` is typically set during property initialization or by business rules.
-
-Configure a read-only property:
+Display read-only values:
 
 <!-- snippet: blazor-readonly-property -->
 <a id='snippet-blazor-readonly-property'></a>
@@ -276,13 +221,9 @@ public void ReadOnlyPropertyBindsToComponent()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L219-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-readonly-property-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Read-only components remain visually enabled but prevent editing. The underlying MudBlazor component respects the `ReadOnly` parameter, which MudNeatoo binds to `EntityProperty.IsReadOnly`.
+## Select/Dropdown
 
-## Select and Dropdown Binding
-
-`MudNeatooSelect` binds to properties with discrete values. Use `MudSelectItem` children to define options.
-
-Bind to an enum property:
+Bind to enum properties:
 
 <!-- snippet: blazor-select-enum -->
 <a id='snippet-blazor-select-enum'></a>
@@ -313,13 +254,9 @@ public void SelectBindsToEnumProperty()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L239-L252' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-select-enum-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The select component binds to the property wrapper. When the user selects a value, the component updates the entity property via the typed setter, triggering validation rules. Error messages display automatically from `PropertyMessages`.
+## Checkbox
 
-## Checkbox and Switch Binding
-
-Bind boolean properties to `MudNeatooCheckBox` or `MudNeatooSwitch` for toggle controls.
-
-Bind to a boolean property:
+Bind to boolean properties:
 
 <!-- snippet: blazor-checkbox-binding -->
 <a id='snippet-blazor-checkbox-binding'></a>
@@ -351,13 +288,9 @@ public void CheckboxBindsToBooleanProperty()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L254-L271' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-checkbox-binding-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Checkbox state changes update the entity property via the typed setter, triggering business rules and validation rules with `ChangeReason.UserEdit`.
+## Date Picker
 
-## Date and Time Pickers
-
-MudNeatoo provides specialized components for date and time selection that bind to `DateTime`, `DateOnly`, `TimeOnly`, and `DateRange` properties.
-
-Bind to a date property:
+Bind to date properties:
 
 <!-- snippet: blazor-date-picker -->
 <a id='snippet-blazor-date-picker'></a>
@@ -383,13 +316,9 @@ public void DatePickerBindsToDateProperty()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L273-L286' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-date-picker-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Date pickers bind to the property wrapper. When the user selects a date, the component updates the entity property via the typed setter, triggering validation and business rules. Error messages display automatically from `PropertyMessages`.
+## Numeric Fields
 
-## Numeric Field Binding
-
-`MudNeatooNumericField` provides formatted numeric input for decimal, int, double, and other numeric types.
-
-Bind to a decimal property:
+Bind to numeric properties:
 
 <!-- snippet: blazor-numeric-field -->
 <a id='snippet-blazor-numeric-field'></a>
@@ -421,13 +350,9 @@ public void NumericFieldBindsToDecimalProperty()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L288-L304' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-numeric-field-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Numeric fields support min/max validation and custom formatting.
+## Autocomplete
 
-## Autocomplete Binding
-
-`MudNeatooAutocomplete` provides search-as-you-type functionality for properties with large option sets.
-
-Bind to a property with autocomplete search:
+Bind with autocomplete behavior:
 
 <!-- snippet: blazor-autocomplete -->
 <a id='snippet-blazor-autocomplete'></a>
@@ -454,13 +379,9 @@ public void AutocompleteBindsToStringProperty()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L306-L318' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-autocomplete-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Autocomplete integrates with async search functions. When the user selects a value, the component updates the entity property via the typed setter, triggering validation and business rules. Error messages display automatically from `PropertyMessages`.
+## Change Tracking in UI
 
-## Change Tracking in Forms
-
-MudNeatoo components bind to `IsModified` for change tracking. Use this to enable/disable save buttons or warn users about unsaved changes.
-
-Track unsaved changes:
+React to property changes:
 
 <!-- snippet: blazor-change-tracking -->
 <a id='snippet-blazor-change-tracking'></a>
@@ -506,13 +427,9 @@ public void ChangeTrackingDetectsModifications()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L320-L338' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-change-tracking-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-`IsModified` cascades from child entities to the aggregate root, providing accurate change state. Use `ModifiedProperties` to see which specific properties changed.
+## Customizing Appearance
 
-## Customizing Component Appearance
-
-MudNeatoo components expose MudBlazor parameters for customization. Set `Variant`, `Margin`, `Class`, and other MudBlazor properties.
-
-Customize component appearance:
+Style based on validation state:
 
 <!-- snippet: blazor-customize-appearance -->
 <a id='snippet-blazor-customize-appearance'></a>
@@ -547,13 +464,9 @@ public void ComponentAcceptsStyleParameters()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L340-L354' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-customize-appearance-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-All MudBlazor styling parameters pass through to the underlying component.
-
 ## Property Extensions
 
-MudNeatoo provides extension methods for `IEntityProperty` to integrate with standard MudBlazor components.
-
-Use extension methods for custom binding:
+Access extended property information:
 
 <!-- snippet: blazor-property-extensions -->
 <a id='snippet-blazor-property-extensions'></a>
@@ -587,32 +500,9 @@ public void ExtensionMethodsProvideValidationInfo()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L356-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-property-extensions-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Extensions include `GetValidationFunc`, `GetErrorText`, and `HasErrors`.
+## Manual State Updates
 
-## Two-Way Binding
-
-MudNeatoo components use Blazor's two-way binding pattern but bind to `IEntityProperty` instead of raw values. Changes flow through the entity property, triggering all Neatoo behaviors.
-
-Understanding the binding flow:
-
-1. User changes component value
-2. Component updates entity property via typed property setter (e.g., `employee.Name = value`)
-3. Property setter triggers PropertyChanged event with `ChangeReason.UserEdit`
-4. RuleManager identifies rules registered with the property as a trigger
-5. Business rules and validation rules execute sequentially
-6. Validation messages are stored on the property via `SetMessagesForRule`
-7. `IsModified` updates (entity-level and property-level tracking)
-8. Parent cascade occurs (IsModified, IsValid bubble up to aggregate root)
-9. PropertyChanged events notify subscribed components
-10. Component re-renders with updated validation state, busy state, and values
-
-This ensures UI changes trigger the full Neatoo rule pipeline while maintaining aggregate consistency.
-
-## StateHasChanged Integration
-
-MudNeatoo components subscribe to the `PropertyChanged` event on `IEntityProperty` during `OnInitialized`. When key properties change (`PropertyMessages`, `IsValid`, `IsBusy`, `IsReadOnly`, `Value`), the component calls `InvokeAsync(StateHasChanged)` to re-render on the Blazor synchronization context. Components unsubscribe in `Dispose` to prevent memory leaks.
-
-Property change triggers automatic re-render:
+Trigger UI updates manually:
 
 <!-- snippet: blazor-statehaschanged -->
 <a id='snippet-blazor-statehaschanged'></a>
@@ -678,13 +568,9 @@ public void PropertyChangesNotifyComponents()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L375-L391' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-statehaschanged-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Components implement `IDisposable` and unsubscribe from `PropertyChanged` events in `Dispose()`, preventing memory leaks when components are removed from the render tree.
+## Manual Binding
 
-## Using Standard MudBlazor Components
-
-For scenarios not covered by MudNeatoo components, bind standard MudBlazor components manually. Use the typed property for reading values and the `SetValue` method on the property wrapper for async updates. This ensures proper async coordination with validation rules.
-
-Manual binding to a MudBlazor component:
+For custom controls without Neatoo components:
 
 <!-- snippet: blazor-manual-binding -->
 <a id='snippet-blazor-manual-binding'></a>
@@ -716,18 +602,24 @@ public async Task ManualBindingUsesSetValueAsync()
 <sup><a href='/src/docs/samples/BlazorSamples.cs#L393-L406' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-manual-binding-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Manual binding requires implementing validation display (reading `PropertyMessages`), busy state handling (binding to `IsBusy`), read-only state (binding to `IsReadOnly`), and change tracking (subscribing to `PropertyChanged`). MudNeatoo components handle all of this automatically.
+## Component Reference
 
-## Performance Considerations
+| Component | Purpose |
+|-----------|---------|
+| `NeatooTextField` | Text input with validation |
+| `NeatooNumericField` | Numeric input |
+| `NeatooDatePicker` | Date selection |
+| `NeatooCheckbox` | Boolean toggle |
+| `NeatooSelect` | Dropdown selection |
+| `NeatooValidationSummary` | All validation errors |
+| `NeatooValidationMessage` | Single property validation |
 
-MudNeatoo components subscribe to `PropertyChanged` events and re-render when `PropertyMessages`, `IsValid`, `IsBusy`, `IsReadOnly`, or `Value` change. For forms with many fields:
+## Best Practices
 
-- Use `PauseAllActions` during bulk updates to prevent excessive re-renders. This queues `PropertyChanged` events and fires them after the `using` block completes.
-- Prefer batch validation after multiple changes with `await entity.RunRules()` once all properties are set.
-- Consider virtualization for large lists of input components (`MudVirtualize` with MudNeatoo components).
-- Use `Immediate="false"` on MudBlazor components to validate on blur instead of keystroke, reducing rule execution frequency.
-
-For high-frequency updates, debounce property changes at the component level (e.g., `DebounceInterval` on `MudTextField`) to avoid triggering rules on every keystroke. This reduces the frequency of property setter calls and rule execution.
+1. **Use Neatoo components** - They handle validation and change tracking automatically
+2. **Bind to ViewModel properties** - Not directly to domain model
+3. **Handle IsBusy** - Disable buttons and show loading during async operations
+4. **Show validation early** - Display errors as user types, not just on submit
 
 ## Blazor WASM Project Structure
 
@@ -776,6 +668,8 @@ This ensures:
 - Clear architectural boundary between client and server code
 - Domain project can still compile and use EF Core types
 
----
+## Related
 
-**UPDATED:** 2026-01-27
+- [Validation](validation.md) - Validation rules and BrokenRules
+- [Properties](properties.md) - Property change notifications
+- [Entities](entities.md) - IsSavable for submit buttons

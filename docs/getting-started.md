@@ -30,6 +30,7 @@ The package includes:
 Create a class that inherits from `ValidateBase<T>`. Use `partial` properties - Neatoo's source generator creates backing fields and wires up property change notifications and validation automatically.
 
 <!-- snippet: getting-started-validate -->
+<a id='snippet-getting-started-validate'></a>
 ```cs
 [Factory]
 public partial class CustomerValidator : ValidateBase<CustomerValidator>
@@ -46,6 +47,7 @@ public partial class CustomerValidator : ValidateBase<CustomerValidator>
     public void Create() { }
 }
 ```
+<sup><a href='/src/docs/samples/GettingStartedSamples.cs#L10-L25' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-validate' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 When you build the project, Neatoo's source generator creates:
@@ -72,6 +74,7 @@ Validation rules execute automatically when properties change. Access validation
 > **Note:** The code samples below are integration tests that resolve factories from DI. The `GetRequiredService<T>()` helper retrieves services from a configured `IServiceProvider`. In your application, you would inject the factory interface directly into your controllers, services, or Blazor components.
 
 <!-- snippet: getting-started-validate-check -->
+<a id='snippet-getting-started-validate-check'></a>
 ```cs
 [Fact]
 public void ValidateBase_CheckValidationState()
@@ -93,6 +96,7 @@ public void ValidateBase_CheckValidationState()
     Assert.True(customer.IsSelfValid);
 }
 ```
+<sup><a href='/src/docs/samples/GettingStartedSamples.cs#L101-L121' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-validate-check' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Key validation meta-properties:
@@ -106,6 +110,7 @@ Key validation meta-properties:
 Entities are domain objects with identity and lifecycle management. `EntityBase<T>` extends `ValidateBase<T>` to add persistence state tracking, modification tracking, and save operations:
 
 <!-- snippet: getting-started-entity -->
+<a id='snippet-getting-started-entity'></a>
 ```cs
 // Mock repository interface for the sample
 public interface IEmployeeRepository
@@ -174,6 +179,7 @@ public partial class EmployeeEntity : EntityBase<EmployeeEntity>
     }
 }
 ```
+<sup><a href='/src/docs/samples/GettingStartedSamples.cs#L27-L94' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-entity' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Entity state tracking properties:
@@ -189,6 +195,7 @@ The `[Fetch]` attribute marks a data access method. RemoteFactory generates a fa
 RemoteFactory generates factory methods based on your `[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, and `[Delete]` attributes. Create and fetch entities through the generated factory interface:
 
 <!-- snippet: getting-started-entity-use -->
+<a id='snippet-getting-started-entity-use'></a>
 ```cs
 [Fact]
 public void EntityBase_UseEntity()
@@ -213,6 +220,7 @@ public void EntityBase_UseEntity()
     Assert.Contains("Salary", employee.ModifiedProperties);
 }
 ```
+<sup><a href='/src/docs/samples/GettingStartedSamples.cs#L181-L204' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-entity-use' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Each method you mark with an attribute becomes a method on the generated factory interface. Your `FetchAsync(int id, ...)` method becomes `IEmployeeEntityFactory.FetchAsync(int id)`.
@@ -222,6 +230,7 @@ Each method you mark with an attribute becomes a method on the generated factory
 Register Neatoo services and your repositories with DI:
 
 <!-- snippet: getting-started-di -->
+<a id='snippet-getting-started-di'></a>
 ```cs
 [Fact]
 public void ConfigureDependencyInjection()
@@ -244,6 +253,7 @@ public void ConfigureDependencyInjection()
     Assert.NotNull(factory);
 }
 ```
+<sup><a href='/src/docs/samples/GettingStartedSamples.cs#L249-L270' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-di' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `AddNeatooServices()` registers all Neatoo services including factories for types in the specified assembly. The `NeatooFactory.Logical` option means all operations run locally (no client-server split).

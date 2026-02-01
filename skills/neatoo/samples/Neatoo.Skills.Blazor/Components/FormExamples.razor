@@ -1,0 +1,70 @@
+@* Form examples - demonstrates form submission, busy state, and change tracking *@
+
+@if (employee != null)
+{
+    @* begin-snippet: blazor-form-submit *@
+    <MudForm @ref="form">
+        <MudNeatooTextField T="string" EntityProperty="@employee["Name"]" />
+        <MudNeatooTextField T="string" EntityProperty="@employee["Email"]" />
+        <MudNeatooNumericField T="decimal" EntityProperty="@employee["Salary"]" />
+
+        <MudButton OnClick="@Submit"
+                   Disabled="@(!employee.IsValid || employee.IsBusy)">
+            Save
+        </MudButton>
+    </MudForm>
+    @* end-snippet *@
+
+    @* begin-snippet: blazor-busy-state *@
+    <MudNeatooTextField T="string" EntityProperty="@employee["Email"]" />
+
+    @if (employee.IsBusy)
+    {
+        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+    }
+    @* end-snippet *@
+
+    @* begin-snippet: blazor-change-tracking *@
+    <MudButton OnClick="@Save"
+               Disabled="@(!employee.IsModified || !employee.IsValid)">
+        Save Changes
+    </MudButton>
+
+    <MudButton OnClick="@Cancel"
+               Disabled="@(!employee.IsModified)">
+        Cancel
+    </MudButton>
+
+    @if (employee.IsModified)
+    {
+        <MudAlert Severity="Severity.Warning">
+            You have unsaved changes
+        </MudAlert>
+    }
+    @* end-snippet *@
+}
+
+@code {
+    private MudForm? form;
+    private SkillBlazorEmployee? employee;
+
+    [Inject]
+    private ISkillBlazorEmployeeFactory EmployeeFactory { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        employee = EmployeeFactory.Create();
+    }
+
+    private async Task Submit()
+    {
+        await form!.Validate();
+        if (employee!.IsValid)
+        {
+            // Save the entity
+        }
+    }
+
+    private Task Save() => Task.CompletedTask;
+    private void Cancel() { }
+}

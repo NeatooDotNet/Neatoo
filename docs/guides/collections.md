@@ -13,11 +13,24 @@ Unlike ValidateBase and EntityBase which require DI services, collection classes
 Inherit from ValidateListBase&lt;T&gt; where T implements IValidateBase:
 
 <!-- snippet: collections-validate-list-definition -->
+<a id='snippet-collections-validate-list-definition'></a>
+```cs
+/// <summary>
+/// ValidateListBase for phone numbers (value object collection).
+/// No deletion tracking - items are simply removed.
+/// </summary>
+public class SkillCollPhoneNumberList : ValidateListBase<ISkillCollPhoneNumber>
+{
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L141-L149' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validate-list-definition' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-collections-validate-list-definition-1'></a>
 ```cs
 public class CollectionValidateItemList : ValidateListBase<CollectionValidateItem>
 {
 }
 ```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L43-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validate-list-definition-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The collection automatically tracks:
@@ -33,12 +46,27 @@ EntityListBase extends ValidateListBase to add entity-specific persistence track
 Inherit from EntityListBase&lt;T&gt; where T implements IEntityBase:
 
 <!-- snippet: collections-entity-list-definition -->
+<a id='snippet-collections-entity-list-definition'></a>
+```cs
+/// <summary>
+/// EntityListBase for order line items.
+/// Tracks deletions for persistence and cascades parent relationship.
+/// </summary>
+public class SkillCollOrderItemList : EntityListBase<ISkillCollOrderItem>, ISkillCollOrderItemList
+{
+    // DeletedList tracks removed existing items for DELETE persistence
+    public int DeletedCount => DeletedList.Count;
+}
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L65-L75' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-entity-list-definition' title='Start of snippet'>anchor</a></sup>
+<a id='snippet-collections-entity-list-definition-1'></a>
 ```cs
 public class CollectionOrderItemList : EntityListBase<ICollectionOrderItem>, ICollectionOrderItemList
 {
     public int DeletedCount => DeletedList.Count;
 }
 ```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L96-L101' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-entity-list-definition-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 In addition to validation state, EntityListBase tracks:
@@ -55,6 +83,7 @@ Items added to a collection automatically receive parent references, establishin
 Add items using standard collection methods:
 
 <!-- snippet: collections-add-item -->
+<a id='snippet-collections-add-item'></a>
 ```cs
 [Fact]
 public void AddItem_SetsParentAndTracksItem()
@@ -80,6 +109,7 @@ public void AddItem_SetsParentAndTracksItem()
     Assert.Same(order, item.Parent);
 }
 ```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L135-L159' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-add-item' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 During insertion, ValidateListBase:
@@ -103,6 +133,7 @@ Removal behavior differs between ValidateListBase and EntityListBase. ValidateLi
 Remove items from ValidateListBase:
 
 <!-- snippet: collections-remove-validate -->
+<a id='snippet-collections-remove-validate'></a>
 ```cs
 [Fact]
 public void RemoveFromValidateList_RemovesImmediately()
@@ -122,6 +153,7 @@ public void RemoveFromValidateList_RemovesImmediately()
     Assert.Empty(list);
 }
 ```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L161-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-validate' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The item is unsubscribed from events and removed immediately.
@@ -129,6 +161,7 @@ The item is unsubscribed from events and removed immediately.
 Remove items from EntityListBase:
 
 <!-- snippet: collections-remove-entity -->
+<a id='snippet-collections-remove-entity'></a>
 ```cs
 [Fact]
 public void RemoveFromEntityList_TracksForDeletion()
@@ -158,6 +191,7 @@ public void RemoveFromEntityList_TracksForDeletion()
     Assert.Equal(1, order.Items.DeletedCount);
 }
 ```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L181-L209' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-entity' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The sample uses `DoMarkUnmodified()`, a helper method that exposes the protected `MarkUnmodified()` for demonstration purposes. In production, `MarkUnmodified()` is called automatically by the framework after Fetch or successful save operations.
@@ -176,6 +210,7 @@ Collections automatically cascade parent references to establish aggregate bound
 Parent references propagate when items are added:
 
 <!-- snippet: collections-parent-cascade -->
+<a id='snippet-collections-parent-cascade'></a>
 ```cs
 [Fact]
 public void ParentCascade_UpdatesAllItems()
@@ -203,6 +238,7 @@ public void ParentCascade_UpdatesAllItems()
     Assert.Same(order, item2.Root);
 }
 ```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L211-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-parent-cascade' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This establishes the aggregate boundary. All items within the collection belong to the same aggregate root, enabling:
@@ -224,6 +260,7 @@ Collections aggregate validation state from all child items. When any child's va
 Validation state propagates through property change events:
 
 <!-- snippet: collections-validation -->
+<a id='snippet-collections-validation'></a>
 ```cs
 [Fact]
 public async Task ValidationState_AggregatesFromChildren()
@@ -259,6 +296,7 @@ public async Task ValidationState_AggregatesFromChildren()
     Assert.True(list.IsValid);
 }
 ```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L239-L273' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The collection uses cached meta properties with incremental updates:
@@ -269,6 +307,7 @@ The collection uses cached meta properties with incremental updates:
 Run validation rules on all items:
 
 <!-- snippet: collections-run-rules -->
+<a id='snippet-collections-run-rules'></a>
 ```cs
 [Fact]
 public async Task RunRules_ExecutesOnAllItems()
@@ -300,6 +339,7 @@ public async Task RunRules_ExecutesOnAllItems()
     Assert.False(list.IsValid);
 }
 ```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L275-L305' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-run-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This executes validation rules on every item in the collection and updates the aggregated validation state.
@@ -311,6 +351,7 @@ Collections implement IEnumerable&lt;T&gt; and support standard iteration patter
 Iterate over items:
 
 <!-- snippet: collections-iteration -->
+<a id='snippet-collections-iteration'></a>
 ```cs
 [Fact]
 public void Iteration_SupportsStandardPatterns()
@@ -350,6 +391,7 @@ public void Iteration_SupportsStandardPatterns()
     Assert.Equal(3, order.Items.Count);
 }
 ```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L307-L345' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-iteration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Collections support:
@@ -360,6 +402,40 @@ Collections support:
 - Collection changed events (INotifyCollectionChanged)
 - Property changed events on collection properties like Count
 
+## Deletion State Behavior
+
+EntityListBase handles removal differently based on entity state. Understanding these transitions is critical for correct persistence behavior.
+
+### New vs Existing Item Removal
+
+| Item State | On Remove | DeletedList | IsDeleted | ContainingList |
+|------------|-----------|-------------|-----------|----------------|
+| `IsNew == true` | Removed entirely | Unchanged | N/A | Cleared |
+| `IsNew == false` | Tracked for deletion | Item added | `true` | Stays set |
+
+New items (never persisted) are removed immediately since there's nothing to delete from the database. Existing items must be tracked for the DELETE operation during save.
+
+### Intra-Aggregate Moves
+
+When you re-add an item that was removed from the same aggregate (or a different collection within the aggregate):
+
+1. Item is removed from the old list's DeletedList
+2. `UnDelete()` is called → `IsDeleted = false`
+3. Item is marked modified (state transition occurred)
+4. `ContainingList` is updated to the new list
+
+This enables moving entities between child collections within the same aggregate without database deletion. The entity remains in the aggregate boundary and is updated (not deleted/re-inserted) during save.
+
+### Cross-Aggregate Transfer
+
+Entities cannot be moved directly between aggregates. Attempting to add an entity with a different `Root` throws `InvalidOperationException`.
+
+### Adding Existing Items Marks Them Modified
+
+Adding a fetched (non-new) item to a collection marks both the item and the collection as modified. This is intentional—adding an existing entity to a new parent represents a state change that must be persisted.
+
+---
+
 ## Deleted List Management
 
 EntityListBase maintains a protected DeletedList to track removed entities that need deletion during persistence. This enables the repository to delete entities from the database while maintaining aggregate consistency until the save operation completes.
@@ -367,6 +443,7 @@ EntityListBase maintains a protected DeletedList to track removed entities that 
 The DeletedList lifecycle:
 
 <!-- snippet: collections-deleted-list -->
+<a id='snippet-collections-deleted-list'></a>
 ```cs
 [Fact]
 public void DeletedList_TracksRemovedEntitiesUntilSave()
@@ -394,6 +471,7 @@ public void DeletedList_TracksRemovedEntitiesUntilSave()
     Assert.True(order.Items.IsModified);
 }
 ```
+<sup><a href='/src/docs/samples/CollectionsSamples.cs#L347-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-deleted-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Deleted items remain in DeletedList with their ContainingList property set until FactoryComplete fires after a successful save. This preserves aggregate boundaries during the save operation:
@@ -436,4 +514,4 @@ Collections respect the IsPaused flag during deserialization and factory operati
 
 ---
 
-**UPDATED:** 2026-01-25
+**UPDATED:** 2026-01-27

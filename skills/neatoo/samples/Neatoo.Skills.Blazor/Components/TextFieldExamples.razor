@@ -1,0 +1,51 @@
+@* Text field binding examples - demonstrates MudNeatooTextField usage patterns *@
+
+@if (employee != null)
+{
+    @* begin-snippet: blazor-text-field-basic *@
+    <MudNeatooTextField T="string" EntityProperty="@employee["Name"]" />
+    @* end-snippet *@
+
+    @* begin-snippet: blazor-validation-inline *@
+    <MudNeatooTextField T="string" EntityProperty="@employee["Email"]" />
+    @* end-snippet *@
+}
+
+@if (auditedEntity != null)
+{
+    @* begin-snippet: blazor-readonly-property *@
+    <MudNeatooTextField T="string" EntityProperty="@auditedEntity["CreatedBy"]" ReadOnly="true" />
+    @* end-snippet *@
+}
+
+@if (employee != null)
+{
+    @* begin-snippet: blazor-customize-appearance *@
+    <MudNeatooTextField T="string"
+                        EntityProperty="@employee["Name"]"
+                        Variant="Variant.Filled"
+                        Margin="Margin.Normal"
+                        HelperText="Enter the employee's full name"
+                        Placeholder="John Doe"
+                        Adornment="Adornment.Start"
+                        AdornmentIcon="@Icons.Material.Filled.Person"
+                        Class="my-custom-field" />
+    @* end-snippet *@
+}
+
+@code {
+    private SkillBlazorEmployee? employee;
+    private SkillBlazorAuditedEntity? auditedEntity;
+
+    [Inject]
+    private ISkillBlazorEmployeeFactory EmployeeFactory { get; set; } = default!;
+
+    [Inject]
+    private ISkillBlazorAuditedEntityFactory AuditedEntityFactory { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        employee = EmployeeFactory.Create();
+        auditedEntity = AuditedEntityFactory.Create();
+    }
+}
