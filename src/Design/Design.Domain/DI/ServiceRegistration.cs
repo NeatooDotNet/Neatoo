@@ -207,3 +207,181 @@ public static class ServiceRegistrationDemo
 // FIX: Use a type from the domain assembly:
 //   services.AddNeatooServices(typeof(Employee).Assembly);
 // =============================================================================
+
+// =============================================================================
+// HOW FACTORY DISCOVERS [Factory] CLASSES
+// =============================================================================
+// RemoteFactory source generator runs at compile time and:
+//
+// 1. SCANS for [Factory] attribute on classes
+//    - Looks in the assembly being compiled
+//    - Finds all classes decorated with [Factory]
+//
+// 2. ANALYZES factory methods
+//    - Finds methods with [Create], [Fetch], [Insert], [Update], [Delete], [Execute]
+//    - Extracts parameter signatures
+//    - Notes which methods have [Remote] attribute
+//
+// 3. GENERATES factory interface
+//    - IEmployeeFactory with methods matching factory operations
+//    - Return types based on operation (Task<T> for async, T for sync)
+//
+// 4. GENERATES factory implementation
+//    - EmployeeFactory implementing IEmployeeFactory
+//    - Constructor takes IServiceProvider
+//    - Methods resolve domain object and call factory methods
+//    - [Service] parameters resolved from DI at execution time
+//
+// 5. GENERATES registration extension
+//    - AddNeatooRemoteFactory extension method
+//    - Registers all factory interfaces and implementations
+//
+// GENERATOR OUTPUT LOCATION:
+//   Generated/Neatoo.Generator/Neatoo.Factory/
+//     - {Namespace}.{TypeName}Factory.g.cs
+//
+// To see generated code, add to .csproj:
+//   <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+// =============================================================================
+
+// =============================================================================
+// DI CONTAINER ASSUMPTIONS
+// =============================================================================
+// Neatoo assumes Microsoft.Extensions.DependencyInjection:
+// - IServiceProvider for resolving services
+// - IServiceCollection for registration
+// - Transient/Scoped/Singleton lifetime support
+//
+// DESIGN DECISION: Use IServiceProvider, not DI container abstraction.
+// Neatoo doesn't abstract over DI containers. It directly uses:
+// - IServiceProvider.GetService<T>()
+// - IServiceProvider.GetRequiredService<T>()
+//
+// DID NOT DO THIS: Create custom IContainer abstraction.
+//
+// REJECTED PATTERN:
+//   public interface INeatooContainer {
+//       T Resolve<T>();
+//   }
+//
+// WHY NOT: Microsoft.Extensions.DependencyInjection is the standard.
+// All modern .NET frameworks support it. Adding abstraction would:
+// - Complicate usage for no benefit
+// - Require adapter implementations for each DI container
+// - Prevent using DI container features directly
+//
+// SUPPORTED CONTAINERS (via Microsoft.Extensions.DependencyInjection.Abstractions):
+// - Microsoft.Extensions.DependencyInjection (default)
+// - Autofac (with extension)
+// - Castle Windsor (with extension)
+// - Any container with IServiceProvider support
+// =============================================================================
+
+// =============================================================================
+// CUSTOM RULE REGISTRATION
+// =============================================================================
+// Rules are typically added in constructors, but you can also register
+// rule classes in DI for dependency injection into rules.
+//
+// PATTERN 1: Rules added in constructor (most common)
+//
+//   public Employee(...) : base(services)
+//   {
+//       RuleManager.AddRule(new NameRequiredRule());
+//   }
+//
+// PATTERN 2: Rules with dependencies (less common)
+//
+//   public class UniqueNameRule : AsyncRuleBase<Employee>
+//   {
+//       private readonly IEmployeeRepository _repo;
+//
+//       public UniqueNameRule(IEmployeeRepository repo) : base(t => t.Name)
+//       {
+//           _repo = repo;
+//       }
+//
+//       protected override async Task<IRuleMessages> Execute(...)
+//       {
+//           if (await _repo.NameExists(target.Name))
+//               return (nameof(Employee.Name), "Name already exists").AsRuleMessages();
+//           return None;
+//       }
+//   }
+//
+//   // Registration:
+//   services.AddTransient<UniqueNameRule>();
+//
+//   // Usage in constructor:
+//   public Employee(IEntityBaseServices<Employee> services,
+//                   [Service] UniqueNameRule uniqueNameRule)
+//       : base(services)
+//   {
+//       RuleManager.AddRule(uniqueNameRule);
+//   }
+//
+// DESIGN DECISION: Rules are NOT auto-registered.
+// Rules are typically stateless and created inline. Auto-registration
+// would add complexity for a scenario that's rarely needed.
+// =============================================================================
+
+// =============================================================================
+// SCOPED VS TRANSIENT LIFETIME CONSIDERATIONS
+// =============================================================================
+// DESIGN DECISION: Domain objects are always Transient.
+//
+// Transient (AddTransient):
+//   - New instance per resolution
+//   - Independent state between instances
+//   - CORRECT for domain objects
+//
+// Scoped (AddScoped):
+//   - Same instance within scope (e.g., HTTP request)
+//   - Shared state within scope
+//   - WRONG for domain objects
+//
+// Singleton (AddSingleton):
+//   - One instance for application lifetime
+//   - Shared across all requests
+//   - NEVER for domain objects
+//
+// WHY TRANSIENT MATTERS:
+//
+// Scenario: Two places in code fetch same employee
+//   var emp1 = await factory.Fetch(1);
+//   emp1.Name = "Changed";
+//
+//   var emp2 = await factory.Fetch(1);  // Different request in same scope
+//   // emp2.Name should be "Original" from DB
+//
+// With TRANSIENT: emp2 is a fresh instance, Name = "Original" (CORRECT)
+// With SCOPED: emp2 is same as emp1, Name = "Changed" (WRONG - state bleeding)
+//
+// INFRASTRUCTURE SERVICES can be Scoped:
+//   services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+//   services.AddScoped<MyDbContext>();
+//
+// This is fine because repositories don't hold entity state.
+// =============================================================================
+
+// =============================================================================
+// SERVICE RESOLUTION EXCEPTIONS
+// =============================================================================
+// Common DI exceptions and their causes:
+//
+// "Unable to resolve service for type 'IEmployeeFactory'"
+//   CAUSE: Assembly not registered with AddNeatooServices
+//   FIX: services.AddNeatooServices(typeof(Employee).Assembly);
+//
+// "Unable to resolve service for type 'IEmployeeRepository'"
+//   CAUSE: Repository not registered
+//   FIX: services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+//
+// "A circular dependency was detected for the service of type 'Employee'"
+//   CAUSE: Employee depends on something that depends on Employee
+//   FIX: Break cycle using Lazy<T> or factory delegate
+//
+// "Cannot resolve scoped service 'X' from root provider"
+//   CAUSE: Trying to resolve scoped service outside of scope
+//   FIX: Create IServiceScope first, then resolve from scope
+// =============================================================================

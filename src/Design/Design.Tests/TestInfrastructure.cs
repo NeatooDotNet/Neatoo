@@ -51,6 +51,11 @@ public static class DesignTestServices
                 services.AddTransient<Design.Domain.Rules.IRulesDemoRepository, MockRulesDemoRepository>();
                 services.AddTransient<Design.Domain.Rules.IFluentRulesRepository, MockFluentRulesRepository>();
 
+                // Gotcha demo repositories
+                services.AddTransient<Design.Domain.IGotcha2Repository, MockGotcha2Repository>();
+                services.AddTransient<Design.Domain.IServerOnlyService, MockServerOnlyService>();
+                services.AddTransient<Design.Domain.IGotcha5Repository, MockGotcha5Repository>();
+
                 _serviceProvider = services.BuildServiceProvider();
             }
             return _serviceProvider.CreateScope();
@@ -187,4 +192,28 @@ internal class MockFluentRulesRepository : Design.Domain.Rules.IFluentRulesRepos
 {
     public (string Name, string Email, int Quantity, decimal UnitPrice, decimal Total) GetById(int id)
         => ($"Fluent-{id}", $"test{id}@example.com", 5, 20.00m, 100.00m);
+}
+
+// =============================================================================
+// Mock Repositories for Gotcha Tests
+// =============================================================================
+
+internal class MockGotcha2Repository : Design.Domain.IGotcha2Repository
+{
+    public void Insert() { }
+    public void Update() { }
+    public void Delete() { }
+}
+
+internal class MockServerOnlyService : Design.Domain.IServerOnlyService
+{
+    public string GetServerData() => "Server Data";
+    public string GetDataById(int id) => $"Server Data for {id}";
+}
+
+internal class MockGotcha5Repository : Design.Domain.IGotcha5Repository
+{
+    public void Insert() { }
+    public void Update() { }
+    public void Delete() { }
 }

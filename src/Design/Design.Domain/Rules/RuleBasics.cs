@@ -217,6 +217,14 @@ public class MultiMessageRule : AsyncRuleBase<RuleBasicsDemo>
 //   RuleOrder = -10  // Runs early
 //   RuleOrder = 0    // Default
 //   RuleOrder = 10   // Runs late
+//
+// PERFORMANCE: Rule execution considerations:
+// - Rules are stored in Dictionary<uint, IRule> keyed by stable rule ID
+// - Triggering rules: O(n) where n = total rules (filters by trigger property)
+// - Sorting by RuleOrder: Happens on each trigger (consider caching for hot paths)
+// - Async rules: Run sequentially, not in parallel (maintains predictable state)
+// - Rule messages: Stored per-property, cleared before each rule execution
+// - WaitForTasks(): Awaits all pending async rules before proceeding
 // =============================================================================
 
 /// <summary>
@@ -250,6 +258,149 @@ public class EarlyValidationRule : AsyncRuleBase<RuleBasicsDemo>
 // RunRules(RunRulesFlag.Children): Run children's rules only
 //
 // await WaitForTasks(): Wait for async rules to complete
+// =============================================================================
+
+// =============================================================================
+// RULE TRIGGER DECISION MATRIX
+// =============================================================================
+// Use this matrix to decide which rule style to use for your scenario.
+//
+// +---------------------------+----------------+----------------+-------------+
+// | Scenario                  | Fluent API     | Class-Based    | Winner      |
+// +---------------------------+----------------+----------------+-------------+
+// | Simple required field     | AddValidation  |                | Fluent      |
+// | Format validation (email) | AddValidation  |                | Fluent      |
+// | Calculate derived value   | AddAction      |                | Fluent      |
+// | Async external lookup     | AddActionAsync | AsyncRuleBase  | Either      |
+// | Complex multi-field       |                | AsyncRuleBase  | Class       |
+// | Reusable across entities  |                | AsyncRuleBase  | Class       |
+// | Needs dependency inject   |                | AsyncRuleBase  | Class       |
+// | Rule ordering critical    |                | AsyncRuleBase  | Class       |
+// | Unit testable in isolat   |                | AsyncRuleBase  | Class       |
+// +---------------------------+----------------+----------------+-------------+
+//
+// FLUENT API - USE WHEN:
+// - Rule is simple (1-2 lines of logic)
+// - Rule is specific to this entity
+// - No external dependencies needed
+// - No need to unit test rule in isolation
+//
+// CLASS-BASED - USE WHEN:
+// - Rule has complex logic (>5 lines)
+// - Rule is reused across multiple entities
+// - Rule needs injected dependencies
+// - Rule needs specific execution order (RuleOrder property)
+// - Rule needs isolated unit testing
+// =============================================================================
+
+// =============================================================================
+// SINGLE VS MULTIPLE PROPERTY TRIGGERS
+// =============================================================================
+// Rules can be triggered by one or more properties.
+//
+// SINGLE TRIGGER:
+//   RuleManager.AddValidation(
+//       t => string.IsNullOrEmpty(t.Name) ? "Required" : "",
+//       t => t.Name);  // Triggers on Name only
+//
+// MULTIPLE TRIGGERS:
+//   RuleManager.AddAction(
+//       t => t.Total = t.Quantity * t.Price,
+//       t => t.Quantity,
+//       t => t.Price);  // Triggers on Quantity OR Price
+//
+// For class-based rules:
+//   public MyRule() : base(t => t.Name) { }  // Single
+//   public MyRule() : base(t => t.A, t => t.B, t => t.C) { }  // Multiple
+//
+// DECISION GUIDE:
+// - Validation rules: Usually single trigger (validates that property)
+// - Action rules: Often multiple triggers (computes from multiple inputs)
+// - If rule reads property A to compute property B, trigger on A
+//
+// COMMON MISTAKE: Not triggering on all input properties.
+//
+// WRONG:
+//   RuleManager.AddAction(
+//       t => t.Total = t.Quantity * t.Price,
+//       t => t.Quantity);  // Forgot Price!
+//   // Changing Price doesn't recalculate Total
+//
+// RIGHT:
+//   RuleManager.AddAction(
+//       t => t.Total = t.Quantity * t.Price,
+//       t => t.Quantity,
+//       t => t.Price);  // Both inputs trigger
+// =============================================================================
+
+// =============================================================================
+// ASYNC RULE INTERACTION PATTERNS
+// =============================================================================
+// Async rules run sequentially within a property change.
+// Multiple property changes can have overlapping async rules.
+//
+// SCENARIO 1: Single property change with async rule
+//
+//   entity.Name = "Test";
+//   // AsyncNameValidation starts
+//   // IsBusy = true
+//   await entity.WaitForTasks();
+//   // AsyncNameValidation completes
+//   // IsBusy = false
+//   // IsValid now reflects result
+//
+// SCENARIO 2: Multiple changes before await
+//
+//   entity.Name = "Test";      // AsyncNameValidation starts (exec1)
+//   entity.Email = "a@b.com";  // AsyncEmailValidation starts (exec2)
+//   // Both running concurrently
+//   await entity.WaitForTasks();
+//   // Both complete
+//
+// SCENARIO 3: Rapid changes to same property
+//
+//   entity.Name = "A";  // Rule starts for "A"
+//   entity.Name = "B";  // Rule starts for "B" (A's rule still running)
+//   entity.Name = "C";  // Rule starts for "C" (A and B still running)
+//   await entity.WaitForTasks();
+//   // All complete, but final result is from "C"'s rule
+//
+// DESIGN DECISION: Rules don't cancel each other.
+// Each property change triggers its rules. Rapid changes mean multiple
+// concurrent rule executions. The last one to complete sets the final state.
+//
+// For long-running rules with rapid input (e.g., typeahead search):
+// Consider debouncing at the UI layer, not in rules.
+// =============================================================================
+
+// =============================================================================
+// RULE EXECUTION ORDER GUARANTEES
+// =============================================================================
+// Rules for a given trigger property execute in order:
+//
+// 1. Sorted by RuleOrder (ascending, lower first)
+// 2. Within same RuleOrder, registration order
+//
+// EXAMPLE:
+//   RuleManager.AddRule(new RuleA());  // RuleOrder = 0 (default)
+//   RuleManager.AddRule(new RuleB());  // RuleOrder = -10 (early)
+//   RuleManager.AddRule(new RuleC());  // RuleOrder = 0 (default)
+//
+//   // Execution order: RuleB, RuleA, RuleC
+//
+// WHAT'S NOT GUARANTEED:
+// - Order between rules with different trigger properties
+// - Order when multiple properties change simultaneously
+// - Order after object deserialization (rules re-run, order preserved)
+//
+// USE CASES FOR ORDERING:
+// - Dependent calculations: Calculate subtotal before total
+// - Validation dependencies: Check required before format
+// - Derived state: Update status after all other rules
+//
+// PATTERN: Use negative RuleOrder for prerequisites.
+//   public PrerequisiteRule() : base(...) { RuleOrder = -100; }
+//   public DependentRule() : base(...) { RuleOrder = 0; }  // Runs after
 // =============================================================================
 
 // =============================================================================

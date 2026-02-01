@@ -25,6 +25,14 @@ namespace Design.Domain.BaseClasses;
 // this foundation. This follows the principle that validation is always needed,
 // but persistence tracking is optional.
 //
+// PERFORMANCE: Memory overhead per ValidateBase instance:
+// - PropertyManager: ~100 bytes + (property count * 50 bytes)
+// - RuleManager: ~50 bytes + (rule count * 30 bytes)
+// - AsyncTasks tracker: ~30 bytes
+// - Parent reference: 8 bytes (64-bit)
+// - State cache (MetaState tuple): 24 bytes
+// - Total base overhead: ~200-500 bytes depending on property/rule count
+//
 // STATE PROPERTIES provided by ValidateBase<T>:
 // - IsValid: True when all validation rules pass (including children)
 // - IsSelfValid: True when THIS object's rules pass (excluding children)
@@ -146,6 +154,12 @@ public partial class DemoValueObject : ValidateBase<DemoValueObject>
 // - Root: Reference to aggregate root
 // - ModifiedProperties: List of changed property names
 // - Factory: Reference to IFactorySave<T> for persistence operations
+//
+// PERFORMANCE: IsModified aggregates from entire object graph.
+// - Checking IsModified walks all children recursively
+// - For deep graphs (>100 items), consider caching if called frequently
+// - IsSelfModified is O(1) - only checks this object's properties
+// - ModifiedProperties is a HashSet for O(1) contains checks
 //
 // STATE MACHINE: Entity persistence states
 //
@@ -375,6 +389,13 @@ public partial class DemoValueObjectList : ValidateListBase<DemoValueObject>
 // - DeletedList: Items removed from list that need deletion on save
 // - Root: Reference to aggregate root (for consistency checks)
 // - Cascade: Adding/removing items updates child state automatically
+//
+// PERFORMANCE: DeletedList is a separate collection, not a flag on items.
+// This design choice has performance implications:
+// - Iteration over main list only sees active items (O(n) where n = active count)
+// - Alternative (IsDeleted flag): Would require filtering on every iteration
+// - Memory trade-off: Deleted items stay in memory until Save() completes
+// - Collection operations (Add/Remove) are O(1) for DeletedList management
 //
 // DELETEDLIST LIFECYCLE: How EntityListBase manages removed items
 //
