@@ -48,10 +48,14 @@ This generates a factory (`IProductFactory`) with a `Create()` method. Propertie
 
 All Neatoo properties use `partial` properties. The source generator implements backing fields with automatic change tracking and validation triggering:
 
-```csharp
+<!-- snippet: skill-properties-basic -->
+<a id='snippet-skill-properties-basic'></a>
+```cs
 public partial string Name { get; set; }
 public partial decimal Price { get; set; }
 ```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/QuickStartSamples.cs#L35-L38' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-properties-basic' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 The generator creates property implementations that call `Getter<T>()` and `Setter()` internally.
 
@@ -59,11 +63,13 @@ The generator creates property implementations that call `Getter<T>()` and `Sett
 
 Mark methods with factory attributes to generate client-callable factory methods:
 
-```csharp
+<!-- snippet: skill-factory-methods -->
+<a id='snippet-skill-factory-methods'></a>
+```cs
 [Factory]
-public partial class Employee : EntityBase<Employee>
+public partial class SkillFactoryEmployee : EntityBase<SkillFactoryEmployee>
 {
-    public Employee(IEntityBaseServices<Employee> services) : base(services) { }
+    public SkillFactoryEmployee(IEntityBaseServices<SkillFactoryEmployee> services) : base(services) { }
 
     public partial int Id { get; set; }
     public partial string Name { get; set; }
@@ -75,15 +81,17 @@ public partial class Employee : EntityBase<Employee>
     public void Fetch(int id, string name) { Id = id; Name = name; }
 
     [Insert]
-    public async Task InsertAsync([Service] IRepository repo) { /* Save new */ }
+    public async Task InsertAsync([Service] IRepository repo) { /* Save new */ await Task.CompletedTask; }
 
     [Update]
-    public async Task UpdateAsync([Service] IRepository repo) { /* Save changes */ }
+    public async Task UpdateAsync([Service] IRepository repo) { /* Save changes */ await Task.CompletedTask; }
 
     [Delete]
-    public async Task DeleteAsync([Service] IRepository repo) { /* Remove */ }
+    public async Task DeleteAsync([Service] IRepository repo) { /* Remove */ await Task.CompletedTask; }
 }
 ```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L23-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-factory-methods' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ### Save Routing
 
@@ -96,8 +104,10 @@ When `Save()` is called, Neatoo automatically routes to the appropriate operatio
 
 Add validation rules in the constructor using RuleManager or validation attributes:
 
-```csharp
-public Employee(IEntityBaseServices<Employee> services) : base(services)
+<!-- snippet: skill-validation -->
+<a id='snippet-skill-validation'></a>
+```cs
+public SkillValidationExample(IEntityBaseServices<SkillValidationExample> services) : base(services)
 {
     // Inline validation with lambda
     RuleManager.AddValidation(
@@ -109,6 +119,8 @@ public Employee(IEntityBaseServices<Employee> services) : base(services)
     // public partial string Name { get; set; }
 }
 ```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L54-L66' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
 
@@ -116,7 +128,9 @@ Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
 
 Control who can perform factory operations via an authorization interface:
 
-```csharp
+<!-- snippet: skill-authorization -->
+<a id='snippet-skill-authorization'></a>
+```cs
 public interface IEmployeeAuthorization
 {
     [AuthorizeFactory(AuthorizeFactoryOperation.Create)]
@@ -141,8 +155,16 @@ public class EmployeeAuthorization : IEmployeeAuthorization
 
 [Factory]
 [AuthorizeFactory<IEmployeeAuthorization>]
-public partial class Employee : EntityBase<Employee> { /* ... */ }
+public partial class SkillDocEmployee : EntityBase<SkillDocEmployee>
+{
+    public SkillDocEmployee(IEntityBaseServices<SkillDocEmployee> services) : base(services) { }
+    public partial int Id { get; set; }
+    public partial string Name { get; set; }
+    [Create] public void Create() { }
+}
 ```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L15-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-authorization' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Key Properties
 
@@ -161,14 +183,18 @@ public partial class Employee : EntityBase<Employee> { /* ... */ }
 
 Inject dependencies using `[Service]` attribute on factory method parameters:
 
-```csharp
+<!-- snippet: skill-service-injection -->
+<a id='snippet-skill-service-injection'></a>
+```cs
 [Fetch]
-public async Task Fetch(Guid id, [Service] IEmployeeRepository repo)
+public async Task Fetch(Guid id, [Service] ISkillEmployeeRepository repo)
 {
-    var data = await repo.GetByIdAsync(id);
+    var data = await repo.FetchByIdAsync((int)id.GetHashCode());
     // Map data to properties
 }
 ```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L375-L382' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-service-injection' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Remote Execution
 
@@ -182,16 +208,26 @@ public async Task Fetch(Guid id, [Service] IEmployeeRepository repo)
 | Methods with `[Service]` method injection | No (usually) | Already on server when called |
 | Any method called from server-side code | No | Execution already on server |
 
-```csharp
+<!-- snippet: skill-remote-execution -->
+<a id='snippet-skill-remote-execution'></a>
+```cs
 // Aggregate root - needs [Remote] because it's called from client
 [Remote]
 [Fetch]
-public async Task Fetch(Guid id, [Service] IEmployeeRepository repo) { }
+public async Task Fetch(Guid id, [Service] ISkillEmployeeRepository repo) { await Task.CompletedTask; }
+```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L449-L454' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-remote-execution' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
+<!-- snippet: skill-remote-child -->
+<a id='snippet-skill-remote-child'></a>
+```cs
 // Child entity - no [Remote] needed, called from server-side parent
 [Fetch]
-public void Fetch(int id, string name, [Service] IChildRepository repo) { }
+public void Fetch(int id, string name, [Service] ISkillChildRepository repo) { }
 ```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L469-L473' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-remote-child' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 **Constructor vs Method Injection:**
 - Constructor injection (`[Service]` on constructor): Services available on both client and server
@@ -201,31 +237,45 @@ public void Fetch(int id, string name, [Service] IChildRepository repo) { }
 
 **Critical:** Never mock Neatoo interfaces or classes. Use real factories and mock only external dependencies:
 
-```csharp
-// Setup DI with Neatoo services and mock external dependencies
-services.AddNeatooServices(NeatooFactory.Logical, typeof(Employee).Assembly);
-services.AddScoped<IEmployeeRepository, MockEmployeeRepository>();
+<!-- snippet: skill-testing-pattern -->
+<a id='snippet-skill-testing-pattern'></a>
+```cs
+public static void ConfigureServices(IServiceCollection services)
+{
+    // Setup DI with Neatoo services and mock external dependencies
+    services.AddNeatooServices(NeatooFactory.Logical, typeof(SkillEmployee).Assembly);
+    services.AddScoped<ISkillEmployeeRepository, MockEmployeeRepository>();
+}
 
-// DO: Use real Neatoo factories
-var factory = serviceProvider.GetRequiredService<IEmployeeFactory>();
-var employee = factory.Create();
-employee.Name = "Alice";
-Assert.IsTrue(employee.IsModified);
+public static void TestExample(IServiceProvider serviceProvider)
+{
+    // DO: Use real Neatoo factories
+    var factory = serviceProvider.GetRequiredService<ISkillEmployeeFactory>();
+    var employee = factory.Create();
+    employee.Name = "Alice";
+    Assert.IsTrue(employee.IsModified);
 
-// DON'T: Mock Neatoo interfaces
-var mock = new Mock<IEntityBase>(); // Never do this
+    // DON'T: Mock Neatoo interfaces
+    // var mock = new Mock<IEntityBase>(); // Never do this
+}
 ```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L18-L37' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-testing-pattern' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 **For unit tests without factory generation:** Use `[SuppressFactory]` on test classes that inherit from Neatoo base classes. This prevents the source generator from creating factory methods for test-only classes.
 
-```csharp
+<!-- snippet: skill-suppress-factory -->
+<a id='snippet-skill-suppress-factory'></a>
+```cs
 [SuppressFactory]
 public class TestEmployee : EntityBase<TestEmployee>
 {
     public TestEmployee(IEntityBaseServices<TestEmployee> services) : base(services) { }
-    public partial string Name { get; set; }
+    public string Name { get => Getter<string>(); set => Setter(value); }
 }
 ```
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L178-L185' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-suppress-factory' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 See `references/testing.md` for integration test patterns and `references/pitfalls.md` for common mistakes.
 

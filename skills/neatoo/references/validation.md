@@ -101,7 +101,7 @@ public partial class SkillValidRegistration : ValidateBase<SkillValidRegistratio
     public void Create() { }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L54-L88' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-attributes' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L78-L112' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-attributes' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-validation-attributes-1'></a>
 ```cs
 [Factory]
@@ -166,7 +166,7 @@ public partial class SkillValidEmployee : ValidateBase<SkillValidEmployee>
     public void Create() { }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L124-L151' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-custom-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L148-L175' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-custom-rule' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-validation-custom-rule-1'></a>
 ```cs
 public ValidationInvoice(IValidateBaseServices<ValidationInvoice> services) : base(services)
@@ -209,7 +209,7 @@ public partial class SkillValidDateRange : ValidateBase<SkillValidDateRange>
     public void Create() { }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L178-L200' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cross-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L202-L224' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cross-property' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-validation-cross-property-1'></a>
 ```cs
 public ValidationDateRange(IValidateBaseServices<ValidationDateRange> services) : base(services)
@@ -263,7 +263,7 @@ public partial class SkillValidUser : ValidateBase<SkillValidUser>
     public void Create() { }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L206-L240' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-async-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L230-L264' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-async-rule' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-validation-async-rule-1'></a>
 ```cs
 public ValidationUser(
@@ -489,7 +489,7 @@ public partial class SkillValidInvoice : ValidateBase<SkillValidInvoice>
 // - If any child is invalid, parent.IsValid is false
 // - Parent.IsSelfValid only checks parent's own properties
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L277-L303' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cascade' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L301-L327' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cascade' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-validation-cascade-1'></a>
 ```cs
 [Fact]
@@ -539,7 +539,7 @@ Access validation metadata:
 // entity.PropertyMessages - All error messages
 // entity.ObjectInvalid    - Object-level error message (from MarkInvalid)
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L305-L313' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-meta-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L329-L337' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-meta-properties' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-validation-meta-properties-1'></a>
 ```cs
 [Fact]
@@ -586,7 +586,7 @@ Neatoo automatically checks `IsValid` before allowing save operations:
 //
 // Save() will fail if !IsSavable
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L315-L321' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L339-L345' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-validation-before-save-1'></a>
 ```cs
 [Fact]

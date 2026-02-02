@@ -12,6 +12,40 @@ namespace Neatoo.Skills.Domain;
 // Basic Authorization Setup
 // -----------------------------------------------------------------------------
 
+#region skill-authorization
+public interface IEmployeeAuthorization
+{
+    [AuthorizeFactory(AuthorizeFactoryOperation.Create)]
+    bool CanCreate();
+
+    [AuthorizeFactory(AuthorizeFactoryOperation.Fetch)]
+    bool CanFetch();
+
+    [AuthorizeFactory(AuthorizeFactoryOperation.Write)]
+    bool CanSave();
+}
+
+public class EmployeeAuthorization : IEmployeeAuthorization
+{
+    private readonly IPrincipal _principal;
+    public EmployeeAuthorization(IPrincipal principal) => _principal = principal;
+
+    public bool CanCreate() => _principal.IsInRole("HR");
+    public bool CanFetch() => _principal.Identity?.IsAuthenticated ?? false;
+    public bool CanSave() => _principal.IsInRole("HR");
+}
+
+[Factory]
+[AuthorizeFactory<IEmployeeAuthorization>]
+public partial class SkillDocEmployee : EntityBase<SkillDocEmployee>
+{
+    public SkillDocEmployee(IEntityBaseServices<SkillDocEmployee> services) : base(services) { }
+    public partial int Id { get; set; }
+    public partial string Name { get; set; }
+    [Create] public void Create() { }
+}
+#endregion
+
 #region auth-basic
 /// <summary>
 /// Authorization interface for Employee operations.

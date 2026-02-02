@@ -1,6 +1,8 @@
 # KnockOff Stub Patterns Reference
 
-KnockOff supports three patterns for creating test stubs. Each pattern solves different testing scenarios with varying trade-offs in reusability, ceremony, and capabilities.
+[Home](../../../../README.md) > [Documentation](../../../../docs/README.md) > [Guides](../../../../docs/guides/README.md) > Stub Patterns
+
+KnockOff supports four patterns for creating test stubs. Each pattern solves different testing scenarios with varying trade-offs in reusability, ceremony, and capabilities.
 
 ---
 
@@ -13,6 +15,7 @@ KnockOff supports three patterns for creating test stubs. Each pattern solves di
 | Quick, test-local stub | Inline Interface |
 | No extra stub files | Inline Interface |
 | Stub a class (not interface) | Inline Class |
+| Stub a delegate | Inline Delegate |
 
 ---
 
@@ -30,20 +33,18 @@ The Stand-Alone pattern creates a dedicated stub class in its own file. This stu
 
 Create a partial class with the `[KnockOff]` attribute that implements the interface you want to stub:
 
+<!-- snippet: patterns-standalone-basic -->
 ```cs
-public interface IUserRepository
+public interface IUserRepoStandalone
 {
     User? GetById(int id);
     void Save(User user);
 }
 
 [KnockOff]
-public partial class UserRepositoryStub : IUserRepository
-{
-    // Optionally add user methods for default behavior
-    protected User? GetById(int id) => new User { Id = id, Name = $"User{id}" };
-}
+public partial class UserRepoStandaloneStub : IUserRepoStandalone { }
 ```
+<!-- endSnippet -->
 
 The source generator produces:
 - Explicit interface implementations for all members
@@ -52,30 +53,30 @@ The source generator produces:
 
 ### Usage in Tests
 
+<!-- snippet: patterns-standalone-usage -->
 ```cs
 [Fact]
 public void StandaloneStub_CanBeConfiguredAndVerified()
 {
     // Arrange - instantiate the reusable stub
-    var stub = new UserRepositoryStub();
+    var stub = new UserRepoStandaloneStub();
 
-    // Configure void method via OnCall and mark verifiable
+    // Configure method behavior and mark verifiable
+    stub.GetById.OnCall((id) => new User { Id = id, Name = $"User{id}" }).Verifiable();
     stub.Save.OnCall((user) => { }).Verifiable();
 
     // Act - cast to interface for use
-    IUserRepository repository = stub;
+    IUserRepoStandalone repository = stub;
     var user = repository.GetById(42);
     repository.Save(user!);
 
     // Assert - verify via Verify()
     Assert.NotNull(user);
+    Assert.Equal("User42", user.Name);
     stub.Verify();
-
-    // User methods get a numbered interceptor (GetById2) for tracking
-    // This allows verification without blocking the user method implementation
-    stub.GetById2.Verify(Times.Once);
 }
 ```
+<!-- endSnippet -->
 
 ### Key Points
 
@@ -114,50 +115,44 @@ The Inline Interface pattern generates a stub class scoped to your test class. T
 
 Apply `[KnockOff<IInterface>]` to your test class:
 
+<!-- snippet: patterns-inline-interface-basic -->
 ```cs
-public interface IUserRepository
+[KnockOff<IUserRepoInline>]
+public partial class InlineInterfaceTests
 {
-    User? GetById(int id);
-    void Save(User user);
-}
-
-[KnockOff<IUserRepository>]
-public partial class UserRepositoryTests
-{
-    // The generator creates Stubs.IUserRepository
+    // The generator creates Stubs.IUserRepoInline
 }
 ```
+<!-- endSnippet -->
 
 The source generator produces a nested `Stubs` class containing the stub implementation.
 
 ### Usage in Tests
 
+<!-- snippet: patterns-inline-interface-usage -->
 ```cs
-[KnockOff<IUserRepository>]
-public partial class UserRepositoryTests
+[Fact]
+public void InlineInterfaceStub_GeneratedInStubsNamespace()
 {
-    [Fact]
-    public void InlineInterfaceStub_GeneratedInStubsNamespace()
-    {
-        // Arrange - use generated Stubs.InterfaceName class
-        var stub = new Stubs.IUserRepository();
+    // Arrange - use generated Stubs.InterfaceName class
+    var stub = new Stubs.IUserRepoInline();
 
-        // Configure behavior and mark verifiable
-        stub.GetById.OnCall((id) => new User { Id = id, Name = "Test" }).Verifiable();
-        stub.Save.OnCall((user) => { }).Verifiable();
+    // Configure behavior and mark verifiable
+    stub.GetById.OnCall((id) => new User { Id = id, Name = "Test" }).Verifiable();
+    stub.Save.OnCall((user) => { }).Verifiable();
 
-        // Act
-        IUserRepository repository = stub;
-        var user = repository.GetById(1);
-        repository.Save(user!);
+    // Act
+    IUserRepoInline repository = stub;
+    var user = repository.GetById(1);
+    repository.Save(user!);
 
-        // Assert
-        Assert.NotNull(user);
-        Assert.Equal("Test", user.Name);
-        stub.Verify();
-    }
+    // Assert
+    Assert.NotNull(user);
+    Assert.Equal("Test", user.Name);
+    stub.Verify();
 }
 ```
+<!-- endSnippet -->
 
 ### Key Points
 
@@ -194,21 +189,23 @@ The Inline Class pattern generates a stub for abstract or virtual class members.
 
 Apply `[KnockOff<ClassName>]` to your test class, targeting a class with virtual or abstract members:
 
+<!-- snippet: patterns-inline-class-basic -->
 ```cs
 // Target class with virtual members
-public class UserService
+public class UserServiceClass
 {
     public virtual User? GetUser(int id) => null;
     public virtual void SaveUser(User user) { }
     public virtual bool IsConnected { get; set; }
 }
 
-[KnockOff<UserService>]
-public partial class UserServiceTests
+[KnockOff<UserServiceClass>]
+public partial class InlineClassTests
 {
-    // The generator creates Stubs.UserService
+    // The generator creates Stubs.UserServiceClass
 }
 ```
+<!-- endSnippet -->
 
 The source generator produces:
 - A wrapper class in the nested `Stubs` namespace
@@ -217,30 +214,28 @@ The source generator produces:
 
 ### Usage in Tests
 
+<!-- snippet: patterns-inline-class-usage -->
 ```cs
-[KnockOff<UserService>]
-public partial class UserServiceTests
+[Fact]
+public void InlineClassStub_UsesObjectProperty()
 {
-    [Fact]
-    public void InlineClassStub_UsesObjectProperty()
-    {
-        // Arrange - create wrapper stub
-        var stub = new Stubs.UserService();
+    // Arrange - create wrapper stub
+    var stub = new Stubs.UserServiceClass();
 
-        // Configure virtual member behavior and mark verifiable
-        stub.GetUser.OnCall((id) => new User { Id = id, Name = "FromStub" }).Verifiable();
+    // Configure virtual member behavior and mark verifiable
+    stub.GetUser.OnCall((id) => new User { Id = id, Name = "FromStub" }).Verifiable();
 
-        // Act - use .Object to get the actual class instance
-        UserService service = stub.Object;
-        var user = service.GetUser(42);
+    // Act - use .Object to get the actual class instance
+    UserServiceClass service = stub.Object;
+    var user = service.GetUser(42);
 
-        // Assert
-        Assert.NotNull(user);
-        Assert.Equal("FromStub", user.Name);
-        stub.Verify();
-    }
+    // Assert
+    Assert.NotNull(user);
+    Assert.Equal("FromStub", user.Name);
+    stub.Verify();
 }
 ```
+<!-- endSnippet -->
 
 ### Key Points
 
@@ -263,19 +258,104 @@ public partial class UserServiceTests
 
 ---
 
+## Inline Delegate Pattern
+
+The Inline Delegate pattern generates a stub for delegate types. This allows stubbing callbacks and factory patterns without creating wrapper interfaces.
+
+### When to Use
+
+- You need to stub a delegate type
+- You want to track delegate invocations
+- You need to configure delegate behavior dynamically in tests
+
+### Declaration
+
+Apply `[KnockOff<DelegateType>]` to your test class, targeting a delegate type:
+
+<!-- snippet: patterns-inline-delegate-basic -->
+```cs
+// Define delegate types
+public delegate bool ValidationRule(string value);
+public delegate T Factory<T>();
+
+[KnockOff<ValidationRule>]
+[KnockOff<Factory<User>>]
+public partial class InlineDelegateTests
+{
+    // The generator creates Stubs.ValidationRule and Stubs.Factory<User>
+}
+```
+<!-- endSnippet -->
+
+The source generator produces:
+- A wrapper class in the nested `Stubs` namespace
+- An `Interceptor` property for configuring behavior and tracking calls
+- Implicit conversion operator to the delegate type
+
+### Usage in Tests
+
+<!-- snippet: patterns-inline-delegate-usage -->
+```cs
+[Fact]
+public void InlineDelegateStub_TracksInvocationsAndConfiguresBehavior()
+{
+    // Arrange - create delegate stub
+    var ruleStub = new Stubs.ValidationRule();
+
+    // Configure behavior via Interceptor.OnCall
+    ruleStub.Interceptor.OnCall((value) => value != "invalid");
+
+    // Act - implicit conversion to delegate type
+    ValidationRule rule = ruleStub;
+    bool result1 = rule("valid");
+    bool result2 = rule("invalid");
+
+    // Assert - verify calls and behavior
+    Assert.True(result1);
+    Assert.False(result2);
+    ruleStub.Interceptor.Verify(Times.Exactly(2));
+    Assert.Equal("invalid", ruleStub.Interceptor.LastCallArg);
+}
+```
+<!-- endSnippet -->
+
+### Key Points
+
+- **Instantiation**: `new Stubs.DelegateType()`
+- **Delegate access**: Implicit conversion to delegate type
+- **Configuration**: Use `stub.Interceptor.OnCall(...)` to configure behavior
+- **Verification**: Call `stub.Interceptor.Verify()` to verify invocations
+- **Argument tracking**: Access `stub.Interceptor.LastCallArg` for the last argument passed
+
+### Benefits
+
+- **Stub delegates**: Works with any delegate type, including `Func<T>` and `Action<T>`
+- **Invocation tracking**: Tracks all delegate invocations automatically
+- **Flexible configuration**: Configure behavior dynamically per test
+
+### Trade-offs
+
+- **Interceptor syntax**: Must use `stub.Interceptor` to access configuration (not directly on stub)
+- **No user methods**: Cannot add custom methods like Stand-Alone pattern
+- **Test-local only**: Cannot reuse across multiple test classes
+
+---
+
 ## Pattern Comparison
 
-| Feature | Stand-Alone | Inline Interface | Inline Class |
-|---------|-------------|------------------|--------------|
-| **Reusable across test files** | Yes | No | No |
-| **Custom user methods** | Yes | No | No |
-| **Extra file required** | Yes | No | No |
-| **Supports interfaces** | Yes | Yes | No |
-| **Supports classes** | No | No | Yes |
-| **IntelliSense visible** | Yes | Within test class | Within test class |
-| **Instantiation syntax** | `new MyStub()` | `new Stubs.IFoo()` | `new Stubs.Foo()` |
-| **Access pattern** | Cast to interface | Cast to interface | Use `.Object` property |
-| **Best for** | Shared stubs | Local stubs | Class stubs |
+| Feature | Stand-Alone | Inline Interface | Inline Class | Inline Delegate |
+|---------|-------------|------------------|--------------|-----------------|
+| **Reusable across test files** | Yes | No | No | No |
+| **Custom user methods** | Yes | No | No | No |
+| **Extra file required** | Yes | No | No | No |
+| **Supports interfaces** | Yes | Yes | No | No |
+| **Supports classes** | No | No | Yes | No |
+| **Supports delegates** | No | No | No | Yes |
+| **IntelliSense visible** | Yes | Within test class | Within test class | Within test class |
+| **Instantiation syntax** | `new MyStub()` | `new Stubs.IFoo()` | `new Stubs.Foo()` | `new Stubs.DelegateType()` |
+| **Access pattern** | Cast to interface | Cast to interface | Use `.Object` property | Implicit conversion |
+| **Configuration** | `stub.Member.OnCall(...)` | `stub.Member.OnCall(...)` | `stub.Member.OnCall(...)` | `stub.Interceptor.OnCall(...)` |
+| **Best for** | Shared stubs | Local stubs | Class stubs | Delegate stubs |
 
 ---
 
@@ -283,15 +363,19 @@ public partial class UserServiceTests
 
 Follow this decision tree to choose the right pattern:
 
-1. **Do you need to stub a class (not an interface)?**
-   - Yes: Use **Inline Class** pattern
+1. **Do you need to stub a delegate type?**
+   - Yes: Use **Inline Delegate** pattern
    - No: Continue to step 2
 
-2. **Do you need the stub in multiple test files?**
-   - Yes: Use **Stand-Alone** pattern
+2. **Do you need to stub a class (not an interface)?**
+   - Yes: Use **Inline Class** pattern
    - No: Continue to step 3
 
-3. **Do you need custom methods on the stub?**
+3. **Do you need the stub in multiple test files?**
+   - Yes: Use **Stand-Alone** pattern
+   - No: Continue to step 4
+
+4. **Do you need custom methods on the stub?**
    - Yes: Use **Stand-Alone** pattern
    - No: Use **Inline Interface** pattern
 
@@ -304,61 +388,41 @@ Follow this decision tree to choose the right pattern:
 | Quick stub for single test class | Inline Interface |
 | Stub a `DbContext` with virtual `DbSet` properties | Inline Class |
 | Stub an abstract base class | Inline Class |
+| Stub a validation callback or factory delegate | Inline Delegate |
 
 ---
 
-## Complete Example: All Three Patterns Together
+## Complete Example: All Patterns Together
 
-This example demonstrates using all three patterns in a realistic test scenario:
+This example demonstrates using all patterns in a realistic test scenario:
 
+<!-- snippet: patterns-complete-example -->
 ```cs
-// Stand-alone stub for email service (reusable across test files)
-public interface IEmailService
-{
-    bool Send(string to, string subject, string body);
-    bool IsConfigured { get; }
-}
-
-[KnockOff]
-public partial class EmailServiceStub : IEmailService { }
-
-// Interfaces and classes to stub inline
-public interface ILogService
-{
-    void Log(string message);
-}
-
-public abstract class AuditServiceBase
-{
-    public abstract void Audit(string action);
-}
-
-// Test class using all three patterns
-[KnockOff<ILogService>]
-[KnockOff<AuditServiceBase>]
-public partial class IntegrationTests
+[KnockOff<ILogSvc>]
+[KnockOff<AuditSvcBase>]
+public partial class PatternComparisonTests
 {
     [Fact]
     public void AllThreePatterns_WorkTogether()
     {
         // Stand-Alone: Reusable email stub
-        var emailStub = new EmailServiceStub();
+        var emailStub = new EmailSvcPatternStub();
         emailStub.Send.OnCall((to, subject, body) => true).Verifiable();
-        emailStub.IsConfigured.Value = true;
+        emailStub.IsConfigured.OnGet(true);
 
         // Inline Interface: Test-local logger stub
-        var loggerStub = new Stubs.ILogService();
+        var loggerStub = new Stubs.ILogSvc();
         var logMessages = new List<string>();
-        loggerStub.Log.OnCall((msg) => logMessages.Add(msg)).Verifiable(Times.Exactly(2));
+        var logTracking = loggerStub.Log.OnCall((msg) => logMessages.Add(msg)).Verifiable(Times.Exactly(2));
 
         // Inline Class: Stub for abstract base class
-        var auditStub = new Stubs.AuditServiceBase();
+        var auditStub = new Stubs.AuditSvcBase();
         auditStub.Audit.OnCall((action) => { }).Verifiable();
 
         // Act - simulate integration scenario
-        IEmailService email = emailStub;
-        ILogService logger = loggerStub;
-        AuditServiceBase audit = auditStub.Object;
+        IEmailSvcPattern email = emailStub;
+        ILogSvc logger = loggerStub;
+        AuditSvcBase audit = auditStub.Object;
 
         logger.Log("Starting operation");
         var sent = email.Send("user@test.com", "Hello", "World");
@@ -374,11 +438,16 @@ public partial class IntegrationTests
     }
 }
 ```
+<!-- endSnippet -->
 
 ### Pattern Usage Summary in the Example
 
 | Stub | Pattern | Reason |
 |------|---------|--------|
-| `EmailServiceStub` | Stand-Alone | Reusable across test files, could have helper methods |
-| `Stubs.ILogService` | Inline Interface | Only needed in this test class |
-| `Stubs.AuditServiceBase` | Inline Class | Stubbing an abstract class, not an interface |
+| `EmailSvcPatternStub` | Stand-Alone | Reusable across test files, could have helper methods |
+| `Stubs.ILogSvc` | Inline Interface | Only needed in this test class |
+| `Stubs.AuditSvcBase` | Inline Class | Stubbing an abstract class, not an interface |
+
+---
+
+**UPDATED:** 2026-01-26

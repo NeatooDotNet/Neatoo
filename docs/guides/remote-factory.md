@@ -69,7 +69,7 @@ public partial class SkillFactoryCustomer : EntityBase<SkillFactoryCustomer>
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L15-L71' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-factory-methods' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L49-L105' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-factory-methods' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-remotefactory-factory-methods-1'></a>
 ```cs
 [Factory]
@@ -251,7 +251,7 @@ public partial class SkillFactoryReport : EntityBase<SkillFactoryReport>
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L303-L330' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-service-injection' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L337-L364' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-service-injection' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-remotefactory-service-injection-1'></a>
 ```cs
 [Factory]
@@ -329,7 +329,7 @@ public partial class SkillFactoryProduct : EntityBase<SkillFactoryProduct>
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L77-L105' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-fetch' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L111-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-fetch' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-remotefactory-fetch-1'></a>
 ```cs
 [Factory]
@@ -438,7 +438,7 @@ public partial class SkillFactoryAccount : EntityBase<SkillFactoryAccount>
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L167-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-save' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L201-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-save' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-remotefactory-save-1'></a>
 ```cs
 [Factory]
@@ -528,7 +528,7 @@ public partial class SkillFactoryValidatedOrder : EntityBase<SkillFactoryValidat
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L226-L260' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-save-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L260-L294' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-save-validation' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-remotefactory-save-validation-1'></a>
 ```cs
 [Factory]
@@ -620,7 +620,7 @@ public partial class SkillFactoryProject : EntityBase<SkillFactoryProject>
 // project.Delete();           // Marks for deletion
 // await factory.SaveAsync(project);  // Routes to DeleteAsync
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L266-L297' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L300-L331' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-delete' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-remotefactory-delete-1'></a>
 ```cs
 [Factory]
@@ -723,7 +723,7 @@ public partial class SkillFactoryRemoteEntity : EntityBase<SkillFactoryRemoteEnt
 // - Performing operations that shouldn't run on the client
 // - Needing server-side services
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L336-L379' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-remote-attribute' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L392-L435' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-remote-attribute' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-remotefactory-remote-attribute-1'></a>
 ```cs
 [Factory]
@@ -1116,7 +1116,7 @@ public partial class SkillFactoryOrder : EntityBase<SkillFactoryOrder>
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L111-L161' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-fetch-overloads' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L145-L195' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-fetch-overloads' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-remotefactory-fetch-overloads-1'></a>
 ```cs
 [Factory]
@@ -1218,7 +1218,7 @@ public partial class SkillFactoryOrderWithItems : EntityBase<SkillFactoryOrderWi
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L423-L466' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-child-factories' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L521-L564' title='Snippet source file'>snippet source</a> | <a href='#snippet-remotefactory-child-factories' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-remotefactory-child-factories-1'></a>
 ```cs
 [Factory]

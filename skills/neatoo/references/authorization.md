@@ -80,7 +80,7 @@ public partial class SkillAuthEmployee : EntityBase<SkillAuthEmployee>
     public Task DeleteAsync() => Task.CompletedTask;
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L15-L86' title='Snippet source file'>snippet source</a> | <a href='#snippet-auth-basic' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L49-L120' title='Snippet source file'>snippet source</a> | <a href='#snippet-auth-basic' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Authorization Methods
@@ -155,7 +155,7 @@ public partial class SkillAuthDocument : EntityBase<SkillAuthDocument>
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L92-L148' title='Snippet source file'>snippet source</a> | <a href='#snippet-auth-with-parameters' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L126-L182' title='Snippet source file'>snippet source</a> | <a href='#snippet-auth-with-parameters' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Authorization with Services
@@ -209,7 +209,7 @@ public interface ISkillOrderAccessService
     bool IsOrderOwner(int orderId, string userId);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L154-L198' title='Snippet source file'>snippet source</a> | <a href='#snippet-auth-with-services' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L188-L232' title='Snippet source file'>snippet source</a> | <a href='#snippet-auth-with-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Async Authorization
@@ -269,7 +269,7 @@ public interface ISkillProjectMembershipService
     Task<bool> HasWriteAccessAsync(string userId);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L204-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-auth-async' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L238-L288' title='Snippet source file'>snippet source</a> | <a href='#snippet-auth-async' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Combined Authorization Checks
@@ -348,7 +348,7 @@ public interface ISkillFeatureFlagService
     bool IsEnabled(string featureName);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L260-L329' title='Snippet source file'>snippet source</a> | <a href='#snippet-auth-combined-checks' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L294-L363' title='Snippet source file'>snippet source</a> | <a href='#snippet-auth-combined-checks' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Authorization Failure

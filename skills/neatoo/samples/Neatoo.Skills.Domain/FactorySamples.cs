@@ -12,6 +12,40 @@ namespace Neatoo.Skills.Domain;
 // Basic Factory Setup
 // -----------------------------------------------------------------------------
 
+// Generic repository interface for skill snippets
+public interface IRepository
+{
+    Task InsertAsync();
+    Task UpdateAsync();
+    Task DeleteAsync();
+}
+
+#region skill-factory-methods
+[Factory]
+public partial class SkillFactoryEmployee : EntityBase<SkillFactoryEmployee>
+{
+    public SkillFactoryEmployee(IEntityBaseServices<SkillFactoryEmployee> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string Name { get; set; }
+
+    [Create]
+    public void Create() { /* Initialize new */ }
+
+    [Fetch]
+    public void Fetch(int id, string name) { Id = id; Name = name; }
+
+    [Insert]
+    public async Task InsertAsync([Service] IRepository repo) { /* Save new */ await Task.CompletedTask; }
+
+    [Update]
+    public async Task UpdateAsync([Service] IRepository repo) { /* Save changes */ await Task.CompletedTask; }
+
+    [Delete]
+    public async Task DeleteAsync([Service] IRepository repo) { /* Remove */ await Task.CompletedTask; }
+}
+#endregion
+
 #region remotefactory-factory-methods
 /// <summary>
 /// Customer entity demonstrating factory method attributes.
@@ -329,6 +363,28 @@ public partial class SkillFactoryReport : EntityBase<SkillFactoryReport>
 }
 #endregion
 
+// SKILL.md snippet - just the method pattern
+[Factory]
+public partial class SkillServiceInjectionExample : EntityBase<SkillServiceInjectionExample>
+{
+    public SkillServiceInjectionExample(IEntityBaseServices<SkillServiceInjectionExample> services) : base(services) { }
+
+    public partial Guid Id { get; set; }
+    public partial string Name { get; set; }
+
+    #region skill-service-injection
+    [Fetch]
+    public async Task Fetch(Guid id, [Service] ISkillEmployeeRepository repo)
+    {
+        var data = await repo.FetchByIdAsync((int)id.GetHashCode());
+        // Map data to properties
+    }
+    #endregion
+
+    [Create]
+    public void Create() { }
+}
+
 // -----------------------------------------------------------------------------
 // Remote Execution
 // -----------------------------------------------------------------------------
@@ -377,6 +433,48 @@ public partial class SkillFactoryRemoteEntity : EntityBase<SkillFactoryRemoteEnt
 // - Performing operations that shouldn't run on the client
 // - Needing server-side services
 #endregion
+
+// SKILL.md snippet - concise remote vs local pattern
+// Child repository interface for the skill snippet
+public interface ISkillChildRepository { }
+
+// Demonstrates aggregate root with [Remote] vs child without
+[Factory]
+public partial class SkillRemoteAggregateRoot : EntityBase<SkillRemoteAggregateRoot>
+{
+    public SkillRemoteAggregateRoot(IEntityBaseServices<SkillRemoteAggregateRoot> services) : base(services) { }
+
+    public partial Guid Id { get; set; }
+
+    #region skill-remote-execution
+    // Aggregate root - needs [Remote] because it's called from client
+    [Remote]
+    [Fetch]
+    public async Task Fetch(Guid id, [Service] ISkillEmployeeRepository repo) { await Task.CompletedTask; }
+    #endregion
+
+    [Create]
+    public void Create() { }
+}
+
+// Child entity demonstrating no [Remote] needed
+[Factory]
+public partial class SkillRemoteChildEntity : EntityBase<SkillRemoteChildEntity>
+{
+    public SkillRemoteChildEntity(IEntityBaseServices<SkillRemoteChildEntity> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string Name { get; set; }
+
+    #region skill-remote-child
+    // Child entity - no [Remote] needed, called from server-side parent
+    [Fetch]
+    public void Fetch(int id, string name, [Service] ISkillChildRepository repo) { }
+    #endregion
+
+    [Create]
+    public void Create() { }
+}
 
 // -----------------------------------------------------------------------------
 // Child Factories (Aggregate Loading)

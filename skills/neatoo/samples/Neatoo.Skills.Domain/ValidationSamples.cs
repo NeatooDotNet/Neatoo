@@ -47,6 +47,30 @@ public partial class SkillValidProduct : ValidateBase<SkillValidProduct>
 }
 #endregion
 
+// For SKILL.md - shows just the validation constructor pattern
+[Factory]
+public partial class SkillValidationExample : EntityBase<SkillValidationExample>
+{
+    #region skill-validation
+    public SkillValidationExample(IEntityBaseServices<SkillValidationExample> services) : base(services)
+    {
+        // Inline validation with lambda
+        RuleManager.AddValidation(
+            emp => string.IsNullOrEmpty(emp.Name) ? "Name is required" : "",
+            e => e.Name);
+
+        // Or use validation attributes on properties
+        // [Required(ErrorMessage = "Name is required")]
+        // public partial string Name { get; set; }
+    }
+    #endregion
+
+    public partial string Name { get; set; }
+
+    [Create]
+    public void Create() { }
+}
+
 // -----------------------------------------------------------------------------
 // DataAnnotations Validation Attributes
 // -----------------------------------------------------------------------------

@@ -1,4 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
 using Neatoo;
+using Neatoo.RemoteFactory;
 using Neatoo.Skills.Domain;
 
 namespace Neatoo.Skills.Tests;
@@ -6,6 +8,34 @@ namespace Neatoo.Skills.Tests;
 // =============================================================================
 // TESTING PATTERNS - Demonstrates proper Neatoo testing techniques
 // =============================================================================
+
+/// <summary>
+/// Example showing proper Neatoo test setup pattern.
+/// This code demonstrates the pattern but is not executed as a test.
+/// </summary>
+public static class SkillTestingPatternExample
+{
+    #region skill-testing-pattern
+    public static void ConfigureServices(IServiceCollection services)
+    {
+        // Setup DI with Neatoo services and mock external dependencies
+        services.AddNeatooServices(NeatooFactory.Logical, typeof(SkillEmployee).Assembly);
+        services.AddScoped<ISkillEmployeeRepository, MockEmployeeRepository>();
+    }
+
+    public static void TestExample(IServiceProvider serviceProvider)
+    {
+        // DO: Use real Neatoo factories
+        var factory = serviceProvider.GetRequiredService<ISkillEmployeeFactory>();
+        var employee = factory.Create();
+        employee.Name = "Alice";
+        Assert.IsTrue(employee.IsModified);
+
+        // DON'T: Mock Neatoo interfaces
+        // var mock = new Mock<IEntityBase>(); // Never do this
+    }
+    #endregion
+}
 
 [TestClass]
 public class TestingPatternsTests : SkillTestBase

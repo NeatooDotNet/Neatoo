@@ -405,3 +405,6 @@ FodyWeavers.xsd
 
 # Claude Code user-specific settings
 .claude/settings.local.json
+
+# Windows NTFS alternate data streams (Zone.Identifier marks files from internet)
+*:Zone.Identifier
