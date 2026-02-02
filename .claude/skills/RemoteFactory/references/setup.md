@@ -208,6 +208,33 @@ public static class CorsSample
 
 ---
 
+## Blazor WASM Project Structure
+
+For Blazor WASM, isolate EF Core in a separate infrastructure project and use `PrivateAssets="all"` on the project reference. This prevents server-only dependencies from being included in the client bundle:
+
+```xml
+<!-- Infrastructure.csproj - contains EF Core -->
+<PackageReference Include="Microsoft.EntityFrameworkCore" Version="..." />
+
+<!-- Domain.csproj - references Infrastructure privately -->
+<ProjectReference Include="..\Infrastructure\Infrastructure.csproj" PrivateAssets="all" />
+
+<!-- Server.csproj - explicitly references both -->
+<ProjectReference Include="..\Domain\Domain.csproj" />
+<ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+
+<!-- Client.csproj - only references Domain, never sees Infrastructure -->
+<ProjectReference Include="..\Domain\Domain.csproj" />
+```
+
+**Why this pattern?**
+- Domain project can use method injection with infrastructure services
+- Server has full access to infrastructure
+- Client bundle excludes EF Core and other server dependencies
+- Clean separation enforced at the project level
+
+---
+
 ## Client Setup (Blazor WASM)
 
 <!-- snippet: getting-started-client-program -->
