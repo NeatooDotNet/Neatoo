@@ -139,7 +139,7 @@ public void BackingFieldAccess_ViaIndexer()
     Assert.AreEqual(typeof(string), property.Type);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L546-L567' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-backing-field-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L576-L597' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-backing-field-access' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-properties-backing-field-access-1'></a>
 ```cs
 [Fact]
@@ -212,7 +212,7 @@ public void PropertyChanged_NotifiesOnChange()
     Assert.IsTrue(changedProperties.Contains("Name"));
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L443-L465' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-property-changed' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L473-L495' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-property-changed' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-properties-property-changed-1'></a>
 ```cs
 [Fact]
@@ -283,7 +283,7 @@ public void NeatooPropertyChanged_IncludesChangeReason()
     Assert.AreEqual(ChangeReason.UserEdit, nameChanges.Last().Reason);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L467-L492' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L497-L522' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-properties-neatoo-property-changed-1'></a>
 ```cs
 [Fact]
@@ -372,7 +372,7 @@ public void ChangeReason_TracksUserEdits()
     Assert.AreEqual(ChangeReason.UserEdit, nameReasons.Last().Reason);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L601-L626' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L631-L656' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-properties-change-reason-useredit-1'></a>
 ```cs
 [Fact]
@@ -433,7 +433,7 @@ public void LoadValue_DoesNotTriggerRules()
     // (LoadValue doesn't run rules)
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L494-L513' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L524-L543' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-properties-load-value-1'></a>
 ```cs
 [Fact]
@@ -507,7 +507,7 @@ public async Task MetaProperties_AvailableOnProperty()
     Assert.IsFalse(accountNumberProp.PropertyMessages.Any());
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L515-L544' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L545-L574' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-properties-meta-properties-1'></a>
 ```cs
 [Fact]
@@ -738,7 +738,7 @@ public void SuppressEvents_WithPauseAllActions()
     Assert.AreEqual("Doe", customer.LastName);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L569-L599' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L599-L629' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
 <a id='snippet-properties-suppress-events-1'></a>
 ```cs
 [Fact]

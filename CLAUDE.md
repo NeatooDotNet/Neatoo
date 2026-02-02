@@ -1,29 +1,7 @@
 
 The Neatoo Solution is at src/Neatoo.sln
 
-## Design Source of Truth
 
-The `src/Design/` directory contains the **authoritative reference** for Neatoo's API design:
-
-- **Design.Domain** - Heavily-commented demonstrations of all base classes, factory operations, properties, and rules
-- **Design.Infrastructure** - Repository interface examples
-- **Design.Tests** - Tests verifying documented patterns
-
-When learning about Neatoo concepts, **read Design.Domain files first**. They contain:
-- `DESIGN DECISION` - Why the API works this way
-- `DID NOT DO THIS` - Rejected alternatives with explanations
-- `GENERATOR BEHAVIOR` - What source generators produce
-- `COMMON MISTAKE` - Incorrect usage patterns to avoid
-
-**Key files by topic:**
-- Base classes: `Design.Domain/BaseClasses/AllBaseClasses.cs`
-- Aggregate patterns: `Design.Domain/Aggregates/OrderAggregate/`
-- Factory operations: `Design.Domain/FactoryOperations/`
-- Validation rules: `Design.Domain/Rules/`
-- Property system: `Design.Domain/PropertySystem/`
-- Generator interaction: `Design.Domain/Generators/TwoGeneratorInteraction.cs`
-
-See `src/Design/CLAUDE-DESIGN.md` for detailed Claude Code guidance.
 
 ## Neatoo Terminology
 
@@ -159,3 +137,27 @@ Neatoo depends on **RemoteFactory** (`C:\src\neatoodotnet\RemoteFactory`) for so
 - **Framework documentation**: Use `/csharp-docs` skill for creating user-facing docs with MarkdownSnippets
 - **Project todos/plans**: Use `/project-todos` skill for tracking work and design documents
 - **DDD terminology**: See global CLAUDE.md for DDD documentation guidelines
+
+## Design Source of Truth
+
+The `src/Design/` directory contains the **authoritative reference** for Neatoo's API design:
+
+- **Design.Domain** - Heavily-commented demonstrations of all base classes, factory operations, properties, and rules
+- **Design.Infrastructure** - Repository interface examples
+- **Design.Tests** - Tests verifying documented patterns
+
+When learning about Neatoo concepts, **read Design.Domain files first**. They contain:
+- `DESIGN DECISION` - Why the API works this way
+- `DID NOT DO THIS` - Rejected alternatives with explanations
+- `GENERATOR BEHAVIOR` - What source generators produce
+- `COMMON MISTAKE` - Incorrect usage patterns to avoid
+
+**Key files by topic:**
+- Base classes: `Design.Domain/BaseClasses/AllBaseClasses.cs`
+- Aggregate patterns: `Design.Domain/Aggregates/OrderAggregate/`
+- Factory operations: `Design.Domain/FactoryOperations/`
+- Validation rules: `Design.Domain/Rules/`
+- Property system: `Design.Domain/PropertySystem/`
+- Generator interaction: `Design.Domain/Generators/TwoGeneratorInteraction.cs`
+
+See `src/Design/CLAUDE-DESIGN.md` for detailed Claude Code guidance.

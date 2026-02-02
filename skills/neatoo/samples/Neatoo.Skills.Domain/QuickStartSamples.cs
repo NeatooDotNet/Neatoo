@@ -21,3 +21,22 @@ public partial class Product : EntityBase<Product>
     [Create] public void Create() { }
 }
 #endregion
+
+// -----------------------------------------------------------------------------
+// Properties Basic Sample - demonstrates partial properties without attributes
+// This class exists to provide a compilable snippet showing basic property syntax
+// -----------------------------------------------------------------------------
+
+[Factory]
+public partial class SkillPropertiesBasic : ValidateBase<SkillPropertiesBasic>
+{
+    public SkillPropertiesBasic(IValidateBaseServices<SkillPropertiesBasic> services) : base(services) { }
+
+    #region skill-properties-basic
+    public partial string Name { get; set; }
+    public partial decimal Price { get; set; }
+    #endregion
+
+    [Create]
+    public void Create() { }
+}

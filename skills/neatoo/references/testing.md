@@ -37,7 +37,7 @@ public async Task RealVsMock_UseRealNeatooClasses()
     // services.AddScoped<IMyRepository, MockMyRepository>();
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L17-L44' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-real-vs-mock' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L47-L74' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-real-vs-mock' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Why No Mocking?
@@ -142,7 +142,7 @@ public void ValidationAttributes_AutoConverted()
     Assert.IsTrue(reg["Age"].IsValid);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L50-L111' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L80-L141' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Change Tracking
@@ -201,7 +201,7 @@ public void ChangeTracking_IsNewState()
     Assert.IsFalse(existingEmployee.IsNew);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L117-L166' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-change-tracking' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L147-L196' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-change-tracking' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Factory Methods
@@ -261,7 +261,7 @@ public async Task FactoryMethods_MultipleFetchOverloads()
     Assert.AreEqual("test@example.com", byCustomer.CustomerEmail);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L172-L222' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-factory-methods' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L202-L252' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-factory-methods' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing with Mocked Dependencies
@@ -299,7 +299,7 @@ public async Task MockDependencies_OnlyMockExternal()
     Assert.AreEqual("Changed", entity.Name);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L228-L256' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-mock-dependencies' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L258-L286' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-mock-dependencies' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Collections
@@ -371,7 +371,7 @@ public void Collections_DeletionTracking()
     Assert.AreEqual(1, order.Items.DeletedCount);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L262-L324' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-collections' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L292-L354' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-collections' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Parent-Child Relationships
@@ -413,7 +413,7 @@ public void ParentChild_TracksRelationships()
     Assert.IsNull(dept.Root); // Root has no parent
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L330-L362' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-parent-child' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L360-L392' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-parent-child' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Async Rules
@@ -450,7 +450,7 @@ public async Task AsyncRules_WaitForCompletion()
     Assert.IsTrue(user["Email"].IsValid);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L368-L395' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-async-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L398-L425' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-async-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Integration Test Base Class
@@ -603,7 +603,7 @@ public void Authorization_TestSeparately()
     Assert.IsFalse(limitedAuth.CanDelete());
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L401-L433' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-authorization' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L431-L463' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-authorization' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Test Organization

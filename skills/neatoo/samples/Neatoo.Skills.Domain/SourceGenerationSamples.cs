@@ -175,6 +175,15 @@ public class SkillGenTestObject : ValidateBase<SkillGenTestObject>
 }
 #endregion
 
+#region skill-suppress-factory
+[SuppressFactory]
+public class TestEmployee : EntityBase<TestEmployee>
+{
+    public TestEmployee(IEntityBaseServices<TestEmployee> services) : base(services) { }
+    public string Name { get => Getter<string>(); set => Setter(value); }
+}
+#endregion
+
 // -----------------------------------------------------------------------------
 // Repository Interface (for samples above)
 // -----------------------------------------------------------------------------
