@@ -49,21 +49,9 @@ When trying to understand a Neatoo concept:
 
 ### 2. Constructor vs Method [Service] Injection
 
-This distinction is critical for understanding client-server boundaries:
+This distinction affects Neatoo entity behavior. See the `/RemoteFactory` skill for full details.
 
-```csharp
-// Constructor [Service] - Available on BOTH client AND server
-public Employee([Service] IValidateBaseServices<Employee> services) : base(services)
-
-// Method [Service] - Only available on SERVER
-[Remote]
-[Fetch]
-public void Fetch(int id, [Service] IEmployeeRepository repository)
-```
-
-- Constructor services are in the DI container for both client and server
-- Method services are only registered on the server
-- If a non-[Remote] method has method-injected services and is called on client, you get a DI exception
+**Key point for Neatoo:** Constructor-injected services survive serialization round-trips (available on client and server). Method-injected services are server-only and not serialized.
 
 ### 3. DeletedList Lifecycle
 
@@ -132,191 +120,20 @@ Neatoo uses two source generators:
 
 Both generators run independently during compilation.
 
-## RemoteFactory Deep Dive
+## RemoteFactory Integration
 
-### How [Remote] Methods Work in Blazor WebAssembly
+For RemoteFactory-specific documentation (factory attributes, service injection, remote execution, HTTP endpoints, project setup), see the `/RemoteFactory` skill.
 
-RemoteFactory generates different code for server and client assemblies based on the `NeatooFactory` enum passed to `AddNeatooServices()`:
+**Neatoo-specific behavior with factories:**
 
-```csharp
-// SERVER: NeatooFactory.Server
-services.AddNeatooServices(NeatooFactory.Server, typeof(MyDomain).Assembly);
+### Save() Routing Based on Entity State
 
-// CLIENT: NeatooFactory.Remote
-services.AddNeatooServices(NeatooFactory.Remote, typeof(MyDomain).Assembly);
-```
+The `Save()` method routes based on Neatoo entity state:
+- `IsDeleted && !IsNew` → `[Delete]` method
+- `IsNew` → `[Insert]` method
+- `IsModified` → `[Update]` method
 
-**Server-Side Factory (NeatooFactory.Server):**
-```csharp
-// Generated for: [Remote][Fetch] public void Fetch(int id, [Service] IRepo repo)
-public Employee Fetch(int id)
-{
-    var obj = _serviceProvider.GetRequiredService<Employee>();
-    var repo = _serviceProvider.GetRequiredService<IRepo>();  // [Service] resolved
-    obj.FactoryStart(FactoryOperation.Fetch);
-    obj.Fetch(id, repo);  // Actual method call
-    obj.FactoryComplete(FactoryOperation.Fetch);
-    return obj;
-}
-```
-
-**Client-Side Factory (NeatooFactory.Remote):**
-```csharp
-// Generated for: [Remote][Fetch] public void Fetch(int id, [Service] IRepo repo)
-public async Task<Employee> Fetch(int id)
-{
-    // User parameters serialized, [Service] parameters NOT serialized
-    var request = new FetchRequest { id = id };
-    var response = await _httpClient.PostAsJsonAsync("/api/Employee/Fetch", request);
-    response.EnsureSuccessStatusCode();
-    return await response.Content.ReadFromJsonAsync<Employee>(_jsonOptions);
-}
-```
-
-### Factory Method Invocation Flow
-
-```
-CLIENT (Blazor WASM)                    SERVER (ASP.NET Core)
-     |                                        |
-     | employeeFactory.Fetch(1)               |
-     |     ↓                                  |
-     | [Generated HTTP Proxy]                 |
-     |     ↓                                  |
-     | POST /api/Employee/Fetch               |
-     | Body: { "id": 1 }  ------------------>  |
-     |                                        | [API Controller receives]
-     |                                        |     ↓
-     |                                        | [Server Factory]
-     |                                        |     ↓
-     |                                        | employee = new Employee(services)
-     |                                        | repo = DI.GetService<IRepo>()
-     |                                        | employee.FactoryStart(Fetch)
-     |                                        | employee.Fetch(1, repo)
-     |                                        | employee.FactoryComplete(Fetch)
-     |                                        |     ↓
-     |                                        | Serialize employee
-     | <------------------------------------ | JSON response
-     |     ↓                                  |
-     | Deserialize employee                   |
-     | employee.OnDeserialized()              |
-     |     ↓                                  |
-     | return employee                        |
-```
-
-### NeatooFactory Enum Values
-
-| Value | Description | Factory Behavior |
-|-------|-------------|------------------|
-| `Server` | Full server-side implementation | All methods execute locally, [Service] resolved from DI |
-| `Remote` | Client-side HTTP proxy | [Remote] methods make HTTP calls, non-[Remote] execute locally |
-| `Logical` | In-process (testing/monolith) | Everything local, no HTTP, [Remote] ignored |
-
-### PrivateAssets="all" Pattern Explained
-
-This pattern isolates server-only dependencies from client assemblies:
-
-```xml
-<!-- Infrastructure.csproj - Contains EF Core -->
-<Project>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
-  </ItemGroup>
-</Project>
-
-<!-- Domain.csproj - References Infrastructure privately -->
-<Project>
-  <ItemGroup>
-    <!-- PrivateAssets="all" means: compile against this, but don't expose to consumers -->
-    <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" PrivateAssets="all" />
-  </ItemGroup>
-</Project>
-
-<!-- Server.csproj - Explicitly references both -->
-<Project>
-  <ItemGroup>
-    <ProjectReference Include="..\Domain\Domain.csproj" />
-    <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
-  </ItemGroup>
-</Project>
-
-<!-- Client.csproj - Only sees Domain, never Infrastructure -->
-<Project>
-  <ItemGroup>
-    <ProjectReference Include="..\Domain\Domain.csproj" />
-    <!-- Infrastructure is NOT transitive due to PrivateAssets="all" -->
-  </ItemGroup>
-</Project>
-```
-
-**Why this works:**
-1. Domain.csproj can reference `IDbContext` interface from Infrastructure
-2. Domain methods can have `[Service] IDbContext` parameters
-3. Client.csproj compiles (interfaces are satisfied)
-4. Client.csproj has no EF Core DLLs (PrivateAssets prevents transitive dependency)
-5. Server.csproj explicitly references Infrastructure, so EF Core is available
-6. At runtime, client calls [Remote] methods which execute on server
-
-### Non-[Remote] Methods with [Service] Parameters
-
-Methods without [Remote] that have [Service] parameters:
-- Are generated for BOTH client and server
-- Work correctly on server (services resolved from DI)
-- FAIL on client at runtime ("service not registered")
-
-This is intentional - it catches incorrect usage:
-
-```csharp
-// WRONG: Missing [Remote] - will fail on client
-[Fetch]
-public void Fetch(int id, [Service] IDbContext db) { }
-// Client call: factory.Fetch(1) -> DI error "IDbContext not registered"
-
-// RIGHT: [Remote] triggers HTTP proxy generation
-[Remote]
-[Fetch]
-public void Fetch(int id, [Service] IDbContext db) { }
-// Client call: factory.Fetch(1) -> HTTP to server -> server resolves IDbContext
-```
-
-### Save() and [Remote] Routing
-
-The `Save()` method on EntityBase intelligently routes to Insert/Update/Delete:
-
-```csharp
-public async Task Save()
-{
-    // Entity determines which operation based on state
-    if (IsDeleted && !IsNew)
-        await Factory.Delete(this);  // [Delete] method
-    else if (IsNew)
-        await Factory.Insert(this);  // [Insert] method
-    else if (IsModified)
-        await Factory.Update(this);  // [Update] method
-}
-```
-
-For aggregate roots with [Remote] on Insert/Update/Delete:
-- Client calls `entity.Save()`
-- Save() calls `Factory.Insert/Update/Delete`
-- Generated factory proxy makes HTTP call
-- Server executes actual persistence
-
-### HTTP Endpoint Conventions
-
-RemoteFactory generates endpoints following this pattern:
-- Base path: `/api/{TypeName}/`
-- Method path: `/{OperationName}`
-- HTTP method: POST (for all operations)
-- Request body: JSON with user parameters (no [Service] parameters)
-- Response body: JSON serialized entity
-
-Example endpoints for `Employee`:
-- `POST /api/Employee/Create` - Body: `{}`
-- `POST /api/Employee/Fetch` - Body: `{ "id": 1 }`
-- `POST /api/Employee/Insert` - Body: `{ employee: {...} }`
-- `POST /api/Employee/Update` - Body: `{ employee: {...} }`
-- `POST /api/Employee/Delete` - Body: `{ employee: {...} }`
+This routing is determined by Neatoo's state properties, not RemoteFactory.
 
 ## Common Implementation Tasks
 
