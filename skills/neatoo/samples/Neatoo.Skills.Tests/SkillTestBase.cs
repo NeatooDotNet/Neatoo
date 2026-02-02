@@ -76,6 +76,7 @@ public abstract class SkillTestBase : IDisposable
         services.AddScoped<ISkillOrderWithItemsRepository, MockOrderWithItemsRepository>();
         services.AddScoped<ISkillEntityRepository, MockEntityRepository>();
         services.AddScoped<ISkillGenRepository, MockGenRepository>();
+        services.AddScoped<ISkillRemoteFactoryRepository, MockRemoteFactoryRepository>();
 
         // Service mocks
         services.AddScoped<ISkillEmailService, MockEmailService>();
@@ -275,4 +276,21 @@ public class MockProjectMembershipService : ISkillProjectMembershipService
 public class MockFeatureFlagService : ISkillFeatureFlagService
 {
     public bool IsEnabled(string featureName) => true;
+}
+
+public class MockRemoteFactoryRepository : ISkillRemoteFactoryRepository
+{
+    private int _nextId = 100;
+
+    public Task<(int Id, string Name, string Department)> FetchAsync(int id)
+        => Task.FromResult((id, $"Entity {id}", $"Dept {id}"));
+
+    public Task<int> InsertAsync(string name, string department)
+        => Task.FromResult(_nextId++);
+
+    public Task UpdateAsync(int id, string name, string department)
+        => Task.CompletedTask;
+
+    public Task DeleteAsync(int id)
+        => Task.CompletedTask;
 }

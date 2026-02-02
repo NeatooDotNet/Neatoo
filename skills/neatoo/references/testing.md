@@ -71,7 +71,7 @@ public async Task RealVsMock_UseRealNeatooClasses()
 // NeatooFactory.Logical means all factory operations run locally
 // (no HTTP calls to remote server)
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/SkillTestBase.cs#L115-L134' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-project-setup' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/SkillTestBase.cs#L116-L135' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-project-setup' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Validation
@@ -526,6 +526,7 @@ public abstract class SkillTestBase : IDisposable
         services.AddScoped<ISkillOrderWithItemsRepository, MockOrderWithItemsRepository>();
         services.AddScoped<ISkillEntityRepository, MockEntityRepository>();
         services.AddScoped<ISkillGenRepository, MockGenRepository>();
+        services.AddScoped<ISkillRemoteFactoryRepository, MockRemoteFactoryRepository>();
 
         // Service mocks
         services.AddScoped<ISkillEmailService, MockEmailService>();
@@ -561,7 +562,7 @@ public abstract class SkillTestBase : IDisposable
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/SkillTestBase.cs#L12-L113' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-base-class' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/SkillTestBase.cs#L12-L114' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-base-class' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Authorization
