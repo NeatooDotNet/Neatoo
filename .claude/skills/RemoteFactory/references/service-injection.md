@@ -194,6 +194,26 @@ public partial class Assignment
 
 `[Remote]` marks entry points from client to server. Once execution is on the server, subsequent calls stay there.
 
+### Entity Duality
+
+An entity can be an aggregate root in one object graph and a child in another. The same class may have `[Remote]` methods for aggregate root scenarios while other methods are server-only:
+
+```csharp
+[Factory]
+public partial class Project
+{
+    [Remote, Create]  // When Project is the aggregate root
+    public void Create(string name, [Service] IProjectRepository repo) { }
+
+    [Create]  // When Project is a child of Employee (no [Remote])
+    public void Create(string name) { }
+}
+```
+
+### Runtime Enforcement
+
+Non-`[Remote]` methods are generated for client assemblies but result in "not-registered" DI exceptions if called—server-only services aren't in the client container. This provides runtime protection against accidental client-side invocation of server-only methods.
+
 ```csharp
 // In Employee.Create (already on server):
 [Remote, Create]

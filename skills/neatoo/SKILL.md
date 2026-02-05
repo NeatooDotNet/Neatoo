@@ -1,6 +1,6 @@
 ---
 name: Neatoo
-description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, [Factory], [Create], [Fetch], [Insert], [Update], [Delete], [Execute], [Remote], [Service], [AuthorizeFactory], partial properties, property change tracking, validation rules, business rules, domain model persistence, aggregate roots, entities, value objects, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, and source-generated factory methods.
+description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, and base class behavior. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill.
 version: 1.0.0
 ---
 
@@ -61,44 +61,20 @@ The generator creates property implementations that call `Getter<T>()` and `Sett
 
 ### Factory Methods
 
-Mark methods with factory attributes to generate client-callable factory methods:
+Neatoo entities use RemoteFactory for factory generation. See the `/RemoteFactory` skill for:
+- Factory attributes (`[Factory]`, `[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]`)
+- Service injection (`[Service]`)
+- Remote execution (`[Remote]`)
+- Authorization (`[AuthorizeFactory]`)
 
-<!-- snippet: skill-factory-methods -->
-<a id='snippet-skill-factory-methods'></a>
-```cs
-[Factory]
-public partial class SkillFactoryEmployee : EntityBase<SkillFactoryEmployee>
-{
-    public SkillFactoryEmployee(IEntityBaseServices<SkillFactoryEmployee> services) : base(services) { }
+### Save Routing (Neatoo State-Based)
 
-    public partial int Id { get; set; }
-    public partial string Name { get; set; }
-
-    [Create]
-    public void Create() { /* Initialize new */ }
-
-    [Fetch]
-    public void Fetch(int id, string name) { Id = id; Name = name; }
-
-    [Insert]
-    public async Task InsertAsync([Service] IRepository repo) { /* Save new */ await Task.CompletedTask; }
-
-    [Update]
-    public async Task UpdateAsync([Service] IRepository repo) { /* Save changes */ await Task.CompletedTask; }
-
-    [Delete]
-    public async Task DeleteAsync([Service] IRepository repo) { /* Remove */ await Task.CompletedTask; }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L23-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-factory-methods' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-### Save Routing
-
-When `Save()` is called, Neatoo automatically routes to the appropriate operation:
+When `Save()` is called, the factory routes based on Neatoo entity state:
 - `IsNew == true` → `[Insert]` method
 - `IsNew == false && IsDeleted == false` → `[Update]` method
 - `IsDeleted == true` → `[Delete]` method
+
+This routing is automatic based on entity state properties.
 
 ### Validation
 
@@ -126,45 +102,7 @@ Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
 
 ### Authorization
 
-Control who can perform factory operations via an authorization interface:
-
-<!-- snippet: skill-authorization -->
-<a id='snippet-skill-authorization'></a>
-```cs
-public interface IEmployeeAuthorization
-{
-    [AuthorizeFactory(AuthorizeFactoryOperation.Create)]
-    bool CanCreate();
-
-    [AuthorizeFactory(AuthorizeFactoryOperation.Fetch)]
-    bool CanFetch();
-
-    [AuthorizeFactory(AuthorizeFactoryOperation.Write)]
-    bool CanSave();
-}
-
-public class EmployeeAuthorization : IEmployeeAuthorization
-{
-    private readonly IPrincipal _principal;
-    public EmployeeAuthorization(IPrincipal principal) => _principal = principal;
-
-    public bool CanCreate() => _principal.IsInRole("HR");
-    public bool CanFetch() => _principal.Identity?.IsAuthenticated ?? false;
-    public bool CanSave() => _principal.IsInRole("HR");
-}
-
-[Factory]
-[AuthorizeFactory<IEmployeeAuthorization>]
-public partial class SkillDocEmployee : EntityBase<SkillDocEmployee>
-{
-    public SkillDocEmployee(IEntityBaseServices<SkillDocEmployee> services) : base(services) { }
-    public partial int Id { get; set; }
-    public partial string Name { get; set; }
-    [Create] public void Create() { }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/AuthorizationSamples.cs#L15-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-authorization' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+Factory-level authorization is provided by RemoteFactory via `[AuthorizeFactory<T>]`. See the `/RemoteFactory` skill for authorization patterns.
 
 ## Key Properties
 
@@ -179,59 +117,12 @@ public partial class SkillDocEmployee : EntityBase<SkillDocEmployee>
 | `IsDeleted` | bool | Marked for deletion |
 | `RuleManager` | IRuleManager | Access to validation rules |
 
-## Dependency Injection
+## Dependency Injection & Remote Execution
 
-Inject dependencies using `[Service]` attribute on factory method parameters:
-
-<!-- snippet: skill-service-injection -->
-<a id='snippet-skill-service-injection'></a>
-```cs
-[Fetch]
-public async Task Fetch(Guid id, [Service] ISkillEmployeeRepository repo)
-{
-    var data = await repo.FetchByIdAsync((int)id.GetHashCode());
-    // Map data to properties
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L375-L382' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-service-injection' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Remote Execution
-
-`[Remote]` marks **entry points from the client to the server**. Once execution crosses to the server, it stays there—subsequent method calls don't need `[Remote]`.
-
-| Scenario | Use `[Remote]`? | Reason |
-|----------|-----------------|--------|
-| Aggregate root Create/Fetch/Save | **Yes** | Entry point from client |
-| Top-level UI-initiated operations | **Yes** | Entry point from client |
-| Child entity loading within aggregate | No | Called from server after crossing boundary |
-| Methods with `[Service]` method injection | No (usually) | Already on server when called |
-| Any method called from server-side code | No | Execution already on server |
-
-<!-- snippet: skill-remote-execution -->
-<a id='snippet-skill-remote-execution'></a>
-```cs
-// Aggregate root - needs [Remote] because it's called from client
-[Remote]
-[Fetch]
-public async Task Fetch(Guid id, [Service] ISkillEmployeeRepository repo) { await Task.CompletedTask; }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L449-L454' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-remote-execution' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-<!-- snippet: skill-remote-child -->
-<a id='snippet-skill-remote-child'></a>
-```cs
-// Child entity - no [Remote] needed, called from server-side parent
-[Fetch]
-public void Fetch(int id, string name, [Service] ISkillChildRepository repo) { }
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/FactorySamples.cs#L469-L473' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-remote-child' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-**Constructor vs Method Injection:**
-- Constructor injection (`[Service]` on constructor): Services available on both client and server
-- Method injection (`[Service]` on method parameters): Server-only services (the common case)
+Service injection (`[Service]`) and remote execution (`[Remote]`) are RemoteFactory features. See the `/RemoteFactory` skill for:
+- Constructor vs method injection patterns
+- When to use `[Remote]` on aggregate roots
+- Child entity patterns (no `[Remote]` needed)
 
 ## Testing
 
@@ -288,12 +179,13 @@ Detailed documentation for each topic area:
 - **`references/validation.md`** - RuleManager, attributes, async validation
 - **`references/entities.md`** - EntityBase lifecycle, persistence, Save routing
 - **`references/collections.md`** - EntityListBase, parent-child relationships, deletion tracking
-- **`references/factory.md`** - [Factory], [Create], [Fetch], [Insert], [Update], [Delete], [Execute], [Remote], [Service]
-- **`references/authorization.md`** - [AuthorizeFactory<T>], authorization interfaces
 - **`references/source-generation.md`** - What gets generated, Generated/ folder, [SuppressFactory]
 - **`references/blazor.md`** - Blazor-specific binding and component patterns
 - **`references/testing.md`** - No mocking Neatoo, integration test patterns
 - **`references/pitfalls.md`** - Common mistakes and gotchas
+
+**RemoteFactory topics** (see `/RemoteFactory` skill):
+- Factory attributes, service injection, remote execution, authorization
 
 ## Troubleshooting
 
