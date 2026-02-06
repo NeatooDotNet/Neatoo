@@ -92,7 +92,7 @@ Neatoo depends on **RemoteFactory** (`C:\src\neatoodotnet\RemoteFactory`) for so
 
 ## Documentation and Project Management
 
-- **Framework documentation**: Use `/csharp-docs` skill for creating user-facing docs with MarkdownSnippets
+- **Framework documentation**: Use `/docs-create`, `/docs-update`, or `/docs-review` commands (powered by `docs-writer` agent) for creating and maintaining user-facing docs with MarkdownSnippets. All code snippets live in `src/samples/`.
 - **Project todos/plans**: Use `/project-todos` skill for tracking work and design documents
 - **DDD terminology**: See global CLAUDE.md for DDD documentation guidelines
 

@@ -41,7 +41,7 @@ public class UniqueEmailRule : AsyncRuleBase<AsyncContact>
     }
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L38-L66' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-validation-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L38-L66' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-validation-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The framework marks trigger properties as busy using unique execution IDs. While an async rule executes, `IsBusy` returns `true` on both the property and the entity. After completion, the same execution ID is used to clear the busy state, ensuring concurrent rules don't interfere with each other's tracking.
@@ -69,7 +69,7 @@ public AsyncActionContact(IValidateBaseServices<AsyncActionContact> services)
         c => c.ZipCode);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L136-L150' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-action-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L136-L150' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-action-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 For rules that need cancellation support, use the overload that accepts `CancellationToken`:
@@ -93,7 +93,7 @@ public AsyncCancellableContact(IValidateBaseServices<AsyncCancellableContact> se
         c => c.Email);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L164-L180' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-action-rule-with-token' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L164-L180' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-action-rule-with-token' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## WaitForTasks
@@ -121,7 +121,7 @@ public async Task WaitForTasks_EnsuresAsyncRulesComplete()
     Assert.Equal(0.0825m, contact.TaxRate);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L340-L356' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-wait-for-tasks' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L340-L356' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-wait-for-tasks' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The framework automatically propagates task tracking up the parent hierarchy through the `Parent` property. When you call `WaitForTasks` on a parent entity, it recursively waits for all child entities and collections to complete their async operations.
@@ -158,7 +158,7 @@ public async Task IsBusy_TracksAsyncOperationState()
     Assert.False(contact.IsBusy);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L358-L377' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-check-busy' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L358-L377' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-check-busy' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `IsBusy` cascades through the parent hierarchy via the `Parent` property. Aggregate roots reflect the busy state of all children, ensuring the UI can disable save operations or show loading indicators for the entire aggregate.
@@ -191,7 +191,7 @@ public async Task CancellationToken_CancelsWaitForTasks()
     await contact.RunRules(RunRulesFlag.All);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L379-L398' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-cancellation-token' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L379-L398' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-cancellation-token' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After catching `OperationCanceledException`, the entity may have partially completed rules. Call `RunRules(RunRulesFlag.All)` to re-execute all rules and establish consistent validation state.
@@ -230,7 +230,7 @@ public async Task ListWaitForTasks_WaitsForAllItems()
     Assert.False(item2.IsBusy);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L400-L425' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-list-wait-tasks' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L400-L425' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-list-wait-tasks' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Collections report `IsBusy == true` when any child item is busy. This busy state cascades up through the parent hierarchy, allowing aggregate roots to reflect the busy state of deeply nested collections.
@@ -261,7 +261,7 @@ public async Task RunRules_ExecutesAllValidationRules()
     Assert.Equal(0.0825m, contact.TaxRate);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L427-L444' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L427-L444' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-run-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `RunRules(RunRulesFlag.All)` clears all validation messages before running rules, providing a clean validation state.
@@ -289,7 +289,7 @@ public async Task RuleOrder_ControlsExecutionSequence()
     Assert.Equal(2, contact.SecondRuleExecutionOrder);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L446-L460' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-rule-order' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L446-L460' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-rule-order' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This sequential execution ensures consistent entity state and prevents race conditions when rules modify the same properties.
@@ -323,7 +323,7 @@ public async Task AsyncRule_ExceptionsAreCaptured()
     Assert.False(contact["Value"].IsValid);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L462-L482' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-error-handling' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L462-L482' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-error-handling' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 When a rule throws an exception, the framework marks the trigger properties as invalid using `MarkInvalid` and stores the exception message in `PropertyMessages`. The entity's `IsValid` becomes `false` and `IsSavable` becomes `false`.
@@ -357,7 +357,7 @@ public async Task RecursiveRules_ChainedRulesExecute()
     Assert.Equal("JD", contact.Initials);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L484-L504' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-recursive-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L484-L504' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-recursive-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Each rule in the chain executes sequentially. When rule A modifies a property that triggers rule B, rule B starts executing only after rule A completes.
@@ -395,7 +395,7 @@ public async Task PauseAllActions_BatchesPropertyChanges()
     Assert.Equal("JS", contact.Initials);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L506-L530' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-pause-actions' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L506-L530' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-pause-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This pattern avoids triggering rules multiple times during batch updates. After resume, `RunRules` executes rules once for all changed properties, and `WaitForTasks` ensures all async operations complete before proceeding.
@@ -428,7 +428,7 @@ public async Task Save_WaitsForAsyncValidation()
     Assert.False(contact.IsBusy);
 }
 ```
-<sup><a href='/src/docs/samples/AsyncSamples.cs#L532-L551' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-save-entity' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/AsyncSamples.cs#L532-L551' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-save-entity' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 If async rules are still executing (`IsBusy == true`) or the entity is invalid (`IsValid == false`) after `WaitForTasks`, the factory does not call your persistence method. Instead, it relies on `IsSavable` to determine if persistence should proceed. Since `IsSavable == IsModified && IsValid && !IsBusy && !IsChild`, an invalid or busy entity cannot be saved.

@@ -2,7 +2,7 @@ using Neatoo;
 using Neatoo.RemoteFactory;
 using System.Security.Principal;
 
-namespace Neatoo.Skills.Domain;
+namespace Samples;
 
 // =============================================================================
 // AUTHORIZATION SAMPLES - Demonstrates factory-level authorization

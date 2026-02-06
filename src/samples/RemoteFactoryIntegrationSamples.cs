@@ -1,7 +1,7 @@
 using Neatoo;
 using Neatoo.RemoteFactory;
 
-namespace Neatoo.Skills.Domain;
+namespace Samples;
 
 // =============================================================================
 // REMOTE FACTORY INTEGRATION SAMPLES - Entity state during factory operations

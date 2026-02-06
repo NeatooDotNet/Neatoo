@@ -3,7 +3,7 @@ using Neatoo.RemoteFactory;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace Neatoo.Skills.Domain;
+namespace Samples;
 
 // =============================================================================
 // BLAZOR SAMPLES - Demonstrates Neatoo entities used with Blazor components

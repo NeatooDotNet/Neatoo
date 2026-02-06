@@ -3,7 +3,7 @@ using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System.ComponentModel.DataAnnotations;
 
-namespace Neatoo.Skills.Domain;
+namespace Samples;
 
 // =============================================================================
 // BASE CLASS SAMPLES - Demonstrates Neatoo base class to DDD concept mapping

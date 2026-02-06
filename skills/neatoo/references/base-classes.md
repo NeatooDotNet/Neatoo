@@ -60,7 +60,7 @@ public partial class SkillAddress : ValidateBase<SkillAddress>
     public void Create() { }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BaseClassSamples.cs#L16-L49' title='Snippet source file'>snippet source</a> | <a href='#snippet-validate-base-sample' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/BaseClassSamples.cs#L16-L49' title='Snippet source file'>snippet source</a> | <a href='#snippet-validate-base-sample' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## EntityBase<T>
@@ -151,7 +151,7 @@ public partial class SkillEmployee : EntityBase<SkillEmployee>
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BaseClassSamples.cs#L55-L129' title='Snippet source file'>snippet source</a> | <a href='#snippet-edit-base-sample' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/BaseClassSamples.cs#L55-L129' title='Snippet source file'>snippet source</a> | <a href='#snippet-edit-base-sample' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## EntityListBase<I>
@@ -178,7 +178,7 @@ public class SkillEmployeeAddressList : EntityListBase<ISkillEmployeeAddress>, I
     public int DeletedCount => DeletedList.Count;
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BaseClassSamples.cs#L188-L198' title='Snippet source file'>snippet source</a> | <a href='#snippet-editable-list-base-sample' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/BaseClassSamples.cs#L188-L198' title='Snippet source file'>snippet source</a> | <a href='#snippet-editable-list-base-sample' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Commands (Static Classes with [Execute])
@@ -225,7 +225,7 @@ public static partial class SkillSendEmailCommand
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BaseClassSamples.cs#L204-L233' title='Snippet source file'>snippet source</a> | <a href='#snippet-command-base-sample' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/BaseClassSamples.cs#L204-L233' title='Snippet source file'>snippet source</a> | <a href='#snippet-command-base-sample' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Read Models (ValidateBase with [Fetch] Only)
@@ -277,7 +277,7 @@ public class SkillEmployeeSummaryList : ValidateListBase<SkillEmployeeSummary>
 {
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/BaseClassSamples.cs#L239-L273' title='Snippet source file'>snippet source</a> | <a href='#snippet-readonly-base-sample' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/BaseClassSamples.cs#L239-L273' title='Snippet source file'>snippet source</a> | <a href='#snippet-readonly-base-sample' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Inheritance Guidelines

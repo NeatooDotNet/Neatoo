@@ -111,6 +111,30 @@ public abstract class SamplesTestBase : IDisposable
         services.AddTransient<MultipleMessagesRule>();
         services.AddTransient<AggregateValidationRule>();
         services.AddTransient<DateRangeValidationRule>();
+
+        // Skill sample repository mocks
+        services.AddScoped<ISkillEmployeeRepository, SkillMockEmployeeRepository>();
+        services.AddScoped<ISkillCustomerRepository, MockCustomerRepository>();
+        services.AddScoped<ISkillProductRepository, MockProductRepository>();
+        services.AddScoped<ISkillOrderRepository, MockOrderRepository>();
+        services.AddScoped<ISkillAccountRepository, MockAccountRepository>();
+        services.AddScoped<ISkillProjectRepository, MockProjectRepository>();
+        services.AddScoped<ISkillReportRepository, MockReportRepository>();
+        services.AddScoped<ISkillReportGenerator, MockReportGenerator>();
+        services.AddScoped<ISkillDataRepository, MockDataRepository>();
+        services.AddScoped<ISkillOrderWithItemsRepository, MockOrderWithItemsRepository>();
+        services.AddScoped<ISkillEntityRepository, MockEntityRepository>();
+        services.AddScoped<ISkillGenRepository, MockGenRepository>();
+        services.AddScoped<ISkillRemoteFactoryRepository, MockRemoteFactoryRepository>();
+
+        // Skill sample service mocks
+        services.AddScoped<ISkillEmailService, MockEmailService>();
+        services.AddScoped<ISkillUserValidationService, MockUserValidationService>();
+        services.AddScoped<ISkillAccountValidationService, MockAccountValidationService>();
+        services.AddScoped<ISkillEmailValidationService, SkillMockEmailValidationService>();
+        services.AddScoped<ISkillOrderAccessService, MockOrderAccessService>();
+        services.AddScoped<ISkillProjectMembershipService, MockProjectMembershipService>();
+        services.AddScoped<ISkillFeatureFlagService, MockFeatureFlagService>();
     }
 
     /// <summary>

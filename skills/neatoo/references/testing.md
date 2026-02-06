@@ -13,7 +13,7 @@ Testing Neatoo domain models requires a specific approach: **never mock Neatoo i
 /// <summary>
 /// Use real Neatoo classes - never mock Neatoo interfaces.
 /// </summary>
-[TestMethod]
+[Fact]
 public async Task RealVsMock_UseRealNeatooClasses()
 {
     // DO: Use real Neatoo factory to create real Neatoo objects
@@ -21,23 +21,23 @@ public async Task RealVsMock_UseRealNeatooClasses()
     var employee = factory.Create();
 
     // Real Neatoo objects have real behavior
-    Assert.IsTrue(employee.IsNew);
+    Assert.True(employee.IsNew);
 
     // Set invalid data and run rules to trigger validation
     employee.Name = "";
     await employee.RunRules(RunRulesFlag.All);
-    Assert.IsFalse(employee["Name"].IsValid); // Real validation
+    Assert.False(employee["Name"].IsValid); // Real validation
 
     // Set valid data
     employee.Name = "John Doe";
     await employee.RunRules(RunRulesFlag.All);
-    Assert.IsTrue(employee["Name"].IsValid);
+    Assert.True(employee["Name"].IsValid);
 
     // For external dependencies, use mock implementations:
     // services.AddScoped<IMyRepository, MockMyRepository>();
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L47-L74' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-real-vs-mock' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/TestingPatternsTests.cs#L46-L73' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-real-vs-mock' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Why No Mocking?
@@ -71,7 +71,7 @@ public async Task RealVsMock_UseRealNeatooClasses()
 // NeatooFactory.Logical means all factory operations run locally
 // (no HTTP calls to remote server)
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/SkillTestBase.cs#L116-L135' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-project-setup' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/SkillTestBase.cs#L113-L132' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-project-setup' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Validation
@@ -84,7 +84,7 @@ Test validation rules with real objects:
 /// <summary>
 /// Test validation rules with real Neatoo validation.
 /// </summary>
-[TestMethod]
+[Fact]
 public async Task Validation_TestsRealRules()
 {
     var factory = GetRequiredService<ISkillValidProductFactory>();
@@ -96,9 +96,9 @@ public async Task Validation_TestsRealRules()
 
     await product.RunRules();
 
-    Assert.IsFalse(product.IsValid);
-    Assert.IsFalse(product["Name"].IsValid);
-    Assert.IsFalse(product["Price"].IsValid);
+    Assert.False(product.IsValid);
+    Assert.False(product["Name"].IsValid);
+    Assert.False(product["Price"].IsValid);
 
     // Test valid state
     product.Name = "Widget";
@@ -106,15 +106,15 @@ public async Task Validation_TestsRealRules()
 
     await product.RunRules();
 
-    Assert.IsTrue(product.IsValid);
-    Assert.IsTrue(product["Name"].IsValid);
-    Assert.IsTrue(product["Price"].IsValid);
+    Assert.True(product.IsValid);
+    Assert.True(product["Name"].IsValid);
+    Assert.True(product["Price"].IsValid);
 }
 
 /// <summary>
 /// Test DataAnnotation validation attributes.
 /// </summary>
-[TestMethod]
+[Fact]
 public void ValidationAttributes_AutoConverted()
 {
     var factory = GetRequiredService<ISkillValidRegistrationFactory>();
@@ -122,27 +122,27 @@ public void ValidationAttributes_AutoConverted()
 
     // [Required] - empty fails
     reg.Username = "";
-    Assert.IsFalse(reg["Username"].IsValid);
+    Assert.False(reg["Username"].IsValid);
 
     reg.Username = "validuser";
-    Assert.IsTrue(reg["Username"].IsValid);
+    Assert.True(reg["Username"].IsValid);
 
     // [EmailAddress] - invalid format fails
     reg.Email = "not-an-email";
-    Assert.IsFalse(reg["Email"].IsValid);
+    Assert.False(reg["Email"].IsValid);
 
     reg.Email = "valid@example.com";
-    Assert.IsTrue(reg["Email"].IsValid);
+    Assert.True(reg["Email"].IsValid);
 
     // [Range] - out of range fails
     reg.Age = 10;
-    Assert.IsFalse(reg["Age"].IsValid);
+    Assert.False(reg["Age"].IsValid);
 
     reg.Age = 25;
-    Assert.IsTrue(reg["Age"].IsValid);
+    Assert.True(reg["Age"].IsValid);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L80-L141' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/TestingPatternsTests.cs#L79-L140' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Change Tracking
@@ -155,7 +155,7 @@ Verify change tracking behavior:
 /// <summary>
 /// Test change tracking with real Neatoo entities.
 /// </summary>
-[TestMethod]
+[Fact]
 public void ChangeTracking_DetectsPropertyChanges()
 {
     var factory = GetRequiredService<ISkillEntityEmployeeFactory>();
@@ -164,44 +164,44 @@ public void ChangeTracking_DetectsPropertyChanges()
     var employee = factory.Fetch(1, "Alice", "Engineering", 50000);
 
     // After fetch, entity is clean
-    Assert.IsFalse(employee.IsNew);
-    Assert.IsFalse(employee.IsModified);
-    Assert.IsFalse(employee.IsSelfModified);
+    Assert.False(employee.IsNew);
+    Assert.False(employee.IsModified);
+    Assert.False(employee.IsSelfModified);
 
     // Change a property
     employee.Name = "Alice Smith";
 
     // Now entity tracks the change
-    Assert.IsTrue(employee.IsModified);
-    Assert.IsTrue(employee.IsSelfModified);
-    Assert.IsTrue(employee.ModifiedProperties.Contains("Name"));
+    Assert.True(employee.IsModified);
+    Assert.True(employee.IsSelfModified);
+    Assert.True(employee.ModifiedProperties.Contains("Name"));
 
     // Other properties not tracked
-    Assert.IsFalse(employee.ModifiedProperties.Contains("Department"));
+    Assert.False(employee.ModifiedProperties.Contains("Department"));
 
     // Change another property
     employee.Salary = 55000;
-    Assert.IsTrue(employee.ModifiedProperties.Contains("Salary"));
+    Assert.True(employee.ModifiedProperties.Contains("Salary"));
 }
 
 /// <summary>
 /// Test IsNew state after Create and Fetch.
 /// </summary>
-[TestMethod]
+[Fact]
 public void ChangeTracking_IsNewState()
 {
     var factory = GetRequiredService<ISkillEntityEmployeeFactory>();
 
     // Create produces new entity
     var newEmployee = factory.Create();
-    Assert.IsTrue(newEmployee.IsNew);
+    Assert.True(newEmployee.IsNew);
 
     // Fetch produces existing entity
     var existingEmployee = factory.Fetch(1, "Bob", "Sales", 60000);
-    Assert.IsFalse(existingEmployee.IsNew);
+    Assert.False(existingEmployee.IsNew);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L147-L196' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-change-tracking' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/TestingPatternsTests.cs#L146-L195' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-change-tracking' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Factory Methods
@@ -214,54 +214,54 @@ Test factory operations:
 /// <summary>
 /// Test factory methods with real factories.
 /// </summary>
-[TestMethod]
+[Fact]
 public async Task FactoryMethods_TestCreateFetchSave()
 {
     var factory = GetRequiredService<ISkillFactoryCustomerFactory>();
 
     // Test Create
     var customer = factory.Create();
-    Assert.IsTrue(customer.IsNew);
-    Assert.AreEqual(0, customer.Id);
-    Assert.AreEqual("", customer.Name);
+    Assert.True(customer.IsNew);
+    Assert.Equal(0, customer.Id);
+    Assert.Equal("", customer.Name);
 
     // Test Fetch
     var existing = await factory.FetchByIdAsync(1);
-    Assert.IsFalse(existing.IsNew);
-    Assert.AreEqual(1, existing.Id);
-    Assert.AreEqual("Customer 1", existing.Name);
+    Assert.False(existing.IsNew);
+    Assert.Equal(1, existing.Id);
+    Assert.Equal("Customer 1", existing.Name);
 
     // Test Save (routes to Insert for new entity)
     customer.Name = "New Customer";
     customer.Email = "new@example.com";
     var saved = await factory.SaveAsync(customer);
 
-    Assert.IsNotNull(saved);
-    Assert.IsFalse(saved!.IsNew); // After insert, no longer new
+    Assert.NotNull(saved);
+    Assert.False(saved!.IsNew); // After insert, no longer new
 }
 
 /// <summary>
 /// Test multiple fetch overloads.
 /// </summary>
-[TestMethod]
+[Fact]
 public async Task FactoryMethods_MultipleFetchOverloads()
 {
     var factory = GetRequiredService<ISkillFactoryOrderFactory>();
 
     // Fetch by ID
     var byId = factory.FetchById(42);
-    Assert.AreEqual(42, byId.Id);
+    Assert.Equal(42, byId.Id);
 
     // Fetch by order number
     var byNumber = factory.FetchByOrderNumber("ORD-00001");
-    Assert.AreEqual("ORD-00001", byNumber.OrderNumber);
+    Assert.Equal("ORD-00001", byNumber.OrderNumber);
 
     // Fetch by customer email
     var byCustomer = await factory.FetchByCustomerAsync("test@example.com");
-    Assert.AreEqual("test@example.com", byCustomer.CustomerEmail);
+    Assert.Equal("test@example.com", byCustomer.CustomerEmail);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L202-L252' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-factory-methods' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/TestingPatternsTests.cs#L201-L251' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-factory-methods' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing with Mocked Dependencies
@@ -274,7 +274,7 @@ Mock external dependencies, not Neatoo:
 /// <summary>
 /// Mock external dependencies, not Neatoo classes.
 /// </summary>
-[TestMethod]
+[Fact]
 public async Task MockDependencies_OnlyMockExternal()
 {
     // Mock repository is registered in SkillTestBase
@@ -286,20 +286,20 @@ public async Task MockDependencies_OnlyMockExternal()
     var entity = await factory.FetchAsync(1);
 
     // Entity has real Neatoo behavior
-    Assert.IsFalse(entity.IsNew); // Real lifecycle
-    Assert.IsFalse(entity.IsModified); // Real tracking
+    Assert.False(entity.IsNew); // Real lifecycle
+    Assert.False(entity.IsModified); // Real tracking
 
     // Mock provided the data
-    Assert.AreEqual(1, entity.Id);
-    Assert.AreEqual("Entity 1", entity.Name);
+    Assert.Equal(1, entity.Id);
+    Assert.Equal("Entity 1", entity.Name);
 
     // Modify to test change detection
     entity.Name = "Changed";
-    Assert.IsTrue(entity.IsModified); // Real change detection
-    Assert.AreEqual("Changed", entity.Name);
+    Assert.True(entity.IsModified); // Real change detection
+    Assert.Equal("Changed", entity.Name);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L258-L286' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-mock-dependencies' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/TestingPatternsTests.cs#L257-L285' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-mock-dependencies' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Collections
@@ -312,7 +312,7 @@ Test collection behavior:
 /// <summary>
 /// Test collection behavior with real Neatoo lists.
 /// </summary>
-[TestMethod]
+[Fact]
 public void Collections_TestRealBehavior()
 {
     var orderFactory = GetRequiredService<ISkillCollOrderFactory>();
@@ -335,20 +335,20 @@ public void Collections_TestRealBehavior()
     order.Items.Add(item2);
 
     // Real collection behavior
-    Assert.AreEqual(2, order.Items.Count);
-    Assert.IsTrue(item1.IsChild);
-    Assert.AreSame(order, item1.Parent);
+    Assert.Equal(2, order.Items.Count);
+    Assert.True(item1.IsChild);
+    Assert.Same(order, item1.Parent);
 
     // Remove item
     order.Items.Remove(item1);
-    Assert.AreEqual(1, order.Items.Count);
-    Assert.AreEqual(0, order.Items.DeletedCount); // New item not tracked
+    Assert.Equal(1, order.Items.Count);
+    Assert.Equal(0, order.Items.DeletedCount); // New item not tracked
 }
 
 /// <summary>
 /// Test deletion tracking for existing items.
 /// </summary>
-[TestMethod]
+[Fact]
 public void Collections_DeletionTracking()
 {
     var orderFactory = GetRequiredService<ISkillCollOrderFactory>();
@@ -361,17 +361,17 @@ public void Collections_DeletionTracking()
     order.Items.Add(item);
     order.DoMarkUnmodified(); // Simulate loaded from DB
 
-    Assert.IsFalse(item.IsNew);
+    Assert.False(item.IsNew);
 
     // Remove existing item
     order.Items.Remove(item);
 
     // Item tracked for deletion
-    Assert.IsTrue(item.IsDeleted);
-    Assert.AreEqual(1, order.Items.DeletedCount);
+    Assert.True(item.IsDeleted);
+    Assert.Equal(1, order.Items.DeletedCount);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L292-L354' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-collections' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/TestingPatternsTests.cs#L291-L353' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-collections' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Parent-Child Relationships
@@ -384,7 +384,7 @@ Verify parent references:
 /// <summary>
 /// Test parent-child relationships.
 /// </summary>
-[TestMethod]
+[Fact]
 public void ParentChild_TracksRelationships()
 {
     var deptFactory = GetRequiredService<ISkillEntityDepartmentFactory>();
@@ -398,22 +398,22 @@ public void ParentChild_TracksRelationships()
     member.Role = "Developer";
 
     // Before adding - no parent
-    Assert.IsNull(member.Parent);
-    Assert.IsFalse(member.IsChild);
+    Assert.Null(member.Parent);
+    Assert.False(member.IsChild);
 
     // Add to collection
     dept.Members.Add(member);
 
     // After adding - parent established
-    Assert.AreSame(dept, member.Parent);
-    Assert.IsTrue(member.IsChild);
+    Assert.Same(dept, member.Parent);
+    Assert.True(member.IsChild);
 
     // Root walks to aggregate root
-    Assert.AreSame(dept, member.Root);
-    Assert.IsNull(dept.Root); // Root has no parent
+    Assert.Same(dept, member.Root);
+    Assert.Null(dept.Root); // Root has no parent
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L360-L392' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-parent-child' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/TestingPatternsTests.cs#L359-L391' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-parent-child' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Async Rules
@@ -426,7 +426,7 @@ Test async validation:
 /// <summary>
 /// Test async validation rules.
 /// </summary>
-[TestMethod]
+[Fact]
 public async Task AsyncRules_WaitForCompletion()
 {
     var factory = GetRequiredService<ISkillValidUserFactory>();
@@ -441,16 +441,16 @@ public async Task AsyncRules_WaitForCompletion()
     await user.WaitForTasks();
 
     // Async rule executed
-    Assert.IsFalse(user["Email"].IsValid);
+    Assert.False(user["Email"].IsValid);
 
     // Change to valid email
     user.Email = "available@example.com";
     await user.WaitForTasks();
 
-    Assert.IsTrue(user["Email"].IsValid);
+    Assert.True(user["Email"].IsValid);
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L398-L425' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-async-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/TestingPatternsTests.cs#L397-L424' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-async-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Integration Test Base Class
@@ -503,7 +503,6 @@ public abstract class SkillTestBase : IDisposable
         // Register Neatoo services with NeatooFactory.Logical
         // (all operations run locally, no remote calls)
         services.AddNeatooServices(NeatooFactory.Logical, typeof(SkillTestBase).Assembly);
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(SkillEmployee).Assembly);
 
         // Register mock services for external dependencies
         RegisterMockServices(services);
@@ -514,7 +513,7 @@ public abstract class SkillTestBase : IDisposable
     private static void RegisterMockServices(IServiceCollection services)
     {
         // Repository mocks
-        services.AddScoped<ISkillEmployeeRepository, MockEmployeeRepository>();
+        services.AddScoped<ISkillEmployeeRepository, SkillMockEmployeeRepository>();
         services.AddScoped<ISkillCustomerRepository, MockCustomerRepository>();
         services.AddScoped<ISkillProductRepository, MockProductRepository>();
         services.AddScoped<ISkillOrderRepository, MockOrderRepository>();
@@ -532,7 +531,7 @@ public abstract class SkillTestBase : IDisposable
         services.AddScoped<ISkillEmailService, MockEmailService>();
         services.AddScoped<ISkillUserValidationService, MockUserValidationService>();
         services.AddScoped<ISkillAccountValidationService, MockAccountValidationService>();
-        services.AddScoped<ISkillEmailValidationService, MockEmailValidationService>();
+        services.AddScoped<ISkillEmailValidationService, SkillMockEmailValidationService>();
         services.AddScoped<ISkillOrderAccessService, MockOrderAccessService>();
         services.AddScoped<ISkillProjectMembershipService, MockProjectMembershipService>();
         services.AddScoped<ISkillFeatureFlagService, MockFeatureFlagService>();
@@ -562,7 +561,7 @@ public abstract class SkillTestBase : IDisposable
     }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/SkillTestBase.cs#L12-L114' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-base-class' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/SkillTestBase.cs#L10-L111' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-base-class' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Authorization
@@ -575,7 +574,7 @@ Test authorization separately:
 /// <summary>
 /// Test authorization logic separately from entity behavior.
 /// </summary>
-[TestMethod]
+[Fact]
 public void Authorization_TestSeparately()
 {
     // Test authorization implementation directly
@@ -586,10 +585,10 @@ public void Authorization_TestSeparately()
     var auth = new SkillEmployeeAuthorization(principal);
 
     // Admin can create
-    Assert.IsTrue(auth.CanCreate());
-    Assert.IsTrue(auth.CanFetch());
-    Assert.IsTrue(auth.CanSave());
-    Assert.IsTrue(auth.CanDelete());
+    Assert.True(auth.CanCreate());
+    Assert.True(auth.CanFetch());
+    Assert.True(auth.CanSave());
+    Assert.True(auth.CanDelete());
 
     // Non-admin limited
     var limitedPrincipal = new System.Security.Principal.GenericPrincipal(
@@ -598,13 +597,13 @@ public void Authorization_TestSeparately()
 
     var limitedAuth = new SkillEmployeeAuthorization(limitedPrincipal);
 
-    Assert.IsFalse(limitedAuth.CanCreate());
-    Assert.IsTrue(limitedAuth.CanFetch()); // Authenticated
-    Assert.IsFalse(limitedAuth.CanSave());
-    Assert.IsFalse(limitedAuth.CanDelete());
+    Assert.False(limitedAuth.CanCreate());
+    Assert.True(limitedAuth.CanFetch()); // Authenticated
+    Assert.False(limitedAuth.CanSave());
+    Assert.False(limitedAuth.CanDelete());
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L431-L463' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-authorization' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/TestingPatternsTests.cs#L430-L462' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-authorization' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Test Organization

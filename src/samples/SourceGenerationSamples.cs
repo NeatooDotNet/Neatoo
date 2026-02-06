@@ -2,7 +2,7 @@ using Neatoo;
 using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 
-namespace Neatoo.Skills.Domain;
+namespace Samples;
 
 // =============================================================================
 // SOURCE GENERATION SAMPLES - Demonstrates what the Roslyn generator creates
@@ -12,7 +12,6 @@ namespace Neatoo.Skills.Domain;
 // Partial Property Generation
 // -----------------------------------------------------------------------------
 
-#region api-generator-partial-property
 /// <summary>
 /// Entity demonstrating partial property generation.
 /// The source generator completes these partial property declarations.
@@ -31,13 +30,11 @@ public partial class SkillGenCustomer : ValidateBase<SkillGenCustomer>
     [Create]
     public void Create() { }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Factory Method Generation
 // -----------------------------------------------------------------------------
 
-#region api-generator-factory-methods
 /// <summary>
 /// Entity demonstrating factory method generation.
 /// Source generator creates factory interface and implementation.
@@ -78,13 +75,11 @@ public partial class SkillGenEntity : EntityBase<SkillGenEntity>
     public Task DeleteAsync([Service] ISkillGenRepository repository) =>
         repository.DeleteAsync(Id);
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Save Factory Generation
 // -----------------------------------------------------------------------------
 
-#region api-generator-save-factory
 /// <summary>
 /// Entity demonstrating save factory generation.
 /// When Insert/Update/Delete have only [Service] parameters,
@@ -121,13 +116,11 @@ public partial class SkillGenSaveEntity : EntityBase<SkillGenSaveEntity>
     public Task DeleteAsync([Service] ISkillGenRepository repository) =>
         repository.DeleteAsync(Id);
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Rule ID Generation
 // -----------------------------------------------------------------------------
 
-#region api-generator-ruleid
 /// <summary>
 /// Entity demonstrating RuleId generation.
 /// Lambda expressions in AddRule generate stable RuleId entries.
@@ -151,13 +144,11 @@ public partial class SkillGenRuleEntity : ValidateBase<SkillGenRuleEntity>
     [Create]
     public void Create() { }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // SuppressFactory Attribute
 // -----------------------------------------------------------------------------
 
-#region api-attributes-suppressfactory
 /// <summary>
 /// [SuppressFactory] prevents factory generation.
 /// Used for test classes, abstract bases, or manual factory implementations.
@@ -173,7 +164,6 @@ public class SkillGenTestObject : ValidateBase<SkillGenTestObject>
 
     public int Amount { get => Getter<int>(); set => Setter(value); }
 }
-#endregion
 
 #region skill-suppress-factory
 [SuppressFactory]

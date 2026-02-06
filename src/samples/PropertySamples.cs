@@ -3,7 +3,7 @@ using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using System.ComponentModel.DataAnnotations;
 
-namespace Neatoo.Skills.Domain;
+namespace Samples;
 
 // =============================================================================
 // PROPERTY SAMPLES - Demonstrates property declaration and change tracking
@@ -13,7 +13,6 @@ namespace Neatoo.Skills.Domain;
 // Partial Property Declaration
 // -----------------------------------------------------------------------------
 
-#region properties-partial-declaration
 /// <summary>
 /// Customer entity demonstrating partial property declarations.
 /// Partial properties let the source generator create backing fields.
@@ -35,13 +34,11 @@ public partial class SkillPropCustomer : ValidateBase<SkillPropCustomer>
     [Create]
     public void Create() { }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Read-Only Properties
 // -----------------------------------------------------------------------------
 
-#region properties-read-only
 /// <summary>
 /// Contact entity demonstrating read-only properties.
 /// </summary>
@@ -69,13 +66,11 @@ public partial class SkillPropContact : ValidateBase<SkillPropContact>
         this["FullName"].LoadValue($"{firstName} {lastName}");
     }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Custom Getter Logic
 // -----------------------------------------------------------------------------
 
-#region properties-custom-getter
 /// <summary>
 /// Order entity demonstrating computed properties.
 /// </summary>
@@ -115,7 +110,6 @@ public partial class SkillPropOrder : ValidateBase<SkillPropOrder>
     [Create]
     public void Create() { }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Property Change Notifications

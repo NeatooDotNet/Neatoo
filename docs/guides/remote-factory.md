@@ -39,7 +39,7 @@ public void Create()
     Department = "";
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/RemoteFactoryIntegrationSamples.cs#L41-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-create' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/RemoteFactoryIntegrationSamples.cs#L41-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-create' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Fetch Operations
@@ -65,7 +65,7 @@ public async Task Fetch(int id, [Service] ISkillRemoteFactoryRepository repo)
     // - IsPaused = false (validation resumes)
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/RemoteFactoryIntegrationSamples.cs#L55-L73' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-fetch' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/RemoteFactoryIntegrationSamples.cs#L55-L73' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-fetch' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Save Operations
@@ -95,7 +95,7 @@ public static async Task<bool> CheckSavableBeforeSave(SkillRfIntegrationRoot ent
     return true;
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/RemoteFactoryIntegrationSamples.cs#L179-L199' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-issavable-check' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/RemoteFactoryIntegrationSamples.cs#L179-L199' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-issavable-check' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After `[Insert]` or `[Update]` completes:
@@ -142,7 +142,7 @@ public void Update() { /* Persist through aggregate root */ }
 [Delete]
 public void Delete() { /* Persist through aggregate root */ }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/RemoteFactoryIntegrationSamples.cs#L131-L156' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-child-no-remote' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/RemoteFactoryIntegrationSamples.cs#L131-L156' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-child-no-remote' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## DeletedList Lifecycle
@@ -183,7 +183,7 @@ public static void DeletedListLifecycle(
     // Step 4: After Save(), DeletedList is cleared
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/RemoteFactoryIntegrationSamples.cs#L224-L247' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-deletedlist-lifecycle' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/RemoteFactoryIntegrationSamples.cs#L224-L247' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-deletedlist-lifecycle' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Serialization State Transfer

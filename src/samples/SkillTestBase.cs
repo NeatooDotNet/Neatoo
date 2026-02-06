@@ -1,9 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Neatoo;
 using Neatoo.RemoteFactory;
-using Neatoo.Skills.Domain;
-
-namespace Neatoo.Skills.Tests;
+namespace Samples;
 
 // =============================================================================
 // TEST BASE CLASS - Sets up DI container for integration tests
@@ -53,7 +51,6 @@ public abstract class SkillTestBase : IDisposable
         // Register Neatoo services with NeatooFactory.Logical
         // (all operations run locally, no remote calls)
         services.AddNeatooServices(NeatooFactory.Logical, typeof(SkillTestBase).Assembly);
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(SkillEmployee).Assembly);
 
         // Register mock services for external dependencies
         RegisterMockServices(services);
@@ -64,7 +61,7 @@ public abstract class SkillTestBase : IDisposable
     private static void RegisterMockServices(IServiceCollection services)
     {
         // Repository mocks
-        services.AddScoped<ISkillEmployeeRepository, MockEmployeeRepository>();
+        services.AddScoped<ISkillEmployeeRepository, SkillMockEmployeeRepository>();
         services.AddScoped<ISkillCustomerRepository, MockCustomerRepository>();
         services.AddScoped<ISkillProductRepository, MockProductRepository>();
         services.AddScoped<ISkillOrderRepository, MockOrderRepository>();
@@ -82,7 +79,7 @@ public abstract class SkillTestBase : IDisposable
         services.AddScoped<ISkillEmailService, MockEmailService>();
         services.AddScoped<ISkillUserValidationService, MockUserValidationService>();
         services.AddScoped<ISkillAccountValidationService, MockAccountValidationService>();
-        services.AddScoped<ISkillEmailValidationService, MockEmailValidationService>();
+        services.AddScoped<ISkillEmailValidationService, SkillMockEmailValidationService>();
         services.AddScoped<ISkillOrderAccessService, MockOrderAccessService>();
         services.AddScoped<ISkillProjectMembershipService, MockProjectMembershipService>();
         services.AddScoped<ISkillFeatureFlagService, MockFeatureFlagService>();
@@ -139,7 +136,7 @@ public abstract class SkillTestBase : IDisposable
 // =============================================================================
 
 // Repository mocks
-public class MockEmployeeRepository : ISkillEmployeeRepository
+public class SkillMockEmployeeRepository : ISkillEmployeeRepository
 {
     public Task<(int Id, string Name, string Email, decimal Salary)> FetchByIdAsync(int id)
         => Task.FromResult((id, $"Employee {id}", $"emp{id}@company.com", 50000m));
@@ -253,7 +250,7 @@ public class MockAccountValidationService : ISkillAccountValidationService
         => Task.FromResult(email.Contains("@"));
 }
 
-public class MockEmailValidationService : ISkillEmailValidationService
+public class SkillMockEmailValidationService : ISkillEmailValidationService
 {
     public Task<bool> IsCompanyEmailAsync(string email)
         => Task.FromResult(email.EndsWith("@company.com", StringComparison.OrdinalIgnoreCase));

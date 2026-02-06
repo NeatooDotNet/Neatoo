@@ -15,22 +15,11 @@ Inherit from ValidateListBase&lt;T&gt; where T implements IValidateBase:
 <!-- snippet: collections-validate-list-definition -->
 <a id='snippet-collections-validate-list-definition'></a>
 ```cs
-/// <summary>
-/// ValidateListBase for phone numbers (value object collection).
-/// No deletion tracking - items are simply removed.
-/// </summary>
-public class SkillCollPhoneNumberList : ValidateListBase<ISkillCollPhoneNumber>
-{
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L141-L149' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validate-list-definition' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-validate-list-definition-1'></a>
-```cs
 public class CollectionValidateItemList : ValidateListBase<CollectionValidateItem>
 {
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L43-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validate-list-definition-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L43-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validate-list-definition' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The collection automatically tracks:
@@ -48,25 +37,12 @@ Inherit from EntityListBase&lt;T&gt; where T implements IEntityBase:
 <!-- snippet: collections-entity-list-definition -->
 <a id='snippet-collections-entity-list-definition'></a>
 ```cs
-/// <summary>
-/// EntityListBase for order line items.
-/// Tracks deletions for persistence and cascades parent relationship.
-/// </summary>
-public class SkillCollOrderItemList : EntityListBase<ISkillCollOrderItem>, ISkillCollOrderItemList
-{
-    // DeletedList tracks removed existing items for DELETE persistence
-    public int DeletedCount => DeletedList.Count;
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/CollectionSamples.cs#L65-L75' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-entity-list-definition' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-collections-entity-list-definition-1'></a>
-```cs
 public class CollectionOrderItemList : EntityListBase<ICollectionOrderItem>, ICollectionOrderItemList
 {
     public int DeletedCount => DeletedList.Count;
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L96-L101' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-entity-list-definition-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L96-L101' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-entity-list-definition' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 In addition to validation state, EntityListBase tracks:
@@ -109,7 +85,7 @@ public void AddItem_SetsParentAndTracksItem()
     Assert.Same(order, item.Parent);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L135-L159' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-add-item' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L135-L159' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-add-item' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 During insertion, ValidateListBase:
@@ -153,7 +129,7 @@ public void RemoveFromValidateList_RemovesImmediately()
     Assert.Empty(list);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L161-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-validate' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L161-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-validate' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The item is unsubscribed from events and removed immediately.
@@ -191,7 +167,7 @@ public void RemoveFromEntityList_TracksForDeletion()
     Assert.Equal(1, order.Items.DeletedCount);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L181-L209' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-entity' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L181-L209' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-entity' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The sample uses `DoMarkUnmodified()`, a helper method that exposes the protected `MarkUnmodified()` for demonstration purposes. In production, `MarkUnmodified()` is called automatically by the framework after Fetch or successful save operations.
@@ -238,7 +214,7 @@ public void ParentCascade_UpdatesAllItems()
     Assert.Same(order, item2.Root);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L211-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-parent-cascade' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L211-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-parent-cascade' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This establishes the aggregate boundary. All items within the collection belong to the same aggregate root, enabling:
@@ -296,7 +272,7 @@ public async Task ValidationState_AggregatesFromChildren()
     Assert.True(list.IsValid);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L239-L273' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L239-L273' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The collection uses cached meta properties with incremental updates:
@@ -339,7 +315,7 @@ public async Task RunRules_ExecutesOnAllItems()
     Assert.False(list.IsValid);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L275-L305' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L275-L305' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-run-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This executes validation rules on every item in the collection and updates the aggregated validation state.
@@ -391,7 +367,7 @@ public void Iteration_SupportsStandardPatterns()
     Assert.Equal(3, order.Items.Count);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L307-L345' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-iteration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L307-L345' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-iteration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Collections support:
@@ -471,7 +447,7 @@ public void DeletedList_TracksRemovedEntitiesUntilSave()
     Assert.True(order.Items.IsModified);
 }
 ```
-<sup><a href='/src/docs/samples/CollectionsSamples.cs#L347-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-deleted-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L347-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-deleted-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Deleted items remain in DeletedList with their ContainingList property set until FactoryComplete fires after a successful save. This preserves aggregate boundaries during the save operation:

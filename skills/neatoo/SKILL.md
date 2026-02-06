@@ -25,7 +25,7 @@ public partial class Product : EntityBase<Product>
     [Create] public void Create() { }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/QuickStartSamples.cs#L11-L23' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quickstart' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/QuickStartSamples.cs#L11-L23' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quickstart' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This generates a factory (`IProductFactory`) with a `Create()` method. Properties auto-track changes, trigger validation, and fire `PropertyChanged`.
@@ -54,7 +54,7 @@ All Neatoo properties use `partial` properties. The source generator implements 
 public partial string Name { get; set; }
 public partial decimal Price { get; set; }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/QuickStartSamples.cs#L35-L38' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-properties-basic' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/QuickStartSamples.cs#L35-L38' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-properties-basic' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The generator creates property implementations that call `Getter<T>()` and `Setter()` internally.
@@ -95,7 +95,7 @@ public SkillValidationExample(IEntityBaseServices<SkillValidationExample> servic
     // public partial string Name { get; set; }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L54-L66' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/SkillValidationSamples.cs#L52-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
@@ -135,7 +135,7 @@ public static void ConfigureServices(IServiceCollection services)
 {
     // Setup DI with Neatoo services and mock external dependencies
     services.AddNeatooServices(NeatooFactory.Logical, typeof(SkillEmployee).Assembly);
-    services.AddScoped<ISkillEmployeeRepository, MockEmployeeRepository>();
+    services.AddScoped<ISkillEmployeeRepository, SkillMockEmployeeRepository>();
 }
 
 public static void TestExample(IServiceProvider serviceProvider)
@@ -144,13 +144,13 @@ public static void TestExample(IServiceProvider serviceProvider)
     var factory = serviceProvider.GetRequiredService<ISkillEmployeeFactory>();
     var employee = factory.Create();
     employee.Name = "Alice";
-    Assert.IsTrue(employee.IsModified);
+    Assert.True(employee.IsModified);
 
     // DON'T: Mock Neatoo interfaces
     // var mock = new Mock<IEntityBase>(); // Never do this
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Tests/TestingPatternsTests.cs#L18-L37' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-testing-pattern' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/TestingPatternsTests.cs#L18-L37' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-testing-pattern' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **For unit tests without factory generation:** Use `[SuppressFactory]` on test classes that inherit from Neatoo base classes. This prevents the source generator from creating factory methods for test-only classes.
@@ -165,7 +165,7 @@ public class TestEmployee : EntityBase<TestEmployee>
     public string Name { get => Getter<string>(); set => Setter(value); }
 }
 ```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L178-L185' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-suppress-factory' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/SourceGenerationSamples.cs#L168-L175' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-suppress-factory' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 See `references/testing.md` for integration test patterns and `references/pitfalls.md` for common mistakes.

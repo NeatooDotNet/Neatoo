@@ -47,7 +47,7 @@ public partial class CustomerValidator : ValidateBase<CustomerValidator>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/GettingStartedSamples.cs#L10-L25' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-validate' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/GettingStartedSamples.cs#L10-L25' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-validate' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 When you build the project, Neatoo's source generator creates:
@@ -96,7 +96,7 @@ public void ValidateBase_CheckValidationState()
     Assert.True(customer.IsSelfValid);
 }
 ```
-<sup><a href='/src/docs/samples/GettingStartedSamples.cs#L101-L121' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-validate-check' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/GettingStartedSamples.cs#L101-L121' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-validate-check' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Key validation meta-properties:
@@ -179,7 +179,7 @@ public partial class EmployeeEntity : EntityBase<EmployeeEntity>
     }
 }
 ```
-<sup><a href='/src/docs/samples/GettingStartedSamples.cs#L27-L94' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-entity' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/GettingStartedSamples.cs#L27-L94' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-entity' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Entity state tracking properties:
@@ -220,7 +220,7 @@ public void EntityBase_UseEntity()
     Assert.Contains("Salary", employee.ModifiedProperties);
 }
 ```
-<sup><a href='/src/docs/samples/GettingStartedSamples.cs#L181-L204' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-entity-use' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/GettingStartedSamples.cs#L181-L204' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-entity-use' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Each method you mark with an attribute becomes a method on the generated factory interface. Your `FetchAsync(int id, ...)` method becomes `IEmployeeEntityFactory.FetchAsync(int id)`.
@@ -253,7 +253,7 @@ public void ConfigureDependencyInjection()
     Assert.NotNull(factory);
 }
 ```
-<sup><a href='/src/docs/samples/GettingStartedSamples.cs#L249-L270' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-di' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/GettingStartedSamples.cs#L249-L270' title='Snippet source file'>snippet source</a> | <a href='#snippet-getting-started-di' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `AddNeatooServices()` registers all Neatoo services including factories for types in the specified assembly. The `NeatooFactory.Logical` option means all operations run locally (no client-server split).

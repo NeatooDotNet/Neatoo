@@ -2,7 +2,7 @@ using Neatoo;
 using Neatoo.RemoteFactory;
 using System.ComponentModel.DataAnnotations;
 
-namespace Neatoo.Skills.Domain;
+namespace Samples;
 
 // =============================================================================
 // ENTITY SAMPLES - Demonstrates entity lifecycle and persistence state
@@ -12,7 +12,6 @@ namespace Neatoo.Skills.Domain;
 // Entity Base Class
 // -----------------------------------------------------------------------------
 
-#region entities-base-class
 /// <summary>
 /// Employee entity demonstrating EntityBase lifecycle.
 /// </summary>
@@ -67,7 +66,6 @@ public partial class SkillEntityEmployee : EntityBase<SkillEntityEmployee>
     [Delete]
     public Task DeleteAsync([Service] ISkillEntityRepository repo) => repo.DeleteAsync(this);
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Aggregate Root
@@ -114,7 +112,6 @@ public class SkillEntityDepartmentMemberList : EntityListBase<ISkillEntityDepart
     public int DeletedCount => DeletedList.Count;
 }
 
-#region entities-aggregate-root
 /// <summary>
 /// Department aggregate root containing member entities.
 /// </summary>
@@ -158,7 +155,6 @@ public partial class SkillEntityDepartment : EntityBase<SkillEntityDepartment>
 }
 // Aggregate root coordinates persistence of all contained entities.
 // Save on the root saves/deletes all children as a unit.
-#endregion
 
 // -----------------------------------------------------------------------------
 // Repository Interface

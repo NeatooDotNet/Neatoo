@@ -11,28 +11,6 @@ For each partial property with `Getter<T>()` / `Setter()`:
 <!-- snippet: api-generator-partial-property -->
 <a id='snippet-api-generator-partial-property'></a>
 ```cs
-/// <summary>
-/// Entity demonstrating partial property generation.
-/// The source generator completes these partial property declarations.
-/// </summary>
-[Factory]
-public partial class SkillGenCustomer : ValidateBase<SkillGenCustomer>
-{
-    public SkillGenCustomer(IValidateBaseServices<SkillGenCustomer> services) : base(services) { }
-
-    public partial string Name { get; set; }
-
-    public partial string Email { get; set; }
-
-    public partial DateTime BirthDate { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L15-L34' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-partial-property' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-api-generator-partial-property-1'></a>
-```cs
 [Factory]
 public partial class ApiGeneratedCustomer : ValidateBase<ApiGeneratedCustomer>
 {
@@ -50,7 +28,7 @@ public partial class ApiGeneratedCustomer : ValidateBase<ApiGeneratedCustomer>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L598-L615' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-partial-property-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L598-L615' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-partial-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Factory Methods
@@ -59,50 +37,6 @@ For classes with `[Factory]` attribute:
 
 <!-- snippet: api-generator-factory-methods -->
 <a id='snippet-api-generator-factory-methods'></a>
-```cs
-/// <summary>
-/// Entity demonstrating factory method generation.
-/// Source generator creates factory interface and implementation.
-/// </summary>
-[Factory]
-public partial class SkillGenEntity : EntityBase<SkillGenEntity>
-{
-    public SkillGenEntity(IEntityBaseServices<SkillGenEntity> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string Name { get; set; }
-
-    [Create]
-    public void Create()
-    {
-        Id = 0;
-        Name = "";
-    }
-
-    [Fetch]
-    public async Task FetchAsync(int id, [Service] ISkillGenRepository repository)
-    {
-        var data = await repository.FetchAsync(id);
-        Id = data.Id;
-        Name = data.Name;
-    }
-
-    [Insert]
-    public Task InsertAsync([Service] ISkillGenRepository repository) =>
-        repository.InsertAsync(Id, Name);
-
-    [Update]
-    public Task UpdateAsync([Service] ISkillGenRepository repository) =>
-        repository.UpdateAsync(Id, Name);
-
-    [Delete]
-    public Task DeleteAsync([Service] ISkillGenRepository repository) =>
-        repository.DeleteAsync(Id);
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L40-L81' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-factory-methods' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-api-generator-factory-methods-1'></a>
 ```cs
 [Factory]
 public partial class ApiGeneratedEntity : EntityBase<ApiGeneratedEntity>
@@ -130,7 +64,7 @@ public partial class ApiGeneratedEntity : EntityBase<ApiGeneratedEntity>
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L620-L646' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-factory-methods-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L620-L646' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-factory-methods' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Save Factory
@@ -139,46 +73,6 @@ Save routing and factory wiring:
 
 <!-- snippet: api-generator-save-factory -->
 <a id='snippet-api-generator-save-factory'></a>
-```cs
-/// <summary>
-/// Entity demonstrating save factory generation.
-/// When Insert/Update/Delete have only [Service] parameters,
-/// the generator creates a unified SaveAsync method.
-/// </summary>
-[Factory]
-public partial class SkillGenSaveEntity : EntityBase<SkillGenSaveEntity>
-{
-    public SkillGenSaveEntity(IEntityBaseServices<SkillGenSaveEntity> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string Data { get; set; }
-
-    public void DoMarkNew() => MarkNew();
-    public void DoMarkOld() => MarkOld();
-
-    [Create]
-    public void Create()
-    {
-        Id = 0;
-        Data = "";
-    }
-
-    [Insert]
-    public Task InsertAsync([Service] ISkillGenRepository repository) =>
-        repository.InsertAsync(Id, Data);
-
-    [Update]
-    public Task UpdateAsync([Service] ISkillGenRepository repository) =>
-        repository.UpdateAsync(Id, Data);
-
-    [Delete]
-    public Task DeleteAsync([Service] ISkillGenRepository repository) =>
-        repository.DeleteAsync(Id);
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L87-L124' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-save-factory' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-api-generator-save-factory-1'></a>
 ```cs
 [Factory]
 public partial class ApiGeneratedSaveEntity : EntityBase<ApiGeneratedSaveEntity>
@@ -220,7 +114,7 @@ public partial class ApiGeneratedSaveEntity : EntityBase<ApiGeneratedSaveEntity>
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L651-L691' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-save-factory-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L651-L691' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-save-factory' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Rule IDs
@@ -229,33 +123,6 @@ Stable identifiers for validation rules:
 
 <!-- snippet: api-generator-ruleid -->
 <a id='snippet-api-generator-ruleid'></a>
-```cs
-/// <summary>
-/// Entity demonstrating RuleId generation.
-/// Lambda expressions in AddRule generate stable RuleId entries.
-/// </summary>
-[Factory]
-public partial class SkillGenRuleEntity : ValidateBase<SkillGenRuleEntity>
-{
-    public SkillGenRuleEntity(IValidateBaseServices<SkillGenRuleEntity> services) : base(services)
-    {
-        RuleManager.AddValidation(
-            entity => entity.Value > 0 ? "" : "Value must be positive",
-            e => e.Value);
-
-        RuleManager.AddValidation(
-            entity => entity.Value <= 100 ? "" : "Value cannot exceed 100",
-            e => e.Value);
-    }
-
-    public partial int Value { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L130-L154' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-ruleid' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-api-generator-ruleid-1'></a>
 ```cs
 [Factory]
 public partial class ApiRuleIdEntity : ValidateBase<ApiRuleIdEntity>
@@ -275,7 +142,7 @@ public partial class ApiRuleIdEntity : ValidateBase<ApiRuleIdEntity>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L696-L714' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-ruleid-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L696-L714' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-ruleid' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Generated/ Folder
@@ -309,25 +176,6 @@ Use `[SuppressFactory]` to prevent factory generation:
 <!-- snippet: api-attributes-suppressfactory -->
 <a id='snippet-api-attributes-suppressfactory'></a>
 ```cs
-/// <summary>
-/// [SuppressFactory] prevents factory generation.
-/// Used for test classes, abstract bases, or manual factory implementations.
-/// </summary>
-[SuppressFactory]
-public class SkillGenTestObject : ValidateBase<SkillGenTestObject>
-{
-    public SkillGenTestObject(IValidateBaseServices<SkillGenTestObject> services) : base(services) { }
-
-    // Using traditional Getter/Setter instead of partial properties
-    // (partial properties also work, but this shows the alternative)
-    public string Name { get => Getter<string>(); set => Setter(value); }
-
-    public int Amount { get => Getter<int>(); set => Setter(value); }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L160-L176' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-suppressfactory' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-api-attributes-suppressfactory-1'></a>
-```cs
 [SuppressFactory]
 public class ApiTestObject : ValidateBase<ApiTestObject>
 {
@@ -336,7 +184,7 @@ public class ApiTestObject : ValidateBase<ApiTestObject>
     public string Name { get => Getter<string>(); set => Setter(value); }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L585-L593' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-suppressfactory-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L585-L593' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-suppressfactory' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Use cases:

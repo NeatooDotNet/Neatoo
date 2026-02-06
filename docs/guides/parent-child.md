@@ -36,7 +36,7 @@ public void Parent_SetDuringChildCreation()
     Assert.Same(order, lineItem.Parent);
 }
 ```
-<sup><a href='/src/docs/samples/ParentChildSamples.cs#L130-L153' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-setup' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L130-L153' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-setup' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Parent is of type `IValidateBase?` and can reference:
@@ -91,7 +91,7 @@ public void Navigation_FromChildToRoot()
     Assert.Null(order.Root);
 }
 ```
-<sup><a href='/src/docs/samples/ParentChildSamples.cs#L155-L191' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-navigation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L155-L191' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-navigation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Root calculation:
@@ -144,7 +144,7 @@ public void AggregateBoundary_EnforcedByParentProperty()
     Assert.False(order.IsChild);
 }
 ```
-<sup><a href='/src/docs/samples/ParentChildSamples.cs#L193-L227' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-aggregate-boundary' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L193-L227' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-aggregate-boundary' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Aggregate boundary rules:
@@ -202,7 +202,7 @@ public async Task CascadeValidation_ChildInvalidMakesParentInvalid()
     Assert.True(order.IsValid);
 }
 ```
-<sup><a href='/src/docs/samples/ParentChildSamples.cs#L229-L266' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L229-L266' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade behavior:
@@ -250,7 +250,7 @@ public void CascadeDirty_ChildModificationCascadesToParent()
     Assert.True(item.IsModified);
 }
 ```
-<sup><a href='/src/docs/samples/ParentChildSamples.cs#L268-L295' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-dirty' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L268-L295' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-dirty' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade rules for IsDirty:
@@ -312,7 +312,7 @@ public async Task ChildLifecycle_MarkedWhenAddedToCollection()
     Assert.Equal(SaveFailureReason.IsChildObject, exception.Reason);
 }
 ```
-<sup><a href='/src/docs/samples/ParentChildSamples.cs#L297-L337' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-lifecycle' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L297-L337' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-lifecycle' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Child entity restrictions:
@@ -378,7 +378,7 @@ public void CollectionNavigation_AccessSiblingsThroughParent()
     Assert.Equal(50.00m, total); // (10*1) + (20*2)
 }
 ```
-<sup><a href='/src/docs/samples/ParentChildSamples.cs#L339-L378' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-containing-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L339-L378' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-containing-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Navigation patterns:
@@ -431,7 +431,7 @@ public void RootAccess_FromChildEntity()
     Assert.Equal(new DateTime(2024, 6, 15), orderRoot.OrderDate);
 }
 ```
-<sup><a href='/src/docs/samples/ParentChildSamples.cs#L380-L410' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-root-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L380-L410' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-root-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Root access patterns:
@@ -508,7 +508,7 @@ public void CollectionParent_AutomaticManagement()
     Assert.Same(order, item2.Root);
 }
 ```
-<sup><a href='/src/docs/samples/ParentChildSamples.cs#L412-L446' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-collection-parent' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L412-L446' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-collection-parent' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Collection parent propagation:
