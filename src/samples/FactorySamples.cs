@@ -2,7 +2,7 @@ using Neatoo;
 using Neatoo.RemoteFactory;
 using System.ComponentModel.DataAnnotations;
 
-namespace Neatoo.Skills.Domain;
+namespace Samples;
 
 // =============================================================================
 // FACTORY SAMPLES - Demonstrates factory methods and entity lifecycle
@@ -46,7 +46,6 @@ public partial class SkillFactoryEmployee : EntityBase<SkillFactoryEmployee>
 }
 #endregion
 
-#region remotefactory-factory-methods
 /// <summary>
 /// Customer entity demonstrating factory method attributes.
 /// </summary>
@@ -102,13 +101,11 @@ public partial class SkillFactoryCustomer : EntityBase<SkillFactoryCustomer>
         await repository.DeleteAsync(Id);
     }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Fetch with Service Injection
 // -----------------------------------------------------------------------------
 
-#region remotefactory-fetch
 /// <summary>
 /// Entity demonstrating [Fetch] implementation.
 /// </summary>
@@ -136,13 +133,11 @@ public partial class SkillFactoryProduct : EntityBase<SkillFactoryProduct>
         // After Fetch: IsNew = false, IsModified = false
     }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Multiple Fetch Overloads
 // -----------------------------------------------------------------------------
 
-#region remotefactory-fetch-overloads
 /// <summary>
 /// Entity with multiple fetch methods for different query patterns.
 /// </summary>
@@ -192,13 +187,11 @@ public partial class SkillFactoryOrder : EntityBase<SkillFactoryOrder>
         }
     }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Save Routing
 // -----------------------------------------------------------------------------
 
-#region remotefactory-save
 /// <summary>
 /// Entity demonstrating save routing logic.
 /// </summary>
@@ -251,13 +244,11 @@ public partial class SkillFactoryAccount : EntityBase<SkillFactoryAccount>
         await repository.DeleteAsync(Id);
     }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Save Validation
 // -----------------------------------------------------------------------------
 
-#region remotefactory-save-validation
 /// <summary>
 /// Entity demonstrating validation before save.
 /// </summary>
@@ -291,13 +282,11 @@ public partial class SkillFactoryValidatedOrder : EntityBase<SkillFactoryValidat
         await repository.InsertOrderAsync(Id, Quantity, UnitPrice);
     }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Delete Pattern
 // -----------------------------------------------------------------------------
 
-#region remotefactory-delete
 /// <summary>
 /// Entity demonstrating delete pattern.
 /// </summary>
@@ -328,13 +317,11 @@ public partial class SkillFactoryProject : EntityBase<SkillFactoryProject>
 // var project = await factory.Fetch(1, "My Project");
 // project.Delete();           // Marks for deletion
 // await factory.SaveAsync(project);  // Routes to DeleteAsync
-#endregion
 
 // -----------------------------------------------------------------------------
 // Service Injection
 // -----------------------------------------------------------------------------
 
-#region remotefactory-service-injection
 /// <summary>
 /// Entity demonstrating [Service] attribute for DI injection.
 /// </summary>
@@ -361,7 +348,6 @@ public partial class SkillFactoryReport : EntityBase<SkillFactoryReport>
         ReportData = await generator.GenerateAsync(id);
     }
 }
-#endregion
 
 // SKILL.md snippet - just the method pattern
 [Factory]
@@ -389,7 +375,6 @@ public partial class SkillServiceInjectionExample : EntityBase<SkillServiceInjec
 // Remote Execution
 // -----------------------------------------------------------------------------
 
-#region remotefactory-remote-attribute
 /// <summary>
 /// Entity demonstrating [Remote] attribute for client-server execution.
 /// </summary>
@@ -432,7 +417,6 @@ public partial class SkillFactoryRemoteEntity : EntityBase<SkillFactoryRemoteEnt
 // - Accessing database or server-only resources
 // - Performing operations that shouldn't run on the client
 // - Needing server-side services
-#endregion
 
 // SKILL.md snippet - concise remote vs local pattern
 // Child repository interface for the skill snippet
@@ -518,7 +502,6 @@ public interface ISkillFactoryOrderItemList : IEntityListBase<ISkillFactoryOrder
 
 public class SkillFactoryOrderItemList : EntityListBase<ISkillFactoryOrderItem>, ISkillFactoryOrderItemList { }
 
-#region remotefactory-child-factories
 /// <summary>
 /// Order aggregate demonstrating child factory usage.
 /// </summary>
@@ -561,7 +544,6 @@ public partial class SkillFactoryOrderWithItems : EntityBase<SkillFactoryOrderWi
         }
     }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Repository and Service Interfaces (for samples above)
@@ -574,8 +556,6 @@ public interface ISkillCustomerRepository
     Task UpdateAsync(int id, string name, string email);
     Task DeleteAsync(int id);
 }
-
-public record CustomerData(int Id, string Name, string Email);
 
 public interface ISkillProductRepository
 {

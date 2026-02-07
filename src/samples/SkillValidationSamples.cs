@@ -3,7 +3,7 @@ using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System.ComponentModel.DataAnnotations;
 
-namespace Neatoo.Skills.Domain;
+namespace Samples;
 
 // =============================================================================
 // VALIDATION SAMPLES - Demonstrates validation rules, attributes, and patterns
@@ -13,7 +13,6 @@ namespace Neatoo.Skills.Domain;
 // Basic Validation with RuleManager
 // -----------------------------------------------------------------------------
 
-#region validation-basic
 /// <summary>
 /// Product entity demonstrating basic validation rules.
 /// </summary>
@@ -45,7 +44,6 @@ public partial class SkillValidProduct : ValidateBase<SkillValidProduct>
     [Create]
     public void Create() { }
 }
-#endregion
 
 // For SKILL.md - shows just the validation constructor pattern
 [Factory]
@@ -75,7 +73,6 @@ public partial class SkillValidationExample : EntityBase<SkillValidationExample>
 // DataAnnotations Validation Attributes
 // -----------------------------------------------------------------------------
 
-#region validation-attributes
 /// <summary>
 /// Registration entity demonstrating DataAnnotations attributes.
 /// Neatoo automatically converts these to validation rules.
@@ -109,7 +106,6 @@ public partial class SkillValidRegistration : ValidateBase<SkillValidRegistratio
     [Create]
     public void Create() { }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Custom Validation Rule Classes
@@ -145,7 +141,6 @@ public class SkillSalaryRangeRule : RuleBase<SkillValidEmployee>
     }
 }
 
-#region validation-custom-rule
 /// <summary>
 /// Employee entity with custom rule class.
 /// </summary>
@@ -172,7 +167,6 @@ public partial class SkillValidEmployee : ValidateBase<SkillValidEmployee>
     [Create]
     public void Create() { }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Cross-Property Validation
@@ -199,7 +193,6 @@ public class SkillDateRangeRule : RuleBase<SkillValidDateRange>
     }
 }
 
-#region validation-cross-property
 /// <summary>
 /// Entity demonstrating cross-property validation.
 /// </summary>
@@ -221,13 +214,11 @@ public partial class SkillValidDateRange : ValidateBase<SkillValidDateRange>
     [Create]
     public void Create() { }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Async Validation Rules
 // -----------------------------------------------------------------------------
 
-#region validation-async-rule
 /// <summary>
 /// User entity with async validation for email uniqueness.
 /// </summary>
@@ -261,7 +252,6 @@ public partial class SkillValidUser : ValidateBase<SkillValidUser>
     [Create]
     public void Create() { }
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Validation Cascade (Parent-Child)
@@ -298,7 +288,6 @@ public interface ISkillValidLineItemList : IValidateListBase<ISkillValidLineItem
 
 public class SkillValidLineItemList : ValidateListBase<ISkillValidLineItem>, ISkillValidLineItemList { }
 
-#region validation-cascade
 /// <summary>
 /// Invoice entity demonstrating validation cascade to children.
 /// </summary>
@@ -324,9 +313,7 @@ public partial class SkillValidInvoice : ValidateBase<SkillValidInvoice>
 // Parent.IsValid reflects child validation state:
 // - If any child is invalid, parent.IsValid is false
 // - Parent.IsSelfValid only checks parent's own properties
-#endregion
 
-#region validation-meta-properties
 // Validation meta properties available:
 //
 // entity.IsValid          - Object and children pass validation
@@ -334,15 +321,12 @@ public partial class SkillValidInvoice : ValidateBase<SkillValidInvoice>
 // entity.IsBusy           - Async operations running
 // entity.PropertyMessages - All error messages
 // entity.ObjectInvalid    - Object-level error message (from MarkInvalid)
-#endregion
 
-#region validation-before-save
 // EntityBase checks validation before save:
 //
 // entity.IsSavable = entity.IsValid && entity.IsModified && !entity.IsBusy && !entity.IsChild
 //
 // Save() will fail if !IsSavable
-#endregion
 
 // -----------------------------------------------------------------------------
 // Service interfaces

@@ -63,7 +63,7 @@ public partial class ApiCustomer : ValidateBase<ApiCustomer>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L17-L33' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-partial-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L17-L33' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-partial-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### Property Access
@@ -102,7 +102,7 @@ public void PropertyAccess_ByNameAndIndexer()
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L722-L745' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-property-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L722-L745' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-property-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Validation and Rules
@@ -140,7 +140,7 @@ public async Task RunRules_ExecutesValidation()
     Assert.Equal("Customer: Valid Name", customer.DisplayName);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L747-L768' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-runrules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L747-L768' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-runrules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### RuleManager
@@ -178,7 +178,7 @@ public partial class ApiCustomerValidator : ValidateBase<ApiCustomerValidator>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L54-L78' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-rulemanager' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L54-L78' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-rulemanager' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### MarkInvalid
@@ -214,7 +214,7 @@ public void MarkInvalid_SetsObjectLevelError()
         m => m.Message.Contains("Payment gateway rejected"));
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L770-L792' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-markinvalid' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L770-L792' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-markinvalid' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### ObjectInvalid
@@ -264,7 +264,7 @@ public void MetaProperties_ReflectValidationState()
     Assert.NotEmpty(customer.PropertyMessages);  // Has error messages
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L794-L810' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-metaproperties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L794-L810' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-metaproperties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Parent-Child Relationships
@@ -298,7 +298,7 @@ public void Parent_EstablishesHierarchy()
     Assert.Same(address, item.Parent);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L812-L831' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-parent' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L812-L831' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-parent' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Async Task Management
@@ -332,7 +332,7 @@ public async Task Tasks_WaitForAsyncOperations()
     Assert.Equal(0.0825m, contact.TaxRate);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L833-L851' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-tasks' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L833-L851' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-tasks' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Pause/Resume
@@ -368,7 +368,7 @@ public void Pause_SuppressesEventsAndRules()
     Assert.Equal("Batch Update", customer.Name);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L853-L873' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-pause' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L853-L873' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-pause' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Events
@@ -448,7 +448,7 @@ public void PersistenceState_TracksEntityLifecycle()
     Assert.True(existingEmployee.IsDeleted);  // Will Delete on save
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L875-L895' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-persistence-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L875-L895' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-persistence-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Modification Tracking
@@ -488,7 +488,7 @@ public void ModificationTracking_DetectsChanges()
     Assert.Contains("Name", employee.ModifiedProperties);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L897-L917' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-modification' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L897-L917' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-modification' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Savability
@@ -535,7 +535,7 @@ public void Root_FindsAggregateRoot()
     Assert.Null(order.Root);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L919-L942' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-root' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L919-L942' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-root' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Save Operations
@@ -601,7 +601,7 @@ public partial class ApiEmployeeEntity : EntityBase<ApiEmployeeEntity>
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L132-L183' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-save' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L132-L183' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-save' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Delete Operations
@@ -636,7 +636,7 @@ public void Delete_MarksForDeletion()
     Assert.False(employee.IsDeleted);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L944-L964' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L944-L964' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### State Management Methods
@@ -677,7 +677,7 @@ public void MarkMethods_ControlEntityState()
     Assert.False(employee.IsDeleted);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L966-L988' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-mark-methods' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L966-L988' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-mark-methods' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Property Access
@@ -743,7 +743,7 @@ public void ValidateListBase_ParentRelationship()
     Assert.Same(address, address.Items.Parent);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L990-L1011' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-parent' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L990-L1011' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-parent' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Aggregated Meta Properties
@@ -783,7 +783,7 @@ public async Task ValidateListBase_AggregatesState()
     Assert.True(list.IsSelfValid); // Lists have no own validation
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L1013-L1036' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-metaproperties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1013-L1036' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-metaproperties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Validation Operations
@@ -828,7 +828,7 @@ public async Task ValidateListBase_RunRulesOnAll()
     Assert.Empty(item1.PropertyMessages);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L1038-L1066' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1038-L1066' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Task Management
@@ -897,7 +897,7 @@ public void ValidateListBase_StandardOperations()
     Assert.Empty(list);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L1068-L1094' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-collection-ops' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1068-L1094' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-collection-ops' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ---
@@ -958,7 +958,7 @@ public void EntityListBase_ModificationFromItems()
     Assert.False(order.Items.IsSelfModified);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L1096-L1123' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-metaproperties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1096-L1123' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-metaproperties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Aggregate Root
@@ -1004,7 +1004,7 @@ public void EntityListBase_TracksDeleted()
     Assert.Equal(1, order.Items.DeletedCount);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L1125-L1149' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-deletedlist' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1125-L1149' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-deletedlist' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Collection Operations
@@ -1060,7 +1060,7 @@ public void EntityListBase_AddRemoveBehavior()
     Assert.True(existingItem.IsDeleted);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L1151-L1186' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-add-remove' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1151-L1186' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-add-remove' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Factory Lifecycle
@@ -1120,7 +1120,7 @@ public void IValidateBase_CoreValidationInterface()
     Assert.NotNull(nameProperty);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L1188-L1210' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ivalidatebase' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1188-L1210' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ivalidatebase' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### IEntityBase
@@ -1166,7 +1166,7 @@ public void IEntityBase_EntityInterface()
     Assert.Null(employee.Root);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L1212-L1235' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ientitybase' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1212-L1235' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ientitybase' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### IValidateProperty
@@ -1228,7 +1228,7 @@ public async Task IValidateProperty_PropertyInterface()
     await property.WaitForTasks();
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L1237-L1271' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ivalidateproperty' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1237-L1271' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ivalidateproperty' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### IEntityProperty
@@ -1276,7 +1276,7 @@ public void IPropertyInfo_PropertyMetadata()
     Assert.Equal(typeof(string), property.Type);
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L1273-L1287' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ipropertyinfo' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1273-L1287' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ipropertyinfo' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### IValidateMetaProperties
@@ -1337,7 +1337,7 @@ public void IMetaProperties_ValidationAndEntityState()
     Assert.True(entityMeta.IsSavable);  // New entity is savable
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L1289-L1313' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-imetaproperties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1289-L1313' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-imetaproperties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ---
@@ -1373,7 +1373,7 @@ public partial class ApiProduct : ValidateBase<ApiProduct>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L402-L415' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-factory' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L402-L415' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-factory' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Create]
@@ -1408,7 +1408,7 @@ public partial class ApiInvoice : EntityBase<ApiInvoice>
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L420-L440' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-create' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L420-L440' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-create' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Fetch]
@@ -1444,7 +1444,7 @@ public partial class ApiContact : EntityBase<ApiContact>
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L445-L466' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-fetch' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L445-L466' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-fetch' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Insert]
@@ -1482,7 +1482,7 @@ public partial class ApiAccount : EntityBase<ApiAccount>
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L471-L494' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-insert' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L471-L494' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Update]
@@ -1523,7 +1523,7 @@ public partial class ApiLead : EntityBase<ApiLead>
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L499-L525' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-update' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L499-L525' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-update' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Delete]
@@ -1564,7 +1564,7 @@ public partial class ApiProject : EntityBase<ApiProject>
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L530-L556' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L530-L556' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Service]
@@ -1598,7 +1598,7 @@ public partial class ApiReport : EntityBase<ApiReport>
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L561-L580' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-service' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L561-L580' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-service' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [SuppressFactory]
@@ -1613,25 +1613,6 @@ Suppresses factory method generation for a class. Used for test classes that inh
 <!-- snippet: api-attributes-suppressfactory -->
 <a id='snippet-api-attributes-suppressfactory'></a>
 ```cs
-/// <summary>
-/// [SuppressFactory] prevents factory generation.
-/// Used for test classes, abstract bases, or manual factory implementations.
-/// </summary>
-[SuppressFactory]
-public class SkillGenTestObject : ValidateBase<SkillGenTestObject>
-{
-    public SkillGenTestObject(IValidateBaseServices<SkillGenTestObject> services) : base(services) { }
-
-    // Using traditional Getter/Setter instead of partial properties
-    // (partial properties also work, but this shows the alternative)
-    public string Name { get => Getter<string>(); set => Setter(value); }
-
-    public int Amount { get => Getter<int>(); set => Setter(value); }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L160-L176' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-suppressfactory' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-api-attributes-suppressfactory-1'></a>
-```cs
 [SuppressFactory]
 public class ApiTestObject : ValidateBase<ApiTestObject>
 {
@@ -1640,7 +1621,7 @@ public class ApiTestObject : ValidateBase<ApiTestObject>
     public string Name { get => Getter<string>(); set => Setter(value); }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L585-L593' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-suppressfactory-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L585-L593' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-suppressfactory' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Validation Attributes
@@ -1682,7 +1663,7 @@ public partial class ApiRegistration : ValidateBase<ApiRegistration>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L373-L397' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L373-L397' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Validation attributes are automatically converted to validation rules during object construction.
@@ -1705,28 +1686,6 @@ When you declare a partial property, the BaseGenerator creates:
 <!-- snippet: api-generator-partial-property -->
 <a id='snippet-api-generator-partial-property'></a>
 ```cs
-/// <summary>
-/// Entity demonstrating partial property generation.
-/// The source generator completes these partial property declarations.
-/// </summary>
-[Factory]
-public partial class SkillGenCustomer : ValidateBase<SkillGenCustomer>
-{
-    public SkillGenCustomer(IValidateBaseServices<SkillGenCustomer> services) : base(services) { }
-
-    public partial string Name { get; set; }
-
-    public partial string Email { get; set; }
-
-    public partial DateTime BirthDate { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L15-L34' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-partial-property' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-api-generator-partial-property-1'></a>
-```cs
 [Factory]
 public partial class ApiGeneratedCustomer : ValidateBase<ApiGeneratedCustomer>
 {
@@ -1744,7 +1703,7 @@ public partial class ApiGeneratedCustomer : ValidateBase<ApiGeneratedCustomer>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L598-L615' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-partial-property-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L598-L615' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-partial-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The source-generated code for a partial property looks like:
@@ -1772,50 +1731,6 @@ RemoteFactory generates static factory methods from instance methods marked with
 <!-- snippet: api-generator-factory-methods -->
 <a id='snippet-api-generator-factory-methods'></a>
 ```cs
-/// <summary>
-/// Entity demonstrating factory method generation.
-/// Source generator creates factory interface and implementation.
-/// </summary>
-[Factory]
-public partial class SkillGenEntity : EntityBase<SkillGenEntity>
-{
-    public SkillGenEntity(IEntityBaseServices<SkillGenEntity> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string Name { get; set; }
-
-    [Create]
-    public void Create()
-    {
-        Id = 0;
-        Name = "";
-    }
-
-    [Fetch]
-    public async Task FetchAsync(int id, [Service] ISkillGenRepository repository)
-    {
-        var data = await repository.FetchAsync(id);
-        Id = data.Id;
-        Name = data.Name;
-    }
-
-    [Insert]
-    public Task InsertAsync([Service] ISkillGenRepository repository) =>
-        repository.InsertAsync(Id, Name);
-
-    [Update]
-    public Task UpdateAsync([Service] ISkillGenRepository repository) =>
-        repository.UpdateAsync(Id, Name);
-
-    [Delete]
-    public Task DeleteAsync([Service] ISkillGenRepository repository) =>
-        repository.DeleteAsync(Id);
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L40-L81' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-factory-methods' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-api-generator-factory-methods-1'></a>
-```cs
 [Factory]
 public partial class ApiGeneratedEntity : EntityBase<ApiGeneratedEntity>
 {
@@ -1842,7 +1757,7 @@ public partial class ApiGeneratedEntity : EntityBase<ApiGeneratedEntity>
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L620-L646' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-factory-methods-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L620-L646' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-factory-methods' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 For a Fetch method:
@@ -1887,46 +1802,6 @@ For Insert/Update/Delete methods with no non-service parameters, RemoteFactory g
 <!-- snippet: api-generator-save-factory -->
 <a id='snippet-api-generator-save-factory'></a>
 ```cs
-/// <summary>
-/// Entity demonstrating save factory generation.
-/// When Insert/Update/Delete have only [Service] parameters,
-/// the generator creates a unified SaveAsync method.
-/// </summary>
-[Factory]
-public partial class SkillGenSaveEntity : EntityBase<SkillGenSaveEntity>
-{
-    public SkillGenSaveEntity(IEntityBaseServices<SkillGenSaveEntity> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string Data { get; set; }
-
-    public void DoMarkNew() => MarkNew();
-    public void DoMarkOld() => MarkOld();
-
-    [Create]
-    public void Create()
-    {
-        Id = 0;
-        Data = "";
-    }
-
-    [Insert]
-    public Task InsertAsync([Service] ISkillGenRepository repository) =>
-        repository.InsertAsync(Id, Data);
-
-    [Update]
-    public Task UpdateAsync([Service] ISkillGenRepository repository) =>
-        repository.UpdateAsync(Id, Data);
-
-    [Delete]
-    public Task DeleteAsync([Service] ISkillGenRepository repository) =>
-        repository.DeleteAsync(Id);
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L87-L124' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-save-factory' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-api-generator-save-factory-1'></a>
-```cs
 [Factory]
 public partial class ApiGeneratedSaveEntity : EntityBase<ApiGeneratedSaveEntity>
 {
@@ -1967,7 +1842,7 @@ public partial class ApiGeneratedSaveEntity : EntityBase<ApiGeneratedSaveEntity>
     }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L651-L691' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-save-factory-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L651-L691' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-save-factory' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ```csharp
@@ -1999,33 +1874,6 @@ For stable rule IDs across compilations, the BaseGenerator creates a RuleIdRegis
 <!-- snippet: api-generator-ruleid -->
 <a id='snippet-api-generator-ruleid'></a>
 ```cs
-/// <summary>
-/// Entity demonstrating RuleId generation.
-/// Lambda expressions in AddRule generate stable RuleId entries.
-/// </summary>
-[Factory]
-public partial class SkillGenRuleEntity : ValidateBase<SkillGenRuleEntity>
-{
-    public SkillGenRuleEntity(IValidateBaseServices<SkillGenRuleEntity> services) : base(services)
-    {
-        RuleManager.AddValidation(
-            entity => entity.Value > 0 ? "" : "Value must be positive",
-            e => e.Value);
-
-        RuleManager.AddValidation(
-            entity => entity.Value <= 100 ? "" : "Value cannot exceed 100",
-            e => e.Value);
-    }
-
-    public partial int Value { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/SourceGenerationSamples.cs#L130-L154' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-ruleid' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-api-generator-ruleid-1'></a>
-```cs
 [Factory]
 public partial class ApiRuleIdEntity : ValidateBase<ApiRuleIdEntity>
 {
@@ -2044,7 +1892,7 @@ public partial class ApiRuleIdEntity : ValidateBase<ApiRuleIdEntity>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ApiReferenceSamples.cs#L696-L714' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-ruleid-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L696-L714' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-ruleid' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This registry enables rule suppression and rule-specific behavior without relying on runtime hash codes.

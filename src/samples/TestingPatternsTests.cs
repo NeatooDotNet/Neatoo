@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Neatoo;
 using Neatoo.RemoteFactory;
-using Neatoo.Skills.Domain;
+using Xunit;
 
-namespace Neatoo.Skills.Tests;
+namespace Samples;
 
 // =============================================================================
 // TESTING PATTERNS - Demonstrates proper Neatoo testing techniques
@@ -20,7 +20,7 @@ public static class SkillTestingPatternExample
     {
         // Setup DI with Neatoo services and mock external dependencies
         services.AddNeatooServices(NeatooFactory.Logical, typeof(SkillEmployee).Assembly);
-        services.AddScoped<ISkillEmployeeRepository, MockEmployeeRepository>();
+        services.AddScoped<ISkillEmployeeRepository, SkillMockEmployeeRepository>();
     }
 
     public static void TestExample(IServiceProvider serviceProvider)
@@ -29,7 +29,7 @@ public static class SkillTestingPatternExample
         var factory = serviceProvider.GetRequiredService<ISkillEmployeeFactory>();
         var employee = factory.Create();
         employee.Name = "Alice";
-        Assert.IsTrue(employee.IsModified);
+        Assert.True(employee.IsModified);
 
         // DON'T: Mock Neatoo interfaces
         // var mock = new Mock<IEntityBase>(); // Never do this
@@ -37,8 +37,7 @@ public static class SkillTestingPatternExample
     #endregion
 }
 
-[TestClass]
-public class TestingPatternsTests : SkillTestBase
+public class TestingPatternsTests : SamplesTestBase
 {
     // -------------------------------------------------------------------------
     // Core Testing Principle: Real vs Mock
@@ -48,7 +47,7 @@ public class TestingPatternsTests : SkillTestBase
     /// <summary>
     /// Use real Neatoo classes - never mock Neatoo interfaces.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public async Task RealVsMock_UseRealNeatooClasses()
     {
         // DO: Use real Neatoo factory to create real Neatoo objects
@@ -56,17 +55,17 @@ public class TestingPatternsTests : SkillTestBase
         var employee = factory.Create();
 
         // Real Neatoo objects have real behavior
-        Assert.IsTrue(employee.IsNew);
+        Assert.True(employee.IsNew);
 
         // Set invalid data and run rules to trigger validation
         employee.Name = "";
         await employee.RunRules(RunRulesFlag.All);
-        Assert.IsFalse(employee["Name"].IsValid); // Real validation
+        Assert.False(employee["Name"].IsValid); // Real validation
 
         // Set valid data
         employee.Name = "John Doe";
         await employee.RunRules(RunRulesFlag.All);
-        Assert.IsTrue(employee["Name"].IsValid);
+        Assert.True(employee["Name"].IsValid);
 
         // For external dependencies, use mock implementations:
         // services.AddScoped<IMyRepository, MockMyRepository>();
@@ -81,7 +80,7 @@ public class TestingPatternsTests : SkillTestBase
     /// <summary>
     /// Test validation rules with real Neatoo validation.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public async Task Validation_TestsRealRules()
     {
         var factory = GetRequiredService<ISkillValidProductFactory>();
@@ -93,9 +92,9 @@ public class TestingPatternsTests : SkillTestBase
 
         await product.RunRules();
 
-        Assert.IsFalse(product.IsValid);
-        Assert.IsFalse(product["Name"].IsValid);
-        Assert.IsFalse(product["Price"].IsValid);
+        Assert.False(product.IsValid);
+        Assert.False(product["Name"].IsValid);
+        Assert.False(product["Price"].IsValid);
 
         // Test valid state
         product.Name = "Widget";
@@ -103,15 +102,15 @@ public class TestingPatternsTests : SkillTestBase
 
         await product.RunRules();
 
-        Assert.IsTrue(product.IsValid);
-        Assert.IsTrue(product["Name"].IsValid);
-        Assert.IsTrue(product["Price"].IsValid);
+        Assert.True(product.IsValid);
+        Assert.True(product["Name"].IsValid);
+        Assert.True(product["Price"].IsValid);
     }
 
     /// <summary>
     /// Test DataAnnotation validation attributes.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void ValidationAttributes_AutoConverted()
     {
         var factory = GetRequiredService<ISkillValidRegistrationFactory>();
@@ -119,24 +118,24 @@ public class TestingPatternsTests : SkillTestBase
 
         // [Required] - empty fails
         reg.Username = "";
-        Assert.IsFalse(reg["Username"].IsValid);
+        Assert.False(reg["Username"].IsValid);
 
         reg.Username = "validuser";
-        Assert.IsTrue(reg["Username"].IsValid);
+        Assert.True(reg["Username"].IsValid);
 
         // [EmailAddress] - invalid format fails
         reg.Email = "not-an-email";
-        Assert.IsFalse(reg["Email"].IsValid);
+        Assert.False(reg["Email"].IsValid);
 
         reg.Email = "valid@example.com";
-        Assert.IsTrue(reg["Email"].IsValid);
+        Assert.True(reg["Email"].IsValid);
 
         // [Range] - out of range fails
         reg.Age = 10;
-        Assert.IsFalse(reg["Age"].IsValid);
+        Assert.False(reg["Age"].IsValid);
 
         reg.Age = 25;
-        Assert.IsTrue(reg["Age"].IsValid);
+        Assert.True(reg["Age"].IsValid);
     }
     #endregion
 
@@ -148,7 +147,7 @@ public class TestingPatternsTests : SkillTestBase
     /// <summary>
     /// Test change tracking with real Neatoo entities.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void ChangeTracking_DetectsPropertyChanges()
     {
         var factory = GetRequiredService<ISkillEntityEmployeeFactory>();
@@ -157,41 +156,41 @@ public class TestingPatternsTests : SkillTestBase
         var employee = factory.Fetch(1, "Alice", "Engineering", 50000);
 
         // After fetch, entity is clean
-        Assert.IsFalse(employee.IsNew);
-        Assert.IsFalse(employee.IsModified);
-        Assert.IsFalse(employee.IsSelfModified);
+        Assert.False(employee.IsNew);
+        Assert.False(employee.IsModified);
+        Assert.False(employee.IsSelfModified);
 
         // Change a property
         employee.Name = "Alice Smith";
 
         // Now entity tracks the change
-        Assert.IsTrue(employee.IsModified);
-        Assert.IsTrue(employee.IsSelfModified);
-        Assert.IsTrue(employee.ModifiedProperties.Contains("Name"));
+        Assert.True(employee.IsModified);
+        Assert.True(employee.IsSelfModified);
+        Assert.True(employee.ModifiedProperties.Contains("Name"));
 
         // Other properties not tracked
-        Assert.IsFalse(employee.ModifiedProperties.Contains("Department"));
+        Assert.False(employee.ModifiedProperties.Contains("Department"));
 
         // Change another property
         employee.Salary = 55000;
-        Assert.IsTrue(employee.ModifiedProperties.Contains("Salary"));
+        Assert.True(employee.ModifiedProperties.Contains("Salary"));
     }
 
     /// <summary>
     /// Test IsNew state after Create and Fetch.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void ChangeTracking_IsNewState()
     {
         var factory = GetRequiredService<ISkillEntityEmployeeFactory>();
 
         // Create produces new entity
         var newEmployee = factory.Create();
-        Assert.IsTrue(newEmployee.IsNew);
+        Assert.True(newEmployee.IsNew);
 
         // Fetch produces existing entity
         var existingEmployee = factory.Fetch(1, "Bob", "Sales", 60000);
-        Assert.IsFalse(existingEmployee.IsNew);
+        Assert.False(existingEmployee.IsNew);
     }
     #endregion
 
@@ -203,51 +202,51 @@ public class TestingPatternsTests : SkillTestBase
     /// <summary>
     /// Test factory methods with real factories.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public async Task FactoryMethods_TestCreateFetchSave()
     {
         var factory = GetRequiredService<ISkillFactoryCustomerFactory>();
 
         // Test Create
         var customer = factory.Create();
-        Assert.IsTrue(customer.IsNew);
-        Assert.AreEqual(0, customer.Id);
-        Assert.AreEqual("", customer.Name);
+        Assert.True(customer.IsNew);
+        Assert.Equal(0, customer.Id);
+        Assert.Equal("", customer.Name);
 
         // Test Fetch
         var existing = await factory.FetchByIdAsync(1);
-        Assert.IsFalse(existing.IsNew);
-        Assert.AreEqual(1, existing.Id);
-        Assert.AreEqual("Customer 1", existing.Name);
+        Assert.False(existing.IsNew);
+        Assert.Equal(1, existing.Id);
+        Assert.Equal("Customer 1", existing.Name);
 
         // Test Save (routes to Insert for new entity)
         customer.Name = "New Customer";
         customer.Email = "new@example.com";
         var saved = await factory.SaveAsync(customer);
 
-        Assert.IsNotNull(saved);
-        Assert.IsFalse(saved!.IsNew); // After insert, no longer new
+        Assert.NotNull(saved);
+        Assert.False(saved!.IsNew); // After insert, no longer new
     }
 
     /// <summary>
     /// Test multiple fetch overloads.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public async Task FactoryMethods_MultipleFetchOverloads()
     {
         var factory = GetRequiredService<ISkillFactoryOrderFactory>();
 
         // Fetch by ID
         var byId = factory.FetchById(42);
-        Assert.AreEqual(42, byId.Id);
+        Assert.Equal(42, byId.Id);
 
         // Fetch by order number
         var byNumber = factory.FetchByOrderNumber("ORD-00001");
-        Assert.AreEqual("ORD-00001", byNumber.OrderNumber);
+        Assert.Equal("ORD-00001", byNumber.OrderNumber);
 
         // Fetch by customer email
         var byCustomer = await factory.FetchByCustomerAsync("test@example.com");
-        Assert.AreEqual("test@example.com", byCustomer.CustomerEmail);
+        Assert.Equal("test@example.com", byCustomer.CustomerEmail);
     }
     #endregion
 
@@ -259,7 +258,7 @@ public class TestingPatternsTests : SkillTestBase
     /// <summary>
     /// Mock external dependencies, not Neatoo classes.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public async Task MockDependencies_OnlyMockExternal()
     {
         // Mock repository is registered in SkillTestBase
@@ -271,17 +270,17 @@ public class TestingPatternsTests : SkillTestBase
         var entity = await factory.FetchAsync(1);
 
         // Entity has real Neatoo behavior
-        Assert.IsFalse(entity.IsNew); // Real lifecycle
-        Assert.IsFalse(entity.IsModified); // Real tracking
+        Assert.False(entity.IsNew); // Real lifecycle
+        Assert.False(entity.IsModified); // Real tracking
 
         // Mock provided the data
-        Assert.AreEqual(1, entity.Id);
-        Assert.AreEqual("Entity 1", entity.Name);
+        Assert.Equal(1, entity.Id);
+        Assert.Equal("Entity 1", entity.Name);
 
         // Modify to test change detection
         entity.Name = "Changed";
-        Assert.IsTrue(entity.IsModified); // Real change detection
-        Assert.AreEqual("Changed", entity.Name);
+        Assert.True(entity.IsModified); // Real change detection
+        Assert.Equal("Changed", entity.Name);
     }
     #endregion
 
@@ -293,7 +292,7 @@ public class TestingPatternsTests : SkillTestBase
     /// <summary>
     /// Test collection behavior with real Neatoo lists.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void Collections_TestRealBehavior()
     {
         var orderFactory = GetRequiredService<ISkillCollOrderFactory>();
@@ -316,20 +315,20 @@ public class TestingPatternsTests : SkillTestBase
         order.Items.Add(item2);
 
         // Real collection behavior
-        Assert.AreEqual(2, order.Items.Count);
-        Assert.IsTrue(item1.IsChild);
-        Assert.AreSame(order, item1.Parent);
+        Assert.Equal(2, order.Items.Count);
+        Assert.True(item1.IsChild);
+        Assert.Same(order, item1.Parent);
 
         // Remove item
         order.Items.Remove(item1);
-        Assert.AreEqual(1, order.Items.Count);
-        Assert.AreEqual(0, order.Items.DeletedCount); // New item not tracked
+        Assert.Equal(1, order.Items.Count);
+        Assert.Equal(0, order.Items.DeletedCount); // New item not tracked
     }
 
     /// <summary>
     /// Test deletion tracking for existing items.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void Collections_DeletionTracking()
     {
         var orderFactory = GetRequiredService<ISkillCollOrderFactory>();
@@ -342,14 +341,14 @@ public class TestingPatternsTests : SkillTestBase
         order.Items.Add(item);
         order.DoMarkUnmodified(); // Simulate loaded from DB
 
-        Assert.IsFalse(item.IsNew);
+        Assert.False(item.IsNew);
 
         // Remove existing item
         order.Items.Remove(item);
 
         // Item tracked for deletion
-        Assert.IsTrue(item.IsDeleted);
-        Assert.AreEqual(1, order.Items.DeletedCount);
+        Assert.True(item.IsDeleted);
+        Assert.Equal(1, order.Items.DeletedCount);
     }
     #endregion
 
@@ -361,7 +360,7 @@ public class TestingPatternsTests : SkillTestBase
     /// <summary>
     /// Test parent-child relationships.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void ParentChild_TracksRelationships()
     {
         var deptFactory = GetRequiredService<ISkillEntityDepartmentFactory>();
@@ -375,19 +374,19 @@ public class TestingPatternsTests : SkillTestBase
         member.Role = "Developer";
 
         // Before adding - no parent
-        Assert.IsNull(member.Parent);
-        Assert.IsFalse(member.IsChild);
+        Assert.Null(member.Parent);
+        Assert.False(member.IsChild);
 
         // Add to collection
         dept.Members.Add(member);
 
         // After adding - parent established
-        Assert.AreSame(dept, member.Parent);
-        Assert.IsTrue(member.IsChild);
+        Assert.Same(dept, member.Parent);
+        Assert.True(member.IsChild);
 
         // Root walks to aggregate root
-        Assert.AreSame(dept, member.Root);
-        Assert.IsNull(dept.Root); // Root has no parent
+        Assert.Same(dept, member.Root);
+        Assert.Null(dept.Root); // Root has no parent
     }
     #endregion
 
@@ -399,7 +398,7 @@ public class TestingPatternsTests : SkillTestBase
     /// <summary>
     /// Test async validation rules.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public async Task AsyncRules_WaitForCompletion()
     {
         var factory = GetRequiredService<ISkillValidUserFactory>();
@@ -414,13 +413,13 @@ public class TestingPatternsTests : SkillTestBase
         await user.WaitForTasks();
 
         // Async rule executed
-        Assert.IsFalse(user["Email"].IsValid);
+        Assert.False(user["Email"].IsValid);
 
         // Change to valid email
         user.Email = "available@example.com";
         await user.WaitForTasks();
 
-        Assert.IsTrue(user["Email"].IsValid);
+        Assert.True(user["Email"].IsValid);
     }
     #endregion
 
@@ -432,7 +431,7 @@ public class TestingPatternsTests : SkillTestBase
     /// <summary>
     /// Test authorization logic separately from entity behavior.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void Authorization_TestSeparately()
     {
         // Test authorization implementation directly
@@ -443,10 +442,10 @@ public class TestingPatternsTests : SkillTestBase
         var auth = new SkillEmployeeAuthorization(principal);
 
         // Admin can create
-        Assert.IsTrue(auth.CanCreate());
-        Assert.IsTrue(auth.CanFetch());
-        Assert.IsTrue(auth.CanSave());
-        Assert.IsTrue(auth.CanDelete());
+        Assert.True(auth.CanCreate());
+        Assert.True(auth.CanFetch());
+        Assert.True(auth.CanSave());
+        Assert.True(auth.CanDelete());
 
         // Non-admin limited
         var limitedPrincipal = new System.Security.Principal.GenericPrincipal(
@@ -455,10 +454,10 @@ public class TestingPatternsTests : SkillTestBase
 
         var limitedAuth = new SkillEmployeeAuthorization(limitedPrincipal);
 
-        Assert.IsFalse(limitedAuth.CanCreate());
-        Assert.IsTrue(limitedAuth.CanFetch()); // Authenticated
-        Assert.IsFalse(limitedAuth.CanSave());
-        Assert.IsFalse(limitedAuth.CanDelete());
+        Assert.False(limitedAuth.CanCreate());
+        Assert.True(limitedAuth.CanFetch()); // Authenticated
+        Assert.False(limitedAuth.CanSave());
+        Assert.False(limitedAuth.CanDelete());
     }
     #endregion
 }
@@ -467,14 +466,12 @@ public class TestingPatternsTests : SkillTestBase
 // PROPERTY NOTIFICATION TESTS
 // =============================================================================
 
-[TestClass]
-public class PropertyNotificationTests : SkillTestBase
+public class PropertyNotificationTests : SamplesTestBase
 {
-    #region properties-property-changed
     /// <summary>
     /// Test standard PropertyChanged event.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void PropertyChanged_NotifiesOnChange()
     {
         var factory = GetRequiredService<ISkillPropNotifyEntityFactory>();
@@ -490,15 +487,13 @@ public class PropertyNotificationTests : SkillTestBase
         entity.Name = "Test";
 
         // PropertyChanged fired
-        Assert.IsTrue(changedProperties.Contains("Name"));
+        Assert.True(changedProperties.Contains("Name"));
     }
-    #endregion
 
-    #region properties-neatoo-property-changed
     /// <summary>
     /// Test NeatooPropertyChanged with ChangeReason.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void NeatooPropertyChanged_IncludesChangeReason()
     {
         var factory = GetRequiredService<ISkillPropNotifyEntityFactory>();
@@ -516,16 +511,14 @@ public class PropertyNotificationTests : SkillTestBase
         // Property setter fires NeatooPropertyChanged with UserEdit reason
         // Filter for Name property changes (other properties may also fire)
         var nameChanges = changes.Where(c => c.Property == "Name").ToList();
-        Assert.IsTrue(nameChanges.Count >= 1, "Name property should fire at least one change event");
-        Assert.AreEqual(ChangeReason.UserEdit, nameChanges.Last().Reason);
+        Assert.True(nameChanges.Count >= 1, "Name property should fire at least one change event");
+        Assert.Equal(ChangeReason.UserEdit, nameChanges.Last().Reason);
     }
-    #endregion
 
-    #region properties-load-value
     /// <summary>
     /// Test LoadValue for data loading without triggering rules.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void LoadValue_DoesNotTriggerRules()
     {
         var factory = GetRequiredService<ISkillPropInvoiceFactory>();
@@ -535,18 +528,16 @@ public class PropertyNotificationTests : SkillTestBase
         invoice["Amount"].LoadValue(-100m);
 
         // Value is set even though it would fail validation
-        Assert.AreEqual(-100m, invoice.Amount);
+        Assert.Equal(-100m, invoice.Amount);
 
         // Property hasn't been validated yet
         // (LoadValue doesn't run rules)
     }
-    #endregion
 
-    #region properties-meta-properties
     /// <summary>
     /// Test property meta-properties.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public async Task MetaProperties_AvailableOnProperty()
     {
         var factory = GetRequiredService<ISkillPropAccountFactory>();
@@ -560,24 +551,22 @@ public class PropertyNotificationTests : SkillTestBase
         await account.RunRules();
 
         // Meta-properties reflect validation state
-        Assert.IsFalse(accountNumberProp.IsValid);
-        Assert.IsFalse(accountNumberProp.IsBusy);
-        Assert.IsTrue(accountNumberProp.PropertyMessages.Any());
+        Assert.False(accountNumberProp.IsValid);
+        Assert.False(accountNumberProp.IsBusy);
+        Assert.True(accountNumberProp.PropertyMessages.Any());
 
         // Fix value
         account.AccountNumber = "ACCT-001";
         await account.RunRules();
 
-        Assert.IsTrue(accountNumberProp.IsValid);
-        Assert.IsFalse(accountNumberProp.PropertyMessages.Any());
+        Assert.True(accountNumberProp.IsValid);
+        Assert.False(accountNumberProp.PropertyMessages.Any());
     }
-    #endregion
 
-    #region properties-backing-field-access
     /// <summary>
     /// Test accessing property via indexer.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void BackingFieldAccess_ViaIndexer()
     {
         var factory = GetRequiredService<ISkillPropCustomerFactory>();
@@ -589,18 +578,16 @@ public class PropertyNotificationTests : SkillTestBase
         // Access via indexer returns the property wrapper
         var property = customer["FirstName"];
 
-        Assert.IsNotNull(property);
-        Assert.AreEqual("FirstName", property.Name);
-        Assert.AreEqual("John", property.Value);
-        Assert.AreEqual(typeof(string), property.Type);
+        Assert.NotNull(property);
+        Assert.Equal("FirstName", property.Name);
+        Assert.Equal("John", property.Value);
+        Assert.Equal(typeof(string), property.Type);
     }
-    #endregion
 
-    #region properties-suppress-events
     /// <summary>
     /// Test PauseAllActions for batch updates.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void SuppressEvents_WithPauseAllActions()
     {
         var factory = GetRequiredService<ISkillPropCustomerFactory>();
@@ -612,7 +599,7 @@ public class PropertyNotificationTests : SkillTestBase
         // Batch update with pause
         using (customer.PauseAllActions())
         {
-            Assert.IsTrue(customer.IsPaused);
+            Assert.True(customer.IsPaused);
 
             customer.FirstName = "John";
             customer.LastName = "Doe";
@@ -620,19 +607,18 @@ public class PropertyNotificationTests : SkillTestBase
         }
 
         // After pause ends
-        Assert.IsFalse(customer.IsPaused);
+        Assert.False(customer.IsPaused);
 
         // Values are set
-        Assert.AreEqual("John", customer.FirstName);
-        Assert.AreEqual("Doe", customer.LastName);
+        Assert.Equal("John", customer.FirstName);
+        Assert.Equal("Doe", customer.LastName);
     }
-    #endregion
 
     #region properties-change-reason-useredit
     /// <summary>
     /// Test ChangeReason tracking.
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void ChangeReason_TracksUserEdits()
     {
         var factory = GetRequiredService<ISkillPropNotifyEntityFactory>();
@@ -650,8 +636,8 @@ public class PropertyNotificationTests : SkillTestBase
 
         // Filter for Name property changes
         var nameReasons = reasons.Where(r => r.Property == "Name").ToList();
-        Assert.IsTrue(nameReasons.Any(), "Name property should fire change event");
-        Assert.AreEqual(ChangeReason.UserEdit, nameReasons.Last().Reason);
+        Assert.True(nameReasons.Any(), "Name property should fire change event");
+        Assert.Equal(ChangeReason.UserEdit, nameReasons.Last().Reason);
     }
     #endregion
 }

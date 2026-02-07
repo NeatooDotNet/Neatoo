@@ -1,7 +1,7 @@
 using Neatoo;
 using Neatoo.RemoteFactory;
 
-namespace Neatoo.Skills.Domain;
+namespace Samples;
 
 // =============================================================================
 // COLLECTION SAMPLES - Demonstrates EntityListBase and ValidateListBase
@@ -62,7 +62,6 @@ public interface ISkillCollOrderItemList : IEntityListBase<ISkillCollOrderItem>
     int DeletedCount { get; }
 }
 
-#region collections-entity-list-definition
 /// <summary>
 /// EntityListBase for order line items.
 /// Tracks deletions for persistence and cascades parent relationship.
@@ -72,7 +71,6 @@ public class SkillCollOrderItemList : EntityListBase<ISkillCollOrderItem>, ISkil
     // DeletedList tracks removed existing items for DELETE persistence
     public int DeletedCount => DeletedList.Count;
 }
-#endregion
 
 /// <summary>
 /// Order aggregate root containing line items.
@@ -138,7 +136,6 @@ public partial class SkillCollPhoneNumber : ValidateBase<SkillCollPhoneNumber>, 
     public void Create() { }
 }
 
-#region collections-validate-list-definition
 /// <summary>
 /// ValidateListBase for phone numbers (value object collection).
 /// No deletion tracking - items are simply removed.
@@ -146,7 +143,6 @@ public partial class SkillCollPhoneNumber : ValidateBase<SkillCollPhoneNumber>, 
 public class SkillCollPhoneNumberList : ValidateListBase<ISkillCollPhoneNumber>
 {
 }
-#endregion
 
 // -----------------------------------------------------------------------------
 // Collection Behavior Samples - For Skill Documentation

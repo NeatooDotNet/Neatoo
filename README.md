@@ -67,7 +67,7 @@ public interface IAddressList : IEntityListBase<IAddress> { }
 
 public class AddressList : EntityListBase<IAddress>, IAddressList { }
 ```
-<sup><a href='/src/docs/samples/ReadmeSamples.cs#L10-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-readme-teaser' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ReadmeSamples.cs#L10-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-readme-teaser' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The example above demonstrates Neatoo's core features: partial property declarations, automatic validation, business rules, parent-child relationships, and change tracking. Source generators produce backing fields, factory methods, and metadata at compile time.
@@ -175,7 +175,7 @@ public class OrderList : EntityListBase<IOrder>, IOrderList { }
 // Mock repository interface for the sample
 public interface ICustomerRepository { }
 ```
-<sup><a href='/src/docs/samples/ReadmeSamples.cs#L66-L135' title='Snippet source file'>snippet source</a> | <a href='#snippet-readme-quick-start' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ReadmeSamples.cs#L66-L135' title='Snippet source file'>snippet source</a> | <a href='#snippet-readme-quick-start' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This example shows:

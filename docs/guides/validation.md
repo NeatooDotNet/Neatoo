@@ -13,41 +13,6 @@ Declare a ValidateBase class:
 <!-- snippet: validation-basic -->
 <a id='snippet-validation-basic'></a>
 ```cs
-/// <summary>
-/// Product entity demonstrating basic validation rules.
-/// </summary>
-[Factory]
-public partial class SkillValidProduct : ValidateBase<SkillValidProduct>
-{
-    public SkillValidProduct(IValidateBaseServices<SkillValidProduct> services) : base(services)
-    {
-        // Lambda validation rule - returns error message or empty string
-        RuleManager.AddValidation(
-            product => !string.IsNullOrEmpty(product.Name) ? "" : "Name is required",
-            p => p.Name);
-
-        RuleManager.AddValidation(
-            product => product.Price >= 0 ? "" : "Price cannot be negative",
-            p => p.Price);
-
-        RuleManager.AddValidation(
-            product => product.Quantity >= 0 ? "" : "Quantity cannot be negative",
-            p => p.Quantity);
-    }
-
-    public partial string Name { get; set; }
-
-    public partial decimal Price { get; set; }
-
-    public partial int Quantity { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L16-L48' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-basic' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-basic-1'></a>
-```cs
 [Factory]
 public partial class ValidationCustomer : ValidateBase<ValidationCustomer>
 {
@@ -61,7 +26,7 @@ public partial class ValidationCustomer : ValidateBase<ValidationCustomer>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L16-L29' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-basic-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L16-L29' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-basic' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ValidateBase provides:
@@ -103,7 +68,7 @@ public partial class ValidationEmployee : ValidateBase<ValidationEmployee>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L34-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L34-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Property characteristics:
@@ -122,43 +87,6 @@ Apply DataAnnotations attributes to properties:
 
 <!-- snippet: validation-attributes -->
 <a id='snippet-validation-attributes'></a>
-```cs
-/// <summary>
-/// Registration entity demonstrating DataAnnotations attributes.
-/// Neatoo automatically converts these to validation rules.
-/// </summary>
-[Factory]
-public partial class SkillValidRegistration : ValidateBase<SkillValidRegistration>
-{
-    public SkillValidRegistration(IValidateBaseServices<SkillValidRegistration> services) : base(services) { }
-
-    [Required(ErrorMessage = "Username is required")]
-    [StringLength(50, MinimumLength = 3, ErrorMessage = "Username must be 3-50 characters")]
-    public partial string Username { get; set; }
-
-    [Required(ErrorMessage = "Email is required")]
-    [EmailAddress(ErrorMessage = "Invalid email format")]
-    public partial string Email { get; set; }
-
-    [Required(ErrorMessage = "Password is required")]
-    [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
-    public partial string Password { get; set; }
-
-    [Phone(ErrorMessage = "Invalid phone number")]
-    public partial string PhoneNumber { get; set; }
-
-    [Range(18, 120, ErrorMessage = "Age must be between 18 and 120")]
-    public partial int Age { get; set; }
-
-    [RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid ZIP code format")]
-    public partial string ZipCode { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L78-L112' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-attributes' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-attributes-1'></a>
 ```cs
 [Factory]
 public partial class ValidationContact : ValidateBase<ValidationContact>
@@ -185,7 +113,7 @@ public partial class ValidationContact : ValidateBase<ValidationContact>
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L59-L84' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-attributes-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L59-L84' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-attributes' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Supported attributes:
@@ -210,36 +138,6 @@ Add a custom validation rule:
 <!-- snippet: validation-custom-rule -->
 <a id='snippet-validation-custom-rule'></a>
 ```cs
-/// <summary>
-/// Employee entity with custom rule class.
-/// </summary>
-[Factory]
-public partial class SkillValidEmployee : ValidateBase<SkillValidEmployee>
-{
-    public SkillValidEmployee(IValidateBaseServices<SkillValidEmployee> services) : base(services)
-    {
-        // Register custom rule class
-        RuleManager.AddRule(new SkillSalaryRangeRule(30000m, 500000m));
-
-        // Lambda rule for name
-        RuleManager.AddValidation(
-            emp => !string.IsNullOrEmpty(emp.Name) ? "" : "Name is required",
-            e => e.Name);
-    }
-
-    public partial string Name { get; set; }
-
-    public partial string Department { get; set; }
-
-    public partial decimal Salary { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L148-L175' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-custom-rule' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-custom-rule-1'></a>
-```cs
 public ValidationInvoice(IValidateBaseServices<ValidationInvoice> services) : base(services)
 {
     // Custom validation rule: Amount must be positive
@@ -248,7 +146,7 @@ public ValidationInvoice(IValidateBaseServices<ValidationInvoice> services) : ba
         i => i.Amount);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L92-L100' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-custom-rule-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L92-L100' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-custom-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Validation rule patterns:
@@ -268,31 +166,6 @@ Register cross-property validation:
 <!-- snippet: validation-cross-property -->
 <a id='snippet-validation-cross-property'></a>
 ```cs
-/// <summary>
-/// Entity demonstrating cross-property validation.
-/// </summary>
-[Factory]
-public partial class SkillValidDateRange : ValidateBase<SkillValidDateRange>
-{
-    public SkillValidDateRange(IValidateBaseServices<SkillValidDateRange> services) : base(services)
-    {
-        // Cross-property rule: validates relationship between two properties
-        RuleManager.AddRule(new SkillDateRangeRule());
-    }
-
-    public partial DateTime StartDate { get; set; }
-
-    public partial DateTime EndDate { get; set; }
-
-    public partial string Description { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L202-L224' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cross-property' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-cross-property-1'></a>
-```cs
 public ValidationDateRange(IValidateBaseServices<ValidationDateRange> services) : base(services)
 {
     // Cross-property rule: EndDate must be after StartDate
@@ -300,7 +173,7 @@ public ValidationDateRange(IValidateBaseServices<ValidationDateRange> services) 
     RuleManager.AddRule(new ValidationDateRangeRule());
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L136-L143' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cross-property-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L136-L143' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cross-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cross-property patterns:
@@ -320,43 +193,6 @@ Add async validation rule:
 <!-- snippet: validation-async-rule -->
 <a id='snippet-validation-async-rule'></a>
 ```cs
-/// <summary>
-/// User entity with async validation for email uniqueness.
-/// </summary>
-[Factory]
-public partial class SkillValidUser : ValidateBase<SkillValidUser>
-{
-    public SkillValidUser(
-        IValidateBaseServices<SkillValidUser> services,
-        ISkillUserValidationService validationService) : base(services)
-    {
-        // Async validation rule - checks external service
-        RuleManager.AddValidationAsync(
-            async user =>
-            {
-                if (string.IsNullOrEmpty(user.Email))
-                    return "";
-
-                var isUnique = await validationService.IsEmailUniqueAsync(user.Email);
-                return isUnique ? "" : "Email is already in use";
-            },
-            u => u.Email);
-    }
-
-    [Required]
-    public partial string Username { get; set; }
-
-    [Required]
-    [EmailAddress]
-    public partial string Email { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L230-L264' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-async-rule' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-async-rule-1'></a>
-```cs
 public ValidationUser(
     IValidateBaseServices<ValidationUser> services,
     IValidationUniquenessService uniquenessService) : base(services)
@@ -374,7 +210,7 @@ public ValidationUser(
         u => u.Email);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L176-L193' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-async-rule-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L176-L193' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-async-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Async validation behavior:
@@ -418,7 +254,7 @@ public async Task RunRulesManually_RevalidateEntity()
     Assert.True(order.IsValid);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L610-L633' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L610-L633' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-run-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 RunRules overloads:
@@ -464,7 +300,7 @@ public void AccessValidationMessages_PropertyAndObject()
     Assert.Contains(priceProperty.PropertyMessages, m => m.Message.Contains("negative"));
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L635-L660' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-error-messages' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L635-L660' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-error-messages' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Message metadata:
@@ -511,7 +347,7 @@ public async Task PropertyValidationState_IndividualPropertyTracking()
     Assert.NotEmpty(emailProperty.PropertyMessages);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L662-L689' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-property-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L662-L689' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-property-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Property validation metadata:
@@ -557,7 +393,7 @@ public void MarkObjectInvalid_ObjectLevelValidation()
     Assert.Equal("Transaction rejected by payment gateway", transaction.ObjectInvalid);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L691-L716' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-object-invalid' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L691-L716' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-object-invalid' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Object-level validation patterns:
@@ -602,7 +438,7 @@ public void PauseAllActions_BatchUpdatesWithoutValidation()
     Assert.Equal("PROD-001", order.ProductCode);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L718-L743' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-pause-actions' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L718-L743' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-pause-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 PauseAllActions behavior:
@@ -642,7 +478,7 @@ public void LoadValue_DataLoadingWithoutValidation()
     // (In real usage, factory method would call RunRules after loading)
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L745-L763' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-load-value' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L745-L763' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-load-value' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ChangeReason integration:
@@ -661,35 +497,6 @@ Validation cascade behavior:
 
 <!-- snippet: validation-cascade -->
 <a id='snippet-validation-cascade'></a>
-```cs
-/// <summary>
-/// Invoice entity demonstrating validation cascade to children.
-/// </summary>
-[Factory]
-public partial class SkillValidInvoice : ValidateBase<SkillValidInvoice>
-{
-    public SkillValidInvoice(IValidateBaseServices<SkillValidInvoice> services) : base(services)
-    {
-        LineItemsProperty.LoadValue(new SkillValidLineItemList());
-
-        RuleManager.AddValidation(
-            inv => !string.IsNullOrEmpty(inv.InvoiceNumber) ? "" : "Invoice number is required",
-            i => i.InvoiceNumber);
-    }
-
-    public partial string InvoiceNumber { get; set; }
-
-    public partial ISkillValidLineItemList LineItems { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-// Parent.IsValid reflects child validation state:
-// - If any child is invalid, parent.IsValid is false
-// - Parent.IsSelfValid only checks parent's own properties
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L301-L327' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cascade' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-cascade-1'></a>
 ```cs
 [Fact]
 public void ValidationCascade_ChildToParent()
@@ -720,7 +527,7 @@ public void ValidationCascade_ChildToParent()
     Assert.True(invoice.IsValid);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L765-L794' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cascade-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L765-L794' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cascade' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade characteristics:
@@ -740,17 +547,6 @@ Validation meta-properties:
 
 <!-- snippet: validation-meta-properties -->
 <a id='snippet-validation-meta-properties'></a>
-```cs
-// Validation meta properties available:
-//
-// entity.IsValid          - Object and children pass validation
-// entity.IsSelfValid      - Only this object's properties
-// entity.IsBusy           - Async operations running
-// entity.PropertyMessages - All error messages
-// entity.ObjectInvalid    - Object-level error message (from MarkInvalid)
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L329-L337' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-meta-properties' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-meta-properties-1'></a>
 ```cs
 [Fact]
 public async Task MetaProperties_TrackValidationState()
@@ -780,7 +576,7 @@ public async Task MetaProperties_TrackValidationState()
     Assert.NotEmpty(account.PropertyMessages);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L796-L824' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-meta-properties-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L796-L824' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-meta-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Meta-property definitions:
@@ -800,15 +596,6 @@ Validate before save:
 
 <!-- snippet: validation-before-save -->
 <a id='snippet-validation-before-save'></a>
-```cs
-// EntityBase checks validation before save:
-//
-// entity.IsSavable = entity.IsValid && entity.IsModified && !entity.IsBusy && !entity.IsChild
-//
-// Save() will fail if !IsSavable
-```
-<sup><a href='/skills/neatoo/samples/Neatoo.Skills.Domain/ValidationSamples.cs#L339-L345' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-validation-before-save-1'></a>
 ```cs
 [Fact]
 public async Task ValidateBeforeSave_IsSavableCheck()
@@ -836,7 +623,7 @@ public async Task ValidateBeforeSave_IsSavableCheck()
     Assert.True(order.IsSavable);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L826-L852' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L826-L852' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Save validation patterns:
@@ -882,7 +669,7 @@ public async Task CancellationToken_CancelAsyncValidation()
     // Assert.Equal("Validation cancelled", order.ObjectInvalid);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L854-L879' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cancellation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L854-L879' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cancellation behavior:
@@ -951,7 +738,7 @@ public async Task WorkWithValidationMessages_FilterAndAccess()
     Assert.Equal(2, product.PropertyMessages.Count);
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L881-L912' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-messages-collection' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L881-L912' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-messages-collection' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Message collection operations:
@@ -1004,7 +791,7 @@ public partial class ValidationRegistration : ValidateBase<ValidationRegistratio
     public void Create() { }
 }
 ```
-<sup><a href='/src/docs/samples/ValidationSamples.cs#L383-L416' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-combined' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L383-L416' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-combined' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Combined validation patterns:

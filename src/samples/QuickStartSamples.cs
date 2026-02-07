@@ -2,7 +2,7 @@ using Neatoo;
 using Neatoo.RemoteFactory;
 using System.ComponentModel.DataAnnotations;
 
-namespace Neatoo.Skills.Domain;
+namespace Samples;
 
 // =============================================================================
 // QUICKSTART SAMPLE - Simple entity demonstrating core Neatoo patterns
