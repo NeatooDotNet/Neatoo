@@ -42,6 +42,21 @@ This generates a factory (`IProductFactory`) with a `Create()` method. Propertie
 | Command | Static class with `[Execute]` | Server-side operation returning result |
 | Read Model | `ValidateBase<T>` with `[Fetch]` only | Query result (no Insert/Update/Delete) |
 
+## Key Properties
+
+**There is no `IsDirty` in Neatoo.** Use `IsModified` / `IsSelfModified`.
+
+| Property | Type | Meaning |
+|----------|------|---------|
+| `IsModified` | bool | Has unsaved changes (this or children) |
+| `IsSelfModified` | bool | This object (only) has changes |
+| `IsValid` | bool | This object and all children pass validation |
+| `IsSelfValid` | bool | This object (only) passes validation |
+| `IsSavable` | bool | `IsValid && IsModified && !IsBusy && !IsChild` |
+| `IsNew` | bool | Not yet persisted |
+| `IsDeleted` | bool | Marked for deletion |
+| `RuleManager` | IRuleManager | Access to validation rules |
+
 ## Core Patterns
 
 ### Properties with Change Tracking
@@ -61,11 +76,7 @@ The generator creates property implementations that call `Getter<T>()` and `Sett
 
 ### Factory Methods
 
-Neatoo entities use RemoteFactory for factory generation. See the `/RemoteFactory` skill for:
-- Factory attributes (`[Factory]`, `[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]`)
-- Service injection (`[Service]`)
-- Remote execution (`[Remote]`)
-- Authorization (`[AuthorizeFactory]`)
+Neatoo entities use RemoteFactory for factory generation. See the `/RemoteFactory` skill for factory attributes (`[Factory]`, `[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]`), service injection (`[Service]`), remote execution (`[Remote]`), and authorization (`[AuthorizeFactory]`).
 
 ### Save Routing (Neatoo State-Based)
 
@@ -75,6 +86,10 @@ When `Save()` is called, the factory routes based on Neatoo entity state:
 - `IsDeleted == true` → `[Delete]` method
 
 This routing is automatic based on entity state properties.
+
+### Aggregate Save Cascading
+
+State cascades UP automatically; saves cascade DOWN manually — each parent's `[Insert]`/`[Update]` must call `childFactory.SaveAsync()` on its children. See `references/entities.md` → "Aggregate Save Cascading" for the full pattern, rules, and anti-patterns.
 
 ### Validation
 
@@ -100,75 +115,9 @@ public SkillValidationExample(IEntityBaseServices<SkillValidationExample> servic
 
 Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
 
-### Authorization
-
-Factory-level authorization is provided by RemoteFactory via `[AuthorizeFactory<T>]`. See the `/RemoteFactory` skill for authorization patterns.
-
-## Key Properties
-
-| Property | Type | Meaning |
-|----------|------|---------|
-| `IsValid` | bool | This object and all children pass validation |
-| `IsSelfValid` | bool | This object (only) passes validation |
-| `IsSavable` | bool | `IsValid && IsModified && !IsBusy && !IsChild` |
-| `IsModified` | bool | Has unsaved changes (this or children) |
-| `IsSelfModified` | bool | This object (only) has changes |
-| `IsNew` | bool | Not yet persisted |
-| `IsDeleted` | bool | Marked for deletion |
-| `RuleManager` | IRuleManager | Access to validation rules |
-
-## Dependency Injection & Remote Execution
-
-Service injection (`[Service]`) and remote execution (`[Remote]`) are RemoteFactory features. See the `/RemoteFactory` skill for:
-- Constructor vs method injection patterns
-- When to use `[Remote]` on aggregate roots
-- Child entity patterns (no `[Remote]` needed)
-
 ## Testing
 
-**Critical:** Never mock Neatoo interfaces or classes. Use real factories and mock only external dependencies:
-
-<!-- snippet: skill-testing-pattern -->
-<a id='snippet-skill-testing-pattern'></a>
-```cs
-public static void ConfigureServices(IServiceCollection services)
-{
-    // Setup DI with Neatoo services and mock external dependencies
-    services.AddNeatooServices(NeatooFactory.Logical, typeof(SkillEmployee).Assembly);
-    services.AddScoped<ISkillEmployeeRepository, SkillMockEmployeeRepository>();
-}
-
-public static void TestExample(IServiceProvider serviceProvider)
-{
-    // DO: Use real Neatoo factories
-    var factory = serviceProvider.GetRequiredService<ISkillEmployeeFactory>();
-    var employee = factory.Create();
-    employee.Name = "Alice";
-    Assert.True(employee.IsModified);
-
-    // DON'T: Mock Neatoo interfaces
-    // var mock = new Mock<IEntityBase>(); // Never do this
-}
-```
-<sup><a href='/src/samples/TestingPatternsTests.cs#L18-L37' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-testing-pattern' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-**For unit tests without factory generation:** Use `[SuppressFactory]` on test classes that inherit from Neatoo base classes. This prevents the source generator from creating factory methods for test-only classes.
-
-<!-- snippet: skill-suppress-factory -->
-<a id='snippet-skill-suppress-factory'></a>
-```cs
-[SuppressFactory]
-public class TestEmployee : EntityBase<TestEmployee>
-{
-    public TestEmployee(IEntityBaseServices<TestEmployee> services) : base(services) { }
-    public string Name { get => Getter<string>(); set => Setter(value); }
-}
-```
-<sup><a href='/src/samples/SourceGenerationSamples.cs#L168-L175' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-suppress-factory' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-See `references/testing.md` for integration test patterns and `references/pitfalls.md` for common mistakes.
+**Critical:** Never mock Neatoo interfaces or classes. Use real factories and mock only external dependencies. Use `[SuppressFactory]` on test-only classes that inherit from Neatoo base classes. See `references/testing.md` for patterns and `references/pitfalls.md` for common mistakes.
 
 ## Reference Documentation
 
@@ -189,24 +138,4 @@ Detailed documentation for each topic area:
 
 ## Troubleshooting
 
-**Factory method not generated:**
-- Ensure class has `[Factory]` attribute
-- Ensure class is `partial`
-- Ensure project references include source generators with `OutputItemType="Analyzer"`
-- Rebuild the project
-- Check Generated/ folder for output
-
-**Changes not tracked:**
-- Use `partial` properties - the generator implements change tracking
-- Direct backing field assignment bypasses tracking
-
-**Validation not running:**
-- Rules are async - use `await RunRules()` before checking `IsValid`
-- Rules must be added in constructor via `RuleManager.AddValidation()`
-
-**Save not working:**
-- Check `IsSavable` - must be valid and modified
-- Ensure appropriate `[Insert]`/`[Update]`/`[Delete]` methods exist
-- For server-side persistence, add `[Remote]` attribute
-
-See `references/pitfalls.md` for more common issues.
+See `references/pitfalls.md` for common issues. Key quick checks: class and properties must be `partial`, class needs `[Factory]` attribute, and `IsSavable` requires both `IsValid` and `IsModified`.

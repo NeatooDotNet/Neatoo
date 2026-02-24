@@ -13,8 +13,10 @@
     "todos",
     "release-notes"
   ],
+  "TreatMissingAsWarning": true,
   "ExcludeMarkdownDirectories": [
-    "docs/todos"
+    "docs/todos",
+    ".claude"
   ],
   "DocumentExtensions": [
     "md"

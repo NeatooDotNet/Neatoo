@@ -1,75 +1,16 @@
 # Source Generation
 
-Neatoo uses Roslyn source generators to create property implementations, factory methods, and wiring code at compile time. Understanding what gets generated helps with debugging and customization.
+Neatoo uses Roslyn source generators at compile time. **Understanding source generation is not required to use Neatoo** — declare `partial` properties and factory methods, and the generators handle the rest. This page is for curiosity and debugging.
 
 ## What Gets Generated
 
-### Property Implementations
+For each `partial` property, the generator creates a backing `IValidateProperty<T>` field with change tracking, validation triggering, and `PropertyChanged` notifications wired in.
 
-For each partial property with `Getter<T>()` / `Setter()`:
+For each class with `[Factory]`, the generator creates a factory interface (`IMyEntityFactory`) with methods matching your `[Create]`, `[Fetch]`, etc. methods.
 
-<!-- snippet: api-generator-partial-property -->
-<a id='snippet-api-generator-partial-property'></a>
-```cs
-[Factory]
-public partial class ApiGeneratedCustomer : ValidateBase<ApiGeneratedCustomer>
-{
-    public ApiGeneratedCustomer(IValidateBaseServices<ApiGeneratedCustomer> services) : base(services) { }
+## IFactorySave — How entity.Save() Works
 
-    // Source generator creates:
-    // - private IValidateProperty<string> _NameProperty;
-    // - getter: return _NameProperty.Value;
-    // - setter: _NameProperty.SetValue(value);
-    public partial string Name { get; set; }
-
-    public partial string Email { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L598-L615' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-partial-property' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-### Factory Methods
-
-For classes with `[Factory]` attribute:
-
-<!-- snippet: api-generator-factory-methods -->
-<a id='snippet-api-generator-factory-methods'></a>
-```cs
-[Factory]
-public partial class ApiGeneratedEntity : EntityBase<ApiGeneratedEntity>
-{
-    public ApiGeneratedEntity(IEntityBaseServices<ApiGeneratedEntity> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string Name { get; set; }
-
-    // Source generator creates static factory methods from instance methods
-    [Create]
-    public void Create()
-    {
-        Id = 0;
-        Name = "";
-    }
-
-    [Fetch]
-    public async Task FetchAsync(int id, [Service] IApiCustomerRepository repository)
-    {
-        var data = await repository.FetchAsync(id);
-        Id = data.Id;
-        Name = data.Name;
-    }
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L620-L646' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-factory-methods' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-### Save Factory
-
-Save routing and factory wiring:
+When an entity defines `[Insert]`, `[Update]`, and `[Delete]` methods with **no non-service parameters**, the generator creates an `IFactorySave<T>` implementation. This is automatically injected into the entity's `Factory` property via `IEntityBaseServices<T>`, enabling `entity.Save()` to route to the correct method based on state.
 
 <!-- snippet: api-generator-save-factory -->
 <a id='snippet-api-generator-save-factory'></a>
@@ -117,61 +58,11 @@ public partial class ApiGeneratedSaveEntity : EntityBase<ApiGeneratedSaveEntity>
 <sup><a href='/src/samples/ApiReferenceSamples.cs#L651-L691' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-save-factory' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-### Rule IDs
-
-Stable identifiers for validation rules:
-
-<!-- snippet: api-generator-ruleid -->
-<a id='snippet-api-generator-ruleid'></a>
-```cs
-[Factory]
-public partial class ApiRuleIdEntity : ValidateBase<ApiRuleIdEntity>
-{
-    public ApiRuleIdEntity(IValidateBaseServices<ApiRuleIdEntity> services) : base(services)
-    {
-        // Lambda expressions in AddRule generate stable RuleId entries
-        // in RuleIdRegistry for consistent rule identification
-        RuleManager.AddValidation(
-            entity => entity.Value > 0 ? "" : "Value must be positive",
-            e => e.Value);
-    }
-
-    public partial int Value { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L696-L714' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-ruleid' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Generated/ Folder
-
-Generated code is output to a `Generated/` folder within each project:
-
-```
-MyProject/
-├── Domain/
-│   └── Employee.cs              # Your code
-├── Generated/
-│   └── Neatoo.BaseGenerator/
-│       └── Employee.g.cs        # Generated code
-└── MyProject.csproj
-```
-
-**Note:** The `Generated/` folder is excluded from git (see `.gitignore`).
-
-## Viewing Generated Code
-
-To inspect generated code:
-
-1. Build the project
-2. Look in `Generated/Neatoo.BaseGenerator/`
-3. Or use IDE "Go to Definition" on generated members
+If `[Insert]`/`[Update]`/`[Delete]` methods have non-service parameters (like a parent ID), `IFactorySave<T>` is not generated. The parent must call `factory.SaveAsync(child, parentId)` explicitly — this is the cascade save pattern described in [entities.md](entities.md).
 
 ## Suppressing Generation
 
-Use `[SuppressFactory]` to prevent factory generation:
+Use `[SuppressFactory]` to prevent factory generation for abstract base classes, test classes, or when manual factory implementation is needed:
 
 <!-- snippet: api-attributes-suppressfactory -->
 <a id='snippet-api-attributes-suppressfactory'></a>
@@ -187,77 +78,12 @@ public class ApiTestObject : ValidateBase<ApiTestObject>
 <sup><a href='/src/samples/ApiReferenceSamples.cs#L585-L593' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-suppressfactory' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Use cases:
-- Abstract base classes
-- Test classes that shouldn't have factories
-- Manual factory implementation needed
+## Generated/ Folder
 
-## Generator Diagnostics
-
-The generator produces warnings and errors:
-
-| Code | Meaning |
-|------|---------|
-| NEATOO001 | Class must be partial |
-| NEATOO002 | Invalid factory method signature |
-| NEATOO003 | Missing required attribute |
-
-## Incremental Generation
-
-Neatoo uses incremental source generation for fast builds:
-- Only regenerates when source files change
-- Caches intermediate results
-- Minimal impact on build times
-
-## Customizing Generated Code
-
-### Partial Methods
-
-Implement partial methods to hook into generated code:
-
-```csharp
-partial void OnPropertyChanged(string propertyName)
-{
-    // Custom logic after any property change
-}
-```
-
-### Virtual Methods
-
-Override virtual methods in base classes:
-
-```csharp
-protected override void AddRules()
-{
-    base.AddRules();
-    // Add custom rules
-}
-```
-
-## Debugging Generated Code
-
-1. **Enable source maps** - Generated code includes `#line` directives
-2. **Step through** - Debugger can step into generated code
-3. **Inspect generated files** - Check `Generated/` folder for issues
-
-## Build Troubleshooting
-
-**Generator not running:**
-- Ensure NuGet package is referenced correctly
-- Check for analyzer errors in build output
-- Rebuild the project (not just build)
-
-**Generated code not updating:**
-- Clean solution and rebuild
-- Check that source file timestamps are updating
-- Restart IDE if caching issues persist
-
-**Duplicate member errors:**
-- Ensure class is marked `partial`
-- Check for manual implementations conflicting with generated code
+Generated code is output to `Generated/Neatoo.BaseGenerator/` within each project. This folder is excluded from git. To inspect generated code, build the project and look there, or use IDE "Go to Definition" on generated members.
 
 ## Related
 
-- [Factory](factory.md) - Factory attributes
-- [Properties](properties.md) - Property declarations
 - [Base Classes](base-classes.md) - Base class selection
+- [Properties](properties.md) - Property declarations
+- [Entities](entities.md) - Save routing and cascade patterns

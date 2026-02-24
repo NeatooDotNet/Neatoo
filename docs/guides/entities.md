@@ -137,7 +137,7 @@ public void IsNew_DistinguishesNewFromExisting()
     Assert.True(order.IsNew);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L223-L233' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-is-new' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L391-L401' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-is-new' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The framework manages `IsNew` automatically through factory operations. FactoryComplete sets `IsNew = true` after Create and `IsNew = false` after Insert or Fetch.
@@ -171,7 +171,7 @@ public void NewEntity_StartsUnmodifiedAfterCreate()
     Assert.True(order.IsSavable);        // New entity is savable (needs Insert)
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L235-L253' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-lifecycle-new' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L403-L421' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-lifecycle-new' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After Create completes:
@@ -208,7 +208,7 @@ public async Task FetchedEntity_StartsClean()
     Assert.Equal("Customer 42", customer.Name);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L255-L270' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-fetch' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L423-L438' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-fetch' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After Fetch completes:
@@ -241,7 +241,7 @@ public async Task Save_DelegatesToAppropriateFactoryMethod()
     Assert.True(employee.IsSavable);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L272-L287' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L440-L455' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Save logic:
@@ -288,7 +288,7 @@ public async Task Delete_MarksEntityForDeletion()
     Assert.True(customer.IsSavable);  // Ready for delete operation
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L289-L309' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L457-L477' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After Delete:
@@ -322,7 +322,7 @@ public async Task UnDelete_ReversesDeleteBeforeSave()
     Assert.False(customer.IsModified); // Back to clean state
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L311-L332' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-undelete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L479-L500' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-undelete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 If the entity is in a collection, `Delete()` delegates to the collection's `Remove()` method for consistency. See [Collections](collections.md) for deleted list management.
@@ -364,7 +364,7 @@ public void Parent_EstablishesAggregateGraph()
     Assert.Null(order.Root);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L334-L362' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-parent-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L502-L530' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-parent-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Parent cascades:
@@ -423,7 +423,7 @@ public void ModificationState_TracksChanges()
     Assert.Contains("OrderNumber", order.ModifiedProperties);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L364-L389' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-modification-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L532-L557' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-modification-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 - **IsModified**: True if any property changed, entity is new (`IsNew == true`), entity is deleted (`IsDeleted == true`), or explicitly marked modified. Includes child modifications cascading from collections.
@@ -455,7 +455,7 @@ public void MarkModified_ForcesEntityToBeSaved()
     Assert.True(order.IsMarkedModified);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L391-L410' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-mark-modified' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L559-L578' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-mark-modified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Modification state is cleared automatically after successful save operations. The framework calls `FactoryComplete`, which internally calls `MarkUnmodified()` to reset tracking:
@@ -485,7 +485,7 @@ public void MarkUnmodified_ClearsAfterSave()
     Assert.Empty(order.ModifiedProperties);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L412-L434' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-mark-unmodified' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L580-L602' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-mark-unmodified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `MarkUnmodified()` is protected and called internally by `FactoryComplete` after successful Insert or Update operations. Users do not call it directly.
@@ -522,7 +522,7 @@ public async Task PersistenceState_DeterminesFactoryMethod()
     Assert.False(fetchedOrder.IsDeleted);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L436-L461' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-persistence-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L604-L629' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-persistence-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 State transitions:
@@ -562,7 +562,7 @@ public void IsSavable_CombinesStateChecks()
     Assert.True(order.IsSavable);     // Can save!
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L463-L486' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-savable' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L631-L654' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-savable' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 IsSavable is true when:
@@ -608,7 +608,7 @@ public async Task ChildEntity_CannotSaveDirectly()
     Assert.Equal(SaveFailureReason.IsChildObject, exception.Reason);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L488-L516' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L656-L684' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Child entities:
@@ -697,7 +697,7 @@ public void Factory_SetThroughDependencyInjection()
     // The factory calls Insert, Update, or Delete based on entity state
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L518-L533' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L686-L701' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 FactoryComplete executes after factory operations to manage entity state:
@@ -735,7 +735,7 @@ public async Task Save_SupportsCancellation()
     Assert.True(order.IsModified);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L535-L555' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L703-L723' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cancellation behavior:
