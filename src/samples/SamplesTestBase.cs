@@ -80,6 +80,8 @@ public abstract class SamplesTestBase : IDisposable
 
         // Entities samples
         services.AddScoped<IEntitiesCustomerRepository, MockEntitiesCustomerRepository>();
+        services.AddScoped<IEntitiesCascadeOrderRepository, MockEntitiesCascadeOrderRepository>();
+        services.AddScoped<IEntitiesCascadeItemRepository, MockEntitiesCascadeItemRepository>();
 
         // Async samples
         services.AddScoped<IEmailValidationService, MockEmailValidationService>();

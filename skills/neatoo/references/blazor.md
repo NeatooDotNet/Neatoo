@@ -2,40 +2,9 @@
 
 > **Required package:** Install `Neatoo.Blazor.MudNeatoo` to use the MudNeatoo components shown below.
 
-Neatoo provides Blazor-specific components and patterns for building forms with automatic validation display, change tracking, and two-way binding.
-
-## Basic Text Field
-
-Bind to Neatoo properties with automatic validation:
-
-<!-- snippet: blazor-text-field-basic -->
-<a id='snippet-blazor-text-field-basic'></a>
-```cs
-[Fact]
-public void TextFieldBindsToEntityProperty()
-{
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-
-    // Access the property through indexer
-    var nameProperty = employee["Name"];
-
-    // Property has display name from DisplayAttribute
-    Assert.Equal("Full Name", nameProperty.DisplayName);
-
-    // Set value through property (simulates component binding)
-    employee.Name = "Alice Johnson";
-    Assert.Equal("Alice Johnson", nameProperty.Value);
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L116-L133' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-text-field-basic' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+Neatoo provides Blazor-specific components and patterns for building forms with automatic validation display, change tracking, and two-way binding. Property binding basics are covered in [properties.md](properties.md) — this page covers Blazor-specific patterns.
 
 ## Validation Display
-
-### Inline Validation
-
-Show validation errors next to fields:
 
 <!-- snippet: blazor-validation-inline -->
 <a id='snippet-blazor-validation-inline'></a>
@@ -56,10 +25,6 @@ public void ValidationDisplaysInlineErrors()
 ```
 <sup><a href='/src/samples/BlazorSamples.cs#L135-L149' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-validation-inline' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
-
-### Validation Summary
-
-Show all validation errors in one place:
 
 <!-- snippet: blazor-validation-summary -->
 <a id='snippet-blazor-validation-summary'></a>
@@ -84,8 +49,6 @@ public void ValidationSummaryShowsAllErrors()
 <!-- endSnippet -->
 
 ## Form Submission
-
-Handle form submission with validation:
 
 <!-- snippet: blazor-form-submit -->
 <a id='snippet-blazor-form-submit'></a>
@@ -119,7 +82,7 @@ public async Task FormValidationPreventsInvalidSubmit()
 
 ## Busy State
 
-Show loading indicators during async operations:
+Disable buttons and show loading indicators while async validation runs:
 
 <!-- snippet: blazor-busy-state -->
 <a id='snippet-blazor-busy-state'></a>
@@ -149,263 +112,9 @@ public async Task BusyStateDisablesComponent()
 <sup><a href='/src/samples/BlazorSamples.cs#L195-L217' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-busy-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-## Read-Only Properties
-
-Display read-only values:
-
-<!-- snippet: blazor-readonly-property -->
-<a id='snippet-blazor-readonly-property'></a>
-```cs
-[Fact]
-public void ReadOnlyPropertyBindsToComponent()
-{
-    var factory = GetRequiredService<IBlazorAuditedEntityFactory>();
-    var entity = factory.Create();
-
-    // Set value
-    entity.CreatedBy = "admin";
-
-    // Property has IsReadOnly property that components bind to
-    var createdByProperty = entity["CreatedBy"];
-
-    // When IsReadOnly is true, MudNeatoo components render as read-only
-    // The default value depends on property configuration
-    Assert.NotNull(createdByProperty);
-    Assert.Equal("admin", entity.CreatedBy);
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L219-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-readonly-property' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Select/Dropdown
-
-Bind to enum properties:
-
-<!-- snippet: blazor-select-enum -->
-<a id='snippet-blazor-select-enum'></a>
-```cs
-[Fact]
-public void SelectBindsToEnumProperty()
-{
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-
-    // Set enum value
-    employee.Priority = Priority.High;
-
-    var priorityProperty = employee["Priority"];
-    Assert.Equal(Priority.High, priorityProperty.Value);
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L239-L252' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-select-enum' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Checkbox
-
-Bind to boolean properties:
-
-<!-- snippet: blazor-checkbox-binding -->
-<a id='snippet-blazor-checkbox-binding'></a>
-```cs
-[Fact]
-public void CheckboxBindsToBooleanProperty()
-{
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-
-    // Toggle boolean value
-    employee.IsActive = true;
-
-    var isActiveProperty = employee["IsActive"];
-    Assert.Equal(true, isActiveProperty.Value);
-
-    // Toggle again
-    employee.IsActive = false;
-    Assert.Equal(false, isActiveProperty.Value);
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L254-L271' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-checkbox-binding' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Date Picker
-
-Bind to date properties:
-
-<!-- snippet: blazor-date-picker -->
-<a id='snippet-blazor-date-picker'></a>
-```cs
-[Fact]
-public void DatePickerBindsToDateProperty()
-{
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-
-    var startDate = new DateTime(2024, 1, 15);
-    employee.StartDate = startDate;
-
-    var startDateProperty = employee["StartDate"];
-    Assert.Equal(startDate, startDateProperty.Value);
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L273-L286' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-date-picker' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Numeric Fields
-
-Bind to numeric properties:
-
-<!-- snippet: blazor-numeric-field -->
-<a id='snippet-blazor-numeric-field'></a>
-```cs
-[Fact]
-public void NumericFieldBindsToDecimalProperty()
-{
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-
-    employee.Salary = 75000.50m;
-
-    var salaryProperty = employee["Salary"];
-    Assert.Equal(75000.50m, salaryProperty.Value);
-
-    // Validation enforces range
-    employee.Salary = -1000;
-    Assert.False(salaryProperty.IsValid);
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L288-L304' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-numeric-field' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Autocomplete
-
-Bind with autocomplete behavior:
-
-<!-- snippet: blazor-autocomplete -->
-<a id='snippet-blazor-autocomplete'></a>
-```cs
-[Fact]
-public void AutocompleteBindsToStringProperty()
-{
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-
-    employee.Department = "Engineering";
-
-    var deptProperty = employee["Department"];
-    Assert.Equal("Engineering", deptProperty.Value);
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L306-L318' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-autocomplete' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Change Tracking in UI
-
-React to property changes:
-
-<!-- snippet: blazor-change-tracking -->
-<a id='snippet-blazor-change-tracking'></a>
-```cs
-[Fact]
-public void ChangeTrackingDetectsModifications()
-{
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-
-    // New entity starts unmodified
-    Assert.False(employee.IsSelfModified);
-
-    // Making changes sets IsModified
-    employee.Name = "Changed Name";
-    Assert.True(employee.IsSelfModified);
-    Assert.True(employee.IsModified);
-
-    // Track which properties changed
-    Assert.Contains("Name", employee.ModifiedProperties);
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L320-L338' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-change-tracking' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Customizing Appearance
-
-Style based on validation state:
-
-<!-- snippet: blazor-customize-appearance -->
-<a id='snippet-blazor-customize-appearance'></a>
-```cs
-[Fact]
-public void ComponentAcceptsStyleParameters()
-{
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-
-    // Properties are accessible for binding
-    var nameProperty = employee["Name"];
-    Assert.NotNull(nameProperty.DisplayName);
-
-    // All MudBlazor parameters pass through to the underlying component
-    // (Variant, Margin, HelperText, Adornment, etc.)
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L340-L354' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-customize-appearance' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Property Extensions
-
-Access extended property information:
-
-<!-- snippet: blazor-property-extensions -->
-<a id='snippet-blazor-property-extensions'></a>
-```cs
-[Fact]
-public void ExtensionMethodsProvideValidationInfo()
-{
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-    employee.Email = "invalid";
-
-    var emailProperty = employee["Email"];
-
-    // Extension method pattern (simulated - actual extensions in Neatoo.Blazor.MudNeatoo)
-    var hasErrors = emailProperty.PropertyMessages.Any();
-    var errorText = string.Join("; ", emailProperty.PropertyMessages.Select(m => m.Message));
-
-    Assert.True(hasErrors);
-    Assert.NotEmpty(errorText);
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L356-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-property-extensions' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Manual State Updates
-
-Trigger UI updates manually:
-
-<!-- snippet: blazor-statehaschanged -->
-<a id='snippet-blazor-statehaschanged'></a>
-```cs
-[Fact]
-public void PropertyChangesNotifyComponents()
-{
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-    var nameProperty = employee["Name"];
-
-    var changedProperties = new List<string>();
-    nameProperty.PropertyChanged += (_, e) => changedProperties.Add(e.PropertyName ?? "");
-
-    // Setting value triggers PropertyChanged
-    employee.Name = "Test";
-
-    Assert.NotEmpty(changedProperties);
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L375-L391' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-statehaschanged' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
 ## Manual Binding
 
-For custom controls without Neatoo components:
+For custom controls without MudNeatoo components, use `SetValue` for async property assignment:
 
 <!-- snippet: blazor-manual-binding -->
 <a id='snippet-blazor-manual-binding'></a>
@@ -438,12 +147,13 @@ public async Task ManualBindingUsesSetValueAsync()
 | `NeatooValidationSummary` | All validation errors |
 | `NeatooValidationMessage` | Single property validation |
 
+All MudBlazor parameters pass through to the underlying component (Variant, Margin, HelperText, Adornment, etc.).
+
 ## Best Practices
 
-1. **Use Neatoo components** - They handle validation and change tracking automatically
-2. **Bind to ViewModel properties** - Not directly to domain model
-3. **Handle IsBusy** - Disable buttons and show loading during async operations
-4. **Show validation early** - Display errors as user types, not just on submit
+1. **Use Neatoo components** — They handle validation display and change tracking automatically
+2. **Handle IsBusy** — Disable buttons and show loading during async operations
+3. **Show validation early** — Display errors as user types, not just on submit
 
 ## Blazor WASM Project Structure
 
@@ -494,6 +204,6 @@ This ensures:
 
 ## Related
 
-- [Validation](validation.md) - Validation rules and BrokenRules
+- [Validation](validation.md) - Validation rules
 - [Properties](properties.md) - Property change notifications
 - [Entities](entities.md) - IsSavable for submit buttons

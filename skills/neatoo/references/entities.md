@@ -1,135 +1,6 @@
 # Entities
 
-`EntityBase<T>` provides the foundation for persistent entities with full CRUD lifecycle, change tracking, and save routing.
-
-## Basic Entity Definition
-
-Inherit from `EntityBase<T>` and add factory methods:
-
-<!-- snippet: entities-base-class -->
-<a id='snippet-entities-base-class'></a>
-```cs
-[Factory]
-public partial class EntitiesEmployee : EntityBase<EntitiesEmployee>
-{
-    public EntitiesEmployee(IEntityBaseServices<EntitiesEmployee> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string Name { get; set; }
-
-    public partial string Email { get; set; }
-
-    public partial decimal Salary { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/src/samples/EntitiesSamples.cs#L15-L32' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-base-class' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Aggregate Root Pattern
-
-Mark the root entity of an aggregate:
-
-<!-- snippet: entities-aggregate-root -->
-<a id='snippet-entities-aggregate-root'></a>
-```cs
-[Factory]
-public partial class EntitiesOrder : EntityBase<EntitiesOrder>
-{
-    public EntitiesOrder(IEntityBaseServices<EntitiesOrder> services) : base(services)
-    {
-        // Initialize the items collection
-        ItemsProperty.LoadValue(new EntitiesOrderItemList());
-    }
-
-    public partial int Id { get; set; }
-
-    public partial string OrderNumber { get; set; }
-
-    public partial DateTime OrderDate { get; set; }
-
-    // Child collection establishes aggregate boundary
-    public partial IEntitiesOrderItemList Items { get; set; }
-
-    // Expose protected methods for samples
-    public void DoMarkModified() => MarkModified();
-    public void DoMarkUnmodified() => MarkUnmodified();
-
-    [Create]
-    public void Create() { }
-
-    [Fetch]
-    public void Fetch(int id, string orderNumber, DateTime orderDate)
-    {
-        Id = id;
-        OrderNumber = orderNumber;
-        OrderDate = orderDate;
-    }
-}
-```
-<sup><a href='/src/samples/EntitiesSamples.cs#L108-L142' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-aggregate-root' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Factory Methods
-
-Define factory methods for Create, Fetch, and persistence:
-
-<!-- snippet: entities-factory-methods -->
-<a id='snippet-entities-factory-methods'></a>
-```cs
-[Factory]
-public partial class EntitiesCustomer : EntityBase<EntitiesCustomer>
-{
-    public EntitiesCustomer(IEntityBaseServices<EntitiesCustomer> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string Name { get; set; }
-
-    public partial string Email { get; set; }
-
-    [Create]
-    public void Create()
-    {
-        // Initialize default values for new customer
-        Id = 0;
-        Name = "";
-        Email = "";
-    }
-
-    [Fetch]
-    public async Task FetchAsync(int id, [Service] IEntitiesCustomerRepository repository)
-    {
-        var data = await repository.FetchAsync(id);
-        Id = data.Id;
-        Name = data.Name;
-        Email = data.Email;
-    }
-
-    [Insert]
-    public async Task InsertAsync([Service] IEntitiesCustomerRepository repository)
-    {
-        await repository.InsertAsync(this);
-    }
-
-    [Update]
-    public async Task UpdateAsync([Service] IEntitiesCustomerRepository repository)
-    {
-        await repository.UpdateAsync(this);
-    }
-
-    [Delete]
-    public async Task DeleteAsync([Service] IEntitiesCustomerRepository repository)
-    {
-        await repository.DeleteAsync(this);
-    }
-}
-```
-<sup><a href='/src/samples/EntitiesSamples.cs#L147-L195' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-methods' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+`EntityBase<T>` provides the foundation for persistent entities with full CRUD lifecycle, change tracking, and save routing. For base class definitions and factory method examples, see [base-classes.md](base-classes.md).
 
 ## Entity Lifecycle
 
@@ -150,7 +21,7 @@ public void IsNew_DistinguishesNewFromExisting()
     Assert.True(order.IsNew);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L223-L233' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-is-new' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L391-L401' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-is-new' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 <!-- snippet: entities-lifecycle-new -->
 <!-- endSnippet -->
@@ -177,7 +48,7 @@ public async Task FetchedEntity_StartsClean()
     Assert.Equal("Customer 42", customer.Name);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L255-L270' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-fetch' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L423-L438' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-fetch' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Saving Entities
@@ -202,7 +73,7 @@ public async Task Save_DelegatesToAppropriateFactoryMethod()
     Assert.True(employee.IsSavable);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L272-L287' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L440-L455' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Save Routing:**
@@ -237,7 +108,7 @@ public async Task Delete_MarksEntityForDeletion()
     Assert.True(customer.IsSavable);  // Ready for delete operation
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L289-L309' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L457-L477' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Undeleting Entities
@@ -268,7 +139,7 @@ public async Task UnDelete_ReversesDeleteBeforeSave()
     Assert.False(customer.IsModified); // Back to clean state
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L311-L332' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-undelete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L479-L500' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-undelete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Change Tracking
@@ -305,7 +176,7 @@ public void ModificationState_TracksChanges()
     Assert.Contains("OrderNumber", order.ModifiedProperties);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L364-L389' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-modification-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L532-L557' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-modification-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Marking Clean/Dirty
@@ -334,7 +205,7 @@ public void MarkModified_ForcesEntityToBeSaved()
     Assert.True(order.IsMarkedModified);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L391-L410' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-mark-modified' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L559-L578' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-mark-modified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 <!-- snippet: entities-mark-unmodified -->
 <!-- endSnippet -->
@@ -371,7 +242,7 @@ public async Task PersistenceState_DeterminesFactoryMethod()
     Assert.False(fetchedOrder.IsDeleted);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L436-L461' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-persistence-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L604-L629' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-persistence-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## IsSavable
@@ -404,7 +275,7 @@ public void IsSavable_CombinesStateChecks()
     Assert.True(order.IsSavable);     // Can save!
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L463-L486' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-savable' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L631-L654' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-savable' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `IsSavable` returns `true` when:
@@ -447,7 +318,7 @@ public async Task ChildEntity_CannotSaveDirectly()
     Assert.Equal(SaveFailureReason.IsChildObject, exception.Reason);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L488-L516' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L656-L684' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Factory Services
@@ -472,7 +343,7 @@ public void Factory_SetThroughDependencyInjection()
     // The factory calls Insert, Update, or Delete based on entity state
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L518-L533' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L686-L701' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Save Cancellation
@@ -502,7 +373,7 @@ public async Task Save_SupportsCancellation()
     Assert.True(order.IsModified);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L535-L555' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L703-L723' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Parent Property
@@ -540,8 +411,246 @@ public void Parent_EstablishesAggregateGraph()
     Assert.Null(order.Root);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L334-L362' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-parent-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L502-L530' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-parent-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+## Aggregate Save Cascading
+
+Understanding how saves propagate through an aggregate hierarchy is critical. Neatoo handles state cascading and save cascading differently.
+
+### State Cascades UP Automatically
+
+The framework automatically propagates `IsModified`, `IsValid`, and `IsBusy` up the object graph. When a child becomes modified, its parent's `IsModified` becomes true. This is framework behavior — you don't write code for it.
+
+```
+Grandchild.Name = "new"  →  Grandchild.IsModified = true
+                          →  Child.IsModified = true      (automatic)
+                          →  Root.IsModified = true        (automatic)
+```
+
+### Saves Cascade DOWN Manually
+
+**The framework does NOT auto-save children.** When `factory.SaveAsync(root)` is called, it routes to the root's `[Insert]` or `[Update]` method. That method must explicitly save each child. Those children's `[Insert]`/`[Update]` must save their children, and so on.
+
+```
+External code calls:     factory.SaveAsync(order)
+                              ↓  (routes to Insert or Update based on IsNew)
+Order [Insert]:          saves each OrderItem via itemFactory.SaveAsync(item, orderId)
+                              ↓  (routes to Insert or Update based on IsNew)
+OrderItem [Insert]:      saves each Detail via detailFactory.SaveAsync(detail, itemId)
+```
+
+### The Insert Pattern
+
+Each entity's `[Insert]` saves this entity first (to get the ID), then saves its direct children:
+
+<!-- snippet: entities-cascade-insert -->
+<a id='snippet-entities-cascade-insert'></a>
+```cs
+[Factory]
+public partial class EntitiesCascadeOrder : EntityBase<EntitiesCascadeOrder>
+{
+    public EntitiesCascadeOrder(IEntityBaseServices<EntitiesCascadeOrder> services) : base(services)
+    {
+        ItemsProperty.LoadValue(new EntitiesCascadeItemList());
+    }
+
+    public partial int Id { get; set; }
+    public partial string OrderNumber { get; set; }
+    public partial EntitiesCascadeItemList Items { get; set; }
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(int id, string orderNumber)
+    {
+        Id = id;
+        OrderNumber = orderNumber;
+    }
+
+    [Insert]
+    public async Task InsertAsync(
+        [Service] IEntitiesCascadeOrderRepository repository,
+        [Service] IEntitiesCascadeItemFactory itemFactory)
+    {
+        // 1. Save this entity first (get the ID)
+        Id = await repository.InsertOrderAsync(OrderNumber);
+
+        // 2. Save children — parent is responsible for calling childFactory.Save()
+        for (int i = 0; i < Items.Count; i++)
+        {
+            Items[i] = await itemFactory.SaveAsync(Items[i], Id);
+        }
+    }
+```
+<sup><a href='/src/samples/EntitiesSamples.cs#L289-L326' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-cascade-insert' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### The Update Pattern
+
+The `[Update]` has three parts: save this entity, save active children (new or modified), and save deleted children:
+
+<!-- snippet: entities-cascade-update -->
+<a id='snippet-entities-cascade-update'></a>
+```cs
+[Update]
+public async Task UpdateAsync(
+    [Service] IEntitiesCascadeOrderRepository repository,
+    [Service] IEntitiesCascadeItemFactory itemFactory)
+{
+    // 1. Update this entity
+    await repository.UpdateOrderAsync(Id, OrderNumber);
+
+    // 2. Save active children — routes to child's [Insert] or [Update]
+    for (int i = 0; i < Items.Count; i++)
+    {
+        if (Items[i].IsNew)
+        {
+            Items[i] = await itemFactory.SaveAsync(Items[i], Id);
+        }
+        else if (Items[i].IsModified)
+        {
+            Items[i] = (await itemFactory.SaveAsync(Items[i]))!;
+        }
+    }
+
+    // 3. Save deleted children — routes to child's [Delete]
+    foreach (var deleted in Items.Deleted)
+    {
+        await itemFactory.SaveAsync(deleted);
+    }
+}
+```
+<sup><a href='/src/samples/EntitiesSamples.cs#L328-L356' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-cascade-update' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+**Key:** Each child's own `[Insert]`/`[Update]`/`[Delete]` handles its persistence logic (mapping to EF entities, calling repository methods). The parent only calls `itemFactory.SaveAsync()`.
+
+External code only saves the aggregate root:
+
+<!-- snippet: entities-cascade-correct-external -->
+<a id='snippet-entities-cascade-correct-external'></a>
+```cs
+[Fact]
+public async Task CascadeSave_OnlyRootSavedExternally()
+{
+    var orderFactory = GetRequiredService<IEntitiesCascadeOrderFactory>();
+    var itemFactory = GetRequiredService<IEntitiesCascadeItemFactory>();
+
+    var order = orderFactory.Create();
+    order.OrderNumber = "ORD-001";
+
+    var item = itemFactory.Create();
+    item.ProductName = "Widget";
+    item.Quantity = 5;
+    order.Items.Add(item);
+
+    // CORRECT: only save the aggregate root from external code
+    // order.Insert calls itemFactory.SaveAsync for each child
+    var saved = (await orderFactory.SaveAsync(order))!;
+
+    Assert.False(saved.IsNew);
+}
+```
+<sup><a href='/src/samples/EntitiesSamples.cs#L798-L819' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-cascade-correct-external' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### Rules
+
+1. **Only the aggregate root is saved externally** — external code calls `factory.SaveAsync(root)`, never `factory.SaveAsync(child)`
+2. **Each entity saves its own direct children** — don't skip levels (root should not save grandchildren)
+3. **Save order matters** — parent must be inserted before children (to get the parent ID)
+4. **Reassign after save** — `factory.SaveAsync()` returns a new instance, so always reassign: `Items[i] = await itemFactory.SaveAsync(Items[i])`
+
+### Anti-Pattern: Flat Save
+
+Do NOT save entities from a flat coordinator that reaches into the hierarchy:
+
+```csharp
+// WRONG — bypasses aggregate cascade
+async Task SaveEverything()
+{
+    await consultationFactory.SaveAsync(consultation);  // saves its visits
+    await visitFactory.SaveAsync(visit);                // WRONG: already saved by consultation
+    await treatmentFactory.SaveAsync(treatment);        // WRONG: should be saved by visit
+}
+```
+
+Instead, each level saves its own children:
+
+```csharp
+// CORRECT — each entity saves its direct children in [Insert]/[Update]
+// Consultation.Insert → saves Visit via visitFactory.SaveAsync
+// Visit.Insert → saves Treatment via treatmentFactory.SaveAsync
+// External code only calls: await consultationFactory.SaveAsync(consultation)
+```
+
+### Anti-Pattern: Parent Does Child's Persistence Inline
+
+Do NOT put child persistence logic (EF entity mapping, repository calls) in the parent's `[Insert]`/`[Update]`. Each child handles its own persistence in its own factory methods.
+
+```csharp
+// WRONG — parent manually persists children instead of delegating
+[Update]
+public async Task UpdateAsync([Service] IAssessmentRepository repository)
+{
+    var entity = await repository.GetByIdAsync(this.Id);
+    MapTo(entity);
+
+    // BAD: parent iterates children and does their persistence work
+    foreach (var area in AreasList)
+    {
+        var areaEntity = entity.Areas.FirstOrDefault(a => a.LocationId == area.LocationId);
+        if (areaEntity != null)
+        {
+            areaEntity.Value = area.Value?.ToString();  // parent maps child properties
+        }
+        else
+        {
+            await repository.InsertAreaAsync(new AreaEntity  // parent creates child EF entities
+            {
+                AssessmentId = this.Id,
+                Value = area.Value?.ToString()
+            });
+        }
+    }
+}
+```
+
+```csharp
+// CORRECT — parent delegates to child factory; child handles its own persistence
+[Update]
+public async Task UpdateAsync([Service] IAssessmentRepository repository,
+    [Service] IAreaFactory areaFactory)
+{
+    var entity = await repository.GetByIdAsync(this.Id);
+    MapTo(entity);
+
+    // Each child's [Insert]/[Update]/[Delete] handles its own EF mapping
+    for (int i = 0; i < AreasList.Count; i++)
+    {
+        if (AreasList[i].IsNew)
+        {
+            AreasList[i] = await areaFactory.SaveAsync(AreasList[i], this.Id);
+        }
+        else if (AreasList[i].IsModified)
+        {
+            AreasList[i] = (await areaFactory.SaveAsync(AreasList[i]))!;
+        }
+    }
+
+    foreach (var deleted in AreasList.DeletedList)
+    {
+        await areaFactory.SaveAsync(deleted);
+    }
+}
+```
+
+**Why this matters:** When the parent does the child's persistence inline, the child's `[Insert]`/`[Update]`/`[Delete]` methods don't exist or go unused. This means:
+- Child persistence logic can't be tested independently
+- Conditional persistence decisions (e.g., skip empty children) get tangled into the parent
+- The parent grows large and complex as the child's schema evolves
 
 ## Related
 

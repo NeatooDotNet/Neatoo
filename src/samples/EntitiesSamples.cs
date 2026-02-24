@@ -194,6 +194,174 @@ public partial class EntitiesCustomer : EntityBase<EntitiesCustomer>
 }
 #endregion
 
+// -----------------------------------------------------------------
+// Cascade save pattern entity classes
+// -----------------------------------------------------------------
+
+/// <summary>
+/// Repository interface for cascade save samples.
+/// </summary>
+public interface IEntitiesCascadeOrderRepository
+{
+    Task<int> InsertOrderAsync(string orderNumber);
+    Task UpdateOrderAsync(int id, string orderNumber);
+    Task DeleteOrderAsync(int id);
+    Task<(int Id, string OrderNumber)> GetByIdAsync(int id);
+}
+
+public class MockEntitiesCascadeOrderRepository : IEntitiesCascadeOrderRepository
+{
+    public Task<int> InsertOrderAsync(string orderNumber) => Task.FromResult(100);
+    public Task UpdateOrderAsync(int id, string orderNumber) => Task.CompletedTask;
+    public Task DeleteOrderAsync(int id) => Task.CompletedTask;
+    public Task<(int Id, string OrderNumber)> GetByIdAsync(int id) => Task.FromResult((id, $"ORD-{id}"));
+}
+
+public interface IEntitiesCascadeItemRepository
+{
+    Task<int> InsertItemAsync(int orderId, string productName, int quantity);
+    Task UpdateItemAsync(int id, string productName, int quantity);
+    Task DeleteItemAsync(int id);
+}
+
+public class MockEntitiesCascadeItemRepository : IEntitiesCascadeItemRepository
+{
+    public Task<int> InsertItemAsync(int orderId, string productName, int quantity) => Task.FromResult(200);
+    public Task UpdateItemAsync(int id, string productName, int quantity) => Task.CompletedTask;
+    public Task DeleteItemAsync(int id) => Task.CompletedTask;
+}
+
+/// <summary>
+/// Child entity for cascade save pattern — handles its own persistence.
+/// </summary>
+[Factory]
+public partial class EntitiesCascadeItem : EntityBase<EntitiesCascadeItem>
+{
+    public EntitiesCascadeItem(IEntityBaseServices<EntitiesCascadeItem> services) : base(services) { }
+
+    public partial int Id { get; set; }
+    public partial string ProductName { get; set; }
+    public partial int Quantity { get; set; }
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(int id, string productName, int quantity)
+    {
+        Id = id;
+        ProductName = productName;
+        Quantity = quantity;
+    }
+
+    [Insert]
+    public async Task InsertAsync(int orderId, [Service] IEntitiesCascadeItemRepository repository)
+    {
+        Id = await repository.InsertItemAsync(orderId, ProductName, Quantity);
+    }
+
+    [Update]
+    public async Task UpdateAsync([Service] IEntitiesCascadeItemRepository repository)
+    {
+        await repository.UpdateItemAsync(Id, ProductName, Quantity);
+    }
+
+    [Delete]
+    public async Task DeleteAsync([Service] IEntitiesCascadeItemRepository repository)
+    {
+        await repository.DeleteItemAsync(Id);
+    }
+}
+
+/// <summary>
+/// Child list for cascade save pattern.
+/// </summary>
+public class EntitiesCascadeItemList : EntityListBase<EntitiesCascadeItem>
+{
+    public int DeletedCount => DeletedList.Count;
+    public IReadOnlyList<EntitiesCascadeItem> Deleted => DeletedList;
+}
+
+/// <summary>
+/// Aggregate root demonstrating the cascade save pattern.
+/// Each entity's [Insert]/[Update] saves its own direct children.
+/// </summary>
+#region entities-cascade-insert
+[Factory]
+public partial class EntitiesCascadeOrder : EntityBase<EntitiesCascadeOrder>
+{
+    public EntitiesCascadeOrder(IEntityBaseServices<EntitiesCascadeOrder> services) : base(services)
+    {
+        ItemsProperty.LoadValue(new EntitiesCascadeItemList());
+    }
+
+    public partial int Id { get; set; }
+    public partial string OrderNumber { get; set; }
+    public partial EntitiesCascadeItemList Items { get; set; }
+
+    [Create]
+    public void Create() { }
+
+    [Fetch]
+    public void Fetch(int id, string orderNumber)
+    {
+        Id = id;
+        OrderNumber = orderNumber;
+    }
+
+    [Insert]
+    public async Task InsertAsync(
+        [Service] IEntitiesCascadeOrderRepository repository,
+        [Service] IEntitiesCascadeItemFactory itemFactory)
+    {
+        // 1. Save this entity first (get the ID)
+        Id = await repository.InsertOrderAsync(OrderNumber);
+
+        // 2. Save children — parent is responsible for calling childFactory.Save()
+        for (int i = 0; i < Items.Count; i++)
+        {
+            Items[i] = await itemFactory.SaveAsync(Items[i], Id);
+        }
+    }
+#endregion
+
+    #region entities-cascade-update
+    [Update]
+    public async Task UpdateAsync(
+        [Service] IEntitiesCascadeOrderRepository repository,
+        [Service] IEntitiesCascadeItemFactory itemFactory)
+    {
+        // 1. Update this entity
+        await repository.UpdateOrderAsync(Id, OrderNumber);
+
+        // 2. Save active children — routes to child's [Insert] or [Update]
+        for (int i = 0; i < Items.Count; i++)
+        {
+            if (Items[i].IsNew)
+            {
+                Items[i] = await itemFactory.SaveAsync(Items[i], Id);
+            }
+            else if (Items[i].IsModified)
+            {
+                Items[i] = (await itemFactory.SaveAsync(Items[i]))!;
+            }
+        }
+
+        // 3. Save deleted children — routes to child's [Delete]
+        foreach (var deleted in Items.Deleted)
+        {
+            await itemFactory.SaveAsync(deleted);
+        }
+    }
+    #endregion
+
+    [Delete]
+    public async Task DeleteAsync([Service] IEntitiesCascadeOrderRepository repository)
+    {
+        await repository.DeleteOrderAsync(Id);
+    }
+}
+
 /// <summary>
 /// Address value object for comparison with EntityBase.
 /// </summary>
@@ -626,4 +794,59 @@ public class EntitiesSamplesTests : SamplesTestBase
         Assert.True(order.IsModified);
         Assert.False(order.IsSelfModified); // Parent itself not modified
     }
+
+    #region entities-cascade-correct-external
+    [Fact]
+    public async Task CascadeSave_OnlyRootSavedExternally()
+    {
+        var orderFactory = GetRequiredService<IEntitiesCascadeOrderFactory>();
+        var itemFactory = GetRequiredService<IEntitiesCascadeItemFactory>();
+
+        var order = orderFactory.Create();
+        order.OrderNumber = "ORD-001";
+
+        var item = itemFactory.Create();
+        item.ProductName = "Widget";
+        item.Quantity = 5;
+        order.Items.Add(item);
+
+        // CORRECT: only save the aggregate root from external code
+        // order.Insert calls itemFactory.SaveAsync for each child
+        var saved = (await orderFactory.SaveAsync(order))!;
+
+        Assert.False(saved.IsNew);
+    }
+    #endregion
+
+    #region entities-cascade-update-test
+    [Fact]
+    public async Task CascadeInsert_SavesRootAndChildren()
+    {
+        var orderFactory = GetRequiredService<IEntitiesCascadeOrderFactory>();
+        var itemFactory = GetRequiredService<IEntitiesCascadeItemFactory>();
+
+        // Create a new order with child items
+        var order = orderFactory.Create();
+        order.OrderNumber = "ORD-001";
+
+        var item1 = itemFactory.Create();
+        item1.ProductName = "Widget";
+        item1.Quantity = 3;
+        order.Items.Add(item1);
+
+        var item2 = itemFactory.Create();
+        item2.ProductName = "Gadget";
+        item2.Quantity = 1;
+        order.Items.Add(item2);
+
+        Assert.True(order.IsNew);
+        Assert.Equal(2, order.Items.Count);
+
+        // Save the root — Insert cascades to children
+        var saved = (await orderFactory.SaveAsync(order))!;
+
+        Assert.False(saved.IsNew);
+        Assert.Equal(2, saved.Items.Count);
+    }
+    #endregion
 }
