@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 10.12.0** (2026-02-26)
+**Neatoo 0.12.0** (2026-02-26)
 
 ---
 
@@ -12,20 +12,20 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
-| [10.12.0](v10.12.0.md) | 2026-02-26 | Bug Fix | Dictionary properties survive JSON bridge round-trip |
-| [10.11.0](v10.11.0.md) | 2026-01-18 | Feature | LazyLoad&lt;T&gt; wrapper type for explicit async lazy loading |
-| [10.10.0](v10.10.0.md) | 2026-01-16 | Feature | Source-generated property backing fields, lazy loading |
-| [10.7.1](v10.7.1.md) | 2026-01-11 | Patch | List IsValid/IsBusy/IsModified caching optimization |
-| [10.7.0](v10.7.0.md) | 2026-01-11 | Feature | Stable rule identification via source generation |
-| [10.6.3](v10.6.3.md) | 2026-01-10 | Patch | Generator unit test infrastructure |
-| [10.6.2](v10.6.2.md) | 2026-01-10 | Patch | Parameterless constructor for EntityBaseServices<T> (unit testing) |
-| [10.6.1](v10.6.1.md) | 2026-01-09 | Patch | KnockOff 10.12.0 upgrade, Moq removed from test projects |
-| [10.6.0](v10.6.0.md) | 2026-01-05 | Feature | RemoteFactory upgrade to 10.5.0 with CancellationToken support |
-| [10.5.0](v10.5.0.md) | 2026-01-04 | Feature | CancellationToken support for async operations |
-| [10.4.0](v10.4.0.md) | 2026-01-04 | Feature | Collapse Base layer - simplified inheritance hierarchy |
-| [10.3.0](v10.3.0.md) | 2026-01-03 | Feature | Root property, ContainingList, Delete/Remove consistency |
-| [10.2.0](v10.2.0.md) | 2026-01-02 | Feature | Stubbable public interfaces |
-| [10.1.1](v10.1.1.md) | 2026-01-01 | Feature | Record support for Value Objects |
+| [0.12.0](v0.12.0.md) | 2026-02-26 | Bug Fix | Dictionary properties survive JSON bridge round-trip |
+| [0.11.0](v0.11.0.md) | 2026-01-18 | Feature | LazyLoad&lt;T&gt; wrapper type for explicit async lazy loading |
+| [0.10.0](v0.10.0.md) | 2026-01-16 | Feature | Source-generated property backing fields, lazy loading |
+| [0.7.1](v0.7.1.md) | 2026-01-11 | Patch | List IsValid/IsBusy/IsModified caching optimization |
+| [0.7.0](v0.7.0.md) | 2026-01-11 | Feature | Stable rule identification via source generation |
+| [0.6.3](v0.6.3.md) | 2026-01-10 | Patch | Generator unit test infrastructure |
+| [0.6.2](v0.6.2.md) | 2026-01-10 | Patch | Parameterless constructor for EntityBaseServices<T> (unit testing) |
+| [0.6.1](v0.6.1.md) | 2026-01-09 | Patch | KnockOff 10.12.0 upgrade, Moq removed from test projects |
+| [0.6.0](v0.6.0.md) | 2026-01-05 | Feature | RemoteFactory upgrade to 10.5.0 with CancellationToken support |
+| [0.5.0](v0.5.0.md) | 2026-01-04 | Feature | CancellationToken support for async operations |
+| [0.4.0](v0.4.0.md) | 2026-01-04 | Feature | Collapse Base layer - simplified inheritance hierarchy |
+| [0.3.0](v0.3.0.md) | 2026-01-03 | Feature | Root property, ContainingList, Delete/Remove consistency |
+| [0.2.0](v0.2.0.md) | 2026-01-02 | Feature | Stubbable public interfaces |
+| [0.1.1](v0.1.1.md) | 2026-01-01 | Feature | Record support for Value Objects |
 
 ---
 
@@ -33,20 +33,20 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
-| [10.12.0](v10.12.0.md) | 2026-02-26 |
-| [10.11.0](v10.11.0.md) | 2026-01-18 |
-| [10.10.0](v10.10.0.md) | 2026-01-16 |
-| [10.7.1](v10.7.1.md) | 2026-01-11 |
-| [10.7.0](v10.7.0.md) | 2026-01-11 |
-| [10.6.3](v10.6.3.md) | 2026-01-10 |
-| [10.6.2](v10.6.2.md) | 2026-01-10 |
-| [10.6.1](v10.6.1.md) | 2026-01-09 |
-| [10.6.0](v10.6.0.md) | 2026-01-05 |
-| [10.5.0](v10.5.0.md) | 2026-01-04 |
-| [10.4.0](v10.4.0.md) | 2026-01-04 |
-| [10.3.0](v10.3.0.md) | 2026-01-03 |
-| [10.2.0](v10.2.0.md) | 2026-01-02 |
-| [10.1.1](v10.1.1.md) | 2026-01-01 |
+| [0.12.0](v0.12.0.md) | 2026-02-26 |
+| [0.11.0](v0.11.0.md) | 2026-01-18 |
+| [0.10.0](v0.10.0.md) | 2026-01-16 |
+| [0.7.1](v0.7.1.md) | 2026-01-11 |
+| [0.7.0](v0.7.0.md) | 2026-01-11 |
+| [0.6.3](v0.6.3.md) | 2026-01-10 |
+| [0.6.2](v0.6.2.md) | 2026-01-10 |
+| [0.6.1](v0.6.1.md) | 2026-01-09 |
+| [0.6.0](v0.6.0.md) | 2026-01-05 |
+| [0.5.0](v0.5.0.md) | 2026-01-04 |
+| [0.4.0](v0.4.0.md) | 2026-01-04 |
+| [0.3.0](v0.3.0.md) | 2026-01-03 |
+| [0.2.0](v0.2.0.md) | 2026-01-02 |
+| [0.1.1](v0.1.1.md) | 2026-01-01 |
 
 ---
 
@@ -54,9 +54,9 @@ New features, breaking changes, and significant bug fixes.
 
 | Change Type | Version Bump |
 |-------------|--------------|
-| Breaking changes | Major (10.x → 11.0) |
-| New features | Minor (10.1 → 10.2) |
-| Bug fixes | Patch (10.1.0 → 10.1.1) |
+| Breaking changes | Major (0.x → 1.0) |
+| New features | Minor (0.1 → 0.2) |
+| Bug fixes | Patch (0.1.0 → 0.1.1) |
 
 ---
 

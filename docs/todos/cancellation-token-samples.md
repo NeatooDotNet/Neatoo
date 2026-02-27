@@ -86,6 +86,6 @@ public async Task Insert([Service] IDbContext db, CancellationToken cancellation
 
 ## References
 
-- Release note: `docs/release-notes/v10.8.0.md`
+- Release note: `docs/release-notes/v0.8.0.md`
 - RemoteFactory CancellationToken support: `RemoteFactory/docs/todos/completed/cancellation-token-support.md`
 - Neatoo CancellationToken support: `Neatoo/docs/todos/completed/cancellation-token-support.md`
