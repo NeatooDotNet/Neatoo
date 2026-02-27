@@ -9,6 +9,7 @@ public interface IValidateObject : IValidateBase
     string Name { get; set; }
     int RuleRunCount { get; internal set; }
     Dictionary<string, string>? Data { get; set; }
+    Dictionary<string, string>? Data2 { get; set; }
 
     IValidateObject Child { get; set; }
     IEnumerable<IRule> Rules { get; }
@@ -36,6 +37,7 @@ public partial class ValidateObject : ValidateBase<ValidateObject>, IValidateObj
     public partial Guid ID { get; set; }
     public partial string Name { get; set; }
     public partial Dictionary<string, string>? Data { get; set; }
+    public partial Dictionary<string, string>? Data2 { get; set; }
     public partial IValidateObject Child { get; set; }
 
     public IEnumerable<IRule> Rules => RuleManager.Rules;

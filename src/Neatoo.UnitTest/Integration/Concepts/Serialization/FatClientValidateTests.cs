@@ -206,6 +206,26 @@ public class FatClientValidateTests : IntegrationTestBase
     }
 
     [TestMethod]
+    public void FatClientValidate_Deserialize_SharedDictionaryReference()
+    {
+        var shared = new Dictionary<string, string>
+        {
+            { "key1", "value1" }
+        };
+
+        _target.Data = shared;
+        _target.Data2 = shared;
+
+        var json = Serialize(_target);
+        var newTarget = DeserializeValidate(json);
+
+        Assert.IsNotNull(newTarget.Data);
+        Assert.IsNotNull(newTarget.Data2);
+        Assert.AreSame(newTarget.Data, newTarget.Data2);
+        Assert.AreEqual("value1", newTarget.Data["key1"]);
+    }
+
+    [TestMethod]
     public void FatClientValidate_Deserialize_NullDictionaryProperty()
     {
         // Data is null by default
