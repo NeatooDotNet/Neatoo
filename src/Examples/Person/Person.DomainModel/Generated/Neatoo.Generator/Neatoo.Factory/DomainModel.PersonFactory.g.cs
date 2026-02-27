@@ -223,6 +223,11 @@ namespace DomainModel
             return (IFactorySaveMeta? )await Save(target, cancellationToken);
         }
 
+        Task<Authorized> IFactorySave<Person>.CanSave(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(CanSave(cancellationToken));
+        }
+
         public virtual Authorized CanCreate(CancellationToken cancellationToken = default)
         {
             return LocalCanCreate(cancellationToken);

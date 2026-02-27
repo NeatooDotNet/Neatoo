@@ -173,6 +173,49 @@ public class FatClientValidateTests : IntegrationTestBase
     }
 
     [TestMethod]
+    public void FatClientValidate_Serialize_DictionaryProperty()
+    {
+        _target.Data = new Dictionary<string, string>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var json = Serialize(_target);
+
+        Assert.IsTrue(json.Contains("key1"));
+        Assert.IsTrue(json.Contains("value1"));
+    }
+
+    [TestMethod]
+    public void FatClientValidate_Deserialize_DictionaryProperty()
+    {
+        _target.Data = new Dictionary<string, string>
+        {
+            { "key1", "value1" },
+            { "key2", "value2" }
+        };
+
+        var json = Serialize(_target);
+        var newTarget = DeserializeValidate(json);
+
+        Assert.IsNotNull(newTarget.Data);
+        Assert.AreEqual(2, newTarget.Data.Count);
+        Assert.AreEqual("value1", newTarget.Data["key1"]);
+        Assert.AreEqual("value2", newTarget.Data["key2"]);
+    }
+
+    [TestMethod]
+    public void FatClientValidate_Deserialize_NullDictionaryProperty()
+    {
+        // Data is null by default
+        var json = Serialize(_target);
+        var newTarget = DeserializeValidate(json);
+
+        Assert.IsNull(newTarget.Data);
+    }
+
+    [TestMethod]
     public void FatClientValidate_Deserialize_MarkInvalid()
     {
         // This caught a really critical issue that lead to the RuleManager.TransferredResults logic
