@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Reflection;
 using Neatoo.Internal;
+using Neatoo.Rules;
 
 namespace Neatoo.RemoteFactory.Internal;
 
@@ -150,8 +151,8 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                         }
                         else if (propertyName == "$value")
                         {
-                            var property = JsonSerializer.Deserialize(ref reader, propertyType, options);
-                            list.Add((IValidateProperty)property);
+                            var property = DeserializeValidateProperty(ref reader, propertyType, options);
+                            list.Add(property);
                         }
                     }
                 }
@@ -178,6 +179,85 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
 
         throw new JsonException();
     }
+
+    /// <summary>
+    /// Manually deserializes a ValidateProperty or EntityProperty JSON object,
+    /// reading each field individually. The Value field is deserialized as a standalone
+    /// value (not as a constructor parameter), which avoids the STJ limitation where
+    /// reference metadata ($id/$ref) cannot appear in constructor parameters.
+    /// </summary>
+    private static IValidateProperty DeserializeValidateProperty(
+        ref Utf8JsonReader reader, Type propertyType, JsonSerializerOptions options)
+    {
+        var valueType = propertyType.GetGenericArguments()[0];
+        var isEntityProperty = propertyType.GetGenericTypeDefinition() == typeof(EntityProperty<>);
+
+        string? name = null;
+        object? value = null;
+        bool isReadOnly = false;
+        IRuleMessage[]? serializedRuleMessages = null;
+        bool isSelfModified = false;
+
+        if (reader.TokenType != JsonTokenType.StartObject)
+            throw new JsonException("Expected StartObject for ValidateProperty");
+
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndObject) break;
+            if (reader.TokenType != JsonTokenType.PropertyName)
+                throw new JsonException();
+
+            var fieldName = reader.GetString();
+            reader.Read();
+
+            switch (fieldName)
+            {
+                case "Name":
+                    name = reader.GetString();
+                    break;
+                case "Value":
+                    value = JsonSerializer.Deserialize(ref reader, valueType, options);
+                    break;
+                case "IsReadOnly":
+                    isReadOnly = reader.GetBoolean();
+                    break;
+                case "SerializedRuleMessages":
+                    serializedRuleMessages = JsonSerializer.Deserialize<IRuleMessage[]>(
+                        ref reader, options);
+                    break;
+                case "IsSelfModified":
+                    isSelfModified = reader.GetBoolean();
+                    break;
+                default:
+                    reader.Skip();
+                    break;
+            }
+        }
+
+        serializedRuleMessages ??= Array.Empty<IRuleMessage>();
+
+        IValidateProperty result;
+        if (isEntityProperty)
+        {
+            result = (IValidateProperty)Activator.CreateInstance(
+                propertyType, name, value, isSelfModified,
+                isReadOnly, serializedRuleMessages)!;
+        }
+        else
+        {
+            result = (IValidateProperty)Activator.CreateInstance(
+                propertyType, name, value,
+                serializedRuleMessages, isReadOnly)!;
+        }
+
+        if (result is IJsonOnDeserialized jsonOnDeserialized)
+        {
+            jsonOnDeserialized.OnDeserialized();
+        }
+
+        return result;
+    }
+
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
         // Cast to internal interface to access GetProperties
