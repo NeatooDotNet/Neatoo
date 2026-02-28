@@ -2,11 +2,13 @@
 
 [← Collections](collections.md) | [↑ Guides](index.md) | [Parent-Child →](parent-child.md)
 
-EntityBase extends ValidateBase with entity-specific capabilities for persistence, modification tracking, and aggregate root patterns. Entities track their lifecycle state (new, existing, deleted), support save operations through factory methods, and manage parent-child relationships within aggregates.
+When your domain objects need to be persisted, they need to answer questions that ValidateBase doesn't handle: Has anything changed since the last save? Is this a new object or an existing one? Should the save Insert, Update, or Delete? EntityBase adds this persistence awareness on top of ValidateBase's property tracking and validation, so a single `Save()` call does the right thing for an entire aggregate — new items get inserted, modified items get updated, deleted items get removed — without the caller needing to care about the details.
 
 ## EntityBase vs ValidateBase
 
-EntityBase inherits from ValidateBase and adds entity-specific features for persistence scenarios.
+Not every domain object needs persistence. A search filter, a validation-only form, or a DTO has no identity, no lifecycle, and no reason to track whether it's "new" or "deleted." ValidateBase exists for these objects — it gives you property tracking, validation rules, and meta properties without the weight of modification tracking or save operations.
+
+EntityBase builds on ValidateBase for objects that *do* have identity and a persistence lifecycle. This split mirrors the DDD distinction between entities and value objects: entities have identity and change over time; value objects are defined entirely by their data.
 
 ValidateBase provides:
 - Property change tracking
@@ -50,7 +52,9 @@ Use ValidateBase for value objects and DTOs that don't need persistence tracking
 
 ## Aggregate Root Pattern
 
-EntityBase supports Domain-Driven Design aggregate patterns. The aggregate root is the entry point to the aggregate and the only entity directly accessible for persistence operations.
+An Order with its LineItems, or a Customer with its Addresses — these are aggregates. The root (Order, Customer) is the only entry point for persistence because it enforces business rules that span the whole aggregate. If a LineItem could save itself independently, it could violate cross-entity invariants that only the Order knows about (e.g., "order total must not exceed credit limit").
+
+The root also coordinates save order. Children typically need parent IDs for foreign keys, so the root ensures Insert happens in the right sequence and wraps everything in a single unit of work.
 
 Define an aggregate root:
 
@@ -108,7 +112,7 @@ Child entities within the aggregate:
 
 ## Identity and IsNew
 
-The `IsNew` property distinguishes new entities (not yet persisted) from existing entities (already in the database).
+`IsNew` directly drives save routing — it determines whether Save calls Insert or Update. Because the routing depends on it, the framework manages `IsNew` automatically through factory operations rather than leaving it to the developer. After Create, it's true. After Fetch or a successful Insert, it's false. There's no manual tracking to get wrong.
 
 New entities:
 - `IsNew == true`
@@ -219,7 +223,9 @@ After Fetch completes:
 
 ### Save Operations
 
-Save persists the entity through Insert, Update, or Delete factory methods based on entity state.
+A single `Save()` call handles the entire aggregate. Consider a collection where you've added a new item, modified an existing item, and deleted a third — all in one editing session. When the aggregate root saves, it walks the graph and each entity routes to the right factory method (Insert, Update, or Delete) based on its own state. No calling code needs to sort out which operation each entity requires.
+
+This also simplifies authorization. Permissions are typically Read or Read/Write — there's no reason to differentiate Insert, Update, and Delete at the caller level. You either have permission to persist this aggregate or you don't.
 
 Save delegates to the appropriate factory method:
 
@@ -329,7 +335,7 @@ If the entity is in a collection, `Delete()` delegates to the collection's `Remo
 
 ## Parent Property
 
-The Parent property establishes the entity's position in the aggregate graph.
+Parent navigation serves two purposes. First, it defines the aggregate boundary — the framework knows which entities belong to which aggregate by walking the parent chain. Second, it enables state cascading: when a child entity becomes invalid or modified, that state bubbles up through the parent chain to the aggregate root. This is how the root's `IsModified` and `IsValid` reflect the state of the entire aggregate, not just itself.
 
 Parent navigation:
 
@@ -393,7 +399,7 @@ EntityBase tracks multiple state dimensions through meta properties.
 
 ### Modification State
 
-Modification tracking determines if the entity needs saving:
+When an aggregate saves, not every entity in the graph necessarily changed. `IsModified` tells the aggregate root "something in my subtree needs saving" — which drives the decision to cascade the save downward. `IsSelfModified` tells *this specific entity* "I have changes that need an Update call." An Order might have `IsModified == true` because a LineItem changed, but `IsSelfModified == false` — meaning the Order itself doesn't need an Update, it just needs to cascade the save to its children.
 
 <!-- snippet: entities-modification-state -->
 <a id='snippet-entities-modification-state'></a>
@@ -534,7 +540,7 @@ State transitions:
 
 ### Savability
 
-IsSavable determines if Save() can proceed:
+Neatoo is a DDD framework designed for data-binding UIs. `IsSavable` is meant to be bound directly to a Save button's `Enabled` state — the framework manages the conditions, and the UI automatically reflects whether saving is possible right now. No conditional logic needed in the view.
 
 <!-- snippet: entities-savable -->
 <a id='snippet-entities-savable'></a>
@@ -619,7 +625,7 @@ Child entities:
 
 ## Factory Integration
 
-EntityBase integrates with RemoteFactory for persistence operations.
+Persistence methods live inside the entity class rather than in a separate repository. This is a deliberate trade-off for encapsulation: the entity's lifecycle state management — marking clean, marking dirty, transitioning from new to existing — is handled by protected methods that only the entity itself can call. If persistence lived in an external class, those state transitions would need to be public API, and they'd inevitably get misused. By keeping factory methods on the entity, the class owns both its data and its lifecycle.
 
 Factory methods are defined with attributes:
 
@@ -700,13 +706,7 @@ public void Factory_SetThroughDependencyInjection()
 <sup><a href='/src/samples/EntitiesSamples.cs#L686-L701' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-FactoryComplete executes after factory operations to manage entity state:
-- After Create: Sets `IsNew = true` (entity needs Insert on save)
-- After Fetch: No state changes needed (entity loads with `IsNew = false` from data source)
-- After Insert/Update: Sets `IsNew = false` and calls `MarkUnmodified()` to clear modification tracking
-- After Delete: No state changes (entity remains deleted)
-
-This automatic state management ensures entity lifecycle matches persistence operations without manual intervention.
+After each factory operation, the framework automatically updates entity state — setting `IsNew`, clearing modification tracking — so the lifecycle stays in sync with persistence without manual intervention.
 
 ## Cancellation Support
 
@@ -739,13 +739,13 @@ public async Task Save_SupportsCancellation()
 <!-- endSnippet -->
 
 Cancellation behavior:
-- Waits for pending async operations with cancellation support
 - Checks cancellation before persistence begins
-- Does NOT check cancellation during Insert/Update/Delete execution to avoid data corruption
-- Throws OperationCanceledException if canceled before persistence
+- Throws OperationCanceledException if canceled before persistence starts
+- Passes the CancellationToken through to your factory methods — it's your choice whether to honor it
+- After the factory method returns, Neatoo assumes the operation completed and updates entity state accordingly
 
-Use cancellation to coordinate save operations with UI or timeout policies.
+Neatoo checks the token before kicking off persistence, but once your Insert/Update/Delete method is running, persistence is your responsibility. The framework doesn't forcibly cancel mid-operation.
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-02-27
