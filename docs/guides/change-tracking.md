@@ -2,7 +2,7 @@
 
 [← Business Rules](business-rules.md) | [↑ Guides](index.md) | [Collections →](collections.md)
 
-Neatoo tracks modifications to entities and aggregates through a comprehensive change tracking system. The framework automatically marks entities as modified when properties change and cascades modification state up the parent hierarchy to the aggregate root.
+Change tracking runs on the client — in Blazor, WPF, or any data-bound UI — not on the server. The UI binds to `IsModified` and `IsSavable` to show the user what's changed and whether they can save. But change tracking also serves a deeper purpose: when the aggregate reaches the server for persistence, the factory methods need to know *exactly* what changed. Without tracking, you'd have to compare client state against the database to figure out what's different — a convoluted merge operation that quickly becomes unmanageable for complex aggregates. It's far simpler to carry the changes with the data.
 
 ## IsModified and IsSelfModified
 
@@ -140,7 +140,7 @@ Setting `IsMarkedModified` affects both `IsSelfModified` and `IsModified`, ensur
 
 ## Modified Properties
 
-Track which specific properties have changed since the last save:
+Knowing *that* something changed isn't always enough — your persistence layer often needs to know *what* changed. Partial database updates only write the columns that were modified, reducing the conflict surface for optimistic concurrency. Audit logging records exactly which fields changed for compliance. `ModifiedProperties` provides this granularity.
 
 <!-- snippet: tracking-modified-properties -->
 <a id='snippet-tracking-modified-properties'></a>
@@ -170,9 +170,7 @@ The `ModifiedProperties` collection contains the names of all properties that ha
 
 ## Cascade to Parent
 
-Modification state automatically cascades up the parent hierarchy to the aggregate root. This ensures the aggregate root always knows when any part of the aggregate graph has changed.
-
-When a child entity or collection becomes modified, the parent's `IsModified` becomes true through the PropertyManager's incremental cache updates:
+When a child entity changes, the parent needs to know — not for UI purposes, but for business logic. An aggregate root might have rules like "all line item percentages must sum to 100%" that need to re-evaluate when any child changes. Or a parent might need to notify a sibling child that something changed. The cascade gives the parent awareness to implement these aggregate-level rules.
 
 <!-- snippet: tracking-cascade-parent -->
 <a id='snippet-tracking-cascade-parent'></a>
@@ -241,7 +239,7 @@ public void CollectionTracksItemModifications()
 <sup><a href='/src/samples/ChangeTrackingSamples.cs#L254-L275' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-collections-modified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The list maintains a separate `DeletedList` for items that have been removed but need to be deleted during persistence:
+When an existing item is removed from a collection, it can't just disappear — its Delete factory method still needs to run during save. The `DeletedList` holds these removed items so they participate in persistence even though they're no longer in the active collection:
 
 <!-- snippet: tracking-collections-deleted -->
 <a id='snippet-tracking-collections-deleted'></a>
@@ -419,7 +417,7 @@ This design provides clear, actionable feedback when save preconditions are not 
 
 ## Pausing Modification Tracking
 
-Use `PauseAllActions` to temporarily disable modification tracking, validation, and property change notifications during batch operations:
+Pausing exists primarily because the framework itself needs it. During factory operations (Create, Fetch, Insert, Update, Delete), Neatoo pauses tracking so that setting properties from persistence data doesn't trigger rules, fire events, or mark the entity as modified. The same mechanism is available to developers for batch operations — loading from a DTO, deserializing, or bulk updates where you don't want intermediate states.
 
 <!-- snippet: tracking-pause-actions -->
 <a id='snippet-tracking-pause-actions'></a>
@@ -527,46 +525,6 @@ The `IsDeleted` flag is set by calling `Delete()` and can be reversed with `UnDe
 
 **Architecture Note:** Both `IsNew` and `IsDeleted` affect multiple modification properties to ensure proper save behavior. A new entity is always modified (needs Insert), and a deleted entity is always self-modified (needs Delete), regardless of property changes.
 
-## Modification Tracking Architecture
-
-Neatoo implements a layered change tracking architecture through the PropertyManager hierarchy.
-
-### Property-Level Tracking
-
-Each property tracks whether it has been set since entity creation or the last save operation. The PropertyManager aggregates this state across all properties and raises `PropertyChanged` events when modification state transitions occur.
-
-### Entity-Level Tracking (EntityBase)
-
-Entity modification state is computed from multiple sources:
-
-```
-IsModified = PropertyManager.IsModified    // Child entities/collections
-          || IsNew                         // New entity (needs Insert)
-          || IsDeleted                     // Deleted (needs Delete)
-          || IsSelfModified               // Self or explicitly marked
-
-IsSelfModified = PropertyManager.IsSelfModified  // Direct property changes
-              || IsDeleted                      // Deleted entities
-              || IsMarkedModified              // Explicitly marked
-```
-
-### Collection-Level Tracking (EntityListBase)
-
-Collection modification state uses incremental caching:
-
-```
-IsModified = _cachedChildrenModified    // Any child is modified
-          || DeletedList.Any()          // Items pending deletion
-
-IsSelfModified = false                   // Always false (no own properties)
-```
-
-The `_cachedChildrenModified` flag updates incrementally when child `IsModified` changes:
-- Child becomes modified → Set cache to true (O(1))
-- Child becomes unmodified → Scan remaining children if cache was true (O(k) where k = first modified child)
-
-This approach avoids O(n) scans on every property change while maintaining accurate aggregate state.
-
 ---
 
-**UPDATED:** 2026-01-25
+**UPDATED:** 2026-02-28

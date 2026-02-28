@@ -676,7 +676,7 @@ See [Validation](validation.md) for details on rule execution and [Business Rule
 
 ## Property Change Propagation
 
-UI data-binding works at the property level — the UI binds directly to each property via the entity's indexer, and `INotifyPropertyChanged` fires on the property itself. But the *framework* needs to know when anything changes anywhere in the aggregate so it can recalculate aggregate-level state like `IsModified` and `IsValid`. That's what `NeatooPropertyChanged` propagation handles — it bubbles child changes up to the root for framework-internal coordination.
+UI data-binding works at the property level — the UI binds directly to each property via the entity's indexer, and `INotifyPropertyChanged` fires on the property itself. But the *aggregate root* needs to know when children change so it can run aggregate-level business rules — for example, "all line item percentages must sum to 100%" or notifying a sibling child that something changed. `NeatooPropertyChanged` propagation bubbles child changes up to the root for this purpose.
 
 Property change cascade:
 
@@ -771,4 +771,4 @@ Use LoadValue in constructors when initial values must be set outside of factory
 
 ---
 
-**UPDATED:** 2026-02-27
+**UPDATED:** 2026-02-28

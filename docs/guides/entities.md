@@ -335,7 +335,7 @@ If the entity is in a collection, `Delete()` delegates to the collection's `Remo
 
 ## Parent Property
 
-Parent navigation serves two purposes. First, it defines the aggregate boundary — the framework knows which entities belong to which aggregate by walking the parent chain. Second, it enables state cascading: when a child entity becomes invalid or modified, that state bubbles up through the parent chain to the aggregate root. This is how the root's `IsModified` and `IsValid` reflect the state of the entire aggregate, not just itself.
+Parent navigation serves two purposes. First, it defines the aggregate boundary — the framework knows which entities belong to which aggregate by walking the parent chain. Second, it gives the parent awareness when children change, which is essential for aggregate-level business rules. A rule like "all line item percentages must sum to 100%" on the aggregate root needs to re-evaluate when any child changes. The parent can also notify sibling children when something changes.
 
 Parent navigation:
 
@@ -748,4 +748,4 @@ Neatoo checks the token before kicking off persistence, but once your Insert/Upd
 
 ---
 
-**UPDATED:** 2026-02-27
+**UPDATED:** 2026-02-28
