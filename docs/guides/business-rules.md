@@ -2,11 +2,11 @@
 
 [← Blazor](blazor.md) | [↑ Guides](index.md) | [Change Tracking →](change-tracking.md)
 
-Business rules in Neatoo implement validation and side effects that execute when properties change. Rules are registered in the entity constructor via `RuleManager` fluent API or by adding custom rule class instances. The framework automatically executes rules when their trigger properties are modified.
+Neatoo rules exist to support data-binding UIs. In Blazor, WPF, or any data-bound client, when a user types into a field, the binding updates the property — and rules fire automatically. Validation errors appear instantly, computed fields update in real time, and the UI stays in sync without the developer writing orchestration code. Rules are registered in the entity constructor via `RuleManager` fluent API or by adding custom rule class instances.
 
 ## Fluent Action Rules
 
-Action rules perform side effects like calculating derived properties. Action rules do not produce validation messages or affect the entity's `IsValid` state.
+Neatoo separates rules into two types that mirror C#'s `Action` vs `Func` distinction. Action rules perform side effects — computing a derived value, updating a related property — without returning anything. They don't produce validation messages or affect `IsValid`.
 
 Register synchronous actions with `AddAction`:
 
@@ -51,7 +51,7 @@ The `RuleManager.AddAction` method creates an `ActionFluentRule<T>` internally t
 
 ## Fluent Validation Rules
 
-Validation rules check business constraints and produce error messages when validation fails. Validation messages affect the entity's `IsValid` state and are displayed in the UI.
+Validation rules are the `Func` counterpart — they return a string. An empty or null return means validation passed; anything else becomes an error message associated with the trigger property, which drives the entity's `IsValid` state and displays in the UI.
 
 Register synchronous validation with `AddValidation`:
 
@@ -117,7 +117,7 @@ public RulesBooking(
 
 ## Cross-Property Validation
 
-Rules can trigger on multiple properties and validate relationships between them. Use custom rule classes that inherit from `RuleBase<T>` or `AsyncRuleBase<T>` and declare multiple trigger properties in the constructor.
+"End date must be after start date" — but which property change should trigger that check? Both. By listing multiple trigger properties on a single rule, the constraint re-evaluates automatically when *either* property changes. The developer doesn't have to remember to validate the relationship from both sides.
 
 <!-- snippet: rules-cross-property -->
 <a id='snippet-rules-cross-property'></a>
@@ -136,7 +136,7 @@ The rule executes when either `StartDate` or `EndDate` changes and validates the
 
 ## Custom Rule Classes
 
-For complex logic, inherit from `RuleBase<T>` or `AsyncRuleBase<T>`.
+Fluent lambdas work for one-liners and simple checks. When the logic grows complex enough to warrant its own class — or when you need to share a rule across multiple entity types — inherit from `RuleBase<T>` or `AsyncRuleBase<T>`. Custom rule classes also integrate cleanly with dependency injection for rules that need external services.
 
 Synchronous custom rule:
 
@@ -221,7 +221,7 @@ Custom rules support dependency injection through constructor parameters.
 
 ## Business Rule Attributes
 
-Neatoo automatically converts DataAnnotations validation attributes to business rules. During ValidateBase construction, the `RuleManager` scans properties for validation attributes and converts them to rules using the `IAttributeToRule` service.
+Neatoo converts DataAnnotations attributes into business rules so they go through the same execution pipeline as hand-written rules. This means `[Required]` and `[Range]` fire reactively on property change — showing errors immediately as the user edits — rather than requiring a separate validation pass.
 
 Standard validation attributes work without explicit registration:
 
@@ -259,7 +259,7 @@ Supported attributes include `[Required]`, `[StringLength]`, `[MinLength]`, `[Ma
 
 ## Aggregate-Level Rules
 
-Rules execute on an entity instance and can access the entire aggregate graph via navigation properties. This allows validation of business invariants that span multiple entities within the aggregate boundary.
+Some business invariants can't be checked by a single entity. "Order total must not exceed credit limit" requires summing all line items and comparing against the order's budget — that's a rule on the aggregate root that navigates its children. Rules execute on an entity instance and can access the entire aggregate graph via navigation properties.
 
 <!-- snippet: rules-aggregate-level -->
 <a id='snippet-rules-aggregate-level'></a>
@@ -292,6 +292,8 @@ public class AggregateValidationRule : RuleBase<RulesAggregateRoot>
 The `Execute` method receives the target entity instance. Use navigation properties to traverse child entities and collections within the aggregate.
 
 ## Rule Execution Order
+
+Rules execute sequentially, not in parallel. This is necessary because rules often depend on each other — an action rule that computes a tax rate must finish before a validation rule that checks the tax rate. Sequential execution also gives developers a predictable mental model: you can reason about rule order without worrying about concurrency.
 
 When a property changes, the framework identifies all rules with that property as a trigger, sorts them by `RuleOrder` (ascending), then executes them sequentially. Lower `RuleOrder` values execute first. Default is 1.
 
@@ -479,7 +481,7 @@ Async rules automatically track busy state. The framework marks trigger properti
 
 ## LoadProperty - Preventing Rule Recursion
 
-When a rule needs to set a property without triggering other rules, use `LoadProperty`:
+Rules trigger when properties change — but what if a rule *itself* changes a property? If Rule A triggers on `Quantity` and sets `Total`, and Rule B triggers on `Total` and sets `Quantity`, you get an infinite loop. `LoadProperty` breaks the cycle by writing to the property's backing field without firing triggers.
 
 <!-- snippet: rules-load-property -->
 <a id='snippet-rules-load-property'></a>
@@ -733,7 +735,10 @@ Messages are automatically associated with properties and displayed through the 
 
 ## Manual Rule Execution
 
-Rules execute automatically when trigger properties change, but can also be run manually. Manual execution is useful for re-validating after external state changes, running validation before save operations, or executing rules that haven't fired yet.
+Rules fire automatically on property change, but several scenarios require running them by hand:
+- **Server-side re-validation**: Inside Insert/Update/Delete, you may not trust client-side validation and need to re-run rules server-side before persisting.
+- **Testing**: Triggering rules explicitly in test scenarios rather than setting properties one by one.
+- **After pausing or batch updates**: When rules have been paused for a batch of property changes, you need to run them afterward to catch up.
 
 Run all rules:
 
@@ -781,15 +786,10 @@ For targeted rule type execution, expose a custom method on the entity that call
 
 ## Advanced: Stable Rule IDs
 
-Neatoo assigns deterministic rule IDs based on the source expression used to register rules. The `RuleManager` uses `CallerArgumentExpression` to capture the exact lambda expression text when calling `AddAction`, `AddValidation`, or `AddRule`.
+In RemoteFactory scenarios, the domain model graph crosses the client-server boundary. If a rule fails server-side, that broken state travels back to the client with the graph. When the user fixes the data, the client needs to know exactly which rule to re-run and clear. This only works if the same rule has the same ID on both sides.
 
-These stable IDs ensure:
-- Validation messages can be matched between client and server in RemoteFactory scenarios
-- Rule tracking remains consistent across application restarts
-- The same rule in different instances generates the same ID
-
-For custom rule classes, the rule ID is based on the rule's type name. For fluent rules, the ID is a hash of the source expression text.
+Neatoo assigns deterministic rule IDs based on the source expression used to register rules. The `RuleManager` uses `CallerArgumentExpression` to capture the exact lambda expression text when calling `AddAction`, `AddValidation`, or `AddRule`. For custom rule classes, the rule ID is based on the rule's type name. For fluent rules, the ID is a hash of the source expression text.
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-02-27

@@ -2,7 +2,7 @@
 
 [← Parent-Child](parent-child.md) | [↑ Guides](index.md) | [Remote Factory →](remote-factory.md)
 
-Neatoo's property system provides managed properties with source-generated backing field properties, automatic change notifications, validation integration, and parent-child relationship tracking. Properties declared as partial are implemented by the BaseGenerator source generator, which creates backing field properties that access PropertyManager and wires up event handling, rule execution, and task tracking.
+Plain C# auto-properties don't fire change notifications, track validation state, execute business rules, or cascade dirty state to a parent aggregate. A data-binding UI needs all of these. Neatoo's property system wraps each property with a managed layer that intercepts gets and sets — giving the framework a single point to handle change tracking, rule execution, async task management, and parent notification. You declare `partial` properties; the source generator fills in the implementation.
 
 ## Partial Property Declaration
 
@@ -177,7 +177,7 @@ UI binding relies on this event to update when properties change.
 
 ### NeatooPropertyChanged
 
-NeatooPropertyChanged is Neatoo's internal event for coordinating validation, dirty state, and parent-child relationships. This async event enables complex cascading behaviors.
+`INotifyPropertyChanged` is synchronous and carries only a property name — that's fine for UI binding but not enough for Neatoo's internals. `NeatooPropertyChanged` is async (needed for async rule execution and cascading) and carries richer metadata: `ChangeReason`, `FullPropertyName` breadcrumbs through the aggregate graph, and the `Source` object that originated the change.
 
 Subscribe to NeatooPropertyChanged:
 
@@ -227,7 +227,7 @@ The Reason distinguishes user edits (which trigger rules) from data loading (whi
 
 ## ChangeReason: UserEdit vs Load
 
-Property changes are tagged with ChangeReason to control whether validation rules execute and state cascades to the parent.
+During Fetch, you might set 20 properties from the database. Without a way to distinguish loading from editing, each set would fire validation rules and mark the entity as modified — the entity would appear dirty before the user has touched anything. `ChangeReason` solves this: `UserEdit` triggers the full pipeline (rules, dirty state, parent cascade), while `Load` sets the value quietly.
 
 ### ChangeReason.UserEdit
 
@@ -347,7 +347,7 @@ LoadValue is essential during factory Fetch operations to load data without mark
 
 ## Meta-Properties
 
-Properties expose meta-properties for querying their state beyond the current value.
+Each property tracks its own `IsValid`, `IsBusy`, and validation messages — not just the entity as a whole. This enables per-field UI feedback: a validation error icon next to the specific field that's broken, or a spinner on just the field running an async lookup. The entity's `IsValid` and `IsBusy` are simply aggregations of its properties (and child entities), so per-property tracking is the source of truth.
 
 Access property metadata:
 
@@ -434,7 +434,7 @@ Computed properties are useful for display values derived from multiple source p
 
 ## Read-Only Properties
 
-Properties can be declared read-only by omitting the setter. The source generator creates only the getter implementation.
+A computed property like `public string FullName => $"{FirstName} {LastName}"` doesn't raise `PropertyChanged` when `FirstName` or `LastName` change — the UI won't update. A partial read-only property solved by a rule does: when FirstName or LastName triggers the rule, the rule sets FullName via `LoadProperty`, and `PropertyChanged` fires automatically. You can also manually raise `PropertyChanged` for computed properties, but the rule approach handles it for you.
 
 Declare a read-only property:
 
@@ -471,7 +471,7 @@ Read-only properties are common for identity fields and computed values.
 
 ## Suppressing Property Events
 
-During batch operations, suppress property change events to improve performance and avoid intermediate validation states.
+Sometimes you need to set multiple properties without the framework reacting to each one individually. During initialization from a DTO, you don't want intermediate validation states. During a batch edit (swapping two field values), you want the rules to see the final state, not an in-between state. And when setting many properties at once, you don't want N separate rule executions when one pass at the end will do.
 
 Pause property events during batch updates:
 
@@ -576,7 +576,7 @@ The indexer enables scenarios like generic validation messages, rule engines, an
 
 ## Task Tracking and IsBusy
 
-Properties track async operations through the Task property. When validation rules or setters execute asynchronously, the property enters a busy state.
+Async tasks are tracked per-property, not per-entity. When a ZipCode field triggers an async tax-rate lookup, only that field shows a busy indicator — the rest of the form remains editable. If tasks were only tracked at the entity level, any async rule would lock the entire form.
 
 Wait for property tasks to complete:
 
@@ -676,7 +676,7 @@ See [Validation](validation.md) for details on rule execution and [Business Rule
 
 ## Property Change Propagation
 
-Property changes propagate up the parent-child graph through NeatooPropertyChanged events. This enables aggregate-level coordination and validation.
+UI data-binding works at the property level — the UI binds directly to each property via the entity's indexer, and `INotifyPropertyChanged` fires on the property itself. But the *framework* needs to know when anything changes anywhere in the aggregate so it can recalculate aggregate-level state like `IsModified` and `IsValid`. That's what `NeatooPropertyChanged` propagation handles — it bubbles child changes up to the root for framework-internal coordination.
 
 Property change cascade:
 
@@ -771,4 +771,4 @@ Use LoadValue in constructors when initial values must be set outside of factory
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-02-27
