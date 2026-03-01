@@ -2,7 +2,7 @@
 
 [← Remote Factory](remote-factory.md) | [↑ Guides](index.md)
 
-ValidateBase provides the core validation infrastructure for Neatoo domain objects. Validation rules execute automatically when properties change, collecting error messages and tracking validity state across the object graph. The validation system integrates with DataAnnotations attributes, supports custom synchronous and asynchronous rules, and coordinates validation across parent-child relationships.
+A data-binding UI needs to know *right now* whether the form is valid — which fields have errors, what the messages are, and whether the Save button should be enabled. ValidateBase provides this: every property tracks its own `IsValid` and error messages, and the entity's `IsValid` aggregates the entire object graph. When a user edits a field, validation fires immediately, error messages update, and the UI reflects the new state — all through data-binding, with no manual orchestration. See [Business Rules](business-rules.md) for how to define the rules themselves; this guide covers the validation state and messaging infrastructure.
 
 ## ValidateBase Inheritance
 
@@ -186,7 +186,7 @@ Cross-property rules ensure aggregate-level invariants hold as properties change
 
 ## Async Validation Rules
 
-Validation rules can execute asynchronously using RuleManager.AddValidationAsync. This creates an AsyncFluentRule internally that executes your async lambda and manages IsBusy state. Async rules enable scenarios like database uniqueness checks, external service calls, and I/O-bound validation.
+Many real-world validations can't be checked locally — email uniqueness requires a database query, inventory availability needs a service call, credit checks hit an external API. These calls must be async to keep the UI responsive. Because Neatoo assumes a data-binding UI, the result naturally flows back: when the async rule completes, `IsValid` and `PropertyMessages` update, and the UI reflects the new state through data-binding.
 
 Add async validation rule:
 
@@ -361,7 +361,7 @@ Property-level state enables granular validation feedback and selective validati
 
 ## Object-Level Validation
 
-Mark the entire object as invalid using MarkInvalid when validation errors exist at the aggregate level rather than individual properties. Object-level errors appear in PropertyMessages with `Property.Name` equal to "ObjectInvalid".
+Not every validation failure maps to a specific property. A payment gateway might reject an entire transaction. A server-side business rule in an Insert method might catch a constraint that spans multiple fields. `MarkInvalid` handles these cases — it marks the whole object as invalid with an error message that isn't tied to any one property.
 
 Mark object as invalid:
 
@@ -637,7 +637,7 @@ Validation prevents invalid state from being persisted. Async validation must co
 
 ## Cancellation Token Support
 
-Validation rules support cancellation through CancellationToken. Canceled validation marks the object invalid with "Validation cancelled" message. Re-validate with RunRules(RunRulesFlag.All) to clear the cancellation state.
+If a user navigates away from a form, there's no point finishing a database uniqueness check for an abandoned page. If a user types quickly through a field, each keystroke might trigger async validation — but only the last one matters. Cancellation tokens let you abort superseded or abandoned validation work.
 
 Use cancellation tokens with validation:
 
@@ -805,4 +805,4 @@ Layer validation from simple (attributes) to complex (custom rules) to build com
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-02-28
