@@ -261,29 +261,7 @@ public class LazyLoadTests
         Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsModified);
     }
 
-    [TestMethod]
-    public async Task IsSavable_DelegatesToValue_WhenLoaded()
-    {
-        // Arrange
-        var savableValue = new TestEntityValue { IsSavableValue = true };
-        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(savableValue));
-
-        // Act
-        await lazyLoad.LoadAsync();
-
-        // Assert
-        Assert.IsTrue(((IEntityMetaProperties)lazyLoad).IsSavable);
-    }
-
-    [TestMethod]
-    public void IsSavable_BeforeLoad_ReturnsFalse()
-    {
-        // Arrange
-        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
-
-        // Assert
-        Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsSavable);
-    }
+    // IsSavable tests removed — IsSavable moved to IEntityRoot, no longer on IEntityMetaProperties or LazyLoad<T>
 
     [TestMethod]
     public void IsChild_BeforeLoad_ReturnsFalse()
@@ -455,7 +433,6 @@ public class TestValidateValue : IValidateMetaProperties
 public class TestEntityValue : IEntityMetaProperties, IValidateMetaProperties
 {
     public bool IsModifiedValue { get; set; }
-    public bool IsSavableValue { get; set; }
     public bool IsNewValue { get; set; }
     public bool IsDeletedValue { get; set; }
 
@@ -464,7 +441,6 @@ public class TestEntityValue : IEntityMetaProperties, IValidateMetaProperties
     public bool IsModified => IsModifiedValue;
     public bool IsSelfModified => IsModifiedValue;
     public bool IsMarkedModified => false;
-    public bool IsSavable => IsSavableValue;
     public bool IsNew => IsNewValue;
     public bool IsDeleted => IsDeletedValue;
 

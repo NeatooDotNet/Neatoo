@@ -22,7 +22,7 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 /// - Aggregate boundaries are enforced
 /// </summary>
 [Factory]
-public partial class Order : EntityBase<Order>
+public partial class Order : EntityBase<Order>, IOrder
 {
     public partial int Id { get; set; }
 

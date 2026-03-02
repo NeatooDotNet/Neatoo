@@ -19,8 +19,8 @@ ValidateBase provides:
 EntityBase adds:
 - Modification tracking (IsModified, IsSelfModified, ModifiedProperties)
 - Persistence state (IsNew, IsDeleted)
-- Save operations (Save, Delete)
-- Aggregate patterns (Root, IsChild, IsSavable)
+- Save operations (Save, Delete) -- `Save()` and `IsSavable` accessible through `IEntityRoot` (aggregate roots only)
+- Aggregate patterns (Root, IsChild)
 - Factory integration for Insert/Update/Delete
 
 Inherit from EntityBase when the object requires persistence:
@@ -50,9 +50,25 @@ public partial class EntitiesEmployee : EntityBase<EntitiesEmployee>
 
 Use ValidateBase for value objects and DTOs that don't need persistence tracking.
 
-## Aggregate Root Pattern
+## Root vs Child: IEntityRoot and IEntityBase
 
 An Order with its LineItems, or a Customer with its Addresses — these are aggregates. The root (Order, Customer) is the only entry point for persistence because it enforces business rules that span the whole aggregate. If a LineItem could save itself independently, it could violate cross-entity invariants that only the Order knows about (e.g., "order total must not exceed credit limit").
+
+Neatoo makes this distinction explicit at the type level. Aggregate root interfaces extend `IEntityRoot`, which adds `IsSavable` and `Save()`. Child entity interfaces extend `IEntityBase`, which has neither. The developer signals root vs child by choosing the interface -- no attributes, no runtime flags, no magic.
+
+```csharp
+// Aggregate root -- exposes IsSavable and Save()
+public interface IOrder : IEntityRoot { ... }
+
+// Child entity -- no IsSavable, no Save()
+public interface IOrderLine : IEntityBase { ... }
+```
+
+**Why this design exists:** `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. Developers naturally used `IsSavable` in save cascade logic to check whether children need persisting — but it silently returned false, skipping saves. This caused a real production bug. The fix is not to make `IsSavable` work on children — it is to remove it from the child interface entirely. Child entity factory methods (`[Insert]`/`[Update]`) have signatures that outside consumers cannot fulfill (they often need the parent entity or parent ID), and entity classes are `internal`, so external callers should not be saving children at all.
+
+The concrete `EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`, so it retains `IsSavable` and `Save()` as concrete members. This does not matter because entity classes should be `internal` — consumers interact through the public interface, which is the access control mechanism.
+
+### Aggregate Root
 
 The root also coordinates save order. Children typically need parent IDs for foreign keys, so the root ensures Insert happens in the right sequence and wraps everything in a single unit of work.
 
@@ -178,17 +194,17 @@ public void NewEntity_StartsUnmodifiedAfterCreate()
 <sup><a href='/src/samples/EntitiesSamples.cs#L403-L421' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-lifecycle-new' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-After Create completes:
+After Create completes (before setting properties):
 - `IsNew == true`
 - `IsModified == true` (new entities are inherently modified due to IsNew)
 - `IsSelfModified == false` (no properties changed yet)
 - `IsValid` depends on validation rules
-- `IsSavable == false` (new but no property changes)
+- `IsSavable == true` (IsNew makes IsModified true, which satisfies the formula)
 
 After setting properties:
 - `IsSelfModified == true` (properties were changed)
-- `IsModified == true` (remains true - IsNew keeps it modified)
-- `IsSavable == true` (new entity with property changes is ready for Insert)
+- `IsModified == true` (remains true)
+- `IsSavable == true` (still savable — now with property changes for Insert)
 
 ### Fetch Existing Entity
 
@@ -542,6 +558,8 @@ State transitions:
 
 Neatoo is a DDD framework designed for data-binding UIs. `IsSavable` is meant to be bound directly to a Save button's `Enabled` state — the framework manages the conditions, and the UI automatically reflects whether saving is possible right now. No conditional logic needed in the view.
 
+`IsSavable` is exposed through `IEntityRoot` (the aggregate root interface), not `IEntityBase` (the child entity interface). This is deliberate — `IsSavable` includes a `!IsChild` check, so it was always false on child entities. Removing it from the child interface prevents the trap of using `IsSavable` in save cascade logic, where it would silently return false and skip persistence.
+
 <!-- snippet: entities-savable -->
 <a id='snippet-entities-savable'></a>
 ```cs
@@ -577,7 +595,7 @@ IsSavable is true when:
 - `IsBusy == false` (no async operations running)
 - `IsChild == false` (not a child entity)
 
-Child entities must be saved through their parent aggregate root.
+`IsSavable` and `Save()` are only accessible through the `IEntityRoot` interface. Child entity interfaces extend `IEntityBase`, which does not include these members. Children must be saved through the aggregate root.
 
 ### Child Entity State
 
@@ -587,7 +605,7 @@ Child entities are managed by their parent aggregate:
 <a id='snippet-entities-child-state'></a>
 ```cs
 [Fact]
-public async Task ChildEntity_CannotSaveDirectly()
+public void ChildEntity_CannotSaveDirectly()
 {
     var orderFactory = GetRequiredService<IEntitiesOrderFactory>();
     var itemFactory = GetRequiredService<IEntitiesOrderItemFactory>();
@@ -606,20 +624,19 @@ public async Task ChildEntity_CannotSaveDirectly()
     // Child entity state
     Assert.True(item.IsChild);
     Assert.Same(order, item.Root);
-    Assert.False(item.IsSavable); // Children can't save independently
 
-    // Attempting to save throws
-    var exception = await Assert.ThrowsAsync<SaveOperationException>(
-        () => item.Save());
-    Assert.Equal(SaveFailureReason.IsChildObject, exception.Reason);
+    // Child interfaces (IEntityBase) don't expose IsSavable or Save().
+    // Only IEntityRoot exposes those members.
+    // This is enforced at the type level — no runtime check needed.
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L656-L684' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L656-L682' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Child entities:
 - Are marked as children when added to EntityListBase
-- Cannot call Save() directly
+- Their interfaces extend `IEntityBase` (not `IEntityRoot`), so `IsSavable` and `Save()` are not accessible to consumers
+- If `Save()` is somehow called on the concrete class, it throws `SaveOperationException` with `SaveFailureReason.IsChildObject`
 - Have ContainingList set to the owning collection
 - Are saved through the aggregate root's save operation
 
@@ -703,7 +720,7 @@ public void Factory_SetThroughDependencyInjection()
     // The factory calls Insert, Update, or Delete based on entity state
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L686-L701' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L684-L699' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After each factory operation, the framework automatically updates entity state — setting `IsNew`, clearing modification tracking — so the lifecycle stays in sync with persistence without manual intervention.
@@ -735,7 +752,7 @@ public async Task Save_SupportsCancellation()
     Assert.True(order.IsModified);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L703-L723' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L701-L721' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cancellation behavior:
@@ -748,4 +765,4 @@ Neatoo checks the token before kicking off persistence, but once your Insert/Upd
 
 ---
 
-**UPDATED:** 2026-02-28
+**UPDATED:** 2026-03-02

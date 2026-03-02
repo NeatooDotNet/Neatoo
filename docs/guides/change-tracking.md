@@ -344,13 +344,15 @@ This distinction is useful when:
 
 ## IsSavable: Combining Modification and Validation
 
-The `IsSavable` property determines whether an entity can be persisted. It combines modification state, validation state, and aggregate boundary rules to enforce correct save semantics.
+The `IsSavable` property determines whether an entity can be persisted. It combines modification state, validation state, and aggregate boundary rules to enforce correct save semantics. `IsSavable` is only exposed through the `IEntityRoot` interface -- child entity interfaces (`IEntityBase`) do not include it, because it would always be false for children and its presence invited misuse (see below).
 
 An entity is savable when all of the following are true:
 - `IsModified` - The entity has changes requiring persistence
 - `IsValid` - All validation rules pass
 - `!IsBusy` - No async operations are in progress
 - `!IsChild` - The entity is not a child (child entities save through their parent)
+
+**Why IsSavable is IEntityRoot only:** `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. Developers naturally used `IsSavable` in save cascade logic to check whether children need persisting, but it silently returned false, skipping saves. This caused a real production bug. The fix removes `IsSavable` from the child interface entirely. Aggregate root interfaces extend `IEntityRoot`; child entity interfaces extend `IEntityBase`.
 
 This architecture ensures child entities within an aggregate cannot be saved independently, maintaining aggregate consistency:
 
@@ -527,4 +529,4 @@ The `IsDeleted` flag is set by calling `Delete()` and can be reversed with `UnDe
 
 ---
 
-**UPDATED:** 2026-02-28
+**UPDATED:** 2026-03-02

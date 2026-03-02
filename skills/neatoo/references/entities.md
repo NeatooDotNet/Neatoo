@@ -291,7 +291,7 @@ Parent entities reflect child state:
 <a id='snippet-entities-child-state'></a>
 ```cs
 [Fact]
-public async Task ChildEntity_CannotSaveDirectly()
+public void ChildEntity_CannotSaveDirectly()
 {
     var orderFactory = GetRequiredService<IEntitiesOrderFactory>();
     var itemFactory = GetRequiredService<IEntitiesOrderItemFactory>();
@@ -310,15 +310,13 @@ public async Task ChildEntity_CannotSaveDirectly()
     // Child entity state
     Assert.True(item.IsChild);
     Assert.Same(order, item.Root);
-    Assert.False(item.IsSavable); // Children can't save independently
 
-    // Attempting to save throws
-    var exception = await Assert.ThrowsAsync<SaveOperationException>(
-        () => item.Save());
-    Assert.Equal(SaveFailureReason.IsChildObject, exception.Reason);
+    // Child interfaces (IEntityBase) don't expose IsSavable or Save().
+    // Only IEntityRoot exposes those members.
+    // This is enforced at the type level — no runtime check needed.
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L656-L684' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L656-L682' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Factory Services
@@ -343,7 +341,7 @@ public void Factory_SetThroughDependencyInjection()
     // The factory calls Insert, Update, or Delete based on entity state
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L686-L701' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L684-L699' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Save Cancellation
@@ -373,7 +371,7 @@ public async Task Save_SupportsCancellation()
     Assert.True(order.IsModified);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L703-L723' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L701-L721' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Parent Property
@@ -553,7 +551,7 @@ public async Task CascadeSave_OnlyRootSavedExternally()
     Assert.False(saved.IsNew);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L798-L819' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-cascade-correct-external' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L796-L817' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-cascade-correct-external' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Rules

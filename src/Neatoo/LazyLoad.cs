@@ -250,8 +250,7 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
     /// <inheritdoc />
     public bool IsMarkedModified => (_value as IEntityMetaProperties)?.IsMarkedModified ?? false;
 
-    /// <inheritdoc />
-    public bool IsSavable => (_value as IEntityMetaProperties)?.IsSavable ?? false;
+    // IsSavable removed — moved to IEntityRoot
 
     /// <inheritdoc />
     public bool IsNew => (_value as IEntityMetaProperties)?.IsNew ?? false;

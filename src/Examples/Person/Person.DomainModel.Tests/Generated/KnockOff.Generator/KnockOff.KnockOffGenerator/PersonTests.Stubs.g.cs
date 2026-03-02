@@ -8536,303 +8536,6 @@ partial class PersonTests
 
 		}
 
-		/// <summary>Tracks and configures behavior for IsSavable.</summary>
-		public sealed class IPersonPhoneList_IsSavableInterceptor
-		{
-			/// <summary>Source object to delegate to when no Get/Set is configured.</summary>
-			internal global::Neatoo.IEntityMetaProperties? _source;
-
-			private global::System.Func<bool>? _get;
-			private PropertyGetBuilderImpl? _getTracking;
-			private global::System.Collections.Generic.List<(global::System.Func<bool> Callback, PropertyGetBuilderImpl Tracking)>? _getSequence;
-			private int _getSequenceIndex;
-			private bool _getRepeatLastValue = true;
-			private bool _isGetVerifiable;
-			private global::KnockOff.Called? _getVerifiableTimes;
-			private int _unconfiguredGetCount;
-
-			private int TotalGetCount { get { var sum = _unconfiguredGetCount + (_getTracking?._callCount ?? 0); if (_getSequence != null) foreach (var s in _getSequence) sum += s.Tracking._callCount; return sum; } }
-
-			/// <summary>Configures getter callback that repeats indefinitely. Returns builder for tracking and sequence chaining.</summary>
-			public global::KnockOff.IPropertyGetBuilder<bool> Get(global::System.Func<bool> callback)
-			{
-				_getSequence = null;
-				_getSequenceIndex = 0;
-				_isGetVerifiable = false;
-				_getVerifiableTimes = null;
-				_get = callback;
-				_getTracking = new PropertyGetBuilderImpl(this);
-				return _getTracking;
-			}
-
-			/// <summary>Configures getter to return the specified value. Returns builder for tracking and sequence chaining.</summary>
-			public global::KnockOff.IPropertyGetBuilder<bool> Get(bool value) => Get(() => value);
-
-			/// <summary>Records a getter access (tracking only, does not invoke callback). Used by stub override pattern.</summary>
-			internal void RecordGet() => _unconfiguredGetCount++;
-
-			/// <summary>Returns true if Get is configured (callback or sequence). Used by stub override pattern.</summary>
-			internal bool HasGet => _get != null || (_getSequence?.Count ?? 0) > 0;
-
-			/// <summary>Invokes the configured getter callback without tracking. Used by stub override pattern.</summary>
-			internal bool InvokeGetCallback()
-			{
-				if (_getSequence != null && _getSequenceIndex < _getSequence.Count)
-				{
-					var (callback, tracking) = _getSequence[_getSequenceIndex];
-					tracking.RecordCall();
-					_getSequenceIndex++;
-					return callback();
-				}
-				if (_get != null && _getTracking != null)
-				{
-					_getTracking.RecordCall();
-					return _get();
-				}
-				throw new global::System.InvalidOperationException("InvokeGetCallback called without callback configured");
-			}
-
-			/// <summary>Invokes the configured getter callback. Called by explicit interface implementation.</summary>
-			internal bool InvokeGet(bool strict)
-			{
-				if (_getSequence != null && _getSequenceIndex < _getSequence.Count)
-				{
-					var (callback, tracking) = _getSequence[_getSequenceIndex];
-					tracking.RecordCall();
-					_getSequenceIndex++;
-					return callback();
-				}
-
-				if (_get != null && _getTracking != null)
-				{
-					_getTracking.RecordCall();
-					return _get();
-				}
-
-				_unconfiguredGetCount++;
-
-				if (_getSequence != null && _getSequenceIndex >= _getSequence.Count)
-				{
-					if (strict) throw global::KnockOff.StubException.SequenceExhausted("IsSavable (get)");
-					if (_getRepeatLastValue && _getSequence.Count > 0)
-					{
-						var (callback, tracking) = _getSequence[_getSequence.Count - 1];
-						tracking.RecordCall();
-						return callback();
-					}
-					return default!;
-				}
-
-				if (_source is { } src) return src.IsSavable;
-
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "IsSavable");
-				return default!;
-			}
-
-			/// <summary>Resets tracking state but preserves configuration (Get, Set) and verifiable marking.</summary>
-			public void Reset()
-			{
-				_unconfiguredGetCount = 0;
-				_getTracking?.Reset();
-				if (_getSequence != null)
-				{
-					foreach (var (_, tracking) in _getSequence)
-						tracking.Reset();
-				}
-				_getSequenceIndex = 0;
-				_source = null;
-			}
-
-			/// <summary>Verifies the property was accessed at least once. Throws VerificationException if not.</summary>
-			public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
-
-			/// <summary>Verifies total access count satisfies the Called constraint. Throws VerificationException if not.</summary>
-			public void Verify(global::KnockOff.Called times)
-			{
-				var totalCount = TotalGetCount;
-				if (!times.Validate(totalCount))
-					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("IsSavable", times, totalCount));
-			}
-
-			/// <summary>Verifies the getter was accessed at least once. Throws VerificationException if not.</summary>
-			public void VerifyGet() => VerifyGet(global::KnockOff.Called.AtLeastOnce);
-
-			/// <summary>Verifies getter access count satisfies the Called constraint. Throws VerificationException if not.</summary>
-			public void VerifyGet(global::KnockOff.Called times)
-			{
-				if (!times.Validate(TotalGetCount))
-					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("IsSavable (get)", times, TotalGetCount));
-			}
-
-			/// <summary>Marks this property for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-			public IPersonPhoneList_IsSavableInterceptor Verifiable() { _isGetVerifiable = true; _getVerifiableTimes = null; return this; }
-
-			/// <summary>Marks this property for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
-			public IPersonPhoneList_IsSavableInterceptor Verifiable(global::KnockOff.Called times) { _isGetVerifiable = true; _getVerifiableTimes = times; return this; }
-
-			/// <summary>Whether this property was marked with Verifiable().</summary>
-			internal bool IsVerifiable => _isGetVerifiable;
-
-			/// <summary>Whether this property has been configured.</summary>
-			internal bool IsConfigured => _get != null || (_getSequence?.Count ?? 0) > 0;
-
-			/// <summary>Checks verification for Stub.Verify() - only checks if marked verifiable.</summary>
-			internal global::KnockOff.VerificationFailure? CheckVerification()
-			{
-				if (!(_isGetVerifiable)) return null;
-				if (_isGetVerifiable)
-				{
-					var times = _getVerifiableTimes ?? global::KnockOff.Called.AtLeastOnce;
-					if (!times.Validate(TotalGetCount)) return new global::KnockOff.VerificationFailure("IsSavable (get)", times, TotalGetCount);
-				}
-				return null;
-			}
-
-			/// <summary>Checks verification for Stub.VerifyAll() - checks if configured.</summary>
-			internal global::KnockOff.VerificationFailure? CheckVerificationAll()
-			{
-				if (!IsConfigured) return null;
-				var totalCount = TotalGetCount;
-				return totalCount >= 1 ? null : new global::KnockOff.VerificationFailure("IsSavable", global::KnockOff.Called.AtLeastOnce, totalCount);
-			}
-
-			/// <summary>Builder for getter callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			private sealed class PropertyGetBuilderImpl : global::KnockOff.IPropertyGetBuilder<bool>
-			{
-				private readonly IPersonPhoneList_IsSavableInterceptor _interceptor;
-
-				public PropertyGetBuilderImpl(IPersonPhoneList_IsSavableInterceptor interceptor) => _interceptor = interceptor;
-
-				internal int _callCount;
-
-				/// <summary>Records a call to this callback.</summary>
-				public void RecordCall() => _callCount++;
-
-				/// <summary>Resets tracking state.</summary>
-				public void Reset() => _callCount = 0;
-
-				/// <summary>Verifies callback was invoked at least once. Throws VerificationException if not.</summary>
-				public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
-
-				/// <summary>Verifies call count satisfies the Called constraint. Throws VerificationException if not.</summary>
-				public void Verify(global::KnockOff.Called times)
-				{
-					if (!times.Validate(_callCount))
-						throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("property getter", times, _callCount));
-				}
-
-				/// <summary>Elevates to sequence mode and adds another getter callback. Returns sequence for further chaining.</summary>
-				public global::KnockOff.IPropertyGetSequence<bool> ThenGet(global::System.Func<bool> callback)
-				{
-					if (_interceptor._getSequence == null)
-					{
-						_interceptor._getSequence = new global::System.Collections.Generic.List<(global::System.Func<bool> Callback, PropertyGetBuilderImpl Tracking)>();
-						_interceptor._getSequence.Add((_interceptor._get!, this));
-						_interceptor._get = null;
-						_interceptor._getTracking = null;
-						_interceptor._getSequenceIndex = 0;
-					}
-					var nextBuilder = new PropertyGetBuilderImpl(_interceptor);
-					_interceptor._getSequence.Add((callback, nextBuilder));
-					return new PropertyGetSequenceImpl(_interceptor);
-				}
-
-				/// <summary>Elevates to sequence mode and adds a value to return. Returns sequence for further chaining.</summary>
-				public global::KnockOff.IPropertyGetSequence<bool> ThenGet(bool value) => ThenGet(() => value);
-
-				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public global::KnockOff.IPropertyGetSequence<bool> ThenGet(params bool[] values)
-				{
-					if (values.Length == 0)
-					{
-						if (_interceptor._getSequence == null)
-						{
-							_interceptor._getSequence = new global::System.Collections.Generic.List<(global::System.Func<bool> Callback, PropertyGetBuilderImpl Tracking)>();
-							_interceptor._getSequence.Add((_interceptor._get!, this));
-							_interceptor._get = null;
-							_interceptor._getTracking = null;
-							_interceptor._getSequenceIndex = 0;
-						}
-						return new PropertyGetSequenceImpl(_interceptor);
-					}
-					var seq = ThenGet(values[0]);
-					for (int i = 1; i < values.Length; i++)
-					{
-						seq = seq.ThenGet(values[i]);
-					}
-					return seq;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IPropertyGetBuilder<bool> Verifiable()
-				{
-					_interceptor._isGetVerifiable = true;
-					_interceptor._getVerifiableTimes = null;
-					return this;
-				}
-
-				global::KnockOff.IPropertyGetTracking global::KnockOff.IPropertyGetTracking.Verifiable() => Verifiable();
-				global::KnockOff.IPropertyGetTracking global::KnockOff.IPropertyGetTracking.Verifiable(global::KnockOff.Called times) => Verifiable();
-			}
-
-			/// <summary>Sequence implementation for ThenGet chaining.</summary>
-			private sealed class PropertyGetSequenceImpl : global::KnockOff.IPropertyGetSequence<bool>
-			{
-				private readonly IPersonPhoneList_IsSavableInterceptor _interceptor;
-
-				public PropertyGetSequenceImpl(IPersonPhoneList_IsSavableInterceptor interceptor) => _interceptor = interceptor;
-
-				/// <summary>Adds another getter callback to the sequence. Each callback runs exactly once.</summary>
-				public global::KnockOff.IPropertyGetSequence<bool> ThenGet(global::System.Func<bool> callback)
-				{
-					var tracking = new PropertyGetBuilderImpl(_interceptor);
-					_interceptor._getSequence!.Add((callback, tracking));
-					return this;
-				}
-
-				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
-				public global::KnockOff.IPropertyGetSequence<bool> ThenGet(bool value) => ThenGet(() => value);
-
-				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public global::KnockOff.IPropertyGetSequence<bool> ThenGet(params bool[] values)
-				{
-					foreach (var value in values)
-					{
-						ThenGet(value);
-					}
-					return this;
-				}
-
-				/// <summary>Verifies the entire sequence was executed (all callbacks invoked). Throws VerificationException if incomplete.</summary>
-				public void Verify()
-				{
-					if (_interceptor._getSequence == null) return;
-					var sequenceLength = _interceptor._getSequence.Count;
-					var completedCount = _interceptor._getSequenceIndex;
-					if (completedCount < sequenceLength)
-						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("property getter", sequenceLength, completedCount));
-				}
-
-				/// <summary>Resets all tracking in the sequence.</summary>
-				public void Reset() => _interceptor.Reset();
-
-				/// <summary>Marks this sequence for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IPropertyGetSequence<bool> Verifiable()
-				{
-					_interceptor._isGetVerifiable = true;
-					_interceptor._getVerifiableTimes = null;
-					return this;
-				}
-
-				/// <summary>Terminates sequence with default(T) after exhaustion instead of repeating last value.</summary>
-				public void ThenDefault()
-				{
-					_interceptor._getRepeatLastValue = false;
-				}
-			}
-
-		}
-
 		/// <summary>Tracks and configures behavior for IsDeleted.</summary>
 		public sealed class IPersonPhoneList_IsDeletedInterceptor
 		{
@@ -17980,9 +17683,6 @@ partial class PersonTests
 			/// <summary>Interceptor for IsMarkedModified.</summary>
 			public IPersonPhoneList_IsMarkedModifiedInterceptor IsMarkedModified { get; } = new();
 
-			/// <summary>Interceptor for IsSavable.</summary>
-			public IPersonPhoneList_IsSavableInterceptor IsSavable { get; } = new();
-
 			/// <summary>Interceptor for IsDeleted.</summary>
 			public IPersonPhoneList_IsDeletedInterceptor IsDeleted { get; } = new();
 
@@ -18202,11 +17902,6 @@ partial class PersonTests
 				get => IsMarkedModified.InvokeGet(Strict);
 			}
 
-			bool global::Neatoo.IEntityMetaProperties.IsSavable
-			{
-				get => IsSavable.InvokeGet(Strict);
-			}
-
 			bool global::Neatoo.RemoteFactory.IFactorySaveMeta.IsDeleted
 			{
 				get => IsDeleted.InvokeGet(Strict);
@@ -18262,7 +17957,6 @@ partial class PersonTests
 				IsModified._source = source;
 				IsSelfModified._source = source;
 				IsMarkedModified._source = source;
-				IsSavable._source = source;
 				IsDeleted._source = source;
 				IsNew._source = source;
 				Indexer._source = source;
@@ -18297,7 +17991,6 @@ partial class PersonTests
 				IsModified._source = source;
 				IsSelfModified._source = source;
 				IsMarkedModified._source = source;
-				IsSavable._source = source;
 				IsDeleted._source = source;
 				IsNew._source = source;
 				Indexer._source = source;
@@ -18332,7 +18025,6 @@ partial class PersonTests
 				IsModified._source = null;
 				IsSelfModified._source = null;
 				IsMarkedModified._source = null;
-				IsSavable._source = null;
 				IsDeleted._source = null;
 				IsNew._source = null;
 				Indexer._source = source;
@@ -18367,7 +18059,6 @@ partial class PersonTests
 				IsModified._source = null;
 				IsSelfModified._source = null;
 				IsMarkedModified._source = null;
-				IsSavable._source = null;
 				IsDeleted._source = null;
 				IsNew._source = null;
 				Indexer._source = source;
@@ -18402,7 +18093,6 @@ partial class PersonTests
 				IsModified._source = null;
 				IsSelfModified._source = null;
 				IsMarkedModified._source = null;
-				IsSavable._source = null;
 				IsDeleted._source = null;
 				IsNew._source = null;
 				Indexer._source = null;
@@ -18437,7 +18127,6 @@ partial class PersonTests
 				IsModified._source = null;
 				IsSelfModified._source = null;
 				IsMarkedModified._source = null;
-				IsSavable._source = null;
 				IsDeleted._source = null;
 				IsNew._source = null;
 				Indexer._source = null;
@@ -18472,7 +18161,6 @@ partial class PersonTests
 				IsModified._source = null;
 				IsSelfModified._source = null;
 				IsMarkedModified._source = null;
-				IsSavable._source = null;
 				IsDeleted._source = null;
 				IsNew._source = null;
 				Indexer._source = null;
@@ -18507,7 +18195,6 @@ partial class PersonTests
 				IsModified._source = null;
 				IsSelfModified._source = null;
 				IsMarkedModified._source = null;
-				IsSavable._source = null;
 				IsDeleted._source = null;
 				IsNew._source = null;
 				Indexer._source = null;
@@ -18542,7 +18229,6 @@ partial class PersonTests
 				IsModified._source = null;
 				IsSelfModified._source = null;
 				IsMarkedModified._source = null;
-				IsSavable._source = null;
 				IsDeleted._source = null;
 				IsNew._source = null;
 				Indexer._source = null;
@@ -18577,7 +18263,6 @@ partial class PersonTests
 				IsModified._source = null;
 				IsSelfModified._source = null;
 				IsMarkedModified._source = null;
-				IsSavable._source = null;
 				IsDeleted._source = null;
 				IsNew._source = null;
 				Indexer._source = null;
@@ -18612,7 +18297,6 @@ partial class PersonTests
 				IsModified._source = null;
 				IsSelfModified._source = null;
 				IsMarkedModified._source = null;
-				IsSavable._source = null;
 				IsDeleted._source = null;
 				IsNew._source = null;
 				Indexer._source = null;
@@ -18647,7 +18331,6 @@ partial class PersonTests
 				IsModified._source = null;
 				IsSelfModified._source = null;
 				IsMarkedModified._source = null;
-				IsSavable._source = null;
 				IsDeleted._source = null;
 				IsNew._source = null;
 				Indexer._source = null;
@@ -18682,7 +18365,6 @@ partial class PersonTests
 				IsModified._source = source;
 				IsSelfModified._source = source;
 				IsMarkedModified._source = source;
-				IsSavable._source = source;
 				IsDeleted._source = source;
 				IsNew._source = source;
 				Indexer._source = null;
@@ -18717,7 +18399,6 @@ partial class PersonTests
 				IsModified._source = null;
 				IsSelfModified._source = null;
 				IsMarkedModified._source = null;
-				IsSavable._source = null;
 				IsDeleted._source = source;
 				IsNew._source = source;
 				Indexer._source = null;
@@ -18754,7 +18435,6 @@ partial class PersonTests
 				if (IsModified.CheckVerification() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerification() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerification() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerification() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerification() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerification() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerification() is { } indexerFailure) failures.Add(indexerFailure);
@@ -18797,7 +18477,6 @@ partial class PersonTests
 				if (IsModified.CheckVerificationAll() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerificationAll() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerificationAll() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerificationAll() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerificationAll() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerificationAll() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerificationAll() is { } indexerFailure) failures.Add(indexerFailure);

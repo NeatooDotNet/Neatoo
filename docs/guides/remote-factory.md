@@ -70,7 +70,7 @@ public async Task Fetch(int id, [Service] ISkillRemoteFactoryRepository repo)
 
 ### Save Operations
 
-Before save executes, check `IsSavable`:
+Before save executes, check `IsSavable` (available on aggregate roots through `IEntityRoot`):
 
 <!-- snippet: remote-factory-issavable-check -->
 <a id='snippet-remote-factory-issavable-check'></a>
@@ -112,7 +112,7 @@ Child entities within an aggregate have their state cascade to the parent:
 | `IsValid = false` | Parent `IsValid = false` |
 | `IsBusy = true` | Parent `IsBusy = true` |
 
-Child entities have `IsChild = true` and `IsSavable = false` - they must save through the aggregate root.
+Child entities have `IsChild = true` and must save through the aggregate root. Their interfaces extend `IEntityBase` (not `IEntityRoot`), so `IsSavable` and `Save()` are not accessible to consumers.
 
 <!-- snippet: remote-factory-child-no-remote -->
 <a id='snippet-remote-factory-child-no-remote'></a>
@@ -122,7 +122,7 @@ Child entities have `IsChild = true` and `IsSavable = false` - they must save th
 public void Create()
 {
     // IsChild = true (set when added to parent collection)
-    // IsSavable = false (must save through aggregate root)
+    // IsSavable/Save() not accessible on IEntityBase (child interface)
 }
 
 [Fetch]
@@ -212,4 +212,4 @@ After deserialization, validation rules execute to establish `IsValid` state on 
 
 ---
 
-**UPDATED:** 2026-02-01
+**UPDATED:** 2026-03-02

@@ -1,9 +1,20 @@
 # Make IsSavable More Intuitive
 
-**Status:** In Progress
+**Status:** Complete
 **Priority:** High
 **Created:** 2026-02-24
-**Last Updated:** 2026-02-24
+**Last Updated:** 2026-03-01
+
+---
+
+### 2026-03-01 (Architect Verification)
+- Independent verification: VERIFIED
+- All builds pass (0 errors, 0 warnings across both solutions)
+- All tests pass (2144 passed, 0 failed, 1 skipped)
+- All design acceptance criteria met (IEntityRoot exists, 5 Design.Tests pass)
+- Developer deviations verified correct (ReadmeSamples.cs IOrder is a child; UnitTest.Demo IPersonObject has no root behavior)
+- Plan status updated to Verified
+- Ready for documentation step
 
 ---
 
@@ -94,24 +105,50 @@ In Neatoo's RemoteFactory pattern, there's a single `IFactory.Save(entity)` — 
 4. The correct pattern (checking `IsModified`/`IsNew` directly) is non-obvious
 5. Developers familiar with CSLA would expect `IsSavable` to be `true` on modified children
 
-## Solution
+## Solution — `IEntityRoot` Interface
 
-Make the API more intuitive so developers don't fall into this trap. Possible approaches (to be evaluated in planning):
+**Chosen approach:** Introduce an `IEntityRoot` interface that extends `IEntityBase` and adds `IsSavable` and `Save()`. Child entities only expose `IEntityBase`, which has no `IsSavable` or `Save()`.
 
-1. **Rename or split** — e.g., `IsSavable` for the root-only check, `NeedsSave` or `HasPendingChanges` for the child-safe check
-2. **Analyzer diagnostic** — Warn when `IsSavable` is accessed on a known child entity type
-3. **Documentation + Design samples** — Add a prominent warning in Design.Domain showing the correct cascade pattern
-4. **API change** — Remove `!IsChild` from `IsSavable` and add a separate `IsRoot` or `CanInitiateSave` property (aligns with CSLA's approach)
-5. **Explicit child factory operations** — Add child-specific factory methods (like CSLA's `DataPortal.UpdateChild`) so the root-vs-child distinction is explicit at the call site, not hidden in a property
-6. **Combination** — Multiple approaches together
+### Design decisions
 
-**Note:** CSLA research suggests the deeper issue may not be `IsSavable` itself but the lack of explicit root-vs-child factory operations. Options 4 and 5 address the architectural root cause.
+- **`IEntityRoot : IEntityBase`** — adds `IsSavable` and `Save()`. Only aggregate roots implement this interface.
+- **`IEntityBase`** — retains `IsModified`, `IsValid`, `IsBusy`, `IsNew`, `IsChild`, etc. No `IsSavable`, no `Save()`.
+- **User signals root vs child** by choosing which interface their entity interface extends. No attributes, no inference, no RemoteFactory involvement.
+- **Concrete `EntityBase<T>` unchanged** — keeps `IsSavable` and `Save()` as concrete members. This doesn't matter because all `EntityBase<T>` classes should be `internal` with only the public interface exposed.
+- **`!IsChild` check in `IsSavable` becomes unnecessary** — if only roots expose it through the interface, the check is redundant.
+- **Child factory methods have internal signatures** — child `[Insert]`/`[Update]` often need parent entity or parent ID parameters that outside consumers can't fulfill. Combined with `internal` access on entity classes, this prevents external callers from saving children even if they tried.
+
+### Example
+
+```csharp
+// Aggregate root — extends IEntityRoot, exposes IsSavable and Save()
+public interface IOrder : IEntityRoot
+{
+    string OrderNumber { get; set; }
+    IOrderLineList Lines { get; }
+}
+
+// Child entity — extends IEntityBase only, no IsSavable, no Save()
+public interface IOrderLine : IEntityBase
+{
+    string ProductName { get; set; }
+    decimal Price { get; set; }
+}
+```
+
+### Rejected approaches
+
+1. ~~Rename or split~~ — Adding more properties doesn't fix the root cause
+2. ~~Analyzer diagnostic~~ — Runtime/compile-time warning is weaker than removing the API entirely
+3. ~~Documentation only~~ — Traps should be eliminated, not documented
+4. ~~Remove `!IsChild` from `IsSavable`~~ — Still exposes `IsSavable` on children where it has no meaning
+5. ~~Explicit child factory operations~~ — Goes the wrong direction; we want to hide child factories from consumers, not expose more of them
 
 ---
 
 ## Plans
 
-_(To be created during architect review)_
+- [IEntityRoot Interface — Architectural Plan](../plans/ientityroot-interface.md)
 
 ---
 
@@ -136,21 +173,50 @@ _(To be created during architect review)_
 - Deeper CSLA research: CSLA has **two separate DataPortal paths** — `DataPortal.Update()` for roots and `DataPortal.UpdateChild()` for children, with separate method conventions (`DataPortal_Update` vs `Child_Update`). Modern CSLA (6+) uses `IChildDataPortal<T>`. This makes root-vs-child explicit at the call site. Neatoo's single `IFactory.Save()` lacks this distinction, which is the deeper architectural issue. Added option 5 (explicit child factory operations).
 - CSLA's `IsSavable` also includes **authorization checks** (create/edit/delete permissions based on object state). Neatoo's `IsSavable` doesn't — authorization lives at the factory level via `[AspAuthorize]`/`[AuthorizeFactory]`. This means Neatoo's `IsSavable` can be `true` when the user can't actually save. Consider whether `IsSavable` should incorporate authorization awareness.
 
+### 2026-03-01 (Architect Review)
+- Deep codebase analysis completed — examined 20+ files across framework, Design, examples, and samples
+- Created architectural plan at `docs/plans/ientityroot-interface.md`
+- Identified 9 tensions/concerns with the `IEntityRoot` approach
+- Key findings:
+  - `IsSavable` is on `IEntityMetaProperties` (not directly on `IEntityBase`) — affects `IEntityListBase` and `LazyLoad<T>` too
+  - Every entity interface in samples/examples extends `IEntityBase` — all roots must change to `IEntityRoot` (breaking change)
+  - `Person.cs` uses `this.IsSavable` inside Insert/Update methods (concrete class access — still works)
+  - Blazor UI binds to `Person.IsSavable` — requires `IPerson : IEntityRoot`
+  - Serialization writes all `IEntityMetaProperties` properties via reflection — `IsSavable` will stop being serialized (correct, it's computed)
+  - `EntityListBase` caches `IsSavable` in MetaState — becomes dead code after removal
+- Design project verification code written:
+  - `src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs` — `IOrder : IEntityRoot` (fails: CS0246)
+  - `src/Design/Design.Tests/AggregateTests/EntityRootInterfaceTests.cs` — tests exercising the pattern (fails: depends on IEntityRoot)
+- Plan status: Under Review (Developer)
+
+### 2026-03-01 (Design Decision)
+- Decided on `IEntityRoot` interface approach after discussion
+- Key insights: (1) child factory methods have signatures outside consumers can't fulfill (need parent entity/ID), (2) `internal` on entity classes limits access to the domain assembly, (3) the user choosing `IEntityRoot` vs `IEntityBase` on their interface is the explicit signal — no RemoteFactory involvement needed
+- Rejected all other approaches — this eliminates the trap at the interface level rather than working around it
+- Concrete `EntityBase<T>` unchanged — `IsSavable`/`Save()` stay as concrete members since entity classes should be `internal`
+
 ---
 
 ## Completion Verification
 
 Before marking this todo as Complete, verify:
 
-- [ ] Design project builds successfully
-- [ ] Design project tests pass
+- [x] Design project builds successfully
+- [x] Design project tests pass
 
 **Verification results:**
-- Design build: [Pending]
-- Design tests: [Pending]
+- Design build: PASS (0 errors, 0 warnings)
+- Design tests: PASS (89 passed, 0 failed)
 
 ---
 
 ## Results / Conclusions
 
-[What was learned? What decisions were made?]
+Introduced `IEntityRoot : IEntityBase` interface with `IsSavable` and `Save()`. Child entities expose only `IEntityBase` — no `IsSavable`, no `Save()`. The user signals root vs child by choosing which interface their entity interface extends.
+
+Key outcomes:
+- The `IsSavable` trap is eliminated — child interfaces don't expose it, so developers can't misuse it
+- `EntityListBase` dead code removed — `IsSavable` was always false on every child in the list
+- `LazyLoad<T>` orphaned `IsSavable` removed
+- 2144 tests pass, zero failures
+- Design project has authoritative example at `Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs`

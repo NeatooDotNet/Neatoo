@@ -49,8 +49,9 @@ In addition to validation state, EntityListBase tracks:
 - **IsModified** - True if any item is modified or any items are in the DeletedList
 - **IsSelfModified** - Always false (lists have no self state to modify)
 - **IsNew** - Always false (collections are not independently persisted)
-- **IsSavable** - Always false (collections are persisted through the aggregate root)
 - **DeletedList** - Protected collection of removed entities pending deletion during save
+
+`IsSavable` is not present on entity lists. It was removed because it was always false -- lists are always persisted through the aggregate root, and the property was dead code that invited misuse.
 
 ## Adding Items
 
@@ -490,4 +491,4 @@ Collections respect the IsPaused flag during deserialization and factory operati
 
 ---
 
-**UPDATED:** 2026-01-27
+**UPDATED:** 2026-03-02

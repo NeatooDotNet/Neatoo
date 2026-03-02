@@ -134,7 +134,7 @@ public partial class SkillRfIntegrationChild : EntityBase<SkillRfIntegrationChil
     public void Create()
     {
         // IsChild = true (set when added to parent collection)
-        // IsSavable = false (must save through aggregate root)
+        // IsSavable/Save() not accessible on IEntityBase (child interface)
     }
 
     [Fetch]
@@ -217,7 +217,7 @@ public static class SkillRemoteFactoryStateSamples
 
         // Child cannot save independently:
         // - child.IsChild = true (after adding to collection)
-        // - child.IsSavable = false (IsChild prevents saving)
+        // - IsSavable/Save() not accessible on child interface (IEntityBase)
     }
     #endregion
 
