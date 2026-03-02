@@ -102,7 +102,6 @@ public class EntityPropertyManager : ValidatePropertyManager<IEntityProperty>, I
     public bool IsModified { get; protected set; }
     [JsonIgnore]
     public bool IsSelfModified { get; protected set; }
-    public bool IsPaused { get; private set; } = false;
 
     public IEnumerable<string> ModifiedProperties => this.PropertyBag.Where(f => f.Value.IsModified).Select(f => f.Value.Name);
 
@@ -114,21 +113,44 @@ public class EntityPropertyManager : ValidatePropertyManager<IEntityProperty>, I
         }
     }
 
-    public void PauseAllActions()
+    public override void PauseAllActions()
     {
-        this.IsPaused = true;
-        foreach (var fd in this.PropertyBag)
+        if (!this.IsPaused)
         {
-            fd.Value.IsPaused = true;
+            base.PauseAllActions();
+            foreach (var fd in this.PropertyBag)
+            {
+                fd.Value.IsPaused = true;
+            }
         }
     }
 
-    public void ResumeAllActions()
+    public override void ResumeAllActions()
     {
-        this.IsPaused = false;
-        foreach (var fd in this.PropertyBag)
+        if (this.IsPaused)
         {
-            fd.Value.IsPaused = false;
+            base.ResumeAllActions();  // Sets VPM.IsPaused = false, recalculates IsValid/IsSelfValid/IsBusy
+
+            foreach (var fd in this.PropertyBag)
+            {
+                fd.Value.IsPaused = false;
+            }
+
+            // Recalculate cached modification state from current property state.
+            // Events received while paused were dropped, so caches may be stale.
+            var wasModified = this.IsModified;
+            this.IsModified = this.PropertyBag.Any(p => p.Value.IsModified);
+            if (wasModified != this.IsModified)
+            {
+                RaisePropertyChanged(nameof(IsModified));
+            }
+
+            var wasSelfModified = this.IsSelfModified;
+            this.IsSelfModified = this.PropertyBag.Any(p => p.Value.IsSelfModified);
+            if (wasSelfModified != this.IsSelfModified)
+            {
+                RaisePropertyChanged(nameof(IsSelfModified));
+            }
         }
     }
 
