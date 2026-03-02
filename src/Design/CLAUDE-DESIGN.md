@@ -1,3 +1,13 @@
+## Commands
+
+```bash
+# Build Design projects
+dotnet build src/Design/Design.sln
+
+# Test Design patterns
+dotnet test src/Design/Design.Tests/Design.Tests.csproj
+```
+
 # Claude Code Design Guidance
 
 This document provides specific guidance for Claude Code when working with Neatoo framework code. The `src/Design/` projects are your primary reference for understanding Neatoo's API design.
@@ -24,6 +34,11 @@ When trying to understand a Neatoo concept:
 | Generator behavior | `Generators/TwoGeneratorInteraction.cs` | N/A |
 | Root vs child interfaces | `Aggregates/OrderAggregate/IOrderInterfaces.cs` | `AggregateTests/EntityRootInterfaceTests.cs` |
 | DI setup | `DI/*.cs` | N/A |
+| Commands | `Commands/ApproveEmployee.cs` | N/A |
+| Standalone entities | `Entities/*.cs` | N/A |
+| Value objects | `ValueObjects/*.cs` | N/A |
+| Error handling | `ErrorHandling/*.cs` | `GotchaTests/*` |
+| Common gotchas | `CommonGotchas.cs` | `GotchaTests/*` |
 
 ## Key Design Decision: IEntityRoot vs IEntityBase
 
