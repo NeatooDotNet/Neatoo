@@ -54,7 +54,7 @@ namespace Design.Domain.FactoryOperations;
 /// Demonstrates: [Insert]/[Update]/[Delete] patterns for persistence.
 /// </summary>
 [Factory]
-public partial class SaveDemo : EntityBase<SaveDemo>
+internal partial class SaveDemo : EntityBase<SaveDemo>, ISaveDemo
 {
     public partial int Id { get; set; }
     public partial string? Name { get; set; }
@@ -161,11 +161,11 @@ public partial class SaveDemo : EntityBase<SaveDemo>
 /// Demonstrates: Aggregate save pattern with child persistence.
 /// </summary>
 [Factory]
-public partial class SaveAggregateDemo : EntityBase<SaveAggregateDemo>
+internal partial class SaveAggregateDemo : EntityBase<SaveAggregateDemo>, ISaveAggregateDemo
 {
     public partial int Id { get; set; }
     public partial string? Title { get; set; }
-    public partial SaveDemoItemList? Items { get; set; }
+    public partial ISaveDemoItemList? Items { get; set; }
 
     public SaveAggregateDemo(IEntityBaseServices<SaveAggregateDemo> services) : base(services) { }
 
@@ -284,7 +284,7 @@ public partial class SaveAggregateDemo : EntityBase<SaveAggregateDemo>
 
     // Helper to access DeletedList for demonstration
     // In practice, the generated Save code handles this
-    private IEnumerable<SaveDemoItem> GetDeletedItems()
+    private IEnumerable<ISaveDemoItem> GetDeletedItems()
     {
         // This would access the protected DeletedList
         // Actual implementation uses internal interfaces
@@ -307,7 +307,7 @@ public partial class SaveAggregateDemo : EntityBase<SaveAggregateDemo>
 }
 
 [Factory]
-public partial class SaveDemoItem : EntityBase<SaveDemoItem>
+internal partial class SaveDemoItem : EntityBase<SaveDemoItem>, ISaveDemoItem
 {
     public partial int Id { get; set; }
     public partial string? Name { get; set; }
@@ -340,7 +340,7 @@ public partial class SaveDemoItem : EntityBase<SaveDemoItem>
 }
 
 [Factory]
-public partial class SaveDemoItemList : EntityListBase<SaveDemoItem>
+internal partial class SaveDemoItemList : EntityListBase<ISaveDemoItem>, ISaveDemoItemList
 {
     [Create]
     public void Create() { }

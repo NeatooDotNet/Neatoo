@@ -106,7 +106,7 @@ namespace Design.Domain.ErrorHandling;
 /// Demonstrates: Validation failure patterns (not exceptions).
 /// </summary>
 [Factory]
-public partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>
+internal partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>, IValidationFailureDemo
 {
     public partial string? Name { get; set; }
     public partial int Quantity { get; set; }
@@ -202,7 +202,7 @@ public partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>
 /// <summary>
 /// Demonstrates: What happens when a rule throws an exception.
 /// </summary>
-public class ExceptionThrowingRule : AsyncRuleBase<ValidationFailureDemo>
+internal class ExceptionThrowingRule : AsyncRuleBase<ValidationFailureDemo>
 {
     public ExceptionThrowingRule() : base(t => t.Name) { }
 

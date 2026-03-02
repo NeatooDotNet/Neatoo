@@ -48,7 +48,7 @@ namespace Design.Domain.Rules;
 /// Demonstrates: RuleBase/AsyncRuleBase for custom validation rules.
 /// </summary>
 [Factory]
-public partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>
+internal partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>, IRuleBasicsDemo
 {
     public partial string? Name { get; set; }
     public partial int Quantity { get; set; }
@@ -107,7 +107,7 @@ public partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>
 /// <summary>
 /// Demonstrates: Simple validation rule as a class.
 /// </summary>
-public class NameRequiredRule : AsyncRuleBase<RuleBasicsDemo>
+internal class NameRequiredRule : AsyncRuleBase<RuleBasicsDemo>
 {
     // =========================================================================
     // TriggerProperties - When Does This Rule Run?
@@ -143,7 +143,7 @@ public class NameRequiredRule : AsyncRuleBase<RuleBasicsDemo>
 /// <summary>
 /// Demonstrates: Action rule that computes derived values.
 /// </summary>
-public class CalculateTotalRule : AsyncRuleBase<RuleBasicsDemo>
+internal class CalculateTotalRule : AsyncRuleBase<RuleBasicsDemo>
 {
     // =========================================================================
     // Multiple Trigger Properties
@@ -188,7 +188,7 @@ public class CalculateTotalRule : AsyncRuleBase<RuleBasicsDemo>
 /// <summary>
 /// Demonstrates: Rule returning multiple messages.
 /// </summary>
-public class MultiMessageRule : AsyncRuleBase<RuleBasicsDemo>
+internal class MultiMessageRule : AsyncRuleBase<RuleBasicsDemo>
 {
     public MultiMessageRule() : base(t => t.Quantity, t => t.Price) { }
 
@@ -230,7 +230,7 @@ public class MultiMessageRule : AsyncRuleBase<RuleBasicsDemo>
 /// <summary>
 /// Demonstrates: Rule ordering.
 /// </summary>
-public class EarlyValidationRule : AsyncRuleBase<RuleBasicsDemo>
+internal class EarlyValidationRule : AsyncRuleBase<RuleBasicsDemo>
 {
     public EarlyValidationRule() : base(t => t.Name)
     {

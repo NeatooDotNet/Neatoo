@@ -45,7 +45,7 @@ namespace Design.Domain.Rules;
 /// Demonstrates: Async validation and action rules.
 /// </summary>
 [Factory]
-public partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>
+internal partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>, IAsyncRulesDemo
 {
     public partial string? Email { get; set; }
     public partial string? Username { get; set; }
@@ -95,7 +95,7 @@ public partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>
 /// <summary>
 /// Demonstrates: Async uniqueness validation via database lookup.
 /// </summary>
-public class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>
+internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>
 {
     // =========================================================================
     // Service Injection in Rules
@@ -161,7 +161,7 @@ public class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>
 /// <summary>
 /// Demonstrates: Sync validation that uses async signature.
 /// </summary>
-public class ValidateEmailFormatRule : AsyncRuleBase<AsyncRulesDemo>
+internal class ValidateEmailFormatRule : AsyncRuleBase<AsyncRulesDemo>
 {
     public ValidateEmailFormatRule() : base(t => t.Email) { }
 
@@ -194,7 +194,7 @@ public class ValidateEmailFormatRule : AsyncRuleBase<AsyncRulesDemo>
 /// <summary>
 /// Demonstrates: Async action rule that fetches external data.
 /// </summary>
-public class FetchExternalDataRule : AsyncRuleBase<AsyncRulesDemo>
+internal class FetchExternalDataRule : AsyncRuleBase<AsyncRulesDemo>
 {
     public FetchExternalDataRule() : base(t => t.Email) { }
 
@@ -229,7 +229,7 @@ public class FetchExternalDataRule : AsyncRuleBase<AsyncRulesDemo>
 /// <summary>
 /// Demonstrates: Rule with cancellation support.
 /// </summary>
-public class CancellableRule : AsyncRuleBase<AsyncRulesDemo>
+internal class CancellableRule : AsyncRuleBase<AsyncRulesDemo>
 {
     public CancellableRule() : base(t => t.Username) { }
 

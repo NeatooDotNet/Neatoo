@@ -22,7 +22,7 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 /// - Aggregate boundaries are enforced
 /// </summary>
 [Factory]
-public partial class Order : EntityBase<Order>, IOrder
+internal partial class Order : EntityBase<Order>, IOrder
 {
     public partial int Id { get; set; }
 
@@ -47,7 +47,7 @@ public partial class Order : EntityBase<Order>, IOrder
     // - Modified items are updated
     // - Removed items (in DeletedList) are deleted
     // =========================================================================
-    public partial OrderItemList? Items { get; set; }
+    public partial IOrderItemList? Items { get; set; }
 
     public Order(IEntityBaseServices<Order> services) : base(services)
     {

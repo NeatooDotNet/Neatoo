@@ -21,7 +21,7 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 /// - Delete/UnDelete managed by list operations
 /// </summary>
 [Factory]
-public partial class OrderItem : EntityBase<OrderItem>
+internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 {
     public partial int Id { get; set; }
 

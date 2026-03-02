@@ -19,7 +19,7 @@ namespace Design.Domain.ValueObjects;
 /// - Used for: Search results, list views, read-only collections
 /// </summary>
 [Factory]
-public partial class EmployeeList : ValidateListBase<EmployeeListItem>
+internal partial class EmployeeList : ValidateListBase<IEmployeeListItem>, IEmployeeList
 {
     // =========================================================================
     // ValidateListBase provides:
