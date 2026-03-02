@@ -300,6 +300,24 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
         if (this.IsPaused)
         {
             this.IsPaused = false;
+
+            // Recalculate cached validity from current property state.
+            // Events received while paused were dropped, so caches may be stale.
+            var wasValid = this.IsValid;
+            this.IsValid = !this.PropertyBag.Any(p => !p.Value.IsValid);
+            if (wasValid != this.IsValid)
+            {
+                RaisePropertyChanged(nameof(IsValid));
+            }
+
+            var wasSelfValid = this.IsSelfValid;
+            this.IsSelfValid = !this.PropertyBag.Any(p => !p.Value.IsSelfValid);
+            if (wasSelfValid != this.IsSelfValid)
+            {
+                RaisePropertyChanged(nameof(IsSelfValid));
+            }
+
+            this.IsBusy = this.PropertyBag.Any(p => p.Value.IsBusy);
         }
     }
 }

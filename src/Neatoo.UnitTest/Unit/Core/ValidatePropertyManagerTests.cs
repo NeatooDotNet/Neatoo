@@ -1134,6 +1134,73 @@ public class ValidatePropertyManagerTests
 
     #endregion
 
+    #region Resume Recalculation Tests (Red-Green: Must FAIL before fix)
+
+    [TestMethod]
+    public void ResumeAllActions_PropertyBecomesInvalidDuringPause_IsValidRecalculated()
+    {
+        // RED-GREEN: This test exposes the bug where VPM.IsValid stays stale after resume.
+        // Must FAIL before fix, PASS after.
+
+        // Arrange
+        var testObject = new ValidatePropertyManagerTestObject();
+        testObject.ResumeAllActions();
+        Assert.IsTrue(testObject.PropertyManager.IsValid, "Precondition: should be valid");
+
+        // Act - Pause, make a property invalid during pause, then resume
+        testObject.PauseAllActions();
+
+        // Directly add a validation error to the property while paused
+        var nameProperty = testObject.PropertyManager.GetProperty("Name");
+        var ruleMessages = new List<IRuleMessage>
+        {
+            new RuleMessage("Name", "Test validation error") { RuleId = 99 }
+        };
+        ((IValidatePropertyInternal)nameProperty).SetMessagesForRule(ruleMessages);
+        Assert.IsFalse(nameProperty.IsValid, "Precondition: property should be invalid");
+
+        testObject.ResumeAllActions();
+
+        // Assert - After resume, VPM.IsValid should reflect the property's invalid state
+        Assert.IsFalse(testObject.PropertyManager.IsValid,
+            "VPM.IsValid should be false after resume because property became invalid during pause");
+        Assert.IsFalse(testObject.PropertyManager.IsSelfValid,
+            "VPM.IsSelfValid should be false after resume because property became invalid during pause");
+    }
+
+    [TestMethod]
+    public void ResumeAllActions_PropertyBecomesValidDuringPause_IsValidRecalculated()
+    {
+        // RED-GREEN: This test exposes the bug where VPM.IsValid stays stale after resume.
+        // Must FAIL before fix, PASS after.
+
+        // Arrange - Make the object invalid first
+        var testObject = new ValidatePropertyManagerTestObject();
+        testObject.ResumeAllActions();
+        testObject.AddValidationError("Test error");
+        // AddValidationError calls PauseAllActions at the end, so resume
+        testObject.ResumeAllActions();
+        Assert.IsFalse(testObject.IsValid, "Precondition: should be invalid");
+
+        // Act - Pause, clear the error during pause, then resume
+        testObject.PauseAllActions();
+
+        // Clear all messages from the property to make it valid while paused
+        var nameProperty = testObject.PropertyManager.GetProperty("Name");
+        ((IValidatePropertyInternal)nameProperty).ClearSelfMessages();
+        Assert.IsTrue(nameProperty.IsValid, "Precondition: property should now be valid");
+
+        testObject.ResumeAllActions();
+
+        // Assert - After resume, VPM.IsValid should reflect the property's valid state
+        Assert.IsTrue(testObject.PropertyManager.IsValid,
+            "VPM.IsValid should be true after resume because property became valid during pause");
+        Assert.IsTrue(testObject.PropertyManager.IsSelfValid,
+            "VPM.IsSelfValid should be true after resume because property became valid during pause");
+    }
+
+    #endregion
+
     #region Validation State Consistency Tests
 
     [TestMethod]

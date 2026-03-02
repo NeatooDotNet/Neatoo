@@ -1340,4 +1340,142 @@ public class EntityPropertyManagerTests
     }
 
     #endregion
+
+    #region Resume Recalculation Tests (Red-Green: Must FAIL before fix)
+
+    [TestMethod]
+    public void ResumeAllActions_ChildModifiedDuringPause_IsModifiedRecalculated()
+    {
+        // RED-GREEN: This test exposes the bug where EPM.IsModified stays stale after resume.
+        // Must FAIL before fix, PASS after.
+
+        // Arrange - Parent with child, both resumed, then pause the parent
+        var parent = new PropertyTestParentEntity();
+        var child = new TestChildEntity();
+        parent.ResumeAllActions();
+        parent.Child = child;
+        parent.PropertyManager.MarkSelfUnmodified();
+        Assert.IsFalse(parent.PropertyManager.IsModified, "Precondition: parent should not be modified");
+
+        // Act - Pause parent, modify child during pause, then resume parent
+        parent.PauseAllActions();
+        child.ResumeAllActions();
+        child.ChildName = "Modified During Pause";
+        Assert.IsTrue(child.IsModified, "Precondition: child should be modified");
+
+        parent.ResumeAllActions();
+
+        // Assert - After resume, parent's EPM.IsModified should reflect child's modified state
+        Assert.IsTrue(parent.PropertyManager.IsModified,
+            "EPM.IsModified should be true after resume because child was modified during pause");
+    }
+
+    [TestMethod]
+    public void ResumeAllActions_ChildInvalidDuringPause_IsValidRecalculated()
+    {
+        // RED-GREEN: This test exposes the bug where EPM's IsValid (via VPM) stays stale after resume.
+        // Must FAIL before fix, PASS after.
+
+        // Arrange - Parent with child, both resumed, then pause the parent
+        var parent = new PropertyTestParentEntity();
+        var child = new TestChildEntity();
+        parent.ResumeAllActions();
+        parent.Child = child;
+        child.ResumeAllActions();
+        Assert.IsTrue(parent.PropertyManager.IsValid, "Precondition: parent should be valid");
+
+        // Act - Pause parent, make child invalid during pause, then resume parent
+        parent.PauseAllActions();
+
+        // Make the child invalid by adding a validation error directly to the child's property
+        var childNameProperty = child["ChildName"];
+        var ruleMessages = new List<IRuleMessage>
+        {
+            new RuleMessage("ChildName", "Test validation error") { RuleId = 99 }
+        };
+        ((IValidatePropertyInternal)childNameProperty).SetMessagesForRule(ruleMessages);
+        Assert.IsFalse(child.IsValid, "Precondition: child should be invalid");
+
+        parent.ResumeAllActions();
+
+        // Assert - After resume, parent's IsValid should reflect child's invalid state
+        Assert.IsFalse(parent.PropertyManager.IsValid,
+            "EPM.IsValid should be false after resume because child became invalid during pause");
+    }
+
+    [TestMethod]
+    public void ResumeAllActions_NoChangesDuringPause_ValuesUnchanged()
+    {
+        // Safety test: resume with no changes during pause should not alter state or raise events.
+        // Expected to PASS before and after fix.
+
+        // Arrange
+        var parent = new PropertyTestParentEntity();
+        var child = new TestChildEntity();
+        parent.ResumeAllActions();
+        parent.Child = child;
+        child.ResumeAllActions();
+        parent.PropertyManager.MarkSelfUnmodified();
+
+        var isModifiedBefore = parent.PropertyManager.IsModified;
+        var isValidBefore = parent.PropertyManager.IsValid;
+
+        var propertyChangedEvents = new List<string>();
+        parent.PropertyManager.PropertyChanged += (sender, e) => propertyChangedEvents.Add(e.PropertyName!);
+
+        // Act - Pause and resume with no changes
+        parent.PauseAllActions();
+        parent.ResumeAllActions();
+
+        // Assert - State should be unchanged, no events raised for meta properties
+        Assert.AreEqual(isModifiedBefore, parent.PropertyManager.IsModified,
+            "IsModified should not change when nothing changed during pause");
+        Assert.AreEqual(isValidBefore, parent.PropertyManager.IsValid,
+            "IsValid should not change when nothing changed during pause");
+        Assert.IsFalse(propertyChangedEvents.Contains("IsModified"),
+            "Should not raise IsModified PropertyChanged when value didn't change");
+        Assert.IsFalse(propertyChangedEvents.Contains("IsValid"),
+            "Should not raise IsValid PropertyChanged when value didn't change");
+    }
+
+    [TestMethod]
+    public void PropertyPropertyChanged_WhenEPMPaused_VPMDoesNotProcessEvents()
+    {
+        // RED-GREEN: This test exposes the secondary bug where VPM.Property_PropertyChanged
+        // processes events during EPM pause because VPM.IsPaused is never set.
+        // Must FAIL before fix, PASS after.
+
+        // Arrange - Entity with a property, resumed
+        var parent = new PropertyTestParentEntity();
+        var child = new TestChildEntity();
+        parent.ResumeAllActions();
+        parent.Child = child;
+        child.ResumeAllActions();
+        Assert.IsTrue(parent.PropertyManager.IsValid, "Precondition: parent should be valid");
+
+        // Track PropertyChanged events from the property manager
+        var pmPropertyChangedEvents = new List<string>();
+        parent.PropertyManager.PropertyChanged += (sender, e) => pmPropertyChangedEvents.Add(e.PropertyName!);
+
+        // Act - Pause parent, make child invalid. During pause, VPM should NOT process events
+        // and should NOT raise PropertyChanged for IsValid.
+        parent.PauseAllActions();
+        pmPropertyChangedEvents.Clear(); // Clear events from pause itself
+
+        // Make the child invalid -- this triggers PropertyChanged on the child property
+        var childNameProperty = child["ChildName"];
+        var ruleMessages = new List<IRuleMessage>
+        {
+            new RuleMessage("ChildName", "Test validation error") { RuleId = 99 }
+        };
+        ((IValidatePropertyInternal)childNameProperty).SetMessagesForRule(ruleMessages);
+
+        // Assert - While paused, VPM should NOT have raised PropertyChanged for IsValid
+        // (Bug: VPM.IsPaused is never set for EPM objects, so VPM processes events during pause)
+        Assert.IsFalse(pmPropertyChangedEvents.Contains("IsValid"),
+            "VPM should not raise PropertyChanged(IsValid) while EPM is paused. " +
+            "Bug: VPM.IsPaused is never set to true for EntityBase objects.");
+    }
+
+    #endregion
 }
