@@ -6,6 +6,8 @@ Use for stateless operations like commands and events. No instance state - pure 
 
 Use `[Execute]` for operations that return a result. The client awaits the response.
 
+> **Note:** `[Execute]` also works on non-static `[Factory]` classes when the operation returns the containing type. See `references/class-factory.md` for that pattern.
+
 <!-- snippet: skill-static-execute-commands -->
 <a id='snippet-skill-static-execute-commands'></a>
 ```cs
@@ -184,90 +186,17 @@ Use `IEventTracker` to wait for pending fire-and-forget events to complete:
 <!-- snippet: events-eventtracker-access -->
 <a id='snippet-events-eventtracker-access'></a>
 ```cs
-/// <summary>
-/// Demonstrates IEventTracker singleton access and basic usage.
-/// </summary>
-public class EventTrackerAccessDemo
-{
-    private readonly IEventTracker _eventTracker;
-    private readonly EmployeeBasicEvent.SendWelcomeEmailEvent _sendWelcomeEmail;
-
-    public EventTrackerAccessDemo(
-        IEventTracker eventTracker,
-        EmployeeBasicEvent.SendWelcomeEmailEvent sendWelcomeEmail)
-    {
-        // IEventTracker is a singleton registered by AddNeatooAspNetCore
-        _eventTracker = eventTracker;
-        _sendWelcomeEmail = sendWelcomeEmail;
-    }
-
-    public async Task DemonstrateEventTrackerAsync()
-    {
-        // Fire multiple events
-        _ = _sendWelcomeEmail(Guid.NewGuid(), "employee1@company.com");
-        _ = _sendWelcomeEmail(Guid.NewGuid(), "employee2@company.com");
-        _ = _sendWelcomeEmail(Guid.NewGuid(), "employee3@company.com");
-
-        // Check pending count (may be 0 if events complete quickly)
-        var pendingCount = _eventTracker.PendingCount;
-        Console.WriteLine($"Pending events: {pendingCount}");
-
-        // Wait for all events to complete
-        await _eventTracker.WaitAllAsync();
-
-        // Verify all events completed
-        if (_eventTracker.PendingCount != 0)
-        {
-            throw new InvalidOperationException("Expected no pending events");
-        }
-    }
-}
-```
-<sup><a href='/src/docs/reference-app/EmployeeManagement.Application/Samples/Events/EventTrackerSamples.cs#L6-L45' title='Snippet source file'>snippet source</a> | <a href='#snippet-events-eventtracker-access' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-events-eventtracker-access-1'></a>
-```cs
-/// <summary>
-/// Demonstrates injecting and using IEventTracker.
-/// </summary>
+// IEventTracker registered by AddNeatooRemoteFactory/AddNeatooAspNetCore
 public static class EventTrackerAccessSample
 {
-    /// <summary>
-    /// IEventTracker is registered automatically by AddNeatooRemoteFactory/AddNeatooAspNetCore.
-    /// </summary>
-    public static void AccessEventTracker(IServiceProvider serviceProvider)
+    public static void AccessEventTracker(IServiceProvider sp)
     {
-        // Resolve IEventTracker from DI
-        var eventTracker = serviceProvider.GetRequiredService<IEventTracker>();
-
-        // Check pending event count
-        var pendingCount = eventTracker.PendingCount;
-        Console.WriteLine($"Pending events: {pendingCount}");
+        var tracker = sp.GetRequiredService<IEventTracker>();
+        Console.WriteLine($"Pending: {tracker.PendingCount}");
     }
 }
 ```
-<sup><a href='/src/docs/reference-app/EmployeeManagement.Domain/Samples/Events/EventsSamples.cs#L343-L362' title='Snippet source file'>snippet source</a> | <a href='#snippet-events-eventtracker-access-1' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-events-eventtracker-access-2'></a>
-```cs
-/// <summary>
-/// Accessing IEventTracker for pending event monitoring.
-/// </summary>
-public class EventTrackerAccessTests
-{
-    [Fact]
-    public void EventTracker_ResolvedFromDI()
-    {
-        // Arrange
-        var scopes = TestClientServerContainers.CreateScopes();
-
-        // Act - IEventTracker is registered by AddNeatooRemoteFactory
-        var eventTracker = scopes.local.ServiceProvider.GetRequiredService<IEventTracker>();
-
-        // Assert
-        Assert.NotNull(eventTracker);
-    }
-}
-```
-<sup><a href='/src/docs/reference-app/EmployeeManagement.Tests/Samples/TestingSamples.cs#L560-L579' title='Snippet source file'>snippet source</a> | <a href='#snippet-events-eventtracker-access-2' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/reference-app/EmployeeManagement.Domain/Samples/Events/EventsSamples.cs#L155-L165' title='Snippet source file'>snippet source</a> | <a href='#snippet-events-eventtracker-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **ASP.NET Core Integration:**
@@ -281,77 +210,20 @@ RemoteFactory registers `EventTrackerHostedService` which:
 <!-- snippet: events-testing -->
 <a id='snippet-events-testing'></a>
 ```cs
-/// <summary>
-/// Standard pattern for testing event side effects.
-/// </summary>
+// Fire event delegate, wait via IEventTracker, assert side effects
 public static class EventTestingPatternSample
 {
-    public static async Task TestWelcomeEmailEvent(
-        IServiceProvider serviceProvider,
-        IEventTracker eventTracker)
+    public static async Task TestWelcomeEmailEvent(IServiceProvider sp, IEventTracker tracker)
     {
-        // Arrange - get event delegate from DI
-        var sendWelcomeEmail = serviceProvider
-            .GetRequiredService<EmployeeBasicEvent.SendWelcomeEmailEvent>();
-
-        // Clear test data
+        var sendEmail = sp.GetRequiredService<EmployeeBasicEvent.SendWelcomeEmailEvent>();
         InMemoryEmailService.Clear();
-
-        // Act - fire the event
-        var employeeId = Guid.NewGuid();
-        var testEmail = "newemployee@company.com";
-        _ = sendWelcomeEmail(employeeId, testEmail);
-
-        // Wait for event completion
-        await eventTracker.WaitAllAsync();
-
-        // Assert - verify email was sent
-        var sentEmails = InMemoryEmailService.GetSentEmails();
-        Assert.Single(sentEmails);
-        Assert.Equal(testEmail, sentEmails[0].Recipient);
+        _ = sendEmail(Guid.NewGuid(), "test@example.com");
+        await tracker.WaitAllAsync();
+        Assert.Single(InMemoryEmailService.GetSentEmails());
     }
 }
 ```
-<sup><a href='/src/docs/reference-app/EmployeeManagement.Tests/Samples/Events/EventTestingSamples.cs#L69-L100' title='Snippet source file'>snippet source</a> | <a href='#snippet-events-testing' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-events-testing-1'></a>
-```cs
-/// <summary>
-/// Testing event handlers via delegate injection.
-/// Events are fired via generated delegates, not factory methods.
-/// </summary>
-public class EventsTests
-{
-    [Fact]
-    public async Task EventDelegate_FiresAsynchronously()
-    {
-        // Arrange - Clear any previous data
-        InMemoryEmailService.Clear();
-
-        var scopes = TestClientServerContainers.CreateScopes();
-
-        // Events are invoked via delegates resolved from DI
-        // The delegate is: EmployeeEventHandlers.NotifyHROfNewEmployeeEvent
-        var notifyDelegate = scopes.local.ServiceProvider
-            .GetRequiredService<EmployeeManagement.Domain.Events.EmployeeEventHandlers.NotifyHROfNewEmployeeEvent>();
-
-        // Act - Invoke event delegate (fire-and-forget)
-        await notifyDelegate(
-            Guid.NewGuid(),
-            "John Doe");
-
-        // Assert - Wait for event to complete
-        var eventTracker = scopes.local.ServiceProvider.GetRequiredService<IEventTracker>();
-        await eventTracker.WaitAllAsync();
-
-        // Verify email was sent
-        var emails = InMemoryEmailService.GetSentEmails();
-        Assert.Contains(emails, e =>
-            e.Recipient == "hr@company.com" &&
-            e.Subject.Contains("John Doe", StringComparison.Ordinal));
-    }
-}
-```
-<sup><a href='/src/docs/reference-app/EmployeeManagement.Tests/Samples/TestingSamples.cs#L371-L407' title='Snippet source file'>snippet source</a> | <a href='#snippet-events-testing-1' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/reference-app/EmployeeManagement.Tests/Samples/Events/EventTestingSamples.cs#L8-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-events-testing' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ---

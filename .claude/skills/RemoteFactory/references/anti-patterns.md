@@ -232,16 +232,45 @@ private static Task _OnEmployeeCreated(Guid id, [Service] IEmailService svc, Can
 
 ---
 
+## 10. Class Factory [Execute] Returning Wrong Type
+
+**Problem**: Execute method on a class factory must return the containing type's service type.
+
+```csharp
+// WRONG - returns a different type
+[Factory]
+public partial class Order
+{
+    [Remote, Execute]
+    public static Task<Invoice> GenerateInvoice(  // Returns Invoice, not Order!
+        int orderId, [Service] IInvoiceService svc) { }
+}
+
+// RIGHT - returns the containing type
+[Factory]
+public partial class Order
+{
+    [Remote, Execute]
+    public static Task<Order> CloneOrder(
+        int orderId, [Service] IOrderRepository repo) { }
+}
+```
+
+**Why**: Class factory Execute generates a method on `IOrderFactory`. Every method on that interface deals with `Order`. If you need to return a different type, use a static class `[Execute]` instead.
+
+---
+
 ## Summary Table
 
 | Anti-Pattern | Problem | Solution |
 |--------------|---------|----------|
 | [Remote] on children | N+1 calls | Remove [Remote] from child entities |
 | Attributes on interface methods | Duplicate generation | Remove operation attributes |
-| Public static methods | Name conflict | Use `private static _MethodName` |
+| Public static methods (static factory) | Name conflict | Use `private static _MethodName` |
 | Private setters | Won't deserialize | Use public setters |
 | Storing method services | Null after round-trip | Use immediately or constructor inject |
 | Missing partial | Won't compile | Add `partial` keyword |
 | [Factory] on implementation | Duplicate registration | Only on interface |
 | [Execute] returning Task | No confirmation | Return Task<T> |
 | [Event] missing CancellationToken | Can't cancel | Add as final parameter |
+| Class [Execute] wrong return type | Won't compile | Must return containing type |

@@ -13,14 +13,14 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange - KnockOff stubs
             var phoneListStub = new Stubs.IPersonPhoneList();
-            phoneListStub.GetEnumerator.OnCall(() => ((IEnumerable<IPersonPhone>)Array.Empty<IPersonPhone>()).GetEnumerator());
+            phoneListStub.GetEnumerator.Return(() => ((IEnumerable<IPersonPhone>)Array.Empty<IPersonPhone>()).GetEnumerator());
 
             var personStub = new Stubs.IPerson();
-            personStub.PersonPhoneList.OnGet = () => phoneListStub;
+            personStub.PersonPhoneList.Get(() => phoneListStub);
 
             var phoneStub = new Stubs.IPersonPhone();
-            phoneStub.PhoneType.OnGet = () => PhoneType.Mobile;
-            phoneStub.ParentPerson.OnGet = () => personStub;
+            phoneStub.PhoneType.Get(() => PhoneType.Mobile);
+            phoneStub.ParentPerson.Get(() => personStub);
 
             var rule = new UniquePhoneTypeRule();
 
@@ -36,17 +36,17 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange - KnockOff stubs
             var existingPhoneStub = new Stubs.IPersonPhone();
-            existingPhoneStub.PhoneType.OnGet = () => PhoneType.Mobile;
+            existingPhoneStub.PhoneType.Get(() => PhoneType.Mobile);
 
             var phoneListStub = new Stubs.IPersonPhoneList();
-            phoneListStub.GetEnumerator.OnCall(() => ((IEnumerable<IPersonPhone>)new[] { (IPersonPhone)existingPhoneStub }).GetEnumerator());
+            phoneListStub.GetEnumerator.Return(() => ((IEnumerable<IPersonPhone>)new[] { (IPersonPhone)existingPhoneStub }).GetEnumerator());
 
             var personStub = new Stubs.IPerson();
-            personStub.PersonPhoneList.OnGet = () => phoneListStub;
+            personStub.PersonPhoneList.Get(() => phoneListStub);
 
             var phoneStub = new Stubs.IPersonPhone();
-            phoneStub.PhoneType.OnGet = () => PhoneType.Mobile;
-            phoneStub.ParentPerson.OnGet = () => personStub;
+            phoneStub.PhoneType.Get(() => PhoneType.Mobile);
+            phoneStub.ParentPerson.Get(() => personStub);
 
             var rule = new UniquePhoneTypeRule();
 
@@ -63,8 +63,8 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange - KnockOff stub
             var phoneStub = new Stubs.IPersonPhone();
-            phoneStub.PhoneType.OnGet = () => PhoneType.Mobile;
-            phoneStub.ParentPerson.OnGet = () => null;
+            phoneStub.PhoneType.Get(() => PhoneType.Mobile);
+            phoneStub.ParentPerson.Get(() => null);
 
             var rule = new UniquePhoneTypeRule();
 
