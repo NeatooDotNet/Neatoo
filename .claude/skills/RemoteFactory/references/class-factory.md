@@ -194,12 +194,107 @@ public partial class SkillEmployeeWithLifecycle : IFactorySaveMeta, IFactoryOnSt
 
 ---
 
+## Execute Methods on Class Factories
+
+Use `[Execute]` on `public static` methods within a class factory to co-locate orchestration logic with the aggregate it operates on.
+
+### When to Use
+
+- The operation creates or returns an instance of the containing type
+- The logic is tightly coupled to the aggregate (calls its factory methods, uses internal helpers)
+- You want the operation on the same factory interface as Create/Fetch/Save
+
+If the operation returns a different type, use a static factory `[Execute]` instead (see `references/static-factory.md`).
+
+### Method Signature
+
+<!-- snippet: skill-class-execute -->
+<a id='snippet-skill-class-execute'></a>
+```cs
+public interface ISkillConsultation
+{
+    long PatientId { get; }
+    string Status { get; }
+}
+
+[Factory]
+public partial class SkillConsultation : ISkillConsultation
+{
+    public long PatientId { get; set; }
+    public string Status { get; set; } = string.Empty;
+
+    public SkillConsultation() { }
+
+    [Remote, Create]
+    public Task CreateAcute(long patientId, [Service] IEmployeeRepository repo)
+    {
+        PatientId = patientId;
+        Status = "Acute";
+        return Task.CompletedTask;
+    }
+
+    [Remote, Fetch]
+    public Task<bool> FetchActive(long patientId, [Service] IEmployeeRepository repo)
+    {
+        PatientId = patientId;
+        Status = "Active";
+        return Task.FromResult(true);
+    }
+
+    // Execute on class factory: public static, returns the interface type
+    [Remote, Execute]
+    public static async Task<ISkillConsultation> StartForPatient(
+        long patientId,
+        [Service] ISkillConsultationFactory factory,
+        [Service] IEmployeeRepository repo)
+    {
+        var existing = await factory.FetchActive(patientId);
+        if (existing != null)
+            return existing;
+
+        return await factory.CreateAcute(patientId);
+    }
+}
+```
+<sup><a href='/src/docs/reference-app/EmployeeManagement.Domain/Samples/Skill/ClassFactoryExecuteSamples.cs#L6-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-class-execute' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Key differences from static factory `[Execute]`:
+- Method is **`public static`** (no underscore prefix, no `private`)
+- Must return the **containing type** (or its matching interface)
+- Generates a **factory interface method**, not a delegate type
+
+### Generated Code
+
+When the class implements a matching `I{ClassName}` interface, all generated factory methods return the interface type. Classes without a matching interface return the concrete type instead.
+
+```csharp
+public interface ISkillConsultationFactory
+{
+    Task<ISkillConsultation> CreateAcute(long patientId, CancellationToken ct = default);
+    Task<ISkillConsultation?> FetchActive(long patientId, CancellationToken ct = default);
+    Task<ISkillConsultation> StartForPatient(long patientId, CancellationToken ct = default);
+}
+```
+
+### Caller Usage
+
+```csharp
+// Inject the factory -- same as any other factory method
+var factory = serviceProvider.GetRequiredService<IConsultationFactory>();
+var consultation = await factory.StartForPatient(patientId);
+```
+
+---
+
 ## Key Rules
 
 1. **Classes must be `partial`** - Generator adds serialization code
 2. **Properties need public setters** - Required for deserialization
 3. **[Remote] marks client entry points** - Only on aggregate root operations
 4. **Business logic belongs in the entity** - Not in the factory
+5. **Execute methods must be `public static`** - No underscore prefix (unlike static factory Execute)
+6. **Execute must return the containing type** (or concrete type if no matching interface) - Keeps the factory interface cohesive
 
 ---
 
@@ -210,36 +305,13 @@ Use `[SuppressFactory]` to prevent factory generation on derived classes that in
 <!-- snippet: attributes-suppressfactory -->
 <a id='snippet-attributes-suppressfactory'></a>
 ```cs
-/// <summary>
-/// Base class with factory generation.
-/// </summary>
 [Factory]
-public partial class BaseEmployeeEntity
-{
-    public Guid Id { get; protected set; }
-    public string Name { get; set; } = "";
+public partial class BaseEntity { }
 
-    [Create]
-    public BaseEmployeeEntity()
-    {
-        Id = Guid.NewGuid();
-    }
-}
-
-/// <summary>
-/// [SuppressFactory] prevents factory generation for derived class.
-/// Use when base class has [Factory] but derived should not.
-/// </summary>
-[SuppressFactory]
-public partial class InternalEmployeeEntity : BaseEmployeeEntity
-{
-    public string InternalCode { get; set; } = "";
-
-    // No factory generated for this class
-    // Must be created via base factory or manually
-}
+[SuppressFactory]  // Prevents factory generation on derived class
+public partial class InternalEntity : BaseEntity { }
 ```
-<sup><a href='/src/docs/reference-app/EmployeeManagement.Domain/Samples/Attributes/AttributesSamples.cs#L26-L55' title='Snippet source file'>snippet source</a> | <a href='#snippet-attributes-suppressfactory' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/reference-app/EmployeeManagement.Domain/Samples/Attributes/MinimalAttributesSamples.cs#L19-L25' title='Snippet source file'>snippet source</a> | <a href='#snippet-attributes-suppressfactory' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Use when:**

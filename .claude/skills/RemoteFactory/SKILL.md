@@ -34,6 +34,7 @@ RemoteFactory is a Roslyn Source Generator-powered Data Mapper Factory for 3-tie
 | Do I need `partial` keyword? | Yes, always |
 | Should child entities have [Remote]? | No - causes N+1 remote calls |
 | Can [Execute] return void? | No, must return Task<T> |
+| Can [Execute] go on a class factory? | Yes, if `public static` and returns containing type |
 | Do [Event] methods need CancellationToken? | Yes, as final parameter |
 | Where does business logic go? | In the entity, not the factory |
 

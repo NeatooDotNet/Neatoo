@@ -6,7 +6,6 @@ using Person.Ef;
 
 namespace DomainModel.Tests.UnitTests
 {
-    // Using KnockOff 10.12.0 for all interfaces
     [KnockOff<IPersonDbContext>]
     [KnockOff<IPersonPhoneListFactory>]
     [KnockOff<IPersonPhoneList>]
@@ -47,10 +46,10 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange
             var personEntity = new PersonEntity { FirstName = "John", LastName = "Doe" };
-            personDbContextStub.FindPerson.OnCall((token) => Task.FromResult<PersonEntity?>(personEntity));
+            personDbContextStub.FindPerson.Return((token) => Task.FromResult<PersonEntity?>(personEntity));
 
             var phoneListStub = new Stubs.IPersonPhoneList();
-            phoneListFactoryStub.Fetch.OnCall((entities, token) => phoneListStub);
+            phoneListFactoryStub.Fetch.Return((entities, token) => phoneListStub);
 
             // Act
             var result = await testPerson.Fetch(personDbContextStub, phoneListFactoryStub, CancellationToken.None);
@@ -66,7 +65,7 @@ namespace DomainModel.Tests.UnitTests
         public async Task Fetch_ShouldReturnFalse_WhenPersonDoesNotExist()
         {
             // Arrange
-            personDbContextStub.FindPerson.OnCall((token) => Task.FromResult<PersonEntity?>(null));
+            personDbContextStub.FindPerson.Return((token) => Task.FromResult<PersonEntity?>(null));
 
             var person = new Person(new EntityBaseServices<Person>(null), testUniqueNameRule);
 
@@ -81,11 +80,11 @@ namespace DomainModel.Tests.UnitTests
         public async Task Insert_ShouldReturnPersonEntity_WhenModelIsSavable()
         {
             // Arrange
-            personDbContextStub.SaveChangesAsync.OnCall((token) => Task.FromResult(1));
+            personDbContextStub.SaveChangesAsync.Return((token) => Task.FromResult(1));
 
             var phoneListStub = new Stubs.IPersonPhoneList();
             testPerson.PersonPhoneList = phoneListStub;
-            phoneListFactoryStub.Save.OnCall((target, entities, token) => phoneListStub);
+            phoneListFactoryStub.Save.Return((target, entities, token) => phoneListStub);
 
             testPerson.FirstName = "John";
             testPerson.LastName = "Doe";
@@ -96,8 +95,8 @@ namespace DomainModel.Tests.UnitTests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(1, testPerson.RunRulesCallCount);
-            personDbContextStub.AddPerson.Verify(Times.Once);
-            personDbContextStub.SaveChangesAsync.Verify(Times.Once);
+            personDbContextStub.AddPerson.Verify(Called.Once);
+            personDbContextStub.SaveChangesAsync.Verify(Called.Once);
         }
 
         [Fact]
@@ -111,15 +110,15 @@ namespace DomainModel.Tests.UnitTests
 
             // Assert
             Assert.Null(result);
-            personDbContextStub.AddPerson.Verify(Times.Never);
-            personDbContextStub.SaveChangesAsync.Verify(Times.Never);
+            personDbContextStub.AddPerson.Verify(Called.Never);
+            personDbContextStub.SaveChangesAsync.Verify(Called.Never);
         }
 
         [Fact]
         public async Task Update_ShouldThrowException_WhenPersonNotFound()
         {
             // Arrange
-            personDbContextStub.FindPerson.OnCall((token) => Task.FromResult<PersonEntity?>(null));
+            personDbContextStub.FindPerson.Return((token) => Task.FromResult<PersonEntity?>(null));
 
             // Act & Assert
             await Assert.ThrowsAsync<KeyNotFoundException>(() => testPerson.Update(personDbContextStub, phoneListFactoryStub, CancellationToken.None));
@@ -135,8 +134,8 @@ namespace DomainModel.Tests.UnitTests
             await person.Delete(personDbContextStub, CancellationToken.None);
 
             // Assert
-            personDbContextStub.DeleteAllPersons.Verify(Times.Once);
-            personDbContextStub.SaveChangesAsync.Verify(Times.Once);
+            personDbContextStub.DeleteAllPersons.Verify(Called.Once);
+            personDbContextStub.SaveChangesAsync.Verify(Called.Once);
         }
     }
 }

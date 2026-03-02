@@ -12,20 +12,20 @@ namespace DomainModel.Tests.UnitTests
         private Stubs.IPerson CreatePersonStub(string firstName, string lastName, bool isModified)
         {
             var firstNameProp = new Stubs.IEntityProperty();
-            firstNameProp.IsModified.OnGet = () => isModified;
+            firstNameProp.IsModified.Get(() => isModified);
 
             var lastNameProp = new Stubs.IEntityProperty();
-            lastNameProp.IsModified.OnGet = () => isModified;
+            lastNameProp.IsModified.Get(() => isModified);
 
             var personStub = new Stubs.IPerson();
-            personStub.FirstName.OnGet = () => firstName;
-            personStub.LastName.OnGet = () => lastName;
-            personStub.Indexer.OnGet = (propName) => propName switch
+            personStub.FirstName.Get(() => firstName);
+            personStub.LastName.Get(() => lastName);
+            personStub.Indexer.Get((propName) => propName switch
             {
                 nameof(IPerson.FirstName) => firstNameProp,
                 nameof(IPerson.LastName) => lastNameProp,
                 _ => new Stubs.IEntityProperty()
-            };
+            });
 
             return personStub;
         }
@@ -35,7 +35,7 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange - KnockOff stubs
             var isUniqueStub = new Stubs.IsUniqueName();
-            isUniqueStub.Interceptor.OnCall = (id, firstName, lastName, token) => Task.FromResult(true);
+            isUniqueStub.Interceptor.Return((id, firstName, lastName, token) => Task.FromResult(true));
 
             var rule = new UniqueNameRule(isUniqueStub);
             var personStub = CreatePersonStub("Jane", "Doe", isModified: true);
@@ -52,7 +52,7 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange - KnockOff stubs
             var isUniqueStub = new Stubs.IsUniqueName();
-            isUniqueStub.Interceptor.OnCall = (id, firstName, lastName, token) => Task.FromResult(false);
+            isUniqueStub.Interceptor.Return((id, firstName, lastName, token) => Task.FromResult(false));
 
             var rule = new UniqueNameRule(isUniqueStub);
             var personStub = CreatePersonStub("John", "Doe", isModified: true);
@@ -69,7 +69,7 @@ namespace DomainModel.Tests.UnitTests
         [Fact]
         public async Task Execute_ShouldReturnNone_WhenNameIsNotModified()
         {
-            // Arrange - KnockOff stubs (no OnCall configured = will not be called)
+            // Arrange - KnockOff stubs (no Call configured = will not be called)
             var isUniqueStub = new Stubs.IsUniqueName();
             var rule = new UniqueNameRule(isUniqueStub);
             var personStub = CreatePersonStub("Jane", "Doe", isModified: false);
@@ -79,7 +79,7 @@ namespace DomainModel.Tests.UnitTests
 
             // Assert
             Assert.Equal(RuleMessages.None, result);
-            isUniqueStub.Interceptor.Verify(Times.Never);
+            isUniqueStub.Interceptor.Verify(Called.Never);
         }
     }
 }

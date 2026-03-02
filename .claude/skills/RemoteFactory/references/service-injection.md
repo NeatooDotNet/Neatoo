@@ -9,52 +9,14 @@ Services injected via constructor are available on **both client and server**.
 <!-- snippet: service-injection-constructor -->
 <a id='snippet-service-injection-constructor'></a>
 ```cs
-/// <summary>
-/// Service for calculating employee salary.
-/// </summary>
-public interface ISalaryCalculator
+// Constructor injection - service available on BOTH client and server
+[Create]
+public EmployeeCompensation([Service] ISalaryCalculator calculator)
 {
-    decimal Calculate(decimal baseSalary, decimal bonus);
-}
-
-/// <summary>
-/// Simple salary calculator implementation.
-/// </summary>
-public class SalaryCalculator : ISalaryCalculator
-{
-    public decimal Calculate(decimal baseSalary, decimal bonus)
-    {
-        return baseSalary + bonus;
-    }
-}
-
-/// <summary>
-/// Employee compensation demonstrating constructor service injection.
-/// </summary>
-[Factory]
-public partial class EmployeeCompensation
-{
-    private readonly ISalaryCalculator _calculator;
-
-    public decimal TotalCompensation { get; private set; }
-
-    /// <summary>
-    /// Constructor with service injection.
-    /// ISalaryCalculator is resolved from DI when the factory creates the instance.
-    /// </summary>
-    [Create]
-    public EmployeeCompensation([Service] ISalaryCalculator calculator)
-    {
-        _calculator = calculator;
-    }
-
-    public void CalculateTotal(decimal baseSalary, decimal bonus)
-    {
-        TotalCompensation = _calculator.Calculate(baseSalary, bonus);
-    }
+    _calculator = calculator;
 }
 ```
-<sup><a href='/src/docs/reference-app/EmployeeManagement.Domain/Samples/Services/ServiceInjectionSamples.cs#L166-L211' title='Snippet source file'>snippet source</a> | <a href='#snippet-service-injection-constructor' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/reference-app/EmployeeManagement.Domain/Samples/Services/ServiceInjectionSamples.cs#L161-L168' title='Snippet source file'>snippet source</a> | <a href='#snippet-service-injection-constructor' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Use constructor injection when:**
@@ -71,53 +33,14 @@ Services injected via method parameters are **server-only**.
 <!-- snippet: service-injection-server-only -->
 <a id='snippet-service-injection-server-only'></a>
 ```cs
-/// <summary>
-/// Interface for database access (server-only service).
-/// </summary>
-public interface IEmployeeDatabase
+// Server-only service - [Remote] ensures execution on server where IEmployeeDatabase exists
+[Remote, Fetch]
+public async Task Fetch(string query, [Service] IEmployeeDatabase database)
 {
-    Task<string> ExecuteQueryAsync(string query);
-}
-
-/// <summary>
-/// Simple implementation for demonstration.
-/// </summary>
-public class EmployeeDatabase : IEmployeeDatabase
-{
-    public Task<string> ExecuteQueryAsync(string query)
-    {
-        // Simulated query execution
-        return Task.FromResult($"Query result for: {query}");
-    }
-}
-
-/// <summary>
-/// Employee report demonstrating server-only service injection.
-/// </summary>
-[Factory]
-public partial class ServiceEmployeeReport
-{
-    public string QueryResult { get; private set; } = "";
-
-    [Create]
-    public ServiceEmployeeReport()
-    {
-    }
-
-    /// <summary>
-    /// Fetches report data from the database.
-    /// </summary>
-    /// <remarks>
-    /// This service only exists on the server - [Remote] ensures the method runs there.
-    /// </remarks>
-    [Remote, Fetch]
-    public async Task Fetch(string query, [Service] IEmployeeDatabase database)
-    {
-        QueryResult = await database.ExecuteQueryAsync(query);
-    }
+    QueryResult = await database.ExecuteQueryAsync(query);
 }
 ```
-<sup><a href='/src/docs/reference-app/EmployeeManagement.Domain/Samples/Services/ServiceInjectionSamples.cs#L41-L87' title='Snippet source file'>snippet source</a> | <a href='#snippet-service-injection-server-only' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/docs/reference-app/EmployeeManagement.Domain/Samples/Services/ServiceInjectionSamples.cs#L66-L73' title='Snippet source file'>snippet source</a> | <a href='#snippet-service-injection-server-only' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Use method injection when:**
@@ -193,26 +116,6 @@ public partial class Assignment
 ### Why No [Remote] on Children?
 
 `[Remote]` marks entry points from client to server. Once execution is on the server, subsequent calls stay there.
-
-### Entity Duality
-
-An entity can be an aggregate root in one object graph and a child in another. The same class may have `[Remote]` methods for aggregate root scenarios while other methods are server-only:
-
-```csharp
-[Factory]
-public partial class Project
-{
-    [Remote, Create]  // When Project is the aggregate root
-    public void Create(string name, [Service] IProjectRepository repo) { }
-
-    [Create]  // When Project is a child of Employee (no [Remote])
-    public void Create(string name) { }
-}
-```
-
-### Runtime Enforcement
-
-Non-`[Remote]` methods are generated for client assemblies but result in "not-registered" DI exceptions if called—server-only services aren't in the client container. This provides runtime protection against accidental client-side invocation of server-only methods.
 
 ```csharp
 // In Employee.Create (already on server):
