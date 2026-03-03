@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.15.1** (2026-03-03)
+**Neatoo 0.16.0** (2026-03-03)
 
 ---
 
@@ -12,6 +12,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.16.0](v0.16.0.md) | 2026-03-03 | **Breaking** | IEntityRoot interface separates root vs child entity operations |
 | [0.15.1](v0.15.1.md) | 2026-03-03 | Bug Fix | IsValid/IsSavable stale during RunRules() in factory operations |
 | [0.15.0](v0.15.0.md) | 2026-03-02 | Dependency | RemoteFactory updated to 0.16.1 |
 | [0.14.2](v0.14.2.md) | 2026-03-02 | Bug Fix | DI version pinning for net10.0 WASM consumers |
@@ -39,6 +40,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [0.16.0](v0.16.0.md) | 2026-03-03 |
 | [0.15.1](v0.15.1.md) | 2026-03-03 |
 | [0.15.0](v0.15.0.md) | 2026-03-02 |
 | [0.14.2](v0.14.2.md) | 2026-03-02 |
