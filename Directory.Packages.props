@@ -15,15 +15,16 @@
     <!-- Microsoft Extensions -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
     <!-- ASP.NET Core / Blazor -->
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.5" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.5" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.3" />
     <!-- Entity Framework Core -->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.5" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.5" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.5" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Proxies" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.3" />
     <!-- UI Libraries -->
-    <PackageVersion Include="MudBlazor" Version="8.0.0" />
+    <PackageVersion Include="MudBlazor" Version="9.0.0" />
     <!-- Neatoo Dependencies -->
     <PackageVersion Include="Neatoo" Version="9.10.1" />
     <PackageVersion Include="Neatoo.RemoteFactory" Version="0.16.0" />

@@ -2,7 +2,7 @@ using DomainModel.Tests.TestDoubles;
 using KnockOff;
 using Neatoo;
 using Neatoo.Internal;
-using Person.Ef;
+using Person.Dal;
 
 namespace DomainModel.Tests.UnitTests
 {

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- Test projects stay single-target - override Directory.Build.props -->
     <TargetFrameworks></TargetFrameworks>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <AnalysisMode>default</AnalysisMode>
@@ -36,6 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Person.Dal\Person.Dal.csproj" />
     <ProjectReference Include="..\Person.DomainModel\Person.DomainModel.csproj" />
     <ProjectReference Include="..\Person.Ef\Person.Ef.csproj" />
   </ItemGroup>

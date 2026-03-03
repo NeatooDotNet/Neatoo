@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<!-- Example projects stay single-target - override Directory.Build.props -->
 		<TargetFrameworks></TargetFrameworks>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -18,6 +18,10 @@
 
 	<ItemGroup>
 		<Folder Include="Migrations\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Person.Dal\Person.Dal.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -2,18 +2,13 @@
 	<PropertyGroup>
 		<!-- Example projects stay single-target - override Directory.Build.props -->
 		<TargetFrameworks></TargetFrameworks>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 	</PropertyGroup>
 	
-	<ItemGroup>
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
-		<PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" PrivateAssets="all" />
-	</ItemGroup>
 
-	<ItemGroup>
+<ItemGroup>
 		<InternalsVisibleTo Include="Person.DomainModel.Tests" />
 		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 		<Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
@@ -22,7 +17,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\..\Neatoo.BaseGenerator\Neatoo.BaseGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	  <ProjectReference Include="..\..\..\Neatoo\Neatoo.csproj" />
-	  <ProjectReference Include="..\Person.Ef\Person.Ef.csproj" PrivateAssets="all" />
+	  <ProjectReference Include="..\Person.Dal\Person.Dal.csproj" />
 	</ItemGroup>
 
 </Project>

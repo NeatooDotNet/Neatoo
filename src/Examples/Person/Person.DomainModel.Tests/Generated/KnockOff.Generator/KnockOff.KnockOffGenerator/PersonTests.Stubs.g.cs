@@ -10,605 +10,11 @@ partial class PersonTests
 	/// <summary>Contains stub implementations for inline stub pattern.</summary>
 	public static class Stubs
 	{
-		/// <summary>Tracks and configures behavior for Persons.</summary>
-		public sealed class IPersonDbContext_PersonsInterceptor
-		{
-			/// <summary>Source object to delegate to when no Get/Set is configured.</summary>
-			internal global::Person.Ef.IPersonDbContext? _source;
-
-			private global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>>? _get;
-			private PropertyGetBuilderImpl? _getTracking;
-			private global::System.Collections.Generic.List<(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> Callback, PropertyGetBuilderImpl Tracking)>? _getSequence;
-			private int _getSequenceIndex;
-			private bool _getRepeatLastValue = true;
-			private bool _isGetVerifiable;
-			private global::KnockOff.Called? _getVerifiableTimes;
-			private int _unconfiguredGetCount;
-
-			private int TotalGetCount { get { var sum = _unconfiguredGetCount + (_getTracking?._callCount ?? 0); if (_getSequence != null) foreach (var s in _getSequence) sum += s.Tracking._callCount; return sum; } }
-
-			/// <summary>Configures getter callback that repeats indefinitely. Returns builder for tracking and sequence chaining.</summary>
-			public global::KnockOff.IPropertyGetBuilder<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> Get(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> callback)
-			{
-				_getSequence = null;
-				_getSequenceIndex = 0;
-				_isGetVerifiable = false;
-				_getVerifiableTimes = null;
-				_get = callback;
-				_getTracking = new PropertyGetBuilderImpl(this);
-				return _getTracking;
-			}
-
-			/// <summary>Configures getter to return the specified value. Returns builder for tracking and sequence chaining.</summary>
-			public global::KnockOff.IPropertyGetBuilder<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> Get(global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity> value) => Get(() => value);
-
-			/// <summary>Records a getter access (tracking only, does not invoke callback). Used by stub override pattern.</summary>
-			internal void RecordGet() => _unconfiguredGetCount++;
-
-			/// <summary>Returns true if Get is configured (callback or sequence). Used by stub override pattern.</summary>
-			internal bool HasGet => _get != null || (_getSequence?.Count ?? 0) > 0;
-
-			/// <summary>Invokes the configured getter callback without tracking. Used by stub override pattern.</summary>
-			internal global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity> InvokeGetCallback()
-			{
-				if (_getSequence != null && _getSequenceIndex < _getSequence.Count)
-				{
-					var (callback, tracking) = _getSequence[_getSequenceIndex];
-					tracking.RecordCall();
-					_getSequenceIndex++;
-					return callback();
-				}
-				if (_get != null && _getTracking != null)
-				{
-					_getTracking.RecordCall();
-					return _get();
-				}
-				throw new global::System.InvalidOperationException("InvokeGetCallback called without callback configured");
-			}
-
-			/// <summary>Invokes the configured getter callback. Called by explicit interface implementation.</summary>
-			internal global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity> InvokeGet(bool strict)
-			{
-				if (_getSequence != null && _getSequenceIndex < _getSequence.Count)
-				{
-					var (callback, tracking) = _getSequence[_getSequenceIndex];
-					tracking.RecordCall();
-					_getSequenceIndex++;
-					return callback();
-				}
-
-				if (_get != null && _getTracking != null)
-				{
-					_getTracking.RecordCall();
-					return _get();
-				}
-
-				_unconfiguredGetCount++;
-
-				if (_getSequence != null && _getSequenceIndex >= _getSequence.Count)
-				{
-					if (strict) throw global::KnockOff.StubException.SequenceExhausted("Persons (get)");
-					if (_getRepeatLastValue && _getSequence.Count > 0)
-					{
-						var (callback, tracking) = _getSequence[_getSequence.Count - 1];
-						tracking.RecordCall();
-						return callback();
-					}
-					return default!;
-				}
-
-				if (_source is { } src) return src.Persons;
-
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "Persons");
-				return default!;
-			}
-
-			/// <summary>Resets tracking state but preserves configuration (Get, Set) and verifiable marking.</summary>
-			public void Reset()
-			{
-				_unconfiguredGetCount = 0;
-				_getTracking?.Reset();
-				if (_getSequence != null)
-				{
-					foreach (var (_, tracking) in _getSequence)
-						tracking.Reset();
-				}
-				_getSequenceIndex = 0;
-				_source = null;
-			}
-
-			/// <summary>Verifies the property was accessed at least once. Throws VerificationException if not.</summary>
-			public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
-
-			/// <summary>Verifies total access count satisfies the Called constraint. Throws VerificationException if not.</summary>
-			public void Verify(global::KnockOff.Called times)
-			{
-				var totalCount = TotalGetCount;
-				if (!times.Validate(totalCount))
-					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("Persons", times, totalCount));
-			}
-
-			/// <summary>Verifies the getter was accessed at least once. Throws VerificationException if not.</summary>
-			public void VerifyGet() => VerifyGet(global::KnockOff.Called.AtLeastOnce);
-
-			/// <summary>Verifies getter access count satisfies the Called constraint. Throws VerificationException if not.</summary>
-			public void VerifyGet(global::KnockOff.Called times)
-			{
-				if (!times.Validate(TotalGetCount))
-					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("Persons (get)", times, TotalGetCount));
-			}
-
-			/// <summary>Marks this property for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-			public IPersonDbContext_PersonsInterceptor Verifiable() { _isGetVerifiable = true; _getVerifiableTimes = null; return this; }
-
-			/// <summary>Marks this property for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
-			public IPersonDbContext_PersonsInterceptor Verifiable(global::KnockOff.Called times) { _isGetVerifiable = true; _getVerifiableTimes = times; return this; }
-
-			/// <summary>Whether this property was marked with Verifiable().</summary>
-			internal bool IsVerifiable => _isGetVerifiable;
-
-			/// <summary>Whether this property has been configured.</summary>
-			internal bool IsConfigured => _get != null || (_getSequence?.Count ?? 0) > 0;
-
-			/// <summary>Checks verification for Stub.Verify() - only checks if marked verifiable.</summary>
-			internal global::KnockOff.VerificationFailure? CheckVerification()
-			{
-				if (!(_isGetVerifiable)) return null;
-				if (_isGetVerifiable)
-				{
-					var times = _getVerifiableTimes ?? global::KnockOff.Called.AtLeastOnce;
-					if (!times.Validate(TotalGetCount)) return new global::KnockOff.VerificationFailure("Persons (get)", times, TotalGetCount);
-				}
-				return null;
-			}
-
-			/// <summary>Checks verification for Stub.VerifyAll() - checks if configured.</summary>
-			internal global::KnockOff.VerificationFailure? CheckVerificationAll()
-			{
-				if (!IsConfigured) return null;
-				var totalCount = TotalGetCount;
-				return totalCount >= 1 ? null : new global::KnockOff.VerificationFailure("Persons", global::KnockOff.Called.AtLeastOnce, totalCount);
-			}
-
-			/// <summary>Builder for getter callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			private sealed class PropertyGetBuilderImpl : global::KnockOff.IPropertyGetBuilder<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>>
-			{
-				private readonly IPersonDbContext_PersonsInterceptor _interceptor;
-
-				public PropertyGetBuilderImpl(IPersonDbContext_PersonsInterceptor interceptor) => _interceptor = interceptor;
-
-				internal int _callCount;
-
-				/// <summary>Records a call to this callback.</summary>
-				public void RecordCall() => _callCount++;
-
-				/// <summary>Resets tracking state.</summary>
-				public void Reset() => _callCount = 0;
-
-				/// <summary>Verifies callback was invoked at least once. Throws VerificationException if not.</summary>
-				public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
-
-				/// <summary>Verifies call count satisfies the Called constraint. Throws VerificationException if not.</summary>
-				public void Verify(global::KnockOff.Called times)
-				{
-					if (!times.Validate(_callCount))
-						throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("property getter", times, _callCount));
-				}
-
-				/// <summary>Elevates to sequence mode and adds another getter callback. Returns sequence for further chaining.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> ThenGet(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> callback)
-				{
-					if (_interceptor._getSequence == null)
-					{
-						_interceptor._getSequence = new global::System.Collections.Generic.List<(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> Callback, PropertyGetBuilderImpl Tracking)>();
-						_interceptor._getSequence.Add((_interceptor._get!, this));
-						_interceptor._get = null;
-						_interceptor._getTracking = null;
-						_interceptor._getSequenceIndex = 0;
-					}
-					var nextBuilder = new PropertyGetBuilderImpl(_interceptor);
-					_interceptor._getSequence.Add((callback, nextBuilder));
-					return new PropertyGetSequenceImpl(_interceptor);
-				}
-
-				/// <summary>Elevates to sequence mode and adds a value to return. Returns sequence for further chaining.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> ThenGet(global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity> value) => ThenGet(() => value);
-
-				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> ThenGet(params global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>[] values)
-				{
-					if (values.Length == 0)
-					{
-						if (_interceptor._getSequence == null)
-						{
-							_interceptor._getSequence = new global::System.Collections.Generic.List<(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> Callback, PropertyGetBuilderImpl Tracking)>();
-							_interceptor._getSequence.Add((_interceptor._get!, this));
-							_interceptor._get = null;
-							_interceptor._getTracking = null;
-							_interceptor._getSequenceIndex = 0;
-						}
-						return new PropertyGetSequenceImpl(_interceptor);
-					}
-					var seq = ThenGet(values[0]);
-					for (int i = 1; i < values.Length; i++)
-					{
-						seq = seq.ThenGet(values[i]);
-					}
-					return seq;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IPropertyGetBuilder<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> Verifiable()
-				{
-					_interceptor._isGetVerifiable = true;
-					_interceptor._getVerifiableTimes = null;
-					return this;
-				}
-
-				global::KnockOff.IPropertyGetTracking global::KnockOff.IPropertyGetTracking.Verifiable() => Verifiable();
-				global::KnockOff.IPropertyGetTracking global::KnockOff.IPropertyGetTracking.Verifiable(global::KnockOff.Called times) => Verifiable();
-			}
-
-			/// <summary>Sequence implementation for ThenGet chaining.</summary>
-			private sealed class PropertyGetSequenceImpl : global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>>
-			{
-				private readonly IPersonDbContext_PersonsInterceptor _interceptor;
-
-				public PropertyGetSequenceImpl(IPersonDbContext_PersonsInterceptor interceptor) => _interceptor = interceptor;
-
-				/// <summary>Adds another getter callback to the sequence. Each callback runs exactly once.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> ThenGet(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> callback)
-				{
-					var tracking = new PropertyGetBuilderImpl(_interceptor);
-					_interceptor._getSequence!.Add((callback, tracking));
-					return this;
-				}
-
-				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> ThenGet(global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity> value) => ThenGet(() => value);
-
-				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> ThenGet(params global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>[] values)
-				{
-					foreach (var value in values)
-					{
-						ThenGet(value);
-					}
-					return this;
-				}
-
-				/// <summary>Verifies the entire sequence was executed (all callbacks invoked). Throws VerificationException if incomplete.</summary>
-				public void Verify()
-				{
-					if (_interceptor._getSequence == null) return;
-					var sequenceLength = _interceptor._getSequence.Count;
-					var completedCount = _interceptor._getSequenceIndex;
-					if (completedCount < sequenceLength)
-						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("property getter", sequenceLength, completedCount));
-				}
-
-				/// <summary>Resets all tracking in the sequence.</summary>
-				public void Reset() => _interceptor.Reset();
-
-				/// <summary>Marks this sequence for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity>> Verifiable()
-				{
-					_interceptor._isGetVerifiable = true;
-					_interceptor._getVerifiableTimes = null;
-					return this;
-				}
-
-				/// <summary>Terminates sequence with default(T) after exhaustion instead of repeating last value.</summary>
-				public void ThenDefault()
-				{
-					_interceptor._getRepeatLastValue = false;
-				}
-			}
-
-		}
-
-		/// <summary>Tracks and configures behavior for PersonPhones.</summary>
-		public sealed class IPersonDbContext_PersonPhonesInterceptor
-		{
-			/// <summary>Source object to delegate to when no Get/Set is configured.</summary>
-			internal global::Person.Ef.IPersonDbContext? _source;
-
-			private global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>>? _get;
-			private PropertyGetBuilderImpl? _getTracking;
-			private global::System.Collections.Generic.List<(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> Callback, PropertyGetBuilderImpl Tracking)>? _getSequence;
-			private int _getSequenceIndex;
-			private bool _getRepeatLastValue = true;
-			private bool _isGetVerifiable;
-			private global::KnockOff.Called? _getVerifiableTimes;
-			private int _unconfiguredGetCount;
-
-			private int TotalGetCount { get { var sum = _unconfiguredGetCount + (_getTracking?._callCount ?? 0); if (_getSequence != null) foreach (var s in _getSequence) sum += s.Tracking._callCount; return sum; } }
-
-			/// <summary>Configures getter callback that repeats indefinitely. Returns builder for tracking and sequence chaining.</summary>
-			public global::KnockOff.IPropertyGetBuilder<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> Get(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> callback)
-			{
-				_getSequence = null;
-				_getSequenceIndex = 0;
-				_isGetVerifiable = false;
-				_getVerifiableTimes = null;
-				_get = callback;
-				_getTracking = new PropertyGetBuilderImpl(this);
-				return _getTracking;
-			}
-
-			/// <summary>Configures getter to return the specified value. Returns builder for tracking and sequence chaining.</summary>
-			public global::KnockOff.IPropertyGetBuilder<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> Get(global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity> value) => Get(() => value);
-
-			/// <summary>Records a getter access (tracking only, does not invoke callback). Used by stub override pattern.</summary>
-			internal void RecordGet() => _unconfiguredGetCount++;
-
-			/// <summary>Returns true if Get is configured (callback or sequence). Used by stub override pattern.</summary>
-			internal bool HasGet => _get != null || (_getSequence?.Count ?? 0) > 0;
-
-			/// <summary>Invokes the configured getter callback without tracking. Used by stub override pattern.</summary>
-			internal global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity> InvokeGetCallback()
-			{
-				if (_getSequence != null && _getSequenceIndex < _getSequence.Count)
-				{
-					var (callback, tracking) = _getSequence[_getSequenceIndex];
-					tracking.RecordCall();
-					_getSequenceIndex++;
-					return callback();
-				}
-				if (_get != null && _getTracking != null)
-				{
-					_getTracking.RecordCall();
-					return _get();
-				}
-				throw new global::System.InvalidOperationException("InvokeGetCallback called without callback configured");
-			}
-
-			/// <summary>Invokes the configured getter callback. Called by explicit interface implementation.</summary>
-			internal global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity> InvokeGet(bool strict)
-			{
-				if (_getSequence != null && _getSequenceIndex < _getSequence.Count)
-				{
-					var (callback, tracking) = _getSequence[_getSequenceIndex];
-					tracking.RecordCall();
-					_getSequenceIndex++;
-					return callback();
-				}
-
-				if (_get != null && _getTracking != null)
-				{
-					_getTracking.RecordCall();
-					return _get();
-				}
-
-				_unconfiguredGetCount++;
-
-				if (_getSequence != null && _getSequenceIndex >= _getSequence.Count)
-				{
-					if (strict) throw global::KnockOff.StubException.SequenceExhausted("PersonPhones (get)");
-					if (_getRepeatLastValue && _getSequence.Count > 0)
-					{
-						var (callback, tracking) = _getSequence[_getSequence.Count - 1];
-						tracking.RecordCall();
-						return callback();
-					}
-					return default!;
-				}
-
-				if (_source is { } src) return src.PersonPhones;
-
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "PersonPhones");
-				return default!;
-			}
-
-			/// <summary>Resets tracking state but preserves configuration (Get, Set) and verifiable marking.</summary>
-			public void Reset()
-			{
-				_unconfiguredGetCount = 0;
-				_getTracking?.Reset();
-				if (_getSequence != null)
-				{
-					foreach (var (_, tracking) in _getSequence)
-						tracking.Reset();
-				}
-				_getSequenceIndex = 0;
-				_source = null;
-			}
-
-			/// <summary>Verifies the property was accessed at least once. Throws VerificationException if not.</summary>
-			public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
-
-			/// <summary>Verifies total access count satisfies the Called constraint. Throws VerificationException if not.</summary>
-			public void Verify(global::KnockOff.Called times)
-			{
-				var totalCount = TotalGetCount;
-				if (!times.Validate(totalCount))
-					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("PersonPhones", times, totalCount));
-			}
-
-			/// <summary>Verifies the getter was accessed at least once. Throws VerificationException if not.</summary>
-			public void VerifyGet() => VerifyGet(global::KnockOff.Called.AtLeastOnce);
-
-			/// <summary>Verifies getter access count satisfies the Called constraint. Throws VerificationException if not.</summary>
-			public void VerifyGet(global::KnockOff.Called times)
-			{
-				if (!times.Validate(TotalGetCount))
-					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("PersonPhones (get)", times, TotalGetCount));
-			}
-
-			/// <summary>Marks this property for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-			public IPersonDbContext_PersonPhonesInterceptor Verifiable() { _isGetVerifiable = true; _getVerifiableTimes = null; return this; }
-
-			/// <summary>Marks this property for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
-			public IPersonDbContext_PersonPhonesInterceptor Verifiable(global::KnockOff.Called times) { _isGetVerifiable = true; _getVerifiableTimes = times; return this; }
-
-			/// <summary>Whether this property was marked with Verifiable().</summary>
-			internal bool IsVerifiable => _isGetVerifiable;
-
-			/// <summary>Whether this property has been configured.</summary>
-			internal bool IsConfigured => _get != null || (_getSequence?.Count ?? 0) > 0;
-
-			/// <summary>Checks verification for Stub.Verify() - only checks if marked verifiable.</summary>
-			internal global::KnockOff.VerificationFailure? CheckVerification()
-			{
-				if (!(_isGetVerifiable)) return null;
-				if (_isGetVerifiable)
-				{
-					var times = _getVerifiableTimes ?? global::KnockOff.Called.AtLeastOnce;
-					if (!times.Validate(TotalGetCount)) return new global::KnockOff.VerificationFailure("PersonPhones (get)", times, TotalGetCount);
-				}
-				return null;
-			}
-
-			/// <summary>Checks verification for Stub.VerifyAll() - checks if configured.</summary>
-			internal global::KnockOff.VerificationFailure? CheckVerificationAll()
-			{
-				if (!IsConfigured) return null;
-				var totalCount = TotalGetCount;
-				return totalCount >= 1 ? null : new global::KnockOff.VerificationFailure("PersonPhones", global::KnockOff.Called.AtLeastOnce, totalCount);
-			}
-
-			/// <summary>Builder for getter callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			private sealed class PropertyGetBuilderImpl : global::KnockOff.IPropertyGetBuilder<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>>
-			{
-				private readonly IPersonDbContext_PersonPhonesInterceptor _interceptor;
-
-				public PropertyGetBuilderImpl(IPersonDbContext_PersonPhonesInterceptor interceptor) => _interceptor = interceptor;
-
-				internal int _callCount;
-
-				/// <summary>Records a call to this callback.</summary>
-				public void RecordCall() => _callCount++;
-
-				/// <summary>Resets tracking state.</summary>
-				public void Reset() => _callCount = 0;
-
-				/// <summary>Verifies callback was invoked at least once. Throws VerificationException if not.</summary>
-				public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
-
-				/// <summary>Verifies call count satisfies the Called constraint. Throws VerificationException if not.</summary>
-				public void Verify(global::KnockOff.Called times)
-				{
-					if (!times.Validate(_callCount))
-						throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("property getter", times, _callCount));
-				}
-
-				/// <summary>Elevates to sequence mode and adds another getter callback. Returns sequence for further chaining.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> ThenGet(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> callback)
-				{
-					if (_interceptor._getSequence == null)
-					{
-						_interceptor._getSequence = new global::System.Collections.Generic.List<(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> Callback, PropertyGetBuilderImpl Tracking)>();
-						_interceptor._getSequence.Add((_interceptor._get!, this));
-						_interceptor._get = null;
-						_interceptor._getTracking = null;
-						_interceptor._getSequenceIndex = 0;
-					}
-					var nextBuilder = new PropertyGetBuilderImpl(_interceptor);
-					_interceptor._getSequence.Add((callback, nextBuilder));
-					return new PropertyGetSequenceImpl(_interceptor);
-				}
-
-				/// <summary>Elevates to sequence mode and adds a value to return. Returns sequence for further chaining.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> ThenGet(global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity> value) => ThenGet(() => value);
-
-				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> ThenGet(params global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>[] values)
-				{
-					if (values.Length == 0)
-					{
-						if (_interceptor._getSequence == null)
-						{
-							_interceptor._getSequence = new global::System.Collections.Generic.List<(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> Callback, PropertyGetBuilderImpl Tracking)>();
-							_interceptor._getSequence.Add((_interceptor._get!, this));
-							_interceptor._get = null;
-							_interceptor._getTracking = null;
-							_interceptor._getSequenceIndex = 0;
-						}
-						return new PropertyGetSequenceImpl(_interceptor);
-					}
-					var seq = ThenGet(values[0]);
-					for (int i = 1; i < values.Length; i++)
-					{
-						seq = seq.ThenGet(values[i]);
-					}
-					return seq;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IPropertyGetBuilder<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> Verifiable()
-				{
-					_interceptor._isGetVerifiable = true;
-					_interceptor._getVerifiableTimes = null;
-					return this;
-				}
-
-				global::KnockOff.IPropertyGetTracking global::KnockOff.IPropertyGetTracking.Verifiable() => Verifiable();
-				global::KnockOff.IPropertyGetTracking global::KnockOff.IPropertyGetTracking.Verifiable(global::KnockOff.Called times) => Verifiable();
-			}
-
-			/// <summary>Sequence implementation for ThenGet chaining.</summary>
-			private sealed class PropertyGetSequenceImpl : global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>>
-			{
-				private readonly IPersonDbContext_PersonPhonesInterceptor _interceptor;
-
-				public PropertyGetSequenceImpl(IPersonDbContext_PersonPhonesInterceptor interceptor) => _interceptor = interceptor;
-
-				/// <summary>Adds another getter callback to the sequence. Each callback runs exactly once.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> ThenGet(global::System.Func<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> callback)
-				{
-					var tracking = new PropertyGetBuilderImpl(_interceptor);
-					_interceptor._getSequence!.Add((callback, tracking));
-					return this;
-				}
-
-				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> ThenGet(global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity> value) => ThenGet(() => value);
-
-				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> ThenGet(params global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>[] values)
-				{
-					foreach (var value in values)
-					{
-						ThenGet(value);
-					}
-					return this;
-				}
-
-				/// <summary>Verifies the entire sequence was executed (all callbacks invoked). Throws VerificationException if incomplete.</summary>
-				public void Verify()
-				{
-					if (_interceptor._getSequence == null) return;
-					var sequenceLength = _interceptor._getSequence.Count;
-					var completedCount = _interceptor._getSequenceIndex;
-					if (completedCount < sequenceLength)
-						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("property getter", sequenceLength, completedCount));
-				}
-
-				/// <summary>Resets all tracking in the sequence.</summary>
-				public void Reset() => _interceptor.Reset();
-
-				/// <summary>Marks this sequence for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IPropertyGetSequence<global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity>> Verifiable()
-				{
-					_interceptor._isGetVerifiable = true;
-					_interceptor._getVerifiableTimes = null;
-					return this;
-				}
-
-				/// <summary>Terminates sequence with default(T) after exhaustion instead of repeating last value.</summary>
-				public void ThenDefault()
-				{
-					_interceptor._getRepeatLastValue = false;
-				}
-			}
-
-		}
-
 		/// <summary>Tracks and configures behavior for FindPerson.</summary>
 		public sealed class IPersonDbContext_FindPersonInterceptor
 		{
 			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Person.Ef.IPersonDbContext? _source;
+			internal global::Person.Dal.IPersonDbContext? _source;
 
 			private int _unconfiguredCallCount;
 
@@ -616,46 +22,46 @@ partial class PersonTests
 			internal int UnconfiguredCallCount => _unconfiguredCallCount;
 
 			/// <summary>Delegate for FindPerson(global::System.Threading.CancellationToken).</summary>
-			public delegate global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(global::System.Threading.CancellationToken cancellationToken);
+			public delegate global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(global::System.Threading.CancellationToken cancellationToken);
 
-			private FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity? _call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity? _callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+			private FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity? _call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity? _callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 
-			private global::System.Func<global::System.Threading.CancellationToken, global::Person.Ef.PersonEntity?>? _callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity? _callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+			private global::System.Func<global::System.Threading.CancellationToken, global::Person.Dal.PersonEntity?>? _callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity? _callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 
-			private global::System.Collections.Generic.List<(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Callback, MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Tracking)>? _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private int _sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private bool _repeatLastValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = true;
+			private global::System.Collections.Generic.List<(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Callback, MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Tracking)>? _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private int _sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private bool _repeatLastValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = true;
 
-			private global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>? _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private int _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private bool _whenVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+			private global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>? _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private int _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private bool _whenVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 
-			private bool _isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private global::KnockOff.Called? _verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+			private bool _isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private global::KnockOff.Called? _verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 
 			/// <summary>Delegate for FindPerson(global::System.Guid?, global::System.Threading.CancellationToken).</summary>
-			public delegate global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken);
+			public delegate global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken);
 
-			private FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity? _call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity? _callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+			private FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity? _call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity? _callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 
-			private global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, global::Person.Ef.PersonEntity?>? _callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity? _callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+			private global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, global::Person.Dal.PersonEntity?>? _callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity? _callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 
-			private global::System.Collections.Generic.List<(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Callback, MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Tracking)>? _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private int _sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private bool _repeatLastValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = true;
+			private global::System.Collections.Generic.List<(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Callback, MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Tracking)>? _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private int _sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private bool _repeatLastValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = true;
 
-			private global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>? _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private int _whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private bool _whenVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+			private global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>? _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private int _whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private bool _whenVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 
-			private bool _isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-			private global::KnockOff.Called? _verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+			private bool _isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+			private global::KnockOff.Called? _verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 
-			private int TotalCallCount => _unconfiguredCallCount + (_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(m => m.CallCount) ?? 0) + (_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(m => m.CallCount) ?? 0);
+			private int TotalCallCount => _unconfiguredCallCount + (_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(m => m.CallCount) ?? 0) + (_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(m => m.CallCount) ?? 0);
 
 			/// <summary>Verifies method was called at least once. Throws VerificationException if not.</summary>
 			public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
@@ -668,104 +74,104 @@ partial class PersonTests
 			}
 
 			/// <summary>Configures callback for FindPerson(global::System.Threading.CancellationToken). Return builder for sequence chaining.</summary>
-			public MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Return(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback)
+			public MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Return(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback)
 			{
-				_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
-				_isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = false;
-				_verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = callback;
-				_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = new MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(this);
-				return _callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+				_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
+				_isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = false;
+				_verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = callback;
+				_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = new MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(this);
+				return _callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 			}
 
 			/// <summary>Configures callback returning unwrapped value for FindPerson(global::System.Threading.CancellationToken). Result auto-wrapped in Task.FromResult.</summary>
-			public MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Return(global::System.Func<global::System.Threading.CancellationToken, global::Person.Ef.PersonEntity?> callback)
+			public MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Return(global::System.Func<global::System.Threading.CancellationToken, global::Person.Dal.PersonEntity?> callback)
 			{
-				_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
-				_isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = false;
-				_verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = callback;
-				_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = new MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(this);
-				return _callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+				_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
+				_isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = false;
+				_verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = callback;
+				_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = new MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(this);
+				return _callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 			}
 
 			/// <summary>Configures callback for FindPerson(global::System.Guid?, global::System.Threading.CancellationToken). Return builder for sequence chaining.</summary>
-			public MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Return(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback)
+			public MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Return(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback)
 			{
-				_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
-				_isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = false;
-				_verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = callback;
-				_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = new MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(this);
-				return _callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+				_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
+				_isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = false;
+				_verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = callback;
+				_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = new MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(this);
+				return _callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 			}
 
 			/// <summary>Configures callback returning unwrapped value for FindPerson(global::System.Guid?, global::System.Threading.CancellationToken). Result auto-wrapped in Task.FromResult.</summary>
-			public MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Return(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, global::Person.Ef.PersonEntity?> callback)
+			public MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Return(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, global::Person.Dal.PersonEntity?> callback)
 			{
-				_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
-				_isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = false;
-				_verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-				_callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = callback;
-				_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = new MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(this);
-				return _callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+				_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
+				_isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = false;
+				_verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+				_callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = callback;
+				_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = new MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(this);
+				return _callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 			}
 
 			/// <summary>Configures parameter-specific matching with exact values. Returns builder for Return().</summary>
-			public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity When(global::System.Threading.CancellationToken cancellationToken)
+			public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity When(global::System.Threading.CancellationToken cancellationToken)
 			{
-				_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>();
-				return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(this, (_arg0) => global::System.Object.Equals(_arg0, cancellationToken));
+				_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>();
+				return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(this, (_arg0) => global::System.Object.Equals(_arg0, cancellationToken));
 			}
 
 			/// <summary>Configures parameter-specific matching with predicate. Returns builder for Return().</summary>
-			public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity When(global::System.Func<global::System.Threading.CancellationToken, bool> predicate)
+			public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity When(global::System.Func<global::System.Threading.CancellationToken, bool> predicate)
 			{
-				_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>();
-				return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(this, predicate);
+				_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>();
+				return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(this, predicate);
 			}
 
 			/// <summary>Configures parameter-specific matching with exact values. Returns builder for Return().</summary>
-			public WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity When(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)
+			public WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity When(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)
 			{
-				_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>();
-				return new WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(this, (_arg0, _arg1) => global::System.Object.Equals(_arg0, id) && global::System.Object.Equals(_arg1, cancellationToken));
+				_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>();
+				return new WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(this, (_arg0, _arg1) => global::System.Object.Equals(_arg0, id) && global::System.Object.Equals(_arg1, cancellationToken));
 			}
 
 			/// <summary>Configures parameter-specific matching with predicate. Returns builder for Return().</summary>
-			public WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity When(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, bool> predicate)
+			public WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity When(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, bool> predicate)
 			{
-				_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>();
-				return new WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(this, predicate);
+				_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>();
+				return new WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(this, predicate);
 			}
 
 			/// <summary>Invokes configured callback for FindPerson(global::System.Threading.CancellationToken).</summary>
-			internal global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> Invoke_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(bool strict, global::System.Threading.CancellationToken cancellationToken)
+			internal global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> Invoke_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(bool strict, global::System.Threading.CancellationToken cancellationToken)
 			{
 				// When chain - check HEAD matcher first (highest priority)
-				if (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity < _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count)
+				if (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity < _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count)
 				{
-					var matcher = _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity];
+					var matcher = _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity];
 					if (matcher.Matches(cancellationToken))
 					{
 						matcher.CallCount++;
 
 						// Advance HEAD unless at last matcher (which repeats)
-						if (_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity < _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count - 1)
+						if (_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity < _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count - 1)
 						{
-							_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity++;
+							_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity++;
 						}
 						// At last matcher: never advance (repeat behavior for both ThenWhen and ThenCall)
 
@@ -774,66 +180,66 @@ partial class PersonTests
 					else if (matcher.IsTerminal)
 					{
 						// ThenNone: didn't match (always false), exhaust by advancing past it
-						_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity++;
+						_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity++;
 					}
 					// Non-terminal didn't match: fall through to rest of priority chain
 				}
 
-				if (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity < _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count)
+				if (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity < _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count)
 				{
-					var (callback, tracking) = _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity];
+					var (callback, tracking) = _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity];
 					tracking.RecordCall(cancellationToken);
-					_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity++;
+					_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity++;
 					return callback(cancellationToken);
 				}
 
-				if (_call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+				if (_call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 				{
-					_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.RecordCall(cancellationToken);
-					return _call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(cancellationToken);
+					_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.RecordCall(cancellationToken);
+					return _call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(cancellationToken);
 				}
 
-				if (_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+				if (_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 				{
-					_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.RecordCall(cancellationToken);
-					return global::System.Threading.Tasks.Task.FromResult(_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(cancellationToken));
+					_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.RecordCall(cancellationToken);
+					return global::System.Threading.Tasks.Task.FromResult(_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(cancellationToken));
 				}
 
 				_unconfiguredCallCount++;
-				if (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity >= _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count)
+				if (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity >= _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count)
 				{
 					if (strict) throw global::KnockOff.StubException.SequenceExhausted("FindPerson");
-					if (_repeatLastValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity && _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count > 0)
+					if (_repeatLastValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity && _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count > 0)
 					{
-						var (callback, tracking) = _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count - 1];
+						var (callback, tracking) = _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count - 1];
 						tracking.RecordCall(cancellationToken);
 						return callback(cancellationToken);
 					}
-					return global::System.Threading.Tasks.Task.FromResult<global::Person.Ef.PersonEntity?>(default!);
+					return global::System.Threading.Tasks.Task.FromResult<global::Person.Dal.PersonEntity?>(default!);
 				}
 
 				#pragma warning disable CS8601, SYSLIB0050
 				if (_source is { } src) return src.FindPerson(cancellationToken);
 				#pragma warning restore CS8601, SYSLIB0050
 				if (strict) throw global::KnockOff.StubException.NotConfigured("", "FindPerson");
-				return global::System.Threading.Tasks.Task.FromResult<global::Person.Ef.PersonEntity?>(default!);
+				return global::System.Threading.Tasks.Task.FromResult<global::Person.Dal.PersonEntity?>(default!);
 			}
 
 			/// <summary>Invokes configured callback for FindPerson(global::System.Guid?, global::System.Threading.CancellationToken).</summary>
-			internal global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> Invoke_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(bool strict, global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)
+			internal global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> Invoke_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(bool strict, global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)
 			{
 				// When chain - check HEAD matcher first (highest priority)
-				if (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity < _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count)
+				if (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity < _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count)
 				{
-					var matcher = _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[_whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity];
+					var matcher = _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[_whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity];
 					if (matcher.Matches(id, cancellationToken))
 					{
 						matcher.CallCount++;
 
 						// Advance HEAD unless at last matcher (which repeats)
-						if (_whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity < _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count - 1)
+						if (_whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity < _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count - 1)
 						{
-							_whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity++;
+							_whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity++;
 						}
 						// At last matcher: never advance (repeat behavior for both ThenWhen and ThenCall)
 
@@ -842,49 +248,49 @@ partial class PersonTests
 					else if (matcher.IsTerminal)
 					{
 						// ThenNone: didn't match (always false), exhaust by advancing past it
-						_whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity++;
+						_whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity++;
 					}
 					// Non-terminal didn't match: fall through to rest of priority chain
 				}
 
-				if (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity < _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count)
+				if (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity < _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count)
 				{
-					var (callback, tracking) = _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[_sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity];
+					var (callback, tracking) = _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[_sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity];
 					tracking.RecordCall((id, cancellationToken));
-					_sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity++;
+					_sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity++;
 					return callback(id, cancellationToken);
 				}
 
-				if (_call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+				if (_call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 				{
-					_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.RecordCall((id, cancellationToken));
-					return _call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(id, cancellationToken);
+					_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.RecordCall((id, cancellationToken));
+					return _call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(id, cancellationToken);
 				}
 
-				if (_callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+				if (_callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 				{
-					_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.RecordCall((id, cancellationToken));
-					return global::System.Threading.Tasks.Task.FromResult(_callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(id, cancellationToken));
+					_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.RecordCall((id, cancellationToken));
+					return global::System.Threading.Tasks.Task.FromResult(_callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(id, cancellationToken));
 				}
 
 				_unconfiguredCallCount++;
-				if (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity >= _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count)
+				if (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity >= _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count)
 				{
 					if (strict) throw global::KnockOff.StubException.SequenceExhausted("FindPerson");
-					if (_repeatLastValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity && _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count > 0)
+					if (_repeatLastValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity && _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count > 0)
 					{
-						var (callback, tracking) = _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count - 1];
+						var (callback, tracking) = _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count - 1];
 						tracking.RecordCall((id, cancellationToken));
 						return callback(id, cancellationToken);
 					}
-					return global::System.Threading.Tasks.Task.FromResult<global::Person.Ef.PersonEntity?>(default!);
+					return global::System.Threading.Tasks.Task.FromResult<global::Person.Dal.PersonEntity?>(default!);
 				}
 
 				#pragma warning disable CS8601, SYSLIB0050
 				if (_source is { } src) return src.FindPerson(id, cancellationToken);
 				#pragma warning restore CS8601, SYSLIB0050
 				if (strict) throw global::KnockOff.StubException.NotConfigured("", "FindPerson");
-				return global::System.Threading.Tasks.Task.FromResult<global::Person.Ef.PersonEntity?>(default!);
+				return global::System.Threading.Tasks.Task.FromResult<global::Person.Dal.PersonEntity?>(default!);
 			}
 
 			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
@@ -892,71 +298,71 @@ partial class PersonTests
 			{
 				_unconfiguredCallCount = 0;
 				_source = null;
-				_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Reset();
-				_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Reset();
-				if (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+				_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Reset();
+				_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Reset();
+				if (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 				{
-					foreach (var (_, tracking) in _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity)
+					foreach (var (_, tracking) in _sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity)
 						tracking.Reset();
 				}
-				_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
-				_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
-				if (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+				_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
+				_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
+				if (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 				{
-					foreach (var matcher in _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity)
+					foreach (var matcher in _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity)
 						matcher.CallCount = 0;
 				}
-				_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Reset();
-				_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Reset();
-				if (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+				_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Reset();
+				_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Reset();
+				if (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 				{
-					foreach (var (_, tracking) in _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity)
+					foreach (var (_, tracking) in _sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity)
 						tracking.Reset();
 				}
-				_sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
-				_whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
-				if (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+				_sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
+				_whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
+				if (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 				{
-					foreach (var matcher in _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity)
+					foreach (var matcher in _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity)
 						matcher.CallCount = 0;
 				}
 			}
 
 			/// <summary>Whether any overload was marked with Verifiable().</summary>
-			internal bool IsVerifiable => _isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity || _isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+			internal bool IsVerifiable => _isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity || _isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 
 			/// <summary>Whether any overload has been configured.</summary>
-			internal bool IsConfigured => _call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null || (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Count ?? 0) > 0 || _callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null || (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Count ?? 0) > 0 || _call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null || (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Count ?? 0) > 0 || _callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null || (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Count ?? 0) > 0;
+			internal bool IsConfigured => _call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null || (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Count ?? 0) > 0 || _callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null || (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Count ?? 0) > 0 || _call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null || (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Count ?? 0) > 0 || _callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null || (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Count ?? 0) > 0;
 
 			/// <summary>Checks verification for Stub.Verify() - checks all verifiable overloads.</summary>
 			internal global::KnockOff.VerificationFailure? CheckVerification()
 			{
-				if (_isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity)
+				if (_isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity)
 				{
-					var times = _verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ?? global::KnockOff.Called.AtLeastOnce;
-					var count = (_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(m => m.CallCount) ?? 0);
+					var times = _verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ?? global::KnockOff.Called.AtLeastOnce;
+					var count = (_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(m => m.CallCount) ?? 0);
 					if (!times.Validate(count)) return new global::KnockOff.VerificationFailure("FindPerson", times, count);
 				}
-				if (_whenVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count > 0)
+				if (_whenVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count > 0)
 				{
-					var head = _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-					var chainCount = _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count;
+					var head = _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+					var chainCount = _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count;
 					// Chain must be fully consumed (HEAD at end or at terminal matcher)
-					if (head < chainCount && !_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].IsTerminal && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].CallCount == 0)
+					if (head < chainCount && !_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].IsTerminal && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].CallCount == 0)
 						return global::KnockOff.VerificationFailure.SequenceIncomplete("FindPerson When chain", chainCount, head);
 				}
-				if (_isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity)
+				if (_isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity)
 				{
-					var times = _verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ?? global::KnockOff.Called.AtLeastOnce;
-					var count = (_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(m => m.CallCount) ?? 0);
+					var times = _verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ?? global::KnockOff.Called.AtLeastOnce;
+					var count = (_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(m => m.CallCount) ?? 0);
 					if (!times.Validate(count)) return new global::KnockOff.VerificationFailure("FindPerson", times, count);
 				}
-				if (_whenVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity && _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count > 0)
+				if (_whenVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity && _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count > 0)
 				{
-					var head = _whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-					var chainCount = _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count;
+					var head = _whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+					var chainCount = _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count;
 					// Chain must be fully consumed (HEAD at end or at terminal matcher)
-					if (head < chainCount && !_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].IsTerminal && _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].CallCount == 0)
+					if (head < chainCount && !_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].IsTerminal && _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].CallCount == 0)
 						return global::KnockOff.VerificationFailure.SequenceIncomplete("FindPerson When chain", chainCount, head);
 				}
 				return null;
@@ -965,41 +371,41 @@ partial class PersonTests
 			/// <summary>Checks verification for Stub.VerifyAll() - checks all configured overloads.</summary>
 			internal global::KnockOff.VerificationFailure? CheckVerificationAll()
 			{
-				if (_call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null || (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Count ?? 0) > 0 || _callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null || (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Count ?? 0) > 0)
+				if (_call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null || (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Count ?? 0) > 0 || _callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null || (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Count ?? 0) > 0)
 				{
-					var count = (_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(m => m.CallCount) ?? 0);
+					var count = (_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(m => m.CallCount) ?? 0);
 					if (!global::KnockOff.Called.AtLeastOnce.Validate(count)) return new global::KnockOff.VerificationFailure("FindPerson", global::KnockOff.Called.AtLeastOnce, count);
 				}
-				if (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count > 0)
+				if (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count > 0)
 				{
-					var head = _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-					var chainCount = _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count;
+					var head = _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+					var chainCount = _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count;
 					// Chain must be fully consumed (HEAD at end or at terminal matcher)
-					if (head < chainCount && !_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].IsTerminal && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].CallCount == 0)
+					if (head < chainCount && !_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].IsTerminal && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].CallCount == 0)
 						return global::KnockOff.VerificationFailure.SequenceIncomplete("FindPerson When chain", chainCount, head);
 				}
-				if (_call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null || (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Count ?? 0) > 0 || _callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null || (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Count ?? 0) > 0)
+				if (_call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null || (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Count ?? 0) > 0 || _callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null || (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Count ?? 0) > 0)
 				{
-					var count = (_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?._callCount ?? 0) + (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity?.Sum(m => m.CallCount) ?? 0);
+					var count = (_callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(s => s.Tracking._callCount) ?? 0) + (_callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?._callCount ?? 0) + (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity?.Sum(m => m.CallCount) ?? 0);
 					if (!global::KnockOff.Called.AtLeastOnce.Validate(count)) return new global::KnockOff.VerificationFailure("FindPerson", global::KnockOff.Called.AtLeastOnce, count);
 				}
-				if (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null && _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count > 0)
+				if (_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null && _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count > 0)
 				{
-					var head = _whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-					var chainCount = _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count;
+					var head = _whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+					var chainCount = _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count;
 					// Chain must be fully consumed (HEAD at end or at terminal matcher)
-					if (head < chainCount && !_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].IsTerminal && _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].CallCount == 0)
+					if (head < chainCount && !_whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].IsTerminal && _whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].CallCount == 0)
 						return global::KnockOff.VerificationFailure.SequenceIncomplete("FindPerson When chain", chainCount, head);
 				}
 				return null;
 			}
 
 			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : global::KnockOff.IMethodReturnBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.CancellationToken>
+			public sealed class MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : global::KnockOff.IMethodReturnBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.CancellationToken>
 			{
 				private readonly IPersonDbContext_FindPersonInterceptor _interceptor;
 
-				public MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
+				public MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
 
 				private global::System.Threading.CancellationToken _lastArg = default!;
 
@@ -1025,58 +431,58 @@ partial class PersonTests
 				}
 
 				/// <summary>Elevates to sequence mode and adds another callback. Return sequence for further chaining.</summary>
-				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback)
+				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback)
 				{
-					if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity == null)
+					if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity == null)
 					{
-						_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = new global::System.Collections.Generic.List<(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Callback, MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Tracking)>();
-						if (_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+						_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = new global::System.Collections.Generic.List<(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Callback, MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Tracking)>();
+						if (_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 						{
-							_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add((_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, this));
+							_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add((_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, this));
 						}
-						else if (_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+						else if (_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 						{
-							var captured = _interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-							_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add(((cancellationToken) => global::System.Threading.Tasks.Task.FromResult(captured(cancellationToken)), this));
-							_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-							_interceptor._callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
+							var captured = _interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+							_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add(((cancellationToken) => global::System.Threading.Tasks.Task.FromResult(captured(cancellationToken)), this));
+							_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+							_interceptor._callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
 						}
-						_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-						_interceptor._callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-						_interceptor._sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
+						_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+						_interceptor._callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+						_interceptor._sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
 					}
-					var nextBuilder = new MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor);
-					_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add((callback, nextBuilder));
-					return new MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor);
+					var nextBuilder = new MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor);
+					_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add((callback, nextBuilder));
+					return new MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor);
 				}
 
 				/// <summary>Elevates to sequence mode and adds a value. Return sequence for further chaining.</summary>
-				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(global::Person.Ef.PersonEntity? value) => ThenReturn((_) => global::System.Threading.Tasks.Task.FromResult(value));
+				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(global::Person.Dal.PersonEntity? value) => ThenReturn((_) => global::System.Threading.Tasks.Task.FromResult(value));
 
 				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(params global::Person.Ef.PersonEntity?[] values)
+				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(params global::Person.Dal.PersonEntity?[] values)
 				{
 					if (values.Length == 0)
 					{
-						if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity == null)
+						if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity == null)
 						{
-							_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = new global::System.Collections.Generic.List<(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Callback, MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Tracking)>();
-							if (_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+							_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = new global::System.Collections.Generic.List<(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Callback, MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Tracking)>();
+							if (_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 							{
-								_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add((_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, this));
+								_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add((_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, this));
 							}
-							else if (_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+							else if (_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 							{
-								var captured = _interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-								_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add(((cancellationToken) => global::System.Threading.Tasks.Task.FromResult(captured(cancellationToken)), this));
-								_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-								_interceptor._callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
+								var captured = _interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+								_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add(((cancellationToken) => global::System.Threading.Tasks.Task.FromResult(captured(cancellationToken)), this));
+								_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+								_interceptor._callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
 							}
-							_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-							_interceptor._callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-							_interceptor._sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
+							_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+							_interceptor._callTracking_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+							_interceptor._sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
 						}
-						return new MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor);
+						return new MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor);
 					}
 					var seq = ThenReturn(values[0]);
 					for (int i = 1; i < values.Length; i++)
@@ -1087,21 +493,21 @@ partial class PersonTests
 				}
 
 				/// <summary>Elevates to sequence mode with simplified callback. Result auto-wrapped in Task.FromResult.</summary>
-				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(global::System.Func<global::System.Threading.CancellationToken, global::Person.Ef.PersonEntity?> callback) => ThenReturn((cancellationToken) => global::System.Threading.Tasks.Task.FromResult(callback(cancellationToken)));
+				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(global::System.Func<global::System.Threading.CancellationToken, global::Person.Dal.PersonEntity?> callback) => ThenReturn((cancellationToken) => global::System.Threading.Tasks.Task.FromResult(callback(cancellationToken)));
 
 				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.CancellationToken> Verifiable()
+				public global::KnockOff.IMethodReturnBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.CancellationToken> Verifiable()
 				{
-					_interceptor._isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = true;
-					_interceptor._verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
+					_interceptor._isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = true;
+					_interceptor._verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
 					return this;
 				}
 
 				/// <summary>Marks for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.CancellationToken> Verifiable(global::KnockOff.Called times)
+				public global::KnockOff.IMethodReturnBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.CancellationToken> Verifiable(global::KnockOff.Called times)
 				{
-					_interceptor._isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = true;
-					_interceptor._verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = times;
+					_interceptor._isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = true;
+					_interceptor._verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = times;
 					return this;
 				}
 
@@ -1109,15 +515,15 @@ partial class PersonTests
 				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
 				global::KnockOff.IMethodTracking<global::System.Threading.CancellationToken> global::KnockOff.IMethodTracking<global::System.Threading.CancellationToken>.Verifiable() => Verifiable();
 				global::KnockOff.IMethodTracking<global::System.Threading.CancellationToken> global::KnockOff.IMethodTracking<global::System.Threading.CancellationToken>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity> global::KnockOff.IMethodReturnBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.CancellationToken>.ThenReturn(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity> global::KnockOff.IMethodReturnBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.CancellationToken>.ThenReturn(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback) => ThenReturn(callback);
 			}
 
 			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : global::KnockOff.IMethodReturnBuilderArgs<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, (global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)>
+			public sealed class MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : global::KnockOff.IMethodReturnBuilderArgs<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, (global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)>
 			{
 				private readonly IPersonDbContext_FindPersonInterceptor _interceptor;
 
-				public MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
+				public MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
 
 				private (global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken) _lastArgs;
 
@@ -1143,58 +549,58 @@ partial class PersonTests
 				}
 
 				/// <summary>Elevates to sequence mode and adds another callback. Return sequence for further chaining.</summary>
-				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback)
+				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback)
 				{
-					if (_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity == null)
+					if (_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity == null)
 					{
-						_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = new global::System.Collections.Generic.List<(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Callback, MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Tracking)>();
-						if (_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+						_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = new global::System.Collections.Generic.List<(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Callback, MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Tracking)>();
+						if (_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 						{
-							_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add((_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, this));
+							_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add((_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, this));
 						}
-						else if (_interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+						else if (_interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 						{
-							var captured = _interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-							_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add(((id, cancellationToken) => global::System.Threading.Tasks.Task.FromResult(captured(id, cancellationToken)), this));
-							_interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-							_interceptor._callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
+							var captured = _interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+							_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add(((id, cancellationToken) => global::System.Threading.Tasks.Task.FromResult(captured(id, cancellationToken)), this));
+							_interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+							_interceptor._callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
 						}
-						_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-						_interceptor._callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-						_interceptor._sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
+						_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+						_interceptor._callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+						_interceptor._sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
 					}
-					var nextBuilder = new MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor);
-					_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add((callback, nextBuilder));
-					return new MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor);
+					var nextBuilder = new MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor);
+					_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add((callback, nextBuilder));
+					return new MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor);
 				}
 
 				/// <summary>Elevates to sequence mode and adds a value. Return sequence for further chaining.</summary>
-				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(global::Person.Ef.PersonEntity? value) => ThenReturn((_, _) => global::System.Threading.Tasks.Task.FromResult(value));
+				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(global::Person.Dal.PersonEntity? value) => ThenReturn((_, _) => global::System.Threading.Tasks.Task.FromResult(value));
 
 				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(params global::Person.Ef.PersonEntity?[] values)
+				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(params global::Person.Dal.PersonEntity?[] values)
 				{
 					if (values.Length == 0)
 					{
-						if (_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity == null)
+						if (_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity == null)
 						{
-							_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = new global::System.Collections.Generic.List<(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Callback, MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Tracking)>();
-							if (_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+							_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = new global::System.Collections.Generic.List<(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Callback, MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Tracking)>();
+							if (_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 							{
-								_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add((_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, this));
+								_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add((_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, this));
 							}
-							else if (_interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+							else if (_interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 							{
-								var captured = _interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-								_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add(((id, cancellationToken) => global::System.Threading.Tasks.Task.FromResult(captured(id, cancellationToken)), this));
-								_interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-								_interceptor._callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
+								var captured = _interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+								_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add(((id, cancellationToken) => global::System.Threading.Tasks.Task.FromResult(captured(id, cancellationToken)), this));
+								_interceptor._callSimplified_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+								_interceptor._callSimplifiedTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
 							}
-							_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-							_interceptor._callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
-							_interceptor._sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
+							_interceptor._call_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+							_interceptor._callTracking_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
+							_interceptor._sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
 						}
-						return new MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor);
+						return new MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor);
 					}
 					var seq = ThenReturn(values[0]);
 					for (int i = 1; i < values.Length; i++)
@@ -1205,21 +611,21 @@ partial class PersonTests
 				}
 
 				/// <summary>Elevates to sequence mode with simplified callback. Result auto-wrapped in Task.FromResult.</summary>
-				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, global::Person.Ef.PersonEntity?> callback) => ThenReturn((id, cancellationToken) => global::System.Threading.Tasks.Task.FromResult(callback(id, cancellationToken)));
+				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, global::Person.Dal.PersonEntity?> callback) => ThenReturn((id, cancellationToken) => global::System.Threading.Tasks.Task.FromResult(callback(id, cancellationToken)));
 
 				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilderArgs<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, (global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)> Verifiable()
+				public global::KnockOff.IMethodReturnBuilderArgs<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, (global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)> Verifiable()
 				{
-					_interceptor._isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = true;
-					_interceptor._verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
+					_interceptor._isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = true;
+					_interceptor._verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
 					return this;
 				}
 
 				/// <summary>Marks for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilderArgs<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, (global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)> Verifiable(global::KnockOff.Called times)
+				public global::KnockOff.IMethodReturnBuilderArgs<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, (global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)> Verifiable(global::KnockOff.Called times)
 				{
-					_interceptor._isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = true;
-					_interceptor._verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = times;
+					_interceptor._isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = true;
+					_interceptor._verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = times;
 					return this;
 				}
 
@@ -1227,41 +633,41 @@ partial class PersonTests
 				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
 				global::KnockOff.IMethodTrackingArgs<(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)> global::KnockOff.IMethodTrackingArgs<(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)>.Verifiable() => Verifiable();
 				global::KnockOff.IMethodTrackingArgs<(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)> global::KnockOff.IMethodTrackingArgs<(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity> global::KnockOff.IMethodReturnBuilderArgs<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, (global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)>.ThenReturn(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity> global::KnockOff.IMethodReturnBuilderArgs<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, (global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)>.ThenReturn(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback) => ThenReturn(callback);
 			}
 
 			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
-			public sealed class MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>
+			public sealed class MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>
 			{
 				private readonly IPersonDbContext_FindPersonInterceptor _interceptor;
 
-				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
+				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
 
 				private int TotalCallCount
 				{
 					get
 					{
-						if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity == null) return 0;
+						if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity == null) return 0;
 						var total = 0;
-						foreach (var (_, tracking) in _interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity)
+						foreach (var (_, tracking) in _interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity)
 							total += tracking._callCount;
 						return total;
 					}
 				}
 
 				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback)
+				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback)
 				{
-					var tracking = new MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor);
-					_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity!.Add((callback, tracking));
+					var tracking = new MethodCallBuilderImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor);
+					_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity!.Add((callback, tracking));
 					return this;
 				}
 
 				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
-				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(global::Person.Ef.PersonEntity? value) => ThenReturn((_) => global::System.Threading.Tasks.Task.FromResult(value));
+				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(global::Person.Dal.PersonEntity? value) => ThenReturn((_) => global::System.Threading.Tasks.Task.FromResult(value));
 
 				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(params global::Person.Ef.PersonEntity?[] values)
+				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(params global::Person.Dal.PersonEntity?[] values)
 				{
 					foreach (var value in values)
 					{
@@ -1271,14 +677,14 @@ partial class PersonTests
 				}
 
 				/// <summary>Adds simplified callback to the sequence. Result auto-wrapped in Task.FromResult.</summary>
-				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(global::System.Func<global::System.Threading.CancellationToken, global::Person.Ef.PersonEntity?> callback) => ThenReturn((cancellationToken) => global::System.Threading.Tasks.Task.FromResult(callback(cancellationToken)));
+				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(global::System.Func<global::System.Threading.CancellationToken, global::Person.Dal.PersonEntity?> callback) => ThenReturn((cancellationToken) => global::System.Threading.Tasks.Task.FromResult(callback(cancellationToken)));
 
 				/// <summary>Verifies the entire sequence was executed (all callbacks invoked). Throws VerificationException if incomplete.</summary>
 				public void Verify()
 				{
-					if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity == null) return;
-					var sequenceLength = _interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count;
-					var completedCount = _interceptor._sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+					if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity == null) return;
+					var sequenceLength = _interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count;
+					var completedCount = _interceptor._sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 					if (completedCount < sequenceLength)
 						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("method", sequenceLength, completedCount));
 				}
@@ -1287,56 +693,56 @@ partial class PersonTests
 				public void Reset() => _interceptor.Reset();
 
 				/// <summary>Marks this sequence for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Verifiable()
+				public MethodSequenceImpl_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Verifiable()
 				{
-					_interceptor._isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = true;
-					_interceptor._verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
+					_interceptor._isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = true;
+					_interceptor._verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
 					return this;
 				}
 
 				/// <summary>Terminates sequence with default(T) after exhaustion instead of repeating last value.</summary>
 				public void ThenDefault()
 				{
-					_interceptor._repeatLastValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = false;
+					_interceptor._repeatLastValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = false;
 				}
 
-				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity> global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>.ThenReturn(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback) => ThenReturn(callback);
-				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity> global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity> global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>.ThenReturn(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity> global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>.Verifiable() => Verifiable();
 				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
 			}
 
 			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
-			public sealed class MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>
+			public sealed class MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>
 			{
 				private readonly IPersonDbContext_FindPersonInterceptor _interceptor;
 
-				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
+				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
 
 				private int TotalCallCount
 				{
 					get
 					{
-						if (_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity == null) return 0;
+						if (_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity == null) return 0;
 						var total = 0;
-						foreach (var (_, tracking) in _interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity)
+						foreach (var (_, tracking) in _interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity)
 							total += tracking._callCount;
 						return total;
 					}
 				}
 
 				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback)
+				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback)
 				{
-					var tracking = new MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor);
-					_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity!.Add((callback, tracking));
+					var tracking = new MethodCallBuilderImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor);
+					_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity!.Add((callback, tracking));
 					return this;
 				}
 
 				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
-				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(global::Person.Ef.PersonEntity? value) => ThenReturn((_, _) => global::System.Threading.Tasks.Task.FromResult(value));
+				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(global::Person.Dal.PersonEntity? value) => ThenReturn((_, _) => global::System.Threading.Tasks.Task.FromResult(value));
 
 				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(params global::Person.Ef.PersonEntity?[] values)
+				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(params global::Person.Dal.PersonEntity?[] values)
 				{
 					foreach (var value in values)
 					{
@@ -1346,14 +752,14 @@ partial class PersonTests
 				}
 
 				/// <summary>Adds simplified callback to the sequence. Result auto-wrapped in Task.FromResult.</summary>
-				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenReturn(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, global::Person.Ef.PersonEntity?> callback) => ThenReturn((id, cancellationToken) => global::System.Threading.Tasks.Task.FromResult(callback(id, cancellationToken)));
+				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenReturn(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, global::Person.Dal.PersonEntity?> callback) => ThenReturn((id, cancellationToken) => global::System.Threading.Tasks.Task.FromResult(callback(id, cancellationToken)));
 
 				/// <summary>Verifies the entire sequence was executed (all callbacks invoked). Throws VerificationException if incomplete.</summary>
 				public void Verify()
 				{
-					if (_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity == null) return;
-					var sequenceLength = _interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count;
-					var completedCount = _interceptor._sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
+					if (_interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity == null) return;
+					var sequenceLength = _interceptor._sequence_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count;
+					var completedCount = _interceptor._sequenceIndex_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
 					if (completedCount < sequenceLength)
 						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("method", sequenceLength, completedCount));
 				}
@@ -1362,136 +768,136 @@ partial class PersonTests
 				public void Reset() => _interceptor.Reset();
 
 				/// <summary>Marks this sequence for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Verifiable()
+				public MethodSequenceImpl_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Verifiable()
 				{
-					_interceptor._isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = true;
-					_interceptor._verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = null;
+					_interceptor._isVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = true;
+					_interceptor._verifiableTimes_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = null;
 					return this;
 				}
 
 				/// <summary>Terminates sequence with default(T) after exhaustion instead of repeating last value.</summary>
 				public void ThenDefault()
 				{
-					_interceptor._repeatLastValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = false;
+					_interceptor._repeatLastValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = false;
 				}
 
-				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity> global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>.ThenReturn(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback) => ThenReturn(callback);
-				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity> global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity> global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>.ThenReturn(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity> global::KnockOff.IMethodReturnSequence<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>.Verifiable() => Verifiable();
 				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
 			}
 
 			/// <summary>Abstract base for When chain matchers.</summary>
-			private abstract class WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity
+			private abstract class WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity
 			{
 				public abstract bool Matches(global::System.Threading.CancellationToken cancellationToken);
-				public abstract global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> Call(global::System.Threading.CancellationToken cancellationToken);
+				public abstract global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> Call(global::System.Threading.CancellationToken cancellationToken);
 				public abstract bool IsTerminal { get; }
 				public int CallCount { get; set; }
 			}
 
 			/// <summary>Matcher that uses a predicate and returns a stored value.</summary>
-			private sealed class WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity
+			private sealed class WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity
 			{
 				private readonly global::System.Func<global::System.Threading.CancellationToken, bool> _predicate;
-				private readonly global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> _value;
+				private readonly global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> _value;
 
-				public WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(global::System.Func<global::System.Threading.CancellationToken, bool> predicate, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> value)
+				public WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(global::System.Func<global::System.Threading.CancellationToken, bool> predicate, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> value)
 				{
 					_predicate = predicate;
 					_value = value;
 				}
 
 				public override bool Matches(global::System.Threading.CancellationToken cancellationToken) => _predicate(cancellationToken);
-				public override global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> Call(global::System.Threading.CancellationToken cancellationToken) => _value;
+				public override global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> Call(global::System.Threading.CancellationToken cancellationToken) => _value;
 				public override bool IsTerminal => false;
 			}
 
 			/// <summary>Matcher that always matches and invokes a callback. Terminal.</summary>
-			private sealed class WhenMatcherCall_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity
+			private sealed class WhenMatcherCall_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity
 			{
-				private readonly FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity _callback;
+				private readonly FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity _callback;
 
-				public WhenMatcherCall_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback) => _callback = callback;
+				public WhenMatcherCall_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback) => _callback = callback;
 
 				public override bool Matches(global::System.Threading.CancellationToken cancellationToken) => true;
-				public override global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> Call(global::System.Threading.CancellationToken cancellationToken) => _callback(cancellationToken);
+				public override global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> Call(global::System.Threading.CancellationToken cancellationToken) => _callback(cancellationToken);
 				public override bool IsTerminal => true;
 			}
 
 			/// <summary>Matcher that never matches. Used to close chain without fallback. Terminal.</summary>
-			private sealed class WhenMatcherNone_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity
+			private sealed class WhenMatcherNone_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity
 			{
 				public override bool Matches(global::System.Threading.CancellationToken cancellationToken) => false;
-				public override global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> Call(global::System.Threading.CancellationToken cancellationToken) => default!;
+				public override global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> Call(global::System.Threading.CancellationToken cancellationToken) => default!;
 				public override bool IsTerminal => true;
 			}
 
 			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
-			public sealed class WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : global::KnockOff.IWhenBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>>
+			public sealed class WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : global::KnockOff.IWhenBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>>
 			{
 				private readonly IPersonDbContext_FindPersonInterceptor _interceptor;
 				private readonly global::System.Func<global::System.Threading.CancellationToken, bool> _predicate;
 
-				public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor, global::System.Func<global::System.Threading.CancellationToken, bool> predicate)
+				public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor, global::System.Func<global::System.Threading.CancellationToken, bool> predicate)
 				{
 					_interceptor = interceptor;
 					_predicate = predicate;
 				}
 
 				/// <summary>Configures the return value. Auto-wrapped in Task.FromResult.</summary>
-				public WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Return(global::Person.Ef.PersonEntity? value)
+				public WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Return(global::Person.Dal.PersonEntity? value)
 				{
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>();
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add(new WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_predicate, global::System.Threading.Tasks.Task.FromResult(value)));
-					return new WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor);
+					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>();
+					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add(new WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_predicate, global::System.Threading.Tasks.Task.FromResult(value)));
+					return new WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor);
 				}
 
-				global::KnockOff.IWhenChain<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>> global::KnockOff.IWhenBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>>.Return(global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> value) => Return(value.Result);
+				global::KnockOff.IWhenChain<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>> global::KnockOff.IWhenBuilder<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>>.Return(global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> value) => Return(value.Result);
 			}
 
 			/// <summary>When chain implementation with ThenCall, ThenNone, verification support.</summary>
-			public sealed class WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : global::KnockOff.IWhenChain<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>>
+			public sealed class WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : global::KnockOff.IWhenChain<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>>
 			{
 				private readonly IPersonDbContext_FindPersonInterceptor _interceptor;
 
-				public WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
+				public WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
 
 				/// <summary>Adds another matcher with exact value matching.</summary>
-				public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenWhen(global::System.Threading.CancellationToken cancellationToken)
+				public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenWhen(global::System.Threading.CancellationToken cancellationToken)
 				{
-					return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor, (_arg0) => global::System.Object.Equals(_arg0, cancellationToken));
+					return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor, (_arg0) => global::System.Object.Equals(_arg0, cancellationToken));
 				}
 
 				/// <summary>Adds another matcher with predicate matching.</summary>
-				public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenWhen(global::System.Func<global::System.Threading.CancellationToken, bool> predicate)
+				public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenWhen(global::System.Func<global::System.Threading.CancellationToken, bool> predicate)
 				{
-					return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor, predicate);
+					return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor, predicate);
 				}
 
 				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
-				public global::KnockOff.IWhenTracking ThenCall(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback)
+				public global::KnockOff.IWhenTracking ThenCall(FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback)
 				{
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>();
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add(new WhenMatcherCall_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(callback));
+					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>();
+					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add(new WhenMatcherCall_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(callback));
 					return this;
 				}
 
 				/// <summary>Closes chain with no matcher. Falls through when exhausted.</summary>
 				public global::KnockOff.IWhenTracking ThenNone()
 				{
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>();
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add(new WhenMatcherNone_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity());
+					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>();
+					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add(new WhenMatcherNone_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity());
 					return this;
 				}
 
 				/// <summary>Verifies the When chain was fully consumed (reached terminal state).</summary>
 				public void Verify()
 				{
-					if (_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity == null || _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count == 0) return;
-					var head = _interceptor._whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-					var count = _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count;
+					if (_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity == null || _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count == 0) return;
+					var head = _interceptor._whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+					var count = _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count;
 					// Chain is complete if HEAD reached a terminal matcher or exhausted
-					if (head < count && !_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].IsTerminal && _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].CallCount == 0)
+					if (head < count && !_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].IsTerminal && _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].CallCount == 0)
 					{
 						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("When chain", count, head));
 					}
@@ -1500,137 +906,137 @@ partial class PersonTests
 				/// <summary>Resets When chain HEAD and all matcher call counts.</summary>
 				public void Reset()
 				{
-					_interceptor._whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
-					if (_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+					_interceptor._whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
+					if (_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 					{
-						foreach (var matcher in _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity)
+						foreach (var matcher in _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity)
 							matcher.CallCount = 0;
 					}
 				}
 
 				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
-				public WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Verifiable()
+				public WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Verifiable()
 				{
-					_interceptor._whenVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = true;
+					_interceptor._whenVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = true;
 					return this;
 				}
 
-				global::KnockOff.IWhenChain<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>> global::KnockOff.IWhenChain<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>>.Verifiable() => Verifiable();
+				global::KnockOff.IWhenChain<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>> global::KnockOff.IWhenChain<FindPersonDelegate_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>>.Verifiable() => Verifiable();
 				global::KnockOff.IWhenTracking global::KnockOff.IWhenTracking.Verifiable() => Verifiable();
 			}
 
 			/// <summary>Abstract base for When chain matchers.</summary>
-			private abstract class WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity
+			private abstract class WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity
 			{
 				public abstract bool Matches(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken);
-				public abstract global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> Call(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken);
+				public abstract global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> Call(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken);
 				public abstract bool IsTerminal { get; }
 				public int CallCount { get; set; }
 			}
 
 			/// <summary>Matcher that uses a predicate and returns a stored value.</summary>
-			private sealed class WhenMatcherValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity
+			private sealed class WhenMatcherValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity
 			{
 				private readonly global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, bool> _predicate;
-				private readonly global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> _value;
+				private readonly global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> _value;
 
-				public WhenMatcherValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, bool> predicate, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> value)
+				public WhenMatcherValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, bool> predicate, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> value)
 				{
 					_predicate = predicate;
 					_value = value;
 				}
 
 				public override bool Matches(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken) => _predicate(id, cancellationToken);
-				public override global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> Call(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken) => _value;
+				public override global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> Call(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken) => _value;
 				public override bool IsTerminal => false;
 			}
 
 			/// <summary>Matcher that always matches and invokes a callback. Terminal.</summary>
-			private sealed class WhenMatcherCall_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity
+			private sealed class WhenMatcherCall_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity
 			{
-				private readonly FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity _callback;
+				private readonly FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity _callback;
 
-				public WhenMatcherCall_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback) => _callback = callback;
+				public WhenMatcherCall_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback) => _callback = callback;
 
 				public override bool Matches(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken) => true;
-				public override global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> Call(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken) => _callback(id, cancellationToken);
+				public override global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> Call(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken) => _callback(id, cancellationToken);
 				public override bool IsTerminal => true;
 			}
 
 			/// <summary>Matcher that never matches. Used to close chain without fallback. Terminal.</summary>
-			private sealed class WhenMatcherNone_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity
+			private sealed class WhenMatcherNone_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity
 			{
 				public override bool Matches(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken) => false;
-				public override global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> Call(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken) => default!;
+				public override global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> Call(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken) => default!;
 				public override bool IsTerminal => true;
 			}
 
 			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
-			public sealed class WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : global::KnockOff.IWhenBuilder<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>>
+			public sealed class WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : global::KnockOff.IWhenBuilder<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>>
 			{
 				private readonly IPersonDbContext_FindPersonInterceptor _interceptor;
 				private readonly global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, bool> _predicate;
 
-				public WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor, global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, bool> predicate)
+				public WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor, global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, bool> predicate)
 				{
 					_interceptor = interceptor;
 					_predicate = predicate;
 				}
 
 				/// <summary>Configures the return value. Auto-wrapped in Task.FromResult.</summary>
-				public WhenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Return(global::Person.Ef.PersonEntity? value)
+				public WhenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Return(global::Person.Dal.PersonEntity? value)
 				{
-					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>();
-					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add(new WhenMatcherValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_predicate, global::System.Threading.Tasks.Task.FromResult(value)));
-					return new WhenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor);
+					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>();
+					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add(new WhenMatcherValue_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_predicate, global::System.Threading.Tasks.Task.FromResult(value)));
+					return new WhenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor);
 				}
 
-				global::KnockOff.IWhenChain<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>> global::KnockOff.IWhenBuilder<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>>.Return(global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> value) => Return(value.Result);
+				global::KnockOff.IWhenChain<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>> global::KnockOff.IWhenBuilder<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>>.Return(global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> value) => Return(value.Result);
 			}
 
 			/// <summary>When chain implementation with ThenCall, ThenNone, verification support.</summary>
-			public sealed class WhenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity : global::KnockOff.IWhenChain<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>>
+			public sealed class WhenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity : global::KnockOff.IWhenChain<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>>
 			{
 				private readonly IPersonDbContext_FindPersonInterceptor _interceptor;
 
-				public WhenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
+				public WhenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(IPersonDbContext_FindPersonInterceptor interceptor) => _interceptor = interceptor;
 
 				/// <summary>Adds another matcher with exact value matching.</summary>
-				public WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenWhen(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)
+				public WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenWhen(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)
 				{
-					return new WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor, (_arg0, _arg1) => global::System.Object.Equals(_arg0, id) && global::System.Object.Equals(_arg1, cancellationToken));
+					return new WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor, (_arg0, _arg1) => global::System.Object.Equals(_arg0, id) && global::System.Object.Equals(_arg1, cancellationToken));
 				}
 
 				/// <summary>Adds another matcher with predicate matching.</summary>
-				public WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ThenWhen(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, bool> predicate)
+				public WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ThenWhen(global::System.Func<global::System.Guid?, global::System.Threading.CancellationToken, bool> predicate)
 				{
-					return new WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(_interceptor, predicate);
+					return new WhenBuilder_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(_interceptor, predicate);
 				}
 
 				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
-				public global::KnockOff.IWhenTracking ThenCall(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity callback)
+				public global::KnockOff.IWhenTracking ThenCall(FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity callback)
 				{
-					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>();
-					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add(new WhenMatcherCall_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(callback));
+					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>();
+					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add(new WhenMatcherCall_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(callback));
 					return this;
 				}
 
 				/// <summary>Closes chain with no matcher. Falls through when exhausted.</summary>
 				public global::KnockOff.IWhenTracking ThenNone()
 				{
-					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity>();
-					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Add(new WhenMatcherNone_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity());
+					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity ??= new global::System.Collections.Generic.List<WhenMatcher_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity>();
+					_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Add(new WhenMatcherNone_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity());
 					return this;
 				}
 
 				/// <summary>Verifies the When chain was fully consumed (reached terminal state).</summary>
 				public void Verify()
 				{
-					if (_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity == null || _interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count == 0) return;
-					var head = _interceptor._whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity;
-					var count = _interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity.Count;
+					if (_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity == null || _interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count == 0) return;
+					var head = _interceptor._whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity;
+					var count = _interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity.Count;
 					// Chain is complete if HEAD reached a terminal matcher or exhausted
-					if (head < count && !_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].IsTerminal && _interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity[head].CallCount == 0)
+					if (head < count && !_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].IsTerminal && _interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity[head].CallCount == 0)
 					{
 						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("When chain", count, head));
 					}
@@ -1639,22 +1045,22 @@ partial class PersonTests
 				/// <summary>Resets When chain HEAD and all matcher call counts.</summary>
 				public void Reset()
 				{
-					_interceptor._whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = 0;
-					if (_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity != null)
+					_interceptor._whenChainHead_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = 0;
+					if (_interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity != null)
 					{
-						foreach (var matcher in _interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity)
+						foreach (var matcher in _interceptor._whenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity)
 							matcher.CallCount = 0;
 					}
 				}
 
 				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
-				public WhenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity Verifiable()
+				public WhenChain_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity Verifiable()
 				{
-					_interceptor._whenVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity = true;
+					_interceptor._whenVerifiable_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity = true;
 					return this;
 				}
 
-				global::KnockOff.IWhenChain<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>> global::KnockOff.IWhenChain<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?>>.Verifiable() => Verifiable();
+				global::KnockOff.IWhenChain<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>> global::KnockOff.IWhenChain<FindPersonDelegate_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity, global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?>>.Verifiable() => Verifiable();
 				global::KnockOff.IWhenTracking global::KnockOff.IWhenTracking.Verifiable() => Verifiable();
 			}
 
@@ -1664,12 +1070,12 @@ partial class PersonTests
 		public sealed class IPersonDbContext_AddPersonInterceptor
 		{
 			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Person.Ef.IPersonDbContext? _source;
+			internal global::Person.Dal.IPersonDbContext? _source;
 
-			private global::System.Action<global::Person.Ef.PersonEntity>? _call;
+			private global::System.Action<global::Person.Dal.PersonEntity>? _call;
 			private MethodCallBuilderImpl? _callTracking;
 
-			private global::System.Collections.Generic.List<(global::System.Action<global::Person.Ef.PersonEntity> Callback, MethodCallBuilderImpl Tracking)>? _sequence;
+			private global::System.Collections.Generic.List<(global::System.Action<global::Person.Dal.PersonEntity> Callback, MethodCallBuilderImpl Tracking)>? _sequence;
 			private int _sequenceIndex;
 			private bool _repeatLastValue = true;
 
@@ -1684,12 +1090,12 @@ partial class PersonTests
 			/// <summary>Count of calls that were not handled by any configured behavior (used for class stub base fallback).</summary>
 			internal int UnconfiguredCallCount => _unconfiguredCallCount;
 
-			private global::Person.Ef.PersonEntity? _unconfiguredLastArg;
+			private global::Person.Dal.PersonEntity? _unconfiguredLastArg;
 
 			private int TotalCallCount { get { var sum = _unconfiguredCallCount + (_callTracking?._callCount ?? 0); if (_sequence != null) foreach (var s in _sequence) sum += s.Tracking._callCount; if (_whenChain != null) foreach (var m in _whenChain) sum += m.CallCount; return sum; } }
 
 			/// <summary>The argument from the last call (from most recently called registration).</summary>
-			public global::Person.Ef.PersonEntity? LastArg { get { if ((_callTracking?._callCount ?? 0) > 0) return _callTracking!.LastArg; if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0) return _sequence[i].Tracking.LastArg; return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default; } }
+			public global::Person.Dal.PersonEntity? LastArg { get { if ((_callTracking?._callCount ?? 0) > 0) return _callTracking!.LastArg; if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0) return _sequence[i].Tracking.LastArg; return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default; } }
 
 
 			/// <summary>Verifies method was called at least once. Throws VerificationException if not.</summary>
@@ -1717,7 +1123,7 @@ partial class PersonTests
 			}
 
 			/// <summary>Configures callback that repeats indefinitely. Returns builder for sequence chaining.</summary>
-			public MethodCallBuilderImpl Call(global::System.Action<global::Person.Ef.PersonEntity> callback)
+			public MethodCallBuilderImpl Call(global::System.Action<global::Person.Dal.PersonEntity> callback)
 			{
 				_sequence = null;
 				_sequenceIndex = 0;
@@ -1729,7 +1135,7 @@ partial class PersonTests
 			}
 
 			/// <summary>Configures parameter-specific matching with exact values for void method. Returns chain directly.</summary>
-			public VoidWhenChain When(global::Person.Ef.PersonEntity personEntity)
+			public VoidWhenChain When(global::Person.Dal.PersonEntity personEntity)
 			{
 				_whenChain ??= new global::System.Collections.Generic.List<VoidWhenMatcher>();
 				var matcher = new VoidWhenMatcherPredicate((_arg0) => global::System.Object.Equals(_arg0, personEntity));
@@ -1738,7 +1144,7 @@ partial class PersonTests
 			}
 
 			/// <summary>Configures parameter-specific matching with predicate for void method. Returns chain directly.</summary>
-			public VoidWhenChain When(global::System.Func<global::Person.Ef.PersonEntity, bool> predicate)
+			public VoidWhenChain When(global::System.Func<global::Person.Dal.PersonEntity, bool> predicate)
 			{
 				_whenChain ??= new global::System.Collections.Generic.List<VoidWhenMatcher>();
 				var matcher = new VoidWhenMatcherPredicate(predicate);
@@ -1747,7 +1153,7 @@ partial class PersonTests
 			}
 
 			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal void Invoke(bool strict, global::Person.Ef.PersonEntity personEntity)
+			internal void Invoke(bool strict, global::Person.Dal.PersonEntity personEntity)
 			{
 				// When chain - check HEAD matcher first (highest priority)
 				if (_whenChain != null && _whenChainHead < _whenChain.Count)
@@ -1878,21 +1284,21 @@ partial class PersonTests
 			}
 
 			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class MethodCallBuilderImpl : global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Ef.PersonEntity>, global::Person.Ef.PersonEntity>
+			public sealed class MethodCallBuilderImpl : global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Dal.PersonEntity>, global::Person.Dal.PersonEntity>
 			{
 				private readonly IPersonDbContext_AddPersonInterceptor _interceptor;
 
 				public MethodCallBuilderImpl(IPersonDbContext_AddPersonInterceptor interceptor) => _interceptor = interceptor;
 
-				private global::Person.Ef.PersonEntity _lastArg = default!;
+				private global::Person.Dal.PersonEntity _lastArg = default!;
 
 				internal int _callCount;
 
 				/// <summary>Last argument passed to this callback. Default if never called.</summary>
-				public global::Person.Ef.PersonEntity LastArg => _lastArg;
+				public global::Person.Dal.PersonEntity LastArg => _lastArg;
 
 				/// <summary>Records a call to this callback.</summary>
-				public void RecordCall(global::Person.Ef.PersonEntity personEntity) { _callCount++; _lastArg = personEntity; }
+				public void RecordCall(global::Person.Dal.PersonEntity personEntity) { _callCount++; _lastArg = personEntity; }
 
 				/// <summary>Resets tracking state.</summary>
 				public void Reset() { _callCount = 0; _lastArg = default!; }
@@ -1908,11 +1314,11 @@ partial class PersonTests
 				}
 
 				/// <summary>Elevates to sequence mode and adds another callback. Return sequence for further chaining.</summary>
-				public MethodSequenceImpl ThenCall(global::System.Action<global::Person.Ef.PersonEntity> callback)
+				public MethodSequenceImpl ThenCall(global::System.Action<global::Person.Dal.PersonEntity> callback)
 				{
 					if (_interceptor._sequence == null)
 					{
-						_interceptor._sequence = new global::System.Collections.Generic.List<(global::System.Action<global::Person.Ef.PersonEntity> Callback, MethodCallBuilderImpl Tracking)>();
+						_interceptor._sequence = new global::System.Collections.Generic.List<(global::System.Action<global::Person.Dal.PersonEntity> Callback, MethodCallBuilderImpl Tracking)>();
 						if (_interceptor._call != null)
 						{
 							_interceptor._sequence.Add((_interceptor._call, this));
@@ -1927,7 +1333,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Ef.PersonEntity>, global::Person.Ef.PersonEntity> Verifiable()
+				public global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Dal.PersonEntity>, global::Person.Dal.PersonEntity> Verifiable()
 				{
 					_interceptor._isVerifiable = true;
 					_interceptor._verifiableTimes = null;
@@ -1935,7 +1341,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Marks for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Ef.PersonEntity>, global::Person.Ef.PersonEntity> Verifiable(global::KnockOff.Called times)
+				public global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Dal.PersonEntity>, global::Person.Dal.PersonEntity> Verifiable(global::KnockOff.Called times)
 				{
 					_interceptor._isVerifiable = true;
 					_interceptor._verifiableTimes = times;
@@ -1944,13 +1350,13 @@ partial class PersonTests
 
 				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
 				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodTracking<global::Person.Ef.PersonEntity> global::KnockOff.IMethodTracking<global::Person.Ef.PersonEntity>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking<global::Person.Ef.PersonEntity> global::KnockOff.IMethodTracking<global::Person.Ef.PersonEntity>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>> global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Ef.PersonEntity>, global::Person.Ef.PersonEntity>.ThenCall(global::System.Action<global::Person.Ef.PersonEntity> callback) => ThenCall(callback);
+				global::KnockOff.IMethodTracking<global::Person.Dal.PersonEntity> global::KnockOff.IMethodTracking<global::Person.Dal.PersonEntity>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking<global::Person.Dal.PersonEntity> global::KnockOff.IMethodTracking<global::Person.Dal.PersonEntity>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>> global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Dal.PersonEntity>, global::Person.Dal.PersonEntity>.ThenCall(global::System.Action<global::Person.Dal.PersonEntity> callback) => ThenCall(callback);
 			}
 
 			/// <summary>Sequence implementation for ThenCall chaining.</summary>
-			public sealed class MethodSequenceImpl : global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>>
+			public sealed class MethodSequenceImpl : global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>>
 			{
 				private readonly IPersonDbContext_AddPersonInterceptor _interceptor;
 
@@ -1969,7 +1375,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public MethodSequenceImpl ThenCall(global::System.Action<global::Person.Ef.PersonEntity> callback)
+				public MethodSequenceImpl ThenCall(global::System.Action<global::Person.Dal.PersonEntity> callback)
 				{
 					var tracking = new MethodCallBuilderImpl(_interceptor);
 					_interceptor._sequence!.Add((callback, tracking));
@@ -2003,55 +1409,55 @@ partial class PersonTests
 					_interceptor._repeatLastValue = false;
 				}
 
-				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>> global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>>.ThenCall(global::System.Action<global::Person.Ef.PersonEntity> callback) => ThenCall(callback);
-				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>> global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>> global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>>.ThenCall(global::System.Action<global::Person.Dal.PersonEntity> callback) => ThenCall(callback);
+				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>> global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>>.Verifiable() => Verifiable();
 				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
 			}
 
 			/// <summary>Abstract base for void When chain matchers.</summary>
 			internal abstract class VoidWhenMatcher
 			{
-				public abstract bool Matches(global::Person.Ef.PersonEntity personEntity);
-				public abstract void Call(global::Person.Ef.PersonEntity personEntity);
+				public abstract bool Matches(global::Person.Dal.PersonEntity personEntity);
+				public abstract void Call(global::Person.Dal.PersonEntity personEntity);
 				public abstract bool IsTerminal { get; }
 				public int CallCount { get; set; }
-				public global::System.Action<global::Person.Ef.PersonEntity>? Callback { get; set; }
+				public global::System.Action<global::Person.Dal.PersonEntity>? Callback { get; set; }
 			}
 
 			/// <summary>Matcher that uses a predicate and optionally invokes a callback.</summary>
 			private sealed class VoidWhenMatcherPredicate : VoidWhenMatcher
 			{
-				private readonly global::System.Func<global::Person.Ef.PersonEntity, bool> _predicate;
+				private readonly global::System.Func<global::Person.Dal.PersonEntity, bool> _predicate;
 
-				public VoidWhenMatcherPredicate(global::System.Func<global::Person.Ef.PersonEntity, bool> predicate) => _predicate = predicate;
+				public VoidWhenMatcherPredicate(global::System.Func<global::Person.Dal.PersonEntity, bool> predicate) => _predicate = predicate;
 
-				public override bool Matches(global::Person.Ef.PersonEntity personEntity) => _predicate(personEntity);
-				public override void Call(global::Person.Ef.PersonEntity personEntity) { Callback?.Invoke(personEntity); }
+				public override bool Matches(global::Person.Dal.PersonEntity personEntity) => _predicate(personEntity);
+				public override void Call(global::Person.Dal.PersonEntity personEntity) { Callback?.Invoke(personEntity); }
 				public override bool IsTerminal => false;
 			}
 
 			/// <summary>Matcher that always matches and invokes a callback. Terminal.</summary>
 			private sealed class VoidWhenMatcherCall : VoidWhenMatcher
 			{
-				private readonly global::System.Action<global::Person.Ef.PersonEntity> _callback;
+				private readonly global::System.Action<global::Person.Dal.PersonEntity> _callback;
 
-				public VoidWhenMatcherCall(global::System.Action<global::Person.Ef.PersonEntity> callback) => _callback = callback;
+				public VoidWhenMatcherCall(global::System.Action<global::Person.Dal.PersonEntity> callback) => _callback = callback;
 
-				public override bool Matches(global::Person.Ef.PersonEntity personEntity) => true;
-				public override void Call(global::Person.Ef.PersonEntity personEntity) => _callback(personEntity);
+				public override bool Matches(global::Person.Dal.PersonEntity personEntity) => true;
+				public override void Call(global::Person.Dal.PersonEntity personEntity) => _callback(personEntity);
 				public override bool IsTerminal => true;
 			}
 
 			/// <summary>Matcher that never matches. Used to close chain without fallback. Terminal.</summary>
 			private sealed class VoidWhenMatcherNone : VoidWhenMatcher
 			{
-				public override bool Matches(global::Person.Ef.PersonEntity personEntity) => false;
-				public override void Call(global::Person.Ef.PersonEntity personEntity) { }
+				public override bool Matches(global::Person.Dal.PersonEntity personEntity) => false;
+				public override void Call(global::Person.Dal.PersonEntity personEntity) { }
 				public override bool IsTerminal => true;
 			}
 
 			/// <summary>Void When chain implementation with Call, ThenWhen, ThenCall, ThenNone, verification support.</summary>
-			public sealed class VoidWhenChain : global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Ef.PersonEntity>>
+			public sealed class VoidWhenChain : global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Dal.PersonEntity>>
 			{
 				private readonly IPersonDbContext_AddPersonInterceptor _interceptor;
 				private readonly VoidWhenMatcher _currentMatcher;
@@ -2063,16 +1469,16 @@ partial class PersonTests
 				}
 
 				/// <summary>Sets an optional callback to invoke when this matcher matches.</summary>
-				public VoidWhenChain Call(global::System.Action<global::Person.Ef.PersonEntity> callback)
+				public VoidWhenChain Call(global::System.Action<global::Person.Dal.PersonEntity> callback)
 				{
 					_currentMatcher.Callback = callback;
 					return this;
 				}
 
-				global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Ef.PersonEntity>> global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Ef.PersonEntity>>.Call(global::System.Action<global::Person.Ef.PersonEntity> callback) => Call(callback);
+				global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Dal.PersonEntity>> global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Dal.PersonEntity>>.Call(global::System.Action<global::Person.Dal.PersonEntity> callback) => Call(callback);
 
 				/// <summary>Adds another matcher with exact value matching.</summary>
-				public VoidWhenChain ThenWhen(global::Person.Ef.PersonEntity personEntity)
+				public VoidWhenChain ThenWhen(global::Person.Dal.PersonEntity personEntity)
 				{
 					_interceptor._whenChain ??= new global::System.Collections.Generic.List<VoidWhenMatcher>();
 					var matcher = new VoidWhenMatcherPredicate((_arg0) => global::System.Object.Equals(_arg0, personEntity));
@@ -2081,7 +1487,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Adds another matcher with predicate matching.</summary>
-				public VoidWhenChain ThenWhen(global::System.Func<global::Person.Ef.PersonEntity, bool> predicate)
+				public VoidWhenChain ThenWhen(global::System.Func<global::Person.Dal.PersonEntity, bool> predicate)
 				{
 					_interceptor._whenChain ??= new global::System.Collections.Generic.List<VoidWhenMatcher>();
 					var matcher = new VoidWhenMatcherPredicate(predicate);
@@ -2090,7 +1496,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
-				public global::KnockOff.IWhenTracking ThenCall(global::System.Action<global::Person.Ef.PersonEntity> callback)
+				public global::KnockOff.IWhenTracking ThenCall(global::System.Action<global::Person.Dal.PersonEntity> callback)
 				{
 					_interceptor._whenChain ??= new global::System.Collections.Generic.List<VoidWhenMatcher>();
 					_interceptor._whenChain.Add(new VoidWhenMatcherCall(callback));
@@ -2145,7 +1551,7 @@ partial class PersonTests
 					return this;
 				}
 
-				global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Ef.PersonEntity>> global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Ef.PersonEntity>>.Verifiable() => Verifiable();
+				global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Dal.PersonEntity>> global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Dal.PersonEntity>>.Verifiable() => Verifiable();
 				global::KnockOff.IWhenTracking global::KnockOff.IWhenTracking.Verifiable() => Verifiable();
 			}
 
@@ -2155,7 +1561,7 @@ partial class PersonTests
 		public sealed class IPersonDbContext_DeleteAllPersonsInterceptor
 		{
 			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Person.Ef.IPersonDbContext? _source;
+			internal global::Person.Dal.IPersonDbContext? _source;
 
 			/// <summary>Delegate for DeleteAllPersons.</summary>
 			public delegate global::System.Threading.Tasks.Task DeleteAllPersonsDelegate(global::System.Threading.CancellationToken cancellationToken);
@@ -2782,12 +2188,12 @@ partial class PersonTests
 		public sealed class IPersonDbContext_DeletePersonInterceptor
 		{
 			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Person.Ef.IPersonDbContext? _source;
+			internal global::Person.Dal.IPersonDbContext? _source;
 
-			private global::System.Action<global::Person.Ef.PersonEntity>? _call;
+			private global::System.Action<global::Person.Dal.PersonEntity>? _call;
 			private MethodCallBuilderImpl? _callTracking;
 
-			private global::System.Collections.Generic.List<(global::System.Action<global::Person.Ef.PersonEntity> Callback, MethodCallBuilderImpl Tracking)>? _sequence;
+			private global::System.Collections.Generic.List<(global::System.Action<global::Person.Dal.PersonEntity> Callback, MethodCallBuilderImpl Tracking)>? _sequence;
 			private int _sequenceIndex;
 			private bool _repeatLastValue = true;
 
@@ -2802,12 +2208,12 @@ partial class PersonTests
 			/// <summary>Count of calls that were not handled by any configured behavior (used for class stub base fallback).</summary>
 			internal int UnconfiguredCallCount => _unconfiguredCallCount;
 
-			private global::Person.Ef.PersonEntity? _unconfiguredLastArg;
+			private global::Person.Dal.PersonEntity? _unconfiguredLastArg;
 
 			private int TotalCallCount { get { var sum = _unconfiguredCallCount + (_callTracking?._callCount ?? 0); if (_sequence != null) foreach (var s in _sequence) sum += s.Tracking._callCount; if (_whenChain != null) foreach (var m in _whenChain) sum += m.CallCount; return sum; } }
 
 			/// <summary>The argument from the last call (from most recently called registration).</summary>
-			public global::Person.Ef.PersonEntity? LastArg { get { if ((_callTracking?._callCount ?? 0) > 0) return _callTracking!.LastArg; if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0) return _sequence[i].Tracking.LastArg; return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default; } }
+			public global::Person.Dal.PersonEntity? LastArg { get { if ((_callTracking?._callCount ?? 0) > 0) return _callTracking!.LastArg; if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0) return _sequence[i].Tracking.LastArg; return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default; } }
 
 
 			/// <summary>Verifies method was called at least once. Throws VerificationException if not.</summary>
@@ -2835,7 +2241,7 @@ partial class PersonTests
 			}
 
 			/// <summary>Configures callback that repeats indefinitely. Returns builder for sequence chaining.</summary>
-			public MethodCallBuilderImpl Call(global::System.Action<global::Person.Ef.PersonEntity> callback)
+			public MethodCallBuilderImpl Call(global::System.Action<global::Person.Dal.PersonEntity> callback)
 			{
 				_sequence = null;
 				_sequenceIndex = 0;
@@ -2847,7 +2253,7 @@ partial class PersonTests
 			}
 
 			/// <summary>Configures parameter-specific matching with exact values for void method. Returns chain directly.</summary>
-			public VoidWhenChain When(global::Person.Ef.PersonEntity person)
+			public VoidWhenChain When(global::Person.Dal.PersonEntity person)
 			{
 				_whenChain ??= new global::System.Collections.Generic.List<VoidWhenMatcher>();
 				var matcher = new VoidWhenMatcherPredicate((_arg0) => global::System.Object.Equals(_arg0, person));
@@ -2856,7 +2262,7 @@ partial class PersonTests
 			}
 
 			/// <summary>Configures parameter-specific matching with predicate for void method. Returns chain directly.</summary>
-			public VoidWhenChain When(global::System.Func<global::Person.Ef.PersonEntity, bool> predicate)
+			public VoidWhenChain When(global::System.Func<global::Person.Dal.PersonEntity, bool> predicate)
 			{
 				_whenChain ??= new global::System.Collections.Generic.List<VoidWhenMatcher>();
 				var matcher = new VoidWhenMatcherPredicate(predicate);
@@ -2865,7 +2271,7 @@ partial class PersonTests
 			}
 
 			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal void Invoke(bool strict, global::Person.Ef.PersonEntity person)
+			internal void Invoke(bool strict, global::Person.Dal.PersonEntity person)
 			{
 				// When chain - check HEAD matcher first (highest priority)
 				if (_whenChain != null && _whenChainHead < _whenChain.Count)
@@ -2996,21 +2402,21 @@ partial class PersonTests
 			}
 
 			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class MethodCallBuilderImpl : global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Ef.PersonEntity>, global::Person.Ef.PersonEntity>
+			public sealed class MethodCallBuilderImpl : global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Dal.PersonEntity>, global::Person.Dal.PersonEntity>
 			{
 				private readonly IPersonDbContext_DeletePersonInterceptor _interceptor;
 
 				public MethodCallBuilderImpl(IPersonDbContext_DeletePersonInterceptor interceptor) => _interceptor = interceptor;
 
-				private global::Person.Ef.PersonEntity _lastArg = default!;
+				private global::Person.Dal.PersonEntity _lastArg = default!;
 
 				internal int _callCount;
 
 				/// <summary>Last argument passed to this callback. Default if never called.</summary>
-				public global::Person.Ef.PersonEntity LastArg => _lastArg;
+				public global::Person.Dal.PersonEntity LastArg => _lastArg;
 
 				/// <summary>Records a call to this callback.</summary>
-				public void RecordCall(global::Person.Ef.PersonEntity person) { _callCount++; _lastArg = person; }
+				public void RecordCall(global::Person.Dal.PersonEntity person) { _callCount++; _lastArg = person; }
 
 				/// <summary>Resets tracking state.</summary>
 				public void Reset() { _callCount = 0; _lastArg = default!; }
@@ -3026,11 +2432,11 @@ partial class PersonTests
 				}
 
 				/// <summary>Elevates to sequence mode and adds another callback. Return sequence for further chaining.</summary>
-				public MethodSequenceImpl ThenCall(global::System.Action<global::Person.Ef.PersonEntity> callback)
+				public MethodSequenceImpl ThenCall(global::System.Action<global::Person.Dal.PersonEntity> callback)
 				{
 					if (_interceptor._sequence == null)
 					{
-						_interceptor._sequence = new global::System.Collections.Generic.List<(global::System.Action<global::Person.Ef.PersonEntity> Callback, MethodCallBuilderImpl Tracking)>();
+						_interceptor._sequence = new global::System.Collections.Generic.List<(global::System.Action<global::Person.Dal.PersonEntity> Callback, MethodCallBuilderImpl Tracking)>();
 						if (_interceptor._call != null)
 						{
 							_interceptor._sequence.Add((_interceptor._call, this));
@@ -3045,7 +2451,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Ef.PersonEntity>, global::Person.Ef.PersonEntity> Verifiable()
+				public global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Dal.PersonEntity>, global::Person.Dal.PersonEntity> Verifiable()
 				{
 					_interceptor._isVerifiable = true;
 					_interceptor._verifiableTimes = null;
@@ -3053,7 +2459,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Marks for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Ef.PersonEntity>, global::Person.Ef.PersonEntity> Verifiable(global::KnockOff.Called times)
+				public global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Dal.PersonEntity>, global::Person.Dal.PersonEntity> Verifiable(global::KnockOff.Called times)
 				{
 					_interceptor._isVerifiable = true;
 					_interceptor._verifiableTimes = times;
@@ -3062,13 +2468,13 @@ partial class PersonTests
 
 				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
 				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodTracking<global::Person.Ef.PersonEntity> global::KnockOff.IMethodTracking<global::Person.Ef.PersonEntity>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking<global::Person.Ef.PersonEntity> global::KnockOff.IMethodTracking<global::Person.Ef.PersonEntity>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>> global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Ef.PersonEntity>, global::Person.Ef.PersonEntity>.ThenCall(global::System.Action<global::Person.Ef.PersonEntity> callback) => ThenCall(callback);
+				global::KnockOff.IMethodTracking<global::Person.Dal.PersonEntity> global::KnockOff.IMethodTracking<global::Person.Dal.PersonEntity>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking<global::Person.Dal.PersonEntity> global::KnockOff.IMethodTracking<global::Person.Dal.PersonEntity>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>> global::KnockOff.IMethodCallBuilder<global::System.Action<global::Person.Dal.PersonEntity>, global::Person.Dal.PersonEntity>.ThenCall(global::System.Action<global::Person.Dal.PersonEntity> callback) => ThenCall(callback);
 			}
 
 			/// <summary>Sequence implementation for ThenCall chaining.</summary>
-			public sealed class MethodSequenceImpl : global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>>
+			public sealed class MethodSequenceImpl : global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>>
 			{
 				private readonly IPersonDbContext_DeletePersonInterceptor _interceptor;
 
@@ -3087,7 +2493,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public MethodSequenceImpl ThenCall(global::System.Action<global::Person.Ef.PersonEntity> callback)
+				public MethodSequenceImpl ThenCall(global::System.Action<global::Person.Dal.PersonEntity> callback)
 				{
 					var tracking = new MethodCallBuilderImpl(_interceptor);
 					_interceptor._sequence!.Add((callback, tracking));
@@ -3121,55 +2527,55 @@ partial class PersonTests
 					_interceptor._repeatLastValue = false;
 				}
 
-				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>> global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>>.ThenCall(global::System.Action<global::Person.Ef.PersonEntity> callback) => ThenCall(callback);
-				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>> global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Ef.PersonEntity>>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>> global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>>.ThenCall(global::System.Action<global::Person.Dal.PersonEntity> callback) => ThenCall(callback);
+				global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>> global::KnockOff.IMethodCallSequence<global::System.Action<global::Person.Dal.PersonEntity>>.Verifiable() => Verifiable();
 				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
 			}
 
 			/// <summary>Abstract base for void When chain matchers.</summary>
 			internal abstract class VoidWhenMatcher
 			{
-				public abstract bool Matches(global::Person.Ef.PersonEntity person);
-				public abstract void Call(global::Person.Ef.PersonEntity person);
+				public abstract bool Matches(global::Person.Dal.PersonEntity person);
+				public abstract void Call(global::Person.Dal.PersonEntity person);
 				public abstract bool IsTerminal { get; }
 				public int CallCount { get; set; }
-				public global::System.Action<global::Person.Ef.PersonEntity>? Callback { get; set; }
+				public global::System.Action<global::Person.Dal.PersonEntity>? Callback { get; set; }
 			}
 
 			/// <summary>Matcher that uses a predicate and optionally invokes a callback.</summary>
 			private sealed class VoidWhenMatcherPredicate : VoidWhenMatcher
 			{
-				private readonly global::System.Func<global::Person.Ef.PersonEntity, bool> _predicate;
+				private readonly global::System.Func<global::Person.Dal.PersonEntity, bool> _predicate;
 
-				public VoidWhenMatcherPredicate(global::System.Func<global::Person.Ef.PersonEntity, bool> predicate) => _predicate = predicate;
+				public VoidWhenMatcherPredicate(global::System.Func<global::Person.Dal.PersonEntity, bool> predicate) => _predicate = predicate;
 
-				public override bool Matches(global::Person.Ef.PersonEntity person) => _predicate(person);
-				public override void Call(global::Person.Ef.PersonEntity person) { Callback?.Invoke(person); }
+				public override bool Matches(global::Person.Dal.PersonEntity person) => _predicate(person);
+				public override void Call(global::Person.Dal.PersonEntity person) { Callback?.Invoke(person); }
 				public override bool IsTerminal => false;
 			}
 
 			/// <summary>Matcher that always matches and invokes a callback. Terminal.</summary>
 			private sealed class VoidWhenMatcherCall : VoidWhenMatcher
 			{
-				private readonly global::System.Action<global::Person.Ef.PersonEntity> _callback;
+				private readonly global::System.Action<global::Person.Dal.PersonEntity> _callback;
 
-				public VoidWhenMatcherCall(global::System.Action<global::Person.Ef.PersonEntity> callback) => _callback = callback;
+				public VoidWhenMatcherCall(global::System.Action<global::Person.Dal.PersonEntity> callback) => _callback = callback;
 
-				public override bool Matches(global::Person.Ef.PersonEntity person) => true;
-				public override void Call(global::Person.Ef.PersonEntity person) => _callback(person);
+				public override bool Matches(global::Person.Dal.PersonEntity person) => true;
+				public override void Call(global::Person.Dal.PersonEntity person) => _callback(person);
 				public override bool IsTerminal => true;
 			}
 
 			/// <summary>Matcher that never matches. Used to close chain without fallback. Terminal.</summary>
 			private sealed class VoidWhenMatcherNone : VoidWhenMatcher
 			{
-				public override bool Matches(global::Person.Ef.PersonEntity person) => false;
-				public override void Call(global::Person.Ef.PersonEntity person) { }
+				public override bool Matches(global::Person.Dal.PersonEntity person) => false;
+				public override void Call(global::Person.Dal.PersonEntity person) { }
 				public override bool IsTerminal => true;
 			}
 
 			/// <summary>Void When chain implementation with Call, ThenWhen, ThenCall, ThenNone, verification support.</summary>
-			public sealed class VoidWhenChain : global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Ef.PersonEntity>>
+			public sealed class VoidWhenChain : global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Dal.PersonEntity>>
 			{
 				private readonly IPersonDbContext_DeletePersonInterceptor _interceptor;
 				private readonly VoidWhenMatcher _currentMatcher;
@@ -3181,16 +2587,16 @@ partial class PersonTests
 				}
 
 				/// <summary>Sets an optional callback to invoke when this matcher matches.</summary>
-				public VoidWhenChain Call(global::System.Action<global::Person.Ef.PersonEntity> callback)
+				public VoidWhenChain Call(global::System.Action<global::Person.Dal.PersonEntity> callback)
 				{
 					_currentMatcher.Callback = callback;
 					return this;
 				}
 
-				global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Ef.PersonEntity>> global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Ef.PersonEntity>>.Call(global::System.Action<global::Person.Ef.PersonEntity> callback) => Call(callback);
+				global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Dal.PersonEntity>> global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Dal.PersonEntity>>.Call(global::System.Action<global::Person.Dal.PersonEntity> callback) => Call(callback);
 
 				/// <summary>Adds another matcher with exact value matching.</summary>
-				public VoidWhenChain ThenWhen(global::Person.Ef.PersonEntity person)
+				public VoidWhenChain ThenWhen(global::Person.Dal.PersonEntity person)
 				{
 					_interceptor._whenChain ??= new global::System.Collections.Generic.List<VoidWhenMatcher>();
 					var matcher = new VoidWhenMatcherPredicate((_arg0) => global::System.Object.Equals(_arg0, person));
@@ -3199,7 +2605,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Adds another matcher with predicate matching.</summary>
-				public VoidWhenChain ThenWhen(global::System.Func<global::Person.Ef.PersonEntity, bool> predicate)
+				public VoidWhenChain ThenWhen(global::System.Func<global::Person.Dal.PersonEntity, bool> predicate)
 				{
 					_interceptor._whenChain ??= new global::System.Collections.Generic.List<VoidWhenMatcher>();
 					var matcher = new VoidWhenMatcherPredicate(predicate);
@@ -3208,7 +2614,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
-				public global::KnockOff.IWhenTracking ThenCall(global::System.Action<global::Person.Ef.PersonEntity> callback)
+				public global::KnockOff.IWhenTracking ThenCall(global::System.Action<global::Person.Dal.PersonEntity> callback)
 				{
 					_interceptor._whenChain ??= new global::System.Collections.Generic.List<VoidWhenMatcher>();
 					_interceptor._whenChain.Add(new VoidWhenMatcherCall(callback));
@@ -3263,7 +2669,7 @@ partial class PersonTests
 					return this;
 				}
 
-				global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Ef.PersonEntity>> global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Ef.PersonEntity>>.Verifiable() => Verifiable();
+				global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Dal.PersonEntity>> global::KnockOff.IVoidWhenChain<global::System.Action<global::Person.Dal.PersonEntity>>.Verifiable() => Verifiable();
 				global::KnockOff.IWhenTracking global::KnockOff.IWhenTracking.Verifiable() => Verifiable();
 			}
 
@@ -3273,7 +2679,7 @@ partial class PersonTests
 		public sealed class IPersonDbContext_SaveChangesAsyncInterceptor
 		{
 			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Person.Ef.IPersonDbContext? _source;
+			internal global::Person.Dal.IPersonDbContext? _source;
 
 			/// <summary>Delegate for SaveChangesAsync.</summary>
 			public delegate global::System.Threading.Tasks.Task<int> SaveChangesAsyncDelegate(global::System.Threading.CancellationToken cancellationToken);
@@ -3907,15 +3313,647 @@ partial class PersonTests
 
 		}
 
-		/// <summary>Stub implementation of global::Person.Ef.IPersonDbContext.</summary>
-		public class IPersonDbContext : global::Person.Ef.IPersonDbContext, global::KnockOff.IKnockOffStub
+		/// <summary>Tracks and configures behavior for PersonNameExists.</summary>
+		public sealed class IPersonDbContext_PersonNameExistsInterceptor
 		{
-			/// <summary>Interceptor for Persons.</summary>
-			public IPersonDbContext_PersonsInterceptor Persons { get; } = new();
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::Person.Dal.IPersonDbContext? _source;
 
-			/// <summary>Interceptor for PersonPhones.</summary>
-			public IPersonDbContext_PersonPhonesInterceptor PersonPhones { get; } = new();
+			/// <summary>Delegate for PersonNameExists.</summary>
+			public delegate global::System.Threading.Tasks.Task<bool> PersonNameExistsDelegate(global::System.Guid? excludeId, string firstName, string lastName);
 
+			private PersonNameExistsDelegate? _call;
+			private MethodCallBuilderImpl? _callTracking;
+
+			private bool _returnValue = default!;
+			private bool _hasReturnValue;
+			private MethodCallBuilderImpl? _returnValueTracking;
+
+			private global::System.Func<global::System.Guid?, string, string, bool>? _callSimplified;
+			private MethodCallBuilderImpl? _callSimplifiedTracking;
+
+			private global::System.Collections.Generic.List<(PersonNameExistsDelegate Callback, MethodCallBuilderImpl Tracking)>? _sequence;
+			private int _sequenceIndex;
+			private bool _repeatLastValue = true;
+
+			private global::System.Collections.Generic.List<WhenMatcher>? _whenChain;
+			private int _whenChainHead;
+			private bool _whenVerifiable;
+
+			private bool _isVerifiable;
+			private global::KnockOff.Called? _verifiableTimes;
+
+			private int _unconfiguredCallCount;
+			/// <summary>Count of calls that were not handled by any configured behavior (used for class stub base fallback).</summary>
+			internal int UnconfiguredCallCount => _unconfiguredCallCount;
+
+			private (global::System.Guid? excludeId, string firstName, string lastName)? _unconfiguredLastArgs;
+
+			private int TotalCallCount { get { var sum = _unconfiguredCallCount + (_callTracking?._callCount ?? 0) + (_returnValueTracking?._callCount ?? 0) + (_callSimplifiedTracking?._callCount ?? 0); if (_sequence != null) foreach (var s in _sequence) sum += s.Tracking._callCount; if (_whenChain != null) foreach (var m in _whenChain) sum += m.CallCount; return sum; } }
+
+			/// <summary>The arguments from the last call (from most recently called registration).</summary>
+			public (global::System.Guid? excludeId, string firstName, string lastName)? LastArgs { get { if ((_returnValueTracking?._callCount ?? 0) > 0) return _returnValueTracking!.LastArgs; if ((_callSimplifiedTracking?._callCount ?? 0) > 0) return _callSimplifiedTracking!.LastArgs; if ((_callTracking?._callCount ?? 0) > 0) return _callTracking!.LastArgs; if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0) return _sequence[i].Tracking.LastArgs; return _unconfiguredCallCount > 0 ? _unconfiguredLastArgs : default; } }
+
+
+			/// <summary>Verifies method was called at least once. Throws VerificationException if not.</summary>
+			public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
+
+			/// <summary>Verifies call count satisfies the Called constraint. Throws VerificationException if not.</summary>
+			public void Verify(global::KnockOff.Called times)
+			{
+				if (!times.Validate(TotalCallCount))
+					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("PersonNameExists", times, TotalCallCount));
+			}
+
+			/// <summary>Marks for verification by Stub.Verify().</summary>
+			public void Verifiable()
+			{
+				_isVerifiable = true;
+				_verifiableTimes = null;
+			}
+
+			/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+			public void Verifiable(global::KnockOff.Called times)
+			{
+				_isVerifiable = true;
+				_verifiableTimes = times;
+			}
+
+			/// <summary>Configures callback that repeats indefinitely. Returns builder for sequence chaining.</summary>
+			public MethodCallBuilderImpl Return(PersonNameExistsDelegate callback)
+			{
+				_sequence = null;
+				_sequenceIndex = 0;
+				_isVerifiable = false;
+				_verifiableTimes = null;
+				_hasReturnValue = false;
+				_returnValue = default!;
+				_returnValueTracking = null;
+				_callSimplified = null;
+				_callSimplifiedTracking = null;
+				_call = callback;
+				_callTracking = new MethodCallBuilderImpl(this);
+				return _callTracking;
+			}
+
+			/// <summary>Configures return value that repeats indefinitely. Return builder for sequence chaining.</summary>
+			public MethodCallBuilderImpl Return(bool value)
+			{
+				_sequence = null;
+				_sequenceIndex = 0;
+				_isVerifiable = false;
+				_verifiableTimes = null;
+				_call = null;
+				_callTracking = null;
+				_callSimplified = null;
+				_callSimplifiedTracking = null;
+				_hasReturnValue = true;
+				_returnValue = value;
+				_returnValueTracking = new MethodCallBuilderImpl(this);
+				return _returnValueTracking;
+			}
+
+			/// <summary>Configures sequence of return values. Each value returned once, last repeats.</summary>
+			public MethodSequenceImpl Return(bool first, params bool[] rest)
+			{
+				var builder = Return((_, _, _) => global::System.Threading.Tasks.Task.FromResult(first));
+				if (rest.Length == 0)
+				{
+					return builder.ThenReturn(first);
+				}
+				var seq = builder.ThenReturn(rest[0]);
+				for (int i = 1; i < rest.Length; i++)
+				{
+					seq = seq.ThenReturn(rest[i]);
+				}
+				return seq;
+			}
+
+			/// <summary>Configures callback returning unwrapped value. Result auto-wrapped in Task.FromResult.</summary>
+			public MethodCallBuilderImpl Return(global::System.Func<global::System.Guid?, string, string, bool> callback)
+			{
+				_sequence = null;
+				_sequenceIndex = 0;
+				_isVerifiable = false;
+				_verifiableTimes = null;
+				_hasReturnValue = false;
+				_returnValue = default!;
+				_returnValueTracking = null;
+				_call = null;
+				_callTracking = null;
+				_callSimplified = callback;
+				_callSimplifiedTracking = new MethodCallBuilderImpl(this);
+				return _callSimplifiedTracking;
+			}
+
+			/// <summary>Configures parameter-specific matching with exact values. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Guid? excludeId, string firstName, string lastName)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcher>();
+				return new WhenBuilder(this, (_arg0, _arg1, _arg2) => global::System.Object.Equals(_arg0, excludeId) && global::System.Object.Equals(_arg1, firstName) && global::System.Object.Equals(_arg2, lastName));
+			}
+
+			/// <summary>Configures parameter-specific matching with predicate. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Func<global::System.Guid?, string, string, bool> predicate)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcher>();
+				return new WhenBuilder(this, predicate);
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal global::System.Threading.Tasks.Task<bool> Invoke(bool strict, global::System.Guid? excludeId, string firstName, string lastName)
+			{
+				// When chain - check HEAD matcher first (highest priority)
+				if (_whenChain != null && _whenChainHead < _whenChain.Count)
+				{
+					var matcher = _whenChain[_whenChainHead];
+					if (matcher.Matches(excludeId, firstName, lastName))
+					{
+						matcher.CallCount++;
+
+						// Advance HEAD unless at last matcher (which repeats)
+						if (_whenChainHead < _whenChain.Count - 1)
+						{
+							_whenChainHead++;
+						}
+						// At last matcher: never advance (repeat behavior for both ThenWhen and ThenCall)
+
+						return matcher.Call(excludeId, firstName, lastName);
+					}
+					else if (matcher.IsTerminal)
+					{
+						// ThenNone: didn't match (always false), exhaust by advancing past it
+						_whenChainHead++;
+					}
+					// Non-terminal didn't match: fall through to rest of priority chain
+				}
+
+				if (_sequence != null && _sequenceIndex < _sequence.Count)
+				{
+					var (callback, tracking) = _sequence[_sequenceIndex];
+					tracking.RecordCall((excludeId, firstName, lastName));
+					_sequenceIndex++;
+					return callback(excludeId, firstName, lastName);
+				}
+
+				if (_hasReturnValue && _returnValueTracking != null)
+				{
+					_returnValueTracking.RecordCall((excludeId, firstName, lastName));
+					return global::System.Threading.Tasks.Task.FromResult(_returnValue);
+				}
+
+				if (_call != null && _callTracking != null)
+				{
+					_callTracking.RecordCall((excludeId, firstName, lastName));
+					return _call(excludeId, firstName, lastName);
+				}
+
+				if (_callSimplified != null && _callSimplifiedTracking != null)
+				{
+					_callSimplifiedTracking.RecordCall((excludeId, firstName, lastName));
+					return global::System.Threading.Tasks.Task.FromResult(_callSimplified(excludeId, firstName, lastName));
+				}
+
+				_unconfiguredCallCount++;
+				_unconfiguredLastArgs = ((excludeId, firstName, lastName));
+				if (_sequence != null && _sequenceIndex >= _sequence.Count)
+				{
+					if (strict) throw global::KnockOff.StubException.SequenceExhausted("PersonNameExists");
+					if (_repeatLastValue && _sequence.Count > 0)
+					{
+						var (callback, tracking) = _sequence[_sequence.Count - 1];
+						tracking.RecordCall((excludeId, firstName, lastName));
+						return callback(excludeId, firstName, lastName);
+					}
+					return global::System.Threading.Tasks.Task.FromResult<bool>(default!);
+				}
+
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) return src.PersonNameExists(excludeId, firstName, lastName);
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "PersonNameExists");
+				return global::System.Threading.Tasks.Task.FromResult<bool>(default!);
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public void Reset()
+			{
+				_unconfiguredCallCount = 0;
+				_unconfiguredLastArgs = default;
+				_source = null;
+				_callTracking?.Reset();
+				_returnValueTracking?.Reset();
+				_callSimplifiedTracking?.Reset();
+				if (_sequence != null)
+				{
+					foreach (var (_, tracking) in _sequence)
+						tracking.Reset();
+				}
+				_sequenceIndex = 0;
+				_whenChainHead = 0;
+				if (_whenChain != null)
+				{
+					foreach (var matcher in _whenChain)
+						matcher.CallCount = 0;
+				}
+			}
+
+			/// <summary>Whether this interceptor was marked with Verifiable().</summary>
+			internal bool IsVerifiable => _isVerifiable;
+
+			/// <summary>Whether this interceptor has been configured (Return, Call, Return(value), or When).</summary>
+			internal bool IsConfigured => _hasReturnValue || _call != null || (_sequence?.Count ?? 0) > 0 || _callSimplified != null || (_whenChain?.Count ?? 0) > 0;
+
+			/// <summary>Checks verification for Stub.Verify() - only checks if marked verifiable.</summary>
+			internal global::KnockOff.VerificationFailure? CheckVerification()
+			{
+				if (!_isVerifiable && !_whenVerifiable) return null;
+				if (_isVerifiable)
+				{
+					var times = _verifiableTimes ?? global::KnockOff.Called.AtLeastOnce;
+					if (!times.Validate(TotalCallCount)) return new global::KnockOff.VerificationFailure("PersonNameExists", times, TotalCallCount);
+				}
+				if (_whenVerifiable && _whenChain != null && _whenChain.Count > 0)
+				{
+					var head = _whenChainHead;
+					var count = _whenChain.Count;
+					// Chain must be fully consumed (HEAD at end or at terminal matcher)
+					if (head < count && !_whenChain[head].IsTerminal && _whenChain[head].CallCount == 0)
+						return global::KnockOff.VerificationFailure.SequenceIncomplete("PersonNameExists When chain", count, head);
+				}
+				return null;
+			}
+
+			/// <summary>Checks verification for Stub.VerifyAll() - checks if configured.</summary>
+			internal global::KnockOff.VerificationFailure? CheckVerificationAll()
+			{
+				if (!IsConfigured) return null;
+				if (!global::KnockOff.Called.AtLeastOnce.Validate(TotalCallCount))
+					return new global::KnockOff.VerificationFailure("PersonNameExists", global::KnockOff.Called.AtLeastOnce, TotalCallCount);
+				if (_whenChain != null && _whenChain.Count > 0)
+				{
+					var head = _whenChainHead;
+					var count = _whenChain.Count;
+					// Chain must be fully consumed (HEAD at end or at terminal matcher)
+					if (head < count && !_whenChain[head].IsTerminal && _whenChain[head].CallCount == 0)
+						return global::KnockOff.VerificationFailure.SequenceIncomplete("PersonNameExists When chain", count, head);
+				}
+				return null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class MethodCallBuilderImpl : global::KnockOff.IMethodReturnBuilderArgs<PersonNameExistsDelegate, (global::System.Guid? excludeId, string firstName, string lastName)>
+			{
+				private readonly IPersonDbContext_PersonNameExistsInterceptor _interceptor;
+
+				public MethodCallBuilderImpl(IPersonDbContext_PersonNameExistsInterceptor interceptor) => _interceptor = interceptor;
+
+				private (global::System.Guid? excludeId, string firstName, string lastName) _lastArgs;
+
+				internal int _callCount;
+
+				/// <summary>Last arguments passed to this callback. Default if never called.</summary>
+				public (global::System.Guid? excludeId, string firstName, string lastName) LastArgs => _lastArgs;
+
+				/// <summary>Records a call to this callback.</summary>
+				public void RecordCall((global::System.Guid? excludeId, string firstName, string lastName) args) { _callCount++; _lastArgs = args; }
+
+				/// <summary>Resets tracking state.</summary>
+				public void Reset() { _callCount = 0; _lastArgs = default; }
+
+				/// <summary>Verifies callback was invoked at least once. Throws VerificationException if not.</summary>
+				public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
+
+				/// <summary>Verifies call count satisfies the Called constraint. Throws VerificationException if not.</summary>
+				public void Verify(global::KnockOff.Called times)
+				{
+					if (!times.Validate(_callCount))
+						throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("method", times, _callCount));
+				}
+
+				/// <summary>Elevates to sequence mode and adds another callback. Return sequence for further chaining.</summary>
+				public MethodSequenceImpl ThenReturn(PersonNameExistsDelegate callback)
+				{
+					if (_interceptor._sequence == null)
+					{
+						_interceptor._sequence = new global::System.Collections.Generic.List<(PersonNameExistsDelegate Callback, MethodCallBuilderImpl Tracking)>();
+						if (_interceptor._call != null)
+						{
+							_interceptor._sequence.Add((_interceptor._call, this));
+						}
+						else if (_interceptor._hasReturnValue)
+						{
+							var capturedValue = _interceptor._returnValue;
+							_interceptor._sequence.Add(((_, _, _) => global::System.Threading.Tasks.Task.FromResult(capturedValue), this));
+							_interceptor._hasReturnValue = false;
+							_interceptor._returnValue = default!;
+							_interceptor._returnValueTracking = null;
+						}
+						else if (_interceptor._callSimplified != null)
+						{
+							var captured = _interceptor._callSimplified;
+							_interceptor._sequence.Add(((excludeId, firstName, lastName) => global::System.Threading.Tasks.Task.FromResult(captured(excludeId, firstName, lastName)), this));
+							_interceptor._callSimplified = null;
+							_interceptor._callSimplifiedTracking = null;
+						}
+						_interceptor._call = null;
+						_interceptor._callTracking = null;
+						_interceptor._sequenceIndex = 0;
+					}
+					var nextBuilder = new MethodCallBuilderImpl(_interceptor);
+					_interceptor._sequence.Add((callback, nextBuilder));
+					return new MethodSequenceImpl(_interceptor);
+				}
+
+				/// <summary>Elevates to sequence mode and adds a value. Return sequence for further chaining.</summary>
+				public MethodSequenceImpl ThenReturn(bool value) => ThenReturn((_, _, _) => global::System.Threading.Tasks.Task.FromResult(value));
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public MethodSequenceImpl ThenReturn(params bool[] values)
+				{
+					if (values.Length == 0)
+					{
+						if (_interceptor._sequence == null)
+						{
+							_interceptor._sequence = new global::System.Collections.Generic.List<(PersonNameExistsDelegate Callback, MethodCallBuilderImpl Tracking)>();
+							if (_interceptor._call != null)
+							{
+								_interceptor._sequence.Add((_interceptor._call, this));
+							}
+							else if (_interceptor._hasReturnValue)
+							{
+								var capturedValue = _interceptor._returnValue;
+								_interceptor._sequence.Add(((_, _, _) => global::System.Threading.Tasks.Task.FromResult(capturedValue), this));
+								_interceptor._hasReturnValue = false;
+								_interceptor._returnValue = default!;
+								_interceptor._returnValueTracking = null;
+							}
+							else if (_interceptor._callSimplified != null)
+							{
+								var captured = _interceptor._callSimplified;
+								_interceptor._sequence.Add(((excludeId, firstName, lastName) => global::System.Threading.Tasks.Task.FromResult(captured(excludeId, firstName, lastName)), this));
+								_interceptor._callSimplified = null;
+								_interceptor._callSimplifiedTracking = null;
+							}
+							_interceptor._call = null;
+							_interceptor._callTracking = null;
+							_interceptor._sequenceIndex = 0;
+						}
+						return new MethodSequenceImpl(_interceptor);
+					}
+					var seq = ThenReturn(values[0]);
+					for (int i = 1; i < values.Length; i++)
+					{
+						seq = seq.ThenReturn(values[i]);
+					}
+					return seq;
+				}
+
+				/// <summary>Elevates to sequence mode with simplified callback. Result auto-wrapped in Task.FromResult.</summary>
+				public MethodSequenceImpl ThenReturn(global::System.Func<global::System.Guid?, string, string, bool> callback) => ThenReturn((excludeId, firstName, lastName) => global::System.Threading.Tasks.Task.FromResult(callback(excludeId, firstName, lastName)));
+
+				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
+				public global::KnockOff.IMethodReturnBuilderArgs<PersonNameExistsDelegate, (global::System.Guid? excludeId, string firstName, string lastName)> Verifiable()
+				{
+					_interceptor._isVerifiable = true;
+					_interceptor._verifiableTimes = null;
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
+				public global::KnockOff.IMethodReturnBuilderArgs<PersonNameExistsDelegate, (global::System.Guid? excludeId, string firstName, string lastName)> Verifiable(global::KnockOff.Called times)
+				{
+					_interceptor._isVerifiable = true;
+					_interceptor._verifiableTimes = times;
+					return this;
+				}
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodTrackingArgs<(global::System.Guid? excludeId, string firstName, string lastName)> global::KnockOff.IMethodTrackingArgs<(global::System.Guid? excludeId, string firstName, string lastName)>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTrackingArgs<(global::System.Guid? excludeId, string firstName, string lastName)> global::KnockOff.IMethodTrackingArgs<(global::System.Guid? excludeId, string firstName, string lastName)>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<PersonNameExistsDelegate> global::KnockOff.IMethodReturnBuilderArgs<PersonNameExistsDelegate, (global::System.Guid? excludeId, string firstName, string lastName)>.ThenReturn(PersonNameExistsDelegate callback) => ThenReturn(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
+			public sealed class MethodSequenceImpl : global::KnockOff.IMethodReturnSequence<PersonNameExistsDelegate>
+			{
+				private readonly IPersonDbContext_PersonNameExistsInterceptor _interceptor;
+
+				public MethodSequenceImpl(IPersonDbContext_PersonNameExistsInterceptor interceptor) => _interceptor = interceptor;
+
+				private int TotalCallCount
+				{
+					get
+					{
+						if (_interceptor._sequence == null) return 0;
+						var total = 0;
+						foreach (var (_, tracking) in _interceptor._sequence)
+							total += tracking._callCount;
+						return total;
+					}
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public MethodSequenceImpl ThenReturn(PersonNameExistsDelegate callback)
+				{
+					var tracking = new MethodCallBuilderImpl(_interceptor);
+					_interceptor._sequence!.Add((callback, tracking));
+					return this;
+				}
+
+				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
+				public MethodSequenceImpl ThenReturn(bool value) => ThenReturn((_, _, _) => global::System.Threading.Tasks.Task.FromResult(value));
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public MethodSequenceImpl ThenReturn(params bool[] values)
+				{
+					foreach (var value in values)
+					{
+						ThenReturn(value);
+					}
+					return this;
+				}
+
+				/// <summary>Adds simplified callback to the sequence. Result auto-wrapped in Task.FromResult.</summary>
+				public MethodSequenceImpl ThenReturn(global::System.Func<global::System.Guid?, string, string, bool> callback) => ThenReturn((excludeId, firstName, lastName) => global::System.Threading.Tasks.Task.FromResult(callback(excludeId, firstName, lastName)));
+
+				/// <summary>Verifies the entire sequence was executed (all callbacks invoked). Throws VerificationException if incomplete.</summary>
+				public void Verify()
+				{
+					if (_interceptor._sequence == null) return;
+					var sequenceLength = _interceptor._sequence.Count;
+					var completedCount = _interceptor._sequenceIndex;
+					if (completedCount < sequenceLength)
+						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("method", sequenceLength, completedCount));
+				}
+
+				/// <summary>Resets all tracking in the sequence.</summary>
+				public void Reset() => _interceptor.Reset();
+
+				/// <summary>Marks this sequence for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
+				public MethodSequenceImpl Verifiable()
+				{
+					_interceptor._isVerifiable = true;
+					_interceptor._verifiableTimes = null;
+					return this;
+				}
+
+				/// <summary>Terminates sequence with default(T) after exhaustion instead of repeating last value.</summary>
+				public void ThenDefault()
+				{
+					_interceptor._repeatLastValue = false;
+				}
+
+				global::KnockOff.IMethodReturnSequence<PersonNameExistsDelegate> global::KnockOff.IMethodReturnSequence<PersonNameExistsDelegate>.ThenReturn(PersonNameExistsDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<PersonNameExistsDelegate> global::KnockOff.IMethodReturnSequence<PersonNameExistsDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+			/// <summary>Abstract base for When chain matchers.</summary>
+			private abstract class WhenMatcher
+			{
+				public abstract bool Matches(global::System.Guid? excludeId, string firstName, string lastName);
+				public abstract global::System.Threading.Tasks.Task<bool> Call(global::System.Guid? excludeId, string firstName, string lastName);
+				public abstract bool IsTerminal { get; }
+				public int CallCount { get; set; }
+			}
+
+			/// <summary>Matcher that uses a predicate and returns a stored value.</summary>
+			private sealed class WhenMatcherValue : WhenMatcher
+			{
+				private readonly global::System.Func<global::System.Guid?, string, string, bool> _predicate;
+				private readonly global::System.Threading.Tasks.Task<bool> _value;
+
+				public WhenMatcherValue(global::System.Func<global::System.Guid?, string, string, bool> predicate, global::System.Threading.Tasks.Task<bool> value)
+				{
+					_predicate = predicate;
+					_value = value;
+				}
+
+				public override bool Matches(global::System.Guid? excludeId, string firstName, string lastName) => _predicate(excludeId, firstName, lastName);
+				public override global::System.Threading.Tasks.Task<bool> Call(global::System.Guid? excludeId, string firstName, string lastName) => _value;
+				public override bool IsTerminal => false;
+			}
+
+			/// <summary>Matcher that always matches and invokes a callback. Terminal.</summary>
+			private sealed class WhenMatcherCall : WhenMatcher
+			{
+				private readonly PersonNameExistsDelegate _callback;
+
+				public WhenMatcherCall(PersonNameExistsDelegate callback) => _callback = callback;
+
+				public override bool Matches(global::System.Guid? excludeId, string firstName, string lastName) => true;
+				public override global::System.Threading.Tasks.Task<bool> Call(global::System.Guid? excludeId, string firstName, string lastName) => _callback(excludeId, firstName, lastName);
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Matcher that never matches. Used to close chain without fallback. Terminal.</summary>
+			private sealed class WhenMatcherNone : WhenMatcher
+			{
+				public override bool Matches(global::System.Guid? excludeId, string firstName, string lastName) => false;
+				public override global::System.Threading.Tasks.Task<bool> Call(global::System.Guid? excludeId, string firstName, string lastName) => default!;
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
+			public sealed class WhenBuilder : global::KnockOff.IWhenBuilder<PersonNameExistsDelegate, global::System.Threading.Tasks.Task<bool>>
+			{
+				private readonly IPersonDbContext_PersonNameExistsInterceptor _interceptor;
+				private readonly global::System.Func<global::System.Guid?, string, string, bool> _predicate;
+
+				public WhenBuilder(IPersonDbContext_PersonNameExistsInterceptor interceptor, global::System.Func<global::System.Guid?, string, string, bool> predicate)
+				{
+					_interceptor = interceptor;
+					_predicate = predicate;
+				}
+
+				/// <summary>Configures the return value. Auto-wrapped in Task.FromResult.</summary>
+				public WhenChain Return(bool value)
+				{
+					_interceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcher>();
+					_interceptor._whenChain.Add(new WhenMatcherValue(_predicate, global::System.Threading.Tasks.Task.FromResult(value)));
+					return new WhenChain(_interceptor);
+				}
+
+				global::KnockOff.IWhenChain<PersonNameExistsDelegate, global::System.Threading.Tasks.Task<bool>> global::KnockOff.IWhenBuilder<PersonNameExistsDelegate, global::System.Threading.Tasks.Task<bool>>.Return(global::System.Threading.Tasks.Task<bool> value) => Return(value.Result);
+			}
+
+			/// <summary>When chain implementation with ThenCall, ThenNone, verification support.</summary>
+			public sealed class WhenChain : global::KnockOff.IWhenChain<PersonNameExistsDelegate, global::System.Threading.Tasks.Task<bool>>
+			{
+				private readonly IPersonDbContext_PersonNameExistsInterceptor _interceptor;
+
+				public WhenChain(IPersonDbContext_PersonNameExistsInterceptor interceptor) => _interceptor = interceptor;
+
+				/// <summary>Adds another matcher with exact value matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Guid? excludeId, string firstName, string lastName)
+				{
+					return new WhenBuilder(_interceptor, (_arg0, _arg1, _arg2) => global::System.Object.Equals(_arg0, excludeId) && global::System.Object.Equals(_arg1, firstName) && global::System.Object.Equals(_arg2, lastName));
+				}
+
+				/// <summary>Adds another matcher with predicate matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Func<global::System.Guid?, string, string, bool> predicate)
+				{
+					return new WhenBuilder(_interceptor, predicate);
+				}
+
+				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
+				public global::KnockOff.IWhenTracking ThenCall(PersonNameExistsDelegate callback)
+				{
+					_interceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcher>();
+					_interceptor._whenChain.Add(new WhenMatcherCall(callback));
+					return this;
+				}
+
+				/// <summary>Closes chain with no matcher. Falls through when exhausted.</summary>
+				public global::KnockOff.IWhenTracking ThenNone()
+				{
+					_interceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcher>();
+					_interceptor._whenChain.Add(new WhenMatcherNone());
+					return this;
+				}
+
+				/// <summary>Verifies the When chain was fully consumed (reached terminal state).</summary>
+				public void Verify()
+				{
+					if (_interceptor._whenChain == null || _interceptor._whenChain.Count == 0) return;
+					var head = _interceptor._whenChainHead;
+					var count = _interceptor._whenChain.Count;
+					// Chain is complete if HEAD reached a terminal matcher or exhausted
+					if (head < count && !_interceptor._whenChain[head].IsTerminal && _interceptor._whenChain[head].CallCount == 0)
+					{
+						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("When chain", count, head));
+					}
+				}
+
+				/// <summary>Resets When chain HEAD and all matcher call counts.</summary>
+				public void Reset()
+				{
+					_interceptor._whenChainHead = 0;
+					if (_interceptor._whenChain != null)
+					{
+						foreach (var matcher in _interceptor._whenChain)
+							matcher.CallCount = 0;
+					}
+				}
+
+				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
+				public WhenChain Verifiable()
+				{
+					_interceptor._whenVerifiable = true;
+					return this;
+				}
+
+				global::KnockOff.IWhenChain<PersonNameExistsDelegate, global::System.Threading.Tasks.Task<bool>> global::KnockOff.IWhenChain<PersonNameExistsDelegate, global::System.Threading.Tasks.Task<bool>>.Verifiable() => Verifiable();
+				global::KnockOff.IWhenTracking global::KnockOff.IWhenTracking.Verifiable() => Verifiable();
+			}
+
+		}
+
+		/// <summary>Stub implementation of global::Person.Dal.IPersonDbContext.</summary>
+		public class IPersonDbContext : global::Person.Dal.IPersonDbContext, global::KnockOff.IKnockOffStub
+		{
 			/// <summary>Interceptor for FindPerson.</summary>
 			public IPersonDbContext_FindPersonInterceptor FindPerson { get; } = new();
 
@@ -3931,48 +3969,46 @@ partial class PersonTests
 			/// <summary>Interceptor for SaveChangesAsync.</summary>
 			public IPersonDbContext_SaveChangesAsyncInterceptor SaveChangesAsync { get; } = new();
 
-			global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> global::Person.Ef.IPersonDbContext.FindPerson(global::System.Threading.CancellationToken cancellationToken)
+			/// <summary>Interceptor for PersonNameExists.</summary>
+			public IPersonDbContext_PersonNameExistsInterceptor PersonNameExists { get; } = new();
+
+			global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> global::Person.Dal.IPersonDbContext.FindPerson(global::System.Threading.CancellationToken cancellationToken)
 			{
-				return FindPerson.Invoke_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(Strict, cancellationToken);
+				return FindPerson.Invoke_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(Strict, cancellationToken);
 			}
 
-			global::System.Threading.Tasks.Task<global::Person.Ef.PersonEntity?> global::Person.Ef.IPersonDbContext.FindPerson(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)
+			global::System.Threading.Tasks.Task<global::Person.Dal.PersonEntity?> global::Person.Dal.IPersonDbContext.FindPerson(global::System.Guid? id, global::System.Threading.CancellationToken cancellationToken)
 			{
-				return FindPerson.Invoke_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Ef_PersonEntity(Strict, id, cancellationToken);
+				return FindPerson.Invoke_Guid_Threading_CancellationToken_Threading_Tasks_Task_Person_Dal_PersonEntity(Strict, id, cancellationToken);
 			}
 
-			void global::Person.Ef.IPersonDbContext.AddPerson(global::Person.Ef.PersonEntity personEntity)
+			void global::Person.Dal.IPersonDbContext.AddPerson(global::Person.Dal.PersonEntity personEntity)
 			{
 				AddPerson.Invoke(Strict, personEntity);
 			}
 
-			global::System.Threading.Tasks.Task global::Person.Ef.IPersonDbContext.DeleteAllPersons(global::System.Threading.CancellationToken cancellationToken)
+			global::System.Threading.Tasks.Task global::Person.Dal.IPersonDbContext.DeleteAllPersons(global::System.Threading.CancellationToken cancellationToken)
 			{
 				return DeleteAllPersons.Invoke(Strict, cancellationToken);
 			}
 
-			void global::Person.Ef.IPersonDbContext.DeletePerson(global::Person.Ef.PersonEntity person)
+			void global::Person.Dal.IPersonDbContext.DeletePerson(global::Person.Dal.PersonEntity person)
 			{
 				DeletePerson.Invoke(Strict, person);
 			}
 
-			global::System.Threading.Tasks.Task<int> global::Person.Ef.IPersonDbContext.SaveChangesAsync(global::System.Threading.CancellationToken cancellationToken)
+			global::System.Threading.Tasks.Task<int> global::Person.Dal.IPersonDbContext.SaveChangesAsync(global::System.Threading.CancellationToken cancellationToken)
 			{
 				return SaveChangesAsync.Invoke(Strict, cancellationToken);
 			}
 
-			global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonEntity> global::Person.Ef.IPersonDbContext.Persons
+			global::System.Threading.Tasks.Task<bool> global::Person.Dal.IPersonDbContext.PersonNameExists(global::System.Guid? excludeId, string firstName, string lastName)
 			{
-				get => Persons.InvokeGet(Strict);
+				return PersonNameExists.Invoke(Strict, excludeId, firstName, lastName);
 			}
 
-			global::Microsoft.EntityFrameworkCore.DbSet<global::Person.Ef.PersonPhoneEntity> global::Person.Ef.IPersonDbContext.PersonPhones
-			{
-				get => PersonPhones.InvokeGet(Strict);
-			}
-
-			/// <summary>The global::Person.Ef.IPersonDbContext instance. Use for passing to code expecting the interface.</summary>
-			public global::Person.Ef.IPersonDbContext Object => this;
+			/// <summary>The global::Person.Dal.IPersonDbContext instance. Use for passing to code expecting the interface.</summary>
+			public global::Person.Dal.IPersonDbContext Object => this;
 
 			/// <summary>When true, unconfigured method calls throw StubException instead of returning default.</summary>
 			public bool Strict { get; set; } = false;
@@ -3984,16 +4020,15 @@ partial class PersonTests
 				Strict = strict;
 			}
 
-			/// <summary>Sets the source object for global::Person.Ef.IPersonDbContext delegation.</summary>
-			public void Source(global::Person.Ef.IPersonDbContext? source)
+			/// <summary>Sets the source object for global::Person.Dal.IPersonDbContext delegation.</summary>
+			public void Source(global::Person.Dal.IPersonDbContext? source)
 			{
-				Persons._source = source;
-				PersonPhones._source = source;
 				FindPerson._source = source;
 				AddPerson._source = source;
 				DeleteAllPersons._source = source;
 				DeletePerson._source = source;
 				SaveChangesAsync._source = source;
+				PersonNameExists._source = source;
 			}
 
 			/// <summary>Verifies all members marked with .Verifiable() were invoked as expected. Throws VerificationException with all failures if any fail.</summary>
@@ -4001,13 +4036,12 @@ partial class PersonTests
 			{
 				var failures = new global::System.Collections.Generic.List<global::KnockOff.VerificationFailure>();
 
-				if (Persons.CheckVerification() is { } personsFailure) failures.Add(personsFailure);
-				if (PersonPhones.CheckVerification() is { } personphonesFailure) failures.Add(personphonesFailure);
 				if (FindPerson.CheckVerification() is { } findpersonFailure) failures.Add(findpersonFailure);
 				if (AddPerson.CheckVerification() is { } addpersonFailure) failures.Add(addpersonFailure);
 				if (DeleteAllPersons.CheckVerification() is { } deleteallpersonsFailure) failures.Add(deleteallpersonsFailure);
 				if (DeletePerson.CheckVerification() is { } deletepersonFailure) failures.Add(deletepersonFailure);
 				if (SaveChangesAsync.CheckVerification() is { } savechangesasyncFailure) failures.Add(savechangesasyncFailure);
+				if (PersonNameExists.CheckVerification() is { } personnameexistsFailure) failures.Add(personnameexistsFailure);
 
 				if (failures.Count > 0)
 					throw new global::KnockOff.VerificationException(failures);
@@ -4018,13 +4052,12 @@ partial class PersonTests
 			{
 				var failures = new global::System.Collections.Generic.List<global::KnockOff.VerificationFailure>();
 
-				if (Persons.CheckVerificationAll() is { } personsFailure) failures.Add(personsFailure);
-				if (PersonPhones.CheckVerificationAll() is { } personphonesFailure) failures.Add(personphonesFailure);
 				if (FindPerson.CheckVerificationAll() is { } findpersonFailure) failures.Add(findpersonFailure);
 				if (AddPerson.CheckVerificationAll() is { } addpersonFailure) failures.Add(addpersonFailure);
 				if (DeleteAllPersons.CheckVerificationAll() is { } deleteallpersonsFailure) failures.Add(deleteallpersonsFailure);
 				if (DeletePerson.CheckVerificationAll() is { } deletepersonFailure) failures.Add(deletepersonFailure);
 				if (SaveChangesAsync.CheckVerificationAll() is { } savechangesasyncFailure) failures.Add(savechangesasyncFailure);
+				if (PersonNameExists.CheckVerificationAll() is { } personnameexistsFailure) failures.Add(personnameexistsFailure);
 
 				if (failures.Count > 0)
 					throw new global::KnockOff.VerificationException(failures);
@@ -4039,7 +4072,7 @@ partial class PersonTests
 			internal global::DomainModel.IPersonPhoneListFactory? _source;
 
 			/// <summary>Delegate for Fetch.</summary>
-			public delegate global::DomainModel.IPersonPhoneList FetchDelegate(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
+			public delegate global::DomainModel.IPersonPhoneList FetchDelegate(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
 
 			private FetchDelegate? _call;
 			private MethodCallBuilderImpl? _callTracking;
@@ -4063,12 +4096,12 @@ partial class PersonTests
 			/// <summary>Count of calls that were not handled by any configured behavior (used for class stub base fallback).</summary>
 			internal int UnconfiguredCallCount => _unconfiguredCallCount;
 
-			private (global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)? _unconfiguredLastArgs;
+			private (global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)? _unconfiguredLastArgs;
 
 			private int TotalCallCount { get { var sum = _unconfiguredCallCount + (_callTracking?._callCount ?? 0) + (_returnValueTracking?._callCount ?? 0); if (_sequence != null) foreach (var s in _sequence) sum += s.Tracking._callCount; if (_whenChain != null) foreach (var m in _whenChain) sum += m.CallCount; return sum; } }
 
 			/// <summary>The arguments from the last call (from most recently called registration).</summary>
-			public (global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)? LastArgs { get { if ((_returnValueTracking?._callCount ?? 0) > 0) return _returnValueTracking!.LastArgs; if ((_callTracking?._callCount ?? 0) > 0) return _callTracking!.LastArgs; if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0) return _sequence[i].Tracking.LastArgs; return _unconfiguredCallCount > 0 ? _unconfiguredLastArgs : default; } }
+			public (global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)? LastArgs { get { if ((_returnValueTracking?._callCount ?? 0) > 0) return _returnValueTracking!.LastArgs; if ((_callTracking?._callCount ?? 0) > 0) return _callTracking!.LastArgs; if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0) return _sequence[i].Tracking.LastArgs; return _unconfiguredCallCount > 0 ? _unconfiguredLastArgs : default; } }
 
 
 			/// <summary>Verifies method was called at least once. Throws VerificationException if not.</summary>
@@ -4142,21 +4175,21 @@ partial class PersonTests
 			}
 
 			/// <summary>Configures parameter-specific matching with exact values. Returns builder for Return().</summary>
-			public WhenBuilder When(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
+			public WhenBuilder When(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
 			{
 				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcher>();
 				return new WhenBuilder(this, (_arg0, _arg1) => global::System.Object.Equals(_arg0, personPhoneEntities) && global::System.Object.Equals(_arg1, cancellationToken));
 			}
 
 			/// <summary>Configures parameter-specific matching with predicate. Returns builder for Return().</summary>
-			public WhenBuilder When(global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
+			public WhenBuilder When(global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
 			{
 				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcher>();
 				return new WhenBuilder(this, predicate);
 			}
 
 			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal global::DomainModel.IPersonPhoneList Invoke(bool strict, global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
+			internal global::DomainModel.IPersonPhoneList Invoke(bool strict, global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
 			{
 				// When chain - check HEAD matcher first (highest priority)
 				if (_whenChain != null && _whenChainHead < _whenChain.Count)
@@ -4290,21 +4323,21 @@ partial class PersonTests
 			}
 
 			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class MethodCallBuilderImpl : global::KnockOff.IMethodReturnBuilderArgs<FetchDelegate, (global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>
+			public sealed class MethodCallBuilderImpl : global::KnockOff.IMethodReturnBuilderArgs<FetchDelegate, (global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>
 			{
 				private readonly IPersonPhoneListFactory_FetchInterceptor _interceptor;
 
 				public MethodCallBuilderImpl(IPersonPhoneListFactory_FetchInterceptor interceptor) => _interceptor = interceptor;
 
-				private (global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) _lastArgs;
+				private (global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) _lastArgs;
 
 				internal int _callCount;
 
 				/// <summary>Last arguments passed to this callback. Default if never called.</summary>
-				public (global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) LastArgs => _lastArgs;
+				public (global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) LastArgs => _lastArgs;
 
 				/// <summary>Records a call to this callback.</summary>
-				public void RecordCall((global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) args) { _callCount++; _lastArgs = args; }
+				public void RecordCall((global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) args) { _callCount++; _lastArgs = args; }
 
 				/// <summary>Resets tracking state.</summary>
 				public void Reset() { _callCount = 0; _lastArgs = default; }
@@ -4384,7 +4417,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilderArgs<FetchDelegate, (global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> Verifiable()
+				public global::KnockOff.IMethodReturnBuilderArgs<FetchDelegate, (global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> Verifiable()
 				{
 					_interceptor._isVerifiable = true;
 					_interceptor._verifiableTimes = null;
@@ -4392,7 +4425,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Marks for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilderArgs<FetchDelegate, (global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> Verifiable(global::KnockOff.Called times)
+				public global::KnockOff.IMethodReturnBuilderArgs<FetchDelegate, (global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> Verifiable(global::KnockOff.Called times)
 				{
 					_interceptor._isVerifiable = true;
 					_interceptor._verifiableTimes = times;
@@ -4401,9 +4434,9 @@ partial class PersonTests
 
 				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
 				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodTrackingArgs<(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> global::KnockOff.IMethodTrackingArgs<(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTrackingArgs<(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> global::KnockOff.IMethodTrackingArgs<(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodReturnSequence<FetchDelegate> global::KnockOff.IMethodReturnBuilderArgs<FetchDelegate, (global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.ThenReturn(FetchDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodTrackingArgs<(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> global::KnockOff.IMethodTrackingArgs<(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTrackingArgs<(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> global::KnockOff.IMethodTrackingArgs<(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<FetchDelegate> global::KnockOff.IMethodReturnBuilderArgs<FetchDelegate, (global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.ThenReturn(FetchDelegate callback) => ThenReturn(callback);
 			}
 
 			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
@@ -4481,8 +4514,8 @@ partial class PersonTests
 			/// <summary>Abstract base for When chain matchers.</summary>
 			private abstract class WhenMatcher
 			{
-				public abstract bool Matches(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
-				public abstract global::DomainModel.IPersonPhoneList Call(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
+				public abstract bool Matches(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
+				public abstract global::DomainModel.IPersonPhoneList Call(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
 				public abstract bool IsTerminal { get; }
 				public int CallCount { get; set; }
 			}
@@ -4490,17 +4523,17 @@ partial class PersonTests
 			/// <summary>Matcher that uses a predicate and returns a stored value.</summary>
 			private sealed class WhenMatcherValue : WhenMatcher
 			{
-				private readonly global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> _predicate;
+				private readonly global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> _predicate;
 				private readonly global::DomainModel.IPersonPhoneList _value;
 
-				public WhenMatcherValue(global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate, global::DomainModel.IPersonPhoneList value)
+				public WhenMatcherValue(global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate, global::DomainModel.IPersonPhoneList value)
 				{
 					_predicate = predicate;
 					_value = value;
 				}
 
-				public override bool Matches(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _predicate(personPhoneEntities, cancellationToken);
-				public override global::DomainModel.IPersonPhoneList Call(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _value;
+				public override bool Matches(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _predicate(personPhoneEntities, cancellationToken);
+				public override global::DomainModel.IPersonPhoneList Call(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _value;
 				public override bool IsTerminal => false;
 			}
 
@@ -4511,16 +4544,16 @@ partial class PersonTests
 
 				public WhenMatcherCall(FetchDelegate callback) => _callback = callback;
 
-				public override bool Matches(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => true;
-				public override global::DomainModel.IPersonPhoneList Call(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _callback(personPhoneEntities, cancellationToken);
+				public override bool Matches(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => true;
+				public override global::DomainModel.IPersonPhoneList Call(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _callback(personPhoneEntities, cancellationToken);
 				public override bool IsTerminal => true;
 			}
 
 			/// <summary>Matcher that never matches. Used to close chain without fallback. Terminal.</summary>
 			private sealed class WhenMatcherNone : WhenMatcher
 			{
-				public override bool Matches(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => false;
-				public override global::DomainModel.IPersonPhoneList Call(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => default!;
+				public override bool Matches(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => false;
+				public override global::DomainModel.IPersonPhoneList Call(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => default!;
 				public override bool IsTerminal => true;
 			}
 
@@ -4528,9 +4561,9 @@ partial class PersonTests
 			public sealed class WhenBuilder : global::KnockOff.IWhenBuilder<FetchDelegate, global::DomainModel.IPersonPhoneList>
 			{
 				private readonly IPersonPhoneListFactory_FetchInterceptor _interceptor;
-				private readonly global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> _predicate;
+				private readonly global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> _predicate;
 
-				public WhenBuilder(IPersonPhoneListFactory_FetchInterceptor interceptor, global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
+				public WhenBuilder(IPersonPhoneListFactory_FetchInterceptor interceptor, global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
 				{
 					_interceptor = interceptor;
 					_predicate = predicate;
@@ -4554,13 +4587,13 @@ partial class PersonTests
 				public WhenChain(IPersonPhoneListFactory_FetchInterceptor interceptor) => _interceptor = interceptor;
 
 				/// <summary>Adds another matcher with exact value matching.</summary>
-				public WhenBuilder ThenWhen(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
+				public WhenBuilder ThenWhen(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
 				{
 					return new WhenBuilder(_interceptor, (_arg0, _arg1) => global::System.Object.Equals(_arg0, personPhoneEntities) && global::System.Object.Equals(_arg1, cancellationToken));
 				}
 
 				/// <summary>Adds another matcher with predicate matching.</summary>
-				public WhenBuilder ThenWhen(global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
+				public WhenBuilder ThenWhen(global::System.Func<global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
 				{
 					return new WhenBuilder(_interceptor, predicate);
 				}
@@ -4625,7 +4658,7 @@ partial class PersonTests
 			internal global::DomainModel.IPersonPhoneListFactory? _source;
 
 			/// <summary>Delegate for Save.</summary>
-			public delegate global::DomainModel.IPersonPhoneList SaveDelegate(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
+			public delegate global::DomainModel.IPersonPhoneList SaveDelegate(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
 
 			private SaveDelegate? _call;
 			private MethodCallBuilderImpl? _callTracking;
@@ -4649,12 +4682,12 @@ partial class PersonTests
 			/// <summary>Count of calls that were not handled by any configured behavior (used for class stub base fallback).</summary>
 			internal int UnconfiguredCallCount => _unconfiguredCallCount;
 
-			private (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)? _unconfiguredLastArgs;
+			private (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)? _unconfiguredLastArgs;
 
 			private int TotalCallCount { get { var sum = _unconfiguredCallCount + (_callTracking?._callCount ?? 0) + (_returnValueTracking?._callCount ?? 0); if (_sequence != null) foreach (var s in _sequence) sum += s.Tracking._callCount; if (_whenChain != null) foreach (var m in _whenChain) sum += m.CallCount; return sum; } }
 
 			/// <summary>The arguments from the last call (from most recently called registration).</summary>
-			public (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)? LastArgs { get { if ((_returnValueTracking?._callCount ?? 0) > 0) return _returnValueTracking!.LastArgs; if ((_callTracking?._callCount ?? 0) > 0) return _callTracking!.LastArgs; if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0) return _sequence[i].Tracking.LastArgs; return _unconfiguredCallCount > 0 ? _unconfiguredLastArgs : default; } }
+			public (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)? LastArgs { get { if ((_returnValueTracking?._callCount ?? 0) > 0) return _returnValueTracking!.LastArgs; if ((_callTracking?._callCount ?? 0) > 0) return _callTracking!.LastArgs; if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0) return _sequence[i].Tracking.LastArgs; return _unconfiguredCallCount > 0 ? _unconfiguredLastArgs : default; } }
 
 
 			/// <summary>Verifies method was called at least once. Throws VerificationException if not.</summary>
@@ -4728,21 +4761,21 @@ partial class PersonTests
 			}
 
 			/// <summary>Configures parameter-specific matching with exact values. Returns builder for Return().</summary>
-			public WhenBuilder When(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
+			public WhenBuilder When(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
 			{
 				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcher>();
 				return new WhenBuilder(this, (_arg0, _arg1, _arg2) => global::System.Object.Equals(_arg0, target) && global::System.Object.Equals(_arg1, personPhoneEntities) && global::System.Object.Equals(_arg2, cancellationToken));
 			}
 
 			/// <summary>Configures parameter-specific matching with predicate. Returns builder for Return().</summary>
-			public WhenBuilder When(global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
+			public WhenBuilder When(global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
 			{
 				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcher>();
 				return new WhenBuilder(this, predicate);
 			}
 
 			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal global::DomainModel.IPersonPhoneList Invoke(bool strict, global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
+			internal global::DomainModel.IPersonPhoneList Invoke(bool strict, global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
 			{
 				// When chain - check HEAD matcher first (highest priority)
 				if (_whenChain != null && _whenChainHead < _whenChain.Count)
@@ -4876,21 +4909,21 @@ partial class PersonTests
 			}
 
 			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class MethodCallBuilderImpl : global::KnockOff.IMethodReturnBuilderArgs<SaveDelegate, (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>
+			public sealed class MethodCallBuilderImpl : global::KnockOff.IMethodReturnBuilderArgs<SaveDelegate, (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>
 			{
 				private readonly IPersonPhoneListFactory_SaveInterceptor _interceptor;
 
 				public MethodCallBuilderImpl(IPersonPhoneListFactory_SaveInterceptor interceptor) => _interceptor = interceptor;
 
-				private (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) _lastArgs;
+				private (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) _lastArgs;
 
 				internal int _callCount;
 
 				/// <summary>Last arguments passed to this callback. Default if never called.</summary>
-				public (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) LastArgs => _lastArgs;
+				public (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) LastArgs => _lastArgs;
 
 				/// <summary>Records a call to this callback.</summary>
-				public void RecordCall((global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) args) { _callCount++; _lastArgs = args; }
+				public void RecordCall((global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) args) { _callCount++; _lastArgs = args; }
 
 				/// <summary>Resets tracking state.</summary>
 				public void Reset() { _callCount = 0; _lastArgs = default; }
@@ -4970,7 +5003,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilderArgs<SaveDelegate, (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> Verifiable()
+				public global::KnockOff.IMethodReturnBuilderArgs<SaveDelegate, (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> Verifiable()
 				{
 					_interceptor._isVerifiable = true;
 					_interceptor._verifiableTimes = null;
@@ -4978,7 +5011,7 @@ partial class PersonTests
 				}
 
 				/// <summary>Marks for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilderArgs<SaveDelegate, (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> Verifiable(global::KnockOff.Called times)
+				public global::KnockOff.IMethodReturnBuilderArgs<SaveDelegate, (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> Verifiable(global::KnockOff.Called times)
 				{
 					_interceptor._isVerifiable = true;
 					_interceptor._verifiableTimes = times;
@@ -4987,9 +5020,9 @@ partial class PersonTests
 
 				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
 				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodTrackingArgs<(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> global::KnockOff.IMethodTrackingArgs<(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTrackingArgs<(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> global::KnockOff.IMethodTrackingArgs<(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodReturnSequence<SaveDelegate> global::KnockOff.IMethodReturnBuilderArgs<SaveDelegate, (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.ThenReturn(SaveDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodTrackingArgs<(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> global::KnockOff.IMethodTrackingArgs<(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTrackingArgs<(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)> global::KnockOff.IMethodTrackingArgs<(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<SaveDelegate> global::KnockOff.IMethodReturnBuilderArgs<SaveDelegate, (global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)>.ThenReturn(SaveDelegate callback) => ThenReturn(callback);
 			}
 
 			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
@@ -5067,8 +5100,8 @@ partial class PersonTests
 			/// <summary>Abstract base for When chain matchers.</summary>
 			private abstract class WhenMatcher
 			{
-				public abstract bool Matches(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
-				public abstract global::DomainModel.IPersonPhoneList Call(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
+				public abstract bool Matches(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
+				public abstract global::DomainModel.IPersonPhoneList Call(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken);
 				public abstract bool IsTerminal { get; }
 				public int CallCount { get; set; }
 			}
@@ -5076,17 +5109,17 @@ partial class PersonTests
 			/// <summary>Matcher that uses a predicate and returns a stored value.</summary>
 			private sealed class WhenMatcherValue : WhenMatcher
 			{
-				private readonly global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> _predicate;
+				private readonly global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> _predicate;
 				private readonly global::DomainModel.IPersonPhoneList _value;
 
-				public WhenMatcherValue(global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate, global::DomainModel.IPersonPhoneList value)
+				public WhenMatcherValue(global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate, global::DomainModel.IPersonPhoneList value)
 				{
 					_predicate = predicate;
 					_value = value;
 				}
 
-				public override bool Matches(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _predicate(target, personPhoneEntities, cancellationToken);
-				public override global::DomainModel.IPersonPhoneList Call(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _value;
+				public override bool Matches(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _predicate(target, personPhoneEntities, cancellationToken);
+				public override global::DomainModel.IPersonPhoneList Call(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _value;
 				public override bool IsTerminal => false;
 			}
 
@@ -5097,16 +5130,16 @@ partial class PersonTests
 
 				public WhenMatcherCall(SaveDelegate callback) => _callback = callback;
 
-				public override bool Matches(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => true;
-				public override global::DomainModel.IPersonPhoneList Call(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _callback(target, personPhoneEntities, cancellationToken);
+				public override bool Matches(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => true;
+				public override global::DomainModel.IPersonPhoneList Call(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => _callback(target, personPhoneEntities, cancellationToken);
 				public override bool IsTerminal => true;
 			}
 
 			/// <summary>Matcher that never matches. Used to close chain without fallback. Terminal.</summary>
 			private sealed class WhenMatcherNone : WhenMatcher
 			{
-				public override bool Matches(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => false;
-				public override global::DomainModel.IPersonPhoneList Call(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => default!;
+				public override bool Matches(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => false;
+				public override global::DomainModel.IPersonPhoneList Call(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken) => default!;
 				public override bool IsTerminal => true;
 			}
 
@@ -5114,9 +5147,9 @@ partial class PersonTests
 			public sealed class WhenBuilder : global::KnockOff.IWhenBuilder<SaveDelegate, global::DomainModel.IPersonPhoneList>
 			{
 				private readonly IPersonPhoneListFactory_SaveInterceptor _interceptor;
-				private readonly global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> _predicate;
+				private readonly global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> _predicate;
 
-				public WhenBuilder(IPersonPhoneListFactory_SaveInterceptor interceptor, global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
+				public WhenBuilder(IPersonPhoneListFactory_SaveInterceptor interceptor, global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
 				{
 					_interceptor = interceptor;
 					_predicate = predicate;
@@ -5140,13 +5173,13 @@ partial class PersonTests
 				public WhenChain(IPersonPhoneListFactory_SaveInterceptor interceptor) => _interceptor = interceptor;
 
 				/// <summary>Adds another matcher with exact value matching.</summary>
-				public WhenBuilder ThenWhen(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
+				public WhenBuilder ThenWhen(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
 				{
 					return new WhenBuilder(_interceptor, (_arg0, _arg1, _arg2) => global::System.Object.Equals(_arg0, target) && global::System.Object.Equals(_arg1, personPhoneEntities) && global::System.Object.Equals(_arg2, cancellationToken));
 				}
 
 				/// <summary>Adds another matcher with predicate matching.</summary>
-				public WhenBuilder ThenWhen(global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
+				public WhenBuilder ThenWhen(global::System.Func<global::DomainModel.IPersonPhoneList, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity>, global::System.Threading.CancellationToken, bool> predicate)
 				{
 					return new WhenBuilder(_interceptor, predicate);
 				}
@@ -5213,12 +5246,12 @@ partial class PersonTests
 			/// <summary>Interceptor for Save.</summary>
 			public IPersonPhoneListFactory_SaveInterceptor Save { get; } = new();
 
-			global::DomainModel.IPersonPhoneList global::DomainModel.IPersonPhoneListFactory.Fetch(global::System.Collections.Generic.IEnumerable<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
+			global::DomainModel.IPersonPhoneList global::DomainModel.IPersonPhoneListFactory.Fetch(global::System.Collections.Generic.IEnumerable<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
 			{
 				return Fetch.Invoke(Strict, personPhoneEntities, cancellationToken);
 			}
 
-			global::DomainModel.IPersonPhoneList global::DomainModel.IPersonPhoneListFactory.Save(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Ef.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
+			global::DomainModel.IPersonPhoneList global::DomainModel.IPersonPhoneListFactory.Save(global::DomainModel.IPersonPhoneList target, global::System.Collections.Generic.ICollection<global::Person.Dal.PersonPhoneEntity> personPhoneEntities, global::System.Threading.CancellationToken cancellationToken)
 			{
 				return Save.Invoke(Strict, target, personPhoneEntities, cancellationToken);
 			}
