@@ -46,10 +46,10 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange
             var personEntity = new PersonEntity { FirstName = "John", LastName = "Doe" };
-            personDbContextStub.FindPerson.Return((token) => Task.FromResult<PersonEntity?>(personEntity));
+            personDbContextStub.FindPerson.Call((token) => personEntity);
 
             var phoneListStub = new Stubs.IPersonPhoneList();
-            phoneListFactoryStub.Fetch.Return((entities, token) => phoneListStub);
+            phoneListFactoryStub.Fetch.Call((entities, token) => phoneListStub);
 
             // Act
             var result = await testPerson.Fetch(personDbContextStub, phoneListFactoryStub, CancellationToken.None);
@@ -65,7 +65,7 @@ namespace DomainModel.Tests.UnitTests
         public async Task Fetch_ShouldReturnFalse_WhenPersonDoesNotExist()
         {
             // Arrange
-            personDbContextStub.FindPerson.Return((token) => Task.FromResult<PersonEntity?>(null));
+            personDbContextStub.FindPerson.Call((token) => (PersonEntity?)null);
 
             var person = new Person(new EntityBaseServices<Person>(null), testUniqueNameRule);
 
@@ -80,11 +80,11 @@ namespace DomainModel.Tests.UnitTests
         public async Task Insert_ShouldReturnPersonEntity_WhenModelIsSavable()
         {
             // Arrange
-            personDbContextStub.SaveChangesAsync.Return((token) => Task.FromResult(1));
+            personDbContextStub.SaveChangesAsync.Call((token) => 1);
 
             var phoneListStub = new Stubs.IPersonPhoneList();
             testPerson.PersonPhoneList = phoneListStub;
-            phoneListFactoryStub.Save.Return((target, entities, token) => phoneListStub);
+            phoneListFactoryStub.Save.Call((target, entities, token) => phoneListStub);
 
             testPerson.FirstName = "John";
             testPerson.LastName = "Doe";
@@ -118,7 +118,7 @@ namespace DomainModel.Tests.UnitTests
         public async Task Update_ShouldThrowException_WhenPersonNotFound()
         {
             // Arrange
-            personDbContextStub.FindPerson.Return((token) => Task.FromResult<PersonEntity?>(null));
+            personDbContextStub.FindPerson.Call((token) => (PersonEntity?)null);
 
             // Act & Assert
             await Assert.ThrowsAsync<KeyNotFoundException>(() => testPerson.Update(personDbContextStub, phoneListFactoryStub, CancellationToken.None));

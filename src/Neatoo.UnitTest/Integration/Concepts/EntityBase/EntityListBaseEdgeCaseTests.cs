@@ -13,7 +13,7 @@ public class EntityListBaseEdgeCaseTests
         var list = new EntityPersonList();
 
         // Act & Assert
-        Assert.ThrowsException<ArgumentNullException>(() => list.Add(null!));
+        Assert.ThrowsExactly<ArgumentNullException>(() => list.Add(null!));
     }
 
     [TestMethod]
@@ -28,7 +28,7 @@ public class EntityListBaseEdgeCaseTests
         list.Add(item);
 
         // Act & Assert
-        var exception = Assert.ThrowsException<InvalidOperationException>(() => list.Add(item));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => list.Add(item));
         Assert.IsTrue(exception.Message.Contains("already in this list"));
     }
 
@@ -59,7 +59,7 @@ public class EntityListBaseEdgeCaseTests
         var list = new EntityPersonList();
 
         // Act & Assert
-        Assert.ThrowsException<ArgumentNullException>(() => list.Insert(0, null!));
+        Assert.ThrowsExactly<ArgumentNullException>(() => list.Insert(0, null!));
     }
 
     [TestMethod]
@@ -74,7 +74,7 @@ public class EntityListBaseEdgeCaseTests
         list.Add(item);
 
         // Act & Assert
-        var exception = Assert.ThrowsException<InvalidOperationException>(() => list.Insert(0, item));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => list.Insert(0, item));
         Assert.IsTrue(exception.Message.Contains("already in this list"));
     }
 
@@ -92,7 +92,7 @@ public class EntityListBaseEdgeCaseTests
         Assert.IsTrue(busyItem.IsBusy);
 
         // Act & Assert
-        var exception = Assert.ThrowsException<InvalidOperationException>(() => list.Add(busyItem));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => list.Add(busyItem));
         Assert.IsTrue(exception.Message.Contains("busy"));
 
         // Cleanup

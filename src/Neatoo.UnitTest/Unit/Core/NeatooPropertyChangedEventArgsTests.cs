@@ -255,7 +255,7 @@ public class NeatooPropertyChangedEventArgsTests
     public void Constructor_WithNullIProperty_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        var exception = Assert.ThrowsException<ArgumentNullException>(
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(
             () => new NeatooPropertyChangedEventArgs((IValidateProperty)null!));
 
         Assert.AreEqual("property", exception.ParamName);
@@ -342,7 +342,7 @@ public class NeatooPropertyChangedEventArgsTests
         var source = new object();
 
         // Act & Assert
-        var exception = Assert.ThrowsException<ArgumentNullException>(
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(
             () => new NeatooPropertyChangedEventArgs(null!, source, null));
 
         Assert.AreEqual("property", exception.ParamName);
@@ -355,7 +355,7 @@ public class NeatooPropertyChangedEventArgsTests
         var property = CreateStringProperty("Name");
 
         // Act & Assert
-        var exception = Assert.ThrowsException<ArgumentNullException>(
+        var exception = Assert.ThrowsExactly<ArgumentNullException>(
             () => new NeatooPropertyChangedEventArgs(property, null!, null));
 
         Assert.AreEqual("source", exception.ParamName);

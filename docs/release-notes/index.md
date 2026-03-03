@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.12.0** (2026-02-26)
+**Neatoo 0.15.1** (2026-03-03)
 
 ---
 
@@ -12,6 +12,12 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.15.1](v0.15.1.md) | 2026-03-03 | Bug Fix | IsValid/IsSavable stale during RunRules() in factory operations |
+| [0.15.0](v0.15.0.md) | 2026-03-02 | Dependency | RemoteFactory updated to 0.16.1 |
+| [0.14.2](v0.14.2.md) | 2026-03-02 | Bug Fix | DI version pinning for net10.0 WASM consumers |
+| [0.14.1](v0.14.1.md) | 2026-03-02 | Bug Fix | Blazor WASM publish fix for DI version mismatch |
+| [0.14.0](v0.14.0.md) | 2026-03-01 | Dependency | KnockOff and RemoteFactory re-versioned to 0.x.x |
+| [0.13.0](v0.13.0.md) | 2026-03-01 | Bug Fix | Stale meta property caches after ResumeAllActions() |
 | [0.12.0](v0.12.0.md) | 2026-02-26 | Bug Fix | Dictionary properties survive JSON bridge round-trip |
 | [0.11.0](v0.11.0.md) | 2026-01-18 | Feature | LazyLoad&lt;T&gt; wrapper type for explicit async lazy loading |
 | [0.10.0](v0.10.0.md) | 2026-01-16 | Feature | Source-generated property backing fields, lazy loading |
@@ -33,6 +39,12 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [0.15.1](v0.15.1.md) | 2026-03-03 |
+| [0.15.0](v0.15.0.md) | 2026-03-02 |
+| [0.14.2](v0.14.2.md) | 2026-03-02 |
+| [0.14.1](v0.14.1.md) | 2026-03-02 |
+| [0.14.0](v0.14.0.md) | 2026-03-01 |
+| [0.13.0](v0.13.0.md) | 2026-03-01 |
 | [0.12.0](v0.12.0.md) | 2026-02-26 |
 | [0.11.0](v0.11.0.md) | 2026-01-18 |
 | [0.10.0](v0.10.0.md) | 2026-01-16 |

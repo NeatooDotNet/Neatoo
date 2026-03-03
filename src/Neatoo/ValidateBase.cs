@@ -824,6 +824,10 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 		}
 		finally
 		{
+			// Recalculate cached validity after rules execute.
+			// During factory operations (IsPaused=true), Property_PropertyChanged
+			// skips recalculation, leaving the cache stale.
+			this.PropertyManager.RecalculateValidity();
 			this.CheckIfMetaPropertiesChanged();
 		}
 	}
@@ -870,6 +874,13 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 		{
 			this.MarkInvalid("Validation cancelled");
 			throw;
+		}
+		finally
+		{
+			// Recalculate cached validity after rules execute.
+			// During factory operations (IsPaused=true), Property_PropertyChanged
+			// skips recalculation, leaving the cache stale.
+			this.PropertyManager.RecalculateValidity();
 		}
 	}
 
