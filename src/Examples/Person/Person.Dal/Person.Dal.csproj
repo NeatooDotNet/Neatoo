@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- Example projects stay single-target - override Directory.Build.props -->
+		<TargetFrameworks></TargetFrameworks>
+		<TargetFramework>net10.0</TargetFramework>
+	</PropertyGroup>
+
+</Project>

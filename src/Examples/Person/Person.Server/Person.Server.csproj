@@ -3,10 +3,15 @@
   <PropertyGroup>
     <!-- Example projects stay single-target - override Directory.Build.props -->
     <TargetFrameworks></TargetFrameworks>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Person.App\Person.App.csproj" />
     <ProjectReference Include="..\Person.DomainModel\Person.DomainModel.csproj" />
     <ProjectReference Include="..\Person.Ef\Person.Ef.csproj" />
   </ItemGroup>

@@ -1,6 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
 using Neatoo.RemoteFactory;
-using Person.Ef;
+using Person.Dal;
 
 namespace DomainModel;
 
@@ -12,7 +11,7 @@ public static partial class UniqueName
     [Execute]
     internal static async Task<bool> _IsUniqueName(Guid? id, string firstName, string lastName, [Service] IPersonDbContext personContext)
     {
-        if (await personContext.Persons.AnyAsync(x => (id == null || x.Id != id) && x.FirstName == firstName && x.LastName == lastName))
+        if (await personContext.PersonNameExists(id, firstName, lastName))
         {
             return false;
         }

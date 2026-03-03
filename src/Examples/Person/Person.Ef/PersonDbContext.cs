@@ -1,23 +1,8 @@
-﻿
+
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.ComponentModel.DataAnnotations;
+using Person.Dal;
 
 namespace Person.Ef;
-
-public interface IPersonDbContext
-{
-	DbSet<PersonEntity> Persons { get; }
-    DbSet<PersonPhoneEntity> PersonPhones { get; }
-	Task<PersonEntity?> FindPerson(CancellationToken cancellationToken = default);
-	Task<PersonEntity?> FindPerson(Guid? id, CancellationToken cancellationToken = default);
-	void AddPerson(PersonEntity personEntity);
-    Task DeleteAllPersons(CancellationToken cancellationToken = default);
-	void DeletePerson(PersonEntity person);
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-}
 
 public class PersonDbContext : DbContext, IPersonDbContext
 {
@@ -77,34 +62,9 @@ public class PersonDbContext : DbContext, IPersonDbContext
 		PersonPhones.RemoveRange(person.Phones);
         Persons.Remove(person);
     }
-}
 
-public class PersonEntity
-{
-    [Key]
-    public Guid? Id { get; set; }
-
-    [Required]
-	public string FirstName { get; set; } = null!;
-    [Required]
-	public string LastName { get; set; } = null!;
-    public string? Email { get; set; }
-	public string? Phone { get; set; }
-	public string? Notes { get; set; }
-    public virtual ICollection<PersonPhoneEntity> Phones { get; } = [];
-}
-
-public class PersonPhoneEntity
-{
-	[Key]
-	public Guid? Id { get; set; }
-
-    [Required]
-    public string PhoneNumber { get; set; } = null!;
-
-    [Required]
-    public int PhoneType { get; set; }
-
-    public virtual PersonEntity PersonEntity { get; set; }
-
+    public Task<bool> PersonNameExists(Guid? excludeId, string firstName, string lastName)
+    {
+        return Persons.AnyAsync(x => (excludeId == null || x.Id != excludeId) && x.FirstName == firstName && x.LastName == lastName);
+    }
 }
