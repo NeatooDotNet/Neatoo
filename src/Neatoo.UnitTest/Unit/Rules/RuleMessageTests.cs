@@ -333,14 +333,16 @@ public class RuleMessagesBuilderTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(ArgumentNullException))]
     public void If_NullRuleMessages_ThrowsArgumentNullException()
     {
         // Arrange
         IRuleMessages? messages = null;
 
-        // Act
-        messages!.If(true, "Prop", "Error");
+        // Act & Assert
+        Assert.ThrowsExactly<ArgumentNullException>(() =>
+        {
+            messages!.If(true, "Prop", "Error");
+        });
     }
 
     #endregion

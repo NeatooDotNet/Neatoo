@@ -2,8 +2,7 @@
 using Neatoo.RemoteFactory;
 using Neatoo.RemoteFactory.Internal;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
-using Person.Ef;
+using Person.Dal;
 
 /*
     READONLY - DO NOT EDIT!!!!

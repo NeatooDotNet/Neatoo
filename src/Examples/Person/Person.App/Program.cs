@@ -18,7 +18,7 @@ builder.Services.AddMudServices();
 // Incorporate Neatoo (which includes RemoteFactory)
 builder.Services.AddNeatooServices(NeatooFactory.Remote, typeof(IPerson).Assembly);
 builder.Services.AddKeyedScoped(Neatoo.RemoteFactory.RemoteFactoryServices.HttpClientKey, (sp, key) => {
-		return new HttpClient { BaseAddress = new Uri("http://localhost:5183/") };
+		return new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
 });
 
 

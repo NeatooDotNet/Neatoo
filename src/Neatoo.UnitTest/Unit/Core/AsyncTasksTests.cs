@@ -291,7 +291,7 @@ public class AsyncTasksTests
 
         // Act & Assert
         var allDone = asyncTasks.AllDone;
-        var aggregateException = await Assert.ThrowsExceptionAsync<AggregateException>(async () => await allDone);
+        var aggregateException = await Assert.ThrowsExactlyAsync<AggregateException>(async () => await allDone);
 
         Assert.AreEqual(1, aggregateException.InnerExceptions.Count);
         Assert.IsInstanceOfType(aggregateException.InnerExceptions[0], typeof(InvalidOperationException));
@@ -321,7 +321,7 @@ public class AsyncTasksTests
 
         // Act & Assert
         var allDone = asyncTasks.AllDone;
-        var aggregateException = await Assert.ThrowsExceptionAsync<AggregateException>(async () => await allDone);
+        var aggregateException = await Assert.ThrowsExactlyAsync<AggregateException>(async () => await allDone);
 
         Assert.AreEqual(3, aggregateException.InnerExceptions.Count);
         Assert.IsTrue(aggregateException.InnerExceptions.Any(e => e is InvalidOperationException));
@@ -348,7 +348,7 @@ public class AsyncTasksTests
 
         // Act & Assert
         var allDone = asyncTasks.AllDone;
-        var aggregateException = await Assert.ThrowsExceptionAsync<AggregateException>(async () => await allDone);
+        var aggregateException = await Assert.ThrowsExactlyAsync<AggregateException>(async () => await allDone);
 
         Assert.AreEqual(1, aggregateException.InnerExceptions.Count);
         Assert.IsInstanceOfType(aggregateException.InnerExceptions[0], typeof(InvalidOperationException));
@@ -364,7 +364,7 @@ public class AsyncTasksTests
         var faultedTask = tcs.Task;
 
         // Act & Assert
-        var exception = Assert.ThrowsException<AggregateException>(() => asyncTasks.AddTask(faultedTask));
+        var exception = Assert.ThrowsExactly<AggregateException>(() => asyncTasks.AddTask(faultedTask));
         Assert.IsInstanceOfType(exception.InnerException, typeof(InvalidOperationException));
     }
 
@@ -437,7 +437,7 @@ public class AsyncTasksTests
 
         // Act & Assert
         var allDone = asyncTasks.AllDone;
-        var aggregateException = await Assert.ThrowsExceptionAsync<AggregateException>(async () => await allDone);
+        var aggregateException = await Assert.ThrowsExactlyAsync<AggregateException>(async () => await allDone);
 
         Assert.IsTrue(aggregateException.InnerExceptions.Any(e => e is InvalidOperationException));
     }
@@ -556,7 +556,7 @@ public class AsyncTasksTests
 
         // Assert
         var allDone = asyncTasks.AllDone;
-        var aggregateException = await Assert.ThrowsExceptionAsync<AggregateException>(async () => await allDone);
+        var aggregateException = await Assert.ThrowsExactlyAsync<AggregateException>(async () => await allDone);
         Assert.AreEqual(2, aggregateException.InnerExceptions.Count);
     }
 
@@ -854,7 +854,7 @@ public class AsyncTasksTests
 
         // Assert
         var allDone = asyncTasks.AllDone;
-        var aggregateException = await Assert.ThrowsExceptionAsync<AggregateException>(async () => await allDone);
+        var aggregateException = await Assert.ThrowsExactlyAsync<AggregateException>(async () => await allDone);
         Assert.IsTrue(aggregateException.InnerExceptions.Any(e => e is TaskCanceledException));
     }
 
@@ -971,7 +971,7 @@ public class AsyncTasksTests
         cts.Cancel();
 
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () =>
             await asyncTasks.WaitForCompletion(cts.Token));
 
         // Task should still be running
@@ -995,7 +995,7 @@ public class AsyncTasksTests
         cts.Cancel();
 
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () =>
             await waitTask);
 
         // Task should still be running (only the wait was cancelled)
@@ -1079,7 +1079,7 @@ public class AsyncTasksTests
         tcs.SetException(new InvalidOperationException("Test error"));
 
         // Act & Assert - The AggregateException from AllDone should propagate
-        var ex = await Assert.ThrowsExceptionAsync<AggregateException>(async () =>
+        var ex = await Assert.ThrowsExactlyAsync<AggregateException>(async () =>
             await asyncTasks.WaitForCompletion(cts.Token));
 
         Assert.IsTrue(ex.InnerExceptions.Any(e => e is InvalidOperationException));

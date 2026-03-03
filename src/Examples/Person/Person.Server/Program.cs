@@ -1,11 +1,11 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Neatoo;
 using Neatoo.RemoteFactory;
+using Person.Dal;
 using Person.Ef;
 using DomainModel;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddCors();
 
 // Neatoo
 builder.Services.AddNeatooServices(NeatooFactory.Server, typeof(IPerson).Assembly);
@@ -26,17 +26,10 @@ using (var scope = app.Services.CreateScope())
     await db!.Database.EnsureCreatedAsync();
 }
 
-// Neatoo
-app.MapPost("/api/neatoo", (HttpContext httpContext, RemoteRequestDto request, CancellationToken cancellationToken) =>
-{
-	var handleRemoteDelegateRequest = httpContext.RequestServices.GetRequiredService<HandleRemoteDelegateRequest>();
-	return handleRemoteDelegateRequest(request, cancellationToken);
-});
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
 
-
-// App Specific
-app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-
+// App Specific - UserRole middleware before API endpoint
 app.Use((context, next) =>
 {
 	var role = context.Request.Headers["UserRoles"];
@@ -48,6 +41,15 @@ app.Use((context, next) =>
 	}
 	return next(context);
 });
+
+// Neatoo
+app.MapPost("/api/neatoo", (HttpContext httpContext, RemoteRequestDto request, CancellationToken cancellationToken) =>
+{
+	var handleRemoteDelegateRequest = httpContext.RequestServices.GetRequiredService<HandleRemoteDelegateRequest>();
+	return handleRemoteDelegateRequest(request, cancellationToken);
+});
+
+app.MapFallbackToFile("index.html");
 
 await app.RunAsync();
 

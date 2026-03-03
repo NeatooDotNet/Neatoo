@@ -231,7 +231,7 @@ public class ValidateBaseAsyncTests
     //public async Task ValidateBaseAsync_AsyncRuleThrowsException()
     //{
     //    validate.ThrowException = "Throw";
-    //    await Assert.ThrowsExceptionAsync<AggregateException>(() => validate.WaitForTasks());
+    //    await Assert.ThrowsExactlyAsync<AggregateException>(() => validate.WaitForTasks());
     //    Assert.IsFalse(validate.IsValid);
     //    Assert.IsFalse(validate[nameof(validate.ThrowException)].IsValid);
     //}

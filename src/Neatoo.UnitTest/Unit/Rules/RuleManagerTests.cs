@@ -465,7 +465,7 @@ public class RuleManagerRunRuleTests
         // Note: Not adding the rule to the manager
 
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<RuleNotAddedException>(async () =>
+        await Assert.ThrowsExactlyAsync<RuleNotAddedException>(async () =>
             await ruleManager.RunRule(rule));
     }
 
@@ -918,7 +918,7 @@ public class RuleManagerCancellationTests
         ruleManager.AddRule(rule);
 
         // Act & Assert - Should throw OperationCanceledException when token is already cancelled
-        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () =>
             await ruleManager.RunRules(RunRulesFlag.All, cts.Token));
 
         // Rule should not have executed
@@ -940,7 +940,7 @@ public class RuleManagerCancellationTests
         ruleManager.AddRule(rule);
 
         // Act & Assert - Should throw OperationCanceledException when token is already cancelled
-        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () =>
             await ruleManager.RunRule(rule, cts.Token));
 
         // Rule should not have executed

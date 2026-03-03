@@ -446,14 +446,16 @@ public class ListBaseTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(ArgumentOutOfRangeException))]
     public void Indexer_Get_InvalidIndex_ThrowsException()
     {
         // Arrange
         var list = new TestList();
 
-        // Act
-        var item = list[0];
+        // Act & Assert
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() =>
+        {
+            var item = list[0];
+        });
     }
 
     #endregion

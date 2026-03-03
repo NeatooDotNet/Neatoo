@@ -1,6 +1,6 @@
 ﻿using Neatoo;
 using Neatoo.RemoteFactory;
-using Person.Ef;
+using Person.Dal;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 

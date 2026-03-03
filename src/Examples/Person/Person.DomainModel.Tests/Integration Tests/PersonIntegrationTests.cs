@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Neatoo;
 using Neatoo.Internal;
+using Person.Dal;
 using Person.Ef;
 using System;
 using System.Threading.Tasks;

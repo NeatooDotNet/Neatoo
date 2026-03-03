@@ -827,7 +827,7 @@ public class EntityBaseStateTests
         entity.MarkAsChild();
 
         // Act & Assert
-        var ex = await Assert.ThrowsExceptionAsync<SaveOperationException>(() => entity.Save());
+        var ex = await Assert.ThrowsExactlyAsync<SaveOperationException>(() => entity.Save());
         Assert.AreEqual(SaveFailureReason.IsChildObject, ex.Reason);
     }
 
@@ -839,7 +839,7 @@ public class EntityBaseStateTests
         entity.Resume();
 
         // Act & Assert
-        var ex = await Assert.ThrowsExceptionAsync<SaveOperationException>(() => entity.Save());
+        var ex = await Assert.ThrowsExactlyAsync<SaveOperationException>(() => entity.Save());
         Assert.AreEqual(SaveFailureReason.NotModified, ex.Reason);
     }
 
@@ -851,7 +851,7 @@ public class EntityBaseStateTests
         entity.Name = "Test"; // Make it savable
 
         // Act & Assert
-        var ex = await Assert.ThrowsExceptionAsync<SaveOperationException>(() => entity.Save());
+        var ex = await Assert.ThrowsExactlyAsync<SaveOperationException>(() => entity.Save());
         Assert.AreEqual(SaveFailureReason.NoFactoryMethod, ex.Reason);
     }
 

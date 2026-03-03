@@ -2,7 +2,7 @@
 using Neatoo;
 using Microsoft.Extensions.DependencyInjection;
 using Neatoo.RemoteFactory;
-using Person.Ef;
+using Person.Dal;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 

@@ -1131,7 +1131,7 @@ public class ValidatePropertyTests
         var property = new ValidateProperty<string>(wrapper);
 
         // Act & Assert
-        Assert.ThrowsException<PropertyReadOnlyException>(() => property.Value = "NewValue");
+        Assert.ThrowsExactly<PropertyReadOnlyException>(() => property.Value = "NewValue");
     }
 
     [TestMethod]
