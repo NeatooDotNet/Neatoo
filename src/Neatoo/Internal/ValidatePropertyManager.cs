@@ -233,8 +233,7 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
             p.Value.NeatooPropertyChanged += this._Property_NeatooPropertyChanged;
             p.Value.PropertyChanged += this._Property_PropertyChanged;
         }
-        this.IsValid = !this.PropertyBag.Any(p => !p.Value.IsValid);
-        this.IsSelfValid = !this.PropertyBag.Any(p => !p.Value.IsSelfValid);
+        RecalculateValidity();
     }
 
     void IJsonOnDeserialized.OnDeserialized()
@@ -287,6 +286,17 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
         }
     }
 
+    /// <summary>
+    /// Recalculates the cached IsValid and IsSelfValid values from current property state.
+    /// Called after explicit RunRules() to ensure caches are accurate regardless of paused state.
+    /// Does not raise PropertyChanged events (caller is responsible for meta-state notifications).
+    /// </summary>
+    public void RecalculateValidity()
+    {
+        this.IsValid = !this.PropertyBag.Any(p => !p.Value.IsValid);
+        this.IsSelfValid = !this.PropertyBag.Any(p => !p.Value.IsSelfValid);
+    }
+
     public virtual void PauseAllActions()
     {
         if (!this.IsPaused)
@@ -304,14 +314,14 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
             // Recalculate cached validity from current property state.
             // Events received while paused were dropped, so caches may be stale.
             var wasValid = this.IsValid;
-            this.IsValid = !this.PropertyBag.Any(p => !p.Value.IsValid);
+            var wasSelfValid = this.IsSelfValid;
+
+            RecalculateValidity();
+
             if (wasValid != this.IsValid)
             {
                 RaisePropertyChanged(nameof(IsValid));
             }
-
-            var wasSelfValid = this.IsSelfValid;
-            this.IsSelfValid = !this.PropertyBag.Any(p => !p.Value.IsSelfValid);
             if (wasSelfValid != this.IsSelfValid)
             {
                 RaisePropertyChanged(nameof(IsSelfValid));

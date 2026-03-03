@@ -135,4 +135,10 @@ public interface IValidatePropertyManager<out P> : INotifyNeatooPropertyChanged,
     /// Clears validation messages that apply directly to properties, excluding child object messages.
     /// </summary>
     void ClearSelfMessages();
+
+    /// <summary>
+    /// Recalculates the cached IsValid and IsSelfValid values from current property state.
+    /// Called after explicit RunRules() to ensure caches are accurate regardless of paused state.
+    /// </summary>
+    void RecalculateValidity();
 }

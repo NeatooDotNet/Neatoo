@@ -1201,6 +1201,103 @@ public class ValidatePropertyManagerTests
 
     #endregion
 
+    #region RecalculateValidity Tests
+
+    [TestMethod]
+    public void RecalculateValidity_WhenPropertyBecameInvalidDuringPause_UpdatesCachedIsValid()
+    {
+        // Arrange
+        var testObject = new ValidatePropertyManagerTestObject();
+        testObject.ResumeAllActions();
+        Assert.IsTrue(testObject.PropertyManager.IsValid, "Precondition: should be valid");
+
+        // Pause the property manager
+        testObject.PropertyManager.PauseAllActions();
+
+        // Make a property invalid while paused (PropertyChanged event is dropped)
+        var nameProperty = testObject.PropertyManager.GetProperty("Name");
+        var ruleMessages = new List<IRuleMessage>
+        {
+            new RuleMessage("Name", "Test validation error") { RuleId = 99 }
+        };
+        ((IValidatePropertyInternal)nameProperty).SetMessagesForRule(ruleMessages);
+        Assert.IsFalse(nameProperty.IsValid, "Precondition: property should be invalid");
+
+        // The cached IsValid is still true because Property_PropertyChanged exited early
+        Assert.IsTrue(testObject.PropertyManager.IsValid, "Precondition: cached IsValid still stale (true)");
+
+        // Act
+        testObject.PropertyManager.RecalculateValidity();
+
+        // Assert
+        Assert.IsFalse(testObject.PropertyManager.IsValid,
+            "RecalculateValidity should update cached IsValid to false");
+        Assert.IsFalse(testObject.PropertyManager.IsSelfValid,
+            "RecalculateValidity should update cached IsSelfValid to false");
+    }
+
+    [TestMethod]
+    public void RecalculateValidity_WhenAllPropertiesValid_CachedIsValidTrue()
+    {
+        // Arrange
+        var testObject = new ValidatePropertyManagerTestObject();
+        testObject.ResumeAllActions();
+
+        // Access properties to create them in the bag
+        _ = testObject.Name;
+        _ = testObject.Age;
+
+        // Act
+        testObject.PropertyManager.RecalculateValidity();
+
+        // Assert
+        Assert.IsTrue(testObject.PropertyManager.IsValid);
+        Assert.IsTrue(testObject.PropertyManager.IsSelfValid);
+    }
+
+    [TestMethod]
+    public void RecalculateValidity_EmptyPropertyBag_IsValidRemainsTrue()
+    {
+        // Arrange - New manager with no properties accessed yet
+        var testObject = new ValidatePropertyManagerTestObject();
+        testObject.ResumeAllActions();
+
+        // Act
+        testObject.PropertyManager.RecalculateValidity();
+
+        // Assert - No properties means .Any() returns false, so IsValid = true
+        Assert.IsTrue(testObject.PropertyManager.IsValid);
+        Assert.IsTrue(testObject.PropertyManager.IsSelfValid);
+    }
+
+    [TestMethod]
+    public void RecalculateValidity_CalledMultipleTimes_ConsistentResults()
+    {
+        // Arrange
+        var testObject = new ValidatePropertyManagerTestObject();
+        testObject.ResumeAllActions();
+        testObject.PropertyManager.PauseAllActions();
+
+        // Make a property invalid while paused
+        var nameProperty = testObject.PropertyManager.GetProperty("Name");
+        var ruleMessages = new List<IRuleMessage>
+        {
+            new RuleMessage("Name", "Error") { RuleId = 99 }
+        };
+        ((IValidatePropertyInternal)nameProperty).SetMessagesForRule(ruleMessages);
+
+        // Act - Call multiple times
+        testObject.PropertyManager.RecalculateValidity();
+        testObject.PropertyManager.RecalculateValidity();
+        testObject.PropertyManager.RecalculateValidity();
+
+        // Assert - All calls should produce the same result
+        Assert.IsFalse(testObject.PropertyManager.IsValid);
+        Assert.IsFalse(testObject.PropertyManager.IsSelfValid);
+    }
+
+    #endregion
+
     #region Validation State Consistency Tests
 
     [TestMethod]
