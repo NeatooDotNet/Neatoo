@@ -159,7 +159,7 @@ public class RootPropertyTests
 
         // Act & Assert
         Assert.AreEqual(aggregate1, item.Root);
-        var exception = Assert.ThrowsException<InvalidOperationException>(() => list2.Add(item));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => list2.Add(item));
         Assert.IsTrue(exception.Message.Contains("Cannot add"));
         Assert.IsTrue(exception.Message.Contains("belongs to aggregate"));
     }

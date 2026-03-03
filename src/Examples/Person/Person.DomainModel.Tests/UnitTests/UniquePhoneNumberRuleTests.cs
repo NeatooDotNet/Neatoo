@@ -13,7 +13,7 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange - KnockOff stubs
             var phoneListStub = new Stubs.IPersonPhoneList();
-            phoneListStub.GetEnumerator.Return(() => ((IEnumerable<IPersonPhone>)Array.Empty<IPersonPhone>()).GetEnumerator());
+            phoneListStub.GetEnumerator.Call(() => ((IEnumerable<IPersonPhone>)Array.Empty<IPersonPhone>()).GetEnumerator());
 
             var personStub = new Stubs.IPerson();
             personStub.PersonPhoneList.Get(() => phoneListStub);
@@ -39,7 +39,7 @@ namespace DomainModel.Tests.UnitTests
             existingPhoneStub.PhoneNumber.Get(() => "1234567890");
 
             var phoneListStub = new Stubs.IPersonPhoneList();
-            phoneListStub.GetEnumerator.Return(() => ((IEnumerable<IPersonPhone>)new[] { (IPersonPhone)existingPhoneStub }).GetEnumerator());
+            phoneListStub.GetEnumerator.Call(() => ((IEnumerable<IPersonPhone>)new[] { (IPersonPhone)existingPhoneStub }).GetEnumerator());
 
             var personStub = new Stubs.IPerson();
             personStub.PersonPhoneList.Get(() => phoneListStub);

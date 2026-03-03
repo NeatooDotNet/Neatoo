@@ -245,7 +245,7 @@ public class ValidateBaseTests
     public void ValidateBase_ThrowsException()
     {
         // No async fork so an exception should be thrown
-        Assert.ThrowsException<AggregateException>(() => validate.FirstName = "Throw");
+        Assert.ThrowsExactly<AggregateException>(() => validate.FirstName = "Throw");
     }
 
     [TestMethod]

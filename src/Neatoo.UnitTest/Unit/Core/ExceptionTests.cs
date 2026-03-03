@@ -763,7 +763,7 @@ public class ExceptionTests
         const string expectedMessage = "Test property missing exception";
 
         // Act & Assert
-        var caughtException = Assert.ThrowsException<PropertyMissingException>(() =>
+        var caughtException = Assert.ThrowsExactly<PropertyMissingException>(() =>
         {
             throw new PropertyMissingException(expectedMessage);
         });
@@ -778,7 +778,7 @@ public class ExceptionTests
         const string expectedMessage = "Test property type mismatch exception";
 
         // Act & Assert
-        var caughtException = Assert.ThrowsException<PropertyTypeMismatchException>(() =>
+        var caughtException = Assert.ThrowsExactly<PropertyTypeMismatchException>(() =>
         {
             throw new PropertyTypeMismatchException(expectedMessage);
         });
@@ -793,7 +793,7 @@ public class ExceptionTests
         const string expectedMessage = "Test property not found exception";
 
         // Act & Assert
-        var caughtException = Assert.ThrowsException<PropertyNotFoundException>(() =>
+        var caughtException = Assert.ThrowsExactly<PropertyNotFoundException>(() =>
         {
             throw new PropertyNotFoundException(expectedMessage);
         });
@@ -808,7 +808,7 @@ public class ExceptionTests
         const string expectedMessage = "Test global factory exception";
 
         // Act & Assert
-        var caughtException = Assert.ThrowsException<GlobalFactoryException>(() =>
+        var caughtException = Assert.ThrowsExactly<GlobalFactoryException>(() =>
         {
             throw new GlobalFactoryException(expectedMessage);
         });
@@ -823,7 +823,7 @@ public class ExceptionTests
         const string expectedMessage = "Test invalid rule type exception";
 
         // Act & Assert
-        var caughtException = Assert.ThrowsException<InvalidRuleTypeException>(() =>
+        var caughtException = Assert.ThrowsExactly<InvalidRuleTypeException>(() =>
         {
             throw new InvalidRuleTypeException(expectedMessage);
         });
@@ -838,7 +838,7 @@ public class ExceptionTests
         const string expectedMessage = "Test invalid target type exception";
 
         // Act & Assert
-        var caughtException = Assert.ThrowsException<InvalidTargetTypeException>(() =>
+        var caughtException = Assert.ThrowsExactly<InvalidTargetTypeException>(() =>
         {
             throw new InvalidTargetTypeException(expectedMessage);
         });
@@ -853,7 +853,7 @@ public class ExceptionTests
         const string expectedMessage = "Test target is null exception";
 
         // Act & Assert
-        var caughtException = Assert.ThrowsException<TargetIsNullException>(() =>
+        var caughtException = Assert.ThrowsExactly<TargetIsNullException>(() =>
         {
             throw new TargetIsNullException(expectedMessage);
         });
@@ -868,7 +868,7 @@ public class ExceptionTests
         const string expectedMessage = "Test target rule property change exception";
 
         // Act & Assert
-        var caughtException = Assert.ThrowsException<TargetRulePropertyChangeException>(() =>
+        var caughtException = Assert.ThrowsExactly<TargetRulePropertyChangeException>(() =>
         {
             throw new TargetRulePropertyChangeException(expectedMessage);
         });
@@ -883,7 +883,7 @@ public class ExceptionTests
         const string expectedMessage = "Test entity child data wrong type exception";
 
         // Act & Assert
-        var caughtException = Assert.ThrowsException<PropertyInfoEntityChildDataWrongTypeException>(() =>
+        var caughtException = Assert.ThrowsExactly<PropertyInfoEntityChildDataWrongTypeException>(() =>
         {
             throw new PropertyInfoEntityChildDataWrongTypeException(expectedMessage);
         });
@@ -898,7 +898,7 @@ public class ExceptionTests
         const string expectedMessage = "Test validate child data wrong type exception";
 
         // Act & Assert
-        var caughtException = Assert.ThrowsException<PropertyValidateChildDataWrongTypeException>(() =>
+        var caughtException = Assert.ThrowsExactly<PropertyValidateChildDataWrongTypeException>(() =>
         {
             throw new PropertyValidateChildDataWrongTypeException(expectedMessage);
         });
@@ -910,7 +910,7 @@ public class ExceptionTests
     public void AddRulesNotDefinedException_CanBeThrownAndCaught()
     {
         // Act & Assert
-        var caughtException = Assert.ThrowsException<AddRulesNotDefinedException<string>>(() =>
+        var caughtException = Assert.ThrowsExactly<AddRulesNotDefinedException<string>>(() =>
         {
             throw new AddRulesNotDefinedException<string>();
         });

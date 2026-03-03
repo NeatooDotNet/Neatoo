@@ -26,7 +26,7 @@ public abstract class UnitTestBase
     protected static TException AssertThrows<TException>(Action action, string? messageContains = null)
         where TException : Exception
     {
-        var exception = Assert.ThrowsException<TException>(action);
+        var exception = Assert.ThrowsExactly<TException>(action);
 
         if (messageContains is not null)
         {
@@ -48,7 +48,7 @@ public abstract class UnitTestBase
     protected static async Task<TException> AssertThrowsAsync<TException>(Func<Task> action, string? messageContains = null)
         where TException : Exception
     {
-        var exception = await Assert.ThrowsExceptionAsync<TException>(action);
+        var exception = await Assert.ThrowsExactlyAsync<TException>(action);
 
         if (messageContains is not null)
         {

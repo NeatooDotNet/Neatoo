@@ -662,7 +662,7 @@ public class AttributeToRuleTests
         // Act & Assert
         // The AttributeToRule.GetRule method uses Expression.Property which requires
         // the property to exist on the type T
-        Assert.ThrowsException<ArgumentException>(() =>
+        Assert.ThrowsExactly<ArgumentException>(() =>
             _attributeToRule.GetRule<TestValidateObject>(propertyInfo, requiredAttribute));
     }
 

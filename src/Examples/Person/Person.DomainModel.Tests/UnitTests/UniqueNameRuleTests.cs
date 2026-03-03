@@ -35,7 +35,7 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange - KnockOff stubs
             var isUniqueStub = new Stubs.IsUniqueName();
-            isUniqueStub.Interceptor.Return((id, firstName, lastName, token) => Task.FromResult(true));
+            isUniqueStub.Interceptor.Call((id, firstName, lastName, token) => true);
 
             var rule = new UniqueNameRule(isUniqueStub);
             var personStub = CreatePersonStub("Jane", "Doe", isModified: true);
@@ -52,7 +52,7 @@ namespace DomainModel.Tests.UnitTests
         {
             // Arrange - KnockOff stubs
             var isUniqueStub = new Stubs.IsUniqueName();
-            isUniqueStub.Interceptor.Return((id, firstName, lastName, token) => Task.FromResult(false));
+            isUniqueStub.Interceptor.Call((id, firstName, lastName, token) => false);
 
             var rule = new UniqueNameRule(isUniqueStub);
             var personStub = CreatePersonStub("John", "Doe", isModified: true);

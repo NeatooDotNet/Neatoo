@@ -99,7 +99,7 @@ public class EntityPropertyTests
         // Note: The base Property<T> constructor accesses propertyInfo.Name before
         // the ArgumentNullException.ThrowIfNull can be called, resulting in NullReferenceException
         // Act & Assert
-        Assert.ThrowsException<NullReferenceException>(() => new EntityProperty<string>(null!));
+        Assert.ThrowsExactly<NullReferenceException>(() => new EntityProperty<string>(null!));
     }
 
     [TestMethod]
@@ -905,7 +905,7 @@ public class EntityPropertyTests
         var property = new EntityProperty<string>(wrapper);
 
         // Act & Assert
-        Assert.ThrowsException<PropertyReadOnlyException>(() => property.Value = "NewValue");
+        Assert.ThrowsExactly<PropertyReadOnlyException>(() => property.Value = "NewValue");
     }
 
     [TestMethod]

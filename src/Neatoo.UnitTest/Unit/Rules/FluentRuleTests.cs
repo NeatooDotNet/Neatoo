@@ -219,7 +219,6 @@ public partial class ActionFluentRuleTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidTargetTypeException))]
     public async Task RunRule_WithInvalidTargetType_ThrowsException()
     {
         // Arrange
@@ -227,8 +226,11 @@ public partial class ActionFluentRuleTests
         var rule = new ActionFluentRule<TestValidateTarget>(action);
         var differentTargetStub = new RuleProxyTests.Stubs.IValidateBase();
 
-        // Act - should throw because stub is not TestValidateTarget
-        await ((IRule)rule).RunRule(differentTargetStub);
+        // Act & Assert - should throw because stub is not TestValidateTarget
+        await Assert.ThrowsExactlyAsync<InvalidTargetTypeException>(async () =>
+        {
+            await ((IRule)rule).RunRule(differentTargetStub);
+        });
     }
 
     #endregion
@@ -1080,7 +1082,6 @@ public class ActionAsyncFluentRuleTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidTargetTypeException))]
     public async Task RunRule_WithInvalidTargetType_ThrowsException()
     {
         // Arrange
@@ -1088,8 +1089,11 @@ public class ActionAsyncFluentRuleTests
         var rule = new ActionAsyncFluentRule<TestValidateTarget>(asyncAction);
         var differentTargetStub = new RuleProxyTests.Stubs.IValidateBase();
 
-        // Act
-        await ((IRule)rule).RunRule(differentTargetStub);
+        // Act & Assert
+        await Assert.ThrowsExactlyAsync<InvalidTargetTypeException>(async () =>
+        {
+            await ((IRule)rule).RunRule(differentTargetStub);
+        });
     }
 
     #endregion
@@ -1426,7 +1430,6 @@ public class FluentRuleLambdaBehaviorTests
     #region Lambda Exception Handling Tests
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidOperationException))]
     public async Task ActionFluentRule_LambdaThrows_ExceptionPropagates()
     {
         // Arrange
@@ -1434,12 +1437,14 @@ public class FluentRuleLambdaBehaviorTests
         Action<TestValidateTarget> action = t => throw new InvalidOperationException("Test exception");
         var rule = new ActionFluentRule<TestValidateTarget>(action);
 
-        // Act
-        await rule.RunRule(target);
+        // Act & Assert
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () =>
+        {
+            await rule.RunRule(target);
+        });
     }
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidOperationException))]
     public async Task ValidationFluentRule_LambdaThrows_ExceptionPropagates()
     {
         // Arrange
@@ -1448,12 +1453,14 @@ public class FluentRuleLambdaBehaviorTests
             throw new InvalidOperationException("Validation exception");
         var rule = new ValidationFluentRule<TestValidateTarget>(validationFunc, t => t.Name);
 
-        // Act
-        await rule.RunRule(target);
+        // Act & Assert
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () =>
+        {
+            await rule.RunRule(target);
+        });
     }
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidOperationException))]
     public async Task AsyncFluentRule_LambdaThrows_ExceptionPropagates()
     {
         // Arrange
@@ -1465,12 +1472,14 @@ public class FluentRuleLambdaBehaviorTests
         };
         var rule = new AsyncFluentRule<TestValidateTarget>(asyncFunc, t => t.Name);
 
-        // Act
-        await rule.RunRule(target);
+        // Act & Assert
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () =>
+        {
+            await rule.RunRule(target);
+        });
     }
 
     [TestMethod]
-    [ExpectedException(typeof(InvalidOperationException))]
     public async Task ActionAsyncFluentRule_LambdaThrows_ExceptionPropagates()
     {
         // Arrange
@@ -1482,8 +1491,11 @@ public class FluentRuleLambdaBehaviorTests
         };
         var rule = new ActionAsyncFluentRule<TestValidateTarget>(asyncAction);
 
-        // Act
-        await rule.RunRule(target);
+        // Act & Assert
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () =>
+        {
+            await rule.RunRule(target);
+        });
     }
 
     #endregion
@@ -1639,7 +1651,7 @@ public class ActionAsyncFluentRuleWithTokenTests
         cts.Cancel();
 
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () =>
             await rule.RunRule(target, cts.Token));
 
         Assert.IsFalse(wasExecuted);
@@ -1673,7 +1685,7 @@ public class ActionAsyncFluentRuleWithTokenTests
         proceedToCheck.SetResult(); // Let the task proceed to check the token
 
         // Assert
-        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () => await task);
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () => await task);
     }
 }
 
@@ -1782,7 +1794,7 @@ public class AsyncFluentRuleWithTokenTests
         cts.Cancel();
 
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () =>
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () =>
             await rule.RunRule(target, cts.Token));
 
         Assert.IsFalse(wasExecuted);
@@ -1822,7 +1834,7 @@ public class AsyncFluentRuleWithTokenTests
         cancellationChecked.SetResult(true);
 
         // Assert
-        await Assert.ThrowsExceptionAsync<OperationCanceledException>(async () => await task);
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () => await task);
     }
 }
 
