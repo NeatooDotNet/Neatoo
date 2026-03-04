@@ -1,6 +1,6 @@
 ---
 name: Neatoo
-description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, and base class behavior. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill.
+description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, IEntityRoot, IEntityBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, and base class behavior. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill.
 version: 1.0.0
 ---
 
@@ -32,15 +32,17 @@ This generates a factory (`IProductFactory`) with a `Create()` method. Propertie
 
 ## Base Class Quick Reference
 
-| DDD Concept | Neatoo Base Class | Use When |
-|-------------|-------------------|----------|
-| Aggregate Root | `EntityBase<T>` | Root entity with full CRUD lifecycle |
-| Entity | `EntityBase<T>` | Child entity within an aggregate |
-| Value Object | `ValidateBase<T>` | Data with validation, no persistence lifecycle |
-| Entity Collection | `EntityListBase<I>` | List of child entities (tracks deletions) |
-| Validate Collection | `ValidateListBase<I>` | List of value objects (no deletion tracking) |
-| Command | Static class with `[Execute]` | Server-side operation returning result |
-| Read Model | `ValidateBase<T>` with `[Fetch]` only | Query result (no Insert/Update/Delete) |
+| DDD Concept | Neatoo Base Class | Interface | Use When |
+|-------------|-------------------|-----------|----------|
+| Aggregate Root | `EntityBase<T>` | `IEntityRoot` | Root entity with full CRUD lifecycle, `IsSavable`, `Save()` |
+| Child Entity | `EntityBase<T>` | `IEntityBase` | Child entity within an aggregate (no `IsSavable`/`Save()`) |
+| Value Object | `ValidateBase<T>` | `IValidateBase` | Data with validation, no persistence lifecycle |
+| Entity Collection | `EntityListBase<I>` | — | List of child entities (tracks deletions) |
+| Validate Collection | `ValidateListBase<I>` | — | List of value objects (no deletion tracking) |
+| Command | Static class with `[Execute]` | — | Server-side operation returning result |
+| Read Model | `ValidateBase<T>` with `[Fetch]` only | `IValidateBase` | Query result (no Insert/Update/Delete) |
+
+**IEntityRoot vs IEntityBase:** Aggregate root interfaces extend `IEntityRoot` which exposes `IsSavable` and `Save()`. Child entity interfaces extend `IEntityBase` which does **not** expose `IsSavable` or `Save()` — this is enforced at the type level.
 
 ## Key Properties
 
@@ -52,7 +54,7 @@ This generates a factory (`IProductFactory`) with a `Create()` method. Propertie
 | `IsSelfModified` | bool | This object (only) has changes |
 | `IsValid` | bool | This object and all children pass validation |
 | `IsSelfValid` | bool | This object (only) passes validation |
-| `IsSavable` | bool | `IsValid && IsModified && !IsBusy && !IsChild` |
+| `IsSavable` | bool | `IsValid && IsModified && !IsBusy` — **only on `IEntityRoot`** |
 | `IsNew` | bool | Not yet persisted |
 | `IsDeleted` | bool | Marked for deletion |
 | `RuleManager` | IRuleManager | Access to validation rules |
@@ -80,7 +82,7 @@ Neatoo entities use RemoteFactory for factory generation. See the `/RemoteFactor
 
 ### Save Routing (Neatoo State-Based)
 
-When `Save()` is called, the factory routes based on Neatoo entity state:
+`Save()` is only available on `IEntityRoot` (aggregate roots). When called, the factory routes based on entity state:
 - `IsNew == true` → `[Insert]` method
 - `IsNew == false && IsDeleted == false` → `[Update]` method
 - `IsDeleted == true` → `[Delete]` method
@@ -138,4 +140,4 @@ Detailed documentation for each topic area:
 
 ## Troubleshooting
 
-See `references/pitfalls.md` for common issues. Key quick checks: class and properties must be `partial`, class needs `[Factory]` attribute, and `IsSavable` requires both `IsValid` and `IsModified`.
+See `references/pitfalls.md` for common issues. Key quick checks: class and properties must be `partial`, class needs `[Factory]` attribute, `IsSavable` requires both `IsValid` and `IsModified`, and `IsSavable`/`Save()` are only on `IEntityRoot` (not `IEntityBase`).

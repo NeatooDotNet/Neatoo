@@ -53,7 +53,7 @@ public async Task FetchedEntity_StartsClean()
 
 ### Saving Entities
 
-`Save()` routes to the appropriate operation based on state:
+`Save()` is only available on `IEntityRoot` (aggregate roots). It routes to the appropriate operation based on state:
 
 <!-- snippet: entities-save -->
 <a id='snippet-entities-save'></a>
@@ -245,9 +245,9 @@ public async Task PersistenceState_DeterminesFactoryMethod()
 <sup><a href='/src/samples/EntitiesSamples.cs#L604-L629' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-persistence-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-## IsSavable
+## IsSavable (IEntityRoot Only)
 
-Check if an entity can be saved:
+`IsSavable` is only available on `IEntityRoot` — aggregate root interfaces. Child entity interfaces (`IEntityBase`) do not expose `IsSavable` or `Save()`. This is enforced at the type level.
 
 <!-- snippet: entities-savable -->
 <a id='snippet-entities-savable'></a>
@@ -278,7 +278,7 @@ public void IsSavable_CombinesStateChecks()
 <sup><a href='/src/samples/EntitiesSamples.cs#L631-L654' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-savable' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-`IsSavable` returns `true` when:
+`IsSavable` (on `IEntityRoot`) returns `true` when:
 - `IsValid == true` (passes validation)
 - `IsModified == true` (has changes)
 - `IsBusy == false` (no async operations pending)
