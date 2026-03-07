@@ -375,6 +375,7 @@ Neatoo uses custom JSON converters for client-server state transfer:
 | `IsPaused` | No | Paused during deserialization, resumed after |
 | Rule state (executed flags) | No | Rules start fresh |
 | Parent reference | Yes | Via `$ref`/`$id` reference handling |
+| `LazyLoad<T>` properties | Yes | `Value` and `IsLoaded` serialized; loader delegate is not. Inner Neatoo entities go through Neatoo converter for `$id`/`$ref`. Post-deserialization `LoadAsync()` throws if value was not pre-loaded. |
 
 ### Circular Reference Handling
 
