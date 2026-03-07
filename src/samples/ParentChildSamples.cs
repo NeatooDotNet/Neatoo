@@ -296,7 +296,7 @@ public class ParentChildSamplesTests : SamplesTestBase
 
     #region parent-child-lifecycle
     [Fact]
-    public async Task ChildLifecycle_MarkedWhenAddedToCollection()
+    public void ChildLifecycle_MarkedWhenAddedToCollection()
     {
         var orderFactory = GetRequiredService<IParentChildOrderFactory>();
         var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
@@ -326,13 +326,9 @@ public class ParentChildSamplesTests : SamplesTestBase
         // 3. Parent is set
         Assert.Same(order, item.Parent);
 
-        // 4. IsSavable is false (children can't save independently)
-        Assert.False(item.IsSavable);
-
-        // 5. Attempting to save throws
-        var exception = await Assert.ThrowsAsync<SaveOperationException>(
-            () => item.Save());
-        Assert.Equal(SaveFailureReason.IsChildObject, exception.Reason);
+        // 4. Child interfaces (IEntityBase) don't expose IsSavable or Save().
+        //    Only IEntityRoot exposes those members.
+        //    This is enforced at the type level — no runtime check needed.
     }
     #endregion
 

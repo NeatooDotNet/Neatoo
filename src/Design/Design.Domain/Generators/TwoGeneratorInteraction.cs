@@ -43,7 +43,7 @@ namespace Design.Domain.Generators;
 /// Demonstrates: What both generators produce for a typical entity.
 /// </summary>
 [Factory]
-public partial class GeneratorDemo : EntityBase<GeneratorDemo>
+internal partial class GeneratorDemo : EntityBase<GeneratorDemo>, IGeneratorDemo
 {
     public partial string? Name { get; set; }
     public partial int Value { get; set; }

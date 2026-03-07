@@ -31,7 +31,7 @@ namespace Design.Domain.Rules;
 /// Demonstrates: RuleManager fluent API for inline rules.
 /// </summary>
 [Factory]
-public partial class FluentRulesDemo : EntityBase<FluentRulesDemo>
+internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRulesDemo
 {
     public partial string? Name { get; set; }
     public partial string? Email { get; set; }
@@ -207,7 +207,7 @@ public partial class FluentRulesDemo : EntityBase<FluentRulesDemo>
 /// Demonstrates: Different trigger property patterns.
 /// </summary>
 [Factory]
-public partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>
+internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, ITriggerPatternsDemo
 {
     public partial int A { get; set; }
     public partial int B { get; set; }

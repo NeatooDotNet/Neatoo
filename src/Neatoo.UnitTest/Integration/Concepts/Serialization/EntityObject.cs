@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Neatoo.UnitTest.Integration.Concepts.Serialization.EntityTests;
 
-public interface IEntityObject : IEntityBase
+public interface IEntityObject : IEntityRoot
 {
     Guid ID { get; set; }
     string Name { get; set; }

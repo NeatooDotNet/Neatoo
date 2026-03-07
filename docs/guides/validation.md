@@ -584,13 +584,13 @@ Meta-property definitions:
 - **IsSelfValid**: True if this object's properties pass validation (ignores children)
 - **IsBusy**: True if any async validation tasks are running
 - **PropertyMessages**: Collection of ALL validation messages (this object + children)
-- **IsSavable**: (EntityBase only) True if IsModified && IsValid && !IsBusy && !IsChild
+- **IsSavable**: (`IEntityRoot` only) True if IsModified && IsValid && !IsBusy && !IsChild. Not available on `IEntityBase` (child entity interface) or entity lists
 
 Meta-properties fire PropertyChanged events when their values change, enabling UI binding for save button enablement and validation indicators.
 
 ## Validation During Save
 
-Validate entities before persisting changes. The IsSavable property (EntityBase only) combines IsModified, IsValid, IsBusy, and IsChild to determine if the entity can be saved.
+Validate entities before persisting changes. The `IsSavable` property (accessible through `IEntityRoot`, the aggregate root interface) combines `IsModified`, `IsValid`, `IsBusy`, and `IsChild` to determine if the entity can be saved. Child entity interfaces (`IEntityBase`) do not expose `IsSavable`.
 
 Validate before save:
 
@@ -805,4 +805,4 @@ Layer validation from simple (attributes) to complex (custom rules) to build com
 
 ---
 
-**UPDATED:** 2026-02-28
+**UPDATED:** 2026-03-02

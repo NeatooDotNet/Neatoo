@@ -27,7 +27,7 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
     IEnumerable<string> ModifiedProperties { get; }
 
     /// <summary>
-    /// Marks the entity for deletion. The entity will be deleted when <see cref="Save()"/> is called.
+    /// Marks the entity for deletion. The entity will be deleted when Save() is called on the aggregate root.
     /// </summary>
     void Delete();
 
@@ -36,22 +36,7 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
     /// </summary>
     void UnDelete();
 
-    /// <summary>
-    /// Persists the entity asynchronously using the configured factory.
-    /// </summary>
-    /// <returns>A task that represents the asynchronous save operation. The task result contains the saved entity.</returns>
-    Task<IEntityBase> Save();
-
-    /// <summary>
-    /// Persists the entity asynchronously with cancellation support.
-    /// </summary>
-    /// <param name="token">Cancellation token to cancel the operation before persistence begins.</param>
-    /// <returns>A task that represents the asynchronous save operation. The task result contains the saved entity.</returns>
-    /// <remarks>
-    /// Cancellation is checked before persistence operations begin. Once Insert, Update, or Delete
-    /// starts executing, cancellation is not checked to avoid leaving the database in an inconsistent state.
-    /// </remarks>
-    Task<IEntityBase> Save(CancellationToken token);
+    // Save() and IsSavable moved to IEntityRoot
 
     /// <summary>
     /// Gets the entity property with the specified name using indexer syntax.
@@ -59,6 +44,35 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
     /// <param name="propertyName">The name of the property to retrieve.</param>
     /// <returns>The <see cref="IEntityProperty"/> instance for the specified property.</returns>
     new IEntityProperty this[string propertyName] { get; }
+}
+
+/// <summary>
+/// Defines the interface for aggregate root entities that can initiate save operations.
+/// </summary>
+/// <remarks>
+/// Use IEntityRoot for aggregate roots that own the Save() operation.
+/// Use IEntityBase for child entities within an aggregate.
+/// The user signals root vs child by choosing which interface their entity interface extends.
+/// </remarks>
+public interface IEntityRoot : IEntityBase
+{
+    /// <summary>
+    /// Gets a value indicating whether this entity can be saved.
+    /// </summary>
+    /// <value>
+    /// <c>true</c> if the entity is modified, valid, and not busy; otherwise, <c>false</c>.
+    /// </value>
+    bool IsSavable { get; }
+
+    /// <summary>
+    /// Persists the entity asynchronously using the configured factory.
+    /// </summary>
+    Task<IEntityBase> Save();
+
+    /// <summary>
+    /// Persists the entity asynchronously with cancellation support.
+    /// </summary>
+    Task<IEntityBase> Save(CancellationToken token);
 }
 
 /// <summary>
@@ -99,7 +113,7 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
 /// </code>
 /// </example>
 [Factory]
-public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBase, IEntityBaseInternal, IEntityMetaProperties
+public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBase, IEntityRoot, IEntityBaseInternal, IEntityMetaProperties
     where T : EntityBase<T>
 {
     /// <summary>
@@ -135,7 +149,24 @@ public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBas
     /// Gets a value indicating whether this entity or any child entities have been modified.
     /// </summary>
     /// <value><c>true</c> if any property has changed, the entity is new, deleted, or explicitly marked modified; otherwise, <c>false</c>.</value>
-    public virtual bool IsModified => this.PropertyManager.IsModified || this.IsDeleted || this.IsNew || this.IsSelfModified;
+    public virtual bool IsModified => this.PropertyManager.IsModified || this.IsDeleted || this.IsNew || this.IsSelfModified || IsAnyLazyLoadChildModified();
+
+    /// <summary>
+    /// Checks whether any LazyLoad child entity is modified.
+    /// Returns false when there are no LazyLoad properties.
+    /// </summary>
+    private bool IsAnyLazyLoadChildModified()
+    {
+        var props = GetLazyLoadProperties(GetType());
+        if (props.Length == 0) return false;
+
+        foreach (var prop in props)
+        {
+            if (prop.GetValue(this) is IEntityMetaProperties emp && emp.IsModified)
+                return true;
+        }
+        return false;
+    }
 
     /// <summary>
     /// Gets or sets a value indicating whether this entity's own properties have been modified.

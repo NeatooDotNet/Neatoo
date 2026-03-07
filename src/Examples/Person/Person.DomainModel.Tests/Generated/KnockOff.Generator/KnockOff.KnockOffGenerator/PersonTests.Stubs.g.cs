@@ -8337,9 +8337,6 @@ partial class PersonTests
 			/// <summary>Interceptor for IsMarkedModified.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsMarkedModified { get; } = new("IsMarkedModified");
 
-			/// <summary>Interceptor for IsSavable.</summary>
-			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsSavable { get; } = new("IsSavable");
-
 			/// <summary>Interceptor for IsDeleted.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsDeleted { get; } = new("IsDeleted");
 
@@ -8559,11 +8556,6 @@ partial class PersonTests
 				get => IsMarkedModified.InvokeGet(Strict);
 			}
 
-			bool global::Neatoo.IEntityMetaProperties.IsSavable
-			{
-				get => IsSavable.InvokeGet(Strict);
-			}
-
 			bool global::Neatoo.RemoteFactory.IFactorySaveMeta.IsDeleted
 			{
 				get => IsDeleted.InvokeGet(Strict);
@@ -8619,7 +8611,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetSourceFallback(source != null ? (a) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] : null, source != null ? (a, value) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] = value : null);
@@ -8654,7 +8645,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetSourceFallback(source != null ? (a) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] : null, source != null ? (a, value) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] = value : null);
@@ -8689,7 +8679,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(source != null ? (a) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] : null, source != null ? (a, value) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] = value : null);
@@ -8724,7 +8713,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(source != null ? (a) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] : null, source != null ? (a, value) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] = value : null);
@@ -8759,7 +8747,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -8794,7 +8781,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -8829,7 +8815,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -8864,7 +8849,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -8899,7 +8883,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -8934,7 +8917,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -8969,7 +8951,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -9004,7 +8985,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -9039,7 +9019,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetSourceFallback(null, null);
@@ -9074,7 +9053,6 @@ partial class PersonTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetSourceFallback(null, null);
@@ -9111,7 +9089,6 @@ partial class PersonTests
 				if (IsModified.CheckVerification() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerification() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerification() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerification() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerification() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerification() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerification() is { } indexerFailure) failures.Add(indexerFailure);
@@ -9154,7 +9131,6 @@ partial class PersonTests
 				if (IsModified.CheckVerificationAll() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerificationAll() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerificationAll() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerificationAll() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerificationAll() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerificationAll() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerificationAll() is { } indexerFailure) failures.Add(indexerFailure);

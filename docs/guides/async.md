@@ -326,7 +326,7 @@ public async Task AsyncRule_ExceptionsAreCaptured()
 <sup><a href='/src/samples/AsyncSamples.cs#L462-L482' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-error-handling' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-When a rule throws an exception, the framework marks the trigger properties as invalid using `MarkInvalid` and stores the exception message in `PropertyMessages`. The entity's `IsValid` becomes `false` and `IsSavable` becomes `false`.
+When a rule throws an exception, the framework marks the trigger properties as invalid using `MarkInvalid` and stores the exception message in `PropertyMessages`. The entity's `IsValid` becomes `false`, which in turn makes `IsSavable` `false` (for aggregate roots).
 
 ## Recursive Async Rules
 
@@ -431,7 +431,7 @@ public async Task Save_WaitsForAsyncValidation()
 <sup><a href='/src/samples/AsyncSamples.cs#L532-L551' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-save-entity' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-If async rules are still executing (`IsBusy == true`) or the entity is invalid (`IsValid == false`) after `WaitForTasks`, the factory does not call your persistence method. Instead, it relies on `IsSavable` to determine if persistence should proceed. Since `IsSavable == IsModified && IsValid && !IsBusy && !IsChild`, an invalid or busy entity cannot be saved.
+If async rules are still executing (`IsBusy == true`) or the entity is invalid (`IsValid == false`) after `WaitForTasks`, the factory does not call your persistence method. Instead, it relies on `IsSavable` (available on aggregate root entities via the `IEntityRoot` interface) to determine if persistence should proceed. Since `IsSavable == IsModified && IsValid && !IsBusy && !IsChild`, an invalid or busy entity cannot be saved.
 
 ## Performance Considerations
 
@@ -446,4 +446,4 @@ For high-frequency property changes, debounce validation by pausing actions and 
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-03-02

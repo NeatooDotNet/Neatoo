@@ -52,7 +52,7 @@ namespace Design.Domain;
 /// Demonstrates Gotcha 1: Rules don't fire during [Create].
 /// </summary>
 [Factory]
-public partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>
+internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
 {
     public partial int Quantity { get; set; }
     public partial decimal Price { get; set; }
@@ -137,10 +137,10 @@ public partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>
 /// Demonstrates Gotcha 2: DeletedList only tracks non-new items.
 /// </summary>
 [Factory]
-public partial class Gotcha2Parent : EntityBase<Gotcha2Parent>
+internal partial class Gotcha2Parent : EntityBase<Gotcha2Parent>, IGotcha2Parent
 {
     public partial string? Name { get; set; }
-    public partial Gotcha2ItemList? Items { get; set; }
+    public partial IGotcha2ItemList? Items { get; set; }
 
     public Gotcha2Parent(IEntityBaseServices<Gotcha2Parent> services) : base(services) { }
 
@@ -175,7 +175,7 @@ public partial class Gotcha2Parent : EntityBase<Gotcha2Parent>
 }
 
 [Factory]
-public partial class Gotcha2Item : EntityBase<Gotcha2Item>
+internal partial class Gotcha2Item : EntityBase<Gotcha2Item>, IGotcha2Item
 {
     public partial int Id { get; set; }
     public partial string? Name { get; set; }
@@ -210,7 +210,7 @@ public partial class Gotcha2Item : EntityBase<Gotcha2Item>
 }
 
 [Factory]
-public partial class Gotcha2ItemList : EntityListBase<Gotcha2Item>
+internal partial class Gotcha2ItemList : EntityListBase<IGotcha2Item>, IGotcha2ItemList
 {
     /// <summary>
     /// Exposes DeletedList count for testing.
@@ -266,7 +266,7 @@ public interface IGotcha2Repository
 /// Demonstrates Gotcha 3: Server-only services need [Remote].
 /// </summary>
 [Factory]
-public partial class Gotcha3Demo : EntityBase<Gotcha3Demo>
+internal partial class Gotcha3Demo : EntityBase<Gotcha3Demo>, IGotcha3Demo
 {
     public partial string? Name { get; set; }
 
@@ -358,7 +358,7 @@ public interface IServerOnlyService
 /// Demonstrates Gotcha 4: Rules don't run while paused.
 /// </summary>
 [Factory]
-public partial class Gotcha4Demo : ValidateBase<Gotcha4Demo>
+internal partial class Gotcha4Demo : ValidateBase<Gotcha4Demo>, IGotcha4Demo
 {
     public partial int Quantity { get; set; }
     public partial decimal Price { get; set; }
@@ -411,10 +411,10 @@ public partial class Gotcha4Demo : ValidateBase<Gotcha4Demo>
 /// Demonstrates Gotcha 5: IsModified vs IsSelfModified.
 /// </summary>
 [Factory]
-public partial class Gotcha5Parent : EntityBase<Gotcha5Parent>
+internal partial class Gotcha5Parent : EntityBase<Gotcha5Parent>, IGotcha5Parent
 {
     public partial string? Name { get; set; }
-    public partial Gotcha5Child? Child { get; set; }
+    public partial IGotcha5Child? Child { get; set; }
 
     public Gotcha5Parent(IEntityBaseServices<Gotcha5Parent> services) : base(services) { }
 
@@ -449,7 +449,7 @@ public partial class Gotcha5Parent : EntityBase<Gotcha5Parent>
 }
 
 [Factory]
-public partial class Gotcha5Child : EntityBase<Gotcha5Child>
+internal partial class Gotcha5Child : EntityBase<Gotcha5Child>, IGotcha5Child
 {
     public partial string? Value { get; set; }
 

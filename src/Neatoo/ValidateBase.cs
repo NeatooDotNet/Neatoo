@@ -1,7 +1,9 @@
 using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.Rules;
+using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Reflection;
 using System.Text.Json.Serialization;
 
 namespace Neatoo;
@@ -168,7 +170,7 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// Gets a value indicating whether the object has asynchronous operations in progress.
 	/// </summary>
 	/// <value><c>true</c> if async tasks are running or any property is busy; otherwise, <c>false</c>.</value>
-	public bool IsBusy => this.RunningTasks.IsRunning || this.PropertyManager.IsBusy;
+	public bool IsBusy => this.RunningTasks.IsRunning || this.PropertyManager.IsBusy || IsAnyLazyLoadChildBusy();
 
 	/// <summary>
 	/// Gets the rule manager responsible for executing business rules on this object.
@@ -274,7 +276,7 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// Gets a value indicating whether the object and all its child objects are valid.
 	/// </summary>
 	/// <value><c>true</c> if all properties and child objects pass validation; otherwise, <c>false</c>.</value>
-	public bool IsValid => this.PropertyManager.IsValid;
+	public bool IsValid => this.PropertyManager.IsValid && IsAllLazyLoadChildrenValid();
 
 	/// <summary>
 	/// Gets a value indicating whether this object's own properties are valid, excluding child objects.
@@ -296,6 +298,103 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// and raise appropriate property changed notifications.
 	/// </remarks>
 	protected (bool IsValid, bool IsSelfValid, bool IsBusy) MetaState { get; private set; }
+
+	#region LazyLoad State Propagation
+
+	/// <summary>
+	/// Static cache of LazyLoad properties per concrete type.
+	/// Same reflection pattern used by NeatooBaseJsonTypeConverter for serialization.
+	/// </summary>
+	private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _lazyLoadPropertyCache = new();
+
+	private protected static PropertyInfo[] GetLazyLoadProperties(Type concreteType)
+	{
+		return _lazyLoadPropertyCache.GetOrAdd(concreteType, type =>
+			type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+				.Where(p => p.PropertyType.IsGenericType
+					&& p.PropertyType.GetGenericTypeDefinition() == typeof(LazyLoad<>)
+					&& p.GetMethod != null)
+				.ToArray());
+	}
+
+	/// <summary>
+	/// Checks whether all LazyLoad children are valid.
+	/// Returns true when there are no LazyLoad properties or all are valid.
+	/// </summary>
+	private bool IsAllLazyLoadChildrenValid()
+	{
+		var props = GetLazyLoadProperties(GetType());
+		if (props.Length == 0) return true;
+
+		foreach (var prop in props)
+		{
+			if (prop.GetValue(this) is IValidateMetaProperties vmp && !vmp.IsValid)
+				return false;
+		}
+		return true;
+	}
+
+	/// <summary>
+	/// Checks whether any LazyLoad child is busy.
+	/// Returns false when there are no LazyLoad properties.
+	/// </summary>
+	private bool IsAnyLazyLoadChildBusy()
+	{
+		var props = GetLazyLoadProperties(GetType());
+		if (props.Length == 0) return false;
+
+		foreach (var prop in props)
+		{
+			if (prop.GetValue(this) is IValidateMetaProperties vmp && vmp.IsBusy)
+				return true;
+		}
+		return false;
+	}
+
+	/// <summary>
+	/// Active subscriptions to LazyLoad instances for reactive event propagation.
+	/// </summary>
+	private readonly List<INotifyPropertyChanged> _lazyLoadSubscriptions = new();
+
+	/// <summary>
+	/// Subscribes to PropertyChanged on all LazyLoad properties for reactive state propagation.
+	/// Call this after assigning LazyLoad properties outside of FactoryComplete/OnDeserialized.
+	/// </summary>
+	protected void SubscribeToLazyLoadProperties()
+	{
+		UnsubscribeFromLazyLoadProperties();
+
+		var props = GetLazyLoadProperties(GetType());
+		if (props.Length == 0) return;
+
+		foreach (var prop in props)
+		{
+			if (prop.GetValue(this) is INotifyPropertyChanged npc)
+			{
+				npc.PropertyChanged += OnLazyLoadPropertyChanged;
+				_lazyLoadSubscriptions.Add(npc);
+			}
+		}
+	}
+
+	private void UnsubscribeFromLazyLoadProperties()
+	{
+		foreach (var npc in _lazyLoadSubscriptions)
+		{
+			npc.PropertyChanged -= OnLazyLoadPropertyChanged;
+		}
+		_lazyLoadSubscriptions.Clear();
+	}
+
+	private void OnLazyLoadPropertyChanged(object? sender, PropertyChangedEventArgs e)
+	{
+		if (!this.IsPaused)
+		{
+			CheckIfMetaPropertiesChanged();
+		}
+	}
+
+	#endregion
 
 	/// <summary>
 	/// Raises property changed events if the value has changed from the cached state.
@@ -541,6 +640,7 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 			}
 		}
 
+		this.SubscribeToLazyLoadProperties();
 		this.ResumeAllActions();
 	}
 
@@ -961,6 +1061,7 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// </remarks>
 	public virtual void FactoryComplete(FactoryOperation factoryOperation)
 	{
+		this.SubscribeToLazyLoadProperties();
 		this.ResumeAllActions();
 	}
 }

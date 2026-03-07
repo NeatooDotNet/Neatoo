@@ -273,7 +273,7 @@ Child entity lifecycle tracking:
 <a id='snippet-parent-child-lifecycle'></a>
 ```cs
 [Fact]
-public async Task ChildLifecycle_MarkedWhenAddedToCollection()
+public void ChildLifecycle_MarkedWhenAddedToCollection()
 {
     var orderFactory = GetRequiredService<IParentChildOrderFactory>();
     var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
@@ -303,24 +303,22 @@ public async Task ChildLifecycle_MarkedWhenAddedToCollection()
     // 3. Parent is set
     Assert.Same(order, item.Parent);
 
-    // 4. IsSavable is false (children can't save independently)
-    Assert.False(item.IsSavable);
-
-    // 5. Attempting to save throws
-    var exception = await Assert.ThrowsAsync<SaveOperationException>(
-        () => item.Save());
-    Assert.Equal(SaveFailureReason.IsChildObject, exception.Reason);
+    // 4. Child interfaces (IEntityBase) don't expose IsSavable or Save().
+    //    Only IEntityRoot exposes those members.
+    //    This is enforced at the type level — no runtime check needed.
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L297-L337' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-lifecycle' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L297-L333' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-lifecycle' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Child entity restrictions:
-- Cannot call Save() directly (throws SaveOperationException with SaveFailureReason.IsChildObject)
-- IsSavable is always false
+- `IEntityBase` (the child entity interface) does not expose `IsSavable` or `Save()` -- these are on `IEntityRoot` only
+- If a caller somehow accesses `Save()` on the concrete class, it throws `SaveOperationException` with `SaveFailureReason.IsChildObject`
 - Must be saved through the aggregate root
-- Marked as IsChild when added to a collection
+- Marked as `IsChild` when added to a collection
 - Cannot be added to a different aggregate while already belonging to one
+
+This restriction is enforced at the type level. Child entity interfaces extend `IEntityBase`, so `IsSavable` and `Save()` simply do not exist on the interface. No runtime check needed for well-typed code.
 
 When a child entity is added to a collection:
 1. Parent is set to the collection's Parent (the owning entity)
@@ -378,7 +376,7 @@ public void CollectionNavigation_AccessSiblingsThroughParent()
     Assert.Equal(50.00m, total); // (10*1) + (20*2)
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L339-L378' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-containing-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L335-L374' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-containing-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Navigation patterns:
@@ -431,7 +429,7 @@ public void RootAccess_FromChildEntity()
     Assert.Equal(new DateTime(2024, 6, 15), orderRoot.OrderDate);
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L380-L410' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-root-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L376-L406' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-root-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Root access patterns:
@@ -508,7 +506,7 @@ public void CollectionParent_AutomaticManagement()
     Assert.Same(order, item2.Root);
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L412-L446' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-collection-parent' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L408-L442' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-collection-parent' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Collection parent propagation:
@@ -539,4 +537,4 @@ This ensures efficient bulk operations while maintaining eventual consistency of
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-03-02

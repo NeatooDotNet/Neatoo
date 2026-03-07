@@ -1308,7 +1308,9 @@ public class ApiReferenceSamplesTests : SamplesTestBase
         Assert.True(entityMeta.IsModified);  // New entity
         Assert.False(entityMeta.IsSelfModified);
         Assert.False(entityMeta.IsMarkedModified);
-        Assert.True(entityMeta.IsSavable);  // New entity is savable
+        // IsSavable is on IEntityRoot, not IEntityMetaProperties
+        // Cast to IEntityRoot to check savability:
+        Assert.True(((IEntityRoot)entityMeta).IsSavable);  // New entity is savable
     }
     #endregion
 

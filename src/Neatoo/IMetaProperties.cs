@@ -85,6 +85,9 @@ public interface IValidateMetaProperties
 /// that participate in persistence operations. These properties track modification state,
 /// parent-child relationships, and save eligibility.
 /// </remarks>
+// Does NOT extend IValidateMetaProperties — the serializer uses typeof(IEntityMetaProperties).GetProperties()
+// to discover which properties to send over the wire. If this extended IValidateMetaProperties,
+// IsValid, IsBusy, PropertyMessages, etc. would be included in serialization.
 public interface IEntityMetaProperties : IFactorySaveMeta
 {
     /// <summary>
@@ -113,10 +116,5 @@ public interface IEntityMetaProperties : IFactorySaveMeta
     /// </summary>
     /// <value><c>true</c> if explicitly marked modified; otherwise, <c>false</c>.</value>
     bool IsMarkedModified { get; }
-
-    /// <summary>
-    /// Gets a value indicating whether the object can be saved.
-    /// </summary>
-    /// <value><c>true</c> if the object is modified, valid, not busy, and not a child; otherwise, <c>false</c>.</value>
-    bool IsSavable { get; }
+    // IsSavable moved to IEntityRoot
 }

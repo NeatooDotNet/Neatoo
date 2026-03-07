@@ -20,7 +20,7 @@ namespace Design.Domain.ValueObjects;
 /// - Used for: List items, search results, read-only views
 /// </summary>
 [Factory]
-public partial class EmployeeListItem : ValidateBase<EmployeeListItem>
+internal partial class EmployeeListItem : ValidateBase<EmployeeListItem>, IEmployeeListItem
 {
     // =========================================================================
     // Properties - Read Model Data

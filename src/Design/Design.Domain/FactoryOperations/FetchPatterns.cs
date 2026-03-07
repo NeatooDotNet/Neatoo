@@ -50,7 +50,7 @@ namespace Design.Domain.FactoryOperations;
 /// Demonstrates: [Fetch] patterns for loading existing entities.
 /// </summary>
 [Factory]
-public partial class FetchDemo : EntityBase<FetchDemo>
+internal partial class FetchDemo : EntityBase<FetchDemo>, IFetchDemo
 {
     public partial int Id { get; set; }
     public partial string? Name { get; set; }
@@ -173,11 +173,11 @@ public partial class FetchDemo : EntityBase<FetchDemo>
 /// Demonstrates: Fetching aggregate with child collections.
 /// </summary>
 [Factory]
-public partial class FetchWithChildrenDemo : EntityBase<FetchWithChildrenDemo>
+internal partial class FetchWithChildrenDemo : EntityBase<FetchWithChildrenDemo>, IFetchWithChildrenDemo
 {
     public partial int Id { get; set; }
     public partial string? Title { get; set; }
-    public partial FetchDemoItemList? Items { get; set; }
+    public partial IFetchDemoItemList? Items { get; set; }
 
     public FetchWithChildrenDemo(IEntityBaseServices<FetchWithChildrenDemo> services) : base(services) { }
 
@@ -255,7 +255,7 @@ public partial class FetchWithChildrenDemo : EntityBase<FetchWithChildrenDemo>
 }
 
 [Factory]
-public partial class FetchDemoItem : EntityBase<FetchDemoItem>
+internal partial class FetchDemoItem : EntityBase<FetchDemoItem>, IFetchDemoItem
 {
     public partial int Id { get; set; }
     public partial string? Name { get; set; }
@@ -282,7 +282,7 @@ public partial class FetchDemoItem : EntityBase<FetchDemoItem>
 }
 
 [Factory]
-public partial class FetchDemoItemList : EntityListBase<FetchDemoItem>
+internal partial class FetchDemoItemList : EntityListBase<IFetchDemoItem>, IFetchDemoItemList
 {
     [Create]
     public void Create() { }

@@ -11,235 +11,11 @@ partial class UniquePhoneNumberRuleTests
 	/// <summary>Contains stub implementations for inline stub pattern.</summary>
 	public static class Stubs
 	{
-		/// <summary>Tracks and configures behavior for Delete().</summary>
-		public sealed class IPerson_DeleteInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
-		{
-			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Neatoo.IEntityBase? _source;
-
-			/// <summary>Callback delegate for Delete().</summary>
-			public delegate void DeleteDelegate();
-
-			public IPerson_DeleteInterceptor() : base("Delete") { }
-
-			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
-			{
-				((DeleteDelegate)del)();
-			}
-			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
-			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking) { }
-			protected override void RecordUnconfiguredArgs(object? args) { }
-
-			/// <summary>Configures callback for Delete().</summary>
-			public DeleteImpl Call(DeleteDelegate callback)
-			{
-				var builder = new DeleteImpl(this);
-				SetupVoidCallback(callback, builder);
-				return builder;
-			}
-
-			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal void Invoke(bool strict)
-			{
-				if (RunVoidPriorityChain(null)) return;
-				_unconfiguredCallCount++;
-				RecordUnconfiguredArgs(null);
-				if (HandleVoidSequenceExhaustedRepeat(strict, null)) return;
-				#pragma warning disable CS8601, SYSLIB0050
-				if (_source is { } src) { src.Delete(); return; }
-				#pragma warning restore CS8601, SYSLIB0050
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "Delete");
-				return;
-			}
-
-			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
-			public override void Reset()
-			{
-				base.Reset();
-				_source = null;
-			}
-
-			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class DeleteImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<DeleteDelegate>
-			{
-				private readonly IPerson_DeleteInterceptor _typedInterceptor;
-
-				public DeleteImpl(IPerson_DeleteInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-
-				public override void Reset() => base.Reset();
-
-				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
-				public DeleteSequence ThenCall(DeleteDelegate callback)
-				{
-					ThenCallBase(callback);
-					return new DeleteSequence(_typedInterceptor);
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public DeleteImpl Verifiable() { VerifiableBase(); return this; }
-				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
-				public DeleteImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new DeleteImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallBuilder<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodCallBuilder<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.ThenCall(DeleteDelegate callback) => ThenCall(callback);
-			}
-
-			/// <summary>Sequence implementation for ThenCall chaining.</summary>
-			public sealed class DeleteSequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<DeleteDelegate>
-			{
-				private readonly IPerson_DeleteInterceptor _typedInterceptor;
-
-				public DeleteSequence(IPerson_DeleteInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public DeleteSequence ThenCall(DeleteDelegate callback)
-				{
-					var tracking = new DeleteImpl(_typedInterceptor);
-					AddToSequence(callback, tracking);
-					return this;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public DeleteSequence Verifiable() { VerifiableBase(); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new DeleteImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallSequence<DeleteDelegate>.ThenCall(DeleteDelegate callback) => ThenCall(callback);
-				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallSequence<DeleteDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
-			}
-
-		}
-
-		/// <summary>Tracks and configures behavior for UnDelete().</summary>
-		public sealed class IPerson_UnDeleteInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
-		{
-			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Neatoo.IEntityBase? _source;
-
-			/// <summary>Callback delegate for UnDelete().</summary>
-			public delegate void UnDeleteDelegate();
-
-			public IPerson_UnDeleteInterceptor() : base("UnDelete") { }
-
-			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
-			{
-				((UnDeleteDelegate)del)();
-			}
-			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
-			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking) { }
-			protected override void RecordUnconfiguredArgs(object? args) { }
-
-			/// <summary>Configures callback for UnDelete().</summary>
-			public UnDeleteImpl Call(UnDeleteDelegate callback)
-			{
-				var builder = new UnDeleteImpl(this);
-				SetupVoidCallback(callback, builder);
-				return builder;
-			}
-
-			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal void Invoke(bool strict)
-			{
-				if (RunVoidPriorityChain(null)) return;
-				_unconfiguredCallCount++;
-				RecordUnconfiguredArgs(null);
-				if (HandleVoidSequenceExhaustedRepeat(strict, null)) return;
-				#pragma warning disable CS8601, SYSLIB0050
-				if (_source is { } src) { src.UnDelete(); return; }
-				#pragma warning restore CS8601, SYSLIB0050
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "UnDelete");
-				return;
-			}
-
-			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
-			public override void Reset()
-			{
-				base.Reset();
-				_source = null;
-			}
-
-			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class UnDeleteImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>
-			{
-				private readonly IPerson_UnDeleteInterceptor _typedInterceptor;
-
-				public UnDeleteImpl(IPerson_UnDeleteInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-
-				public override void Reset() => base.Reset();
-
-				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
-				public UnDeleteSequence ThenCall(UnDeleteDelegate callback)
-				{
-					ThenCallBase(callback);
-					return new UnDeleteSequence(_typedInterceptor);
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public UnDeleteImpl Verifiable() { VerifiableBase(); return this; }
-				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
-				public UnDeleteImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new UnDeleteImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallBuilder<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodCallBuilder<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.ThenCall(UnDeleteDelegate callback) => ThenCall(callback);
-			}
-
-			/// <summary>Sequence implementation for ThenCall chaining.</summary>
-			public sealed class UnDeleteSequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<UnDeleteDelegate>
-			{
-				private readonly IPerson_UnDeleteInterceptor _typedInterceptor;
-
-				public UnDeleteSequence(IPerson_UnDeleteInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public UnDeleteSequence ThenCall(UnDeleteDelegate callback)
-				{
-					var tracking = new UnDeleteImpl(_typedInterceptor);
-					AddToSequence(callback, tracking);
-					return this;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public UnDeleteSequence Verifiable() { VerifiableBase(); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new UnDeleteImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallSequence<UnDeleteDelegate>.ThenCall(UnDeleteDelegate callback) => ThenCall(callback);
-				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallSequence<UnDeleteDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
-			}
-
-		}
-
 		/// <summary>Tracks and configures behavior for Save (overloaded).</summary>
 		public sealed class IPerson_SaveInterceptor
 		{
 			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Neatoo.IEntityBase? _source;
+			internal global::Neatoo.IEntityRoot? _source;
 
 			private int _unconfiguredCallCount;
 
@@ -1109,6 +885,230 @@ partial class UniquePhoneNumberRuleTests
 
 				global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>> global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>.Verifiable() => Verifiable();
 				global::KnockOff.IWhenTracking global::KnockOff.IWhenTracking.Verifiable() => Verifiable();
+			}
+
+		}
+
+		/// <summary>Tracks and configures behavior for Delete().</summary>
+		public sealed class IPerson_DeleteInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::Neatoo.IEntityBase? _source;
+
+			/// <summary>Callback delegate for Delete().</summary>
+			public delegate void DeleteDelegate();
+
+			public IPerson_DeleteInterceptor() : base("Delete") { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				((DeleteDelegate)del)();
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking) { }
+			protected override void RecordUnconfiguredArgs(object? args) { }
+
+			/// <summary>Configures callback for Delete().</summary>
+			public DeleteImpl Call(DeleteDelegate callback)
+			{
+				var builder = new DeleteImpl(this);
+				SetupVoidCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal void Invoke(bool strict)
+			{
+				if (RunVoidPriorityChain(null)) return;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(null);
+				if (HandleVoidSequenceExhaustedRepeat(strict, null)) return;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) { src.Delete(); return; }
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "Delete");
+				return;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class DeleteImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<DeleteDelegate>
+			{
+				private readonly IPerson_DeleteInterceptor _typedInterceptor;
+
+				public DeleteImpl(IPerson_DeleteInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+
+				public override void Reset() => base.Reset();
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public DeleteSequence ThenCall(DeleteDelegate callback)
+				{
+					ThenCallBase(callback);
+					return new DeleteSequence(_typedInterceptor);
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public DeleteImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public DeleteImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override MethodCallBuilderBase CreateNextBuilder() => new DeleteImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallBuilder<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodCallBuilder<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.ThenCall(DeleteDelegate callback) => ThenCall(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenCall chaining.</summary>
+			public sealed class DeleteSequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<DeleteDelegate>
+			{
+				private readonly IPerson_DeleteInterceptor _typedInterceptor;
+
+				public DeleteSequence(IPerson_DeleteInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public DeleteSequence ThenCall(DeleteDelegate callback)
+				{
+					var tracking = new DeleteImpl(_typedInterceptor);
+					AddToSequence(callback, tracking);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public DeleteSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override MethodCallBuilderBase CreateNextBuilder() => new DeleteImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallSequence<DeleteDelegate>.ThenCall(DeleteDelegate callback) => ThenCall(callback);
+				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallSequence<DeleteDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+		}
+
+		/// <summary>Tracks and configures behavior for UnDelete().</summary>
+		public sealed class IPerson_UnDeleteInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::Neatoo.IEntityBase? _source;
+
+			/// <summary>Callback delegate for UnDelete().</summary>
+			public delegate void UnDeleteDelegate();
+
+			public IPerson_UnDeleteInterceptor() : base("UnDelete") { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				((UnDeleteDelegate)del)();
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking) { }
+			protected override void RecordUnconfiguredArgs(object? args) { }
+
+			/// <summary>Configures callback for UnDelete().</summary>
+			public UnDeleteImpl Call(UnDeleteDelegate callback)
+			{
+				var builder = new UnDeleteImpl(this);
+				SetupVoidCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal void Invoke(bool strict)
+			{
+				if (RunVoidPriorityChain(null)) return;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(null);
+				if (HandleVoidSequenceExhaustedRepeat(strict, null)) return;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) { src.UnDelete(); return; }
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "UnDelete");
+				return;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class UnDeleteImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>
+			{
+				private readonly IPerson_UnDeleteInterceptor _typedInterceptor;
+
+				public UnDeleteImpl(IPerson_UnDeleteInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+
+				public override void Reset() => base.Reset();
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public UnDeleteSequence ThenCall(UnDeleteDelegate callback)
+				{
+					ThenCallBase(callback);
+					return new UnDeleteSequence(_typedInterceptor);
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public UnDeleteImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public UnDeleteImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override MethodCallBuilderBase CreateNextBuilder() => new UnDeleteImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallBuilder<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodCallBuilder<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.ThenCall(UnDeleteDelegate callback) => ThenCall(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenCall chaining.</summary>
+			public sealed class UnDeleteSequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<UnDeleteDelegate>
+			{
+				private readonly IPerson_UnDeleteInterceptor _typedInterceptor;
+
+				public UnDeleteSequence(IPerson_UnDeleteInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public UnDeleteSequence ThenCall(UnDeleteDelegate callback)
+				{
+					var tracking = new UnDeleteImpl(_typedInterceptor);
+					AddToSequence(callback, tracking);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public UnDeleteSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override MethodCallBuilderBase CreateNextBuilder() => new UnDeleteImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallSequence<UnDeleteDelegate>.ThenCall(UnDeleteDelegate callback) => ThenCall(callback);
+				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallSequence<UnDeleteDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
 			}
 
 		}
@@ -4201,6 +4201,9 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for PersonPhoneList.</summary>
 			public global::KnockOff.Interceptors.PropertyGetSetInterceptor<global::DomainModel.IPersonPhoneList> PersonPhoneList { get; } = new("PersonPhoneList");
 
+			/// <summary>Interceptor for IsSavable.</summary>
+			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsSavable { get; } = new("IsSavable");
+
 			/// <summary>Interceptor for Root.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<global::Neatoo.IValidateBase?> Root { get; } = new("Root");
 
@@ -4237,9 +4240,6 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for IsMarkedModified.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsMarkedModified { get; } = new("IsMarkedModified");
 
-			/// <summary>Interceptor for IsSavable.</summary>
-			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsSavable { get; } = new("IsSavable");
-
 			/// <summary>Interceptor for IsDeleted.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsDeleted { get; } = new("IsDeleted");
 
@@ -4249,14 +4249,14 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for indexer.</summary>
 			public global::KnockOff.Interceptors.IndexerGetSetInterceptor<string, global::Neatoo.IEntityProperty> Indexer { get; } = new("Indexer");
 
+			/// <summary>Interceptor for Save.</summary>
+			public IPerson_SaveInterceptor Save { get; } = new();
+
 			/// <summary>Interceptor for Delete.</summary>
 			public IPerson_DeleteInterceptor Delete { get; } = new();
 
 			/// <summary>Interceptor for UnDelete.</summary>
 			public IPerson_UnDeleteInterceptor UnDelete { get; } = new();
-
-			/// <summary>Interceptor for Save.</summary>
-			public IPerson_SaveInterceptor Save { get; } = new();
 
 			/// <summary>Interceptor for GetProperty.</summary>
 			public IPerson_GetPropertyInterceptor GetProperty { get; } = new();
@@ -4321,6 +4321,21 @@ partial class UniquePhoneNumberRuleTests
 				set => PersonPhoneList.InvokeSet(Strict, value);
 			}
 
+			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityRoot.Save()
+			{
+				return Save.Invoke_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase(Strict);
+			}
+
+			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityRoot.Save(global::System.Threading.CancellationToken token)
+			{
+				return Save.Invoke_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(Strict, token);
+			}
+
+			bool global::Neatoo.IEntityRoot.IsSavable
+			{
+				get => IsSavable.InvokeGet(Strict);
+			}
+
 			void global::Neatoo.IEntityBase.Delete()
 			{
 				Delete.Invoke(Strict);
@@ -4329,16 +4344,6 @@ partial class UniquePhoneNumberRuleTests
 			void global::Neatoo.IEntityBase.UnDelete()
 			{
 				UnDelete.Invoke(Strict);
-			}
-
-			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityBase.Save()
-			{
-				return Save.Invoke_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase(Strict);
-			}
-
-			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityBase.Save(global::System.Threading.CancellationToken token)
-			{
-				return Save.Invoke_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(Strict, token);
 			}
 
 			global::Neatoo.IValidateBase? global::Neatoo.IEntityBase.Root
@@ -4456,11 +4461,6 @@ partial class UniquePhoneNumberRuleTests
 				get => IsMarkedModified.InvokeGet(Strict);
 			}
 
-			bool global::Neatoo.IEntityMetaProperties.IsSavable
-			{
-				get => IsSavable.InvokeGet(Strict);
-			}
-
 			bool global::Neatoo.RemoteFactory.IFactorySaveMeta.IsDeleted
 			{
 				get => IsDeleted.InvokeGet(Strict);
@@ -4505,6 +4505,7 @@ partial class UniquePhoneNumberRuleTests
 				Email.SetSourceFallback(source != null ? () => source.Email : null, source != null ? (value) => source.Email = value : null);
 				Notes.SetSourceFallback(source != null ? () => source.Notes : null, source != null ? (value) => source.Notes = value : null);
 				PersonPhoneList.SetSourceFallback(source != null ? () => source.PersonPhoneList : null, source != null ? (value) => source.PersonPhoneList = value : null);
+				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				Root.SetSourceFallback(source != null ? () => source.Root : null);
 				ModifiedProperties.SetSourceFallback(source != null ? () => source.ModifiedProperties : null);
 				Parent.SetSourceFallback(source != null ? () => source.Parent : null);
@@ -4517,13 +4518,49 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
+				Save._source = source;
 				Delete._source = source;
 				UnDelete._source = source;
+				GetProperty._source = source;
+				TryGetProperty._source = source;
+				AddChildTask._source = source;
+				WaitForTasks._source = source;
+				RunRules._source = source;
+				ClearAllMessages._source = source;
+				ClearSelfMessages._source = source;
+			}
+
+			/// <summary>Sets the source object for global::Neatoo.IEntityRoot delegation.</summary>
+			public void Source(global::Neatoo.IEntityRoot? source)
+			{
+				Id.SetSourceFallback(null, null);
+				FirstName.SetSourceFallback(null, null);
+				LastName.SetSourceFallback(null, null);
+				Email.SetSourceFallback(null, null);
+				Notes.SetSourceFallback(null, null);
+				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
+				Root.SetSourceFallback(source != null ? () => source.Root : null);
+				ModifiedProperties.SetSourceFallback(source != null ? () => source.ModifiedProperties : null);
+				Parent.SetSourceFallback(source != null ? () => source.Parent : null);
+				IsPaused.SetSourceFallback(source != null ? () => source.IsPaused : null);
+				IsBusy.SetSourceFallback(source != null ? () => source.IsBusy : null);
+				IsValid.SetSourceFallback(source != null ? () => source.IsValid : null);
+				IsSelfValid.SetSourceFallback(source != null ? () => source.IsSelfValid : null);
+				PropertyMessages.SetSourceFallback(source != null ? () => source.PropertyMessages : null);
+				IsChild.SetSourceFallback(source != null ? () => source.IsChild : null);
+				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
+				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
+				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
+				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
+				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
+				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
 				Save._source = source;
+				Delete._source = source;
+				UnDelete._source = source;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
 				AddChildTask._source = source;
@@ -4542,6 +4579,7 @@ partial class UniquePhoneNumberRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(source != null ? () => source.Root : null);
 				ModifiedProperties.SetSourceFallback(source != null ? () => source.ModifiedProperties : null);
 				Parent.SetSourceFallback(source != null ? () => source.Parent : null);
@@ -4554,13 +4592,12 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
+				Save._source = null;
 				Delete._source = source;
 				UnDelete._source = source;
-				Save._source = source;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
 				AddChildTask._source = source;
@@ -4579,6 +4616,7 @@ partial class UniquePhoneNumberRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(source != null ? () => source.Parent : null);
@@ -4591,13 +4629,12 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
 				AddChildTask._source = source;
@@ -4616,6 +4653,7 @@ partial class UniquePhoneNumberRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4628,13 +4666,12 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4653,6 +4690,7 @@ partial class UniquePhoneNumberRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4665,13 +4703,12 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4690,6 +4727,7 @@ partial class UniquePhoneNumberRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4702,13 +4740,12 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4727,6 +4764,7 @@ partial class UniquePhoneNumberRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4739,13 +4777,12 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4764,6 +4801,7 @@ partial class UniquePhoneNumberRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4776,13 +4814,12 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4801,6 +4838,7 @@ partial class UniquePhoneNumberRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4813,13 +4851,12 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4840,6 +4877,7 @@ partial class UniquePhoneNumberRuleTests
 				if (Email.CheckVerification() is { } emailFailure) failures.Add(emailFailure);
 				if (Notes.CheckVerification() is { } notesFailure) failures.Add(notesFailure);
 				if (PersonPhoneList.CheckVerification() is { } personphonelistFailure) failures.Add(personphonelistFailure);
+				if (IsSavable.CheckVerification() is { } issavableFailure) failures.Add(issavableFailure);
 				if (Root.CheckVerification() is { } rootFailure) failures.Add(rootFailure);
 				if (ModifiedProperties.CheckVerification() is { } modifiedpropertiesFailure) failures.Add(modifiedpropertiesFailure);
 				if (Parent.CheckVerification() is { } parentFailure) failures.Add(parentFailure);
@@ -4852,13 +4890,12 @@ partial class UniquePhoneNumberRuleTests
 				if (IsModified.CheckVerification() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerification() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerification() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerification() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerification() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerification() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerification() is { } indexerFailure) failures.Add(indexerFailure);
+				if (Save.CheckVerification() is { } saveFailure) failures.Add(saveFailure);
 				if (Delete.CheckVerification() is { } deleteFailure) failures.Add(deleteFailure);
 				if (UnDelete.CheckVerification() is { } undeleteFailure) failures.Add(undeleteFailure);
-				if (Save.CheckVerification() is { } saveFailure) failures.Add(saveFailure);
 				if (GetProperty.CheckVerification() is { } getpropertyFailure) failures.Add(getpropertyFailure);
 				if (TryGetProperty.CheckVerification() is { } trygetpropertyFailure) failures.Add(trygetpropertyFailure);
 				if (AddChildTask.CheckVerification() is { } addchildtaskFailure) failures.Add(addchildtaskFailure);
@@ -4884,6 +4921,7 @@ partial class UniquePhoneNumberRuleTests
 				if (Email.CheckVerificationAll() is { } emailFailure) failures.Add(emailFailure);
 				if (Notes.CheckVerificationAll() is { } notesFailure) failures.Add(notesFailure);
 				if (PersonPhoneList.CheckVerificationAll() is { } personphonelistFailure) failures.Add(personphonelistFailure);
+				if (IsSavable.CheckVerificationAll() is { } issavableFailure) failures.Add(issavableFailure);
 				if (Root.CheckVerificationAll() is { } rootFailure) failures.Add(rootFailure);
 				if (ModifiedProperties.CheckVerificationAll() is { } modifiedpropertiesFailure) failures.Add(modifiedpropertiesFailure);
 				if (Parent.CheckVerificationAll() is { } parentFailure) failures.Add(parentFailure);
@@ -4896,13 +4934,12 @@ partial class UniquePhoneNumberRuleTests
 				if (IsModified.CheckVerificationAll() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerificationAll() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerificationAll() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerificationAll() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerificationAll() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerificationAll() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerificationAll() is { } indexerFailure) failures.Add(indexerFailure);
+				if (Save.CheckVerificationAll() is { } saveFailure) failures.Add(saveFailure);
 				if (Delete.CheckVerificationAll() is { } deleteFailure) failures.Add(deleteFailure);
 				if (UnDelete.CheckVerificationAll() is { } undeleteFailure) failures.Add(undeleteFailure);
-				if (Save.CheckVerificationAll() is { } saveFailure) failures.Add(saveFailure);
 				if (GetProperty.CheckVerificationAll() is { } getpropertyFailure) failures.Add(getpropertyFailure);
 				if (TryGetProperty.CheckVerificationAll() is { } trygetpropertyFailure) failures.Add(trygetpropertyFailure);
 				if (AddChildTask.CheckVerificationAll() is { } addchildtaskFailure) failures.Add(addchildtaskFailure);
@@ -10004,9 +10041,6 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for IsMarkedModified.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsMarkedModified { get; } = new("IsMarkedModified");
 
-			/// <summary>Interceptor for IsSavable.</summary>
-			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsSavable { get; } = new("IsSavable");
-
 			/// <summary>Interceptor for IsDeleted.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsDeleted { get; } = new("IsDeleted");
 
@@ -10226,11 +10260,6 @@ partial class UniquePhoneNumberRuleTests
 				get => IsMarkedModified.InvokeGet(Strict);
 			}
 
-			bool global::Neatoo.IEntityMetaProperties.IsSavable
-			{
-				get => IsSavable.InvokeGet(Strict);
-			}
-
 			bool global::Neatoo.RemoteFactory.IFactorySaveMeta.IsDeleted
 			{
 				get => IsDeleted.InvokeGet(Strict);
@@ -10286,7 +10315,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetSourceFallback(source != null ? (a) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] : null, source != null ? (a, value) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] = value : null);
@@ -10321,7 +10349,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetSourceFallback(source != null ? (a) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] : null, source != null ? (a, value) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] = value : null);
@@ -10356,7 +10383,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(source != null ? (a) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] : null, source != null ? (a, value) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] = value : null);
@@ -10391,7 +10417,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(source != null ? (a) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] : null, source != null ? (a, value) => ((global::System.Collections.Generic.IList<global::DomainModel.IPersonPhone>)source)[a] = value : null);
@@ -10426,7 +10451,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -10461,7 +10485,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -10496,7 +10519,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -10531,7 +10553,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -10566,7 +10587,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -10601,7 +10621,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -10636,7 +10655,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -10671,7 +10689,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetSourceFallback(null, null);
@@ -10706,7 +10723,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetSourceFallback(null, null);
@@ -10741,7 +10757,6 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetSourceFallback(null, null);
@@ -10778,7 +10793,6 @@ partial class UniquePhoneNumberRuleTests
 				if (IsModified.CheckVerification() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerification() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerification() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerification() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerification() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerification() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerification() is { } indexerFailure) failures.Add(indexerFailure);
@@ -10821,7 +10835,6 @@ partial class UniquePhoneNumberRuleTests
 				if (IsModified.CheckVerificationAll() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerificationAll() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerificationAll() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerificationAll() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerificationAll() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerificationAll() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerificationAll() is { } indexerFailure) failures.Add(indexerFailure);
@@ -11070,884 +11083,6 @@ partial class UniquePhoneNumberRuleTests
 				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallSequence<UnDeleteDelegate>.ThenCall(UnDeleteDelegate callback) => ThenCall(callback);
 				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallSequence<UnDeleteDelegate>.Verifiable() => Verifiable();
 				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
-			}
-
-		}
-
-		/// <summary>Tracks and configures behavior for Save (overloaded).</summary>
-		public sealed class IPersonPhone_SaveInterceptor
-		{
-			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Neatoo.IEntityBase? _source;
-
-			private int _unconfiguredCallCount;
-
-			/// <summary>Count of calls that were not handled by any configured behavior (used for class stub base fallback).</summary>
-			internal int UnconfiguredCallCount => _unconfiguredCallCount;
-
-			/// <summary>Callback delegate for Save() -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>.</summary>
-			public delegate global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> SaveDelegate();
-
-			private SaveDelegate? _call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private SaveImpl? _callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-
-			private global::System.Func<global::Neatoo.IEntityBase>? _callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private SaveImpl? _callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-
-			private global::Neatoo.IEntityBase _returnValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = default!;
-			private bool _hasReturnValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private SaveImpl? _returnValueTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-
-			private global::System.Collections.Generic.List<(SaveDelegate Callback, SaveImpl Tracking)>? _sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private int _sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private bool _repeatLastValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = true;
-
-			private bool _isVerifiable_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private global::KnockOff.Called? _verifiableTimes_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-
-			/// <summary>Callback delegate for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>.</summary>
-			public delegate global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> SaveDelegate2(global::System.Threading.CancellationToken token);
-
-			private SaveDelegate2? _call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private SaveImpl2? _callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-
-			private global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase>? _callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private SaveImpl2? _callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-
-			private global::Neatoo.IEntityBase _returnValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = default!;
-			private bool _hasReturnValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private SaveImpl2? _returnValueTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-
-			private global::System.Collections.Generic.List<(SaveDelegate2 Callback, SaveImpl2 Tracking)>? _sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private int _sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private bool _repeatLastValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = true;
-
-			private global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase>? _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private int _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private bool _whenVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-
-			private bool _isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-			private global::KnockOff.Called? _verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-
-			private int TotalCallCount => _unconfiguredCallCount + (_callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?.Sum(s => s.Tracking._callCount) ?? 0) + (_returnValueTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Sum(s => s.Tracking._callCount) ?? 0) + (_returnValueTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Sum(m => m.CallCount) ?? 0);
-
-			/// <summary>Verifies method was called at least once. Throws VerificationException if not.</summary>
-			public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
-
-			/// <summary>Verifies call count satisfies the Called constraint. Throws VerificationException if not.</summary>
-			public void Verify(global::KnockOff.Called times)
-			{
-				if (!times.Validate(TotalCallCount))
-					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("Save", times, TotalCallCount));
-			}
-
-			/// <summary>Configures callback for Save() -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>. Returns builder for sequence chaining.</summary>
-			public SaveImpl Call(SaveDelegate callback)
-			{
-				_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-				_isVerifiable_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = false;
-				_verifiableTimes_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_hasReturnValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = false;
-				_returnValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = default!;
-				_returnValueTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = callback;
-				_callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = new SaveImpl(this);
-				return _callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-			}
-
-			/// <summary>Configures callback for Save() -> Neatoo.IEntityBase. Result auto-wrapped in Task.FromResult.</summary>
-			public SaveImpl Call(global::System.Func<global::Neatoo.IEntityBase> callback)
-			{
-				_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-				_isVerifiable_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = false;
-				_verifiableTimes_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = callback;
-				_callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = new SaveImpl(this);
-				return _callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-			}
-
-			/// <summary>Configures callback for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>. Returns builder for sequence chaining.</summary>
-			public SaveImpl2 Call(SaveDelegate2 callback)
-			{
-				_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-				_isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = false;
-				_verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_hasReturnValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = false;
-				_returnValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = default!;
-				_returnValueTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = callback;
-				_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = new SaveImpl2(this);
-				return _callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-			}
-
-			/// <summary>Configures callback for Save(System.Threading.CancellationToken token) -> Neatoo.IEntityBase. Result auto-wrapped in Task.FromResult.</summary>
-			public SaveImpl2 Call(global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase> callback)
-			{
-				_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-				_isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = false;
-				_verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-				_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = callback;
-				_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = new SaveImpl2(this);
-				return _callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-			}
-
-			/// <summary>Configures parameter matching for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>. Matches exact values using Object.Equals. Returns builder for Return().</summary>
-			public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase When(global::System.Threading.CancellationToken token)
-			{
-				_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase>();
-				return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(this, (_arg0) => global::System.Object.Equals(_arg0, token));
-			}
-
-			/// <summary>Configures parameter matching for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>. Matches using predicate. Returns builder for Return().</summary>
-			public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase When(global::System.Func<global::System.Threading.CancellationToken, bool> predicate)
-			{
-				_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase>();
-				return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(this, predicate);
-			}
-
-			/// <summary>Invokes configured callback for Save().</summary>
-			internal global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Invoke_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase(bool strict)
-			{
-				if (_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null && _sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase < _sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.Count)
-				{
-					var (callback, tracking) = _sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase[_sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase];
-					tracking.RecordCall();
-					_sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase++;
-					return callback();
-				}
-
-				if (_hasReturnValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase && _returnValueTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-				{
-					_returnValueTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.RecordCall();
-					return global::System.Threading.Tasks.Task.FromResult(_returnValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase);
-				}
-
-				if (_call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null && _callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-				{
-					_callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.RecordCall();
-					return _call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase();
-				}
-
-				if (_callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null && _callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-				{
-					_callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.RecordCall();
-					return global::System.Threading.Tasks.Task.FromResult(_callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase());
-				}
-
-				_unconfiguredCallCount++;
-				if (_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null && _sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase >= _sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.Count)
-				{
-					if (strict) throw global::KnockOff.StubException.SequenceExhausted("Save");
-					if (_repeatLastValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase && _sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.Count > 0)
-					{
-						var (callback, tracking) = _sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase[_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.Count - 1];
-						tracking.RecordCall();
-						return callback();
-					}
-					return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase>(default!);
-				}
-
-				#pragma warning disable CS8601, SYSLIB0050
-				if (_source is { } src) return src.Save();
-				#pragma warning restore CS8601, SYSLIB0050
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "Save");
-				return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase>(default!);
-			}
-
-			/// <summary>Invokes configured callback for Save(global::System.Threading.CancellationToken).</summary>
-			internal global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Invoke_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(bool strict, global::System.Threading.CancellationToken token)
-			{
-				// When chain - check HEAD matcher first (highest priority)
-				if (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null && _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase < _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count)
-				{
-					var matcher = _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase[_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase];
-					if (matcher.Matches(token))
-					{
-						matcher.CallCount++;
-
-						// Advance HEAD unless at last matcher (which repeats)
-						if (_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase < _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count - 1)
-						{
-							_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase++;
-						}
-						// At last matcher: never advance (repeat behavior for both ThenWhen and ThenCall)
-
-						return matcher.Call(token);
-					}
-					else if (matcher.IsTerminal)
-					{
-						// ThenNone: didn't match (always false), exhaust by advancing past it
-						_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase++;
-					}
-					// Non-terminal didn't match: fall through to rest of priority chain
-				}
-
-				if (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null && _sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase < _sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count)
-				{
-					var (callback, tracking) = _sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase[_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase];
-					tracking.RecordCall(token);
-					_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase++;
-					return callback(token);
-				}
-
-				if (_hasReturnValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase && _returnValueTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-				{
-					_returnValueTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.RecordCall(token);
-					return global::System.Threading.Tasks.Task.FromResult(_returnValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase);
-				}
-
-				if (_call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null && _callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-				{
-					_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.RecordCall(token);
-					return _call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(token);
-				}
-
-				if (_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null && _callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-				{
-					_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.RecordCall(token);
-					return global::System.Threading.Tasks.Task.FromResult(_callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(token));
-				}
-
-				_unconfiguredCallCount++;
-				if (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null && _sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase >= _sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count)
-				{
-					if (strict) throw global::KnockOff.StubException.SequenceExhausted("Save");
-					if (_repeatLastValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase && _sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count > 0)
-					{
-						var (callback, tracking) = _sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase[_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count - 1];
-						tracking.RecordCall(token);
-						return callback(token);
-					}
-					return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase>(default!);
-				}
-
-				#pragma warning disable CS8601, SYSLIB0050
-				if (_source is { } src) return src.Save(token);
-				#pragma warning restore CS8601, SYSLIB0050
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "Save");
-				return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase>(default!);
-			}
-
-			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
-			public void Reset()
-			{
-				_unconfiguredCallCount = 0;
-				_source = null;
-				_callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?.Reset();
-				_returnValueTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?.Reset();
-				_callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?.Reset();
-				if (_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-				{
-					foreach (var (_, tracking) in _sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase)
-						tracking.Reset();
-				}
-				_sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-				_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Reset();
-				_returnValueTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Reset();
-				_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Reset();
-				if (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-				{
-					foreach (var (_, tracking) in _sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase)
-						tracking.Reset();
-				}
-				_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-				_whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-				if (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-				{
-					foreach (var matcher in _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase)
-						matcher.CallCount = 0;
-				}
-			}
-
-			/// <summary>Whether any overload was marked with Verifiable().</summary>
-			internal bool IsVerifiable => _isVerifiable_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase || _isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-
-			/// <summary>Whether any overload has been configured.</summary>
-			internal bool IsConfigured => _call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null || (_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?.Count ?? 0) > 0 || _hasReturnValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase || _callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null || _call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null || (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Count ?? 0) > 0 || _hasReturnValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase || _callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null || (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Count ?? 0) > 0;
-
-			/// <summary>Checks verification for Stub.Verify() - checks all verifiable overloads.</summary>
-			internal global::KnockOff.VerificationFailure? CheckVerification()
-			{
-				if (_isVerifiable_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase)
-				{
-					var times = _verifiableTimes_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase ?? global::KnockOff.Called.AtLeastOnce;
-					var count = (_callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?.Sum(s => s.Tracking._callCount) ?? 0) + (_returnValueTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0);
-					if (!times.Validate(count)) return new global::KnockOff.VerificationFailure("Save", times, count);
-				}
-				if (_isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase)
-				{
-					var times = _verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase ?? global::KnockOff.Called.AtLeastOnce;
-					var count = (_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Sum(s => s.Tracking._callCount) ?? 0) + (_returnValueTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Sum(m => m.CallCount) ?? 0);
-					if (!times.Validate(count)) return new global::KnockOff.VerificationFailure("Save", times, count);
-				}
-				if (_whenVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count > 0)
-				{
-					var head = _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-					var chainCount = _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count;
-					// Chain must be fully consumed (HEAD at end or at terminal matcher)
-					if (head < chainCount && !_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase[head].IsTerminal && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase[head].CallCount == 0)
-						return global::KnockOff.VerificationFailure.SequenceIncomplete("Save When chain", chainCount, head);
-				}
-				return null;
-			}
-
-			/// <summary>Checks verification for Stub.VerifyAll() - checks all configured overloads.</summary>
-			internal global::KnockOff.VerificationFailure? CheckVerificationAll()
-			{
-				if (_call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null || (_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?.Count ?? 0) > 0 || _hasReturnValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase || _callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-				{
-					var count = (_callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?.Sum(s => s.Tracking._callCount) ?? 0) + (_returnValueTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0);
-					if (!global::KnockOff.Called.AtLeastOnce.Validate(count)) return new global::KnockOff.VerificationFailure("Save", global::KnockOff.Called.AtLeastOnce, count);
-				}
-				if (_call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null || (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Count ?? 0) > 0 || _hasReturnValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase || _callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null || (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Count ?? 0) > 0)
-				{
-					var count = (_callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Sum(s => s.Tracking._callCount) ?? 0) + (_returnValueTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?._callCount ?? 0) + (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase?.Sum(m => m.CallCount) ?? 0);
-					if (!global::KnockOff.Called.AtLeastOnce.Validate(count)) return new global::KnockOff.VerificationFailure("Save", global::KnockOff.Called.AtLeastOnce, count);
-				}
-				if (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count > 0)
-				{
-					var head = _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-					var chainCount = _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count;
-					// Chain must be fully consumed (HEAD at end or at terminal matcher)
-					if (head < chainCount && !_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase[head].IsTerminal && _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase[head].CallCount == 0)
-						return global::KnockOff.VerificationFailure.SequenceIncomplete("Save When chain", chainCount, head);
-				}
-				return null;
-			}
-
-			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class SaveImpl : global::KnockOff.IMethodReturnBuilder<SaveDelegate>
-			{
-				private readonly IPersonPhone_SaveInterceptor _interceptor;
-
-				public SaveImpl(IPersonPhone_SaveInterceptor interceptor) => _interceptor = interceptor;
-
-
-				internal int _callCount;
-
-				/// <summary>Records a call to this callback.</summary>
-				public void RecordCall() => _callCount++;
-
-				/// <summary>Resets tracking state.</summary>
-				public void Reset() => _callCount = 0;
-
-				/// <summary>Verifies callback was invoked at least once. Throws VerificationException if not.</summary>
-				public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
-
-				/// <summary>Verifies call count satisfies the Called constraint. Throws VerificationException if not.</summary>
-				public void Verify(global::KnockOff.Called times)
-				{
-					if (!times.Validate(_callCount))
-						throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("method", times, _callCount));
-				}
-
-				/// <summary>Elevates to sequence mode and adds another callback. Return sequence for further chaining.</summary>
-				public SaveSequence ThenReturn(SaveDelegate callback)
-				{
-					if (_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase == null)
-					{
-						_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = new global::System.Collections.Generic.List<(SaveDelegate Callback, SaveImpl Tracking)>();
-						if (_interceptor._call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-						{
-							_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.Add((_interceptor._call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase, this));
-						}
-						else if (_interceptor._callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-						{
-							var captured = _interceptor._callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-							SaveDelegate wrapper = () => global::System.Threading.Tasks.Task.FromResult(captured());
-							_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.Add((wrapper, this));
-							_interceptor._callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-							_interceptor._callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-						}
-						_interceptor._call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-						_interceptor._callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-						_interceptor._sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-					}
-					var nextBuilder = new SaveImpl(_interceptor);
-					_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.Add((callback, nextBuilder));
-					return new SaveSequence(_interceptor);
-				}
-
-				/// <summary>Elevates to sequence mode and adds a value. Return sequence for further chaining.</summary>
-				public SaveSequence ThenReturn(global::Neatoo.IEntityBase value) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(value));
-
-				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public SaveSequence ThenReturn(params global::Neatoo.IEntityBase[] values)
-				{
-					if (values.Length == 0)
-					{
-						if (_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase == null)
-						{
-							_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = new global::System.Collections.Generic.List<(SaveDelegate Callback, SaveImpl Tracking)>();
-							if (_interceptor._call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-							{
-								_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.Add((_interceptor._call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase, this));
-							}
-							else if (_interceptor._callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-							{
-								var captured = _interceptor._callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-								SaveDelegate wrapper = () => global::System.Threading.Tasks.Task.FromResult(captured());
-								_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.Add((wrapper, this));
-								_interceptor._callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-								_interceptor._callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-							}
-							_interceptor._call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-							_interceptor._callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-							_interceptor._sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-						}
-						return new SaveSequence(_interceptor);
-					}
-					var seq = ThenReturn(values[0]);
-					for (int i = 1; i < values.Length; i++)
-					{
-						seq = seq.ThenReturn(values[i]);
-					}
-					return seq;
-				}
-
-				/// <summary>Elevates to sequence mode with simplified callback. Result auto-wrapped in Task.FromResult.</summary>
-				public SaveSequence ThenReturn(global::System.Func<global::Neatoo.IEntityBase> callback) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(callback()));
-
-				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilder<SaveDelegate> Verifiable()
-				{
-					_interceptor._isVerifiable_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = true;
-					_interceptor._verifiableTimes_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-					return this;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilder<SaveDelegate> Verifiable(global::KnockOff.Called times)
-				{
-					_interceptor._isVerifiable_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = true;
-					_interceptor._verifiableTimes_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = times;
-					return this;
-				}
-
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodReturnSequence<SaveDelegate> global::KnockOff.IMethodReturnBuilder<SaveDelegate>.ThenReturn(SaveDelegate callback) => ThenReturn(callback);
-			}
-
-			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class SaveImpl2 : global::KnockOff.IMethodReturnBuilder<SaveDelegate2, global::System.Threading.CancellationToken>
-			{
-				private readonly IPersonPhone_SaveInterceptor _interceptor;
-
-				public SaveImpl2(IPersonPhone_SaveInterceptor interceptor) => _interceptor = interceptor;
-
-				private global::System.Threading.CancellationToken _lastArg = default!;
-
-				internal int _callCount;
-
-				/// <summary>Last argument passed to this callback. Default if never called.</summary>
-				public global::System.Threading.CancellationToken LastArg => _lastArg;
-
-				/// <summary>Records a call to this callback.</summary>
-				public void RecordCall(global::System.Threading.CancellationToken token) { _callCount++; _lastArg = token; }
-
-				/// <summary>Resets tracking state.</summary>
-				public void Reset() { _callCount = 0; _lastArg = default!; }
-
-				/// <summary>Verifies callback was invoked at least once. Throws VerificationException if not.</summary>
-				public void Verify() => Verify(global::KnockOff.Called.AtLeastOnce);
-
-				/// <summary>Verifies call count satisfies the Called constraint. Throws VerificationException if not.</summary>
-				public void Verify(global::KnockOff.Called times)
-				{
-					if (!times.Validate(_callCount))
-						throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("method", times, _callCount));
-				}
-
-				/// <summary>Elevates to sequence mode and adds another callback. Return sequence for further chaining.</summary>
-				public SaveSequence2 ThenReturn(SaveDelegate2 callback)
-				{
-					if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase == null)
-					{
-						_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = new global::System.Collections.Generic.List<(SaveDelegate2 Callback, SaveImpl2 Tracking)>();
-						if (_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-						{
-							_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Add((_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase, this));
-						}
-						else if (_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-						{
-							var captured = _interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-							SaveDelegate2 wrapper = (global::System.Threading.CancellationToken token) => global::System.Threading.Tasks.Task.FromResult(captured(token));
-							_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Add((wrapper, this));
-							_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-							_interceptor._callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-						}
-						_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-						_interceptor._callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-						_interceptor._sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-					}
-					var nextBuilder = new SaveImpl2(_interceptor);
-					_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Add((callback, nextBuilder));
-					return new SaveSequence2(_interceptor);
-				}
-
-				/// <summary>Elevates to sequence mode and adds a value. Return sequence for further chaining.</summary>
-				public SaveSequence2 ThenReturn(global::Neatoo.IEntityBase value) => ThenReturn((_) => global::System.Threading.Tasks.Task.FromResult(value));
-
-				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public SaveSequence2 ThenReturn(params global::Neatoo.IEntityBase[] values)
-				{
-					if (values.Length == 0)
-					{
-						if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase == null)
-						{
-							_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = new global::System.Collections.Generic.List<(SaveDelegate2 Callback, SaveImpl2 Tracking)>();
-							if (_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-							{
-								_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Add((_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase, this));
-							}
-							else if (_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-							{
-								var captured = _interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-								SaveDelegate2 wrapper = (global::System.Threading.CancellationToken token) => global::System.Threading.Tasks.Task.FromResult(captured(token));
-								_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Add((wrapper, this));
-								_interceptor._callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-								_interceptor._callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-							}
-							_interceptor._call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-							_interceptor._callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-							_interceptor._sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-						}
-						return new SaveSequence2(_interceptor);
-					}
-					var seq = ThenReturn(values[0]);
-					for (int i = 1; i < values.Length; i++)
-					{
-						seq = seq.ThenReturn(values[i]);
-					}
-					return seq;
-				}
-
-				/// <summary>Elevates to sequence mode with simplified callback. Result auto-wrapped in Task.FromResult.</summary>
-				public SaveSequence2 ThenReturn(global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase> callback) => ThenReturn((global::System.Threading.CancellationToken token) => global::System.Threading.Tasks.Task.FromResult(callback(token)));
-
-				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilder<SaveDelegate2, global::System.Threading.CancellationToken> Verifiable()
-				{
-					_interceptor._isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = true;
-					_interceptor._verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-					return this;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify() with Called constraint. Returns this for fluent chaining.</summary>
-				public global::KnockOff.IMethodReturnBuilder<SaveDelegate2, global::System.Threading.CancellationToken> Verifiable(global::KnockOff.Called times)
-				{
-					_interceptor._isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = true;
-					_interceptor._verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = times;
-					return this;
-				}
-
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodTracking<global::System.Threading.CancellationToken> global::KnockOff.IMethodTracking<global::System.Threading.CancellationToken>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking<global::System.Threading.CancellationToken> global::KnockOff.IMethodTracking<global::System.Threading.CancellationToken>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodReturnSequence<SaveDelegate2> global::KnockOff.IMethodReturnBuilder<SaveDelegate2, global::System.Threading.CancellationToken>.ThenReturn(SaveDelegate2 callback) => ThenReturn(callback);
-			}
-
-			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
-			public sealed class SaveSequence : global::KnockOff.IMethodReturnSequence<SaveDelegate>
-			{
-				private readonly IPersonPhone_SaveInterceptor _interceptor;
-
-				public SaveSequence(IPersonPhone_SaveInterceptor interceptor) => _interceptor = interceptor;
-
-				private int TotalCallCount
-				{
-					get
-					{
-						if (_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase == null) return 0;
-						var total = 0;
-						foreach (var (_, tracking) in _interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase)
-							total += tracking._callCount;
-						return total;
-					}
-				}
-
-				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public SaveSequence ThenReturn(SaveDelegate callback)
-				{
-					var tracking = new SaveImpl(_interceptor);
-					_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase!.Add((callback, tracking));
-					return this;
-				}
-
-				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
-				public SaveSequence ThenReturn(global::Neatoo.IEntityBase value) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(value));
-
-				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public SaveSequence ThenReturn(params global::Neatoo.IEntityBase[] values)
-				{
-					foreach (var value in values)
-					{
-						ThenReturn(value);
-					}
-					return this;
-				}
-
-				/// <summary>Adds simplified callback to the sequence. Result auto-wrapped in Task.FromResult.</summary>
-				public SaveSequence ThenReturn(global::System.Func<global::Neatoo.IEntityBase> callback) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(callback()));
-
-				/// <summary>Verifies the entire sequence was executed (all callbacks invoked). Throws VerificationException if incomplete.</summary>
-				public void Verify()
-				{
-					if (_interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase == null) return;
-					var sequenceLength = _interceptor._sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.Count;
-					var completedCount = _interceptor._sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
-					if (completedCount < sequenceLength)
-						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("method", sequenceLength, completedCount));
-				}
-
-				/// <summary>Resets all tracking in the sequence.</summary>
-				public void Reset() => _interceptor.Reset();
-
-				/// <summary>Marks this sequence for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public SaveSequence Verifiable()
-				{
-					_interceptor._isVerifiable_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = true;
-					_interceptor._verifiableTimes_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-					return this;
-				}
-
-				/// <summary>Terminates sequence with default(T) after exhaustion instead of repeating last value.</summary>
-				public void ThenDefault()
-				{
-					_interceptor._repeatLastValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = false;
-				}
-
-				global::KnockOff.IMethodReturnSequence<SaveDelegate> global::KnockOff.IMethodReturnSequence<SaveDelegate>.ThenReturn(SaveDelegate callback) => ThenReturn(callback);
-				global::KnockOff.IMethodReturnSequence<SaveDelegate> global::KnockOff.IMethodReturnSequence<SaveDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
-			}
-
-			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
-			public sealed class SaveSequence2 : global::KnockOff.IMethodReturnSequence<SaveDelegate2>
-			{
-				private readonly IPersonPhone_SaveInterceptor _interceptor;
-
-				public SaveSequence2(IPersonPhone_SaveInterceptor interceptor) => _interceptor = interceptor;
-
-				private int TotalCallCount
-				{
-					get
-					{
-						if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase == null) return 0;
-						var total = 0;
-						foreach (var (_, tracking) in _interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase)
-							total += tracking._callCount;
-						return total;
-					}
-				}
-
-				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public SaveSequence2 ThenReturn(SaveDelegate2 callback)
-				{
-					var tracking = new SaveImpl2(_interceptor);
-					_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase!.Add((callback, tracking));
-					return this;
-				}
-
-				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
-				public SaveSequence2 ThenReturn(global::Neatoo.IEntityBase value) => ThenReturn((_) => global::System.Threading.Tasks.Task.FromResult(value));
-
-				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public SaveSequence2 ThenReturn(params global::Neatoo.IEntityBase[] values)
-				{
-					foreach (var value in values)
-					{
-						ThenReturn(value);
-					}
-					return this;
-				}
-
-				/// <summary>Adds simplified callback to the sequence. Result auto-wrapped in Task.FromResult.</summary>
-				public SaveSequence2 ThenReturn(global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase> callback) => ThenReturn((global::System.Threading.CancellationToken token) => global::System.Threading.Tasks.Task.FromResult(callback(token)));
-
-				/// <summary>Verifies the entire sequence was executed (all callbacks invoked). Throws VerificationException if incomplete.</summary>
-				public void Verify()
-				{
-					if (_interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase == null) return;
-					var sequenceLength = _interceptor._sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count;
-					var completedCount = _interceptor._sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-					if (completedCount < sequenceLength)
-						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("method", sequenceLength, completedCount));
-				}
-
-				/// <summary>Resets all tracking in the sequence.</summary>
-				public void Reset() => _interceptor.Reset();
-
-				/// <summary>Marks this sequence for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
-				public SaveSequence2 Verifiable()
-				{
-					_interceptor._isVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = true;
-					_interceptor._verifiableTimes_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
-					return this;
-				}
-
-				/// <summary>Terminates sequence with default(T) after exhaustion instead of repeating last value.</summary>
-				public void ThenDefault()
-				{
-					_interceptor._repeatLastValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = false;
-				}
-
-				global::KnockOff.IMethodReturnSequence<SaveDelegate2> global::KnockOff.IMethodReturnSequence<SaveDelegate2>.ThenReturn(SaveDelegate2 callback) => ThenReturn(callback);
-				global::KnockOff.IMethodReturnSequence<SaveDelegate2> global::KnockOff.IMethodReturnSequence<SaveDelegate2>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
-			}
-
-			/// <summary>Abstract base for When chain matchers.</summary>
-			private abstract class WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase
-			{
-				public abstract bool Matches(global::System.Threading.CancellationToken token);
-				public abstract global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Call(global::System.Threading.CancellationToken token);
-				public abstract bool IsTerminal { get; }
-				public int CallCount { get; set; }
-			}
-
-			/// <summary>Matcher that uses a predicate and returns a stored value.</summary>
-			private sealed class WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase : WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase
-			{
-				private readonly global::System.Func<global::System.Threading.CancellationToken, bool> _predicate;
-				private readonly global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> _value;
-
-				public WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(global::System.Func<global::System.Threading.CancellationToken, bool> predicate, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> value)
-				{
-					_predicate = predicate;
-					_value = value;
-				}
-
-				public override bool Matches(global::System.Threading.CancellationToken token) => _predicate(token);
-				public override global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Call(global::System.Threading.CancellationToken token) => _value;
-				public override bool IsTerminal => false;
-			}
-
-			/// <summary>Matcher that always matches and invokes a callback. Terminal.</summary>
-			private sealed class WhenMatcherCall_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase : WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase
-			{
-				private readonly SaveDelegate2 _callback;
-
-				public WhenMatcherCall_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(SaveDelegate2 callback) => _callback = callback;
-
-				public override bool Matches(global::System.Threading.CancellationToken token) => true;
-				public override global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Call(global::System.Threading.CancellationToken token) => _callback(token);
-				public override bool IsTerminal => true;
-			}
-
-			/// <summary>Matcher that never matches. Used to close chain without fallback. Terminal.</summary>
-			private sealed class WhenMatcherNone_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase : WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase
-			{
-				public override bool Matches(global::System.Threading.CancellationToken token) => false;
-				public override global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Call(global::System.Threading.CancellationToken token) => default!;
-				public override bool IsTerminal => true;
-			}
-
-			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
-			public sealed class WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase : global::KnockOff.IWhenBuilder<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>
-			{
-				private readonly IPersonPhone_SaveInterceptor _interceptor;
-				private readonly global::System.Func<global::System.Threading.CancellationToken, bool> _predicate;
-
-				public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(IPersonPhone_SaveInterceptor interceptor, global::System.Func<global::System.Threading.CancellationToken, bool> predicate)
-				{
-					_interceptor = interceptor;
-					_predicate = predicate;
-				}
-
-				/// <summary>Configures the return value. Auto-wrapped in Task.FromResult.</summary>
-				public WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase Return(global::Neatoo.IEntityBase value)
-				{
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase>();
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Add(new WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(_predicate, global::System.Threading.Tasks.Task.FromResult(value)));
-					return new WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(_interceptor);
-				}
-
-				global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>> global::KnockOff.IWhenBuilder<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>.Return(global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> value) => Return(value.Result);
-			}
-
-			/// <summary>When chain implementation with ThenCall, ThenNone, verification support.</summary>
-			public sealed class WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase : global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>
-			{
-				private readonly IPersonPhone_SaveInterceptor _interceptor;
-
-				public WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(IPersonPhone_SaveInterceptor interceptor) => _interceptor = interceptor;
-
-				/// <summary>Adds another matcher with exact value matching.</summary>
-				public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase ThenWhen(global::System.Threading.CancellationToken token)
-				{
-					return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(_interceptor, (_arg0) => global::System.Object.Equals(_arg0, token));
-				}
-
-				/// <summary>Adds another matcher with predicate matching.</summary>
-				public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase ThenWhen(global::System.Func<global::System.Threading.CancellationToken, bool> predicate)
-				{
-					return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(_interceptor, predicate);
-				}
-
-				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
-				public global::KnockOff.IWhenTracking ThenCall(SaveDelegate2 callback)
-				{
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase>();
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Add(new WhenMatcherCall_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(callback));
-					return this;
-				}
-
-				/// <summary>Closes chain with no matcher. Falls through when exhausted.</summary>
-				public global::KnockOff.IWhenTracking ThenNone()
-				{
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase>();
-					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Add(new WhenMatcherNone_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase());
-					return this;
-				}
-
-				/// <summary>Verifies the When chain was fully consumed (reached terminal state).</summary>
-				public void Verify()
-				{
-					if (_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase == null || _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count == 0) return;
-					var head = _interceptor._whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
-					var count = _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count;
-					// Chain is complete if HEAD reached a terminal matcher or exhausted
-					if (head < count && !_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase[head].IsTerminal && _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase[head].CallCount == 0)
-					{
-						throw new global::KnockOff.VerificationException(global::KnockOff.VerificationFailure.SequenceIncomplete("When chain", count, head));
-					}
-				}
-
-				/// <summary>Resets When chain HEAD and all matcher call counts.</summary>
-				public void Reset()
-				{
-					_interceptor._whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
-					if (_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null)
-					{
-						foreach (var matcher in _interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase)
-							matcher.CallCount = 0;
-					}
-				}
-
-				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
-				public WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase Verifiable()
-				{
-					_interceptor._whenVerifiable_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = true;
-					return this;
-				}
-
-				global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>> global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>.Verifiable() => Verifiable();
-				global::KnockOff.IWhenTracking global::KnockOff.IWhenTracking.Verifiable() => Verifiable();
 			}
 
 		}
@@ -15070,9 +14205,6 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for IsMarkedModified.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsMarkedModified { get; } = new("IsMarkedModified");
 
-			/// <summary>Interceptor for IsSavable.</summary>
-			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsSavable { get; } = new("IsSavable");
-
 			/// <summary>Interceptor for IsDeleted.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsDeleted { get; } = new("IsDeleted");
 
@@ -15087,9 +14219,6 @@ partial class UniquePhoneNumberRuleTests
 
 			/// <summary>Interceptor for UnDelete.</summary>
 			public IPersonPhone_UnDeleteInterceptor UnDelete { get; } = new();
-
-			/// <summary>Interceptor for Save.</summary>
-			public IPersonPhone_SaveInterceptor Save { get; } = new();
 
 			/// <summary>Interceptor for GetProperty.</summary>
 			public IPersonPhone_GetPropertyInterceptor GetProperty { get; } = new();
@@ -15149,16 +14278,6 @@ partial class UniquePhoneNumberRuleTests
 			void global::Neatoo.IEntityBase.UnDelete()
 			{
 				UnDelete.Invoke(Strict);
-			}
-
-			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityBase.Save()
-			{
-				return Save.Invoke_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase(Strict);
-			}
-
-			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityBase.Save(global::System.Threading.CancellationToken token)
-			{
-				return Save.Invoke_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(Strict, token);
 			}
 
 			global::Neatoo.IValidateBase? global::Neatoo.IEntityBase.Root
@@ -15276,11 +14395,6 @@ partial class UniquePhoneNumberRuleTests
 				get => IsMarkedModified.InvokeGet(Strict);
 			}
 
-			bool global::Neatoo.IEntityMetaProperties.IsSavable
-			{
-				get => IsSavable.InvokeGet(Strict);
-			}
-
 			bool global::Neatoo.RemoteFactory.IFactorySaveMeta.IsDeleted
 			{
 				get => IsDeleted.InvokeGet(Strict);
@@ -15335,13 +14449,11 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
 				Delete._source = source;
 				UnDelete._source = source;
-				Save._source = source;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
 				AddChildTask._source = source;
@@ -15370,13 +14482,11 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
 				Delete._source = source;
 				UnDelete._source = source;
-				Save._source = source;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
 				AddChildTask._source = source;
@@ -15405,13 +14515,11 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
 				AddChildTask._source = source;
@@ -15440,13 +14548,11 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -15475,13 +14581,11 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -15510,13 +14614,11 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -15545,13 +14647,11 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -15580,13 +14680,11 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(null);
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -15615,13 +14713,11 @@ partial class UniquePhoneNumberRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(null);
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -15652,13 +14748,11 @@ partial class UniquePhoneNumberRuleTests
 				if (IsModified.CheckVerification() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerification() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerification() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerification() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerification() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerification() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerification() is { } indexerFailure) failures.Add(indexerFailure);
 				if (Delete.CheckVerification() is { } deleteFailure) failures.Add(deleteFailure);
 				if (UnDelete.CheckVerification() is { } undeleteFailure) failures.Add(undeleteFailure);
-				if (Save.CheckVerification() is { } saveFailure) failures.Add(saveFailure);
 				if (GetProperty.CheckVerification() is { } getpropertyFailure) failures.Add(getpropertyFailure);
 				if (TryGetProperty.CheckVerification() is { } trygetpropertyFailure) failures.Add(trygetpropertyFailure);
 				if (AddChildTask.CheckVerification() is { } addchildtaskFailure) failures.Add(addchildtaskFailure);
@@ -15694,13 +14788,11 @@ partial class UniquePhoneNumberRuleTests
 				if (IsModified.CheckVerificationAll() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerificationAll() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerificationAll() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerificationAll() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerificationAll() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerificationAll() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerificationAll() is { } indexerFailure) failures.Add(indexerFailure);
 				if (Delete.CheckVerificationAll() is { } deleteFailure) failures.Add(deleteFailure);
 				if (UnDelete.CheckVerificationAll() is { } undeleteFailure) failures.Add(undeleteFailure);
-				if (Save.CheckVerificationAll() is { } saveFailure) failures.Add(saveFailure);
 				if (GetProperty.CheckVerificationAll() is { } getpropertyFailure) failures.Add(getpropertyFailure);
 				if (TryGetProperty.CheckVerificationAll() is { } trygetpropertyFailure) failures.Add(trygetpropertyFailure);
 				if (AddChildTask.CheckVerificationAll() is { } addchildtaskFailure) failures.Add(addchildtaskFailure);

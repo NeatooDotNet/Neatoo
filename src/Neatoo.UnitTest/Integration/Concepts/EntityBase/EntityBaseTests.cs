@@ -174,6 +174,6 @@ public class EntityBaseTests
 
         Assert.IsTrue(editPerson.IsSavable);
         var propertyChangedNames = propertyChanged.Select(p => p.propertyName).ToList();
-        CollectionAssert.Contains(propertyChangedNames, nameof(IEntityBase.IsSavable));
+        CollectionAssert.Contains(propertyChangedNames, nameof(IEntityRoot.IsSavable));
     }
 }

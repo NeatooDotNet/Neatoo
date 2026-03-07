@@ -326,6 +326,9 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
 
             if (value is IEntityMetaProperties editMetaProperties)
             {
+                // IEntityMetaProperties intentionally does not extend IValidateMetaProperties
+                // so this reflection call only picks up persistence state (IsModified, IsChild, etc.)
+                // and not validation state (IsValid, IsBusy, PropertyMessages, etc.)
                 var editProperties = typeof(IEntityMetaProperties).GetProperties().ToList();
                 editProperties.AddRange(typeof(IFactorySaveMeta).GetProperties());
 
