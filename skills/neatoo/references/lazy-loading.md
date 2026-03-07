@@ -8,7 +8,7 @@
 - **Thread-safe** — Multiple concurrent awaits share a single load operation.
 - **UI-friendly** — Implements `INotifyPropertyChanged` with `IsLoading`, `IsLoaded`, `HasLoadError`, and `LoadError` for binding.
 - **Meta property delegation** — Implements `IValidateMetaProperties` and `IEntityMetaProperties`, delegating to the loaded value.
-- **JSON serialization** — `Value` and `IsLoaded` are serialized; the loader delegate is not. The Neatoo JSON converter (`NeatooBaseJsonTypeConverter`) detects `LazyLoad<>` properties on entities and serializes them alongside PropertyManager entries and meta properties. When `LazyLoad<T>.Value` contains a Neatoo entity (`IValidateBase`), the inner entity is serialized through the Neatoo converter with proper `$id`/`$ref` handling. After deserialization, `LoadAsync()` throws `InvalidOperationException` if the value was not pre-loaded (the loader delegate is not serialized).
+- **JSON serialization** — `Value` and `IsLoaded` are serialized; the loader delegate is not.
 
 ## Creating Instances
 

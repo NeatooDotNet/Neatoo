@@ -2,7 +2,50 @@
 
 > **Required package:** Install `Neatoo.Blazor.MudNeatoo` to use the MudNeatoo components shown below.
 
-Neatoo provides Blazor-specific components and patterns for building forms with automatic validation display, change tracking, and two-way binding. Property binding basics are covered in [properties.md](properties.md) — this page covers Blazor-specific patterns.
+Neatoo provides Blazor-specific components and patterns for building forms with automatic validation display, change tracking, and two-way binding. Property binding basics are covered in [properties.md](properties.md) -- this page covers Blazor-specific patterns.
+
+## The Thin Binding Layer Principle
+
+The Blazor UI should be a **thin binding layer** over the domain model. It binds to domain properties, calls domain methods, and displays domain-computed state. It does not compute, decide, or validate.
+
+**When implementing a feature: design domain properties and rules first. Write the UI as a binding layer over those properties. If you find yourself writing business logic in a `.razor` file, stop and move it to the domain model.**
+
+**What belongs in .razor files:**
+- Property binding (`@bind-Value`, `Value="@entity.Name"`)
+- Layout and styling (CSS classes, MudBlazor components, grid structure)
+- Component selection (which MudBlazor component to use)
+- Navigation and routing
+- Calling domain methods on button click (`OnClick="@(() => entity.Approve())"`)
+
+**What does NOT belong in .razor files:**
+- Arithmetic (`@(a * b)`) -- use `AddAction` computed property
+- Conditional business logic (`@if (status == "X" && count > 0)`) -- use domain `bool` property
+- LINQ expressions (`@items.Where(...).Count()`) -- use domain computed property
+- Multi-property validation in event handlers -- use `AddValidation`
+- Setting multiple properties in response to an event -- use domain method or `AddAction`
+
+### Anti-Pattern: Logic-Heavy Razor Files
+
+A `.razor` file with 20+ conditional/LINQ expressions indicates business logic has leaked into the UI. This logic is untestable (requires E2E tests) and duplicates what the domain model should own.
+
+```razor
+<!-- WRONG: 21 conditional expressions in a panel -->
+@if (visit.Status == "Active" && plan.IsApproved && !visit.IsComplete)
+{ <TreatmentPanel /> }
+@if (areas.Any(a => a.NeedsReview) && visit.Status != "Discharged")
+{ <ReviewAlert /> }
+@if (visit.CompletedVisits >= plan.MaxVisits && !plan.HasExtension)
+{ <ExtensionWarning /> }
+```
+
+```razor
+<!-- RIGHT: Domain exposes computed state, UI binds -->
+@if (visit.ShowTreatmentPanel) { <TreatmentPanel /> }
+@if (visit.ShowReviewAlert) { <ReviewAlert /> }
+@if (visit.ShowExtensionWarning) { <ExtensionWarning /> }
+```
+
+The domain model computes `ShowTreatmentPanel`, `ShowReviewAlert`, `ShowExtensionWarning` via `AddAction` rules. See `domain-logic-placement.md` for the full pattern.
 
 ## Validation Display
 
@@ -137,6 +180,8 @@ public async Task ManualBindingUsesSetValueAsync()
 
 ## Component Reference
 
+Bind components to domain-computed properties. Ensure the values you bind to are domain properties, not UI-computed expressions.
+
 | Component | Purpose |
 |-----------|---------|
 | `NeatooTextField` | Text input with validation |
@@ -149,11 +194,11 @@ public async Task ManualBindingUsesSetValueAsync()
 
 All MudBlazor parameters pass through to the underlying component (Variant, Margin, HelperText, Adornment, etc.).
 
-## Best Practices
+## Standard Practices
 
-1. **Use Neatoo components** — They handle validation display and change tracking automatically
-2. **Handle IsBusy** — Disable buttons and show loading during async operations
-3. **Show validation early** — Display errors as user types, not just on submit
+1. **Use Neatoo components** -- They handle validation display and change tracking automatically
+2. **Handle IsBusy** -- Disable buttons and show loading during async operations
+3. **Show validation early** -- Display errors as user types, not just on submit
 
 ## Blazor WASM Project Structure
 
@@ -207,3 +252,4 @@ This ensures:
 - [Validation](validation.md) - Validation rules
 - [Properties](properties.md) - Property change notifications
 - [Entities](entities.md) - IsSavable for submit buttons
+- [Domain Logic Placement](domain-logic-placement.md) - Where business logic belongs

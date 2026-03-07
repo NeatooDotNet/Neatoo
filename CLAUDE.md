@@ -1,3 +1,7 @@
+## Neatoo Skill
+
+The neatoo skill source lives in `skills/neatoo/`. Edit it here, then copy to `~/.claude/skills/neatoo/`. Do NOT load the skill via the Skill tool in this repo.
+
 ## Commands
 
 ```bash

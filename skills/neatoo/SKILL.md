@@ -1,6 +1,6 @@
 ---
 name: Neatoo
-description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, IEntityRoot, IEntityBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, lazy loading, LazyLoad, ILazyLoadFactory, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, AddActionAsync, AddValidationAsync, AddAction, AddValidation, IsBusy, WaitForTasks, IsLoaded, IsLoading, and base class behavior. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill.
+description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, lazy loading, LazyLoad, ILazyLoadFactory, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, AddActionAsync, AddValidationAsync, AddAction, AddValidation, IsBusy, WaitForTasks, IsLoaded, IsLoading, and base class behavior. This skill also provides guidance on where business logic belongs -- computed properties, conditional visibility, reactive behavior, and validation should live in the domain model (not the UI). Consult this skill when writing .razor files that bind to Neatoo entities to ensure logic stays in the domain layer. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill.
 version: 1.0.0
 ---
 
@@ -30,19 +30,56 @@ public partial class Product : EntityBase<Product>
 
 This generates a factory (`IProductFactory`) with a `Create()` method. Properties auto-track changes, trigger validation, and fire `PropertyChanged`.
 
+## Domain Logic First -- The Core Principle
+
+**Business logic belongs in the domain model, not the UI.** Neatoo domain models are not DTOs that shuttle data to a smart UI. They are rich domain objects that encapsulate business rules, computed state, validation, and reactive behavior. The UI is a thin binding layer.
+
+**When implementing a feature: design domain properties and rules first. Write the UI as a binding layer over those properties. If you find yourself writing business logic in a `.razor` file, stop and move it to the domain model.**
+
+These patterns use `RuleManager.AddAction` and `AddActionAsync`, covered in Core Patterns below and in `references/validation.md`.
+
+### Where Logic Goes
+
+| Logic Type | Neatoo Mechanism | NOT in |
+|-----------|-----------------|--------|
+| Computed/derived values | `AddAction` with trigger properties | `.razor` arithmetic/ternary |
+| Conditional visibility | Domain `bool` property via `AddAction` | `.razor` `@if` chains |
+| Cross-property validation | `AddValidation` / `AddValidationAsync` | UI event handlers |
+| Reactive data fetch | `AddActionAsync` | UI `OnChanged` handlers |
+| Cascading state changes | Chained rules (rule sets property -> triggers next rule) | UI code-behind |
+| Workflow transitions | Domain methods + `AddAction` for `CanX` properties | UI button click handlers |
+| LINQ over children | Domain computed property | `.razor` inline LINQ |
+
+### The Smell Test
+
+When writing or reviewing `.razor` files: if there are more than 3 conditional/computed expressions, business logic is leaking into the UI. Move it to the domain model as rules or computed properties.
+
+```csharp
+// WRONG: UI computes
+<MudText>@(order.Quantity * order.UnitPrice)</MudText>
+@if (order.Quantity > 0 && order.UnitPrice > 0 && order.Total > 500)
+{ <MudAlert>Discount!</MudAlert> }
+
+// RIGHT: Domain computes, UI binds
+// In constructor: RuleManager.AddAction(t => t.Total = t.Quantity * t.UnitPrice, t => t.Quantity, t => t.UnitPrice);
+// In constructor: RuleManager.AddAction(t => t.QualifiesForDiscount = t.Total > 500, t => t.Total);
+<MudText>@order.Total</MudText>
+@if (order.QualifiesForDiscount) { <MudAlert>Discount!</MudAlert> }
+```
+
+See `references/domain-logic-placement.md` for detailed patterns: computed properties, conditional visibility, cascading state, async side-effects, workflow state machines, NeatooPropertyChanged for parent-child reactivity, class-based rules with DI, and the refactoring smell test table.
+
 ## Base Class Quick Reference
 
-| DDD Concept | Neatoo Base Class | Interface | Use When |
-|-------------|-------------------|-----------|----------|
-| Aggregate Root | `EntityBase<T>` | `IEntityRoot` | Root entity with full CRUD lifecycle, `IsSavable`, `Save()` |
-| Child Entity | `EntityBase<T>` | `IEntityBase` | Child entity within an aggregate (no `IsSavable`/`Save()`) |
-| Value Object | `ValidateBase<T>` | `IValidateBase` | Data with validation, no persistence lifecycle |
-| Entity Collection | `EntityListBase<I>` | — | List of child entities (tracks deletions) |
-| Validate Collection | `ValidateListBase<I>` | — | List of value objects (no deletion tracking) |
-| Command | Static class with `[Execute]` | — | Server-side operation returning result |
-| Read Model | `ValidateBase<T>` with `[Fetch]` only | `IValidateBase` | Query result (no Insert/Update/Delete) |
-
-**IEntityRoot vs IEntityBase:** Aggregate root interfaces extend `IEntityRoot` which exposes `IsSavable` and `Save()`. Child entity interfaces extend `IEntityBase` which does **not** expose `IsSavable` or `Save()` — this is enforced at the type level.
+| DDD Concept | Neatoo Base Class | Use When |
+|-------------|-------------------|----------|
+| Aggregate Root | `EntityBase<T>` | Root entity with full CRUD lifecycle |
+| Entity | `EntityBase<T>` | Child entity within an aggregate |
+| Value Object | `ValidateBase<T>` | Data with validation, no persistence lifecycle |
+| Entity Collection | `EntityListBase<I>` | List of child entities (tracks deletions) |
+| Validate Collection | `ValidateListBase<I>` | List of value objects (no deletion tracking) |
+| Command | Static class with `[Execute]` | Server-side operation returning result |
+| Read Model | `ValidateBase<T>` with `[Fetch]` only | Query result (no Insert/Update/Delete) |
 
 ## Key Properties
 
@@ -54,7 +91,7 @@ This generates a factory (`IProductFactory`) with a `Create()` method. Propertie
 | `IsSelfModified` | bool | This object (only) has changes |
 | `IsValid` | bool | This object and all children pass validation |
 | `IsSelfValid` | bool | This object (only) passes validation |
-| `IsSavable` | bool | `IsValid && IsModified && !IsBusy` — **only on `IEntityRoot`** |
+| `IsSavable` | bool | `IsValid && IsModified && !IsBusy && !IsChild` |
 | `IsNew` | bool | Not yet persisted |
 | `IsDeleted` | bool | Marked for deletion |
 | `RuleManager` | IRuleManager | Access to validation rules |
@@ -82,7 +119,7 @@ Neatoo entities use RemoteFactory for factory generation. See the `/RemoteFactor
 
 ### Save Routing (Neatoo State-Based)
 
-`Save()` is only available on `IEntityRoot` (aggregate roots). When called, the factory routes based on entity state:
+When `Save()` is called, the factory routes based on Neatoo entity state:
 - `IsNew == true` → `[Insert]` method
 - `IsNew == false && IsDeleted == false` → `[Update]` method
 - `IsDeleted == true` → `[Delete]` method
@@ -127,6 +164,7 @@ Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
 
 Detailed documentation for each topic area:
 
+- **`references/domain-logic-placement.md`** - Where business logic belongs: computed properties, conditional visibility, cascading state, async side-effects, NeatooPropertyChanged, workflow state machines, refactoring smell test
 - **`references/base-classes.md`** - Neatoo-to-DDD mapping, when to use each base
 - **`references/properties.md`** - Partial properties, change tracking, calculated properties
 - **`references/validation.md`** - RuleManager, attributes, async validation
@@ -143,4 +181,4 @@ Detailed documentation for each topic area:
 
 ## Troubleshooting
 
-See `references/pitfalls.md` for common issues. Key quick checks: class and properties must be `partial`, class needs `[Factory]` attribute, `IsSavable` requires both `IsValid` and `IsModified`, and `IsSavable`/`Save()` are only on `IEntityRoot` (not `IEntityBase`).
+See `references/pitfalls.md` for common issues. Key quick checks: class and properties must be `partial`, class needs `[Factory]` attribute, and `IsSavable` requires both `IsValid` and `IsModified`.
