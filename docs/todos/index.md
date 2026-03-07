@@ -1,121 +1,100 @@
 # Neatoo Framework Improvement Todos
 
-This directory contains detailed action items from the comprehensive framework review conducted on December 31, 2024.
+*Last audited: 2026-03-07*
 
 ---
 
-## Quick Reference
+## Active Todos
 
-| ID | Priority | Title | Effort | Status |
-|----|----------|-------|--------|--------|
-| [C1](C1-domain-events-support.md) | Critical | Add Domain Events Support | Low | Not Started |
-| [C2](C2-beginner-tutorials.md) | Critical | Create Beginner-Friendly Tutorials | Medium | Not Started |
-| [H1](completed/H1-fix-rulemanager-assertion.md) | High | Fix RuleManager Assertion Logic | Low | **Completed** |
-| [H2](H2-document-async-validation-patterns.md) | High | Document Async Validation Patterns | Medium | Not Started |
-| [H3](completed/H3-add-generator-diagnostics.md) | High | Add Generator Diagnostics | Low | **Completed** |
-| [H4](completed/H4-thread-safe-ismarkedbusy.md) | High | Make IsMarkedBusy Thread-Safe | Low | **Completed** |
-| [M1](completed/M1-extract-metaproperty-helper.md) | Medium | Extract Meta-Property Change Helper | Low | **Completed** |
-| [M2](M2-value-object-base.md) | Medium | Add Value Object Base Type | Medium | Not Started |
-| [M3](M3-document-propertychanged-events.md) | Medium | Document PropertyChanged vs NeatooPropertyChanged | Low | Not Started |
-| [M4](completed/M4-resolve-todo-comments.md) | Medium | Resolve TODO Comments | Low | **Completed** |
-| [M4a](completed/M4a-displayname-serialization.md) | Medium | Remove DisplayName from Serialization | Medium | **Completed** |
-| [M5](M5-aggregate-root-marker.md) | Medium | Add IAggregateRoot Marker Interface | Low | Not Started |
-| [M6](completed/multi-targeting-net8-9-10.md) | Medium | Multi-Target .NET 8.0/9.0/10.0 | Medium | **Completed** |
-| [L1](L1-naming-consistency.md) | Low | Naming Consistency Fixes | Low | Not Started |
-| [L2](L2-duplicate-event-subscriptions.md) | Low | Guard Against Duplicate Event Subscriptions | Low | Not Started |
-| [L3](completed/L3-fix-waitfortasks-assert.md) | Low | Fix Debug.Assert in WaitForTasks | Low | **Completed** |
-| [L4](L4-specification-pattern.md) | Low | Specification Pattern Support | High | Evaluation |
-| [L5](L5-internal-interface-pattern.md) | Low | Internal Interface Pattern - Document & Simplify | Medium | Not Started |
-| [L6](L6-consolidate-lifecycle-interfaces.md) | Low | Consolidate Lifecycle Interfaces | Low | Not Started |
-| [LL1](lazy-loading-entities.md) | Medium | Add Lazy Loading for Child Entities | High | Not Started |
-| [M7](M7-analyze-documentation-patterns.md) | Medium | Analyze Documentation Sample Patterns | Low | Not Started |
-| [M8](M8-document-child-property-cascade.md) | Medium | Document Child Property Cascade Behavior | Low | Not Started |
-| [CT1](completed/cancellation-token-support.md) | Medium | Add CancellationToken Support | High | **Completed** |
+### Features
 
----
+| Todo | Priority | Effort | Status |
+|------|----------|--------|--------|
+| [C1 - Domain Events Support](C1-domain-events-support.md) | Critical | Low | Not Started |
+| [M2 - Value Object Base Type](M2-value-object-base.md) | Medium | Medium | Not Started |
+| [Entity Dictionary Base](entity-dictionary-base.md) | Medium | Medium | Pending |
+| [Meta-State Notifier Service](meta-state-notifier-service.md) | Medium | Medium | Not Started |
 
-## By Category
+### Bugs
 
-### Missing DDD Features
-- [C1](C1-domain-events-support.md) - Domain Events Support
-- [M2](M2-value-object-base.md) - Value Object Base Type
-- [M5](M5-aggregate-root-marker.md) - IAggregateRoot Marker Interface
-- [L4](L4-specification-pattern.md) - Specification Pattern Support
-- [LL1](lazy-loading-entities.md) - Lazy Loading for Child Entities
-
-### Code Bugs
-- ~~[H1](completed/H1-fix-rulemanager-assertion.md) - RuleManager Assertion Logic~~ **DONE**
-- ~~[H3](completed/H3-add-generator-diagnostics.md) - Generator Diagnostics~~ **DONE**
-- ~~[H4](completed/H4-thread-safe-ismarkedbusy.md) - Thread-Safe IsMarkedBusy~~ **DONE**
-- [L2](L2-duplicate-event-subscriptions.md) - Duplicate Event Subscriptions
-- ~~[L3](completed/L3-fix-waitfortasks-assert.md) - WaitForTasks Assert~~ **DONE**
-
-### Documentation
-- [C2](C2-beginner-tutorials.md) - Beginner Tutorials
-- [H2](H2-document-async-validation-patterns.md) - Async Validation Patterns
-- [M3](M3-document-propertychanged-events.md) - PropertyChanged Events
-- [M8](M8-document-child-property-cascade.md) - Child Property Cascade Behavior
-- ~~[Snippet Refactoring](completed/snippet-refactoring-plan.md) - Refactor full examples to focused micro-snippets~~ **DONE**
-- ~~[Documentation Feedback Review](completed/documentation-feedback-review.md) - Inline feedback cleanup~~ **DONE**
+| Todo | Priority | Effort | Status |
+|------|----------|--------|--------|
+| [L2 - Duplicate Event Subscriptions](L2-duplicate-event-subscriptions.md) | Low | Low | Not Started |
+| [RunRulesFlag Messages Bug](runrulesflag-messages-bug.md) | Medium | Low | Not Started |
 
 ### Code Quality
-- ~~[M1](completed/M1-extract-metaproperty-helper.md) - Meta-Property Change Helper~~ **DONE**
-- ~~[M4](completed/M4-resolve-todo-comments.md) - TODO Comments~~ **DONE**
-- ~~[M4a](completed/M4a-displayname-serialization.md) - DisplayName Serialization Performance~~ **DONE**
-- [M7](M7-analyze-documentation-patterns.md) - Analyze Documentation Sample Patterns
-- [L1](L1-naming-consistency.md) - Naming Consistency
-- [L5](L5-internal-interface-pattern.md) - Internal Interface Pattern (document rationale, consider InternalsVisibleTo simplification)
-- [L6](L6-consolidate-lifecycle-interfaces.md) - Consolidate Lifecycle Interfaces (cosmetic)
 
-### Infrastructure
-- ~~[M6](completed/multi-targeting-net8-9-10.md) - Multi-Target .NET 8.0/9.0/10.0~~ **DONE**
-- ~~[CT1](completed/cancellation-token-support.md) - CancellationToken Support~~ **DONE**
-- ~~[RemoteFactory Upgrade](completed/remotefactory-upgrade-blocked.md) - Upgraded to 10.5.0~~ **DONE**
-- ~~[Skill Samples](completed/skill-samples-needed.md) - Added 17 snippets for skill files~~ **DONE**
+| Todo | Priority | Effort | Status |
+|------|----------|--------|--------|
+| [L1 - Naming Consistency](L1-naming-consistency.md) | Low | Low | Not Started |
+| [L5 - Internal Interface Pattern](L5-internal-interface-pattern.md) | Low | Medium | Not Started |
+| [L6 - Consolidate Lifecycle Interfaces](L6-consolidate-lifecycle-interfaces.md) | Low | Low | Not Started |
+| [Remove Inconsistent Locks](remove-inconsistent-locks.md) | Low | Low | Not Started |
+| [Replace Quoted Identifiers with nameof](replace-quoted-identifiers-with-nameof.md) | Low | Low | Not Started |
+| [Solution B - Internal Interfaces Design](solution-b-internal-interfaces-design.md) | Low | Medium | Design Document |
 
----
+### Documentation
 
-## Suggested Sprint Planning
+| Todo | Priority | Effort | Status |
+|------|----------|--------|--------|
+| [C2 - Beginner Tutorials](C2-beginner-tutorials.md) | Critical | Medium | Not Started |
+| [H2 - Async Validation Patterns](H2-document-async-validation-patterns.md) | High | Low | Partially Done |
+| [Advanced Documentation](advanced-documentation.md) | Medium | Medium | Partially Done |
+| [Business Rules in Factory Methods Antipattern](business-rules-in-factory-methods-antipattern.md) | Medium | Low | Not Started |
+| [Skill Documentation Gaps](skill-documentation-gaps.md) | Low | Low | Partially Addressed |
+| [MudBlazor Skill Documentation Gaps](mudblazor-skill-documentation-gaps.md) | Low | Low | Not Started |
+| [Pseudo-Block Recategorization](pseudo-block-recategorization.md) | Low | Low | Analysis Complete |
 
-### Sprint 1 (Quick Wins)
-- ~~[H1](completed/H1-fix-rulemanager-assertion.md) - Fix RuleManager assertion (Low effort)~~ **DONE**
-- ~~[H3](completed/H3-add-generator-diagnostics.md) - Add generator diagnostics (Low effort)~~ **DONE**
-- ~~[H4](completed/H4-thread-safe-ismarkedbusy.md) - Thread-safe IsMarkedBusy (Low effort)~~ **DONE**
-- ~~[M4](completed/M4-resolve-todo-comments.md) - Resolve TODO comments (Decision items)~~ **DONE**
-- [M7](M7-analyze-documentation-patterns.md) - Analyze patterns from doc samples (Low effort)
+### Tooling / Infrastructure
 
-### Sprint 2 (Documentation)
-- [C2](C2-beginner-tutorials.md) - Beginner tutorials (Reduces adoption barrier)
-- [H2](H2-document-async-validation-patterns.md) - Async validation docs
-- [M3](M3-document-propertychanged-events.md) - Event documentation
-- [M8](M8-document-child-property-cascade.md) - Child property cascade behavior
+| Todo | Priority | Effort | Status |
+|------|----------|--------|--------|
+| [Analyzer - Partial Class Requirement](analyzer-partial-class-requirement.md) | Medium | Medium | Not Started |
+| [AOT Compliance Exploration](aot-compliance-exploration.md) | Low | Medium | Not Started |
 
-### Sprint 3 (Code Quality)
-- ~~[M1](completed/M1-extract-metaproperty-helper.md) - Extract helper method~~ **DONE**
-- [L1](L1-naming-consistency.md) - Naming consistency
-- [L2](L2-duplicate-event-subscriptions.md) - Event subscription guards
-- ~~[L3](completed/L3-fix-waitfortasks-assert.md) - WaitForTasks cleanup~~ **DONE**
+### Design / Analysis Documents
 
-### Sprint 4+ (Features)
-- [C1](C1-domain-events-support.md) - Domain Events (Low effort with RemoteFactory 10.6.0)
-- [M2](M2-value-object-base.md) - Value Object support
-- [M5](M5-aggregate-root-marker.md) - IAggregateRoot marker
-- [LL1](lazy-loading-entities.md) - Lazy Loading for Child Entities (High effort)
+| Todo | Priority | Notes |
+|------|----------|-------|
+| [Internal Interface Methods Analysis](internal-interface-methods-analysis.md) | High | API design rationale reference |
+| [Reduce Design Source Scope](reduce-design-source-scope.md) | Low | Planned, not started |
+| [Future Enhancements](future-enhancements.md) | Low | Backlog of enhancement ideas |
 
 ---
 
-### Entity List Enhancements
-- ~~[ContainingList Property](completed/containinglist-property-implementation.md) - Track entity's containing list~~ **DONE**
-- ~~[Delete/Remove Consistency](completed/entity-delete-vs-list-remove.md) - entity.Delete() and list.Remove() now consistent~~ **DONE**
-- ~~[EntityListBase Add Use Cases](completed/entitylistbase-add-use-cases.md) - Add item use case analysis~~ **DONE**
+## Completed Todos
+
+See `completed/` directory. Key completions include:
+
+- **IEntityRoot Interface** - Root vs child entity distinction (issavable-intuitive-api)
+- **LazyLoad\<T>** - Explicit lazy loading type (lazy-loading-v2-design, lazyload-serialization-bug, lazyload-state-propagation)
+- **Design.Domain** - Authoritative API design reference (design-source-of-truth, design-source-improvements, design-interface-first-pattern)
+- **Property Backing Fields** - Generated Property\<T> backing fields with DI (property-backing-fields)
+- **IsValid Stale Cache Fix** - RecalculateValidity after RunRules (isvalid-stale-cache-during-runrules)
+- **LoadValue/SetParent Bug** - ChangeReason enum for property change intent (loadvalue-setparent-bug)
+- **Documentation Overhaul** - MarkdownSnippets integration, samples project, code block audit, snippet refactoring
+- **CancellationToken Support** - Full cancellation token support with samples
+- **Collapse Base Layer v10.4.0** - Simplified class hierarchy
+- **Multi-Target .NET 8/9/10** - Framework multi-targeting
+- **Neatoo Skill** - Created and refined with MarkdownSnippets samples
+
+## Stale Todos
+
+See `stale/` directory. Items superseded by newer work:
+
+- **M5 - IAggregateRoot Marker** - Superseded by IEntityRoot interface
+- **M7 - Analyze Documentation Patterns** - Patterns analyzed and resolved
+- **L4 - Specification Pattern** - Deferred by design ("Do Not Implement Yet")
+- **LL1 - Lazy Loading Entities** - Superseded by LazyLoad\<T> implementation
+- **KnockOff Upgrade Build Errors** - KnockOff now separate repo
+- **ListBase Parent Behavior** - Reference doc, not a work item
 
 ---
 
 ## Related Documents
 
-- [Comprehensive Framework Review](completed/comprehensive-framework-review.md) - Full analysis (completed)
-- ~~[RemoteFactory Mapper Removal Plan](completed/remotefactory-mapper-removal-plan.md) - Migration plan~~ **DONE**
+- [Comprehensive Framework Review](completed/comprehensive-framework-review.md) - Original analysis (December 2024)
 
 ---
 
-*Generated from comprehensive framework review - December 31, 2024*
+*Originally generated from comprehensive framework review - December 31, 2024. Audited and reorganized March 7, 2026.*
