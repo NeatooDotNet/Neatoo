@@ -1,6 +1,6 @@
 ---
 name: Neatoo
-description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, and base class behavior. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill.
+description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, lazy loading, LazyLoad, ILazyLoadFactory, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, AddActionAsync, AddValidationAsync, AddAction, AddValidation, IsBusy, WaitForTasks, IsLoaded, IsLoading, and base class behavior. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill.
 version: 1.0.0
 ---
 
@@ -113,6 +113,8 @@ public SkillValidationExample(IEntityBaseServices<SkillValidationExample> servic
 <sup><a href='/src/samples/SkillValidationSamples.cs#L52-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+RuleManager also provides `AddAction`, `AddActionAsync`, `AddValidationAsync`, and class-based rules. See `references/validation.md` → "Async Action Rules" for async side-effects (`AddActionAsync`) including LoadValue/deserialization behavior and exception propagation.
+
 Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
 
 ## Testing
@@ -128,6 +130,7 @@ Detailed documentation for each topic area:
 - **`references/validation.md`** - RuleManager, attributes, async validation
 - **`references/entities.md`** - EntityBase lifecycle, persistence, Save routing
 - **`references/collections.md`** - EntityListBase, parent-child relationships, deletion tracking
+- **`references/lazy-loading.md`** - LazyLoad&lt;T&gt;, ILazyLoadFactory, explicit async loading
 - **`references/source-generation.md`** - What gets generated, Generated/ folder, [SuppressFactory]
 - **`references/blazor.md`** - Blazor-specific binding and component patterns
 - **`references/testing.md`** - No mocking Neatoo, integration test patterns

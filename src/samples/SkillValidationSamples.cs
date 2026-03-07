@@ -69,6 +69,30 @@ public partial class SkillValidationExample : EntityBase<SkillValidationExample>
     public void Create() { }
 }
 
+// For SKILL.md - shows AddActionAsync pattern for async side-effects
+[Factory]
+public partial class SkillActionAsyncExample : ValidateBase<SkillActionAsyncExample>
+{
+    #region skill-action-async
+    public SkillActionAsyncExample(
+        IValidateBaseServices<SkillActionAsyncExample> services,
+        ISkillPricingService pricingService) : base(services)
+    {
+        // Async action rule - fetches data when ZipCode changes
+        RuleManager.AddActionAsync(
+            async t => { t.TaxRate = await pricingService.GetTaxRateAsync(t.ZipCode); },
+            t => t.ZipCode);
+    }
+    #endregion
+
+    public partial string ZipCode { get; set; }
+
+    public partial decimal TaxRate { get; set; }
+
+    [Create]
+    public void Create() { }
+}
+
 // -----------------------------------------------------------------------------
 // DataAnnotations Validation Attributes
 // -----------------------------------------------------------------------------
@@ -335,4 +359,9 @@ public partial class SkillValidInvoice : ValidateBase<SkillValidInvoice>
 public interface ISkillUserValidationService
 {
     Task<bool> IsEmailUniqueAsync(string email);
+}
+
+public interface ISkillPricingService
+{
+    Task<decimal> GetTaxRateAsync(string zipCode);
 }
