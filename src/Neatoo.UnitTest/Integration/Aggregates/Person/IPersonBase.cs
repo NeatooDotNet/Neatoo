@@ -1,6 +1,6 @@
 namespace Neatoo.UnitTest.Integration.Aggregates.Person;
 
-public interface IPersonEntity : IPersonBase, IEntityBase
+public interface IPersonEntity : IPersonBase, IEntityRoot
 {
 
 }

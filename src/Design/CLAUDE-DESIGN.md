@@ -1,3 +1,13 @@
+## Commands
+
+```bash
+# Build Design projects
+dotnet build src/Design/Design.sln
+
+# Test Design patterns
+dotnet test src/Design/Design.Tests/Design.Tests.csproj
+```
+
 # Claude Code Design Guidance
 
 This document provides specific guidance for Claude Code when working with Neatoo framework code. The `src/Design/` projects are your primary reference for understanding Neatoo's API design.
@@ -22,16 +32,47 @@ When trying to understand a Neatoo concept:
 | Property system | `PropertySystem/*.cs` | `PropertyTests/*` |
 | Validation rules | `Rules/*.cs` | `RuleTests/*` |
 | Generator behavior | `Generators/TwoGeneratorInteraction.cs` | N/A |
+| Root vs child interfaces | `Aggregates/OrderAggregate/IOrderInterfaces.cs` | `AggregateTests/EntityRootInterfaceTests.cs` |
 | DI setup | `DI/*.cs` | N/A |
+| Commands | `Commands/ApproveEmployee.cs` | N/A |
+| Standalone entities | `Entities/*.cs` | N/A |
+| Value objects | `ValueObjects/*.cs` | N/A |
+| Error handling | `ErrorHandling/*.cs` | `GotchaTests/*` |
+| Common gotchas | `CommonGotchas.cs` | `GotchaTests/*` |
+
+## Key Design Decision: IEntityRoot vs IEntityBase
+
+Neatoo separates `IsSavable` and `Save()` from the base entity interface. Only aggregate roots expose them.
+
+- **`IEntityRoot : IEntityBase`** -- Adds `IsSavable` and `Save()`. Aggregate root entity interfaces extend this.
+- **`IEntityBase`** -- No `IsSavable`, no `Save()`. Child entity interfaces extend this.
+
+```csharp
+// Aggregate root
+public interface IOrder : IEntityRoot { ... }
+
+// Child entity within the Order aggregate
+public interface IOrderItem : IEntityBase { ... }
+```
+
+The concrete `EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`, so it retains `IsSavable` and `Save()` as concrete members. This does not matter because entity classes should be `internal` -- consumers interact through the interface, which is the access control mechanism.
+
+**Why this design exists:** `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. This created a trap where developers used `IsSavable` in save cascade logic to check whether children need persisting, but it silently returned false, skipping saves. This caused a real production bug (zTreatment). The right fix is not to make `IsSavable` work on children -- it is to remove it from the child interface entirely. Child entity factory methods (`[Insert]`/`[Update]`) have signatures that outside consumers cannot fulfill (they often need the parent entity or parent ID). Combined with `internal` on entity classes, external callers should not be able to save children at all.
+
+**EntityListBase does not expose IsSavable.** `IsSavable` on entity lists was always false for every child -- it was faithfully propagating a lie. Removing it from the interface is not losing functionality.
+
+See `Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs` for the authoritative example.
 
 ## Critical Patterns to Understand
 
 ### 1. The Four Base Classes
 
 **EntityBase<T>** - Use for persistent entities:
-- Has IsNew, IsModified, IsDeleted, IsSavable
+- Has IsNew, IsModified, IsDeleted, IsSavable, Save()
 - Save() routes to Insert/Update/Delete based on state
 - Child entities have IsChild=true and cannot save independently
+- Root entity interfaces extend `IEntityRoot` (exposes IsSavable, Save())
+- Child entity interfaces extend `IEntityBase` (no IsSavable, no Save())
 
 **ValidateBase<T>** - Use for value objects and validation-only:
 - Has IsValid, IsSelfValid, IsBusy
@@ -151,7 +192,8 @@ This routing is determined by Neatoo's state properties, not RemoteFactory.
 Same as above, but:
 - The entity will have `IsChild=true` when added to an EntityListBase
 - Do NOT add `[Remote]` to Insert/Update/Delete - parent handles persistence
-- Child's Save() will throw because `IsSavable=false` when `IsChild=true`
+- The child entity interface extends `IEntityBase` (NOT `IEntityRoot`) -- consumers cannot access `IsSavable` or `Save()` on child entities
+- Child `[Insert]`/`[Update]` methods often require the parent entity or parent ID as parameters, which outside consumers cannot fulfill
 
 ### Adding Validation Rules
 
@@ -268,7 +310,7 @@ When updating Design projects:
 | `IsModified` | EntityBase | Has unsaved changes (includes children) |
 | `IsSelfModified` | EntityBase | This object has changes (excludes children) |
 | `IsDeleted` | EntityBase | Marked for deletion |
-| `IsSavable` | EntityBase | IsModified && IsValid && !IsBusy && !IsChild |
+| `IsSavable` | EntityBase (IEntityRoot only) | IsModified && IsValid && !IsBusy && !IsChild. Only on `IEntityRoot` interface -- not on `IEntityBase` or entity lists |
 | `IsChild` | EntityBase | Part of parent aggregate |
 | `IsValid` | ValidateBase | All rules pass (includes children) |
 | `IsSelfValid` | ValidateBase | This object's rules pass (excludes children) |

@@ -4,14 +4,15 @@ Neatoo provides base classes that map to Domain-Driven Design concepts. Choose t
 
 ## Base Class to DDD Mapping
 
-| Neatoo Base Class | DDD Concept | Persistence | Validation | Change Tracking |
-|-------------------|-------------|-------------|------------|-----------------|
-| `ValidateBase<T>` | Value Object | No | Yes | Yes |
-| `EntityBase<T>` | Entity / Aggregate Root | Yes | Yes | Yes |
-| `EntityListBase<I>` | Collection of Entities | Yes (via parent) | Yes | Yes |
-| Static class with `[Execute]` | Command | Execute only | No | No |
-| `ValidateBase<T>` with `[Fetch]` only | Read Model | No | Yes | Yes |
-| `ValidateListBase<I>` | Collection of Read Models | No | Yes | Yes |
+| Neatoo Base Class | Interface | DDD Concept | Persistence | Validation | Change Tracking |
+|-------------------|-----------|-------------|-------------|------------|-----------------|
+| `ValidateBase<T>` | `IValidateBase` | Value Object | No | Yes | Yes |
+| `EntityBase<T>` | `IEntityRoot` | Aggregate Root | Yes (`IsSavable`, `Save()`) | Yes | Yes |
+| `EntityBase<T>` | `IEntityBase` | Child Entity | Yes (via parent) | Yes | Yes |
+| `EntityListBase<I>` | — | Collection of Entities | Yes (via parent) | Yes | Yes |
+| Static class with `[Execute]` | — | Command | Execute only | No | No |
+| `ValidateBase<T>` with `[Fetch]` only | `IValidateBase` | Read Model | No | Yes | Yes |
+| `ValidateListBase<I>` | — | Collection of Read Models | No | Yes | Yes |
 
 ## ValidateBase<T>
 
@@ -63,15 +64,32 @@ public partial class SkillAddress : ValidateBase<SkillAddress>
 <sup><a href='/src/samples/BaseClassSamples.cs#L16-L49' title='Snippet source file'>snippet source</a> | <a href='#snippet-validate-base-sample' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+## IEntityRoot vs IEntityBase
+
+Both aggregate roots and child entities inherit from `EntityBase<T>`. The distinction is in the **interface**:
+
+- **`IEntityRoot`** — Aggregate root interface. Exposes `IsSavable` and `Save()`. Use for root entities that external code saves directly.
+- **`IEntityBase`** — Child entity interface. Does **not** expose `IsSavable` or `Save()`. Use for entities saved through their parent's cascade.
+
+```csharp
+// Aggregate root — exposes IsSavable and Save()
+public interface IOrder : IEntityRoot { ... }
+
+// Child entity — no IsSavable, no Save()
+public interface IOrderLine : IEntityBase { ... }
+```
+
+This is enforced at the type level, not at runtime. Child entities physically cannot call `Save()` through their interface.
+
 ## EntityBase<T>
 
 Use for persistent entities with full CRUD lifecycle.
 
-**DDD Concept:** Entity or Aggregate Root - Objects with identity that persist across time.
+**DDD Concept:** Aggregate Root or Child Entity — Objects with identity that persist across time.
 
 **When to use:**
-- Domain entities that are saved to a database
-- Aggregate roots that coordinate child entities
+- Aggregate roots that coordinate child entities (interface extends `IEntityRoot`)
+- Child entities within an aggregate (interface extends `IEntityBase`)
 - Any object that needs Create/Fetch/Update/Delete operations
 
 <!-- snippet: edit-base-sample -->
@@ -284,7 +302,8 @@ public class SkillEmployeeSummaryList : ValidateListBase<SkillEmployeeSummary>
 
 1. **Always inherit from the appropriate base class** - Don't implement interfaces directly
 2. **Use `partial` keyword** - Source generators extend your class
-3. **Follow DDD aggregate boundaries** - EntityBase for roots, children within the aggregate
+3. **Follow DDD aggregate boundaries** - EntityBase for roots and children within the aggregate
+4. **Choose the right interface** - Aggregate root interfaces extend `IEntityRoot`; child entity interfaces extend `IEntityBase`
 
 ## Related
 

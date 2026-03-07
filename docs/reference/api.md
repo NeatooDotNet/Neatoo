@@ -10,7 +10,7 @@ Complete reference documentation for Neatoo's core classes, interfaces, attribut
 - [EntityBase\<T\>](#entitybaset)
 - [ValidateListBase\<T\>](#validatelistbaset)
 - [EntityListBase\<T\>](#entitylistbaset)
-- [Key Interfaces](#key-interfaces)
+- [Key Interfaces](#key-interfaces) (IValidateBase, IEntityBase, IEntityRoot, IValidateProperty, IEntityProperty, IPropertyInfo, IValidateMetaProperties, IEntityMetaProperties)
 - [Attributes](#attributes)
 - [Source Generator Output](#source-generator-output)
 
@@ -499,6 +499,8 @@ public virtual bool IsSavable { get; }
 
 Entity can be saved when: `IsModified && IsValid && !IsBusy && !IsChild`
 
+`IsSavable` exists on the concrete `EntityBase<T>` class, but is only exposed through the `IEntityRoot` interface -- not through `IEntityBase`. This means child entities (whose interfaces extend `IEntityBase`) never expose `IsSavable` to consumers. Aggregate root interfaces extend `IEntityRoot`, which adds `IsSavable` and `Save()`.
+
 Note: `IsModified` includes deleted entities, so deleted entities are savable (deletion is a state change requiring persistence).
 
 ### Aggregate Root
@@ -545,7 +547,7 @@ public virtual Task<IEntityBase> Save()
 public virtual Task<IEntityBase> Save(CancellationToken token)
 ```
 
-Persists the entity using the configured factory. Delegates to Insert (if IsNew), Delete (if IsDeleted), or Update based on state. Throws `SaveOperationException` if not savable.
+Persists the entity using the configured factory. Delegates to Insert (if IsNew), Delete (if IsDeleted), or Update based on state. Throws `SaveOperationException` if not savable. Exposed through `IEntityRoot` -- child entity interfaces (`IEntityBase`) do not include `Save()`.
 
 <!-- snippet: api-entitybase-save -->
 <a id='snippet-api-entitybase-save'></a>
@@ -920,13 +922,12 @@ Where `I : IEntityBase`.
 public bool IsModified { get; }         // Any item modified or deleted items exist
 public bool IsSelfModified { get; }     // Always false (lists have no own properties)
 public bool IsMarkedModified { get; }   // Always false
-public bool IsSavable { get; }          // Always false (saved through parent)
 public bool IsNew { get; }              // Always false
 public bool IsDeleted { get; }          // Always false
 public bool IsChild { get; }            // Always false
 ```
 
-Lists derive their modification state from their items and deleted list.
+Lists derive their modification state from their items and deleted list. `IsSavable` is not present -- lists are always saved through the aggregate root, and the property was always false (dead code).
 
 <!-- snippet: api-entitylistbase-metaproperties -->
 <a id='snippet-api-entitylistbase-metaproperties'></a>
@@ -1125,7 +1126,7 @@ public void IValidateBase_CoreValidationInterface()
 
 ### IEntityBase
 
-Extends `IValidateBase` with entity persistence and modification tracking.
+Base interface for all entity objects -- both aggregate roots and child entities. Provides persistence state, modification tracking, and deletion, but does **not** expose `IsSavable` or `Save()`. Those belong to `IEntityRoot`.
 
 ```csharp
 public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySaveMeta
@@ -1134,8 +1135,6 @@ public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySav
     IEnumerable<string> ModifiedProperties { get; }
     void Delete();
     void UnDelete();
-    Task<IEntityBase> Save();
-    Task<IEntityBase> Save(CancellationToken token);
     new IEntityProperty this[string propertyName] { get; }
 }
 ```
@@ -1168,6 +1167,33 @@ public void IEntityBase_EntityInterface()
 ```
 <sup><a href='/src/samples/ApiReferenceSamples.cs#L1212-L1235' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ientitybase' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+### IEntityRoot
+
+Extends `IEntityBase` with `IsSavable` and `Save()` for aggregate roots. Child entities should use `IEntityBase` -- they cannot save independently, and `IsSavable`/`Save()` should not appear on their interface.
+
+The separation exists because `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. Developers naturally used `IsSavable` in save cascade logic to check whether children need persisting, but it silently returned false, skipping saves. Rather than fixing the semantics, the right answer is to remove `IsSavable` and `Save()` from the child interface entirely. Child entity `[Insert]`/`[Update]` methods have signatures that outside consumers cannot fulfill, and entity classes are `internal`, so external callers should never save children at all.
+
+```csharp
+public interface IEntityRoot : IEntityBase
+{
+    bool IsSavable { get; }
+    Task<IEntityBase> Save();
+    Task<IEntityBase> Save(CancellationToken token);
+}
+```
+
+User-defined entity interfaces signal root vs child by choosing which framework interface to extend:
+
+```csharp
+// Aggregate root -- exposes IsSavable and Save()
+public interface IOrder : IEntityRoot { ... }
+
+// Child entity -- no IsSavable, no Save()
+public interface IOrderLine : IEntityBase { ... }
+```
+
+`EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`, so the concrete class retains `IsSavable` and `Save()` as members. This does not matter because entity classes should be `internal` -- consumers interact through the interface, which controls what is accessible.
 
 ### IValidateProperty
 
@@ -1295,18 +1321,15 @@ public interface IValidateMetaProperties
 
 ### IEntityMetaProperties
 
-Meta property interface for entity state.
+Meta property interface for entity state. Note that `IsSavable` is not part of this interface -- it lives on `IEntityRoot` only. This prevents child entities and entity lists from exposing a property that would always return false.
 
 ```csharp
-public interface IEntityMetaProperties : IValidateMetaProperties
+public interface IEntityMetaProperties : IFactorySaveMeta
 {
+    bool IsChild { get; }
     bool IsModified { get; }
     bool IsSelfModified { get; }
     bool IsMarkedModified { get; }
-    bool IsSavable { get; }
-    bool IsNew { get; }
-    bool IsDeleted { get; }
-    bool IsChild { get; }
 }
 ```
 
@@ -1334,10 +1357,12 @@ public void IMetaProperties_ValidationAndEntityState()
     Assert.True(entityMeta.IsModified);  // New entity
     Assert.False(entityMeta.IsSelfModified);
     Assert.False(entityMeta.IsMarkedModified);
-    Assert.True(entityMeta.IsSavable);  // New entity is savable
+    // IsSavable is on IEntityRoot, not IEntityMetaProperties
+    // Cast to IEntityRoot to check savability:
+    Assert.True(((IEntityRoot)entityMeta).IsSavable);  // New entity is savable
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1289-L1313' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-imetaproperties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1289-L1315' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-imetaproperties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ---
@@ -1899,4 +1924,4 @@ This registry enables rule suppression and rule-specific behavior without relyin
 
 ---
 
-**UPDATED:** 2026-01-25
+**UPDATED:** 2026-03-02

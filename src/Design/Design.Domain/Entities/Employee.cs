@@ -22,7 +22,7 @@ namespace Design.Domain.Entities;
 /// - Aggregate root pattern (owns Addresses collection)
 /// </summary>
 [Factory]
-public partial class Employee : EntityBase<Employee>
+internal partial class Employee : EntityBase<Employee>, IEmployee
 {
     // =========================================================================
     // Partial Properties
@@ -64,7 +64,7 @@ public partial class Employee : EntityBase<Employee>
     // DESIGN DECISION: Collections are nullable properties, initialized in Create/Fetch.
     // This allows factory methods to create the collection with proper DI.
     // =========================================================================
-    public partial AddressList? Addresses { get; set; }
+    public partial IAddressList? Addresses { get; set; }
 
     // =========================================================================
     // Computed Property (not persisted)

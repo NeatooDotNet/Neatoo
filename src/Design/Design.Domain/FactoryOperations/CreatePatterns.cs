@@ -53,7 +53,7 @@ namespace Design.Domain.FactoryOperations;
 /// Demonstrates: [Create] patterns for object initialization.
 /// </summary>
 [Factory]
-public partial class CreateDemo : EntityBase<CreateDemo>
+internal partial class CreateDemo : EntityBase<CreateDemo>, ICreateDemo
 {
     public partial string? Name { get; set; }
     public partial int Priority { get; set; }
@@ -169,10 +169,10 @@ public partial class CreateDemo : EntityBase<CreateDemo>
 /// Demonstrates: Creating aggregate with child collections.
 /// </summary>
 [Factory]
-public partial class CreateWithChildrenDemo : EntityBase<CreateWithChildrenDemo>
+internal partial class CreateWithChildrenDemo : EntityBase<CreateWithChildrenDemo>, ICreateWithChildrenDemo
 {
     public partial string? Title { get; set; }
-    public partial CreateDemoItemList? Items { get; set; }
+    public partial ICreateDemoItemList? Items { get; set; }
 
     public CreateWithChildrenDemo(IEntityBaseServices<CreateWithChildrenDemo> services) : base(services)
     {
@@ -205,7 +205,7 @@ public partial class CreateWithChildrenDemo : EntityBase<CreateWithChildrenDemo>
 }
 
 [Factory]
-public partial class CreateDemoItem : EntityBase<CreateDemoItem>
+internal partial class CreateDemoItem : EntityBase<CreateDemoItem>, ICreateDemoItem
 {
     public partial string? Name { get; set; }
 
@@ -222,7 +222,7 @@ public partial class CreateDemoItem : EntityBase<CreateDemoItem>
 }
 
 [Factory]
-public partial class CreateDemoItemList : EntityListBase<CreateDemoItem>
+internal partial class CreateDemoItemList : EntityListBase<ICreateDemoItem>, ICreateDemoItemList
 {
     [Create]
     public void Create() { }

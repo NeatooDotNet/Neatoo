@@ -145,15 +145,8 @@ public class EntityListBaseTests
         Assert.IsFalse(list.IsMarkedModified);
     }
 
-    [TestMethod]
-    public void IsSavable_AlwaysFalse()
-    {
-        // Lists are saved through their parent entity
-        var list = new TestEntityList();
-
-        // Assert
-        Assert.IsFalse(list.IsSavable);
-    }
+    // IsSavable_AlwaysFalse removed — IsSavable no longer on IEntityMetaProperties or IEntityListBase.
+    // Lists are never savable; they don't expose IsSavable through any interface.
 
     [TestMethod]
     public void IsNew_AlwaysFalse()

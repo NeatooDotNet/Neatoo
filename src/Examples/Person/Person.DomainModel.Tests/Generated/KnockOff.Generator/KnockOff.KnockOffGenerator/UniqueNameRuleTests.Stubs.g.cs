@@ -11,235 +11,11 @@ partial class UniqueNameRuleTests
 	/// <summary>Contains stub implementations for inline stub pattern.</summary>
 	public static class Stubs
 	{
-		/// <summary>Tracks and configures behavior for Delete().</summary>
-		public sealed class IPerson_DeleteInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
-		{
-			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Neatoo.IEntityBase? _source;
-
-			/// <summary>Callback delegate for Delete().</summary>
-			public delegate void DeleteDelegate();
-
-			public IPerson_DeleteInterceptor() : base("Delete") { }
-
-			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
-			{
-				((DeleteDelegate)del)();
-			}
-			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
-			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking) { }
-			protected override void RecordUnconfiguredArgs(object? args) { }
-
-			/// <summary>Configures callback for Delete().</summary>
-			public DeleteImpl Call(DeleteDelegate callback)
-			{
-				var builder = new DeleteImpl(this);
-				SetupVoidCallback(callback, builder);
-				return builder;
-			}
-
-			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal void Invoke(bool strict)
-			{
-				if (RunVoidPriorityChain(null)) return;
-				_unconfiguredCallCount++;
-				RecordUnconfiguredArgs(null);
-				if (HandleVoidSequenceExhaustedRepeat(strict, null)) return;
-				#pragma warning disable CS8601, SYSLIB0050
-				if (_source is { } src) { src.Delete(); return; }
-				#pragma warning restore CS8601, SYSLIB0050
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "Delete");
-				return;
-			}
-
-			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
-			public override void Reset()
-			{
-				base.Reset();
-				_source = null;
-			}
-
-			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class DeleteImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<DeleteDelegate>
-			{
-				private readonly IPerson_DeleteInterceptor _typedInterceptor;
-
-				public DeleteImpl(IPerson_DeleteInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-
-				public override void Reset() => base.Reset();
-
-				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
-				public DeleteSequence ThenCall(DeleteDelegate callback)
-				{
-					ThenCallBase(callback);
-					return new DeleteSequence(_typedInterceptor);
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public DeleteImpl Verifiable() { VerifiableBase(); return this; }
-				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
-				public DeleteImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new DeleteImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallBuilder<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodCallBuilder<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.ThenCall(DeleteDelegate callback) => ThenCall(callback);
-			}
-
-			/// <summary>Sequence implementation for ThenCall chaining.</summary>
-			public sealed class DeleteSequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<DeleteDelegate>
-			{
-				private readonly IPerson_DeleteInterceptor _typedInterceptor;
-
-				public DeleteSequence(IPerson_DeleteInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public DeleteSequence ThenCall(DeleteDelegate callback)
-				{
-					var tracking = new DeleteImpl(_typedInterceptor);
-					AddToSequence(callback, tracking);
-					return this;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public DeleteSequence Verifiable() { VerifiableBase(); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new DeleteImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallSequence<DeleteDelegate>.ThenCall(DeleteDelegate callback) => ThenCall(callback);
-				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallSequence<DeleteDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
-			}
-
-		}
-
-		/// <summary>Tracks and configures behavior for UnDelete().</summary>
-		public sealed class IPerson_UnDeleteInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
-		{
-			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Neatoo.IEntityBase? _source;
-
-			/// <summary>Callback delegate for UnDelete().</summary>
-			public delegate void UnDeleteDelegate();
-
-			public IPerson_UnDeleteInterceptor() : base("UnDelete") { }
-
-			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
-			{
-				((UnDeleteDelegate)del)();
-			}
-			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
-			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking) { }
-			protected override void RecordUnconfiguredArgs(object? args) { }
-
-			/// <summary>Configures callback for UnDelete().</summary>
-			public UnDeleteImpl Call(UnDeleteDelegate callback)
-			{
-				var builder = new UnDeleteImpl(this);
-				SetupVoidCallback(callback, builder);
-				return builder;
-			}
-
-			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal void Invoke(bool strict)
-			{
-				if (RunVoidPriorityChain(null)) return;
-				_unconfiguredCallCount++;
-				RecordUnconfiguredArgs(null);
-				if (HandleVoidSequenceExhaustedRepeat(strict, null)) return;
-				#pragma warning disable CS8601, SYSLIB0050
-				if (_source is { } src) { src.UnDelete(); return; }
-				#pragma warning restore CS8601, SYSLIB0050
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "UnDelete");
-				return;
-			}
-
-			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
-			public override void Reset()
-			{
-				base.Reset();
-				_source = null;
-			}
-
-			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class UnDeleteImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>
-			{
-				private readonly IPerson_UnDeleteInterceptor _typedInterceptor;
-
-				public UnDeleteImpl(IPerson_UnDeleteInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-
-				public override void Reset() => base.Reset();
-
-				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
-				public UnDeleteSequence ThenCall(UnDeleteDelegate callback)
-				{
-					ThenCallBase(callback);
-					return new UnDeleteSequence(_typedInterceptor);
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public UnDeleteImpl Verifiable() { VerifiableBase(); return this; }
-				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
-				public UnDeleteImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new UnDeleteImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallBuilder<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodCallBuilder<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.ThenCall(UnDeleteDelegate callback) => ThenCall(callback);
-			}
-
-			/// <summary>Sequence implementation for ThenCall chaining.</summary>
-			public sealed class UnDeleteSequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<UnDeleteDelegate>
-			{
-				private readonly IPerson_UnDeleteInterceptor _typedInterceptor;
-
-				public UnDeleteSequence(IPerson_UnDeleteInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public UnDeleteSequence ThenCall(UnDeleteDelegate callback)
-				{
-					var tracking = new UnDeleteImpl(_typedInterceptor);
-					AddToSequence(callback, tracking);
-					return this;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public UnDeleteSequence Verifiable() { VerifiableBase(); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new UnDeleteImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallSequence<UnDeleteDelegate>.ThenCall(UnDeleteDelegate callback) => ThenCall(callback);
-				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallSequence<UnDeleteDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
-			}
-
-		}
-
 		/// <summary>Tracks and configures behavior for Save (overloaded).</summary>
 		public sealed class IPerson_SaveInterceptor
 		{
 			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Neatoo.IEntityBase? _source;
+			internal global::Neatoo.IEntityRoot? _source;
 
 			private int _unconfiguredCallCount;
 
@@ -1109,6 +885,230 @@ partial class UniqueNameRuleTests
 
 				global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>> global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>.Verifiable() => Verifiable();
 				global::KnockOff.IWhenTracking global::KnockOff.IWhenTracking.Verifiable() => Verifiable();
+			}
+
+		}
+
+		/// <summary>Tracks and configures behavior for Delete().</summary>
+		public sealed class IPerson_DeleteInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::Neatoo.IEntityBase? _source;
+
+			/// <summary>Callback delegate for Delete().</summary>
+			public delegate void DeleteDelegate();
+
+			public IPerson_DeleteInterceptor() : base("Delete") { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				((DeleteDelegate)del)();
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking) { }
+			protected override void RecordUnconfiguredArgs(object? args) { }
+
+			/// <summary>Configures callback for Delete().</summary>
+			public DeleteImpl Call(DeleteDelegate callback)
+			{
+				var builder = new DeleteImpl(this);
+				SetupVoidCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal void Invoke(bool strict)
+			{
+				if (RunVoidPriorityChain(null)) return;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(null);
+				if (HandleVoidSequenceExhaustedRepeat(strict, null)) return;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) { src.Delete(); return; }
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "Delete");
+				return;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class DeleteImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<DeleteDelegate>
+			{
+				private readonly IPerson_DeleteInterceptor _typedInterceptor;
+
+				public DeleteImpl(IPerson_DeleteInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+
+				public override void Reset() => base.Reset();
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public DeleteSequence ThenCall(DeleteDelegate callback)
+				{
+					ThenCallBase(callback);
+					return new DeleteSequence(_typedInterceptor);
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public DeleteImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public DeleteImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override MethodCallBuilderBase CreateNextBuilder() => new DeleteImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallBuilder<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodCallBuilder<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallBuilder<DeleteDelegate>.ThenCall(DeleteDelegate callback) => ThenCall(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenCall chaining.</summary>
+			public sealed class DeleteSequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<DeleteDelegate>
+			{
+				private readonly IPerson_DeleteInterceptor _typedInterceptor;
+
+				public DeleteSequence(IPerson_DeleteInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public DeleteSequence ThenCall(DeleteDelegate callback)
+				{
+					var tracking = new DeleteImpl(_typedInterceptor);
+					AddToSequence(callback, tracking);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public DeleteSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override MethodCallBuilderBase CreateNextBuilder() => new DeleteImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallSequence<DeleteDelegate>.ThenCall(DeleteDelegate callback) => ThenCall(callback);
+				global::KnockOff.IMethodCallSequence<DeleteDelegate> global::KnockOff.IMethodCallSequence<DeleteDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+		}
+
+		/// <summary>Tracks and configures behavior for UnDelete().</summary>
+		public sealed class IPerson_UnDeleteInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::Neatoo.IEntityBase? _source;
+
+			/// <summary>Callback delegate for UnDelete().</summary>
+			public delegate void UnDeleteDelegate();
+
+			public IPerson_UnDeleteInterceptor() : base("UnDelete") { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				((UnDeleteDelegate)del)();
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking) { }
+			protected override void RecordUnconfiguredArgs(object? args) { }
+
+			/// <summary>Configures callback for UnDelete().</summary>
+			public UnDeleteImpl Call(UnDeleteDelegate callback)
+			{
+				var builder = new UnDeleteImpl(this);
+				SetupVoidCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal void Invoke(bool strict)
+			{
+				if (RunVoidPriorityChain(null)) return;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(null);
+				if (HandleVoidSequenceExhaustedRepeat(strict, null)) return;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) { src.UnDelete(); return; }
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "UnDelete");
+				return;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class UnDeleteImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>
+			{
+				private readonly IPerson_UnDeleteInterceptor _typedInterceptor;
+
+				public UnDeleteImpl(IPerson_UnDeleteInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+
+				public override void Reset() => base.Reset();
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public UnDeleteSequence ThenCall(UnDeleteDelegate callback)
+				{
+					ThenCallBase(callback);
+					return new UnDeleteSequence(_typedInterceptor);
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public UnDeleteImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public UnDeleteImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override MethodCallBuilderBase CreateNextBuilder() => new UnDeleteImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallBuilder<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodCallBuilder<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallBuilder<UnDeleteDelegate>.ThenCall(UnDeleteDelegate callback) => ThenCall(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenCall chaining.</summary>
+			public sealed class UnDeleteSequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<UnDeleteDelegate>
+			{
+				private readonly IPerson_UnDeleteInterceptor _typedInterceptor;
+
+				public UnDeleteSequence(IPerson_UnDeleteInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public UnDeleteSequence ThenCall(UnDeleteDelegate callback)
+				{
+					var tracking = new UnDeleteImpl(_typedInterceptor);
+					AddToSequence(callback, tracking);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public UnDeleteSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override MethodCallBuilderBase CreateNextBuilder() => new UnDeleteImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallSequence<UnDeleteDelegate>.ThenCall(UnDeleteDelegate callback) => ThenCall(callback);
+				global::KnockOff.IMethodCallSequence<UnDeleteDelegate> global::KnockOff.IMethodCallSequence<UnDeleteDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
 			}
 
 		}
@@ -4201,6 +4201,9 @@ partial class UniqueNameRuleTests
 			/// <summary>Interceptor for PersonPhoneList.</summary>
 			public global::KnockOff.Interceptors.PropertyGetSetInterceptor<global::DomainModel.IPersonPhoneList> PersonPhoneList { get; } = new("PersonPhoneList");
 
+			/// <summary>Interceptor for IsSavable.</summary>
+			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsSavable { get; } = new("IsSavable");
+
 			/// <summary>Interceptor for Root.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<global::Neatoo.IValidateBase?> Root { get; } = new("Root");
 
@@ -4237,9 +4240,6 @@ partial class UniqueNameRuleTests
 			/// <summary>Interceptor for IsMarkedModified.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsMarkedModified { get; } = new("IsMarkedModified");
 
-			/// <summary>Interceptor for IsSavable.</summary>
-			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsSavable { get; } = new("IsSavable");
-
 			/// <summary>Interceptor for IsDeleted.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsDeleted { get; } = new("IsDeleted");
 
@@ -4249,14 +4249,14 @@ partial class UniqueNameRuleTests
 			/// <summary>Interceptor for indexer.</summary>
 			public global::KnockOff.Interceptors.IndexerGetSetInterceptor<string, global::Neatoo.IEntityProperty> Indexer { get; } = new("Indexer");
 
+			/// <summary>Interceptor for Save.</summary>
+			public IPerson_SaveInterceptor Save { get; } = new();
+
 			/// <summary>Interceptor for Delete.</summary>
 			public IPerson_DeleteInterceptor Delete { get; } = new();
 
 			/// <summary>Interceptor for UnDelete.</summary>
 			public IPerson_UnDeleteInterceptor UnDelete { get; } = new();
-
-			/// <summary>Interceptor for Save.</summary>
-			public IPerson_SaveInterceptor Save { get; } = new();
 
 			/// <summary>Interceptor for GetProperty.</summary>
 			public IPerson_GetPropertyInterceptor GetProperty { get; } = new();
@@ -4321,6 +4321,21 @@ partial class UniqueNameRuleTests
 				set => PersonPhoneList.InvokeSet(Strict, value);
 			}
 
+			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityRoot.Save()
+			{
+				return Save.Invoke_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase(Strict);
+			}
+
+			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityRoot.Save(global::System.Threading.CancellationToken token)
+			{
+				return Save.Invoke_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(Strict, token);
+			}
+
+			bool global::Neatoo.IEntityRoot.IsSavable
+			{
+				get => IsSavable.InvokeGet(Strict);
+			}
+
 			void global::Neatoo.IEntityBase.Delete()
 			{
 				Delete.Invoke(Strict);
@@ -4329,16 +4344,6 @@ partial class UniqueNameRuleTests
 			void global::Neatoo.IEntityBase.UnDelete()
 			{
 				UnDelete.Invoke(Strict);
-			}
-
-			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityBase.Save()
-			{
-				return Save.Invoke_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase(Strict);
-			}
-
-			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityBase.Save(global::System.Threading.CancellationToken token)
-			{
-				return Save.Invoke_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(Strict, token);
 			}
 
 			global::Neatoo.IValidateBase? global::Neatoo.IEntityBase.Root
@@ -4456,11 +4461,6 @@ partial class UniqueNameRuleTests
 				get => IsMarkedModified.InvokeGet(Strict);
 			}
 
-			bool global::Neatoo.IEntityMetaProperties.IsSavable
-			{
-				get => IsSavable.InvokeGet(Strict);
-			}
-
 			bool global::Neatoo.RemoteFactory.IFactorySaveMeta.IsDeleted
 			{
 				get => IsDeleted.InvokeGet(Strict);
@@ -4505,6 +4505,7 @@ partial class UniqueNameRuleTests
 				Email.SetSourceFallback(source != null ? () => source.Email : null, source != null ? (value) => source.Email = value : null);
 				Notes.SetSourceFallback(source != null ? () => source.Notes : null, source != null ? (value) => source.Notes = value : null);
 				PersonPhoneList.SetSourceFallback(source != null ? () => source.PersonPhoneList : null, source != null ? (value) => source.PersonPhoneList = value : null);
+				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				Root.SetSourceFallback(source != null ? () => source.Root : null);
 				ModifiedProperties.SetSourceFallback(source != null ? () => source.ModifiedProperties : null);
 				Parent.SetSourceFallback(source != null ? () => source.Parent : null);
@@ -4517,13 +4518,49 @@ partial class UniqueNameRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
+				Save._source = source;
 				Delete._source = source;
 				UnDelete._source = source;
+				GetProperty._source = source;
+				TryGetProperty._source = source;
+				AddChildTask._source = source;
+				WaitForTasks._source = source;
+				RunRules._source = source;
+				ClearAllMessages._source = source;
+				ClearSelfMessages._source = source;
+			}
+
+			/// <summary>Sets the source object for global::Neatoo.IEntityRoot delegation.</summary>
+			public void Source(global::Neatoo.IEntityRoot? source)
+			{
+				Id.SetSourceFallback(null, null);
+				FirstName.SetSourceFallback(null, null);
+				LastName.SetSourceFallback(null, null);
+				Email.SetSourceFallback(null, null);
+				Notes.SetSourceFallback(null, null);
+				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
+				Root.SetSourceFallback(source != null ? () => source.Root : null);
+				ModifiedProperties.SetSourceFallback(source != null ? () => source.ModifiedProperties : null);
+				Parent.SetSourceFallback(source != null ? () => source.Parent : null);
+				IsPaused.SetSourceFallback(source != null ? () => source.IsPaused : null);
+				IsBusy.SetSourceFallback(source != null ? () => source.IsBusy : null);
+				IsValid.SetSourceFallback(source != null ? () => source.IsValid : null);
+				IsSelfValid.SetSourceFallback(source != null ? () => source.IsSelfValid : null);
+				PropertyMessages.SetSourceFallback(source != null ? () => source.PropertyMessages : null);
+				IsChild.SetSourceFallback(source != null ? () => source.IsChild : null);
+				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
+				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
+				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
+				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
+				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
+				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
 				Save._source = source;
+				Delete._source = source;
+				UnDelete._source = source;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
 				AddChildTask._source = source;
@@ -4542,6 +4579,7 @@ partial class UniqueNameRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(source != null ? () => source.Root : null);
 				ModifiedProperties.SetSourceFallback(source != null ? () => source.ModifiedProperties : null);
 				Parent.SetSourceFallback(source != null ? () => source.Parent : null);
@@ -4554,13 +4592,12 @@ partial class UniqueNameRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
+				Save._source = null;
 				Delete._source = source;
 				UnDelete._source = source;
-				Save._source = source;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
 				AddChildTask._source = source;
@@ -4579,6 +4616,7 @@ partial class UniqueNameRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(source != null ? () => source.Parent : null);
@@ -4591,13 +4629,12 @@ partial class UniqueNameRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
 				AddChildTask._source = source;
@@ -4616,6 +4653,7 @@ partial class UniqueNameRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4628,13 +4666,12 @@ partial class UniqueNameRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4653,6 +4690,7 @@ partial class UniqueNameRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4665,13 +4703,12 @@ partial class UniqueNameRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4690,6 +4727,7 @@ partial class UniqueNameRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4702,13 +4740,12 @@ partial class UniqueNameRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4727,6 +4764,7 @@ partial class UniqueNameRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4739,13 +4777,12 @@ partial class UniqueNameRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4764,6 +4801,7 @@ partial class UniqueNameRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4776,13 +4814,12 @@ partial class UniqueNameRuleTests
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
-				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4801,6 +4838,7 @@ partial class UniqueNameRuleTests
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
 				PersonPhoneList.SetSourceFallback(null, null);
+				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
 				Parent.SetSourceFallback(null);
@@ -4813,13 +4851,12 @@ partial class UniqueNameRuleTests
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
-				IsSavable.SetSourceFallback(null);
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(null);
+				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
-				Save._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
 				AddChildTask._source = null;
@@ -4840,6 +4877,7 @@ partial class UniqueNameRuleTests
 				if (Email.CheckVerification() is { } emailFailure) failures.Add(emailFailure);
 				if (Notes.CheckVerification() is { } notesFailure) failures.Add(notesFailure);
 				if (PersonPhoneList.CheckVerification() is { } personphonelistFailure) failures.Add(personphonelistFailure);
+				if (IsSavable.CheckVerification() is { } issavableFailure) failures.Add(issavableFailure);
 				if (Root.CheckVerification() is { } rootFailure) failures.Add(rootFailure);
 				if (ModifiedProperties.CheckVerification() is { } modifiedpropertiesFailure) failures.Add(modifiedpropertiesFailure);
 				if (Parent.CheckVerification() is { } parentFailure) failures.Add(parentFailure);
@@ -4852,13 +4890,12 @@ partial class UniqueNameRuleTests
 				if (IsModified.CheckVerification() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerification() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerification() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerification() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerification() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerification() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerification() is { } indexerFailure) failures.Add(indexerFailure);
+				if (Save.CheckVerification() is { } saveFailure) failures.Add(saveFailure);
 				if (Delete.CheckVerification() is { } deleteFailure) failures.Add(deleteFailure);
 				if (UnDelete.CheckVerification() is { } undeleteFailure) failures.Add(undeleteFailure);
-				if (Save.CheckVerification() is { } saveFailure) failures.Add(saveFailure);
 				if (GetProperty.CheckVerification() is { } getpropertyFailure) failures.Add(getpropertyFailure);
 				if (TryGetProperty.CheckVerification() is { } trygetpropertyFailure) failures.Add(trygetpropertyFailure);
 				if (AddChildTask.CheckVerification() is { } addchildtaskFailure) failures.Add(addchildtaskFailure);
@@ -4884,6 +4921,7 @@ partial class UniqueNameRuleTests
 				if (Email.CheckVerificationAll() is { } emailFailure) failures.Add(emailFailure);
 				if (Notes.CheckVerificationAll() is { } notesFailure) failures.Add(notesFailure);
 				if (PersonPhoneList.CheckVerificationAll() is { } personphonelistFailure) failures.Add(personphonelistFailure);
+				if (IsSavable.CheckVerificationAll() is { } issavableFailure) failures.Add(issavableFailure);
 				if (Root.CheckVerificationAll() is { } rootFailure) failures.Add(rootFailure);
 				if (ModifiedProperties.CheckVerificationAll() is { } modifiedpropertiesFailure) failures.Add(modifiedpropertiesFailure);
 				if (Parent.CheckVerificationAll() is { } parentFailure) failures.Add(parentFailure);
@@ -4896,13 +4934,12 @@ partial class UniqueNameRuleTests
 				if (IsModified.CheckVerificationAll() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerificationAll() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerificationAll() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
-				if (IsSavable.CheckVerificationAll() is { } issavableFailure) failures.Add(issavableFailure);
 				if (IsDeleted.CheckVerificationAll() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerificationAll() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerificationAll() is { } indexerFailure) failures.Add(indexerFailure);
+				if (Save.CheckVerificationAll() is { } saveFailure) failures.Add(saveFailure);
 				if (Delete.CheckVerificationAll() is { } deleteFailure) failures.Add(deleteFailure);
 				if (UnDelete.CheckVerificationAll() is { } undeleteFailure) failures.Add(undeleteFailure);
-				if (Save.CheckVerificationAll() is { } saveFailure) failures.Add(saveFailure);
 				if (GetProperty.CheckVerificationAll() is { } getpropertyFailure) failures.Add(getpropertyFailure);
 				if (TryGetProperty.CheckVerificationAll() is { } trygetpropertyFailure) failures.Add(trygetpropertyFailure);
 				if (AddChildTask.CheckVerificationAll() is { } addchildtaskFailure) failures.Add(addchildtaskFailure);

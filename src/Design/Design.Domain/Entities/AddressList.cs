@@ -19,7 +19,7 @@ namespace Design.Domain.Entities;
 /// - Items marked as children when added
 /// </summary>
 [Factory]
-public partial class AddressList : EntityListBase<Address>
+internal partial class AddressList : EntityListBase<IAddress>, IAddressList
 {
     // =========================================================================
     // EntityListBase provides:

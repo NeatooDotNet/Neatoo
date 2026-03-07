@@ -21,7 +21,7 @@ namespace Design.Domain.Entities;
 /// - Has own validation rules
 /// </summary>
 [Factory]
-public partial class Address : EntityBase<Address>
+internal partial class Address : EntityBase<Address>, IAddress
 {
     public partial int Id { get; set; }
 

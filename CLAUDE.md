@@ -1,7 +1,67 @@
+## Commands
+
+```bash
+# Build
+dotnet build src/Neatoo.sln
+
+# Test (all tests)
+dotnet test src/Neatoo.sln
+
+# Test (specific project)
+dotnet test src/Neatoo.UnitTest/Neatoo.UnitTest.csproj
+dotnet test src/Design/Design.Tests/Design.Tests.csproj
+```
 
 The Neatoo Solution is at src/Neatoo.sln
 
+## Project Map
 
+| Project | Purpose |
+|---------|---------|
+| `Neatoo` | Core framework library (EntityBase, ValidateBase, rules, properties) |
+| `Neatoo.BaseGenerator` | Roslyn source generator for partial properties and backing fields |
+| `Neatoo.BaseGenerator.Tests` | Tests for the source generator |
+| `Neatoo.Analyzers` | Roslyn analyzers for compile-time Neatoo pattern validation |
+| `Neatoo.CodeFixes` | Code fixes paired with analyzers |
+| `Neatoo.Blazor.MudNeatoo` | MudBlazor integration for Neatoo entities |
+| `Neatoo.Console` | Console app for testing/debugging |
+| `Neatoo.UnitTest` | Main test project (Unit/, Integration/) |
+| `Neatoo.UnitTest.Demo` | Demo tests |
+| `samples` | Code samples for documentation (MarkdownSnippets) |
+| `Design.Domain` | Authoritative API design reference (heavily commented) |
+| `Design.Infrastructure` | Repository interface examples |
+| `Design.Tests` | Tests verifying design patterns |
+| `Examples/Person/*` | Full example application (App, DomainModel, Ef, Server) |
+
+## Central Pillar: Interface-First Design
+
+**Every entity/list gets a matched public interface. Concretes are `internal`. All references use interfaces, never concretes.** This is how `IEntityRoot` vs `IEntityBase` separation works -- without it, `IsSavable` on child entities silently returns `false` (real zTreatment bug).
+
+### The Rules
+
+1. Every entity class gets a matched public interface (`IOrder`, `IOrderItem`, `IOrderItemList`)
+2. Concrete classes are `internal`
+3. All references use interfaces -- properties, parameters, list type parameters
+4. Root interfaces extend `IEntityRoot` (exposes `IsSavable`, `Save()`)
+5. Child interfaces extend `IEntityBase` (no `IsSavable`, no `Save()`)
+6. List interfaces extend `IEntityListBase<IChild>` -- parameterized on child interface
+7. ValidateBase entities follow the same pattern
+
+```csharp
+public interface IOrder : IEntityRoot { IOrderItemList? Items { get; } }
+public interface IOrderItem : IEntityBase { string ProductName { get; set; } }
+public interface IOrderItemList : IEntityListBase<IOrderItem> { }
+
+internal partial class Order : EntityBase<Order>, IOrder { ... }
+internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem { ... }
+internal class OrderItemList : EntityListBase<IOrderItem>, IOrderItemList { ... }
+
+// WRONG: public concrete, concrete type in property, list on concrete, factory taking concrete
+// public class Order : EntityBase<Order> { ... }         -- must be internal
+// public partial OrderItemList? Items { get; set; }      -- use IOrderItemList
+// EntityListBase<OrderItem>                              -- use IOrderItem
+// void Insert(Order parent, ...) { ... }                 -- use IOrder
+```
 
 ## Neatoo Terminology
 
@@ -12,12 +72,29 @@ The Neatoo Solution is at src/Neatoo.sln
 - `ValidateListBase<I>` - Collections of read models
 - Static classes with `[Factory]` and `[Execute]` - Commands
 
+### Entity Interfaces: Root vs Child
+- `IEntityRoot : IEntityBase` - Aggregate root interface. Adds `IsSavable` and `Save()`. User-defined root entity interfaces extend this.
+- `IEntityBase` - Child entity interface. No `IsSavable`, no `Save()`. User-defined child entity interfaces extend this.
+
+The user signals root vs child by choosing which interface their entity interface extends. This is explicit -- no attributes, no inference, no RemoteFactory involvement. `EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`, but entity classes should be `internal` with only the public interface exposed. The interface controls what consumers can access.
+
+```csharp
+// Aggregate root -- exposes IsSavable and Save()
+public interface IOrder : IEntityRoot { ... }
+
+// Child entity -- no IsSavable, no Save()
+public interface IOrderLine : IEntityBase { ... }
+```
+
+**Why this exists:** `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. Developers naturally used `IsSavable` in save cascade logic to check whether children need persisting -- but it silently returned false, skipping saves (real bug in zTreatment). The fix is not to make `IsSavable` work on children -- it is to remove it from the child interface entirely. Child entity factory methods (`[Insert]`/`[Update]`) have signatures that outside consumers cannot fulfill (they often need the parent entity or parent ID), and entity classes are `internal`, so external callers should not be able to save children at all.
+
 ### State Properties
 - `IsModified` - True when object has unsaved changes
 - `IsSelfModified` - True when this object (not children) has changes
 - `IsNew` - True when object hasn't been persisted yet
 - `IsValid` - True when all validation rules pass
 - `IsSelfValid` - True when this object's rules pass (not children)
+- `IsSavable` - True when entity can be saved (IsModified && IsValid && !IsBusy && !IsChild). **Only on `IEntityRoot`** -- not on `IEntityBase` or `IEntityListBase`. Child entities and entity lists never expose this property through their interfaces.
 
 ### Factory Operations
 
@@ -112,10 +189,17 @@ When learning about Neatoo concepts, **read Design.Domain files first**. They co
 
 **Key files by topic:**
 - Base classes: `Design.Domain/BaseClasses/AllBaseClasses.cs`
+- Root vs child interfaces: `Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs`
 - Aggregate patterns: `Design.Domain/Aggregates/OrderAggregate/`
 - Factory operations: `Design.Domain/FactoryOperations/`
 - Validation rules: `Design.Domain/Rules/`
 - Property system: `Design.Domain/PropertySystem/`
 - Generator interaction: `Design.Domain/Generators/TwoGeneratorInteraction.cs`
+- Commands: `Design.Domain/Commands/ApproveEmployee.cs`
+- DI/service registration: `Design.Domain/DI/`
+- Error handling: `Design.Domain/ErrorHandling/`
+- Common gotchas: `Design.Domain/CommonGotchas.cs`
+- Entities (standalone): `Design.Domain/Entities/`
+- Value objects: `Design.Domain/ValueObjects/`
 
 See `src/Design/CLAUDE-DESIGN.md` for detailed Claude Code guidance.

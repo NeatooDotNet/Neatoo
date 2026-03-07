@@ -68,7 +68,7 @@ namespace Design.Domain.FactoryOperations;
 /// Demonstrates: [Remote] boundary patterns.
 /// </summary>
 [Factory]
-public partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>
+internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRemoteBoundaryDemo
 {
     public partial int Id { get; set; }
     public partial string? Name { get; set; }
@@ -154,7 +154,7 @@ public partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>
 /// Demonstrates: Constructor vs Method service injection.
 /// </summary>
 [Factory]
-public partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>
+internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, IServiceInjectionDemo
 {
     public partial string? Name { get; set; }
 
@@ -239,7 +239,7 @@ public partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>
 /// Demonstrates: Entity that can be root or child.
 /// </summary>
 [Factory]
-public partial class DualUseEntity : EntityBase<DualUseEntity>
+internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
 {
     public partial int Id { get; set; }
     public partial string? Street { get; set; }

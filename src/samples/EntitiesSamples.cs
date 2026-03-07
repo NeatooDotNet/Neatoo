@@ -655,7 +655,7 @@ public class EntitiesSamplesTests : SamplesTestBase
 
     #region entities-child-state
     [Fact]
-    public async Task ChildEntity_CannotSaveDirectly()
+    public void ChildEntity_CannotSaveDirectly()
     {
         var orderFactory = GetRequiredService<IEntitiesOrderFactory>();
         var itemFactory = GetRequiredService<IEntitiesOrderItemFactory>();
@@ -674,12 +674,10 @@ public class EntitiesSamplesTests : SamplesTestBase
         // Child entity state
         Assert.True(item.IsChild);
         Assert.Same(order, item.Root);
-        Assert.False(item.IsSavable); // Children can't save independently
 
-        // Attempting to save throws
-        var exception = await Assert.ThrowsAsync<SaveOperationException>(
-            () => item.Save());
-        Assert.Equal(SaveFailureReason.IsChildObject, exception.Reason);
+        // Child interfaces (IEntityBase) don't expose IsSavable or Save().
+        // Only IEntityRoot exposes those members.
+        // This is enforced at the type level — no runtime check needed.
     }
     #endregion
 

@@ -91,7 +91,8 @@ public class EntityListBaseTests
 
         child.FirstName = Guid.NewGuid().ToString();
 
-        Assert.IsFalse(list.IsSavable);
+        // Lists do not expose IsSavable (not on IEntityListBase interface)
+        // Child entities are not savable (IsSavable false because IsChild=true)
         Assert.IsFalse(child.IsSavable);
     }
 

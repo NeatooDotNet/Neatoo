@@ -54,7 +54,7 @@ namespace Design.Domain.PropertySystem;
 /// Demonstrates: Partial property patterns and property system basics.
 /// </summary>
 [Factory]
-public partial class PropertyBasicsDemo : EntityBase<PropertyBasicsDemo>
+internal partial class PropertyBasicsDemo : EntityBase<PropertyBasicsDemo>, IPropertyBasicsDemo
 {
     // =========================================================================
     // Pattern 1: Simple Properties
@@ -98,7 +98,7 @@ public partial class PropertyBasicsDemo : EntityBase<PropertyBasicsDemo>
     // This is allowed but be aware it affects parent-child tracking.
     // =========================================================================
 
-    public partial PropertyChildDemo? Child { get; set; }
+    public partial IPropertyChildDemo? Child { get; set; }
 
     public PropertyBasicsDemo(IEntityBaseServices<PropertyBasicsDemo> services) : base(services)
     {
@@ -112,7 +112,7 @@ public partial class PropertyBasicsDemo : EntityBase<PropertyBasicsDemo>
 }
 
 [Factory]
-public partial class PropertyChildDemo : ValidateBase<PropertyChildDemo>
+internal partial class PropertyChildDemo : ValidateBase<PropertyChildDemo>, IPropertyChildDemo
 {
     public partial string? Value { get; set; }
 
@@ -162,7 +162,7 @@ public partial class PropertyChildDemo : ValidateBase<PropertyChildDemo>
 /// Demonstrates: SetValue vs LoadValue distinction.
 /// </summary>
 [Factory]
-public partial class SetValueVsLoadValueDemo : EntityBase<SetValueVsLoadValueDemo>
+internal partial class SetValueVsLoadValueDemo : EntityBase<SetValueVsLoadValueDemo>, ISetValueVsLoadValueDemo
 {
     public partial string? Name { get; set; }
     public partial int Value { get; set; }
@@ -223,7 +223,7 @@ public partial class SetValueVsLoadValueDemo : EntityBase<SetValueVsLoadValueDem
 /// Demonstrates: Property indexer and IEntityProperty/IValidateProperty access.
 /// </summary>
 [Factory]
-public partial class IndexerAccessDemo : EntityBase<IndexerAccessDemo>
+internal partial class IndexerAccessDemo : EntityBase<IndexerAccessDemo>, IIndexerAccessDemo
 {
     public partial string? Name { get; set; }
     public partial int Amount { get; set; }

@@ -21,7 +21,7 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 /// - Coordinates FactoryComplete cleanup
 /// </summary>
 [Factory]
-public partial class OrderItemList : EntityListBase<OrderItem>
+internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemList
 {
     /// <summary>
     /// Test helper: Exposes the count of items in DeletedList.

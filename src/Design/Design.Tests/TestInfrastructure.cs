@@ -35,7 +35,7 @@ public static class DesignTestServices
                 // Add Neatoo services with Design.Domain assembly
                 services.AddNeatooServices(
                     NeatooFactory.Server,
-                    typeof(Design.Domain.BaseClasses.DemoValueObject).Assembly);
+                    typeof(Design.Domain.BaseClasses.IDemoValueObject).Assembly);
 
                 // Register mock repositories for tests
                 services.AddTransient<Design.Domain.BaseClasses.IDemoRepository, MockDemoRepository>();

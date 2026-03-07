@@ -64,7 +64,7 @@ namespace Design.Domain.BaseClasses;
 /// - RuleManager provides fluent API for adding rules
 /// </summary>
 [Factory]
-public partial class DemoValueObject : ValidateBase<DemoValueObject>
+internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoValueObject
 {
     // =========================================================================
     // GENERATOR BEHAVIOR: Partial properties trigger source generation.
@@ -150,6 +150,7 @@ public partial class DemoValueObject : ValidateBase<DemoValueObject>
 // - IsSelfModified: True when THIS object's properties changed (excluding children)
 // - IsDeleted: True when marked for deletion
 // - IsSavable: True when entity can be saved (Modified && Valid && !Busy && !Child)
+//              Exposed only through IEntityRoot (aggregate root interface)
 // - IsChild: True when part of a parent aggregate (cannot save independently)
 // - Root: Reference to aggregate root
 // - ModifiedProperties: List of changed property names
@@ -191,7 +192,7 @@ public partial class DemoValueObject : ValidateBase<DemoValueObject>
 /// - Child entities (IsChild=true) cannot save independently
 /// </summary>
 [Factory]
-public partial class DemoEntity : EntityBase<DemoEntity>
+internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
 {
     public partial string? Name { get; set; }
 
@@ -347,7 +348,7 @@ public partial class DemoEntity : EntityBase<DemoEntity>
 /// - Parent-child relationships managed automatically
 /// </summary>
 [Factory]
-public partial class DemoValueObjectList : ValidateListBase<DemoValueObject>
+internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>, IDemoValueObjectList
 {
     // ValidateListBase has no required constructor - uses default.
 
@@ -449,7 +450,7 @@ public partial class DemoValueObjectList : ValidateListBase<DemoValueObject>
 /// - Root property for aggregate boundary enforcement
 /// </summary>
 [Factory]
-public partial class DemoEntityList : EntityListBase<DemoEntity>
+internal partial class DemoEntityList : EntityListBase<IDemoEntity>, IDemoEntityList
 {
     // DESIGN DECISION: EntityListBase doesn't define IsSavable or Save().
     // Lists are ALWAYS saved through their parent aggregate root.
@@ -510,6 +511,17 @@ public interface IDemoRepository
 //
 // Entities extend validation, lists mirror this structure.
 // This ensures consistent validation semantics across all object types.
+//
+// INTERFACE HIERARCHY for entities:
+//
+//   IEntityBase              (child entities: IsModified, IsChild, Delete, etc.)
+//        ^
+//        |
+//   IEntityRoot              (aggregate roots: adds IsSavable, Save())
+//
+// The user signals root vs child by choosing which interface their entity
+// interface extends. Root entity interfaces extend IEntityRoot; child entity
+// interfaces extend IEntityBase only.
 // =============================================================================
 
 // =============================================================================

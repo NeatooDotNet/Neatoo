@@ -75,11 +75,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// </summary>
     public bool IsMarkedModified => false;
 
-    /// <summary>
-    /// Gets a value indicating whether the list can be saved.
-    /// Always returns <c>false</c> as lists are saved through their parent entity.
-    /// </summary>
-    public bool IsSavable => false;
+    // IsSavable removed — lists are never savable (saved through parent entity)
 
     /// <summary>
     /// Gets a value indicating whether the list is new (not yet persisted).
@@ -119,9 +115,9 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
 
     /// <summary>
     /// Gets the cached entity meta state for change detection.
-    /// Stores the previous values of <see cref="IsModified"/>, <see cref="IsSelfModified"/>, and <see cref="IsSavable"/>.
+    /// Stores the previous values of <see cref="IsModified"/> and <see cref="IsSelfModified"/>.
     /// </summary>
-    protected (bool IsModified, bool IsSelfModified, bool IsSavable) EntityMetaState { get; private set; }
+    protected (bool IsModified, bool IsSelfModified) EntityMetaState { get; private set; }
 
     /// <summary>
     /// Gets the deleted list for internal access by the framework.
@@ -178,7 +174,6 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
         // Compare entity meta properties BEFORE calling base (which resets the cache)
         RaiseIfChanged(this.EntityMetaState.IsModified, this.IsModified, nameof(this.IsModified));
         RaiseIfChanged(this.EntityMetaState.IsSelfModified, this.IsSelfModified, nameof(this.IsSelfModified));
-        RaiseIfChanged(this.EntityMetaState.IsSavable, this.IsSavable, nameof(this.IsSavable));
 
         base.CheckIfMetaPropertiesChanged();
     }
@@ -190,7 +185,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     protected override void ResetMetaState()
     {
         base.ResetMetaState();
-        this.EntityMetaState = (this.IsModified, this.IsSelfModified, this.IsSavable);
+        this.EntityMetaState = (this.IsModified, this.IsSelfModified);
     }
 
     /// <summary>

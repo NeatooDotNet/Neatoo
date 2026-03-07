@@ -52,10 +52,10 @@ namespace Design.Domain.PropertySystem;
 /// Demonstrates: Validation state properties (IsValid, IsSelfValid).
 /// </summary>
 [Factory]
-public partial class ValidationStateDemo : ValidateBase<ValidationStateDemo>
+internal partial class ValidationStateDemo : ValidateBase<ValidationStateDemo>, IValidationStateDemo
 {
     public partial string? RequiredField { get; set; }
-    public partial ValidationChildDemo? Child { get; set; }
+    public partial IValidationChildDemo? Child { get; set; }
 
     public ValidationStateDemo(IValidateBaseServices<ValidationStateDemo> services) : base(services)
     {
@@ -94,7 +94,7 @@ public partial class ValidationStateDemo : ValidateBase<ValidationStateDemo>
 }
 
 [Factory]
-public partial class ValidationChildDemo : ValidateBase<ValidationChildDemo>
+internal partial class ValidationChildDemo : ValidateBase<ValidationChildDemo>, IValidationChildDemo
 {
     public partial string? RequiredField { get; set; }
 
@@ -113,10 +113,10 @@ public partial class ValidationChildDemo : ValidateBase<ValidationChildDemo>
 /// Demonstrates: Modification state properties (IsModified, IsSelfModified, IsNew).
 /// </summary>
 [Factory]
-public partial class ModificationStateDemo : EntityBase<ModificationStateDemo>
+internal partial class ModificationStateDemo : EntityBase<ModificationStateDemo>, IModificationStateDemo
 {
     public partial string? Name { get; set; }
-    public partial ModificationChildDemo? Child { get; set; }
+    public partial IModificationChildDemo? Child { get; set; }
 
     public ModificationStateDemo(IEntityBaseServices<ModificationStateDemo> services) : base(services) { }
 
@@ -197,7 +197,7 @@ public partial class ModificationStateDemo : EntityBase<ModificationStateDemo>
 }
 
 [Factory]
-public partial class ModificationChildDemo : EntityBase<ModificationChildDemo>
+internal partial class ModificationChildDemo : EntityBase<ModificationChildDemo>, IModificationChildDemo
 {
     public partial string? Value { get; set; }
 
@@ -211,7 +211,7 @@ public partial class ModificationChildDemo : EntityBase<ModificationChildDemo>
 /// Demonstrates: IsSavable, IsDeleted, IsChild, Root.
 /// </summary>
 [Factory]
-public partial class SaveStateDemo : EntityBase<SaveStateDemo>
+internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
 {
     public partial string? Name { get; set; }
 
@@ -318,7 +318,7 @@ public partial class SaveStateDemo : EntityBase<SaveStateDemo>
 /// Demonstrates: IsBusy, IsPaused, async operation tracking.
 /// </summary>
 [Factory]
-public partial class BusyStateDemo : ValidateBase<BusyStateDemo>
+internal partial class BusyStateDemo : ValidateBase<BusyStateDemo>, IBusyStateDemo
 {
     public partial string? Name { get; set; }
     public partial string? ComputedValue { get; set; }
