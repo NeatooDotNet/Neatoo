@@ -405,6 +405,164 @@ public async Task ValidateBeforeSave_IsSavableCheck()
 <sup><a href='/src/samples/ValidationSamples.cs#L826-L852' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+## Async Action Rules (AddActionAsync)
+
+Use `AddActionAsync` for async side-effects that compute or fetch values when a property changes. Unlike `AddValidationAsync` (which returns an error message), `AddActionAsync` returns void — it performs work, not validation.
+
+<!-- snippet: async-action-rule -->
+<a id='snippet-async-action-rule'></a>
+```cs
+public AsyncActionContact(IValidateBaseServices<AsyncActionContact> services)
+    : base(services)
+{
+    // Register an async action that fires when ZipCode changes
+    RuleManager.AddActionAsync(
+        async contact =>
+        {
+            // Simulate async lookup (e.g., tax service API call)
+            await Task.Delay(10);
+            contact.TaxRate = contact.ZipCode?.StartsWith("9") == true ? 0.0825m : 0.07m;
+        },
+        c => c.ZipCode);
+}
+```
+<sup><a href='/src/samples/AsyncSamples.cs#L136-L150' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-action-rule' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### CancellationToken Variant
+
+For cooperative cancellation support, use the overload that receives a `CancellationToken`:
+
+<!-- snippet: async-action-rule-with-token -->
+<a id='snippet-async-action-rule-with-token'></a>
+```cs
+public AsyncCancellableContact(IValidateBaseServices<AsyncCancellableContact> services)
+    : base(services)
+{
+    // Async action with CancellationToken support
+    RuleManager.AddActionAsync(
+        async (contact, token) =>
+        {
+            // Check cancellation before expensive operation
+            token.ThrowIfCancellationRequested();
+
+            await Task.Delay(50, token); // Honors cancellation
+            contact.Status = "Validated";
+        },
+        c => c.Email);
+}
+```
+<sup><a href='/src/samples/AsyncSamples.cs#L164-L180' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-action-rule-with-token' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### Multiple Trigger Properties
+
+`AddActionAsync` supports 1–3 trigger properties via individual parameters. For 4+ triggers, pass an explicit array:
+
+```csharp
+RuleManager.AddActionAsync(
+    async t => await CalculateAsync(t),
+    new[] { t => t.A, t => t.B, t => t.C, t => t.D });
+```
+
+### LoadValue and Deserialization Behavior
+
+`AddActionAsync` rules do **not** fire during `LoadValue` or deserialization:
+
+- `LoadValue` fires `NeatooPropertyChanged` with `ChangeReason.Load`. The framework skips rules for `Load` events — only `SetParent` is called.
+- During factory operations (`[Create]`, `[Fetch]`, etc.) and JSON deserialization, `PauseAllActions()` is called. Rules are suppressed until `ResumeAllActions()` runs after the operation completes.
+
+This means properties populated via `LoadValue` in a `[Fetch]` method will not trigger `AddActionAsync` rules. To run rules after loading, call `RunRules(RunRulesFlag.All)` explicitly.
+
+### Exception Propagation
+
+Exceptions thrown inside an `AddActionAsync` lambda are surfaced when `WaitForTasks()` is awaited, wrapped in `AggregateException`. The triggering property is also marked invalid:
+
+<!-- snippet: async-error-handling -->
+<a id='snippet-async-error-handling'></a>
+```cs
+[Fact]
+public async Task AsyncRule_ExceptionsAreCaptured()
+{
+    var factory = GetRequiredService<IAsyncErrorContactFactory>();
+    var contact = factory.Create();
+
+    // This value causes the rule to throw
+    contact.Value = "error";
+
+    // Exception is surfaced when waiting (wrapped in AggregateException)
+    var exception = await Assert.ThrowsAsync<AggregateException>(
+        async () => await contact.WaitForTasks());
+
+    // The original exception is available via InnerException
+    Assert.IsType<InvalidOperationException>(exception.InnerException);
+
+    // Property is marked invalid with exception message
+    Assert.False(contact["Value"].IsValid);
+}
+```
+<sup><a href='/src/samples/AsyncSamples.cs#L462-L482' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-error-handling' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### IsBusy During Async Rules
+
+While an async action rule is executing, `IsBusy` is `true` and `IsSavable` is `false`. Always `await WaitForTasks()` before checking validation state or saving:
+
+<!-- snippet: async-check-busy -->
+<a id='snippet-async-check-busy'></a>
+```cs
+[Fact]
+public async Task IsBusy_TracksAsyncOperationState()
+{
+    var factory = GetRequiredService<IAsyncActionContactFactory>();
+    var contact = factory.Create();
+
+    // Trigger async rule
+    contact.ZipCode = "90210";
+
+    // Object is busy while async rule executes
+    Assert.True(contact.IsBusy);
+
+    // Wait for completion
+    await contact.WaitForTasks();
+
+    // No longer busy
+    Assert.False(contact.IsBusy);
+}
+```
+<sup><a href='/src/samples/AsyncSamples.cs#L358-L377' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-check-busy' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### Rule Execution Order
+
+Async action rules execute in registration order. If a rule sets a property that triggers another rule, the chained rule executes after the first completes:
+
+<!-- snippet: async-recursive-rules -->
+<a id='snippet-async-recursive-rules'></a>
+```cs
+[Fact]
+public async Task RecursiveRules_ChainedRulesExecute()
+{
+    var factory = GetRequiredService<IAsyncRecursiveContactFactory>();
+    var contact = factory.Create();
+
+    // Setting FirstName triggers FullName rule
+    contact.FirstName = "John";
+    contact.LastName = "Doe";
+
+    // WaitForTasks waits for the entire chain
+    await contact.WaitForTasks();
+
+    // First rule set FullName
+    Assert.Equal("John Doe", contact.FullName);
+
+    // Second rule (triggered by FullName) set Initials
+    Assert.Equal("JD", contact.Initials);
+}
+```
+<sup><a href='/src/samples/AsyncSamples.cs#L484-L504' title='Snippet source file'>snippet source</a> | <a href='#snippet-async-recursive-rules' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
 ## Related
 
 - [Properties](properties.md) - How properties trigger validation

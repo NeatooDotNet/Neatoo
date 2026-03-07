@@ -26,6 +26,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
         }
 
         List<PropertyInfo> editProperties = null;
+        List<PropertyInfo> lazyLoadProperties = null;
         var editBaseType = typeToConvert;
 
 
@@ -111,6 +112,14 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
 
                 } while (editBaseType != null);
 
+                // Detect LazyLoad<> properties on the concrete type (works for both EntityBase and ValidateBase)
+                lazyLoadProperties = result.GetType()
+                    .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    .Where(p => p.PropertyType.IsGenericType
+                        && p.PropertyType.GetGenericTypeDefinition() == typeof(LazyLoad<>)
+                        && p.SetMethod != null)
+                    .ToList();
+
             }
             else if (propertyName == "PropertyManager")
             {
@@ -168,6 +177,12 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                     }
                 }
 
+            }
+            else if (lazyLoadProperties != null && lazyLoadProperties.Any(p => p.Name == propertyName))
+            {
+                var property = lazyLoadProperties.First(p => p.Name == propertyName);
+                var value = JsonSerializer.Deserialize(ref reader, property.PropertyType, options);
+                property.SetValue(result, value);
             }
             else if (editProperties != null && editProperties.Any(p => p.Name == propertyName))
             {
@@ -321,6 +336,21 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                 {
                     writer.WritePropertyName(p.Name);
                     JsonSerializer.Serialize(writer, p.GetValue(editMetaProperties), p.PropertyType, options);
+                }
+            }
+
+            // Serialize LazyLoad<> properties on the concrete type
+            foreach (var property in value.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                if (property.PropertyType.IsGenericType
+                    && property.PropertyType.GetGenericTypeDefinition() == typeof(LazyLoad<>))
+                {
+                    var propValue = property.GetValue(value);
+                    if (propValue != null)
+                    {
+                        writer.WritePropertyName(property.Name);
+                        JsonSerializer.Serialize(writer, propValue, property.PropertyType, options);
+                    }
                 }
             }
 
