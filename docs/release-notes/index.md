@@ -12,7 +12,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
-| [0.17.0](v0.17.0.md) | 2026-03-07 | **Breaking** | IEntityRoot interface separates root vs child entity operations |
+| [0.17.0](v0.17.0.md) | 2026-03-07 | **Breaking** | IEntityRoot interface; LazyLoad state propagation fix |
 | [0.16.0](v0.16.0.md) | 2026-03-06 | Bug Fix | LazyLoad properties survive client-server serialization |
 | [0.15.1](v0.15.1.md) | 2026-03-03 | Bug Fix | IsValid/IsSavable stale during RunRules() in factory operations |
 | [0.15.0](v0.15.0.md) | 2026-03-02 | Dependency | RemoteFactory updated to 0.16.1 |
