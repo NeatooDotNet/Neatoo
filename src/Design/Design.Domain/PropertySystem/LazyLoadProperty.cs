@@ -21,6 +21,27 @@
 // When LazyLoad<T>.Value contains a Neatoo entity (IValidateBase),
 // the NeatooBaseJsonConverterFactory claims the inner type, ensuring
 // proper $id/$ref and PropertyManager serialization for the value.
+//
+// STATE PROPAGATION: LazyLoad<T> forwards PropertyChanged events from
+// its wrapped value. The parent entity includes LazyLoad children in
+// its IsModified, IsValid, and IsBusy calculations via cached reflection.
+// This ensures that modifying a child entity inside LazyLoad<T> causes
+// the parent's IsSavable to return true, matching the behavior of
+// regular partial property children managed by PropertyManager.
+//
+// SUBSCRIPTION LIFECYCLE: The parent subscribes to LazyLoad instances'
+// PropertyChanged events at FactoryComplete() and OnDeserialized().
+// If a LazyLoad property is assigned after these points (e.g., in test
+// setup or runtime code), use a custom property setter that calls
+// SubscribeToLazyLoadProperties() to ensure reactive event propagation.
+// Even without subscriptions, the polling overrides (IsModified, IsValid,
+// IsBusy) return correct values when queried directly.
+//
+// COMMON MISTAKE: Assigning a LazyLoad<T> property after FactoryComplete()
+// without calling SubscribeToLazyLoadProperties() in the setter. The
+// polling override still returns correct values, but UI bindings won't
+// update reactively because the parent isn't subscribed to the new
+// LazyLoad instance's PropertyChanged events.
 // -----------------------------------------------------------------------------
 
 using Neatoo;
@@ -91,3 +112,30 @@ public partial class LazyLoadValidateDemo : ValidateBase<LazyLoadValidateDemo>
         LazyContent = lazyLoadFactory.Create<string>("Default content");
     }
 }
+
+// =============================================================================
+// LazyLoad with entity child -- state propagation pattern
+// =============================================================================
+//
+// DESIGN DECISION: When a LazyLoad<T> wraps a child entity (not a string),
+// the parent's IsModified, IsValid, IsBusy, and IsSavable include the child's
+// state. This is automatic via cached reflection in EntityBase/ValidateBase.
+//
+// If the LazyLoad property is assigned after FactoryComplete() (e.g., in
+// test setup or application code), use a custom setter:
+//
+//   private LazyLoad<IChildEntity> _lazyChild = null!;
+//   public LazyLoad<IChildEntity> LazyChild
+//   {
+//       get => _lazyChild;
+//       set
+//       {
+//           _lazyChild = value;
+//           SubscribeToLazyLoadProperties();
+//       }
+//   }
+//
+// This ensures the parent subscribes to the LazyLoad instance's PropertyChanged
+// events for reactive UI updates. Without the custom setter, polling (IsModified
+// etc.) still returns correct values, but PropertyChanged events won't fire
+// on the parent when the LazyLoad child's state changes.

@@ -46,6 +46,28 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
+    private void SubscribeToValuePropertyChanged(T? value)
+    {
+        if (value is INotifyPropertyChanged npc)
+        {
+            npc.PropertyChanged += OnValuePropertyChanged;
+        }
+    }
+
+    private void UnsubscribeFromValuePropertyChanged(T? value)
+    {
+        if (value is INotifyPropertyChanged npc)
+        {
+            npc.PropertyChanged -= OnValuePropertyChanged;
+        }
+    }
+
+    private void OnValuePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Forward child meta-state changes as our own
+        OnPropertyChanged(e.PropertyName!);
+    }
+
     /// <summary>
     /// Parameterless constructor for JSON deserialization.
     /// </summary>
@@ -74,6 +96,7 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
         _loader = () => Task.FromResult(value);
         _value = value;
         _isLoaded = true;
+        SubscribeToValuePropertyChanged(_value);
     }
 
     /// <summary>
@@ -150,7 +173,9 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
         OnPropertyChanged(nameof(IsLoading));
         try
         {
+            UnsubscribeFromValuePropertyChanged(_value);
             _value = await _loader!();
+            SubscribeToValuePropertyChanged(_value);
             _isLoaded = true;
             OnPropertyChanged(nameof(Value));
             OnPropertyChanged(nameof(IsLoaded));
