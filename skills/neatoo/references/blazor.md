@@ -47,6 +47,65 @@ A `.razor` file with 20+ conditional/LINQ expressions indicates business logic h
 
 The domain model computes `ShowTreatmentPanel`, `ShowReviewAlert`, `ShowExtensionWarning` via `AddAction` rules. See `domain-logic-placement.md` for the full pattern.
 
+## Two Binding Modes
+
+Neatoo entities support two distinct binding modes in Blazor. Understanding both is essential for building responsive UIs.
+
+### Mode 1: Display Value Binding
+
+Bind directly to entity properties to display values. The entity implements `INotifyPropertyChanged`, so Blazor re-renders automatically when properties change — including cascading rule updates:
+
+```razor
+<MudText>@order.Total</MudText>
+<MudText>@order.Status</MudText>
+<MudText>@(order.IsModified ? "Unsaved changes" : "Saved")</MudText>
+```
+
+When a rule updates `Total` in response to `Quantity` changing, the UI re-renders `Total` automatically. No event handler code needed.
+
+### Mode 2: Property Metadata Binding
+
+Each partial property is backed by its own `IValidateProperty` object (see [properties.md](properties.md) — Object-Per-Property Architecture). Access it via the indexer `entity["PropertyName"]`. Each property object fires its own `PropertyChanged` for metadata like `IsValid`, `PropertyMessages`, `IsBusy`, and `IsReadOnly`:
+
+```razor
+@{ var emailProp = employee["Email"]; }
+<MudTextField Value="@employee.Email" />
+@if (!emailProp.IsValid)
+{
+    @foreach (var msg in emailProp.PropertyMessages)
+    { <MudText Color="Color.Error">@msg.Message</MudText> }
+}
+@if (emailProp.IsBusy) { <MudProgressCircular Size="Size.Small" /> }
+```
+
+MudNeatoo components (`NeatooTextField`, etc.) handle Mode 2 internally — they bind to both the value and the property metadata automatically.
+
+### When to Use Each Mode
+
+| Goal | Mode | Example |
+|------|------|---------|
+| Show a property value | Mode 1 | `@order.Total` |
+| Show validation errors | Mode 2 (automatic via MudNeatoo) | `<NeatooTextField Property="@employee[nameof(employee.Email)]" />` |
+| Custom validation display | Mode 2 (manual) | `employee["Email"].IsValid`, `employee["Email"].PropertyMessages` |
+| Show busy spinner per field | Mode 2 (manual) | `employee["Email"].IsBusy` |
+| Conditional UI from domain state | Mode 1 | `@if (order.QualifiesForDiscount)` |
+
+### Anti-Pattern: Manual PropertyChanged Handlers for Computed Values
+
+Do NOT subscribe to `PropertyChanged` in Blazor code to recompute derived values. Use `AddAction` rules in the domain model instead — they fire `PropertyChanged` automatically, and Blazor picks up the change.
+
+```csharp
+// WRONG: event handler in .razor code-behind
+employee.PropertyChanged += (s, e) => {
+    if (e.PropertyName == "Hours" || e.PropertyName == "Rate")
+        totalPay = employee.Hours * employee.Rate;  // logic in UI
+};
+
+// RIGHT: AddAction in domain constructor
+RuleManager.AddAction(t => t.TotalPay = t.Hours * t.Rate, t => t.Hours, t => t.Rate);
+// Blazor just binds: @employee.TotalPay
+```
+
 ## Validation Display
 
 <!-- snippet: blazor-validation-inline -->

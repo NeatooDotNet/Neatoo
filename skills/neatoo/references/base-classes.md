@@ -13,6 +13,8 @@ Neatoo provides base classes that map to Domain-Driven Design concepts. Choose t
 | `ValidateBase<T>` with `[Fetch]` only | Read Model | No | Yes | Yes |
 | `ValidateListBase<I>` | Collection of Read Models | No | Yes | Yes |
 
+For validated criteria objects (search forms with rules and `IsValid`), use `ValidateBase<T>`. For simple criteria, use method parameters or POCOs.
+
 ## ValidateBase<T>
 
 Use for objects that need validation and change tracking but no persistence lifecycle.
@@ -238,6 +240,8 @@ Use for query results that don't need editing.
 - Dashboard data
 - Dropdown lists
 - Search results
+
+**Note:** For pure read-only data that doesn't need validation or change tracking, a standard class with `[Factory]` + `[Fetch]` via RemoteFactory works — no Neatoo base class required. Use `ValidateBase<T>` only when you need validation rules, `IsValid`, property change notifications, or change tracking on the read model.
 
 
 <!-- snippet: readonly-base-sample -->

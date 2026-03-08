@@ -58,6 +58,50 @@ public void GeneratedImplementation_PropertyBackingField()
 <sup><a href='/src/samples/PropertiesSamples.cs#L234-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-generated-implementation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+## Object-Per-Property Architecture
+
+Each partial property declared on a Neatoo class is backed by its own `IValidateProperty<T>` object. This is not just a backing field — it is a full object that owns:
+
+| Member | Purpose |
+|--------|---------|
+| `Value` | The current property value |
+| `IsValid` | Whether this property passes its validation rules |
+| `PropertyMessages` | Validation error messages for this property |
+| `IsBusy` | Whether an async rule is currently running for this property |
+| `IsReadOnly` | Whether this property is read-only |
+| `IsModified` | Whether this property has been changed |
+
+Each property object fires its own `PropertyChanged` event independently. This enables fine-grained UI updates — a validation error on `Email` triggers a re-render only for the Email field's error display, not the entire form.
+
+Access the property object via the indexer:
+
+<!-- snippet: skill-property-object-access -->
+<a id='snippet-skill-property-object-access'></a>
+```cs
+[Fact]
+public void PropertyObjectAccess_IndexerReturnsMetadata()
+{
+    var factory = GetRequiredService<ISkillGapEmployeeFactory>();
+    var employee = factory.Create();
+    employee.Email = "test@example.com";
+
+    // Each property is backed by its own IValidateProperty object
+    IValidateProperty emailProp = employee["Email"];
+    bool valid = emailProp.IsValid;
+    var errors = emailProp.PropertyMessages;
+
+    Assert.NotNull(emailProp);
+    Assert.True(valid);
+    Assert.Empty(errors);
+}
+```
+<sup><a href='/src/samples/SkillGapSamples.cs#L154-L171' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-property-object-access' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The source generator creates a strongly-typed backing field (e.g., `EmailProperty` of type `IValidateProperty<string>`) and wires the partial property's getter/setter through it. The indexer provides untyped access by property name.
+
+See [blazor.md](blazor.md) — Two Binding Modes for how this architecture enables per-field validation display and busy indicators in Blazor.
+
 ## Read-Only Properties
 
 For calculated or read-only properties, use only `Getter<T>()`:

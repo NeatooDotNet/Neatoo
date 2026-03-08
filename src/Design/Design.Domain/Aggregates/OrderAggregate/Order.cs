@@ -58,10 +58,43 @@ internal partial class Order : EntityBase<Order>, IOrder
                 : string.Empty,
             t => t.Status);
 
-        // Action rule to calculate total
+        // =====================================================================
+        // Child Property Trigger - Reacting to Child Changes via AddAction
+        // =====================================================================
+        // The trigger expression t => t.Items![0].LineTotal resolves to the
+        // property path "Items.LineTotal". The [0] indexer is a syntactic
+        // placeholder — it does NOT mean "only the first item." Any child
+        // item whose LineTotal changes bubbles up as "Items.LineTotal" and
+        // matches this trigger.
+        //
+        // DESIGN DECISION: Use child property triggers for parent-child
+        // reactivity. This is type-safe and expression-based, just like
+        // same-object AddAction triggers.
+        //
+        // COMMON MISTAKE: Using t => t.Items as the trigger.
+        //   RuleManager.AddAction(t => ..., t => t.Items);
+        //   // WRONG: Only fires when Items property is reassigned (new list),
+        //   // NOT when child items within the list change their properties.
+        //   // TriggerProperty.IsMatch uses exact string equality:
+        //   // "Items" != "Items.LineTotal" — rule never fires.
+        //
+        // For reacting to multiple child properties, register multiple triggers:
+        //   RuleManager.AddAction(t => ...,
+        //       t => t.Items![0].LineTotal,
+        //       t => t.Items![0].Quantity);
+        //
+        // DID NOT DO THIS: Use NeatooPropertyChanged event subscription.
+        //   NeatooPropertyChanged += (args) => {
+        //       if (args.OriginalPropertyName == "LineTotal") { ... }
+        //   };
+        //   // Works but is verbose, string-based, and error-prone.
+        //   // Reserve NeatooPropertyChanged for cases where you need the
+        //   // event args (ChangeReason, Source) or need to react to ANY
+        //   // child change regardless of which property.
+        // =====================================================================
         RuleManager.AddAction(
             t => t.TotalAmount = t.Items?.Sum(i => i.LineTotal) ?? 0,
-            t => t.Items);
+            t => t.Items![0].LineTotal);
     }
 
     [Create]

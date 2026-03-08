@@ -10,10 +10,13 @@ When encountering any business logic during implementation, apply this decision 
 Is this logic about WHAT to display or HOW to display it?
 ├── HOW to display (CSS class, layout, component choice) → UI layer
 └── WHAT to display (computed values, conditions, derived state) → Domain model
-    ├── Derived from property values? → AddAction / AddActionAsync
+    ├── Derived from own property values? → AddAction / AddActionAsync
+    ├── Reacts to child property changes? → AddAction with child trigger (t => t.Children![0].Prop)
+    ├── Parent orchestrates between children? → AddAction with child trigger, action pushes to other child
     ├── Validation / error condition? → AddValidation / AddValidationAsync
-    ├── Reacts to property changes? → AddAction triggered by that property
+    ├── Reacts to own property changes? → AddAction triggered by that property
     ├── Cross-property computation? → AddAction with multiple triggers
+    ├── Cross-sibling rules in a list? → Override HandleNeatooPropertyChanged
     └── Needs external service? → AddActionAsync or class-based AsyncRuleBase<T>
 ```
 
@@ -233,33 +236,88 @@ public DateRangeEntity(IEntityBaseServices<DateRangeEntity> services) : base(ser
 
 The UI just binds date pickers to `StartDate` and `EndDate`. Validation fires automatically and shows through `PropertyMessages`.
 
-## Pattern 6: NeatooPropertyChanged for Parent-Child Reactivity
+## Pattern 6: Child Property Triggers — Parent-Child Reactivity via AddAction
 
-When a parent needs to react to child property changes, use `NeatooPropertyChanged`. This event fires with `ChangeReason` to distinguish user edits from loads.
+When a parent needs to react to child property changes, use `AddAction` with a **child property trigger expression**. This is the same type-safe, expression-based mechanism used for same-object reactivity.
+
+### The Key Syntax: `t => t.ChildCollection![0].ChildProperty`
+
+The `[0]` indexer is a syntactic placeholder — it does NOT mean "only the first item." `TriggerProperty` walks the expression tree, skips the indexer, and produces the property path `"ChildCollection.ChildProperty"`. When any child's property changes, the event bubbles up with this same path and the rule fires.
 
 ```csharp
 public Order(IEntityBaseServices<Order> services) : base(services)
 {
-    // React when child items change
-    NeatooPropertyChanged += (args) =>
-    {
-        if (args.PropertyName == "Items" || args.OriginalPropertyName == "LineTotal")
-        {
-            RecalculateOrderTotal();
-        }
-        return Task.CompletedTask;
-    };
+    // Recalculate total when any child item's LineTotal changes
+    RuleManager.AddAction(
+        t => t.OrderTotal = t.Items?.Sum(i => i.LineTotal) ?? 0,
+        t => t.Items![0].LineTotal);
 }
 
-private void RecalculateOrderTotal()
-{
-    OrderTotal = Items?.Sum(i => i.LineTotal) ?? 0;
-}
+public partial decimal OrderTotal { get; set; }
 ```
 
-`NeatooPropertyChanged` bubbles up from children. `args.OriginalPropertyName` is the child's property; `args.PropertyName` is the parent property that holds the child.
+### Multiple Child Properties
 
-**Note:** `NeatooPropertyChanged` is for parent-child reactivity specifically -- reacting to changes in child objects. For same-object reactivity (property A changes, update property B), prefer `AddAction` with trigger properties. `AddAction` is type-safe and expression-based; `NeatooPropertyChanged` requires string property name matching.
+To react to multiple child properties, add multiple trigger expressions:
+
+```csharp
+RuleManager.AddAction(
+    t => t.RecalculateAggregates(),
+    t => t.Items![0].LineTotal,
+    t => t.Items![0].Quantity);
+
+// Works with single child objects too (not just collections):
+RuleManager.AddAction(
+    t => t.AddressLabel = $"{t.Address!.City}, {t.Address.State}",
+    t => t.Address!.City,
+    t => t.Address!.State);
+```
+
+### Common Mistake: Using Collection Reference as Trigger
+
+```csharp
+// WRONG: Only fires when Items property is reassigned (Items = newList),
+// NOT when child items within the list change their properties.
+RuleManager.AddAction(
+    t => t.OrderTotal = t.Items?.Sum(i => i.LineTotal) ?? 0,
+    t => t.Items);  // "Items" != "Items.LineTotal" — exact match, never fires
+
+// RIGHT: Trigger on the specific child property
+RuleManager.AddAction(
+    t => t.OrderTotal = t.Items?.Sum(i => i.LineTotal) ?? 0,
+    t => t.Items![0].LineTotal);  // "Items.LineTotal" — matches child changes
+```
+
+### When to Use NeatooPropertyChanged Instead
+
+Child property triggers handle most parent-child reactivity. Reserve `NeatooPropertyChanged` for cases that need:
+- **Event args inspection** — `ChangeReason`, `Source`, `FullPropertyName`
+- **React to ANY child change** regardless of which property
+- **Cross-sibling rules** — a list override that triggers rules on sibling items when one changes (see `HandleNeatooPropertyChanged` override pattern)
+
+```csharp
+// NeatooPropertyChanged fallback — only when you need event args or broad matching
+NeatooPropertyChanged += (args) =>
+{
+    if (args.OriginalEventArgs.Reason == ChangeReason.UserEdit)
+    {
+        // React to any user-initiated child change
+    }
+    return Task.CompletedTask;
+};
+
+// Cross-sibling pattern — override in EntityListBase subclass
+protected override async Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+{
+    await base.HandleNeatooPropertyChanged(eventArgs);
+    if (eventArgs.PropertyName == nameof(IPersonPhone.PhoneType)
+        && eventArgs.Source is IPersonPhone changed)
+    {
+        // Re-run rules on all siblings except the one that changed
+        await Task.WhenAll(this.Except([changed]).Select(c => c.RunRules()));
+    }
+}
+```
 
 ## Pattern 7: Status/Workflow State Machines
 
@@ -313,7 +371,7 @@ RuleManager.AddAction(
 
 ## Pattern 8: Child Collection Aggregation
 
-When computing aggregate values from child collections (sums, counts, any/all), expose these as domain properties. This is one of the most common places where LINQ ends up in `.razor` files.
+When computing aggregate values from child collections (sums, counts, any/all), expose these as domain properties using child property triggers. This is one of the most common places where LINQ ends up in `.razor` files.
 
 ### Anti-Pattern: LINQ in Razor
 
@@ -332,42 +390,101 @@ When computing aggregate values from child collections (sums, counts, any/all), 
 ```csharp
 public Order(IEntityBaseServices<Order> services) : base(services)
 {
-    // React when the Items child collection changes
-    NeatooPropertyChanged += (args) =>
-    {
-        if (args.PropertyName == "Items"
-            || args.OriginalPropertyName == "LineTotal"
-            || args.OriginalPropertyName == "Quantity")
-        {
-            RecalculateAggregates();
-        }
-        return Task.CompletedTask;
-    };
-}
+    // Recalculate when any child's LineTotal changes
+    RuleManager.AddAction(
+        t => t.OrderTotal = t.Items?.Sum(i => i.LineTotal) ?? 0,
+        t => t.Items![0].LineTotal);
 
-private void RecalculateAggregates()
-{
-    OrderTotal = Items?.Sum(i => i.LineTotal) ?? 0;
-    ItemCount = Items?.Count ?? 0;
-    HasInvalidQuantities = Items?.Any(i => i.Quantity <= 0) ?? false;
+    // Recalculate when any child's Quantity changes
+    RuleManager.AddAction(
+        t => t.HasInvalidQuantities = t.Items?.Any(i => i.Quantity <= 0) ?? false,
+        t => t.Items![0].Quantity);
 }
 
 public partial decimal OrderTotal { get; set; }
-public partial int ItemCount { get; set; }
 public partial bool HasInvalidQuantities { get; set; }
 ```
 
 ```razor
 <!-- UI binds to precomputed domain properties -->
 <MudText>Total: @order.OrderTotal</MudText>
-<MudText>Item Count: @order.ItemCount</MudText>
 @if (order.HasInvalidQuantities)
 {
     <MudAlert>Some items have invalid quantities</MudAlert>
 }
 ```
 
-This uses `NeatooPropertyChanged` because it reacts to changes in child objects. The parent recalculates aggregates whenever a child's `LineTotal` or `Quantity` changes, or when items are added/removed.
+Each aggregation targets the specific child property it depends on. The `[0]` indexer is a syntactic placeholder — any child in the collection that changes the named property triggers the rule.
+
+## Pattern 9: Parent-as-Orchestrator — Cross-Child Coordination
+
+When one child changes and a different child needs updating, the parent orchestrates via `AddAction`. The action body receives the parent (`t`), which can reach any child. This is the same child property trigger mechanism — the only difference is the action pushes changes DOWN to another child instead of computing a parent property.
+
+### Anti-Pattern: UI Bridges Between Entities
+
+```razor
+@code {
+    void OnShippingStateChanged(string state)
+    {
+        // WRONG: UI orchestrates between domain children
+        var rate = TaxRates.Get(state);
+        foreach (var item in order.Items)
+            item.TaxRate = rate;
+
+        order.BillingAddress.DefaultState = state;
+    }
+}
+```
+
+### Correct: Parent Orchestrates in the Domain
+
+```csharp
+public Order(IEntityBaseServices<Order> services) : base(services)
+{
+    // When shipping state changes, update tax rate on all items
+    RuleManager.AddAction(
+        t =>
+        {
+            var rate = TaxRates.Get(t.ShippingAddress!.State);
+            foreach (var item in t.Items!)
+                item.TaxRate = rate;
+        },
+        t => t.ShippingAddress!.State);
+
+    // When shipping state changes, default billing state
+    RuleManager.AddAction(
+        t => t.BillingAddress!.DefaultState = t.ShippingAddress!.State,
+        t => t.ShippingAddress!.State);
+
+    // When any item's status changes, update parent summary
+    // AND enable/disable the payment child
+    RuleManager.AddAction(
+        t =>
+        {
+            t.AllItemsConfirmed = t.Items?.All(i => i.Status == "Confirmed") ?? false;
+            t.Payment!.Enabled = t.AllItemsConfirmed;
+        },
+        t => t.Items![0].Status);
+}
+```
+
+```razor
+<!-- UI just binds — no bridging logic -->
+<ShippingAddressForm Address="@order.ShippingAddress" />
+<BillingAddressForm Address="@order.BillingAddress" />
+<PaymentPanel Payment="@order.Payment" />
+```
+
+### Orchestrator Variants
+
+| Variant | Trigger | Action |
+|---------|---------|--------|
+| Single child → single child | `t => t.ChildA!.Prop` | Sets `t.ChildB!.Prop` |
+| Single child → collection | `t => t.ChildA!.Prop` | Iterates `t.Items!` and sets properties |
+| Collection → single child | `t => t.Items![0].Prop` | Sets `t.ChildB!.Prop` |
+| Collection → parent + child | `t => t.Items![0].Prop` | Sets parent prop AND `t.ChildB!.Prop` |
+
+The parent entity does not need to be the aggregate root — any entity with children can orchestrate between them.
 
 ## The Refactoring Smell Test
 
@@ -382,6 +499,7 @@ When reviewing .razor files, look for these smells that indicate misplaced logic
 | `OnClick` handler that sets multiple properties | Domain method |
 | `OnChanged` handler that validates | `AddValidation` or `AddValidationAsync` |
 | `@code` block with > 5 lines of logic | Domain rules or methods |
+| Event handler setting properties on two entities | Domain `AddAction` orchestrator |
 
 **Rule of thumb:** If a `.razor` file has more than 3 conditional/computed expressions, business logic is leaking into the UI.
 

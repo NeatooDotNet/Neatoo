@@ -122,6 +122,98 @@ public ValidationUser(
 <sup><a href='/src/samples/ValidationSamples.cs#L176-L193' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-async-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+## Class-Based Rules with Dependency Injection
+
+For rules that need injected services or complex logic, create a class inheriting from `AsyncRuleBase<T>` or `RuleBase<T>`. This is the primary mechanism for non-trivial rules — the fluent `AddValidation`/`AddAction` lambdas are shorthand for simple cases.
+
+### Async Class-Based Rule
+
+<!-- snippet: skill-async-rule-class -->
+<a id='snippet-skill-async-rule-class'></a>
+```cs
+public class SkillGapUniqueEmailRule : AsyncRuleBase<SkillGapEmployee>
+{
+    private readonly ISkillUserValidationService _validationService;
+
+    public SkillGapUniqueEmailRule(ISkillUserValidationService validationService)
+        : base(e => e.Email)  // trigger property
+    {
+        _validationService = validationService;
+    }
+
+    protected override async Task<IRuleMessages> Execute(
+        SkillGapEmployee target, CancellationToken? token = null)
+    {
+        if (string.IsNullOrEmpty(target.Email))
+            return None;
+
+        var isUnique = await _validationService.IsEmailUniqueAsync(target.Email);
+        return isUnique
+            ? None
+            : (nameof(target.Email), "Email is already in use").AsRuleMessages();
+    }
+}
+```
+<sup><a href='/src/samples/SkillGapSamples.cs#L18-L41' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-async-rule-class' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### Synchronous Class-Based Rule
+
+<!-- snippet: skill-sync-rule-class -->
+<a id='snippet-skill-sync-rule-class'></a>
+```cs
+public class SkillGapHireDateRule : RuleBase<SkillGapEmployee>
+{
+    public SkillGapHireDateRule()
+        : base(e => e.HireDate, e => e.TermDate)  // trigger properties
+    { }
+
+    protected override IRuleMessages Execute(SkillGapEmployee target)
+    {
+        if (target.TermDate != default && target.TermDate <= target.HireDate)
+        {
+            return (nameof(target.TermDate), "Termination date must be after hire date")
+                .AsRuleMessages();
+        }
+        return None;
+    }
+}
+```
+<sup><a href='/src/samples/SkillGapSamples.cs#L47-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-sync-rule-class' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### Registration Pattern
+
+Inject dependencies into the entity constructor and pass them to the rule:
+
+<!-- snippet: skill-rule-registration -->
+<a id='snippet-skill-rule-registration'></a>
+```cs
+public SkillGapEmployee(
+    IEntityBaseServices<SkillGapEmployee> services,
+    ISkillUserValidationService validationService) : base(services)
+{
+    // Class-based rules — inject deps into entity, pass to rule constructor
+    RuleManager.AddRule(new SkillGapUniqueEmailRule(validationService));
+    RuleManager.AddRule(new SkillGapHireDateRule());
+}
+```
+<sup><a href='/src/samples/SkillGapSamples.cs#L73-L82' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-registration' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### Fluent vs Class-Based Rules
+
+| Aspect | Fluent (`AddValidation`/`AddAction`) | Class-Based (`RuleBase<T>`/`AsyncRuleBase<T>`) |
+|--------|--------------------------------------|-----------------------------------------------|
+| Best for | Simple single-expression rules | Complex rules, rules needing DI services |
+| DI access | Only via closure over constructor params | Direct constructor injection |
+| Reusability | Inline, not reusable | Reusable across entities |
+| Multi-property writes | Awkward | Natural — full access to target |
+
+Rules operate directly on the target `T` — there is no `IRuleContext`, no `LoadProperty`/`SetProperty` indirection. Return validation messages via `(propertyName, message).AsRuleMessages()`, or `None` when validation passes.
+
+See [domain-logic-placement.md](domain-logic-placement.md) for guidance on when to use rules vs computed properties vs domain methods.
+
 ## Running Rules
 
 Rules run automatically on property change. Manually run rules when needed:

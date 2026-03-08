@@ -18,6 +18,7 @@ This document captures important patterns and behaviors when working with Neatoo
 | Parent maps child properties to EF entities inline | Child has no `[Insert]`/`[Update]`/`[Delete]`; persistence logic is untestable and tangled into parent | Parent calls `childFactory.SaveAsync(child)` — child handles its own EF mapping in its own factory methods |
 | Forgetting to iterate DeletedList in parent's `[Update]` | Removed children are never deleted from the database | After saving active children, iterate `ChildList.DeletedList` and call `childFactory.SaveAsync(deleted)` for each |
 | Forgetting items are modified when added to collections | Adding a fetched (non-new) item marks both item and list as `IsModified` | Expected behavior—adding to a new parent is a state change |
+| Worrying about rules firing during Fetch/Create | **Not a real risk.** `LoadValue` uses `ChangeReason.Load` (rules skip it). Factory operations (`[Create]`, `[Fetch]`) are wrapped in `PauseAllActions()` by the framework. Rules do not fire during hydration — no defensive coding needed. | No action required — this is handled by the framework |
 
 ---
 
