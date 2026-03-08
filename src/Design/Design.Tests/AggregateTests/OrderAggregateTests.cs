@@ -146,4 +146,22 @@ public class OrderAggregateTests
         Assert.IsNotNull(order.Items);
         Assert.AreEqual(2, order.Items.Count, "Should load 2 items from mock repository");
     }
+
+    [TestMethod]
+    public async Task ChildItemLineTotalChange_RecalculatesOrderTotalAmount()
+    {
+        // Arrange - Create order with an item
+        var order = _orderFactory.Create();
+        order.CustomerName = "Test Customer";
+        var item = _itemFactory.Create("Widget", 1, 10.00m);
+        order.Items!.Add(item);
+
+        // Act - Change child item quantity, which triggers LineTotal recalculation
+        item.Quantity = 5;
+        await order.WaitForTasks();
+
+        // Assert - Order.TotalAmount should reflect the child's updated LineTotal (5 * 10 = 50)
+        Assert.AreEqual(50.00m, item.LineTotal, "Child LineTotal should be 50");
+        Assert.AreEqual(50.00m, order.TotalAmount, "Order TotalAmount should recalculate when child LineTotal changes");
+    }
 }

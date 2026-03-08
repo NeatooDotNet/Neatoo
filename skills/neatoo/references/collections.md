@@ -424,6 +424,9 @@ order2.Items.Add(item);  // THROWS: "item belongs to aggregate 'Order'"
 | Deleted List | No | Yes |
 | Persistence | No | Yes (via parent) |
 | Cross-Aggregate Check | No | Yes |
+| INotifyCollectionChanged | Yes | Yes |
+
+Both list base classes implement `INotifyCollectionChanged`, enabling Blazor to re-render automatically when items are added or removed.
 
 Use `ValidateListBase<T>` for collections without persistence needs.
 

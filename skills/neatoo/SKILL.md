@@ -8,6 +8,8 @@ version: 1.0.0
 
 Neatoo is a .NET framework for building domain models with automatic change tracking, validation, and persistence through Roslyn source generators. It provides base classes that map to DDD concepts with built-in support for client-server architectures.
 
+Neatoo + RemoteFactory together provide the complete DDD framework. Both skills are assumed loaded together. For factory attributes, authorization, and client-server patterns, see the RemoteFactory skill. This skill covers domain model, validation, properties, and collections.
+
 ## Quick Start
 
 <!-- snippet: skill-quickstart -->
@@ -44,11 +46,14 @@ These patterns use `RuleManager.AddAction` and `AddActionAsync`, covered in Core
 |-----------|-----------------|--------|
 | Computed/derived values | `AddAction` with trigger properties | `.razor` arithmetic/ternary |
 | Conditional visibility | Domain `bool` property via `AddAction` | `.razor` `@if` chains |
+| Parent reacts to child changes | `AddAction` with child trigger `t => t.Items![0].Prop` | UI event handlers |
 | Cross-property validation | `AddValidation` / `AddValidationAsync` | UI event handlers |
 | Reactive data fetch | `AddActionAsync` | UI `OnChanged` handlers |
 | Cascading state changes | Chained rules (rule sets property -> triggers next rule) | UI code-behind |
 | Workflow transitions | Domain methods + `AddAction` for `CanX` properties | UI button click handlers |
-| LINQ over children | Domain computed property | `.razor` inline LINQ |
+| LINQ over children | `AddAction` with child trigger, computed property | `.razor` inline LINQ |
+| Parent orchestrates between children | `AddAction` with child trigger, action updates other child | UI bridging code |
+| Cross-sibling rules in a list | Override `HandleNeatooPropertyChanged` | UI bridging code |
 
 ### The Smell Test
 
@@ -67,7 +72,7 @@ When writing or reviewing `.razor` files: if there are more than 3 conditional/c
 @if (order.QualifiesForDiscount) { <MudAlert>Discount!</MudAlert> }
 ```
 
-See `references/domain-logic-placement.md` for detailed patterns: computed properties, conditional visibility, cascading state, async side-effects, workflow state machines, NeatooPropertyChanged for parent-child reactivity, class-based rules with DI, and the refactoring smell test table.
+See `references/domain-logic-placement.md` for detailed patterns: computed properties, conditional visibility, cascading state, async side-effects, workflow state machines, child property triggers for parent-child reactivity, class-based rules with DI, and the refactoring smell test table.
 
 ## Base Class Quick Reference
 
@@ -152,9 +157,38 @@ public SkillValidationExample(IEntityBaseServices<SkillValidationExample> servic
 <sup><a href='/src/samples/SkillValidationSamples.cs#L52-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-RuleManager also provides `AddAction`, `AddActionAsync`, `AddValidationAsync`, and class-based rules. See `references/validation.md` → "Async Action Rules" for async side-effects (`AddActionAsync`) including LoadValue/deserialization behavior and exception propagation.
+RuleManager also provides `AddAction`, `AddActionAsync`, `AddValidationAsync`, and class-based rules. Rules do **not** fire during `[Create]`/`[Fetch]` or `LoadValue` — the framework wraps factory operations in `PauseAllActions()`. See `references/validation.md` for details.
 
 Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
+
+### Child Property Triggers — Parent Reacts to Child Changes
+
+To react to child property changes in an aggregate, use a child property trigger expression with `AddAction`. The `[0]` indexer is a syntactic placeholder — any child whose named property changes triggers the rule:
+
+```csharp
+// Parent recalculates when any child's LineTotal changes
+RuleManager.AddAction(
+    t => t.OrderTotal = t.Items?.Sum(i => i.LineTotal) ?? 0,
+    t => t.Items![0].LineTotal);
+
+// Multiple child property triggers
+RuleManager.AddAction(
+    t => t.HasInvalidQuantities = t.Items?.Any(i => i.Quantity <= 0) ?? false,
+    t => t.Items![0].Quantity);
+```
+
+The action body can also push changes to other children — the parent acts as orchestrator:
+
+```csharp
+// When ShippingAddress.State changes, update tax on all items
+RuleManager.AddAction(
+    t => { foreach (var item in t.Items!) item.TaxRate = TaxRates.Get(t.ShippingAddress!.State); },
+    t => t.ShippingAddress!.State);
+```
+
+**Do NOT use `t => t.Items` as the trigger** — that only fires when the `Items` property reference itself is reassigned, not when child items change. `TriggerProperty.IsMatch` uses exact string equality: `"Items" != "Items.LineTotal"`.
+
+See `references/domain-logic-placement.md` → "Pattern 6: Child Property Triggers" for child triggers, orchestrator patterns, `NeatooPropertyChanged`, and `HandleNeatooPropertyChanged` overrides.
 
 ## Testing
 
@@ -164,7 +198,7 @@ Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
 
 Detailed documentation for each topic area:
 
-- **`references/domain-logic-placement.md`** - Where business logic belongs: computed properties, conditional visibility, cascading state, async side-effects, NeatooPropertyChanged, workflow state machines, refactoring smell test
+- **`references/domain-logic-placement.md`** - Where business logic belongs: computed properties, conditional visibility, cascading state, async side-effects, child property triggers, workflow state machines, refactoring smell test
 - **`references/base-classes.md`** - Neatoo-to-DDD mapping, when to use each base
 - **`references/properties.md`** - Partial properties, change tracking, calculated properties
 - **`references/validation.md`** - RuleManager, attributes, async validation
