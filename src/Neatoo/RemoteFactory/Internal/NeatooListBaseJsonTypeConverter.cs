@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections;
@@ -16,6 +17,10 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
         this.localAssemblies = localAssemblies;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "JsonSerializer.Deserialize with runtime Type for polymorphic list item deserialization. " +
+        "Item types are resolved via IServiceAssemblies.FindType() from $type discriminator and are " +
+        "preserved by RemoteFactory generated FactoryServiceRegistrar static references.")]
     public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.StartObject)
@@ -108,6 +113,9 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
 
         throw new JsonException();
     }
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "JsonSerializer.Serialize with runtime types for polymorphic list item serialization. " +
+        "Item types are preserved by RemoteFactory generated FactoryServiceRegistrar static references.")]
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
         if(!(value is IList list))

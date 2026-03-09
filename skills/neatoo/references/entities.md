@@ -679,8 +679,74 @@ public async Task UpdateAsync([Service] IAssessmentRepository repository,
 - Conditional persistence decisions (e.g., skip empty children) get tangled into the parent
 - The parent grows large and complex as the child's schema evolves
 
+## Child Entity Factory Method Visibility
+
+Child entity persistence methods (`[Insert]`, `[Update]`, `[Delete]`, `[Fetch]`) should be `internal` on pure child entities. `[Create]` stays `public` because client code needs to create objects before adding them to collections.
+
+This formalizes the existing design decision that child entity persistence is server-only (child entities do not have `[Remote]` on persistence methods). Making the methods `internal` adds language-level enforcement and enables IL trimming via `IsServerRuntime` guards.
+
+### Visibility Rules
+
+| Method | Visibility | Rationale |
+|--------|-----------|-----------|
+| `[Create]` | `public` | Client code calls `itemFactory.Create()` before `order.Items.Add(item)` |
+| `[Fetch]` | `internal` | Called only by parent/list factory methods on the server |
+| `[Insert]` | `internal` | Called only via `childFactory.SaveAsync()` in parent's `[Insert]`/`[Update]` |
+| `[Update]` | `internal` | Called only via `childFactory.SaveAsync()` in parent's `[Insert]`/`[Update]` |
+| `[Delete]` | `internal` | Called only via `childFactory.SaveAsync()` in parent's `[Update]` (deleted list) |
+
+### Generated Factory Interface Effects
+
+The generated factory interface visibility depends on the mix of method visibilities:
+
+- **Mixed visibility** (public `[Create]` + internal persistence): Factory interface stays `public`. Only `Create` appears on the public interface. `Fetch`, `Save`, and persistence methods are available as internal members within the assembly.
+- **All-internal** (entity list with only `[Fetch]` + `[Update]`, no `[Create]`): Factory interface becomes `internal`. Only usable within the assembly.
+
+Internal methods get `IsServerRuntime` guards in the generated factory implementation, making them trimmable on the client. See [Trimming](trimming.md) for consumer project setup and verified size reductions.
+
+### Example: Pure Child Entity
+
+```csharp
+[Factory]
+internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
+{
+    public OrderItem(IEntityBaseServices<OrderItem> services) : base(services) { }
+
+    public partial string ProductName { get; set; }
+    public partial decimal Price { get; set; }
+
+    // Public — client creates items before adding to collection
+    [Create]
+    public void Create(string productName, decimal price) { ... }
+
+    // Internal — called by parent's [Insert]/[Update] via childFactory.SaveAsync()
+    [Fetch]
+    internal void Fetch(int id, string productName, decimal price) { ... }
+
+    [Insert]
+    internal async Task Insert(int orderId, [Service] IOrderItemRepository repo) { ... }
+
+    [Update]
+    internal async Task Update([Service] IOrderItemRepository repo) { ... }
+
+    [Delete]
+    internal async Task Delete([Service] IOrderItemRepository repo) { ... }
+}
+// Generated: public IOrderItemFactory — Create() is public, Save/Fetch are internal members
+```
+
+### Exceptions: Dual-Use Entities
+
+Entities that can serve as both aggregate roots and children (entity duality pattern) must keep all factory methods `public` with `[Remote]` to support the root usage path. Do NOT make these `internal`.
+
+### Constraints
+
+- **No `[Remote]` on internal methods.** `[Remote]` + `internal` triggers NF0105 diagnostic error. Remove `[Remote]` before making a method `internal`.
+- **CS0051 applies only to public classes.** An `internal` factory interface can be injected as a `[Service]` parameter into another `internal` class without CS0051, because the method's effective accessibility is capped by the class. If the consuming class is `public`, the child factory interface must also be `public` (ensured by keeping `[Create]` public on the child).
+
 ## Related
 
 - [Collections](collections.md) - Child entity collections
 - [Validation](validation.md) - IsValid and validation rules
 - [Domain Logic Placement](domain-logic-placement.md) - Where business logic belongs
+- [Trimming](trimming.md) - IL trimming annotations and consumer project setup

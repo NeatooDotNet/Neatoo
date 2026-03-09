@@ -40,7 +40,8 @@ Neatoo provides:
 - **Source generators** - Automatic property backing fields and factory methods
 - **RemoteFactory integration** - Client-server state transfer and dependency injection
 - **MudNeatoo** - Blazor components for two-way binding and validation display
+- **IL trimming support** - Consumer projects can enable IL trimming for smaller Blazor WASM bundles
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-03-07

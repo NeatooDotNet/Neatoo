@@ -356,7 +356,7 @@ public partial class RfCustomerRemote : EntityBase<RfCustomerRemote>
     // In NeatooFactory.Remote mode, this executes on server via HTTP
     [Remote]
     [Fetch]
-    public async Task FetchAsync(int id, [Service] IRfCustomerRepository repository)
+    internal async Task FetchAsync(int id, [Service] IRfCustomerRepository repository)
     {
         var data = await repository.FetchByIdAsync(id);
         if (data != null)
@@ -369,21 +369,21 @@ public partial class RfCustomerRemote : EntityBase<RfCustomerRemote>
 
     [Remote]
     [Insert]
-    public async Task InsertAsync([Service] IRfCustomerRepository repository)
+    internal async Task InsertAsync([Service] IRfCustomerRepository repository)
     {
         await repository.InsertAsync(Id, Name, Email);
     }
 
     [Remote]
     [Update]
-    public async Task UpdateAsync([Service] IRfCustomerRepository repository)
+    internal async Task UpdateAsync([Service] IRfCustomerRepository repository)
     {
         await repository.UpdateAsync(Id, Name, Email);
     }
 
     [Remote]
     [Delete]
-    public async Task DeleteAsync([Service] IRfCustomerRepository repository)
+    internal async Task DeleteAsync([Service] IRfCustomerRepository repository)
     {
         await repository.DeleteAsync(Id);
     }

@@ -1,4 +1,5 @@
 ﻿using Neatoo.Rules;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neatoo;
 
@@ -11,7 +12,7 @@ namespace Neatoo;
 /// Provides property management, validation, and rule execution services.
 /// </remarks>
 /// <typeparam name="T">The type of the validate object that will use these services. Must derive from <see cref="ValidateBase{T}"/>.</typeparam>
-public interface IValidateBaseServices<T>
+public interface IValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T>
     where T : ValidateBase<T>
 {
     /// <summary>

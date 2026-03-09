@@ -124,7 +124,7 @@ public static class AddNeatooServicesExtension
         services.AddTransient(typeof(NeatooListBaseJsonTypeConverter<>));
     }
 
-    public static IServiceCollection AddTransientSelf<I, T>(this IServiceCollection services) where T : class, I where I : class
+    public static IServiceCollection AddTransientSelf<I, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services) where T : class, I where I : class
     {
         services.AddTransient<I, T>();
         services.AddTransient(
@@ -132,7 +132,7 @@ public static class AddNeatooServicesExtension
         return services;
     }
 
-    public static IServiceCollection AddScopedSelf<I, T>(this IServiceCollection services) where T : class, I where I : class
+    public static IServiceCollection AddScopedSelf<I, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services) where T : class, I where I : class
     {
         services.AddScoped<I, T>();
         services.AddScoped(

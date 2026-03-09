@@ -4,7 +4,21 @@
 		<!-- Example projects stay single-target - override Directory.Build.props -->
 		<TargetFrameworks></TargetFrameworks>
 		<TargetFramework>net10.0</TargetFramework>
+		<PublishTrimmed>true</PublishTrimmed>
+		<TrimMode>full</TrimMode>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<RuntimeHostConfigurationOption Include="Neatoo.RemoteFactory.IsServerRuntime"
+			Value="false"
+			Trim="true" />
+	</ItemGroup>
+
+	<!-- Root Blazor app assemblies so full trim mode doesn't strip component constructors -->
+	<ItemGroup>
+		<TrimmerRootAssembly Include="Person.App" />
+		<TrimmerRootAssembly Include="Neatoo.Blazor.MudNeatoo" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="MudBlazor" />

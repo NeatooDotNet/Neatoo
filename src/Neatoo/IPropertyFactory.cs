@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Neatoo;
 
 /// <summary>
@@ -17,7 +19,7 @@ namespace Neatoo;
 /// services.AddSingleton&lt;IPropertyFactory&lt;Person&gt;, CustomPersonPropertyFactory&gt;();
 /// </code>
 /// </remarks>
-public interface IPropertyFactory<TOwner> where TOwner : IValidateBase
+public interface IPropertyFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOwner> where TOwner : IValidateBase
 {
     /// <summary>
     /// Creates a strongly-typed property backing field.

@@ -25,14 +25,17 @@ namespace DomainModel
 
             if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
             {
-                services.AddTransient<UniqueName.IsUniqueName>(cc =>
+                if (NeatooRuntime.IsServerRuntime)
                 {
-                    return (Guid? id, string firstName, string lastName, CancellationToken cancellationToken = default) =>
+                    services.AddTransient<UniqueName.IsUniqueName>(cc =>
                     {
-                        var personContext = cc.GetRequiredService<IPersonDbContext>();
-                        return UniqueName._IsUniqueName(id, firstName, lastName, personContext);
-                    };
-                });
+                        return (Guid? id, string firstName, string lastName, CancellationToken cancellationToken = default) =>
+                        {
+                            var personContext = cc.GetRequiredService<IPersonDbContext>();
+                            return UniqueName._IsUniqueName(id, firstName, lastName, personContext);
+                        };
+                    });
+                }
             }
         }
     }

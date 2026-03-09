@@ -398,7 +398,7 @@ public partial class SkillFactoryRemoteEntity : EntityBase<SkillFactoryRemoteEnt
     // In NeatooFactory.Remote mode, this executes on server via HTTP
     [Remote]
     [Fetch]
-    public async Task FetchAsync(int id, [Service] ISkillDataRepository repository)
+    internal async Task FetchAsync(int id, [Service] ISkillDataRepository repository)
     {
         var data = await repository.FetchAsync(id);
         Id = data.Id;
@@ -407,7 +407,7 @@ public partial class SkillFactoryRemoteEntity : EntityBase<SkillFactoryRemoteEnt
 
     [Remote]
     [Insert]
-    public async Task InsertAsync([Service] ISkillDataRepository repository)
+    internal async Task InsertAsync([Service] ISkillDataRepository repository)
     {
         await repository.InsertAsync(Id, Data);
     }
@@ -434,7 +434,7 @@ public partial class SkillRemoteAggregateRoot : EntityBase<SkillRemoteAggregateR
     // Aggregate root - needs [Remote] because it's called from client
     [Remote]
     [Fetch]
-    public async Task Fetch(Guid id, [Service] ISkillEmployeeRepository repo) { await Task.CompletedTask; }
+    internal async Task Fetch(Guid id, [Service] ISkillEmployeeRepository repo) { await Task.CompletedTask; }
     #endregion
 
     [Create]

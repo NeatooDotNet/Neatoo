@@ -100,4 +100,4 @@ public interface IPropertyInfoList
 /// This interface is intended for DI container registration. It ensures that each Neatoo object type
 /// receives its own property metadata collection, preventing cross-type access to properties.
 /// </remarks>
-public interface IPropertyInfoList<T> : IPropertyInfoList { }
+public interface IPropertyInfoList<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties)] T> : IPropertyInfoList { }

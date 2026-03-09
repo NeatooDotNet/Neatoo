@@ -1,6 +1,7 @@
 ﻿using Neatoo.Rules.Rules;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -70,7 +71,7 @@ public interface IRuleManager
 /// Extends <see cref="IRuleManager"/> with convenience methods for common rule patterns.
 /// </summary>
 /// <typeparam name="T">The type of validation target this rule manager operates on.</typeparam>
-public interface IRuleManager<T> : IRuleManager
+public interface IRuleManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T> : IRuleManager
     where T : class, IValidateBase
 {
     /// <summary>
@@ -294,7 +295,7 @@ public interface IRuleManager<T> : IRuleManager
 /// Factory for creating <see cref="RuleManager{T}"/> instances with proper dependency injection of the attribute-to-rule converter.
 /// </summary>
 /// <typeparam name="T">The type of validation target the created rule managers will operate on.</typeparam>
-public class RuleManagerFactory<T>
+public class RuleManagerFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T>
     where T : class, IValidateBase
 {
     /// <summary>
@@ -337,7 +338,7 @@ public class RuleManagerFactory<T>
 /// When async rules are executing, the affected properties are marked as busy to provide UI feedback.
 /// </para>
 /// </remarks>
-public class RuleManager<T> : IRuleManager<T>
+public class RuleManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T> : IRuleManager<T>
     where T : class, IValidateBase
 {
     /// <summary>

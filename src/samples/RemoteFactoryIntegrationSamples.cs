@@ -54,7 +54,7 @@ public partial class SkillRfIntegrationRoot : EntityBase<SkillRfIntegrationRoot>
 
     #region remote-factory-fetch
     [Remote, Fetch]
-    public async Task Fetch(int id, [Service] ISkillRemoteFactoryRepository repo)
+    internal async Task Fetch(int id, [Service] ISkillRemoteFactoryRepository repo)
     {
         // During Fetch:
         // - IsPaused = true (validation and modification tracking suspended)
@@ -74,7 +74,7 @@ public partial class SkillRfIntegrationRoot : EntityBase<SkillRfIntegrationRoot>
 
     #region remote-factory-insert
     [Remote, Insert]
-    public async Task Insert([Service] ISkillRemoteFactoryRepository repo)
+    internal async Task Insert([Service] ISkillRemoteFactoryRepository repo)
     {
         // Called when: IsNew == true during Save()
         Id = await repo.InsertAsync(Name, Department);
@@ -87,7 +87,7 @@ public partial class SkillRfIntegrationRoot : EntityBase<SkillRfIntegrationRoot>
 
     #region remote-factory-update
     [Remote, Update]
-    public async Task Update([Service] ISkillRemoteFactoryRepository repo)
+    internal async Task Update([Service] ISkillRemoteFactoryRepository repo)
     {
         // Called when: IsNew == false && IsModified == true during Save()
         await repo.UpdateAsync(Id, Name, Department);
@@ -99,7 +99,7 @@ public partial class SkillRfIntegrationRoot : EntityBase<SkillRfIntegrationRoot>
 
     #region remote-factory-delete
     [Remote, Delete]
-    public async Task Delete([Service] ISkillRemoteFactoryRepository repo)
+    internal async Task Delete([Service] ISkillRemoteFactoryRepository repo)
     {
         // Called when: IsDeleted == true during Save()
         await repo.DeleteAsync(Id);

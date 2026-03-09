@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace Neatoo.Rules.Rules;
@@ -32,6 +33,11 @@ public class AttributeToRule : IAttributeToRule
         };
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "Expression.Property(parameter, r.Name) accesses properties by name on type T. " +
+        "The properties are preserved by [DynamicallyAccessedMembers] on T through the PropertyInfoList " +
+        "annotation chain. The property names come from IPropertyInfo objects that were discovered from " +
+        "preserved PropertyInfo metadata.")]
     private static TriggerProperty<T> CreateTriggerProperty<T>(IPropertyInfo r) where T : class, IValidateBase
     {
         var parameter = Expression.Parameter(typeof(T));

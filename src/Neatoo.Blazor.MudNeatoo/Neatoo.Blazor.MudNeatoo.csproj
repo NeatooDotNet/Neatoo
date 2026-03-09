@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <!-- Multi-targeting: Inherit TargetFrameworks from Directory.Build.props (net8.0;net9.0;net10.0) -->
+    <!-- Multi-targeting: Inherit TargetFrameworks from Directory.Build.props (net9.0;net10.0) -->
     <!-- ImplicitUsings and Nullable also inherited from Directory.Build.props -->
 
     <!-- Library Project Properties -->

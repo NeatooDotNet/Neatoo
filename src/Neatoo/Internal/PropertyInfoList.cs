@@ -1,10 +1,11 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace Neatoo.Internal;
 
 
 
-public class PropertyInfoList<T> : IPropertyInfoList<T>
+public class PropertyInfoList<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T> : IPropertyInfoList<T>
 {
 
     protected CreatePropertyInfoWrapper CreatePropertyInfo { get; }
@@ -24,6 +25,11 @@ public class PropertyInfoList<T> : IPropertyInfoList<T>
 
     private static Type[] neatooTypes = new Type[] { typeof(ValidateBase<>), typeof(ValidateListBase<>), typeof(EntityBase<>), typeof(EntityListBase<>) };
 
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "Walks up the inheritance chain from typeof(T) which has [DynamicallyAccessedMembers] " +
+        "preserving all properties. BaseType returns types in the same hierarchy whose properties are " +
+        "already preserved by the annotation on T. The walk stops at Neatoo base types (ValidateBase<>, EntityBase<>) " +
+        "which are framework types that are always preserved.")]
     protected void RegisterProperties()
     {
         lock (lockRegisteredProperties)

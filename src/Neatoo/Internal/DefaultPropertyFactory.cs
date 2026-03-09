@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Neatoo.Internal;
 
 /// <summary>
@@ -5,7 +7,7 @@ namespace Neatoo.Internal;
 /// standard <see cref="ValidateProperty{T}"/> instances.
 /// </summary>
 /// <typeparam name="TOwner">The type of the Neatoo object that owns the properties.</typeparam>
-public class DefaultPropertyFactory<TOwner> : IPropertyFactory<TOwner>
+public class DefaultPropertyFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOwner> : IPropertyFactory<TOwner>
     where TOwner : IValidateBase
 {
     private readonly IPropertyInfoList<TOwner> _propertyInfoList;

@@ -7,19 +7,18 @@ using Person.Dal;
 namespace DomainModel.Tests.UnitTests
 {
     [KnockOff<IPersonDbContext>]
-    [KnockOff<IPersonPhoneListFactory>]
     [KnockOff<IPersonPhoneList>]
     public partial class PersonTests
     {
         private Stubs.IPersonDbContext personDbContextStub;
-        private Stubs.IPersonPhoneListFactory phoneListFactoryStub;
+        private PersonPhoneListFactoryStub phoneListFactoryStub;
         private TestUniqueNameRule testUniqueNameRule;
         private TestPerson testPerson;
 
         public PersonTests()
         {
             personDbContextStub = new Stubs.IPersonDbContext();
-            phoneListFactoryStub = new Stubs.IPersonPhoneListFactory();
+            phoneListFactoryStub = new PersonPhoneListFactoryStub();
             testUniqueNameRule = new TestUniqueNameRule();
 
             testPerson = new TestPerson(new EntityBaseServices<Person>(null), testUniqueNameRule)

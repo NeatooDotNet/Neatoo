@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neatoo.Rules.Rules;
 
@@ -22,6 +23,10 @@ internal class RequiredRule<T> : RuleBase<T>, IRequiredRule
                                    propertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2072",
+        Justification = "Activator.CreateInstance creates default instances of non-nullable value types " +
+        "(int, decimal, enum, etc.) for comparison. Value type parameterless constructors are intrinsic " +
+        "to the CLR and are never trimmed.")]
     protected override IRuleMessages Execute(T target)
     {
         var value = ((ITriggerProperty<T>) this.TriggerProperties[0]).GetValue(target);

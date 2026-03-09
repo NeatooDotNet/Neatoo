@@ -1,4 +1,5 @@
 ﻿using Neatoo.RemoteFactory;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neatoo;
 
@@ -113,7 +114,7 @@ public interface IEntityRoot : IEntityBase
 /// </code>
 /// </example>
 [Factory]
-public abstract class EntityBase<T> : ValidateBase<T>, INeatooObject, IEntityBase, IEntityRoot, IEntityBaseInternal, IEntityMetaProperties
+public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T> : ValidateBase<T>, INeatooObject, IEntityBase, IEntityRoot, IEntityBaseInternal, IEntityMetaProperties
     where T : EntityBase<T>
 {
     /// <summary>
