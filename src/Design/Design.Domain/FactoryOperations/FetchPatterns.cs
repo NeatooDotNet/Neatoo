@@ -265,20 +265,23 @@ internal partial class FetchDemoItem : EntityBase<FetchDemoItem>, IFetchDemoItem
     [Create]
     public void Create() { }
 
-    // Child entities don't need [Fetch] - they're populated by parent's Fetch
-    // They DO need Insert/Update/Delete for the parent's Save to work
+    // Child entities don't need [Fetch] - they're populated by parent's Fetch.
+    // They DO need Insert/Update/Delete for the parent's Save to work.
+    //
+    // Child persistence methods are internal: server-only, trimmable on client.
+    // [Remote] is NOT used on internal methods (NF0105 diagnostic error).
+    // The generated factory's LocalInsert/LocalUpdate/LocalDelete get IsServerRuntime guards
+    // from the internal visibility alone.
+    // [Create] stays public so the factory interface remains public for client-side creation.
 
-    [Remote]
     [Insert]
-    public void Insert([Service] IFetchChildRepository repository) { }
+    internal void Insert([Service] IFetchChildRepository repository) { }
 
-    [Remote]
     [Update]
-    public void Update([Service] IFetchChildRepository repository) { }
+    internal void Update([Service] IFetchChildRepository repository) { }
 
-    [Remote]
     [Delete]
-    public void Delete([Service] IFetchChildRepository repository) { }
+    internal void Delete([Service] IFetchChildRepository repository) { }
 }
 
 [Factory]

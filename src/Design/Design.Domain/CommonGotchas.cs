@@ -188,25 +188,24 @@ internal partial class Gotcha2Item : EntityBase<Gotcha2Item>, IGotcha2Item
         // New item - IsNew=true after Create
     }
 
-    /// <summary>
-    /// Used during Fetch to simulate a persisted item (IsNew=false).
-    /// </summary>
+    // Child entity factory methods (Fetch/Insert/Update/Delete) are internal:
+    // server-only, trimmable on client.
+
     [Fetch]
-    public void Fetch(int id)
+    internal void Fetch(int id)
     {
         this["Id"].LoadValue(id);
         this["Name"].LoadValue($"Item-{id}");
-        // After Fetch, IsNew=false - this item exists in database
     }
 
     [Insert]
-    public void Insert() { }
+    internal void Insert() { }
 
     [Update]
-    public void Update() { }
+    internal void Update() { }
 
     [Delete]
-    public void Delete() { }
+    internal void Delete() { }
 }
 
 [Factory]
@@ -221,7 +220,7 @@ internal partial class Gotcha2ItemList : EntityListBase<IGotcha2Item>, IGotcha2I
     public void Create() { }
 
     [Fetch]
-    public void FetchForParent(int parentId, [Service] IGotcha2ItemFactory itemFactory)
+    internal void FetchForParent(int parentId, [Service] IGotcha2ItemFactory itemFactory)
     {
         // Simulate fetching 2 items from database
         var item1 = itemFactory.Fetch(1);
@@ -458,20 +457,23 @@ internal partial class Gotcha5Child : EntityBase<Gotcha5Child>, IGotcha5Child
     [Create]
     public void Create() { }
 
+    // Child entity factory methods (Fetch/Insert/Update/Delete) are internal:
+    // server-only, trimmable on client.
+
     [Fetch]
-    public void Fetch(int id)
+    internal void Fetch(int id)
     {
         this["Value"].LoadValue($"Child-{id}");
     }
 
     [Insert]
-    public void Insert() { }
+    internal void Insert() { }
 
     [Update]
-    public void Update() { }
+    internal void Update() { }
 
     [Delete]
-    public void Delete() { }
+    internal void Delete() { }
 }
 
 public interface IGotcha5Repository

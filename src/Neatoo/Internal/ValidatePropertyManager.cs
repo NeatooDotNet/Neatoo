@@ -1,6 +1,7 @@
 using Neatoo.Rules;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -97,6 +98,13 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
     private static MethodInfo? _createPropertyMethod;
     private static ConcurrentDictionary<Type, MethodInfo> _createPropertyMethodPropertyType = new();
 
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "GetType() returns ValidatePropertyManager<P> or EntityPropertyManager, " +
+        "both are framework types whose methods are always preserved.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2060",
+        Justification = "MakeGenericMethod creates CreateProperty<T> where T is a property type " +
+        "discovered from PropertyInfoList. The properties are preserved by [DynamicallyAccessedMembers] " +
+        "on the owning type's type parameter.")]
     public virtual P GetProperty(string propertyName)
     {
         lock (this._propertyBagLock)

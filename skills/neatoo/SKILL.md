@@ -206,6 +206,7 @@ Detailed documentation for each topic area:
 - **`references/collections.md`** - EntityListBase, parent-child relationships, deletion tracking
 - **`references/lazy-loading.md`** - LazyLoad&lt;T&gt;, ILazyLoadFactory, explicit async loading
 - **`references/source-generation.md`** - What gets generated, Generated/ folder, [SuppressFactory]
+- **`references/trimming.md`** - IL trimming annotations, suppression strategy, consumer project setup
 - **`references/blazor.md`** - Blazor-specific binding and component patterns
 - **`references/testing.md`** - No mocking Neatoo, integration test patterns
 - **`references/pitfalls.md`** - Common mistakes and gotchas

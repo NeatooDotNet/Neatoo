@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Neatoo.Internal;
 
 /// <summary>
@@ -9,7 +11,7 @@ namespace Neatoo.Internal;
 /// EntityBase classes require EntityProperty instances (which implement IEntityProperty)
 /// for modification tracking. This factory ensures the correct property type is created.
 /// </remarks>
-public class EntityPropertyFactory<TOwner> : IPropertyFactory<TOwner>
+public class EntityPropertyFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOwner> : IPropertyFactory<TOwner>
     where TOwner : IValidateBase
 {
     private readonly IPropertyInfoList<TOwner> _propertyInfoList;

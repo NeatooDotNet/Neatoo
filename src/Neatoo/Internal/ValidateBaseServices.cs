@@ -1,9 +1,10 @@
 ﻿using Neatoo.Rules;
 using Neatoo.Rules.Rules;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neatoo.Internal;
 
-public class ValidateBaseServices<T> : IValidateBaseServices<T>
+public class ValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T> : IValidateBaseServices<T>
     where T : ValidateBase<T>
 {
     public IPropertyInfoList<T> PropertyInfoList { get; protected set; }

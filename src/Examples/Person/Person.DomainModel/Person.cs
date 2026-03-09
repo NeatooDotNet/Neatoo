@@ -67,7 +67,7 @@ internal partial class Person : EntityBase<Person>, IPerson
 
     [Remote]
     [Fetch]
-    public async Task<bool> Fetch([Service] IPersonDbContext personContext,
+    internal async Task<bool> Fetch([Service] IPersonDbContext personContext,
                                     [Service] IPersonPhoneListFactory personPhoneModelListFactory,
                                     CancellationToken cancellationToken = default)
     {
@@ -83,7 +83,7 @@ internal partial class Person : EntityBase<Person>, IPerson
 
     [Remote]
     [Insert]
-    public async Task<PersonEntity?> Insert([Service] IPersonDbContext personContext,
+    internal async Task<PersonEntity?> Insert([Service] IPersonDbContext personContext,
                                     [Service] IPersonPhoneListFactory personPhoneModelListFactory,
                                     CancellationToken cancellationToken = default)
     {
@@ -108,7 +108,7 @@ internal partial class Person : EntityBase<Person>, IPerson
 
     [Remote]
     [Update]
-    public async Task<PersonEntity?> Update([Service] IPersonDbContext personContext,
+    internal async Task<PersonEntity?> Update([Service] IPersonDbContext personContext,
                                     [Service] IPersonPhoneListFactory personPhoneModelListFactory,
                                     CancellationToken cancellationToken = default)
     {
@@ -135,7 +135,7 @@ internal partial class Person : EntityBase<Person>, IPerson
 
     [Remote]
     [Delete]
-    public async Task Delete([Service] IPersonDbContext personContext,
+    internal async Task Delete([Service] IPersonDbContext personContext,
                              CancellationToken cancellationToken)
     {
         await personContext.DeleteAllPersons(cancellationToken);

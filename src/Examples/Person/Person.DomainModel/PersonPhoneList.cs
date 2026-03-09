@@ -49,7 +49,7 @@ internal class PersonPhoneList : EntityListBase<IPersonPhone>, IPersonPhoneList
     }
 
     [Fetch]
-    public void Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities,
+    internal void Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities,
                         [Service] IPersonPhoneFactory personPhoneModelFactory)
     {
         foreach (var personPhoneEntity in personPhoneEntities)
@@ -60,7 +60,7 @@ internal class PersonPhoneList : EntityListBase<IPersonPhone>, IPersonPhoneList
     }
 
     [Update]
-    public void Update(ICollection<PersonPhoneEntity> personPhoneEntities,
+    internal void Update(ICollection<PersonPhoneEntity> personPhoneEntities,
                         [Service] IPersonPhoneFactory personPhoneModelFactory)
     {
         foreach (var personPhoneModel in this.Union(DeletedList))

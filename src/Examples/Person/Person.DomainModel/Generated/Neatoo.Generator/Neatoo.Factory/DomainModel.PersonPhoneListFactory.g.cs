@@ -4,6 +4,9 @@ using Neatoo.RemoteFactory.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Neatoo;
 using Person.Dal;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 /*
     READONLY - DO NOT EDIT!!!!
@@ -11,24 +14,25 @@ using Person.Dal;
 */
 namespace DomainModel
 {
-    public interface IPersonPhoneListFactory
+    internal interface IPersonPhoneListFactory
     {
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(PersonPhoneListFactory))]
         IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default);
         IPersonPhoneList Save(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default);
     }
 
-    internal class PersonPhoneListFactory : FactoryBase<IPersonPhoneList>, IPersonPhoneListFactory
+    internal class PersonPhoneListFactory : IPersonPhoneListFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
         // Delegates
         // Delegate Properties to provide Local or Remote fork in execution
-        public PersonPhoneListFactory(IServiceProvider serviceProvider, IFactoryCore<IPersonPhoneList> factoryCore) : base(factoryCore)
+        public PersonPhoneListFactory(IServiceProvider serviceProvider)
         {
             this.ServiceProvider = serviceProvider;
         }
 
-        public PersonPhoneListFactory(IServiceProvider serviceProvider, IMakeRemoteDelegateRequest remoteMethodDelegate, IFactoryCore<IPersonPhoneList> factoryCore) : base(factoryCore)
+        public PersonPhoneListFactory(IServiceProvider serviceProvider, IMakeRemoteDelegateRequest remoteMethodDelegate)
         {
             this.ServiceProvider = serviceProvider;
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
@@ -41,16 +45,78 @@ namespace DomainModel
 
         public IPersonPhoneList LocalFetch(IEnumerable<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default)
         {
+            if (!NeatooRuntime.IsServerRuntime)
+                throw new InvalidOperationException("Server-only method called in non-server runtime.");
+            var _logger = ServiceProvider.GetService<ILogger<PersonPhoneListFactory>>();
+            var _correlationContext = ServiceProvider.GetService<ICorrelationContext>();
+            var _correlationId = _correlationContext?.CorrelationId;
+            _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Fetch, "IPersonPhoneList");
+            var _sw = System.Diagnostics.Stopwatch.StartNew();
             var target = ServiceProvider.GetRequiredService<PersonPhoneList>();
             var personPhoneModelFactory = ServiceProvider.GetRequiredService<IPersonPhoneFactory>();
-            return DoFactoryMethodCall(target, FactoryOperation.Fetch, () => target.Fetch(personPhoneEntities, personPhoneModelFactory));
+            try
+            {
+                if (target is IFactoryOnStart _factoryOnStart)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnStart for {TypeName}", "IPersonPhoneList");
+                    _factoryOnStart.FactoryStart(FactoryOperation.Fetch);
+                }
+
+                target.Fetch(personPhoneEntities, personPhoneModelFactory);
+                if (target is IFactoryOnComplete _factoryOnComplete)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPersonPhoneList");
+                    _factoryOnComplete.FactoryComplete(FactoryOperation.Fetch);
+                }
+
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} completed for {TypeName} in {ElapsedMs}ms", _correlationId, FactoryOperation.Fetch, "IPersonPhoneList", _sw.ElapsedMilliseconds);
+                return (IPersonPhoneList)target;
+            }
+            catch (Exception _ex)
+            {
+                _sw.Stop();
+                _logger?.LogError(_ex, "[{CorrelationId}] Factory operation {Operation} failed for {TypeName}: {ErrorMessage}", _correlationId, FactoryOperation.Fetch, "IPersonPhoneList", _ex.Message);
+                throw;
+            }
         }
 
         public IPersonPhoneList LocalUpdate(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default)
         {
+            if (!NeatooRuntime.IsServerRuntime)
+                throw new InvalidOperationException("Server-only method called in non-server runtime.");
             var cTarget = (PersonPhoneList)target ?? throw new Exception("IPersonPhoneList must implement PersonPhoneList");
+            var _logger = ServiceProvider.GetService<ILogger<PersonPhoneListFactory>>();
+            var _correlationContext = ServiceProvider.GetService<ICorrelationContext>();
+            var _correlationId = _correlationContext?.CorrelationId;
+            _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Update, "IPersonPhoneList");
+            var _sw = System.Diagnostics.Stopwatch.StartNew();
             var personPhoneModelFactory = ServiceProvider.GetRequiredService<IPersonPhoneFactory>();
-            return DoFactoryMethodCall(cTarget, FactoryOperation.Update, () => cTarget.Update(personPhoneEntities, personPhoneModelFactory));
+            try
+            {
+                if (cTarget is IFactoryOnStart _factoryOnStart)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnStart for {TypeName}", "IPersonPhoneList");
+                    _factoryOnStart.FactoryStart(FactoryOperation.Update);
+                }
+
+                cTarget.Update(personPhoneEntities, personPhoneModelFactory);
+                if (cTarget is IFactoryOnComplete _factoryOnComplete)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPersonPhoneList");
+                    _factoryOnComplete.FactoryComplete(FactoryOperation.Update);
+                }
+
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} completed for {TypeName} in {ElapsedMs}ms", _correlationId, FactoryOperation.Update, "IPersonPhoneList", _sw.ElapsedMilliseconds);
+                return (IPersonPhoneList)cTarget;
+            }
+            catch (Exception _ex)
+            {
+                _sw.Stop();
+                _logger?.LogError(_ex, "[{CorrelationId}] Factory operation {Operation} failed for {TypeName}: {ErrorMessage}", _correlationId, FactoryOperation.Update, "IPersonPhoneList", _ex.Message);
+                throw;
+            }
         }
 
         public virtual IPersonPhoneList Save(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default)
@@ -60,6 +126,8 @@ namespace DomainModel
 
         public virtual IPersonPhoneList LocalSave(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default)
         {
+            if (!NeatooRuntime.IsServerRuntime)
+                throw new InvalidOperationException("Server-only method called in non-server runtime.");
             if (target.IsDeleted)
             {
                 throw new NotImplementedException();

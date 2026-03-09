@@ -1,4 +1,5 @@
 ﻿using Neatoo.RemoteFactory;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neatoo;
 
@@ -16,7 +17,7 @@ namespace Neatoo;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The type of the entity object that will use these services. Must derive from <see cref="EntityBase{T}"/>.</typeparam>
-public interface IEntityBaseServices<T> : IValidateBaseServices<T>
+public interface IEntityBaseServices<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T> : IValidateBaseServices<T>
     where T : EntityBase<T>
 {
     /// <summary>

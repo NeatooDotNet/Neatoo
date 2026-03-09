@@ -6,6 +6,9 @@ using Neatoo;
 using Person.Dal;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 /*
     READONLY - DO NOT EDIT!!!!
@@ -15,6 +18,7 @@ namespace DomainModel
 {
     public interface IPersonFactory
     {
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(PersonFactory))]
         IPerson? Create(CancellationToken cancellationToken = default);
         Task<IPerson?> Fetch(CancellationToken cancellationToken = default);
         Task<IPerson?> Save(IPerson target, CancellationToken cancellationToken = default);
@@ -27,7 +31,7 @@ namespace DomainModel
         Authorized CanSave(CancellationToken cancellationToken = default);
     }
 
-    internal class PersonFactory : FactorySaveBase<IPerson>, IFactorySave<Person>, IPersonFactory
+    internal class PersonFactory : IFactorySave<Person>, IPersonFactory
     {
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
@@ -38,14 +42,14 @@ namespace DomainModel
         public FetchDelegate FetchProperty { get; }
         public SaveDelegate SaveProperty { get; }
 
-        public PersonFactory(IServiceProvider serviceProvider, IFactoryCore<IPerson> factoryCore) : base(factoryCore)
+        public PersonFactory(IServiceProvider serviceProvider)
         {
             this.ServiceProvider = serviceProvider;
             FetchProperty = LocalFetch;
             SaveProperty = LocalSave;
         }
 
-        public PersonFactory(IServiceProvider serviceProvider, IMakeRemoteDelegateRequest remoteMethodDelegate, IFactoryCore<IPerson> factoryCore) : base(factoryCore)
+        public PersonFactory(IServiceProvider serviceProvider, IMakeRemoteDelegateRequest remoteMethodDelegate)
         {
             this.ServiceProvider = serviceProvider;
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
@@ -74,9 +78,38 @@ namespace DomainModel
                 return new Authorized<IPerson>(authorized);
             }
 
+            var _logger = ServiceProvider.GetService<ILogger<PersonFactory>>();
+            var _correlationContext = ServiceProvider.GetService<ICorrelationContext>();
+            var _correlationId = _correlationContext?.CorrelationId;
+            _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Create, "IPerson");
+            var _sw = System.Diagnostics.Stopwatch.StartNew();
             var target = ServiceProvider.GetRequiredService<Person>();
             var personPhoneModelList = ServiceProvider.GetRequiredService<IPersonPhoneList>();
-            return new Authorized<IPerson>(DoFactoryMethodCall(target, FactoryOperation.Create, () => target.Create(personPhoneModelList)));
+            try
+            {
+                if (target is IFactoryOnStart _factoryOnStart)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnStart for {TypeName}", "IPerson");
+                    _factoryOnStart.FactoryStart(FactoryOperation.Create);
+                }
+
+                target.Create(personPhoneModelList);
+                if (target is IFactoryOnComplete _factoryOnComplete)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPerson");
+                    _factoryOnComplete.FactoryComplete(FactoryOperation.Create);
+                }
+
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} completed for {TypeName} in {ElapsedMs}ms", _correlationId, FactoryOperation.Create, "IPerson", _sw.ElapsedMilliseconds);
+                return new Authorized<IPerson>((IPerson)target);
+            }
+            catch (Exception _ex)
+            {
+                _sw.Stop();
+                _logger?.LogError(_ex, "[{CorrelationId}] Factory operation {Operation} failed for {TypeName}: {ErrorMessage}", _correlationId, FactoryOperation.Create, "IPerson", _ex.Message);
+                throw;
+            }
         }
 
         public virtual async Task<IPerson?> Fetch(CancellationToken cancellationToken = default)
@@ -91,6 +124,8 @@ namespace DomainModel
 
         public async Task<Authorized<IPerson>> LocalFetch(CancellationToken cancellationToken = default)
         {
+            if (!NeatooRuntime.IsServerRuntime)
+                throw new InvalidOperationException("Server-only method called in non-server runtime.");
             Authorized authorized;
             IPersonAuth ipersonauth = ServiceProvider.GetRequiredService<IPersonAuth>();
             authorized = ipersonauth.HasAccess();
@@ -105,14 +140,79 @@ namespace DomainModel
                 return new Authorized<IPerson>(authorized);
             }
 
+            var _logger = ServiceProvider.GetService<ILogger<PersonFactory>>();
+            var _correlationContext = ServiceProvider.GetService<ICorrelationContext>();
+            var _correlationId = _correlationContext?.CorrelationId;
+            _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Fetch, "IPerson");
+            var _sw = System.Diagnostics.Stopwatch.StartNew();
             var target = ServiceProvider.GetRequiredService<Person>();
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
             var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
-            return new Authorized<IPerson>(await DoFactoryMethodCallBoolAsync(target, FactoryOperation.Fetch, () => target.Fetch(personContext, personPhoneModelListFactory, cancellationToken)));
+            try
+            {
+                if (target is IFactoryOnStart _factoryOnStart)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnStart for {TypeName}", "IPerson");
+                    _factoryOnStart.FactoryStart(FactoryOperation.Fetch);
+                }
+
+                if (target is IFactoryOnStartAsync _factoryOnStartAsync)
+                {
+                    await _factoryOnStartAsync.FactoryStartAsync(FactoryOperation.Fetch);
+                }
+
+                var _succeeded = await target.Fetch(personContext, personPhoneModelListFactory, cancellationToken);
+                if (!_succeeded)
+                {
+                    _sw.Stop();
+                    _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} completed for {TypeName} in {ElapsedMs}ms", _correlationId, FactoryOperation.Fetch, "IPerson", _sw.ElapsedMilliseconds);
+                    return default !;
+                }
+
+                if (target is IFactoryOnComplete _factoryOnComplete)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPerson");
+                    _factoryOnComplete.FactoryComplete(FactoryOperation.Fetch);
+                }
+
+                if (target is IFactoryOnCompleteAsync _factoryOnCompleteAsync)
+                {
+                    await _factoryOnCompleteAsync.FactoryCompleteAsync(FactoryOperation.Fetch);
+                }
+
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} completed for {TypeName} in {ElapsedMs}ms", _correlationId, FactoryOperation.Fetch, "IPerson", _sw.ElapsedMilliseconds);
+                return new Authorized<IPerson>((IPerson)target);
+            }
+            catch (OperationCanceledException)
+            {
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} cancelled for {TypeName}", _correlationId, FactoryOperation.Fetch, "IPerson");
+                if (target is IFactoryOnCancelled _factoryOnCancelled)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnCancelled for {TypeName}", "IPerson");
+                    _factoryOnCancelled.FactoryCancelled(FactoryOperation.Fetch);
+                }
+
+                if (target is IFactoryOnCancelledAsync _factoryOnCancelledAsync)
+                {
+                    await _factoryOnCancelledAsync.FactoryCancelledAsync(FactoryOperation.Fetch);
+                }
+
+                throw;
+            }
+            catch (Exception _ex)
+            {
+                _sw.Stop();
+                _logger?.LogError(_ex, "[{CorrelationId}] Factory operation {Operation} failed for {TypeName}: {ErrorMessage}", _correlationId, FactoryOperation.Fetch, "IPerson", _ex.Message);
+                throw;
+            }
         }
 
         public async Task<Authorized<IPerson>> LocalInsert(IPerson target, CancellationToken cancellationToken = default)
         {
+            if (!NeatooRuntime.IsServerRuntime)
+                throw new InvalidOperationException("Server-only method called in non-server runtime.");
             Authorized authorized;
             IPersonAuth ipersonauth = ServiceProvider.GetRequiredService<IPersonAuth>();
             authorized = ipersonauth.HasAccess();
@@ -128,13 +228,71 @@ namespace DomainModel
             }
 
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
+            var _logger = ServiceProvider.GetService<ILogger<PersonFactory>>();
+            var _correlationContext = ServiceProvider.GetService<ICorrelationContext>();
+            var _correlationId = _correlationContext?.CorrelationId;
+            _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Insert, "IPerson");
+            var _sw = System.Diagnostics.Stopwatch.StartNew();
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
             var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
-            return new Authorized<IPerson>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Insert, () => cTarget.Insert(personContext, personPhoneModelListFactory, cancellationToken)));
+            try
+            {
+                if (cTarget is IFactoryOnStart _factoryOnStart)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnStart for {TypeName}", "IPerson");
+                    _factoryOnStart.FactoryStart(FactoryOperation.Insert);
+                }
+
+                if (cTarget is IFactoryOnStartAsync _factoryOnStartAsync)
+                {
+                    await _factoryOnStartAsync.FactoryStartAsync(FactoryOperation.Insert);
+                }
+
+                await cTarget.Insert(personContext, personPhoneModelListFactory, cancellationToken);
+                if (cTarget is IFactoryOnComplete _factoryOnComplete)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPerson");
+                    _factoryOnComplete.FactoryComplete(FactoryOperation.Insert);
+                }
+
+                if (cTarget is IFactoryOnCompleteAsync _factoryOnCompleteAsync)
+                {
+                    await _factoryOnCompleteAsync.FactoryCompleteAsync(FactoryOperation.Insert);
+                }
+
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} completed for {TypeName} in {ElapsedMs}ms", _correlationId, FactoryOperation.Insert, "IPerson", _sw.ElapsedMilliseconds);
+                return new Authorized<IPerson>((IPerson)cTarget);
+            }
+            catch (OperationCanceledException)
+            {
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} cancelled for {TypeName}", _correlationId, FactoryOperation.Insert, "IPerson");
+                if (cTarget is IFactoryOnCancelled _factoryOnCancelled)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnCancelled for {TypeName}", "IPerson");
+                    _factoryOnCancelled.FactoryCancelled(FactoryOperation.Insert);
+                }
+
+                if (cTarget is IFactoryOnCancelledAsync _factoryOnCancelledAsync)
+                {
+                    await _factoryOnCancelledAsync.FactoryCancelledAsync(FactoryOperation.Insert);
+                }
+
+                throw;
+            }
+            catch (Exception _ex)
+            {
+                _sw.Stop();
+                _logger?.LogError(_ex, "[{CorrelationId}] Factory operation {Operation} failed for {TypeName}: {ErrorMessage}", _correlationId, FactoryOperation.Insert, "IPerson", _ex.Message);
+                throw;
+            }
         }
 
         public async Task<Authorized<IPerson>> LocalUpdate(IPerson target, CancellationToken cancellationToken = default)
         {
+            if (!NeatooRuntime.IsServerRuntime)
+                throw new InvalidOperationException("Server-only method called in non-server runtime.");
             Authorized authorized;
             IPersonAuth ipersonauth = ServiceProvider.GetRequiredService<IPersonAuth>();
             authorized = ipersonauth.HasAccess();
@@ -150,13 +308,71 @@ namespace DomainModel
             }
 
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
+            var _logger = ServiceProvider.GetService<ILogger<PersonFactory>>();
+            var _correlationContext = ServiceProvider.GetService<ICorrelationContext>();
+            var _correlationId = _correlationContext?.CorrelationId;
+            _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Update, "IPerson");
+            var _sw = System.Diagnostics.Stopwatch.StartNew();
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
             var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
-            return new Authorized<IPerson>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Update, () => cTarget.Update(personContext, personPhoneModelListFactory, cancellationToken)));
+            try
+            {
+                if (cTarget is IFactoryOnStart _factoryOnStart)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnStart for {TypeName}", "IPerson");
+                    _factoryOnStart.FactoryStart(FactoryOperation.Update);
+                }
+
+                if (cTarget is IFactoryOnStartAsync _factoryOnStartAsync)
+                {
+                    await _factoryOnStartAsync.FactoryStartAsync(FactoryOperation.Update);
+                }
+
+                await cTarget.Update(personContext, personPhoneModelListFactory, cancellationToken);
+                if (cTarget is IFactoryOnComplete _factoryOnComplete)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPerson");
+                    _factoryOnComplete.FactoryComplete(FactoryOperation.Update);
+                }
+
+                if (cTarget is IFactoryOnCompleteAsync _factoryOnCompleteAsync)
+                {
+                    await _factoryOnCompleteAsync.FactoryCompleteAsync(FactoryOperation.Update);
+                }
+
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} completed for {TypeName} in {ElapsedMs}ms", _correlationId, FactoryOperation.Update, "IPerson", _sw.ElapsedMilliseconds);
+                return new Authorized<IPerson>((IPerson)cTarget);
+            }
+            catch (OperationCanceledException)
+            {
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} cancelled for {TypeName}", _correlationId, FactoryOperation.Update, "IPerson");
+                if (cTarget is IFactoryOnCancelled _factoryOnCancelled)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnCancelled for {TypeName}", "IPerson");
+                    _factoryOnCancelled.FactoryCancelled(FactoryOperation.Update);
+                }
+
+                if (cTarget is IFactoryOnCancelledAsync _factoryOnCancelledAsync)
+                {
+                    await _factoryOnCancelledAsync.FactoryCancelledAsync(FactoryOperation.Update);
+                }
+
+                throw;
+            }
+            catch (Exception _ex)
+            {
+                _sw.Stop();
+                _logger?.LogError(_ex, "[{CorrelationId}] Factory operation {Operation} failed for {TypeName}: {ErrorMessage}", _correlationId, FactoryOperation.Update, "IPerson", _ex.Message);
+                throw;
+            }
         }
 
         public async Task<Authorized<IPerson>> LocalDelete(IPerson target, CancellationToken cancellationToken = default)
         {
+            if (!NeatooRuntime.IsServerRuntime)
+                throw new InvalidOperationException("Server-only method called in non-server runtime.");
             Authorized authorized;
             IPersonAuth ipersonauth = ServiceProvider.GetRequiredService<IPersonAuth>();
             authorized = ipersonauth.HasAccess();
@@ -172,8 +388,64 @@ namespace DomainModel
             }
 
             var cTarget = (Person)target ?? throw new Exception("IPerson must implement Person");
+            var _logger = ServiceProvider.GetService<ILogger<PersonFactory>>();
+            var _correlationContext = ServiceProvider.GetService<ICorrelationContext>();
+            var _correlationId = _correlationContext?.CorrelationId;
+            _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Delete, "IPerson");
+            var _sw = System.Diagnostics.Stopwatch.StartNew();
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
-            return new Authorized<IPerson>(await DoFactoryMethodCallAsync(cTarget, FactoryOperation.Delete, () => cTarget.Delete(personContext, cancellationToken)));
+            try
+            {
+                if (cTarget is IFactoryOnStart _factoryOnStart)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnStart for {TypeName}", "IPerson");
+                    _factoryOnStart.FactoryStart(FactoryOperation.Delete);
+                }
+
+                if (cTarget is IFactoryOnStartAsync _factoryOnStartAsync)
+                {
+                    await _factoryOnStartAsync.FactoryStartAsync(FactoryOperation.Delete);
+                }
+
+                await cTarget.Delete(personContext, cancellationToken);
+                if (cTarget is IFactoryOnComplete _factoryOnComplete)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPerson");
+                    _factoryOnComplete.FactoryComplete(FactoryOperation.Delete);
+                }
+
+                if (cTarget is IFactoryOnCompleteAsync _factoryOnCompleteAsync)
+                {
+                    await _factoryOnCompleteAsync.FactoryCompleteAsync(FactoryOperation.Delete);
+                }
+
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} completed for {TypeName} in {ElapsedMs}ms", _correlationId, FactoryOperation.Delete, "IPerson", _sw.ElapsedMilliseconds);
+                return new Authorized<IPerson>((IPerson)cTarget);
+            }
+            catch (OperationCanceledException)
+            {
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} cancelled for {TypeName}", _correlationId, FactoryOperation.Delete, "IPerson");
+                if (cTarget is IFactoryOnCancelled _factoryOnCancelled)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnCancelled for {TypeName}", "IPerson");
+                    _factoryOnCancelled.FactoryCancelled(FactoryOperation.Delete);
+                }
+
+                if (cTarget is IFactoryOnCancelledAsync _factoryOnCancelledAsync)
+                {
+                    await _factoryOnCancelledAsync.FactoryCancelledAsync(FactoryOperation.Delete);
+                }
+
+                throw;
+            }
+            catch (Exception _ex)
+            {
+                _sw.Stop();
+                _logger?.LogError(_ex, "[{CorrelationId}] Factory operation {Operation} failed for {TypeName}: {ErrorMessage}", _correlationId, FactoryOperation.Delete, "IPerson", _ex.Message);
+                throw;
+            }
         }
 
         public virtual async Task<IPerson?> Save(IPerson target, CancellationToken cancellationToken = default)
@@ -199,6 +471,8 @@ namespace DomainModel
 
         public virtual async Task<Authorized<IPerson>> LocalSave(IPerson target, CancellationToken cancellationToken = default)
         {
+            if (!NeatooRuntime.IsServerRuntime)
+                throw new InvalidOperationException("Server-only method called in non-server runtime.");
             if (target.IsDeleted)
             {
                 if (target.IsNew)
@@ -403,6 +677,8 @@ namespace DomainModel
             services.AddTransient<Person>();
             services.AddTransient<IPerson, Person>();
             services.AddScoped<IFactorySave<Person>, PersonFactory>();
+            // Explicit auth type registrations (IL trimming support)
+            services.TryAddTransient<IPersonAuth, PersonAuth>();
             services.AddScoped<FetchDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<PersonFactory>();

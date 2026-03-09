@@ -1,9 +1,10 @@
 ﻿using Neatoo.RemoteFactory;
 using Neatoo.Rules;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Neatoo.Internal;
 
-public class EntityBaseServices<T> : ValidateBaseServices<T>, IEntityBaseServices<T>
+public class EntityBaseServices<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T> : ValidateBaseServices<T>, IEntityBaseServices<T>
     where T : EntityBase<T>
 {
     public IFactorySave<T>? Factory { get; }

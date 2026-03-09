@@ -3,6 +3,7 @@ using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -112,7 +113,7 @@ public interface IValidateBase : INeatooObject, INotifyPropertyChanged, INotifyN
 /// </code>
 /// </example>
 [Factory]
-public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateBaseInternal, ISetParent, INotifyPropertyChanged, IJsonOnDeserializing, IJsonOnDeserialized, IFactoryOnStart, IFactoryOnComplete
+public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T> : INeatooObject, IValidateBase, IValidateBaseInternal, ISetParent, INotifyPropertyChanged, IJsonOnDeserializing, IJsonOnDeserialized, IFactoryOnStart, IFactoryOnComplete
 	where T : ValidateBase<T>
 {
 	/// <summary>
@@ -307,6 +308,11 @@ public abstract class ValidateBase<T> : INeatooObject, IValidateBase, IValidateB
 	/// </summary>
 	private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _lazyLoadPropertyCache = new();
 
+	[UnconditionalSuppressMessage("Trimming", "IL2070",
+		Justification = "Callers pass GetType() which returns a concrete type whose properties are preserved " +
+		"by [DynamicallyAccessedMembers] on the T type parameter of ValidateBase<T>. " +
+		"The trimmer cannot statically verify this because GetType() returns Type without annotations, " +
+		"but at runtime the concrete type is always T (or a subclass) which has its properties preserved.")]
 	private protected static PropertyInfo[] GetLazyLoadProperties(Type concreteType)
 	{
 		return _lazyLoadPropertyCache.GetOrAdd(concreteType, type =>

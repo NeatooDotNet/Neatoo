@@ -59,20 +59,20 @@ internal partial class PersonPhone : EntityBase<PersonPhone>, IPersonPhone
     public partial void MapModifiedTo(PersonPhoneEntity personPhoneEntity);
 
     [Fetch]
-    public void Fetch(PersonPhoneEntity personPhoneEntity)
+    internal void Fetch(PersonPhoneEntity personPhoneEntity)
     {
         MapFrom(personPhoneEntity);
     }
 
     [Insert]
-    public void Insert(PersonPhoneEntity personPhoneEntity)
+    internal void Insert(PersonPhoneEntity personPhoneEntity)
     {
         this.Id = Guid.NewGuid();
         MapTo(personPhoneEntity);
     }
 
     [Update]
-    public void Update(PersonPhoneEntity personPhoneEntity)
+    internal void Update(PersonPhoneEntity personPhoneEntity)
     {
         MapModifiedTo(personPhoneEntity);
     }

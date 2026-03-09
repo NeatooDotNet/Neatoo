@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Reflection;
 using Neatoo.Internal;
@@ -18,6 +19,20 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
         this.localAssemblies = localAssemblies;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "JsonSerializer.Deserialize with runtime Type is required for polymorphic deserialization. " +
+        "Types are preserved by RemoteFactory generated FactoryServiceRegistrar static references.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2055",
+        Justification = "MakeGenericType creates ValidateProperty<T>/EntityProperty<T> with property types " +
+        "from the serialized object. These property types are preserved by [DynamicallyAccessedMembers] " +
+        "on the owning entity's type parameter.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2072",
+        Justification = "Activator.CreateInstance fallback for types not in DI. Types resolved via " +
+        "IServiceAssemblies.FindType() from $type discriminator. RemoteFactory generated code " +
+        "preserves all domain types via static references in FactoryServiceRegistrar.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "GetProperties() on runtime concrete types for property discovery during deserialization. " +
+        "Properties are preserved by [DynamicallyAccessedMembers] on entity type parameters.")]
     public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.StartObject)
@@ -201,6 +216,14 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
     /// value (not as a constructor parameter), which avoids the STJ limitation where
     /// reference metadata ($id/$ref) cannot appear in constructor parameters.
     /// </summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "JsonSerializer.Deserialize with runtime types for property values and rule messages. " +
+        "Value types are preserved by [DynamicallyAccessedMembers] on entity type parameters. " +
+        "IRuleMessage[] is a framework type always preserved.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2067",
+        Justification = "Activator.CreateInstance for ValidateProperty<T> and EntityProperty<T>. " +
+        "These are Neatoo framework types with public constructors that are always preserved " +
+        "because they are directly referenced in Neatoo's own code.")]
     private static IValidateProperty DeserializeValidateProperty(
         ref Utf8JsonReader reader, Type propertyType, JsonSerializerOptions options)
     {
@@ -273,6 +296,15 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
         return result;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "JsonSerializer.Serialize with runtime types for property serialization. " +
+        "Types are preserved by RemoteFactory generated FactoryServiceRegistrar static references " +
+        "and [DynamicallyAccessedMembers] on entity type parameters.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "GetProperties() on runtime concrete types for LazyLoad property discovery and " +
+        "IEntityMetaProperties/IFactorySaveMeta property iteration during serialization. " +
+        "Entity properties are preserved by [DynamicallyAccessedMembers] on type parameters. " +
+        "IEntityMetaProperties and IFactorySaveMeta are framework interfaces always preserved.")]
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
         // Cast to internal interface to access GetProperties
