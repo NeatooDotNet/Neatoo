@@ -145,7 +145,7 @@ public partial class Customer : EntityBase<Customer>
     // RemoteFactory method: Runs on server, result transferred to client
     [Remote]
     [Insert]
-    public Task Insert([Service] ICustomerRepository repo)
+    internal Task Insert([Service] ICustomerRepository repo)
     {
         // Persistence logic here
         return Task.CompletedTask;

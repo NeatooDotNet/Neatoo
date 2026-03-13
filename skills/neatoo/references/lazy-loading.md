@@ -5,23 +5,190 @@
 ## Key Principles
 
 - **Explicit loading only** — `Value` returns current state (null if not loaded). Use `await` or `LoadAsync()` to load.
-- **Nullable reference types supported** — The generic constraint is `where T : class?`, so `T` can be a nullable reference type (e.g., `LazyLoad<IOrderItemList?>`). This is useful when the property type in the entity interface is nullable.
+- **Nullable reference types supported** — The generic constraint is `where T : class?`, so `T` can be a nullable reference type (e.g., `LazyLoad<IOrderItemList?>`).
 - **Thread-safe** — Multiple concurrent awaits share a single load operation.
 - **UI-friendly** — Implements `INotifyPropertyChanged` with `IsLoading`, `IsLoaded`, `HasLoadError`, and `LoadError` for binding.
 - **Meta property delegation** — Implements `IValidateMetaProperties` and `IEntityMetaProperties`, delegating to the loaded value.
-- **JSON serialization** — `Value` and `IsLoaded` are serialized; the loader delegate is not.
+- **JSON serialization** — `Value` and `IsLoaded` are serialized; the loader delegate is not. The converter merges deserialized state into the existing constructor-created instance, preserving the loader.
 
 ## Creating Instances
 
-Always use `ILazyLoadFactory` (registered in DI via `AddNeatooServices`). Inject it with `[Service]`:
+Always use `ILazyLoadFactory` (registered in DI via `AddNeatooServices`):
 
 ```csharp
 // Deferred loading — value loaded on first await
-var lazy = lazyLoadFactory.Create<OrderLines>(async () => await fetchOrderLines(orderId));
+var lazy = lazyLoadFactory.Create<IChild>(async () => await childFactory.Fetch(parentId));
 
 // Pre-loaded — IsLoaded is immediately true
-var lazy = lazyLoadFactory.Create<OrderLines>(existingLines);
+var lazy = lazyLoadFactory.Create<IChild>(existingChild);
 ```
+
+## The Correct Pattern: Constructor-Based LazyLoad
+
+**Create `LazyLoad<T>` in the constructor.** The constructor runs on both server and client (during DI-based deserialization), so the loader delegate is always present. The Neatoo JSON converter merges deserialized state (`Value`, `IsLoaded`) into the constructor-created instance, preserving the loader.
+
+The loader lambda captures factory dependencies from DI and references `this.Id` (or similar state). `this.Id` is resolved at load-time, not capture-time, so it works even though the constructor runs before `[Fetch]` sets the Id.
+
+<!-- snippet: skill-lazyload-constructor-pattern -->
+<a id='snippet-skill-lazyload-constructor-pattern'></a>
+```cs
+[Factory]
+public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyParent
+{
+    public SkillLazyParent(
+        IEntityBaseServices<SkillLazyParent> services,
+        ISkillLazyChildFactory childFactory,
+        ILazyLoadFactory lazyLoadFactory) : base(services)
+    {
+        // Create LazyLoad in the constructor.
+        // The loader lambda captures the factory from DI and references this.Id,
+        // which is resolved at load-time (not capture-time).
+        // This instance survives serialization because the converter merges
+        // deserialized state into it instead of replacing it.
+        LazyChild = lazyLoadFactory.Create<ISkillLazyChild>(async () =>
+        {
+            return await childFactory.Fetch(this.Id);
+        });
+
+        // AddActionAsync: when Trigger changes, await the lazy-loaded child
+        RuleManager.AddActionAsync(async parent =>
+        {
+            if (parent.LazyChild != null)
+            {
+                var child = await parent.LazyChild;
+                if (child != null)
+                {
+                    parent.LoadedData = child.Data;
+                }
+            }
+        }, p => p.Trigger);
+    }
+
+    public partial string Trigger { get; set; }
+    public partial string LoadedData { get; set; }
+    public partial Guid Id { get; set; }
+
+    // LazyLoad property with private setter.
+    // The setter calls SubscribeToLazyLoadProperties() so meta properties
+    // (IsValid, IsModified, etc.) propagate from the loaded child.
+    private LazyLoad<ISkillLazyChild>? _lazyChild;
+    public LazyLoad<ISkillLazyChild>? LazyChild
+    {
+        get => _lazyChild;
+        private set
+        {
+            _lazyChild = value;
+            SubscribeToLazyLoadProperties();
+        }
+    }
+
+    [Remote]
+    [Fetch]
+    internal Task Fetch(Guid id)
+    {
+        using (PauseAllActions())
+        {
+            this["Id"].LoadValue(id);
+        }
+        // LazyChild already created in the constructor with a loader
+        // that uses this.Id — no need to create it here.
+        return Task.CompletedTask;
+    }
+}
+```
+<sup><a href='/src/samples/LazyLoadSamples.cs#L52-L116' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazyload-constructor-pattern' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### Why This Works with Serialization
+
+1. **Server**: Constructor runs → creates `LazyLoad` with loader. `[Fetch]` runs → sets `Id`.
+2. **Serialization**: `LazyLoad` written to JSON (`Value`, `IsLoaded`). Loader delegate is `[JsonIgnore]`.
+3. **Client deserialization**: Constructor runs again via DI → creates **new** `LazyLoad` with loader (factory injected from client DI).
+4. **Converter merges**: `NeatooBaseJsonTypeConverter` finds the existing `LazyLoad` instance and merges deserialized state into it via `ILazyLoadDeserializable.ApplyDeserializedState` — the loader is preserved.
+5. **Usage**: `AddActionAsync` triggers → awaits `LazyChild` → loader executes with correct `this.Id` → child loaded via `[Remote]` call.
+
+### LazyLoad Property Declaration
+
+Declare with a private setter and call `SubscribeToLazyLoadProperties()` so meta properties (`IsValid`, `IsModified`, etc.) propagate from the loaded child:
+
+```csharp
+private LazyLoad<IChild>? _lazyChild;
+public LazyLoad<IChild>? LazyChild
+{
+    get => _lazyChild;
+    private set
+    {
+        _lazyChild = value;
+        SubscribeToLazyLoadProperties();
+    }
+}
+```
+
+## Anti-Patterns
+
+### Creating LazyLoad in [Fetch] (WRONG)
+
+`[Fetch]` only runs on the server when the factory method has `[Remote]`. The `LazyLoad` instance created there is serialized without its loader delegate, and the client receives a broken instance.
+
+<!-- snippet: skill-lazyload-antipattern-fetch -->
+<a id='snippet-skill-lazyload-antipattern-fetch'></a>
+```cs
+// WRONG: Creating LazyLoad in [Fetch].
+// [Fetch] only runs on the server. During serialization the loader delegate
+// is [JsonIgnore] and lost. The client receives a LazyLoad with no loader,
+// and any attempt to await it throws InvalidOperationException.
+//
+// [Fetch]
+// internal Task Fetch(Guid id, [Service] ILazyLoadFactory lazyLoadFactory,
+//     [Service] IChildFactory childFactory)
+// {
+//     this["Id"].LoadValue(id);
+//     // BAD: This LazyLoad instance is created server-side only.
+//     // After serialization to client, the loader delegate is gone.
+//     LazyChild = lazyLoadFactory.Create<IChild>(async () =>
+//     {
+//         return await childFactory.Fetch(id);
+//     });
+// }
+```
+<sup><a href='/src/samples/LazyLoadSamples.cs#L120-L138' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazyload-antipattern-fetch' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### OnDeserialized Workaround (WRONG)
+
+Before the converter fix, developers worked around the lost loader by overriding `OnDeserialized` to reinitialize `LazyLoad` instances. This added unnecessary complexity and a second code path (`ReinitializeLazyLoaders` after save). With the constructor pattern, none of this is needed.
+
+<!-- snippet: skill-lazyload-antipattern-ondeserialized -->
+<a id='snippet-skill-lazyload-antipattern-ondeserialized'></a>
+```cs
+// WRONG: Recreating LazyLoad in OnDeserialized as a workaround.
+// Before the converter fix, developers worked around the lost loader by
+// overriding OnDeserialized to reinitialize LazyLoad instances.
+// This is unnecessary — the converter now preserves constructor-created
+// instances. Move LazyLoad creation to the constructor instead.
+//
+// // In the constructor — workaround creates an initializer method:
+// InitializeLazyLoaders();
+//
+// internal void InitializeLazyLoaders()
+// {
+//     if (existingChild != null)
+//         LazyChild = _lazyLoadFactory.Create<IChild>(existingChild);
+//     else
+//         LazyChild = _lazyLoadFactory.Create<IChild>(LoadChildAsync);
+// }
+//
+// public override void OnDeserialized()
+// {
+//     base.OnDeserialized();
+//     InitializeLazyLoaders(); // BAD: Unnecessary complexity
+// }
+//
+// // Even worse — reinitialize after save:
+// public void ReinitializeLazyLoaders() { InitializeLazyLoaders(); }
+```
+<sup><a href='/src/samples/LazyLoadSamples.cs#L142-L168' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazyload-antipattern-ondeserialized' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Loading
 
@@ -97,41 +264,9 @@ else if (Model.OrderLines.IsLoaded)
 }
 ```
 
-## Usage Within Domain Objects
-
-Declare as a regular property on your entity or validate object:
-
-```csharp
-[Factory]
-public partial class Order : EntityBase<Order>
-{
-    public Order(IEntityBaseServices<Order> services) : base(services) { }
-
-    public partial string CustomerName { get; set; }
-    public LazyLoad<OrderLineList> OrderLines { get; private set; }
-
-    [Create]
-    public void Create([Service] ILazyLoadFactory lazyLoadFactory)
-    {
-        this.OrderLines = lazyLoadFactory.Create<OrderLineList>(
-            async () => await orderLineFactory.Fetch(/* ... */));
-    }
-
-    [Fetch]
-    public void Fetch(int id,
-        [Service] ILazyLoadFactory lazyLoadFactory,
-        [Service] IOrderLineListFactory orderLineFactory)
-    {
-        // ... load order data ...
-        this.OrderLines = lazyLoadFactory.Create<OrderLineList>(
-            async () => await orderLineFactory.Fetch(id));
-    }
-}
-```
-
 ## When to Use vs. Eager Loading
 
-The Design reference (`src/Design/Design.Domain/FactoryOperations/FetchPatterns.cs`) notes that **eager loading in the parent's `[Fetch]` method is preferred** for most cases — it keeps data access visible and avoids N+1 query problems.
+**Eager loading in the parent's `[Fetch]` method is preferred** for most cases — it keeps data access visible and avoids N+1 query problems.
 
 Use `LazyLoad<T>` when:
 - The child data is large and not always needed
@@ -140,7 +275,7 @@ Use `LazyLoad<T>` when:
 
 Do **not** use `LazyLoad<T>` when:
 - The child data is always needed immediately
-- You're loading a small, cheap collection (eager load in `[Fetch]` instead)
+- Loading a small, cheap collection (eager load in `[Fetch]` instead)
 
 ## Related
 

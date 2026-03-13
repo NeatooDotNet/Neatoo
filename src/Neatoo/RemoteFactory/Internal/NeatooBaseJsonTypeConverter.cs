@@ -196,8 +196,20 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             else if (lazyLoadProperties != null && lazyLoadProperties.Any(p => p.Name == propertyName))
             {
                 var property = lazyLoadProperties.First(p => p.Name == propertyName);
-                var value = JsonSerializer.Deserialize(ref reader, property.PropertyType, options);
-                property.SetValue(result, value);
+                var deserialized = JsonSerializer.Deserialize(ref reader, property.PropertyType, options);
+                var existing = property.GetValue(result);
+
+                if (existing is ILazyLoadDeserializable mergeable && deserialized is ILazyLoadDeserializable source)
+                {
+                    // Merge: apply serialized state into existing instance (preserves loader delegate)
+                    mergeable.ApplyDeserializedState(source.BoxedValue, source.IsLoaded);
+                }
+                else if (existing == null && deserialized != null)
+                {
+                    // No constructor-created instance -- fall back to replacement
+                    property.SetValue(result, deserialized);
+                }
+                // If existing != null && deserialized == null: keep existing (constructor's instance)
             }
             else if (editProperties != null && editProperties.Any(p => p.Name == propertyName))
             {

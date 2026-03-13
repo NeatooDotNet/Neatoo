@@ -1,9 +1,11 @@
 # WaitForTasks crashes when AddActionAsync awaits LazyLoad with [Remote] call
 
-**Status:** In Progress
+**Status:** Complete
 **Priority:** High
 **Created:** 2026-03-13
 **Last Updated:** 2026-03-13
+
+**Plans:** [Fix LazyLoad Deserialization Overwrite](../plans/fix-lazyload-deserialization-overwrite.md)
 
 ---
 
@@ -84,10 +86,10 @@ Possible areas to investigate:
 
 ## Tasks
 
-- [ ] Reproduce the crash with a minimal test case
-- [ ] Determine crash type (StackOverflow, AccessViolation, unhandled async exception, etc.)
-- [ ] Fix the root cause
-- [ ] Verify zTreatment integration tests pass after fix
+- [x] Reproduce the crash with a minimal test case
+- [x] Determine crash type (StackOverflow, AccessViolation, unhandled async exception, etc.)
+- [x] Fix the root cause
+- [ ] Verify zTreatment integration tests pass after fix (pending zTreatment update)
 
 ---
 
@@ -96,6 +98,11 @@ Possible areas to investigate:
 ### 2026-03-13
 - Created todo from zTreatment blocker (docs/todos/visit-owns-lazy-load.md)
 - Crash confirmed: even a single integration test that calls `NavigateToSpoke()` + `await WaitForTasks()` crashes the test host
+- **Reproduction built** in `src/Neatoo.UnitTest/Integration/Concepts/Serialization/`:
+  - `WaitForTasksLazyLoadCrashEntity.cs` — minimal `CrashParent` (with `LazyLoad<ICrashChild>` + `AddActionAsync`) and `CrashChild` (`[Remote] [Fetch]`)
+  - `WaitForTasksLazyLoadCrashTests.cs` — `ClientServerTestBase` integration test
+- **Root cause identified**: `NeatooBaseJsonTypeConverter` (lines 130-136, 196-200) overwrites constructor-created `LazyLoad<T>` instances during deserialization. The `_loader` delegate is `[JsonIgnore]` (non-serializable), so the deserialized instance has `_loader = null`. Awaiting it throws `InvalidOperationException: Cannot load: no loader delegate is configured`.
+- In zTreatment's more complex aggregate hierarchy, this exception likely escalates to a hard process crash via re-entrant notification cycles
 
 ---
 
@@ -108,10 +115,19 @@ Before marking this todo as Complete, verify:
 - [ ] zTreatment integration tests pass with the fix (VisitHubReactiveSpokeTests)
 
 **Verification results:**
-- Build: [Pending]
-- Tests: [Pending]
+- Build: 0 errors, 0 warnings
+- Tests: 2092 passed, 0 failed, 1 skipped (pre-existing)
 
 ---
 
 ## Results / Conclusions
 
+**Root cause:** `NeatooBaseJsonTypeConverter.Read` replaced constructor-created `LazyLoad<T>` instances during deserialization with new instances that had `_loader = null`. The loader delegate is `[JsonIgnore]` (non-serializable), so the deserialized replacement could never load.
+
+**Fix:** Added `ILazyLoadDeserializable` internal interface to `LazyLoad<T>` with `ApplyDeserializedState()`. Changed the converter to merge serialized state (Value, IsLoaded) into the existing constructor-created instance instead of replacing it, preserving the loader delegate.
+
+**Files changed:**
+- `src/Neatoo/LazyLoad.cs` — added `ILazyLoadDeserializable` interface and implementation
+- `src/Neatoo/RemoteFactory/Internal/NeatooBaseJsonTypeConverter.cs` — merge instead of replace
+
+**Additional finding:** zTreatment's `Visit.cs` uses `OnDeserialized()` + `ReinitializeLazyLoaders()` as a workaround for this bug. With the converter fix, `LazyLoad` creation can simply go in the constructor and survive deserialization. The zTreatment workaround should be simplified in a follow-up.
