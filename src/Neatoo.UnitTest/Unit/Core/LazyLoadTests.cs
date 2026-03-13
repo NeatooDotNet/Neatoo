@@ -403,6 +403,70 @@ public class LazyLoadTests
     }
 
     #endregion
+
+    #region Nullable Reference Type Tests
+
+    [TestMethod]
+    public async Task NullableType_WithLoader_LoadsValue()
+    {
+        // Arrange
+        var expected = new TestValue("nullable-loaded");
+        var lazyLoad = new LazyLoad<TestValue?>(() => Task.FromResult<TestValue?>(expected));
+
+        // Act
+        var result = await lazyLoad.LoadAsync();
+
+        // Assert
+        Assert.AreSame(expected, result);
+        Assert.AreSame(expected, lazyLoad.Value);
+        Assert.IsTrue(lazyLoad.IsLoaded);
+    }
+
+    [TestMethod]
+    public void NullableType_WithPreLoadedValue_IsLoaded()
+    {
+        // Arrange
+        var expected = new TestValue("nullable-preloaded");
+
+        // Act
+        var lazyLoad = new LazyLoad<TestValue?>(expected);
+
+        // Assert
+        Assert.IsTrue(lazyLoad.IsLoaded);
+        Assert.AreSame(expected, lazyLoad.Value);
+    }
+
+    [TestMethod]
+    public async Task NullableType_Factory_WithLoader_CreatesLazyLoad()
+    {
+        // Arrange
+        var factory = new LazyLoadFactory();
+        var expected = new TestValue("factory-nullable");
+
+        // Act
+        var lazyLoad = factory.Create<TestValue?>(() => Task.FromResult<TestValue?>(expected));
+        var result = await lazyLoad.LoadAsync();
+
+        // Assert
+        Assert.AreSame(expected, result);
+    }
+
+    [TestMethod]
+    public void NullableType_Factory_WithValue_CreatesPreLoadedLazyLoad()
+    {
+        // Arrange
+        var factory = new LazyLoadFactory();
+        var expected = new TestValue("factory-nullable-preloaded");
+
+        // Act
+        var lazyLoad = factory.Create<TestValue?>(expected);
+
+        // Assert
+        Assert.IsTrue(lazyLoad.IsLoaded);
+        Assert.AreSame(expected, lazyLoad.Value);
+    }
+
+    #endregion
 }
 
 public class TestValue

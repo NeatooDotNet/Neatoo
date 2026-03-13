@@ -19,7 +19,7 @@ namespace Neatoo;
 /// Always use <see cref="ILazyLoadFactory"/> to create instances. Do not instantiate directly.
 /// </para>
 /// </remarks>
-public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEntityMetaProperties where T : class
+public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEntityMetaProperties where T : class?
 {
     [JsonIgnore]
     private readonly Func<Task<T?>>? _loader;

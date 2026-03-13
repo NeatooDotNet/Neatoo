@@ -12,7 +12,7 @@ public interface ILazyLoadFactory
     /// <typeparam name="TChild">The type of value to lazy load.</typeparam>
     /// <param name="loader">Async function that loads the value when invoked.</param>
     /// <returns>A new <see cref="LazyLoad{T}"/> configured to load via the delegate.</returns>
-    LazyLoad<TChild> Create<TChild>(Func<Task<TChild?>> loader) where TChild : class;
+    LazyLoad<TChild> Create<TChild>(Func<Task<TChild?>> loader) where TChild : class?;
 
     /// <summary>
     /// Creates a lazy load wrapper with a pre-loaded value.
@@ -21,7 +21,7 @@ public interface ILazyLoadFactory
     /// <typeparam name="TChild">The type of value.</typeparam>
     /// <param name="value">The pre-loaded value.</param>
     /// <returns>A new <see cref="LazyLoad{T}"/> with the value already loaded.</returns>
-    LazyLoad<TChild> Create<TChild>(TChild? value) where TChild : class;
+    LazyLoad<TChild> Create<TChild>(TChild? value) where TChild : class?;
 }
 
 /// <summary>
@@ -30,13 +30,13 @@ public interface ILazyLoadFactory
 public class LazyLoadFactory : ILazyLoadFactory
 {
     /// <inheritdoc />
-    public LazyLoad<TChild> Create<TChild>(Func<Task<TChild?>> loader) where TChild : class
+    public LazyLoad<TChild> Create<TChild>(Func<Task<TChild?>> loader) where TChild : class?
     {
         return new LazyLoad<TChild>(loader);
     }
 
     /// <inheritdoc />
-    public LazyLoad<TChild> Create<TChild>(TChild? value) where TChild : class
+    public LazyLoad<TChild> Create<TChild>(TChild? value) where TChild : class?
     {
         return new LazyLoad<TChild>(value);
     }
