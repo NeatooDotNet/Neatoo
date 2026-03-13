@@ -48,7 +48,7 @@ public void Create()
 <a id='snippet-remote-factory-fetch'></a>
 ```cs
 [Remote, Fetch]
-public async Task Fetch(int id, [Service] ISkillRemoteFactoryRepository repo)
+internal async Task Fetch(int id, [Service] ISkillRemoteFactoryRepository repo)
 {
     // During Fetch:
     // - IsPaused = true (validation and modification tracking suspended)
