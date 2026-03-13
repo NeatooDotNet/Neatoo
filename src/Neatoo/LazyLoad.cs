@@ -6,6 +6,18 @@ using Neatoo.Rules;
 namespace Neatoo;
 
 /// <summary>
+/// Non-generic internal interface for applying deserialized state to a LazyLoad instance
+/// without using reflection. Used by NeatooBaseJsonTypeConverter during deserialization
+/// to merge server-side state into constructor-created instances, preserving loader delegates.
+/// </summary>
+internal interface ILazyLoadDeserializable
+{
+    bool IsLoaded { get; }
+    object? BoxedValue { get; }
+    void ApplyDeserializedState(object? value, bool isLoaded);
+}
+
+/// <summary>
 /// Wrapper for explicit async lazy loading of child entities or related data.
 /// Separates UI binding concerns (state properties) from async loading (explicit await).
 /// </summary>
@@ -19,7 +31,7 @@ namespace Neatoo;
 /// Always use <see cref="ILazyLoadFactory"/> to create instances. Do not instantiate directly.
 /// </para>
 /// </remarks>
-public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEntityMetaProperties where T : class?
+public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEntityMetaProperties, ILazyLoadDeserializable where T : class?
 {
     [JsonIgnore]
     private readonly Func<Task<T?>>? _loader;
@@ -97,6 +109,30 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
         _value = value;
         _isLoaded = true;
         SubscribeToValuePropertyChanged(_value);
+    }
+
+    /// <inheritdoc />
+    bool ILazyLoadDeserializable.IsLoaded => _isLoaded;
+
+    /// <inheritdoc />
+    object? ILazyLoadDeserializable.BoxedValue => _value;
+
+    /// <summary>
+    /// Applies deserialized state (Value and IsLoaded) to this instance,
+    /// preserving the loader delegate. Used by NeatooBaseJsonTypeConverter
+    /// during deserialization to merge server-side state without replacing
+    /// the constructor-created instance.
+    /// </summary>
+    void ILazyLoadDeserializable.ApplyDeserializedState(object? value, bool isLoaded)
+    {
+        if (isLoaded)
+        {
+            _value = (T?)value;
+            _isLoaded = true;
+            SubscribeToValuePropertyChanged(_value);
+        }
+        // If not loaded, leave the instance untouched -- the constructor's
+        // loader delegate is intact for on-demand loading.
     }
 
     /// <summary>
