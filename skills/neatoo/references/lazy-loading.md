@@ -5,6 +5,7 @@
 ## Key Principles
 
 - **Explicit loading only** — `Value` returns current state (null if not loaded). Use `await` or `LoadAsync()` to load.
+- **Nullable reference types supported** — The generic constraint is `where T : class?`, so `T` can be a nullable reference type (e.g., `LazyLoad<IOrderItemList?>`). This is useful when the property type in the entity interface is nullable.
 - **Thread-safe** — Multiple concurrent awaits share a single load operation.
 - **UI-friendly** — Implements `INotifyPropertyChanged` with `IsLoading`, `IsLoaded`, `HasLoadError`, and `LoadError` for binding.
 - **Meta property delegation** — Implements `IValidateMetaProperties` and `IEntityMetaProperties`, delegating to the loaded value.

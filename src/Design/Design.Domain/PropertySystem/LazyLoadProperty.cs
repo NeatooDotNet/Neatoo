@@ -11,6 +11,11 @@
 // - It implements IValidateMetaProperties and IEntityMetaProperties
 //   for delegation to the loaded value
 //
+// DESIGN DECISION: The generic constraint is `where T : class?` (not `where T : class`)
+// to support nullable reference types. This allows declarations like
+// `LazyLoad<IOrderItemList?>` when the entity interface property is nullable.
+// The same `class?` constraint applies to ILazyLoadFactory and LazyLoadFactory.
+//
 // GENERATOR BEHAVIOR: The generators do NOT process LazyLoad<T> properties
 // because they are not partial properties. No backing field is generated.
 //
