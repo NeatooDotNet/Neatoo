@@ -126,69 +126,8 @@ public LazyLoad<IChild>? LazyChild
 
 ## Anti-Patterns
 
-### Creating LazyLoad in [Fetch] (WRONG)
-
-`[Fetch]` only runs on the server when the factory method has `[Remote]`. The `LazyLoad` instance created there is serialized without its loader delegate, and the client receives a broken instance.
-
-<!-- snippet: skill-lazyload-antipattern-fetch -->
-<a id='snippet-skill-lazyload-antipattern-fetch'></a>
-```cs
-// WRONG: Creating LazyLoad in [Fetch].
-// [Fetch] only runs on the server. During serialization the loader delegate
-// is [JsonIgnore] and lost. The client receives a LazyLoad with no loader,
-// and any attempt to await it throws InvalidOperationException.
-//
-// [Fetch]
-// internal Task Fetch(Guid id, [Service] ILazyLoadFactory lazyLoadFactory,
-//     [Service] IChildFactory childFactory)
-// {
-//     this["Id"].LoadValue(id);
-//     // BAD: This LazyLoad instance is created server-side only.
-//     // After serialization to client, the loader delegate is gone.
-//     LazyChild = lazyLoadFactory.Create<IChild>(async () =>
-//     {
-//         return await childFactory.Fetch(id);
-//     });
-// }
-```
-<sup><a href='/src/samples/LazyLoadSamples.cs#L120-L138' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazyload-antipattern-fetch' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-### OnDeserialized Workaround (WRONG)
-
-Before the converter fix, developers worked around the lost loader by overriding `OnDeserialized` to reinitialize `LazyLoad` instances. This added unnecessary complexity and a second code path (`ReinitializeLazyLoaders` after save). With the constructor pattern, none of this is needed.
-
-<!-- snippet: skill-lazyload-antipattern-ondeserialized -->
-<a id='snippet-skill-lazyload-antipattern-ondeserialized'></a>
-```cs
-// WRONG: Recreating LazyLoad in OnDeserialized as a workaround.
-// Before the converter fix, developers worked around the lost loader by
-// overriding OnDeserialized to reinitialize LazyLoad instances.
-// This is unnecessary — the converter now preserves constructor-created
-// instances. Move LazyLoad creation to the constructor instead.
-//
-// // In the constructor — workaround creates an initializer method:
-// InitializeLazyLoaders();
-//
-// internal void InitializeLazyLoaders()
-// {
-//     if (existingChild != null)
-//         LazyChild = _lazyLoadFactory.Create<IChild>(existingChild);
-//     else
-//         LazyChild = _lazyLoadFactory.Create<IChild>(LoadChildAsync);
-// }
-//
-// public override void OnDeserialized()
-// {
-//     base.OnDeserialized();
-//     InitializeLazyLoaders(); // BAD: Unnecessary complexity
-// }
-//
-// // Even worse — reinitialize after save:
-// public void ReinitializeLazyLoaders() { InitializeLazyLoaders(); }
-```
-<sup><a href='/src/samples/LazyLoadSamples.cs#L142-L168' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazyload-antipattern-ondeserialized' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+- **Do NOT create `LazyLoad<T>` in `[Fetch]` or `[Create]`** — these only run server-side. The loader delegate is `[JsonIgnore]` and lost during serialization. Always create in the constructor.
+- **Do NOT use `OnDeserialized`/`InitializeLazyLoaders`/`ReinitializeLazyLoaders`** — unnecessary complexity. The converter preserves constructor-created instances. Move LazyLoad creation to the constructor instead.
 
 ## Loading
 
