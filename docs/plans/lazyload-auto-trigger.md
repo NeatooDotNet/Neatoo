@@ -2,8 +2,8 @@
 
 **Date:** 2026-03-13
 **Related Todo:** [LazyLoad Auto-Trigger on Value Access](../todos/lazyload-auto-trigger-on-value-access.md)
-**Status:** Verified
-**Last Updated:** 2026-03-13 (requirements verification complete)
+**Status:** Requirements Documented
+**Last Updated:** 2026-03-13 (requirements documentation complete)
 
 ---
 
@@ -793,23 +793,75 @@ If any occur, STOP and report:
 
 ## Documentation
 
-**Agent:** neatoo-developer
-**Completed:** 2026-03-13
+**Phase 3 Agent:** neatoo-developer (2026-03-13)
+**Requirements Documenter:** neatoo-requirements-documenter (2026-03-13)
+**Status:** Requirements Documented
 
-### Expected Deliverables
+### Phase 3 Deliverables (completed by developer)
 
-- [x] `skills/neatoo/references/lazy-loading.md` -- Updated key principles, state table, loading section, error handling, Razor example
+- [x] `skills/neatoo/references/lazy-loading.md` -- Updated key principles, state table, loading section, error handling, WaitForTasks section, Razor example
 - [x] `src/Design/Design.Domain/PropertySystem/LazyLoadProperty.cs` -- Added design decision comments for auto-trigger and WaitForTasks
 - [x] `src/samples/LazyLoadSamples.cs` -- No "never triggers" comments found, no changes needed
-- [x] `docs/release-notes/v0.11.0.md` -- Added strikethrough note about behavioral change
+- [x] `docs/release-notes/v0.11.0.md` -- Added strikethrough note about behavioral change on line 35
 - [x] Skill updates: Yes
 - [x] Sample updates: N/A (no relevant comments to update)
 
-### Files Updated
+### Requirements Documenter Updates
 
-- `skills/neatoo/references/lazy-loading.md`
-- `src/Design/Design.Domain/PropertySystem/LazyLoadProperty.cs`
-- `docs/release-notes/v0.11.0.md`
+**Markdown files updated directly:**
+
+1. `skills/neatoo/SKILL.md` (line 207) -- Updated reference documentation entry from "explicit async loading" to "auto-trigger on Value access, WaitForTasks integration"
+2. `docs/release-notes/index.md` (line 26) -- Updated v0.11.0 summary from "explicit async lazy loading" to "async lazy loading" (removed "explicit" since Value now auto-triggers)
+3. Copied updated `skills/neatoo/references/lazy-loading.md` to `~/.claude/skills/neatoo/references/lazy-loading.md` (installed skill was stale)
+4. Copied updated `skills/neatoo/SKILL.md` to `~/.claude/skills/neatoo/SKILL.md` (installed skill was stale)
+
+**Developer documentation verified accurate (no changes needed):**
+
+- `skills/neatoo/references/lazy-loading.md` -- All 5 sections accurately reflect the implementation: auto-trigger behavior (line 3, 7), WaitForTasks integration (lines 145-159), state properties table (line 165), error handling for both paths (lines 188-204), Razor example (lines 210-228)
+- `src/Design/Design.Domain/PropertySystem/LazyLoadProperty.cs` -- Three DESIGN DECISION comments (lines 14-19 auto-trigger, lines 21-24 WaitForTasks, lines 26-29 nullable constraint) all match the actual implementation
+- `docs/release-notes/v0.11.0.md` -- Strikethrough annotation on line 35 is clear and accurate
+
+### Developer Deliverables
+
+**.cs files -- do NOT modify, report for developer:**
+
+1. **New release note for the version containing this change**
+   - File: `docs/release-notes/v0.21.0.md` (suggested -- version number TBD)
+   - What: Create a new release note documenting the LazyLoad auto-trigger feature and WaitForTasks integration
+   - Content: Feature release with two sections: (1) LazyLoad Value auto-trigger (fire-and-forget load on Value access, null loader guard, exception handling), (2) WaitForTasks awaits LazyLoad children. Reference the completed plan.
+   - Note: Also update `docs/release-notes/index.md` current version section and add the new entry to both tables.
+
+2. **No .cs deliverables needed** -- The developer already updated `src/Design/Design.Domain/PropertySystem/LazyLoadProperty.cs` with design decision comments and confirmed no sample changes were needed. All code-level documentation was completed during Phase 3.
+
+### Files Updated (all phases combined)
+
+- `skills/neatoo/references/lazy-loading.md` (developer Phase 3)
+- `skills/neatoo/SKILL.md` (documenter -- line 207 reference entry)
+- `src/Design/Design.Domain/PropertySystem/LazyLoadProperty.cs` (developer Phase 3)
+- `docs/release-notes/v0.11.0.md` (developer Phase 3)
+- `docs/release-notes/index.md` (documenter -- line 26 v0.11.0 summary)
+- `~/.claude/skills/neatoo/references/lazy-loading.md` (documenter -- copied from repo source)
+- `~/.claude/skills/neatoo/SKILL.md` (documenter -- copied from repo source)
+
+### Requirements Change Summary
+
+| Rule | Type | Location | Notes |
+|------|------|----------|-------|
+| Rule 1 (Value auto-trigger) | NEW | skill lazy-loading.md lines 3, 7, 132-134, 165 | Core new behavior |
+| Rule 2 (already-loaded no re-trigger) | Existing (REQ-4) | skill lazy-loading.md line 143 | Unchanged |
+| Rule 3 (in-progress no re-trigger) | Existing (REQ-3) | skill lazy-loading.md line 143 | Unchanged |
+| Rule 4 (null loader guard) | NEW | skill lazy-loading.md line 7 | Gap 3 resolution |
+| Rule 5 (auto-trigger completion) | NEW | skill lazy-loading.md lines 132-134 | Covered by loading section |
+| Rule 6 (auto-trigger failure) | NEW | skill lazy-loading.md lines 204 | Error handling section |
+| Rule 7 (concurrent deduplication) | Existing (REQ-3) | skill lazy-loading.md line 9 | Unchanged |
+| Rule 8 (IsLoading/IsLoaded no side effect) | NEW | skill lazy-loading.md lines 3, 7 | Explicit in key principles |
+| Rule 9 (parent IsBusy cascading) | Existing (REQ-10) | skill lazy-loading.md lines 171-184 | Unchanged table |
+| Rule 10 (parent IsValid cascading) | Existing (REQ-11) | skill lazy-loading.md lines 171-184 | Unchanged table |
+| Rule 11 (explicit LoadAsync unchanged) | Existing (REQ-2,5,6,7) | skill lazy-loading.md lines 136-141 | Still documented |
+| Rule 12 (WaitForTasks on LazyLoad) | Existing (REQ-15) | skill lazy-loading.md | Unchanged |
+| Rule 13 (parent WaitForTasks awaits LazyLoad children) | NEW | skill lazy-loading.md lines 145-159 | New WaitForTasks section |
+| Rule 14 (WaitForTasks with CancellationToken) | NEW | skill lazy-loading.md lines 145-159 | New WaitForTasks section |
+| Rule 15 (WaitForTasks does not trigger loads) | NEW | skill lazy-loading.md line 159 | Explicit safety invariant |
 
 ---
 

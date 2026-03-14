@@ -204,7 +204,7 @@ Detailed documentation for each topic area:
 - **`references/validation.md`** - RuleManager, attributes, async validation
 - **`references/entities.md`** - EntityBase lifecycle, persistence, Save routing
 - **`references/collections.md`** - EntityListBase, parent-child relationships, deletion tracking
-- **`references/lazy-loading.md`** - LazyLoad&lt;T&gt;, ILazyLoadFactory, explicit async loading
+- **`references/lazy-loading.md`** - LazyLoad&lt;T&gt;, ILazyLoadFactory, auto-trigger on Value access, WaitForTasks integration
 - **`references/source-generation.md`** - What gets generated, Generated/ folder, [SuppressFactory]
 - **`references/trimming.md`** - IL trimming annotations, suppression strategy, consumer project setup
 - **`references/blazor.md`** - Blazor-specific binding and component patterns (see also the **MudNeatoo skill** for component binding and anti-patterns)
