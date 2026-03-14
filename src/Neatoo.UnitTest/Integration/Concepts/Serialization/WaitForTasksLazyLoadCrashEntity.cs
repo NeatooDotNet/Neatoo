@@ -56,7 +56,7 @@ public interface ICrashParent : IEntityRoot
 {
     string Trigger { get; set; }
     string LoadedData { get; }
-    LazyLoad<ICrashChild>? LazyChild { get; }
+    LazyLoad<ICrashChild> LazyChild { get; }
     Guid Id { get; set; }
 }
 
@@ -80,13 +80,10 @@ internal partial class CrashParent : EntityBase<CrashParent>, ICrashParent
         // and store the loaded data. Mimics zTreatment VisitHub pattern.
         RuleManager.AddActionAsync(async parent =>
         {
-            if (parent.LazyChild != null)
+            var child = await parent.LazyChild;
+            if (child != null)
             {
-                var child = await parent.LazyChild;
-                if (child != null)
-                {
-                    parent.LoadedData = child.Data;
-                }
+                parent.LoadedData = child.Data;
             }
         }, p => p.Trigger);
     }
@@ -98,8 +95,8 @@ internal partial class CrashParent : EntityBase<CrashParent>, ICrashParent
     // LazyLoad with private setter -- the Neatoo serializer will find this during
     // deserialization (scans for LazyLoad<> with SetMethod != null) and overwrite
     // the constructor-created instance with a deserialized one that has no loader.
-    private LazyLoad<ICrashChild>? _lazyChild;
-    public LazyLoad<ICrashChild>? LazyChild
+    private LazyLoad<ICrashChild> _lazyChild = null!;
+    public LazyLoad<ICrashChild> LazyChild
     {
         get => _lazyChild;
         private set

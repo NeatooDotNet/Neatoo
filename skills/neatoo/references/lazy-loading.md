@@ -1,10 +1,10 @@
 # Lazy Loading
 
-`LazyLoad<T>` provides explicit async lazy loading for child entities or related data within Neatoo domain objects. Loading is always explicit — accessing `Value` never triggers a load.
+`LazyLoad<T>` provides async lazy loading for child entities or related data within Neatoo domain objects. Accessing `Value` auto-triggers a fire-and-forget load when the value hasn't been loaded yet and a loader delegate is present. `IsLoading` and `IsLoaded` are side-effect-free state checks that never trigger a load.
 
 ## Key Principles
 
-- **Explicit loading only** — `Value` returns current state (null if not loaded). Use `await` or `LoadAsync()` to load.
+- **Auto-trigger on Value access** — Accessing `Value` triggers a fire-and-forget load when not loaded, not currently loading, and a loader is configured. Returns `null` synchronously; `PropertyChanged` fires when load completes. `IsLoading`/`IsLoaded` access does NOT trigger a load. Explicit `await` or `LoadAsync()` also work.
 - **Nullable reference types supported** — The generic constraint is `where T : class?`, so `T` can be a nullable reference type (e.g., `LazyLoad<IOrderItemList?>`).
 - **Thread-safe** — Multiple concurrent awaits share a single load operation.
 - **UI-friendly** — Implements `INotifyPropertyChanged` with `IsLoading`, `IsLoaded`, `HasLoadError`, and `LoadError` for binding.
@@ -53,13 +53,10 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
         // AddActionAsync: when Trigger changes, await the lazy-loaded child
         RuleManager.AddActionAsync(async parent =>
         {
-            if (parent.LazyChild != null)
+            var child = await parent.LazyChild;
+            if (child != null)
             {
-                var child = await parent.LazyChild;
-                if (child != null)
-                {
-                    parent.LoadedData = child.Data;
-                }
+                parent.LoadedData = child.Data;
             }
         }, p => p.Trigger);
     }
@@ -71,8 +68,8 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
     // LazyLoad property with private setter.
     // The setter calls SubscribeToLazyLoadProperties() so meta properties
     // (IsValid, IsModified, etc.) propagate from the loaded child.
-    private LazyLoad<ISkillLazyChild>? _lazyChild;
-    public LazyLoad<ISkillLazyChild>? LazyChild
+    private LazyLoad<ISkillLazyChild> _lazyChild = null!;
+    public LazyLoad<ISkillLazyChild> LazyChild
     {
         get => _lazyChild;
         private set
@@ -96,7 +93,7 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
     }
 }
 ```
-<sup><a href='/src/samples/LazyLoadSamples.cs#L52-L116' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazyload-constructor-pattern' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/LazyLoadSamples.cs#L52-L113' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazyload-constructor-pattern' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Why This Works with Serialization
@@ -112,8 +109,8 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
 Declare with a private setter and call `SubscribeToLazyLoadProperties()` so meta properties (`IsValid`, `IsModified`, etc.) propagate from the loaded child:
 
 ```csharp
-private LazyLoad<IChild>? _lazyChild;
-public LazyLoad<IChild>? LazyChild
+private LazyLoad<IChild> _lazyChild = null!;
+public LazyLoad<IChild> LazyChild
 {
     get => _lazyChild;
     private set
@@ -132,6 +129,10 @@ public LazyLoad<IChild>? LazyChild
 ## Loading
 
 ```csharp
+// Auto-trigger via Value access (fire-and-forget)
+var value = lazy.Value; // triggers load, returns null synchronously
+// ... PropertyChanged fires when load completes
+
 // Await syntax (uses GetAwaiter)
 var value = await lazy;
 
@@ -141,11 +142,27 @@ var value = await lazy.LoadAsync();
 
 Loading is idempotent — once loaded, subsequent calls return the cached value without invoking the loader again. Concurrent calls during the first load share the same task.
 
+### WaitForTasks Integration
+
+`ValidateBase.WaitForTasks()` awaits in-progress LazyLoad children. This means `await entity.WaitForTasks()` before Save ensures any auto-triggered loads have completed:
+
+```csharp
+// Value access triggers fire-and-forget load
+var lines = entity.OrderLines.Value;
+
+// WaitForTasks awaits the in-progress LazyLoad load
+await entity.WaitForTasks();
+
+// Now entity.OrderLines.Value is populated
+```
+
+`WaitForTasks()` does NOT trigger loads on unaccessed LazyLoad children. Only the `Value` getter triggers loading.
+
 ## State Properties
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `Value` | `T?` | Current value. `null` if not yet loaded. Never triggers a load. |
+| `Value` | `T?` | Current value. `null` if not yet loaded. Auto-triggers fire-and-forget load when unloaded and loader is present. |
 | `IsLoaded` | `bool` | Whether the value has been loaded. |
 | `IsLoading` | `bool` | Whether a load operation is in progress. |
 | `HasLoadError` | `bool` | Whether the last load attempt failed. |
@@ -168,7 +185,7 @@ Loading is idempotent — once loaded, subsequent calls return the cached value 
 
 ## Error Handling
 
-If the loader throws, the exception propagates to the caller. The error state is captured:
+**Explicit loading (`await` or `LoadAsync()`):** If the loader throws, the exception propagates to the caller.
 
 ```csharp
 try
@@ -184,11 +201,16 @@ catch (Exception)
 }
 ```
 
+**Auto-triggered loading (via Value getter):** Exceptions from the fire-and-forget load are caught internally to prevent unobserved task exceptions. Errors surface via `HasLoadError=true` and `IsValid=false`. If the parent calls `WaitForTasks()` while the load is still in progress and it fails, the exception propagates through `WaitForTasks()`.
+
 ## UI Binding (Blazor / WPF)
 
-`LazyLoad<T>` implements `INotifyPropertyChanged` and fires change events for `Value`, `IsLoaded`, and `IsLoading` during the load lifecycle. Bind directly:
+`LazyLoad<T>` implements `INotifyPropertyChanged` and fires change events for `Value`, `IsLoaded`, and `IsLoading` during the load lifecycle. Accessing `Value` in a Razor expression auto-triggers the load; Blazor re-renders when `PropertyChanged` fires on completion:
 
 ```razor
+@{
+    var orderLines = Model.OrderLines.Value; // Auto-triggers load if needed
+}
 @if (Model.OrderLines.IsLoading)
 {
     <LoadingSpinner />
@@ -199,9 +221,11 @@ else if (Model.OrderLines.HasLoadError)
 }
 else if (Model.OrderLines.IsLoaded)
 {
-    <OrderLinesList Items="@Model.OrderLines.Value" />
+    <OrderLinesList Items="@orderLines" />
 }
 ```
+
+The second render finds `IsLoaded=true` and returns the cached value immediately (no re-trigger). No explicit `await` boilerplate is needed.
 
 ## When to Use vs. Eager Loading
 

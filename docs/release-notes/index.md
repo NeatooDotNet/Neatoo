@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.19.0** (2026-03-08)
+**Neatoo 0.21.0** (2026-03-13)
 
 ---
 
@@ -12,6 +12,9 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.21.0](v0.21.0.md) | 2026-03-13 | Feature | LazyLoad.Value auto-triggers load; WaitForTasks awaits LazyLoad children |
+| [0.20.1](v0.20.1.md) | 2026-03-13 | Bug Fix | WaitForTasks crash with LazyLoad remote fetch |
+| [0.20.0](v0.20.0.md) | 2026-03-12 | Feature | Nullable LazyLoad support |
 | [0.19.0](v0.19.0.md) | 2026-03-08 | Dependency | RemoteFactory 0.21.0; [Remote] methods must be internal |
 | [0.18.0](v0.18.0.md) | 2026-03-07 | Feature | IL trimming support for Blazor WASM consumers |
 | [0.17.0](v0.17.0.md) | 2026-03-07 | **Breaking** | IEntityRoot interface; LazyLoad state propagation fix |
@@ -23,7 +26,7 @@ New features, breaking changes, and significant bug fixes.
 | [0.14.0](v0.14.0.md) | 2026-03-01 | Dependency | KnockOff and RemoteFactory re-versioned to 0.x.x |
 | [0.13.0](v0.13.0.md) | 2026-03-01 | Bug Fix | Stale meta property caches after ResumeAllActions() |
 | [0.12.0](v0.12.0.md) | 2026-02-26 | Bug Fix | Dictionary properties survive JSON bridge round-trip |
-| [0.11.0](v0.11.0.md) | 2026-01-18 | Feature | LazyLoad&lt;T&gt; wrapper type for explicit async lazy loading |
+| [0.11.0](v0.11.0.md) | 2026-01-18 | Feature | LazyLoad&lt;T&gt; wrapper type for async lazy loading |
 | [0.10.0](v0.10.0.md) | 2026-01-16 | Feature | Source-generated property backing fields, lazy loading |
 | [0.7.1](v0.7.1.md) | 2026-01-11 | Patch | List IsValid/IsBusy/IsModified caching optimization |
 | [0.7.0](v0.7.0.md) | 2026-01-11 | Feature | Stable rule identification via source generation |
@@ -43,6 +46,9 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [0.21.0](v0.21.0.md) | 2026-03-13 |
+| [0.20.1](v0.20.1.md) | 2026-03-13 |
+| [0.20.0](v0.20.0.md) | 2026-03-12 |
 | [0.19.0](v0.19.0.md) | 2026-03-08 |
 | [0.18.0](v0.18.0.md) | 2026-03-07 |
 | [0.17.0](v0.17.0.md) | 2026-03-07 |

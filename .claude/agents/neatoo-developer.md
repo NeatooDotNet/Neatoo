@@ -394,7 +394,7 @@ You MUST review in this exact order, keeping production code in memory throughou
 1. **Production code** - Read every modified framework file. Understand what changed and why.
 2. **Design projects** - Read `src/Design/` files for the affected features. Verify the design matches implementation.
 3. **Tests** - Read test files. Verify coverage of all affected base classes and patterns.
-4. **Documentation** - Check that docs and skills reflect the implementation accurately.
+4. **Documentation** - Verify code comments (XML docs) on modified code are accurate. Do NOT update skill markdown, user-facing docs markdown, or release notes — those are handled by the documenter agent in Step 9. Design project code (`src/Design/`) and sample code (`src/samples/`) are source code and may be updated during implementation if in scope, or as Developer Deliverables routed from the documenter in Step 9.
 
 **CRITICAL: Keep production code in memory.** When reviewing design, tests, and docs, constantly compare back to what the production code actually does. Do NOT review these in isolation.
 

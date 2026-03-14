@@ -358,6 +358,46 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	}
 
 	/// <summary>
+	/// Awaits any in-progress LazyLoad children's load tasks.
+	/// Does NOT trigger loads on unaccessed LazyLoad children -- only awaits loads
+	/// that are already in progress (auto-triggered by Value getter or explicit LoadAsync).
+	/// Returns immediately when there are no LazyLoad properties or none have in-progress tasks.
+	/// Exceptions from failed loads propagate to the caller.
+	/// </summary>
+	private async Task WaitForLazyLoadChildren()
+	{
+		var props = GetLazyLoadProperties(GetType());
+		if (props.Length == 0) return;
+
+		foreach (var prop in props)
+		{
+			if (prop.GetValue(this) is IValidateMetaProperties vmp)
+			{
+				await vmp.WaitForTasks();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Awaits any in-progress LazyLoad children's load tasks with cancellation support.
+	/// Does NOT trigger loads on unaccessed LazyLoad children.
+	/// Exceptions from failed loads propagate to the caller.
+	/// </summary>
+	private async Task WaitForLazyLoadChildren(CancellationToken token)
+	{
+		var props = GetLazyLoadProperties(GetType());
+		if (props.Length == 0) return;
+
+		foreach (var prop in props)
+		{
+			if (prop.GetValue(this) is IValidateMetaProperties vmp)
+			{
+				await vmp.WaitForTasks(token);
+			}
+		}
+	}
+
+	/// <summary>
 	/// Active subscriptions to LazyLoad instances for reactive event propagation.
 	/// </summary>
 	private readonly List<INotifyPropertyChanged> _lazyLoadSubscriptions = new();
@@ -665,6 +705,8 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 		await this.RunningTasks.AllDone;
 		// Also wait for property-level tasks (e.g., lazy loading)
 		await this.PropertyManager.WaitForTasks();
+		// Await any in-progress LazyLoad children (auto-triggered by Value getter or explicit LoadAsync)
+		await this.WaitForLazyLoadChildren();
 	}
 
 	/// <summary>
@@ -681,6 +723,8 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	public virtual async Task WaitForTasks(CancellationToken token)
 	{
 		await this.RunningTasks.WaitForCompletion(token);
+		// Await any in-progress LazyLoad children (auto-triggered by Value getter or explicit LoadAsync)
+		await this.WaitForLazyLoadChildren(token);
 	}
 
 	/// <summary>

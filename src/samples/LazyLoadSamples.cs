@@ -21,7 +21,7 @@ public interface ISkillLazyParent : IEntityRoot
     Guid Id { get; set; }
     string Trigger { get; set; }
     string LoadedData { get; }
-    LazyLoad<ISkillLazyChild>? LazyChild { get; }
+    LazyLoad<ISkillLazyChild> LazyChild { get; }
 }
 
 // -- Child entity (fetched via [Remote]) --------------------------------------
@@ -71,13 +71,10 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
         // AddActionAsync: when Trigger changes, await the lazy-loaded child
         RuleManager.AddActionAsync(async parent =>
         {
-            if (parent.LazyChild != null)
+            var child = await parent.LazyChild;
+            if (child != null)
             {
-                var child = await parent.LazyChild;
-                if (child != null)
-                {
-                    parent.LoadedData = child.Data;
-                }
+                parent.LoadedData = child.Data;
             }
         }, p => p.Trigger);
     }
@@ -89,8 +86,8 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
     // LazyLoad property with private setter.
     // The setter calls SubscribeToLazyLoadProperties() so meta properties
     // (IsValid, IsModified, etc.) propagate from the loaded child.
-    private LazyLoad<ISkillLazyChild>? _lazyChild;
-    public LazyLoad<ISkillLazyChild>? LazyChild
+    private LazyLoad<ISkillLazyChild> _lazyChild = null!;
+    public LazyLoad<ISkillLazyChild> LazyChild
     {
         get => _lazyChild;
         private set
