@@ -1,9 +1,9 @@
 # LazyLoad Auto-Trigger on Value Access
 
-**Status:** In Progress
+**Status:** Complete
 **Priority:** High
 **Created:** 2026-03-13
-**Last Updated:** 2026-03-13 (scope expanded: WaitForTasks integration)
+**Last Updated:** 2026-03-13
 
 ---
 
@@ -214,9 +214,10 @@ This is NOT a veto because the todo explicitly proposes changing this behavior b
 - [x] Business requirements review (Step 3)
 - [x] Architect plan creation & design (Step 4)
 - [x] Developer review (Step 5)
-- [ ] Implementation (Step 7)
-- [ ] Verification (Step 8)
-- [ ] Documentation (Step 9)
+- [x] Implementation (Step 7)
+- [x] Verification (Step 8) — VERIFIED + REQUIREMENTS SATISFIED
+- [x] Documentation (Step 9) — Requirements Documented
+- [x] Completion (Step 10)
 
 ---
 
@@ -237,14 +238,21 @@ This is NOT a veto because the todo explicitly proposes changing this behavior b
 
 Before marking this todo as Complete, verify:
 
-- [ ] All builds pass
-- [ ] All tests pass
+- [x] All builds pass
+- [x] All tests pass
 
 **Verification results:**
-- Build: [Pending]
-- Tests: [Pending]
+- Build: PASS (zero warnings, zero errors)
+- Tests: PASS (2111 tests, 0 failures)
 
 ---
 
 ## Results / Conclusions
 
+- `LazyLoad<T>.Value` getter now auto-triggers `LoadAsync()` fire-and-forget, enabling Razor databinding without `await` boilerplate
+- `ValidateBase.WaitForTasks()` now awaits LazyLoad children (scoped in during review)
+- 18 new tests (12 unit + 6 integration) covering auto-trigger, concurrency, error handling, and parent state propagation
+- All 7 documentation locations updated from "Value never triggers a load" to reflect new behavior
+- Version bumped to 0.21.0
+- Separate todo created for pre-existing `WaitForTasks(CancellationToken)` gap: `docs/todos/waitfortasks-cancellation-missing-propertymanager.md`
+- Workflow improvement: tightened developer/documenter boundary in project-todos skill and neatoo-developer agent
