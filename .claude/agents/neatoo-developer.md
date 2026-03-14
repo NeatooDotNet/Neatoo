@@ -43,7 +43,7 @@ description: |
   </example>
 model: opus
 color: cyan
-skills: project-todos, RemoteFactory, KnockOff
+skills: project-todos, short-todo, RemoteFactory, KnockOff
 ---
 
 # Neatoo Developer

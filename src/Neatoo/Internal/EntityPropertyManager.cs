@@ -1,5 +1,6 @@
 ﻿using Neatoo.Rules;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -96,6 +97,19 @@ public class EntityPropertyManager : ValidatePropertyManager<IEntityProperty>, I
         var property = this.Factory.CreateEntityProperty<PV>(propertyInfo);
         property.IsPaused = this.IsPaused;
         return property;
+    }
+
+    /// <summary>
+    /// Creates a LazyLoadEntityProperty instead of LazyLoadValidateProperty for entity aggregates.
+    /// </summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2055",
+        Justification = "MakeGenericType creates LazyLoadEntityProperty<T> " +
+        "with inner types from LazyLoad<T> properties. These inner types are preserved by " +
+        "[DynamicallyAccessedMembers] on the owning entity's type parameter.")]
+    protected override IValidateProperty CreateLazyLoadProperty(Type innerType, IPropertyInfo propertyInfo)
+    {
+        var entityPropertyType = typeof(LazyLoadEntityProperty<>).MakeGenericType(innerType);
+        return (IValidateProperty)Activator.CreateInstance(entityPropertyType, propertyInfo)!;
     }
 
     [JsonIgnore]

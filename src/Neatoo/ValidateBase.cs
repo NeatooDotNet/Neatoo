@@ -1,10 +1,8 @@
 using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.Rules;
-using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Text.Json.Serialization;
 
 namespace Neatoo;
@@ -300,144 +298,39 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </remarks>
 	protected (bool IsValid, bool IsSelfValid, bool IsBusy) MetaState { get; private set; }
 
-	#region LazyLoad PropertyManager Registration
-
-	/// <summary>
-	/// Static cache of LazyLoad properties per concrete type.
-	/// Same reflection pattern used by NeatooBaseJsonTypeConverter for serialization.
-	/// Reflection moves from N calls per object lifetime (every IsBusy/IsValid check in old approach)
-	/// to 1 call per object lifetime (at registration). Full elimination requires generator changes.
-	/// </summary>
-	private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _lazyLoadPropertyCache = new();
-
-	[UnconditionalSuppressMessage("Trimming", "IL2070",
-		Justification = "Callers pass GetType() which returns a concrete type whose properties are preserved " +
-		"by [DynamicallyAccessedMembers] on the T type parameter of ValidateBase<T>. " +
-		"The trimmer cannot statically verify this because GetType() returns Type without annotations, " +
-		"but at runtime the concrete type is always T (or a subclass) which has its properties preserved.")]
-	private protected static PropertyInfo[] GetLazyLoadProperties(Type concreteType)
-	{
-		return _lazyLoadPropertyCache.GetOrAdd(concreteType, type =>
-			type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-				.Where(p => p.PropertyType.IsGenericType
-					&& p.PropertyType.GetGenericTypeDefinition() == typeof(LazyLoad<>)
-					&& p.GetMethod != null)
-				.ToArray());
-	}
-
 	/// <summary>
 	/// Discovers all LazyLoad properties via cached reflection and registers them with PropertyManager
 	/// as look-through property subclasses. Call this in FactoryComplete, OnDeserialized, or after
 	/// assigning LazyLoad properties in a custom setter.
 	/// </summary>
 	/// <remarks>
-	/// Creates LazyLoadValidateProperty or LazyLoadEntityProperty instances that look through
-	/// the LazyLoad wrapper to the inner entity, making RunRules cascading, PropertyMessages
-	/// aggregation, WaitForTasks, IsBusy, IsValid, and ClearAllMessages work through the
-	/// unified PropertyManager system.
+	/// Delegates to <see cref="IValidatePropertyManagerInternal{P}.RegisterLazyLoadProperties"/> which
+	/// handles reflection discovery, property creation (polymorphic for entity vs validate), reassignment
+	/// detection, and registration.
 	/// </remarks>
-	[UnconditionalSuppressMessage("Trimming", "IL2055",
-		Justification = "MakeGenericType creates LazyLoadValidateProperty<T>/LazyLoadEntityProperty<T> " +
-		"with inner types from LazyLoad<T> properties. These inner types are preserved by " +
-		"[DynamicallyAccessedMembers] on the owning entity's type parameter.")]
-	[UnconditionalSuppressMessage("Trimming", "IL2070",
-		Justification = "GetGenericArguments() on LazyLoad<T> property types discovered via cached " +
-		"reflection. The T type argument is a domain type preserved by [DynamicallyAccessedMembers] " +
-		"on the owning entity's type parameter.")]
 	protected void RegisterLazyLoadProperties()
 	{
-		var props = GetLazyLoadProperties(GetType());
-		if (props.Length == 0) return;
-
-		var isEntityPropertyManager = this.PropertyManager is IEntityPropertyManager;
-		var pmInternal = this.PropertyManager as IValidatePropertyManagerInternal<IValidateProperty>;
-
-		foreach (var prop in props)
+		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
 		{
-			var lazyLoadValue = prop.GetValue(this);
-			if (lazyLoadValue == null) continue;
-
-			// If already registered as a LazyLoad property, reload the value
-			// (handles reassignment of the LazyLoad instance in custom setters)
-			if (pmInternal != null
-				&& pmInternal.TryGetRegisteredProperty(prop.Name, out var existing)
-				&& existing is ILazyLoadProperty)
-			{
-				existing!.LoadValue(lazyLoadValue);
-				continue;
-			}
-
-			var innerType = prop.PropertyType.GetGenericArguments()[0];
-			var propertyInfo = new PropertyInfoWrapper(prop);
-
-			IValidateProperty lazyLoadProperty;
-			if (isEntityPropertyManager)
-			{
-				var entityPropertyType = typeof(LazyLoadEntityProperty<>).MakeGenericType(innerType);
-				lazyLoadProperty = (IValidateProperty)Activator.CreateInstance(entityPropertyType, propertyInfo)!;
-			}
-			else
-			{
-				var validatePropertyType = typeof(LazyLoadValidateProperty<>).MakeGenericType(innerType);
-				lazyLoadProperty = (IValidateProperty)Activator.CreateInstance(validatePropertyType, propertyInfo)!;
-			}
-
-			// Load the current LazyLoad value into the property (this connects subscriptions
-			// and inner child without triggering rules -- LoadValue fires ChangeReason.Load)
-			lazyLoadProperty.LoadValue(lazyLoadValue);
-
-			// Register with PropertyManager (subscribes to NeatooPropertyChanged/PropertyChanged events)
-			this.PropertyManager.Register(lazyLoadProperty);
+			pmInternal.RegisterLazyLoadProperties(this, GetType());
 		}
 	}
 
 	/// <summary>
-	/// Registers a single LazyLoad property with PropertyManager explicitly (no reflection).
+	/// Registers a single LazyLoad property with PropertyManager explicitly (no reflection discovery).
 	/// Use this in custom property setters as the recommended alternative to the
 	/// reflection-based <see cref="RegisterLazyLoadProperties"/>.
 	/// </summary>
 	/// <typeparam name="TInner">The inner type of the LazyLoad wrapper.</typeparam>
 	/// <param name="name">The property name (must match the C# property name).</param>
 	/// <param name="lazyLoad">The LazyLoad instance to register.</param>
-	[UnconditionalSuppressMessage("Trimming", "IL2075",
-		Justification = "GetType().GetProperty() on a concrete type whose properties are preserved " +
-		"by [DynamicallyAccessedMembers] on the T type parameter of ValidateBase<T>.")]
 	protected void RegisterLazyLoadProperty<TInner>(string name, LazyLoad<TInner> lazyLoad) where TInner : class?
 	{
-		ArgumentNullException.ThrowIfNull(lazyLoad, nameof(lazyLoad));
-
-		// If already registered as a LazyLoad property, reload the value
-		// (handles reassignment of the LazyLoad instance in custom setters)
-		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInt
-			&& pmInt.TryGetRegisteredProperty(name, out var existing)
-			&& existing is ILazyLoadProperty)
+		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
 		{
-			existing!.LoadValue(lazyLoad);
-			return;
+			pmInternal.RegisterLazyLoadProperty(this, name, lazyLoad);
 		}
-
-		var reflectionProp = GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-		if (reflectionProp == null)
-		{
-			throw new PropertyMissingException($"Property '{name}' not found on type '{GetType().Name}'");
-		}
-		var propertyInfo = new PropertyInfoWrapper(reflectionProp);
-
-		IValidateProperty lazyLoadProperty;
-		if (this.PropertyManager is IEntityPropertyManager)
-		{
-			lazyLoadProperty = new LazyLoadEntityProperty<TInner>(propertyInfo);
-		}
-		else
-		{
-			lazyLoadProperty = new LazyLoadValidateProperty<TInner>(propertyInfo);
-		}
-
-		lazyLoadProperty.LoadValue(lazyLoad);
-		this.PropertyManager.Register(lazyLoadProperty);
 	}
-
-	#endregion
 
 	/// <summary>
 	/// Raises property changed events if the value has changed from the cached state.
