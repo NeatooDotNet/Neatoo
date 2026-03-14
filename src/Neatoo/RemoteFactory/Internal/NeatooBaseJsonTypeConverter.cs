@@ -350,6 +350,12 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
 
             foreach (var p in properties)
             {
+                // Skip LazyLoad property subclasses -- they are serialized as
+                // top-level JSON properties alongside the existing LazyLoad<> path,
+                // not as part of the PropertyManager array.
+                if (p is ILazyLoadProperty)
+                    continue;
+
                 writer.WriteStartObject();
 
                 writer.WritePropertyName("$name");

@@ -102,7 +102,7 @@ internal partial class CrashParent : EntityBase<CrashParent>, ICrashParent
         private set
         {
             _lazyChild = value;
-            SubscribeToLazyLoadProperties();
+            RegisterLazyLoadProperties();
         }
     }
 

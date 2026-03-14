@@ -13,6 +13,7 @@ namespace DomainModel.Tests.UnitTests
         private Stubs.IPersonDbContext personDbContextStub;
         private PersonPhoneListFactoryStub phoneListFactoryStub;
         private TestUniqueNameRule testUniqueNameRule;
+        private LazyLoadFactory lazyLoadFactory;
         private TestPerson testPerson;
 
         public PersonTests()
@@ -20,8 +21,9 @@ namespace DomainModel.Tests.UnitTests
             personDbContextStub = new Stubs.IPersonDbContext();
             phoneListFactoryStub = new PersonPhoneListFactoryStub();
             testUniqueNameRule = new TestUniqueNameRule();
+            lazyLoadFactory = new LazyLoadFactory();
 
-            testPerson = new TestPerson(new EntityBaseServices<Person>(null), testUniqueNameRule)
+            testPerson = new TestPerson(new EntityBaseServices<Person>(null), testUniqueNameRule, phoneListFactoryStub, lazyLoadFactory)
             {
                 IsSavableOverride = true
             };
@@ -33,7 +35,7 @@ namespace DomainModel.Tests.UnitTests
             // Use a fresh rule for this test since the shared one is already used in constructor
             var freshRule = new TestUniqueNameRule();
 
-            var person = new Person(new EntityBaseServices<Person>(null), freshRule);
+            var person = new Person(new EntityBaseServices<Person>(null), freshRule, phoneListFactoryStub, lazyLoadFactory);
 
             // Assert
             Assert.Equal(1, freshRule.OnRuleAddedCallCount);
@@ -47,17 +49,13 @@ namespace DomainModel.Tests.UnitTests
             var personEntity = new PersonEntity { FirstName = "John", LastName = "Doe" };
             personDbContextStub.FindPerson.Call((token) => personEntity);
 
-            var phoneListStub = new Stubs.IPersonPhoneList();
-            phoneListFactoryStub.Fetch.Call((entities, token) => phoneListStub);
-
             // Act
-            var result = await testPerson.Fetch(personDbContextStub, phoneListFactoryStub, CancellationToken.None);
+            var result = await testPerson.Fetch(personDbContextStub, CancellationToken.None);
 
             // Assert
             Assert.True(result);
             Assert.Equal("John", testPerson.FirstName);
             Assert.Equal("Doe", testPerson.LastName);
-            Assert.Equal(phoneListStub, testPerson.PersonPhoneList);
         }
 
         [Fact]
@@ -66,10 +64,10 @@ namespace DomainModel.Tests.UnitTests
             // Arrange
             personDbContextStub.FindPerson.Call((token) => (PersonEntity?)null);
 
-            var person = new Person(new EntityBaseServices<Person>(null), testUniqueNameRule);
+            var person = new Person(new EntityBaseServices<Person>(null), testUniqueNameRule, phoneListFactoryStub, lazyLoadFactory);
 
             // Act
-            var result = await person.Fetch(personDbContextStub, phoneListFactoryStub, CancellationToken.None);
+            var result = await person.Fetch(personDbContextStub, CancellationToken.None);
 
             // Assert
             Assert.False(result);
@@ -82,14 +80,13 @@ namespace DomainModel.Tests.UnitTests
             personDbContextStub.SaveChangesAsync.Call((token) => 1);
 
             var phoneListStub = new Stubs.IPersonPhoneList();
-            testPerson.PersonPhoneList = phoneListStub;
-            phoneListFactoryStub.Save.Call((target, entities, token) => phoneListStub);
+            testPerson.PersonPhoneList = lazyLoadFactory.Create<IPersonPhoneList>(phoneListStub);
 
             testPerson.FirstName = "John";
             testPerson.LastName = "Doe";
 
             // Act
-            var result = await testPerson.Insert(personDbContextStub, phoneListFactoryStub, CancellationToken.None);
+            var result = await testPerson.Insert(personDbContextStub, CancellationToken.None);
 
             // Assert
             Assert.NotNull(result);
@@ -105,7 +102,7 @@ namespace DomainModel.Tests.UnitTests
             testPerson.IsSavableOverride = false;
 
             // Act
-            var result = await testPerson.Insert(personDbContextStub, phoneListFactoryStub, CancellationToken.None);
+            var result = await testPerson.Insert(personDbContextStub, CancellationToken.None);
 
             // Assert
             Assert.Null(result);
@@ -120,14 +117,14 @@ namespace DomainModel.Tests.UnitTests
             personDbContextStub.FindPerson.Call((token) => (PersonEntity?)null);
 
             // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => testPerson.Update(personDbContextStub, phoneListFactoryStub, CancellationToken.None));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => testPerson.Update(personDbContextStub, CancellationToken.None));
         }
 
         [Fact]
         public async Task Delete_ShouldCallDeleteAllPersons()
         {
             // Arrange
-            var person = new Person(new EntityBaseServices<Person>(null), testUniqueNameRule);
+            var person = new Person(new EntityBaseServices<Person>(null), testUniqueNameRule, phoneListFactoryStub, lazyLoadFactory);
 
             // Act
             await person.Delete(personDbContextStub, CancellationToken.None);

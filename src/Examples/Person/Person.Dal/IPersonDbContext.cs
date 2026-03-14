@@ -9,4 +9,5 @@ public interface IPersonDbContext
 	void DeletePerson(PersonEntity person);
 	Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 	Task<bool> PersonNameExists(Guid? excludeId, string firstName, string lastName);
+	Task<ICollection<PersonPhoneEntity>> FindPersonPhones(Guid personId, CancellationToken cancellationToken = default);
 }

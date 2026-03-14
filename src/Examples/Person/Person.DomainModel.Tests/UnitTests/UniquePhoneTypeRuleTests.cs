@@ -16,7 +16,7 @@ namespace DomainModel.Tests.UnitTests
             phoneListStub.GetEnumerator.Call(() => ((IEnumerable<IPersonPhone>)Array.Empty<IPersonPhone>()).GetEnumerator());
 
             var personStub = new Stubs.IPerson();
-            personStub.PersonPhoneList.Get(() => phoneListStub);
+            personStub.PersonPhoneList.Get(() => new Neatoo.LazyLoad<IPersonPhoneList>(phoneListStub));
 
             var phoneStub = new Stubs.IPersonPhone();
             phoneStub.PhoneType.Get(() => PhoneType.Mobile);
@@ -42,7 +42,7 @@ namespace DomainModel.Tests.UnitTests
             phoneListStub.GetEnumerator.Call(() => ((IEnumerable<IPersonPhone>)new[] { (IPersonPhone)existingPhoneStub }).GetEnumerator());
 
             var personStub = new Stubs.IPerson();
-            personStub.PersonPhoneList.Get(() => phoneListStub);
+            personStub.PersonPhoneList.Get(() => new Neatoo.LazyLoad<IPersonPhoneList>(phoneListStub));
 
             var phoneStub = new Stubs.IPersonPhone();
             phoneStub.PhoneType.Get(() => PhoneType.Mobile);

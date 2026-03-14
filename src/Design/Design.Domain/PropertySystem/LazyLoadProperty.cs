@@ -2,14 +2,20 @@
 // Design.Domain - LazyLoad Property on Entities
 // -----------------------------------------------------------------------------
 // Demonstrates LazyLoad<T> properties on EntityBase and ValidateBase entities.
-// LazyLoad<T> properties are regular C# properties (not partial properties),
-// meaning they are NOT managed by PropertyManager.
+// LazyLoad<T> properties are regular C# properties (not partial properties).
+// Their loaded values participate in PropertyManager via look-through property
+// subclasses (LazyLoadValidateProperty<T>, LazyLoadEntityProperty<T>).
 //
 // DESIGN DECISION: LazyLoad<T> is declared as a regular property because:
 // - It wraps a child entity/value, not a scalar property value
 // - It has its own lifecycle (IsLoaded, IsLoading, LoadAsync)
 // - It implements IValidateMetaProperties and IEntityMetaProperties
 //   for delegation to the loaded value
+// The LazyLoad<T> C# property itself is NOT a partial property and NOT
+// processed by the source generator. However, at runtime, a look-through
+// property subclass is registered with PropertyManager that delegates
+// RunRules, PropertyMessages, IsValid, IsBusy, IsModified, WaitForTasks,
+// and ClearAllMessages to the inner entity loaded by LazyLoad.
 //
 // DESIGN DECISION: Accessing Value auto-triggers a fire-and-forget load
 // when the value hasn't been loaded, no load is in progress, and a loader
@@ -19,9 +25,10 @@
 // consistently needed in Blazor Razor databinding.
 //
 // DESIGN DECISION: ValidateBase.WaitForTasks() awaits in-progress LazyLoad
-// children. This ensures that "await entity.WaitForTasks()" before Save
-// waits for any auto-triggered loads to complete. WaitForTasks does NOT
-// trigger loads on unaccessed LazyLoad children.
+// children via PropertyManager.WaitForTasks(). This ensures that
+// "await entity.WaitForTasks()" before Save waits for any auto-triggered
+// loads to complete. WaitForTasks does NOT trigger loads on unaccessed
+// LazyLoad children (uses BoxedValue, not Value getter).
 //
 // DESIGN DECISION: The generic constraint is `where T : class?` (not `where T : class`)
 // to support nullable reference types. This allows declarations like
@@ -30,35 +37,42 @@
 //
 // GENERATOR BEHAVIOR: The generators do NOT process LazyLoad<T> properties
 // because they are not partial properties. No backing field is generated.
+// Registration with PropertyManager happens at runtime in
+// RegisterLazyLoadProperties() (called from FactoryComplete/OnDeserialized).
 //
 // SERIALIZATION: LazyLoad<T> has [JsonInclude] on Value/IsLoaded and
 // [JsonConstructor] for deserialization. The NeatooBaseJsonTypeConverter
 // detects LazyLoad<> properties via reflection and serializes them
-// separately from PropertyManager entries.
+// separately from PropertyManager entries. LazyLoad property subclasses
+// (ILazyLoadProperty) are skipped in the PropertyManager serialization
+// array to avoid double-serialization.
 // When LazyLoad<T>.Value contains a Neatoo entity (IValidateBase),
 // the NeatooBaseJsonConverterFactory claims the inner type, ensuring
 // proper $id/$ref and PropertyManager serialization for the value.
 //
-// STATE PROPAGATION: LazyLoad<T> forwards PropertyChanged events from
-// its wrapped value. The parent entity includes LazyLoad children in
-// its IsModified, IsValid, and IsBusy calculations via cached reflection.
-// This ensures that modifying a child entity inside LazyLoad<T> causes
-// the parent's IsSavable to return true, matching the behavior of
-// regular partial property children managed by PropertyManager.
+// STATE PROPAGATION: LazyLoad property subclasses look through the
+// LazyLoad wrapper to the inner entity for all state delegation:
+// - IsValid, RunRules, PropertyMessages cascade to inner entity
+// - IsBusy includes LazyLoad.IsLoading and inner entity busy state
+// - IsModified (EntityProperty) delegates to inner entity
+// - WaitForTasks delegates to LazyLoad.WaitForTasks (handles both
+//   load tasks and inner child tasks)
+// - ClearAllMessages cascades through ValueIsValidateBase
+// This is unified through PropertyManager -- no parallel helper methods.
 //
-// SUBSCRIPTION LIFECYCLE: The parent subscribes to LazyLoad instances'
-// PropertyChanged events at FactoryComplete() and OnDeserialized().
-// If a LazyLoad property is assigned after these points (e.g., in test
-// setup or runtime code), use a custom property setter that calls
-// SubscribeToLazyLoadProperties() to ensure reactive event propagation.
-// Even without subscriptions, the polling overrides (IsModified, IsValid,
-// IsBusy) return correct values when queried directly.
+// REGISTRATION LIFECYCLE: RegisterLazyLoadProperties() is called at
+// FactoryComplete() and OnDeserialized(). It uses cached-per-type
+// reflection to discover LazyLoad properties and creates look-through
+// property subclass instances registered with PropertyManager.
+// If a LazyLoad property is assigned after these points (e.g., in
+// a custom property setter), call RegisterLazyLoadProperties() to
+// register or re-register the LazyLoad instance with PropertyManager.
 //
 // COMMON MISTAKE: Assigning a LazyLoad<T> property after FactoryComplete()
-// without calling SubscribeToLazyLoadProperties() in the setter. The
-// polling override still returns correct values, but UI bindings won't
-// update reactively because the parent isn't subscribed to the new
-// LazyLoad instance's PropertyChanged events.
+// without calling RegisterLazyLoadProperties() in the setter. The
+// LazyLoad property will not be tracked by PropertyManager, so RunRules
+// cascading, PropertyMessages aggregation, and reactive state propagation
+// will not work for that property.
 // -----------------------------------------------------------------------------
 
 using Neatoo;
@@ -136,7 +150,8 @@ public partial class LazyLoadValidateDemo : ValidateBase<LazyLoadValidateDemo>
 //
 // DESIGN DECISION: When a LazyLoad<T> wraps a child entity (not a string),
 // the parent's IsModified, IsValid, IsBusy, and IsSavable include the child's
-// state. This is automatic via cached reflection in EntityBase/ValidateBase.
+// state. This is automatic via the look-through property subclass registered
+// with PropertyManager at FactoryComplete/OnDeserialized.
 //
 // If the LazyLoad property is assigned after FactoryComplete() (e.g., in
 // test setup or application code), use a custom setter:
@@ -148,11 +163,10 @@ public partial class LazyLoadValidateDemo : ValidateBase<LazyLoadValidateDemo>
 //       set
 //       {
 //           _lazyChild = value;
-//           SubscribeToLazyLoadProperties();
+//           RegisterLazyLoadProperties();
 //       }
 //   }
 //
-// This ensures the parent subscribes to the LazyLoad instance's PropertyChanged
-// events for reactive UI updates. Without the custom setter, polling (IsModified
-// etc.) still returns correct values, but PropertyChanged events won't fire
-// on the parent when the LazyLoad child's state changes.
+// This registers (or re-registers) the LazyLoad instance with PropertyManager,
+// enabling RunRules cascading, PropertyMessages aggregation, and reactive state
+// propagation for the inner entity.

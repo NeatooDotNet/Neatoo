@@ -14,7 +14,7 @@ internal class UniquePhoneNumberRule : RuleBase<IPersonPhone>, IUniquePhoneNumbe
     {
         return RuleMessages.If(target.ParentPerson == null, nameof(IPersonPhone.PhoneType), "Parent is null")
             .If(target.ParentPerson == null, nameof(IPersonPhone.PhoneNumber), "Parent is null")
-            .ElseIf(() => target.ParentPerson!.PersonPhoneList
+            .ElseIf(() => target.ParentPerson!.PersonPhoneList.Value!
                         .Where(c => c != target)
                         .Any(c => c.PhoneNumber == target.PhoneNumber), nameof(IPersonPhone.PhoneNumber), "Phone number must be unique");
     }

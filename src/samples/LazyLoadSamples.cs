@@ -84,7 +84,7 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
     public partial Guid Id { get; set; }
 
     // LazyLoad property with private setter.
-    // The setter calls SubscribeToLazyLoadProperties() so meta properties
+    // The setter calls RegisterLazyLoadProperties() so meta properties
     // (IsValid, IsModified, etc.) propagate from the loaded child.
     private LazyLoad<ISkillLazyChild> _lazyChild = null!;
     public LazyLoad<ISkillLazyChild> LazyChild
@@ -93,7 +93,7 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
         private set
         {
             _lazyChild = value;
-            SubscribeToLazyLoadProperties();
+            RegisterLazyLoadProperties();
         }
     }
 

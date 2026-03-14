@@ -67,4 +67,11 @@ public class PersonDbContext : DbContext, IPersonDbContext
     {
         return Persons.AnyAsync(x => (excludeId == null || x.Id != excludeId) && x.FirstName == firstName && x.LastName == lastName);
     }
+
+    public async Task<ICollection<PersonPhoneEntity>> FindPersonPhones(Guid personId, CancellationToken cancellationToken = default)
+    {
+        var person = await Persons.Include(p => p.Phones)
+            .FirstOrDefaultAsync(p => p.Id == personId, cancellationToken);
+        return person?.Phones ?? (ICollection<PersonPhoneEntity>)new List<PersonPhoneEntity>();
+    }
 }

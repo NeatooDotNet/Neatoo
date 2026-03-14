@@ -30,6 +30,12 @@ internal interface IValidatePropertyManagerInternal<out P> where P : IValidatePr
     /// Used during serialization and deserialization.
     /// </summary>
     IEnumerable<P> GetProperties { get; }
+
+    /// <summary>
+    /// Checks if a property with the given name exists in PropertyBag (not just PropertyInfoList).
+    /// Used by LazyLoad registration to detect reassignment of LazyLoad properties.
+    /// </summary>
+    bool TryGetRegisteredProperty(string propertyName, out IValidateProperty? property);
 }
 
 public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidatePropertyManagerInternal<P>, IJsonOnDeserialized
@@ -231,6 +237,24 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
 
             // Add to property bag
             this.PropertyBag[property.Name] = (P)property;
+        }
+    }
+
+    /// <summary>
+    /// Checks if a property with the given name exists in PropertyBag (not just PropertyInfoList).
+    /// Used by LazyLoad registration to detect reassignment of LazyLoad properties.
+    /// </summary>
+    bool IValidatePropertyManagerInternal<P>.TryGetRegisteredProperty(string propertyName, out IValidateProperty? property)
+    {
+        lock (this._propertyBagLock)
+        {
+            if (this.PropertyBag.TryGetValue(propertyName, out var typedProperty))
+            {
+                property = typedProperty;
+                return true;
+            }
+            property = null;
+            return false;
         }
     }
 

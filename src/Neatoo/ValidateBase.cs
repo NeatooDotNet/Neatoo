@@ -171,7 +171,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// Gets a value indicating whether the object has asynchronous operations in progress.
 	/// </summary>
 	/// <value><c>true</c> if async tasks are running or any property is busy; otherwise, <c>false</c>.</value>
-	public bool IsBusy => this.RunningTasks.IsRunning || this.PropertyManager.IsBusy || IsAnyLazyLoadChildBusy();
+	public bool IsBusy => this.RunningTasks.IsRunning || this.PropertyManager.IsBusy;
 
 	/// <summary>
 	/// Gets the rule manager responsible for executing business rules on this object.
@@ -277,7 +277,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// Gets a value indicating whether the object and all its child objects are valid.
 	/// </summary>
 	/// <value><c>true</c> if all properties and child objects pass validation; otherwise, <c>false</c>.</value>
-	public bool IsValid => this.PropertyManager.IsValid && IsAllLazyLoadChildrenValid();
+	public bool IsValid => this.PropertyManager.IsValid;
 
 	/// <summary>
 	/// Gets a value indicating whether this object's own properties are valid, excluding child objects.
@@ -300,11 +300,13 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </remarks>
 	protected (bool IsValid, bool IsSelfValid, bool IsBusy) MetaState { get; private set; }
 
-	#region LazyLoad State Propagation
+	#region LazyLoad PropertyManager Registration
 
 	/// <summary>
 	/// Static cache of LazyLoad properties per concrete type.
 	/// Same reflection pattern used by NeatooBaseJsonTypeConverter for serialization.
+	/// Reflection moves from N calls per object lifetime (every IsBusy/IsValid check in old approach)
+	/// to 1 call per object lifetime (at registration). Full elimination requires generator changes.
 	/// </summary>
 	private static readonly ConcurrentDictionary<Type, PropertyInfo[]> _lazyLoadPropertyCache = new();
 
@@ -324,120 +326,115 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	}
 
 	/// <summary>
-	/// Checks whether all LazyLoad children are valid.
-	/// Returns true when there are no LazyLoad properties or all are valid.
+	/// Discovers all LazyLoad properties via cached reflection and registers them with PropertyManager
+	/// as look-through property subclasses. Call this in FactoryComplete, OnDeserialized, or after
+	/// assigning LazyLoad properties in a custom setter.
 	/// </summary>
-	private bool IsAllLazyLoadChildrenValid()
-	{
-		var props = GetLazyLoadProperties(GetType());
-		if (props.Length == 0) return true;
-
-		foreach (var prop in props)
-		{
-			if (prop.GetValue(this) is IValidateMetaProperties vmp && !vmp.IsValid)
-				return false;
-		}
-		return true;
-	}
-
-	/// <summary>
-	/// Checks whether any LazyLoad child is busy.
-	/// Returns false when there are no LazyLoad properties.
-	/// </summary>
-	private bool IsAnyLazyLoadChildBusy()
-	{
-		var props = GetLazyLoadProperties(GetType());
-		if (props.Length == 0) return false;
-
-		foreach (var prop in props)
-		{
-			if (prop.GetValue(this) is IValidateMetaProperties vmp && vmp.IsBusy)
-				return true;
-		}
-		return false;
-	}
-
-	/// <summary>
-	/// Awaits any in-progress LazyLoad children's load tasks.
-	/// Does NOT trigger loads on unaccessed LazyLoad children -- only awaits loads
-	/// that are already in progress (auto-triggered by Value getter or explicit LoadAsync).
-	/// Returns immediately when there are no LazyLoad properties or none have in-progress tasks.
-	/// Exceptions from failed loads propagate to the caller.
-	/// </summary>
-	private async Task WaitForLazyLoadChildren()
+	/// <remarks>
+	/// Creates LazyLoadValidateProperty or LazyLoadEntityProperty instances that look through
+	/// the LazyLoad wrapper to the inner entity, making RunRules cascading, PropertyMessages
+	/// aggregation, WaitForTasks, IsBusy, IsValid, and ClearAllMessages work through the
+	/// unified PropertyManager system.
+	/// </remarks>
+	[UnconditionalSuppressMessage("Trimming", "IL2055",
+		Justification = "MakeGenericType creates LazyLoadValidateProperty<T>/LazyLoadEntityProperty<T> " +
+		"with inner types from LazyLoad<T> properties. These inner types are preserved by " +
+		"[DynamicallyAccessedMembers] on the owning entity's type parameter.")]
+	[UnconditionalSuppressMessage("Trimming", "IL2070",
+		Justification = "GetGenericArguments() on LazyLoad<T> property types discovered via cached " +
+		"reflection. The T type argument is a domain type preserved by [DynamicallyAccessedMembers] " +
+		"on the owning entity's type parameter.")]
+	protected void RegisterLazyLoadProperties()
 	{
 		var props = GetLazyLoadProperties(GetType());
 		if (props.Length == 0) return;
 
+		var isEntityPropertyManager = this.PropertyManager is IEntityPropertyManager;
+		var pmInternal = this.PropertyManager as IValidatePropertyManagerInternal<IValidateProperty>;
+
 		foreach (var prop in props)
 		{
-			if (prop.GetValue(this) is IValidateMetaProperties vmp)
+			var lazyLoadValue = prop.GetValue(this);
+			if (lazyLoadValue == null) continue;
+
+			// If already registered as a LazyLoad property, reload the value
+			// (handles reassignment of the LazyLoad instance in custom setters)
+			if (pmInternal != null
+				&& pmInternal.TryGetRegisteredProperty(prop.Name, out var existing)
+				&& existing is ILazyLoadProperty)
 			{
-				await vmp.WaitForTasks();
+				existing!.LoadValue(lazyLoadValue);
+				continue;
 			}
+
+			var innerType = prop.PropertyType.GetGenericArguments()[0];
+			var propertyInfo = new PropertyInfoWrapper(prop);
+
+			IValidateProperty lazyLoadProperty;
+			if (isEntityPropertyManager)
+			{
+				var entityPropertyType = typeof(LazyLoadEntityProperty<>).MakeGenericType(innerType);
+				lazyLoadProperty = (IValidateProperty)Activator.CreateInstance(entityPropertyType, propertyInfo)!;
+			}
+			else
+			{
+				var validatePropertyType = typeof(LazyLoadValidateProperty<>).MakeGenericType(innerType);
+				lazyLoadProperty = (IValidateProperty)Activator.CreateInstance(validatePropertyType, propertyInfo)!;
+			}
+
+			// Load the current LazyLoad value into the property (this connects subscriptions
+			// and inner child without triggering rules -- LoadValue fires ChangeReason.Load)
+			lazyLoadProperty.LoadValue(lazyLoadValue);
+
+			// Register with PropertyManager (subscribes to NeatooPropertyChanged/PropertyChanged events)
+			this.PropertyManager.Register(lazyLoadProperty);
 		}
 	}
 
 	/// <summary>
-	/// Awaits any in-progress LazyLoad children's load tasks with cancellation support.
-	/// Does NOT trigger loads on unaccessed LazyLoad children.
-	/// Exceptions from failed loads propagate to the caller.
+	/// Registers a single LazyLoad property with PropertyManager explicitly (no reflection).
+	/// Use this in custom property setters as the recommended alternative to the
+	/// reflection-based <see cref="RegisterLazyLoadProperties"/>.
 	/// </summary>
-	private async Task WaitForLazyLoadChildren(CancellationToken token)
+	/// <typeparam name="TInner">The inner type of the LazyLoad wrapper.</typeparam>
+	/// <param name="name">The property name (must match the C# property name).</param>
+	/// <param name="lazyLoad">The LazyLoad instance to register.</param>
+	[UnconditionalSuppressMessage("Trimming", "IL2075",
+		Justification = "GetType().GetProperty() on a concrete type whose properties are preserved " +
+		"by [DynamicallyAccessedMembers] on the T type parameter of ValidateBase<T>.")]
+	protected void RegisterLazyLoadProperty<TInner>(string name, LazyLoad<TInner> lazyLoad) where TInner : class?
 	{
-		var props = GetLazyLoadProperties(GetType());
-		if (props.Length == 0) return;
+		ArgumentNullException.ThrowIfNull(lazyLoad, nameof(lazyLoad));
 
-		foreach (var prop in props)
+		// If already registered as a LazyLoad property, reload the value
+		// (handles reassignment of the LazyLoad instance in custom setters)
+		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInt
+			&& pmInt.TryGetRegisteredProperty(name, out var existing)
+			&& existing is ILazyLoadProperty)
 		{
-			if (prop.GetValue(this) is IValidateMetaProperties vmp)
-			{
-				await vmp.WaitForTasks(token);
-			}
+			existing!.LoadValue(lazyLoad);
+			return;
 		}
-	}
 
-	/// <summary>
-	/// Active subscriptions to LazyLoad instances for reactive event propagation.
-	/// </summary>
-	private readonly List<INotifyPropertyChanged> _lazyLoadSubscriptions = new();
-
-	/// <summary>
-	/// Subscribes to PropertyChanged on all LazyLoad properties for reactive state propagation.
-	/// Call this after assigning LazyLoad properties outside of FactoryComplete/OnDeserialized.
-	/// </summary>
-	protected void SubscribeToLazyLoadProperties()
-	{
-		UnsubscribeFromLazyLoadProperties();
-
-		var props = GetLazyLoadProperties(GetType());
-		if (props.Length == 0) return;
-
-		foreach (var prop in props)
+		var reflectionProp = GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+		if (reflectionProp == null)
 		{
-			if (prop.GetValue(this) is INotifyPropertyChanged npc)
-			{
-				npc.PropertyChanged += OnLazyLoadPropertyChanged;
-				_lazyLoadSubscriptions.Add(npc);
-			}
+			throw new PropertyMissingException($"Property '{name}' not found on type '{GetType().Name}'");
 		}
-	}
+		var propertyInfo = new PropertyInfoWrapper(reflectionProp);
 
-	private void UnsubscribeFromLazyLoadProperties()
-	{
-		foreach (var npc in _lazyLoadSubscriptions)
+		IValidateProperty lazyLoadProperty;
+		if (this.PropertyManager is IEntityPropertyManager)
 		{
-			npc.PropertyChanged -= OnLazyLoadPropertyChanged;
+			lazyLoadProperty = new LazyLoadEntityProperty<TInner>(propertyInfo);
 		}
-		_lazyLoadSubscriptions.Clear();
-	}
+		else
+		{
+			lazyLoadProperty = new LazyLoadValidateProperty<TInner>(propertyInfo);
+		}
 
-	private void OnLazyLoadPropertyChanged(object? sender, PropertyChangedEventArgs e)
-	{
-		if (!this.IsPaused)
-		{
-			CheckIfMetaPropertiesChanged();
-		}
+		lazyLoadProperty.LoadValue(lazyLoad);
+		this.PropertyManager.Register(lazyLoadProperty);
 	}
 
 	#endregion
@@ -541,6 +538,12 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 			if (eventArgs.Property.Value is ISetParent child)
 			{
 				child.SetParent(this);
+			}
+			// LazyLoad look-through: LazyLoad does not implement ISetParent,
+			// but the inner entity does. Look through the wrapper to call SetParent.
+			else if (eventArgs.Property.Value is ILazyLoadDeserializable ll && ll.BoxedValue is ISetParent llChild)
+			{
+				llChild.SetParent(this);
 			}
 
 			// The property fires PropertyChanged("Value"), but UI binds to entity.Name (not entity.NameProperty.Value).
@@ -686,7 +689,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 			}
 		}
 
-		this.SubscribeToLazyLoadProperties();
+		this.RegisterLazyLoadProperties();
 		this.ResumeAllActions();
 	}
 
@@ -703,10 +706,8 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	public virtual async Task WaitForTasks()
 	{
 		await this.RunningTasks.AllDone;
-		// Also wait for property-level tasks (e.g., lazy loading)
+		// Also wait for property-level tasks (e.g., lazy loading via LazyLoad subclass properties)
 		await this.PropertyManager.WaitForTasks();
-		// Await any in-progress LazyLoad children (auto-triggered by Value getter or explicit LoadAsync)
-		await this.WaitForLazyLoadChildren();
 	}
 
 	/// <summary>
@@ -719,12 +720,15 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// <para>
 	/// Cancellation only affects waiting - running tasks will complete to avoid leaving the entity in an inconsistent state.
 	/// </para>
+	/// <para>
+	/// Note: This method does NOT call PropertyManager.WaitForTasks(). This is a pre-existing gap
+	/// that predates the LazyLoad unification. LazyLoad children are now waited for by the
+	/// non-cancellable overload via PropertyManager.WaitForTasks().
+	/// </para>
 	/// </remarks>
 	public virtual async Task WaitForTasks(CancellationToken token)
 	{
 		await this.RunningTasks.WaitForCompletion(token);
-		// Await any in-progress LazyLoad children (auto-triggered by Value getter or explicit LoadAsync)
-		await this.WaitForLazyLoadChildren(token);
 	}
 
 	/// <summary>
@@ -1111,7 +1115,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </remarks>
 	public virtual void FactoryComplete(FactoryOperation factoryOperation)
 	{
-		this.SubscribeToLazyLoadProperties();
+		this.RegisterLazyLoadProperties();
 		this.ResumeAllActions();
 	}
 }

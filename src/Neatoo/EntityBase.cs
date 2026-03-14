@@ -150,24 +150,11 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// Gets a value indicating whether this entity or any child entities have been modified.
     /// </summary>
     /// <value><c>true</c> if any property has changed, the entity is new, deleted, or explicitly marked modified; otherwise, <c>false</c>.</value>
-    public virtual bool IsModified => this.PropertyManager.IsModified || this.IsDeleted || this.IsNew || this.IsSelfModified || IsAnyLazyLoadChildModified();
-
-    /// <summary>
-    /// Checks whether any LazyLoad child entity is modified.
-    /// Returns false when there are no LazyLoad properties.
-    /// </summary>
-    private bool IsAnyLazyLoadChildModified()
-    {
-        var props = GetLazyLoadProperties(GetType());
-        if (props.Length == 0) return false;
-
-        foreach (var prop in props)
-        {
-            if (prop.GetValue(this) is IEntityMetaProperties emp && emp.IsModified)
-                return true;
-        }
-        return false;
-    }
+    /// <remarks>
+    /// LazyLoad child modification is now tracked through PropertyManager via
+    /// LazyLoadEntityProperty subclasses that look through to the inner entity's IsModified.
+    /// </remarks>
+    public virtual bool IsModified => this.PropertyManager.IsModified || this.IsDeleted || this.IsNew || this.IsSelfModified;
 
     /// <summary>
     /// Gets or sets a value indicating whether this entity's own properties have been modified.

@@ -4183,6 +4183,9 @@ partial class UniquePhoneTypeRuleTests
 		/// <summary>Stub implementation of global::DomainModel.IPerson.</summary>
 		public class IPerson : global::DomainModel.IPerson, global::KnockOff.IKnockOffStub
 		{
+			/// <summary>Interceptor for PersonPhoneList.</summary>
+			public global::KnockOff.Interceptors.PropertyGetInterceptor<global::Neatoo.LazyLoad<global::DomainModel.IPersonPhoneList>> PersonPhoneList { get; } = new("PersonPhoneList", () => new global::Neatoo.LazyLoad<global::DomainModel.IPersonPhoneList>());
+
 			/// <summary>Interceptor for Id.</summary>
 			public global::KnockOff.Interceptors.PropertyGetSetInterceptor<global::System.Guid?> Id { get; } = new("Id");
 
@@ -4197,9 +4200,6 @@ partial class UniquePhoneTypeRuleTests
 
 			/// <summary>Interceptor for Notes.</summary>
 			public global::KnockOff.Interceptors.PropertyGetSetInterceptor<string?> Notes { get; } = new("Notes");
-
-			/// <summary>Interceptor for PersonPhoneList.</summary>
-			public global::KnockOff.Interceptors.PropertyGetSetInterceptor<global::DomainModel.IPersonPhoneList> PersonPhoneList { get; } = new("PersonPhoneList");
 
 			/// <summary>Interceptor for IsSavable.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsSavable { get; } = new("IsSavable");
@@ -4285,6 +4285,11 @@ partial class UniquePhoneTypeRuleTests
 			/// <summary>Interceptor for NeatooPropertyChanged event.</summary>
 			public IPerson_NeatooPropertyChangedInterceptor NeatooPropertyChanged { get; } = new();
 
+			global::Neatoo.LazyLoad<global::DomainModel.IPersonPhoneList> global::DomainModel.IPerson.PersonPhoneList
+			{
+				get => PersonPhoneList.InvokeGet(Strict);
+			}
+
 			global::System.Guid? global::DomainModel.IPerson.Id
 			{
 				get => Id.InvokeGet(Strict);
@@ -4313,12 +4318,6 @@ partial class UniquePhoneTypeRuleTests
 			{
 				get => Notes.InvokeGet(Strict);
 				set => Notes.InvokeSet(Strict, value);
-			}
-
-			global::DomainModel.IPersonPhoneList global::DomainModel.IPerson.PersonPhoneList
-			{
-				get => PersonPhoneList.InvokeGet(Strict);
-				set => PersonPhoneList.InvokeSet(Strict, value);
 			}
 
 			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityRoot.Save()
@@ -4499,12 +4498,12 @@ partial class UniquePhoneTypeRuleTests
 			/// <summary>Sets the source object for global::DomainModel.IPerson delegation.</summary>
 			public void Source(global::DomainModel.IPerson? source)
 			{
+				PersonPhoneList.SetSourceFallback(source != null ? () => source.PersonPhoneList : null);
 				Id.SetSourceFallback(source != null ? () => source.Id : null, source != null ? (value) => source.Id = value : null);
 				FirstName.SetSourceFallback(source != null ? () => source.FirstName : null, source != null ? (value) => source.FirstName = value : null);
 				LastName.SetSourceFallback(source != null ? () => source.LastName : null, source != null ? (value) => source.LastName = value : null);
 				Email.SetSourceFallback(source != null ? () => source.Email : null, source != null ? (value) => source.Email = value : null);
 				Notes.SetSourceFallback(source != null ? () => source.Notes : null, source != null ? (value) => source.Notes = value : null);
-				PersonPhoneList.SetSourceFallback(source != null ? () => source.PersonPhoneList : null, source != null ? (value) => source.PersonPhoneList = value : null);
 				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				Root.SetSourceFallback(source != null ? () => source.Root : null);
 				ModifiedProperties.SetSourceFallback(source != null ? () => source.ModifiedProperties : null);
@@ -4536,12 +4535,12 @@ partial class UniquePhoneTypeRuleTests
 			/// <summary>Sets the source object for global::Neatoo.IEntityRoot delegation.</summary>
 			public void Source(global::Neatoo.IEntityRoot? source)
 			{
+				PersonPhoneList.SetSourceFallback(null);
 				Id.SetSourceFallback(null, null);
 				FirstName.SetSourceFallback(null, null);
 				LastName.SetSourceFallback(null, null);
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
-				PersonPhoneList.SetSourceFallback(null, null);
 				IsSavable.SetSourceFallback(source != null ? () => source.IsSavable : null);
 				Root.SetSourceFallback(source != null ? () => source.Root : null);
 				ModifiedProperties.SetSourceFallback(source != null ? () => source.ModifiedProperties : null);
@@ -4573,12 +4572,12 @@ partial class UniquePhoneTypeRuleTests
 			/// <summary>Sets the source object for global::Neatoo.IEntityBase delegation.</summary>
 			public void Source(global::Neatoo.IEntityBase? source)
 			{
+				PersonPhoneList.SetSourceFallback(null);
 				Id.SetSourceFallback(null, null);
 				FirstName.SetSourceFallback(null, null);
 				LastName.SetSourceFallback(null, null);
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
-				PersonPhoneList.SetSourceFallback(null, null);
 				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(source != null ? () => source.Root : null);
 				ModifiedProperties.SetSourceFallback(source != null ? () => source.ModifiedProperties : null);
@@ -4610,12 +4609,12 @@ partial class UniquePhoneTypeRuleTests
 			/// <summary>Sets the source object for global::Neatoo.IValidateBase delegation.</summary>
 			public void Source(global::Neatoo.IValidateBase? source)
 			{
+				PersonPhoneList.SetSourceFallback(null);
 				Id.SetSourceFallback(null, null);
 				FirstName.SetSourceFallback(null, null);
 				LastName.SetSourceFallback(null, null);
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
-				PersonPhoneList.SetSourceFallback(null, null);
 				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
@@ -4647,12 +4646,12 @@ partial class UniquePhoneTypeRuleTests
 			/// <summary>Sets the source object for global::Neatoo.INeatooObject delegation.</summary>
 			public void Source(global::Neatoo.INeatooObject? source)
 			{
+				PersonPhoneList.SetSourceFallback(null);
 				Id.SetSourceFallback(null, null);
 				FirstName.SetSourceFallback(null, null);
 				LastName.SetSourceFallback(null, null);
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
-				PersonPhoneList.SetSourceFallback(null, null);
 				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
@@ -4684,12 +4683,12 @@ partial class UniquePhoneTypeRuleTests
 			/// <summary>Sets the source object for global::System.ComponentModel.INotifyPropertyChanged delegation.</summary>
 			public void Source(global::System.ComponentModel.INotifyPropertyChanged? source)
 			{
+				PersonPhoneList.SetSourceFallback(null);
 				Id.SetSourceFallback(null, null);
 				FirstName.SetSourceFallback(null, null);
 				LastName.SetSourceFallback(null, null);
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
-				PersonPhoneList.SetSourceFallback(null, null);
 				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
@@ -4721,12 +4720,12 @@ partial class UniquePhoneTypeRuleTests
 			/// <summary>Sets the source object for global::Neatoo.INotifyNeatooPropertyChanged delegation.</summary>
 			public void Source(global::Neatoo.INotifyNeatooPropertyChanged? source)
 			{
+				PersonPhoneList.SetSourceFallback(null);
 				Id.SetSourceFallback(null, null);
 				FirstName.SetSourceFallback(null, null);
 				LastName.SetSourceFallback(null, null);
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
-				PersonPhoneList.SetSourceFallback(null, null);
 				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
@@ -4758,12 +4757,12 @@ partial class UniquePhoneTypeRuleTests
 			/// <summary>Sets the source object for global::Neatoo.IValidateMetaProperties delegation.</summary>
 			public void Source(global::Neatoo.IValidateMetaProperties? source)
 			{
+				PersonPhoneList.SetSourceFallback(null);
 				Id.SetSourceFallback(null, null);
 				FirstName.SetSourceFallback(null, null);
 				LastName.SetSourceFallback(null, null);
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
-				PersonPhoneList.SetSourceFallback(null, null);
 				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
@@ -4795,12 +4794,12 @@ partial class UniquePhoneTypeRuleTests
 			/// <summary>Sets the source object for global::Neatoo.IEntityMetaProperties delegation.</summary>
 			public void Source(global::Neatoo.IEntityMetaProperties? source)
 			{
+				PersonPhoneList.SetSourceFallback(null);
 				Id.SetSourceFallback(null, null);
 				FirstName.SetSourceFallback(null, null);
 				LastName.SetSourceFallback(null, null);
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
-				PersonPhoneList.SetSourceFallback(null, null);
 				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
@@ -4832,12 +4831,12 @@ partial class UniquePhoneTypeRuleTests
 			/// <summary>Sets the source object for global::Neatoo.RemoteFactory.IFactorySaveMeta delegation.</summary>
 			public void Source(global::Neatoo.RemoteFactory.IFactorySaveMeta? source)
 			{
+				PersonPhoneList.SetSourceFallback(null);
 				Id.SetSourceFallback(null, null);
 				FirstName.SetSourceFallback(null, null);
 				LastName.SetSourceFallback(null, null);
 				Email.SetSourceFallback(null, null);
 				Notes.SetSourceFallback(null, null);
-				PersonPhoneList.SetSourceFallback(null, null);
 				IsSavable.SetSourceFallback(null);
 				Root.SetSourceFallback(null);
 				ModifiedProperties.SetSourceFallback(null);
@@ -4871,12 +4870,12 @@ partial class UniquePhoneTypeRuleTests
 			{
 				var failures = new global::System.Collections.Generic.List<global::KnockOff.VerificationFailure>();
 
+				if (PersonPhoneList.CheckVerification() is { } personphonelistFailure) failures.Add(personphonelistFailure);
 				if (Id.CheckVerification() is { } idFailure) failures.Add(idFailure);
 				if (FirstName.CheckVerification() is { } firstnameFailure) failures.Add(firstnameFailure);
 				if (LastName.CheckVerification() is { } lastnameFailure) failures.Add(lastnameFailure);
 				if (Email.CheckVerification() is { } emailFailure) failures.Add(emailFailure);
 				if (Notes.CheckVerification() is { } notesFailure) failures.Add(notesFailure);
-				if (PersonPhoneList.CheckVerification() is { } personphonelistFailure) failures.Add(personphonelistFailure);
 				if (IsSavable.CheckVerification() is { } issavableFailure) failures.Add(issavableFailure);
 				if (Root.CheckVerification() is { } rootFailure) failures.Add(rootFailure);
 				if (ModifiedProperties.CheckVerification() is { } modifiedpropertiesFailure) failures.Add(modifiedpropertiesFailure);
@@ -4915,12 +4914,12 @@ partial class UniquePhoneTypeRuleTests
 			{
 				var failures = new global::System.Collections.Generic.List<global::KnockOff.VerificationFailure>();
 
+				if (PersonPhoneList.CheckVerificationAll() is { } personphonelistFailure) failures.Add(personphonelistFailure);
 				if (Id.CheckVerificationAll() is { } idFailure) failures.Add(idFailure);
 				if (FirstName.CheckVerificationAll() is { } firstnameFailure) failures.Add(firstnameFailure);
 				if (LastName.CheckVerificationAll() is { } lastnameFailure) failures.Add(lastnameFailure);
 				if (Email.CheckVerificationAll() is { } emailFailure) failures.Add(emailFailure);
 				if (Notes.CheckVerificationAll() is { } notesFailure) failures.Add(notesFailure);
-				if (PersonPhoneList.CheckVerificationAll() is { } personphonelistFailure) failures.Add(personphonelistFailure);
 				if (IsSavable.CheckVerificationAll() is { } issavableFailure) failures.Add(issavableFailure);
 				if (Root.CheckVerificationAll() is { } rootFailure) failures.Add(rootFailure);
 				if (ModifiedProperties.CheckVerificationAll() is { } modifiedpropertiesFailure) failures.Add(modifiedpropertiesFailure);

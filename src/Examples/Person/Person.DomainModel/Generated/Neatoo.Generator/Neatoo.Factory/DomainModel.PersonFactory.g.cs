@@ -147,7 +147,6 @@ namespace DomainModel
             var _sw = System.Diagnostics.Stopwatch.StartNew();
             var target = ServiceProvider.GetRequiredService<Person>();
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
-            var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
             try
             {
                 if (target is IFactoryOnStart _factoryOnStart)
@@ -161,7 +160,7 @@ namespace DomainModel
                     await _factoryOnStartAsync.FactoryStartAsync(FactoryOperation.Fetch);
                 }
 
-                var _succeeded = await target.Fetch(personContext, personPhoneModelListFactory, cancellationToken);
+                var _succeeded = await target.Fetch(personContext, cancellationToken);
                 if (!_succeeded)
                 {
                     _sw.Stop();
@@ -234,7 +233,6 @@ namespace DomainModel
             _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Insert, "IPerson");
             var _sw = System.Diagnostics.Stopwatch.StartNew();
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
-            var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
             try
             {
                 if (cTarget is IFactoryOnStart _factoryOnStart)
@@ -248,7 +246,7 @@ namespace DomainModel
                     await _factoryOnStartAsync.FactoryStartAsync(FactoryOperation.Insert);
                 }
 
-                await cTarget.Insert(personContext, personPhoneModelListFactory, cancellationToken);
+                await cTarget.Insert(personContext, cancellationToken);
                 if (cTarget is IFactoryOnComplete _factoryOnComplete)
                 {
                     _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPerson");
@@ -314,7 +312,6 @@ namespace DomainModel
             _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Update, "IPerson");
             var _sw = System.Diagnostics.Stopwatch.StartNew();
             var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
-            var personPhoneModelListFactory = ServiceProvider.GetRequiredService<IPersonPhoneListFactory>();
             try
             {
                 if (cTarget is IFactoryOnStart _factoryOnStart)
@@ -328,7 +325,7 @@ namespace DomainModel
                     await _factoryOnStartAsync.FactoryStartAsync(FactoryOperation.Update);
                 }
 
-                await cTarget.Update(personContext, personPhoneModelListFactory, cancellationToken);
+                await cTarget.Update(personContext, cancellationToken);
                 if (cTarget is IFactoryOnComplete _factoryOnComplete)
                 {
                     _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPerson");

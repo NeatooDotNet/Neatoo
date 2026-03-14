@@ -30,7 +30,7 @@ public partial class LazyLoadEntityObject : EntityBase<LazyLoadEntityObject>, IL
         set
         {
             _lazyChild = value;
-            SubscribeToLazyLoadProperties();
+            RegisterLazyLoadProperties();
         }
     }
 
