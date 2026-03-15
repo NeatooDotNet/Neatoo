@@ -40,37 +40,53 @@
                 <MudNeatooTextField T="string" EntityProperty="@Person["Email"]" Class="mb-3" />
 
                 <MudText Typo="Typo.h5" Class="my-3">Phone Numbers</MudText>
-                <MudButton Variant="Variant.Filled"
-                          Color="Color.Primary"
-                          OnClick="AddPhone"
-                          StartIcon="@Icons.Material.Filled.Add"
-                          Size="Size.Small"
-                          Class="mb-3">
-                    Add Phone
-                </MudButton>
 
-                @foreach (var phone in Person.PersonPhoneList)
+                @if (Person.PersonPhoneList.HasLoadError)
                 {
-                    <MudGrid Class="mb-2" Spacing="2">
-                        <MudItem xs="12" sm="4">
-                            <MudNeatooSelect T="PhoneType?"
-                                            EntityProperty="@phone[nameof(IPersonPhone.PhoneType)]"
-                                            Placeholder="Select Phone Type">
-                                <MudSelectItem Value="@((PhoneType?)PhoneType.Home)">Home</MudSelectItem>
-                                <MudSelectItem Value="@((PhoneType?)PhoneType.Mobile)">Mobile</MudSelectItem>
-                                <MudSelectItem Value="@((PhoneType?)PhoneType.Work)">Work</MudSelectItem>
-                            </MudNeatooSelect>
-                        </MudItem>
-                        <MudItem xs="10" sm="6">
-                            <MudNeatooTextField T="string" EntityProperty="@phone[nameof(IPersonPhone.PhoneNumber)]" />
-                        </MudItem>
-                        <MudItem xs="2" sm="2" Class="d-flex align-center">
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                          Color="Color.Error"
-                                          Size="Size.Medium"
-                                          OnClick="() => RemovePhone(phone)" />
-                        </MudItem>
-                    </MudGrid>
+                    <MudAlert Severity="Severity.Error">@Person.PersonPhoneList.LoadError</MudAlert>
+                }
+                else if (Person.PersonPhoneList.Value != null)
+                {
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Primary"
+                              OnClick="AddPhone"
+                              StartIcon="@Icons.Material.Filled.Add"
+                              Size="Size.Small"
+                              Class="mb-3">
+                        Add Phone
+                    </MudButton>
+
+                    @foreach (var phone in Person.PersonPhoneList.Value)
+                    {
+                        <MudGrid Class="mb-2" Spacing="2">
+                            <MudItem xs="12" sm="4">
+                                <MudNeatooSelect T="PhoneType?"
+                                                EntityProperty="@phone[nameof(IPersonPhone.PhoneType)]"
+                                                Placeholder="Select Phone Type">
+                                    <MudSelectItem Value="@((PhoneType?)PhoneType.Home)">Home</MudSelectItem>
+                                    <MudSelectItem Value="@((PhoneType?)PhoneType.Mobile)">Mobile</MudSelectItem>
+                                    <MudSelectItem Value="@((PhoneType?)PhoneType.Work)">Work</MudSelectItem>
+                                </MudNeatooSelect>
+                            </MudItem>
+                            <MudItem xs="10" sm="6">
+                                <MudNeatooTextField T="string" EntityProperty="@phone[nameof(IPersonPhone.PhoneNumber)]" />
+                            </MudItem>
+                            <MudItem xs="2" sm="2" Class="d-flex align-center">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                              Color="Color.Error"
+                                              Size="Size.Medium"
+                                              OnClick="() => RemovePhone(phone)" />
+                            </MudItem>
+                        </MudGrid>
+                    }
+                }
+                else if (Person.PersonPhoneList.IsLoaded)
+                {
+                    <MudAlert Severity="Severity.Warning">No phone data</MudAlert>
+                }
+                else
+                {
+                    <MudProgressCircular Indeterminate="true" Size="Size.Small" />
                 }
 
                 <MudNeatooTextField T="string" EntityProperty="@Person["Notes"]"
@@ -223,11 +239,11 @@
 
     private void AddPhone()
     {
-        Person!.PersonPhoneList.AddPhoneNumber();
+        Person!.PersonPhoneList.Value!.AddPhoneNumber();
     }
 
     private Task RemovePhone(IPersonPhone personPhoneModel)
     {
-        return Person!.PersonPhoneList.RemovePhoneNumber(personPhoneModel);
+        return Person!.PersonPhoneList.Value!.RemovePhoneNumber(personPhoneModel);
     }
 }

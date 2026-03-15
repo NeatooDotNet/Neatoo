@@ -92,19 +92,7 @@ internal partial class CrashParent : EntityBase<CrashParent>, ICrashParent
     public partial string LoadedData { get; set; }
     public partial Guid Id { get; set; }
 
-    // LazyLoad with private setter -- the Neatoo serializer will find this during
-    // deserialization (scans for LazyLoad<> with SetMethod != null) and overwrite
-    // the constructor-created instance with a deserialized one that has no loader.
-    private LazyLoad<ICrashChild> _lazyChild = null!;
-    public LazyLoad<ICrashChild> LazyChild
-    {
-        get => _lazyChild;
-        private set
-        {
-            _lazyChild = value;
-            SubscribeToLazyLoadProperties();
-        }
-    }
+    public partial LazyLoad<ICrashChild> LazyChild { get; set; }
 
     [Remote]
     [Fetch]

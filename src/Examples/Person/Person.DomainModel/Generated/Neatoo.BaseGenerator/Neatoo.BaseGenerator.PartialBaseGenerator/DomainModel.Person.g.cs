@@ -23,8 +23,6 @@ namespace DomainModel
         string? Email { get; set; }
 
         string? Notes { get; set; }
-
-        IPersonPhoneList PersonPhoneList { get; set; }
     }
 
     internal partial class Person
@@ -34,7 +32,7 @@ namespace DomainModel
         protected IValidateProperty<string?> LastNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(LastName)]!;
         protected IValidateProperty<string?> EmailProperty => (IValidateProperty<string?>)PropertyManager[nameof(Email)]!;
         protected IValidateProperty<string?> NotesProperty => (IValidateProperty<string?>)PropertyManager[nameof(Notes)]!;
-        protected IValidateProperty<IPersonPhoneList> PersonPhoneListProperty => (IValidateProperty<IPersonPhoneList>)PropertyManager[nameof(PersonPhoneList)]!;
+        protected IValidateProperty<LazyLoad<IPersonPhoneList>> PersonPhoneListProperty => (IValidateProperty<LazyLoad<IPersonPhoneList>>)PropertyManager[nameof(PersonPhoneList)]!;
 
         public partial Guid? Id
         {
@@ -106,17 +104,12 @@ namespace DomainModel
             }
         }
 
-        public partial IPersonPhoneList PersonPhoneList
+        public partial LazyLoad<IPersonPhoneList> PersonPhoneList
         {
             get => PersonPhoneListProperty.Value;
             set
             {
-                PersonPhoneListProperty.Value = value;
-                if (!PersonPhoneListProperty.Task.IsCompleted)
-                {
-                    Parent?.AddChildTask(PersonPhoneListProperty.Task);
-                    RunningTasks.AddTask(PersonPhoneListProperty.Task);
-                }
+                PersonPhoneListProperty.LoadValue(value);
             }
         }
 
@@ -175,7 +168,7 @@ namespace DomainModel
             PropertyManager.Register(factory.Create<string?>(this, nameof(LastName)));
             PropertyManager.Register(factory.Create<string?>(this, nameof(Email)));
             PropertyManager.Register(factory.Create<string?>(this, nameof(Notes)));
-            PropertyManager.Register(factory.Create<IPersonPhoneList>(this, nameof(PersonPhoneList)));
+            PropertyManager.Register(factory.CreateLazyLoad<IPersonPhoneList>(this, nameof(PersonPhoneList)));
         }
     }
 }

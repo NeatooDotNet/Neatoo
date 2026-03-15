@@ -156,6 +156,12 @@ public static class GeneratorTestHelper
             public interface IValidateBase { }
             public interface IEntityBase : IValidateBase { }
 
+            public class LazyLoad<T> where T : class?
+            {
+                public T? Value { get; }
+                public bool IsLoaded { get; }
+            }
+
             public class ValidateBase<T> where T : ValidateBase<T>
             {
                 protected TValue Getter<TValue>() => default!;

@@ -20,19 +20,9 @@ public partial class LazyLoadEntityObject : EntityBase<LazyLoadEntityObject>, IL
     public partial Guid ID { get; set; }
     public partial string Name { get; set; }
 
-    // LazyLoad<T> is a regular property -- not partial, not in PropertyManager
-    public LazyLoad<string> LazyDescription { get; set; } = null!;
+    public partial LazyLoad<string> LazyDescription { get; set; }
 
-    private LazyLoad<ILazyLoadEntityObject> _lazyChild = null!;
-    public LazyLoad<ILazyLoadEntityObject> LazyChild
-    {
-        get => _lazyChild;
-        set
-        {
-            _lazyChild = value;
-            SubscribeToLazyLoadProperties();
-        }
-    }
+    public partial LazyLoad<ILazyLoadEntityObject> LazyChild { get; set; }
 
     [Fetch]
     public Task Fetch(Guid id, string name, [Service] ILazyLoadFactory lazyLoadFactory)

@@ -83,19 +83,10 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
     public partial string LoadedData { get; set; }
     public partial Guid Id { get; set; }
 
-    // LazyLoad property with private setter.
-    // The setter calls SubscribeToLazyLoadProperties() so meta properties
-    // (IsValid, IsModified, etc.) propagate from the loaded child.
-    private LazyLoad<ISkillLazyChild> _lazyChild = null!;
-    public LazyLoad<ISkillLazyChild> LazyChild
-    {
-        get => _lazyChild;
-        private set
-        {
-            _lazyChild = value;
-            SubscribeToLazyLoadProperties();
-        }
-    }
+    // LazyLoad property -- partial, just like every other Neatoo property.
+    // The generator handles backing field, setter (LoadValue), and registration.
+    // Meta properties (IsValid, IsModified, etc.) propagate from the loaded child.
+    public partial LazyLoad<ISkillLazyChild> LazyChild { get; set; }
 
     [Remote]
     [Fetch]

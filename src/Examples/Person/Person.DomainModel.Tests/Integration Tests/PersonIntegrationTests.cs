@@ -66,10 +66,11 @@ namespace DomainModel.Tests.IntegrationTests
             person.Email = "a@a.com";
             person.Notes = "Some notes";
 
-            var phoneNumber = person.PersonPhoneList.AddPhoneNumber();
+            var phoneList = person.PersonPhoneList.Value!;
+            var phoneNumber = phoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Home;
             phoneNumber.PhoneNumber = "1234567890";
-            phoneNumber = person.PersonPhoneList.AddPhoneNumber();
+            phoneNumber = phoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Work;
             phoneNumber.PhoneNumber = "0987654321";
 
@@ -111,7 +112,8 @@ namespace DomainModel.Tests.IntegrationTests
             await CheckValid();
 
             // Check phone number required fields
-            personPhone = person.PersonPhoneList.AddPhoneNumber();
+            var phoneList = person.PersonPhoneList.Value!;
+            personPhone = phoneList.AddPhoneNumber();
 
             await CheckInvalid();
 
@@ -120,7 +122,7 @@ namespace DomainModel.Tests.IntegrationTests
             await CheckValid();
 
             // Add another phone number with a duplicate phone type
-            personPhone = person.PersonPhoneList.AddPhoneNumber();
+            personPhone = phoneList.AddPhoneNumber();
             await CheckInvalid();
 
             personPhone.PhoneType = PhoneType.Home;
@@ -131,7 +133,7 @@ namespace DomainModel.Tests.IntegrationTests
             await CheckValid();
 
             // Add another phone number with a duplicate phone number
-            personPhone = person.PersonPhoneList.AddPhoneNumber();
+            personPhone = phoneList.AddPhoneNumber();
             await CheckInvalid();
 
             personPhone.PhoneType = PhoneType.Mobile;
@@ -177,11 +179,15 @@ namespace DomainModel.Tests.IntegrationTests
             Assert.Equal(personEntity.LastName, result.LastName);
             Assert.Equal(personEntity.Email, result.Email);
             Assert.Equal(personEntity.Notes, result.Notes);
-            Assert.Equal(2, result.PersonPhoneList.Count);
-            Assert.Equal("1234567890", result.PersonPhoneList[0].PhoneNumber);
-            Assert.Equal(PhoneType.Home, (PhoneType)result.PersonPhoneList[0].PhoneType);
-            Assert.Equal("0987654321", result.PersonPhoneList[1].PhoneNumber);
-            Assert.Equal(PhoneType.Work, (PhoneType)result.PersonPhoneList[1].PhoneType);
+
+            // PersonPhoneList is lazy — await it to load
+            var fetchedPhoneList = await result.PersonPhoneList;
+            Assert.NotNull(fetchedPhoneList);
+            Assert.Equal(2, fetchedPhoneList.Count);
+            Assert.Equal("1234567890", fetchedPhoneList[0].PhoneNumber);
+            Assert.Equal(PhoneType.Home, (PhoneType)fetchedPhoneList[0].PhoneType);
+            Assert.Equal("0987654321", fetchedPhoneList[1].PhoneNumber);
+            Assert.Equal(PhoneType.Work, (PhoneType)fetchedPhoneList[1].PhoneType);
         }
 
         [Fact]
@@ -214,12 +220,16 @@ namespace DomainModel.Tests.IntegrationTests
             // Act
             var result = (IPerson?)await factory.Save(person, CancellationToken.None);
 
+            // Await the lazy-loaded phone list after fetch-back from save
+            var phoneList = await result.PersonPhoneList;
+            Assert.NotNull(phoneList);
+
             result.FirstName = this.firstName;
             result.LastName = this.lastName;
             result.Email = "1234567890";
-            result.PersonPhoneList[0].PhoneNumber = "1111111111";
-            result.PersonPhoneList[0].PhoneType = PhoneType.Mobile;
-            result.PersonPhoneList[1].Delete();
+            phoneList[0].PhoneNumber = "1111111111";
+            phoneList[0].PhoneType = PhoneType.Mobile;
+            phoneList[1].Delete();
             result.Notes = "Updated notes";
 
             await result.WaitForTasks();
@@ -263,7 +273,8 @@ namespace DomainModel.Tests.IntegrationTests
             person.FirstName = this.firstName;
             person.LastName = this.lastName;
 
-            var phoneNumber = person.PersonPhoneList.AddPhoneNumber();
+            var phoneList = person.PersonPhoneList.Value!;
+            var phoneNumber = phoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Home;
             phoneNumber.PhoneNumber = "1234567890";
 
@@ -271,7 +282,7 @@ namespace DomainModel.Tests.IntegrationTests
 
             Assert.True(person.IsValid);
 
-            phoneNumber = person.PersonPhoneList.AddPhoneNumber();
+            phoneNumber = phoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Home;
             phoneNumber.PhoneNumber = "0987654321";
 
@@ -289,7 +300,8 @@ namespace DomainModel.Tests.IntegrationTests
             person.FirstName = this.firstName;
             person.LastName = this.lastName;
 
-            var phoneNumber = person.PersonPhoneList.AddPhoneNumber();
+            var phoneList = person.PersonPhoneList.Value!;
+            var phoneNumber = phoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Home;
             phoneNumber.PhoneNumber = "1234567890";
 
@@ -297,7 +309,7 @@ namespace DomainModel.Tests.IntegrationTests
 
             Assert.True(person.IsValid);
 
-            phoneNumber = person.PersonPhoneList.AddPhoneNumber();
+            phoneNumber = phoneList.AddPhoneNumber();
             phoneNumber.PhoneType = PhoneType.Mobile;
             phoneNumber.PhoneNumber = "1234567890";
 

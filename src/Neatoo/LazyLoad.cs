@@ -141,6 +141,38 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
     }
 
     /// <summary>
+    /// Directly sets the inner value, bypassing the loader delegate.
+    /// Marks the LazyLoad as loaded, clears any load error, and fires PropertyChanged events.
+    /// Null is a valid loaded state.
+    /// </summary>
+    /// <param name="value">The value to set. May be null.</param>
+    /// <remarks>
+    /// <para>
+    /// This method is used by LazyLoad property subclasses to implement the
+    /// <see cref="IValidateProperty.Value"/> setter, allowing framework code to set
+    /// the inner entity without going through the loader delegate.
+    /// </para>
+    /// <para>
+    /// The loader delegate is preserved (not cleared) in case a future "reload" scenario is needed.
+    /// If a load is in progress, the setter wins -- <c>_isLoaded = true</c> and <c>_loadTask = null</c>.
+    /// The in-flight async operation cannot be cancelled but its result will not overwrite this value
+    /// because <see cref="LoadAsync"/> checks <c>_isLoaded</c> before starting a new load.
+    /// </para>
+    /// </remarks>
+    public void SetValue(T? value)
+    {
+        UnsubscribeFromValuePropertyChanged(_value);
+        _value = value;
+        _isLoaded = true;
+        _loadError = null;
+        _loadTask = null;
+        SubscribeToValuePropertyChanged(_value);
+        OnPropertyChanged(nameof(Value));
+        OnPropertyChanged(nameof(IsLoaded));
+        OnPropertyChanged(nameof(HasLoadError));
+    }
+
+    /// <summary>
     /// Gets the current value. Returns <c>null</c> synchronously if not yet loaded.
     /// Auto-triggers a fire-and-forget <see cref="LoadAsync"/> when the value has not been loaded,
     /// no load is in progress, and a loader delegate is configured.

@@ -65,19 +65,10 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
     public partial string LoadedData { get; set; }
     public partial Guid Id { get; set; }
 
-    // LazyLoad property with private setter.
-    // The setter calls SubscribeToLazyLoadProperties() so meta properties
-    // (IsValid, IsModified, etc.) propagate from the loaded child.
-    private LazyLoad<ISkillLazyChild> _lazyChild = null!;
-    public LazyLoad<ISkillLazyChild> LazyChild
-    {
-        get => _lazyChild;
-        private set
-        {
-            _lazyChild = value;
-            SubscribeToLazyLoadProperties();
-        }
-    }
+    // LazyLoad property -- partial, just like every other Neatoo property.
+    // The generator handles backing field, setter (LoadValue), and registration.
+    // Meta properties (IsValid, IsModified, etc.) propagate from the loaded child.
+    public partial LazyLoad<ISkillLazyChild> LazyChild { get; set; }
 
     [Remote]
     [Fetch]
@@ -93,7 +84,7 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
     }
 }
 ```
-<sup><a href='/src/samples/LazyLoadSamples.cs#L52-L113' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazyload-constructor-pattern' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/LazyLoadSamples.cs#L52-L104' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazyload-constructor-pattern' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Why This Works with Serialization
@@ -106,25 +97,35 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
 
 ### LazyLoad Property Declaration
 
-Declare with a private setter and call `SubscribeToLazyLoadProperties()` so meta properties (`IsValid`, `IsModified`, etc.) propagate from the loaded child:
+Declare as a `partial` property — just like every other Neatoo property. The source generator handles the backing field, setter (using `LoadValue`), and registration (using `factory.CreateLazyLoad<TInner>()`). Meta properties (`IsValid`, `IsModified`, `IsBusy`, etc.) automatically propagate from the loaded child through look-through property subclasses in PropertyManager.
 
 ```csharp
-private LazyLoad<IChild> _lazyChild = null!;
-public LazyLoad<IChild> LazyChild
+// That's it. No manual backing field, no SubscribeToLazyLoadProperties().
+public partial LazyLoad<IChild> LazyChild { get; set; }
+```
+
+The generator produces a `LazyLoadValidateProperty<IChild>` (or `LazyLoadEntityProperty<IChild>` for EntityBase) backing field that sees through to the inner entity for all framework operations.
+
+## SetValue — Direct Value Assignment
+
+`LazyLoad<T>.SetValue(T?)` assigns a value directly, bypassing the loader delegate. This marks the instance as loaded, clears any load error, and fires `PropertyChanged`. Use this in `[Create]` methods to pre-load with an empty or default value:
+
+```csharp
+[Create]
+public void Create([Service] IPersonPhoneList emptyPhoneList)
 {
-    get => _lazyChild;
-    private set
-    {
-        _lazyChild = value;
-        SubscribeToLazyLoadProperties();
-    }
+    // Pre-load with empty list — IsLoaded becomes true immediately
+    PersonPhoneList.SetValue(emptyPhoneList);
 }
 ```
+
+`SetValue` manages child event subscriptions (unsubscribes from old value, subscribes to new). The loaded child integrates into PropertyManager's parent-child tracking automatically.
 
 ## Anti-Patterns
 
 - **Do NOT create `LazyLoad<T>` in `[Fetch]` or `[Create]`** — these only run server-side. The loader delegate is `[JsonIgnore]` and lost during serialization. Always create in the constructor.
 - **Do NOT use `OnDeserialized`/`InitializeLazyLoaders`/`ReinitializeLazyLoaders`** — unnecessary complexity. The converter preserves constructor-created instances. Move LazyLoad creation to the constructor instead.
+- **Do NOT use manual backing fields or `SubscribeToLazyLoadProperties()`** — this is the old pattern. Declare as `partial` and let the generator handle registration and meta property propagation.
 
 ## Loading
 

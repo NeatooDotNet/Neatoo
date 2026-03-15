@@ -338,6 +338,7 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
             this.IsBusy = this.PropertyBag.Any(p => p.Value.IsBusy);
         }
     }
+
 }
 
 

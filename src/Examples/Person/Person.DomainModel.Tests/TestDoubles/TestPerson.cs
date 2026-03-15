@@ -12,8 +12,9 @@ internal class TestPerson : Person
     public bool IsSavableOverride { get; set; } = true;
     public int RunRulesCallCount { get; private set; }
 
-    public TestPerson(IEntityBaseServices<Person> services, IUniqueNameRule rule)
-        : base(services, rule)
+    public TestPerson(IEntityBaseServices<Person> services, IUniqueNameRule rule,
+                      IPersonPhoneListFactory personPhoneListFactory, ILazyLoadFactory lazyLoadFactory)
+        : base(services, rule, personPhoneListFactory, lazyLoadFactory)
     {
     }
 

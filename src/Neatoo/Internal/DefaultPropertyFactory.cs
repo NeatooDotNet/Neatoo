@@ -27,4 +27,13 @@ public class DefaultPropertyFactory<[DynamicallyAccessedMembers(DynamicallyAcces
 
         return _factory.CreateValidateProperty<TProperty>(propertyInfo);
     }
+
+    /// <inheritdoc />
+    public IValidateProperty CreateLazyLoad<TInner>(TOwner owner, string propertyName) where TInner : class?
+    {
+        var propertyInfo = _propertyInfoList.GetPropertyInfo(propertyName)
+            ?? throw new PropertyNotFoundException($"Property '{propertyName}' not found in '{typeof(TOwner).Name}'");
+
+        return new LazyLoadValidateProperty<TInner>(propertyInfo);
+    }
 }

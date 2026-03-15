@@ -39,7 +39,15 @@ internal static class InitializerGenerator
             sb.AppendLine("            // The backing field properties are computed and fetch from PropertyManager");
             foreach (var property in classInfo.Properties)
             {
-                sb.AppendLine($"            PropertyManager.Register(factory.Create<{property.Type}>({thisRef}, nameof({property.Name})));");
+                if (property.IsLazyLoad)
+                {
+                    // LazyLoad properties use CreateLazyLoad<TInner> with the inner type
+                    sb.AppendLine($"            PropertyManager.Register(factory.CreateLazyLoad<{property.LazyLoadInnerType}>({thisRef}, nameof({property.Name})));");
+                }
+                else
+                {
+                    sb.AppendLine($"            PropertyManager.Register(factory.Create<{property.Type}>({thisRef}, nameof({property.Name})));");
+                }
             }
         }
 

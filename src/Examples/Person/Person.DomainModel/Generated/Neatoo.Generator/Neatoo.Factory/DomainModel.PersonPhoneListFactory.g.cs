@@ -14,11 +14,12 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 */
 namespace DomainModel
 {
-    internal interface IPersonPhoneListFactory
+    public interface IPersonPhoneListFactory
     {
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(PersonPhoneListFactory))]
-        IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default);
-        IPersonPhoneList Save(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default);
+        internal IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default);
+        Task<IPersonPhoneList> Fetch(Guid personId, CancellationToken cancellationToken = default);
+        internal IPersonPhoneList Save(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default);
     }
 
     internal class PersonPhoneListFactory : IPersonPhoneListFactory
@@ -26,16 +27,21 @@ namespace DomainModel
         private readonly IServiceProvider ServiceProvider;
         private readonly IMakeRemoteDelegateRequest? MakeRemoteDelegateRequest;
         // Delegates
+        public delegate Task<IPersonPhoneList> Fetch1Delegate(Guid personId, CancellationToken cancellationToken = default);
         // Delegate Properties to provide Local or Remote fork in execution
+        public Fetch1Delegate Fetch1Property { get; }
+
         public PersonPhoneListFactory(IServiceProvider serviceProvider)
         {
             this.ServiceProvider = serviceProvider;
+            Fetch1Property = LocalFetch1;
         }
 
         public PersonPhoneListFactory(IServiceProvider serviceProvider, IMakeRemoteDelegateRequest remoteMethodDelegate)
         {
             this.ServiceProvider = serviceProvider;
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
+            Fetch1Property = RemoteFetch1;
         }
 
         public virtual IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default)
@@ -72,6 +78,82 @@ namespace DomainModel
                 _sw.Stop();
                 _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} completed for {TypeName} in {ElapsedMs}ms", _correlationId, FactoryOperation.Fetch, "IPersonPhoneList", _sw.ElapsedMilliseconds);
                 return (IPersonPhoneList)target;
+            }
+            catch (Exception _ex)
+            {
+                _sw.Stop();
+                _logger?.LogError(_ex, "[{CorrelationId}] Factory operation {Operation} failed for {TypeName}: {ErrorMessage}", _correlationId, FactoryOperation.Fetch, "IPersonPhoneList", _ex.Message);
+                throw;
+            }
+        }
+
+        public virtual Task<IPersonPhoneList> Fetch(Guid personId, CancellationToken cancellationToken = default)
+        {
+            return Fetch1Property(personId, cancellationToken);
+        }
+
+        public virtual async Task<IPersonPhoneList> RemoteFetch1(Guid personId, CancellationToken cancellationToken = default)
+        {
+            return (await MakeRemoteDelegateRequest!.ForDelegate<IPersonPhoneList>(typeof(Fetch1Delegate), [personId], cancellationToken))!;
+        }
+
+        public async Task<IPersonPhoneList> LocalFetch1(Guid personId, CancellationToken cancellationToken = default)
+        {
+            if (!NeatooRuntime.IsServerRuntime)
+                throw new InvalidOperationException("Server-only method called in non-server runtime.");
+            var _logger = ServiceProvider.GetService<ILogger<PersonPhoneListFactory>>();
+            var _correlationContext = ServiceProvider.GetService<ICorrelationContext>();
+            var _correlationId = _correlationContext?.CorrelationId;
+            _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Fetch, "IPersonPhoneList");
+            var _sw = System.Diagnostics.Stopwatch.StartNew();
+            var target = ServiceProvider.GetRequiredService<PersonPhoneList>();
+            var personContext = ServiceProvider.GetRequiredService<IPersonDbContext>();
+            var personPhoneModelFactory = ServiceProvider.GetRequiredService<IPersonPhoneFactory>();
+            try
+            {
+                if (target is IFactoryOnStart _factoryOnStart)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnStart for {TypeName}", "IPersonPhoneList");
+                    _factoryOnStart.FactoryStart(FactoryOperation.Fetch);
+                }
+
+                if (target is IFactoryOnStartAsync _factoryOnStartAsync)
+                {
+                    await _factoryOnStartAsync.FactoryStartAsync(FactoryOperation.Fetch);
+                }
+
+                await target.Fetch(personId, personContext, personPhoneModelFactory, cancellationToken);
+                if (target is IFactoryOnComplete _factoryOnComplete)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPersonPhoneList");
+                    _factoryOnComplete.FactoryComplete(FactoryOperation.Fetch);
+                }
+
+                if (target is IFactoryOnCompleteAsync _factoryOnCompleteAsync)
+                {
+                    await _factoryOnCompleteAsync.FactoryCompleteAsync(FactoryOperation.Fetch);
+                }
+
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} completed for {TypeName} in {ElapsedMs}ms", _correlationId, FactoryOperation.Fetch, "IPersonPhoneList", _sw.ElapsedMilliseconds);
+                return (IPersonPhoneList)target;
+            }
+            catch (OperationCanceledException)
+            {
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} cancelled for {TypeName}", _correlationId, FactoryOperation.Fetch, "IPersonPhoneList");
+                if (target is IFactoryOnCancelled _factoryOnCancelled)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnCancelled for {TypeName}", "IPersonPhoneList");
+                    _factoryOnCancelled.FactoryCancelled(FactoryOperation.Fetch);
+                }
+
+                if (target is IFactoryOnCancelledAsync _factoryOnCancelledAsync)
+                {
+                    await _factoryOnCancelledAsync.FactoryCancelledAsync(FactoryOperation.Fetch);
+                }
+
+                throw;
             }
             catch (Exception _ex)
             {
@@ -148,6 +230,11 @@ namespace DomainModel
             services.AddScoped<IPersonPhoneListFactory, PersonPhoneListFactory>();
             services.AddTransient<PersonPhoneList>();
             services.AddTransient<IPersonPhoneList, PersonPhoneList>();
+            services.AddScoped<Fetch1Delegate>(cc =>
+            {
+                var factory = cc.GetRequiredService<PersonPhoneListFactory>();
+                return (Guid personId, CancellationToken cancellationToken = default) => factory.LocalFetch1(personId, cancellationToken);
+            });
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

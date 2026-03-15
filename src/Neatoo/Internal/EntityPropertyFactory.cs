@@ -31,4 +31,13 @@ public class EntityPropertyFactory<[DynamicallyAccessedMembers(DynamicallyAccess
 
         return _factory.CreateEntityProperty<TProperty>(propertyInfo);
     }
+
+    /// <inheritdoc />
+    public IValidateProperty CreateLazyLoad<TInner>(TOwner owner, string propertyName) where TInner : class?
+    {
+        var propertyInfo = _propertyInfoList.GetPropertyInfo(propertyName)
+            ?? throw new PropertyNotFoundException($"Property '{propertyName}' not found in '{typeof(TOwner).Name}'");
+
+        return new LazyLoadEntityProperty<TInner>(propertyInfo);
+    }
 }

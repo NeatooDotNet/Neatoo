@@ -59,6 +59,20 @@ internal class PersonPhoneList : EntityListBase<IPersonPhone>, IPersonPhoneList
         }
     }
 
+    [Remote]
+    [Fetch]
+    internal async Task Fetch(Guid personId,
+                              [Service] IPersonDbContext personContext,
+                              [Service] IPersonPhoneFactory personPhoneModelFactory,
+                              CancellationToken cancellationToken = default)
+    {
+        var phoneEntities = await personContext.FindPersonPhones(personId, cancellationToken);
+        foreach (var entity in phoneEntities)
+        {
+            Add(personPhoneModelFactory.Fetch(entity, cancellationToken));
+        }
+    }
+
     [Update]
     internal void Update(ICollection<PersonPhoneEntity> personPhoneEntities,
                         [Service] IPersonPhoneFactory personPhoneModelFactory)

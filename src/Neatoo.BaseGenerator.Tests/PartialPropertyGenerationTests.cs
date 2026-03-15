@@ -346,4 +346,221 @@ public class PartialPropertyGenerationTests
     }
 
     #endregion
+
+    #region LazyLoad Property Tests
+
+    [TestMethod]
+    public void LazyLoadProperty_GeneratesLoadValueSetter()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public interface IChildEntity : Neatoo.IEntityBase { }
+
+                public interface ITestEntity : Neatoo.IEntityBase
+                {
+                    Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated, "Should generate code for TestEntity");
+        Assert.IsTrue(generated.Contains("LazyChildProperty.LoadValue(value)"),
+            "LazyLoad setter should use LoadValue, not .Value =");
+        Assert.IsFalse(generated.Contains("LazyChildProperty.Value = value"),
+            "LazyLoad setter should NOT use .Value = (that triggers rules)");
+        Assert.IsFalse(generated.Contains("RunningTasks.AddTask"),
+            "LazyLoad setter should NOT include task tracking");
+    }
+
+    [TestMethod]
+    public void LazyLoadProperty_GeneratesCreateLazyLoadRegistration()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public interface IChildEntity : Neatoo.IEntityBase { }
+
+                public interface ITestEntity : Neatoo.IEntityBase
+                {
+                    Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated, "Should generate code for TestEntity");
+        Assert.IsTrue(generated.Contains("factory.CreateLazyLoad<IChildEntity>"),
+            "LazyLoad registration should use CreateLazyLoad<TInner>");
+        Assert.IsFalse(generated.Contains("factory.Create<Neatoo.LazyLoad<IChildEntity>>"),
+            "LazyLoad registration should NOT use Create<LazyLoad<T>>");
+    }
+
+    [TestMethod]
+    public void LazyLoadProperty_GeneratesBackingFieldWithWrapperType()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public interface IChildEntity : Neatoo.IEntityBase { }
+
+                public interface ITestEntity : Neatoo.IEntityBase
+                {
+                    Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated);
+        Assert.IsTrue(generated.Contains("IValidateProperty<Neatoo.LazyLoad<IChildEntity>>"),
+            "Backing field should use the full LazyLoad<T> wrapper type");
+        Assert.IsTrue(generated.Contains("LazyChildProperty"),
+            "Should have LazyChildProperty backing field");
+    }
+
+    [TestMethod]
+    public void LazyLoadProperty_MixedWithScalarProperties()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public interface IChildEntity : Neatoo.IEntityBase { }
+
+                public interface ITestEntity : Neatoo.IEntityBase
+                {
+                    string? Name { get; set; }
+                    Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial string? Name { get; set; }
+                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated);
+        // Scalar property uses .Value = and task tracking
+        Assert.IsTrue(generated.Contains("NameProperty.Value = value"),
+            "Scalar property should use .Value = setter");
+        // LazyLoad property uses LoadValue and no task tracking
+        Assert.IsTrue(generated.Contains("LazyChildProperty.LoadValue(value)"),
+            "LazyLoad property should use LoadValue setter");
+        // Registration: scalar uses Create, LazyLoad uses CreateLazyLoad
+        Assert.IsTrue(generated.Contains("factory.Create<string?>"),
+            "Scalar should use factory.Create");
+        Assert.IsTrue(generated.Contains("factory.CreateLazyLoad<IChildEntity>"),
+            "LazyLoad should use factory.CreateLazyLoad");
+    }
+
+    [TestMethod]
+    public void LazyLoadProperty_GetterOnly_NoSetter()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public interface IChildEntity : Neatoo.IEntityBase { }
+
+                public interface ITestEntity : Neatoo.IEntityBase
+                {
+                    Neatoo.LazyLoad<IChildEntity> LazyChild { get; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated);
+        Assert.IsTrue(generated.Contains("LazyChildProperty.Value;"),
+            "Getter-only LazyLoad should have getter");
+        Assert.IsFalse(generated.Contains("LoadValue"),
+            "Getter-only LazyLoad should NOT have setter");
+    }
+
+    [TestMethod]
+    public void LazyLoadProperty_StringInnerType()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public interface ITestEntity : Neatoo.IEntityBase
+                {
+                    Neatoo.LazyLoad<string> LazyDesc { get; set; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial Neatoo.LazyLoad<string> LazyDesc { get; set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated);
+        Assert.IsTrue(generated.Contains("factory.CreateLazyLoad<string>"),
+            "LazyLoad<string> should use CreateLazyLoad<string>");
+        Assert.IsTrue(generated.Contains("LazyDescProperty.LoadValue(value)"),
+            "LazyLoad<string> should use LoadValue setter");
+    }
+
+    #endregion
 }
