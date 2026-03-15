@@ -10,14 +10,14 @@ Blazor compiles the same .NET code to both client and server. The same types, th
 
 They aren't. Neatoo takes that insight to its conclusion.
 
-**Your domain model is the contract.** Define your entities, validation rules, and business logic once. Neatoo's source generators wire up property backing fields, change tracking, and validation triggers at compile time. When it's time to save, RemoteFactory transfers domain object state to the server, executes your persistence logic, and returns the result — no DTOs, no mapping, no translation layer.
+**Your domain model is the contract.** Define your entities, validation rules, and business logic once. Neatoo's source generators wire up property backing fields, change tracking, and validation triggers at compile time. When it's time to save, RemoteFactory transfers domain object state to the server, executes your persistence logic, and returns the result — no DTOs, no mapping, no translation layer. Every operation flows through a single controller endpoint. No more writing a new controller method for every create, fetch, update, and delete.
 
-The domain model you bind to your Blazor form is the same object that validates user input, tracks what changed, and persists to the database. One model, front to back.
+The domain model you bind to your Blazor form is the same object that validates user input, tracks what changed, and persists to the database. One model, one endpoint, front to back.
 
 ## Key Features
 
 - **One model, front to back** — Your domain model binds to the Blazor UI, validates input, tracks changes, and persists to the database. No DTOs, no mapping layers, no translation.
-- **Transparent client-server transfer** — RemoteFactory moves domain object state across the wire. Mark a method `[Remote]` and it runs on the server. The client never knows the difference.
+- **Transparent client-server transfer** — RemoteFactory moves domain object state across the wire through a single controller endpoint. Mark a method `[Remote]` and it runs on the server. No controller-per-operation, no routing boilerplate.
 - **Source-generated properties** — Partial properties generate backing fields, `PropertyChanged` events, validation triggers, and change tracking at compile time. Zero reflection.
 - **Validation and business rules** — Attribute validation (`[Required]`, `[Range]`), inline rules, async rules that call external services, and automatic error aggregation across the entire object graph.
 - **Change tracking** — `IsModified`, `IsSelfModified`, `IsNew`, `IsDeleted` cascade through parent-child graphs to the aggregate root. `ModifiedProperties` tells you exactly what changed.
