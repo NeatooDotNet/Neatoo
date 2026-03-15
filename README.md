@@ -130,7 +130,7 @@ For Blazor support, install the MudNeatoo package:
 dotnet add package Neatoo.Blazor.MudNeatoo
 ```
 
-Neatoo targets .NET 8.0, 9.0, and 10.0.
+Neatoo targets .NET 9.0 and 10.0.
 
 ## Quick Start
 
