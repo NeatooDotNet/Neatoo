@@ -26,6 +26,8 @@ The domain model you bind to your Blazor form is the same object that validates 
 
 ## Example
 
+For a complete working application with domain model, validation rules, authorization, persistence, unit tests, and a Blazor Server UI, see the [Person Example](src/Examples/Person/).
+
 Declare partial properties. Add validation attributes and business rules. Source generators handle the rest — backing fields, `PropertyChanged` events, change tracking, factory methods, and client-server state transfer are all produced at compile time. No reflection, no runtime magic.
 
 <!-- snippet: readme-teaser -->
