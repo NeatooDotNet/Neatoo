@@ -449,6 +449,50 @@ The `PropertyChanged` subscription in Blazor should only trigger `StateHasChange
 
 ---
 
+## Anti-Pattern 9: Blocking Await for LazyLoad in Razor Lifecycle
+
+Awaiting `LoadAsync()` with `await` in `OnInitializedAsync()`, which blocks rendering until data arrives. Use fire-and-forget instead.
+
+### Wrong
+
+```csharp
+protected override async Task OnInitializedAsync()
+{
+    entity = await OrderFactory.Fetch(orderId);
+
+    // WRONG: Blocks rendering until load completes
+    await entity.OrderLines.LoadAsync();
+    await entity.ShippingAddress.LoadAsync();
+}
+```
+
+### Why It's Wrong
+
+- Blocks page rendering until all lazy loads complete — defeats the purpose of lazy loading
+- User sees nothing until all data arrives
+- Multiple awaits run sequentially instead of concurrently
+
+### Correct
+
+Trigger loads fire-and-forget, let the 4-branch Razor pattern handle the loading state:
+
+```csharp
+protected override async Task OnInitializedAsync()
+{
+    entity = await OrderFactory.Fetch(orderId);
+
+    // Fire-and-forget — page renders immediately with spinners
+    _ = entity.OrderLines.LoadAsync();
+    _ = entity.ShippingAddress.LoadAsync();
+}
+```
+
+The page renders immediately with spinners. Each section fills in as its `PropertyChanged` fires on load completion.
+
+**Note:** Blocking `await` IS correct in non-UI code — e.g., `var lines = await entity.OrderLines.LoadAsync()` in tests, domain logic, or before save (`await entity.WaitForTasks()`).
+
+---
+
 ## Summary: The Decision Checklist
 
 When binding a MudBlazor component to a Neatoo entity property:

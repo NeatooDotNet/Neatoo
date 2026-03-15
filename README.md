@@ -1,14 +1,34 @@
 # Neatoo
 
-A .NET Domain Models framework for Blazor and WPF powered by Roslyn source generators.
+A Domain-Driven Design framework for 3-tier .NET Blazor applications, powered by Roslyn source generators.
 
 [![NuGet](https://img.shields.io/nuget/v/Neatoo.svg)](https://www.nuget.org/packages/Neatoo/)
 
-## Overview
+## Why Neatoo?
 
-Neatoo provides a DDD-focused framework for building domain models with source-generated properties, validation, business rules, parent-child relationships, and change tracking. Partial property declarations are completed by source generators that wire up backing fields, PropertyChanged events, and validation triggers. RemoteFactory integration enables seamless client-server state transfer for Blazor and distributed applications.
+Blazor compiles the same .NET code to both client and server. The same types, the same definitions, the same runtime — on both sides of the wire. So why are you still writing DTOs, mapping layers, and serialization boilerplate as if they were different?
 
-Built for expert .NET developers working with Domain-Driven Design patterns.
+They aren't. Neatoo takes that insight to its conclusion.
+
+**Your domain model is the contract.** Define your entities, validation rules, and business logic once. Neatoo's source generators wire up property backing fields, change tracking, and validation triggers at compile time. When it's time to save, RemoteFactory transfers domain object state to the server, executes your persistence logic, and returns the result — no DTOs, no mapping, no translation layer. Every operation flows through a single controller endpoint. No more writing a new controller method for every create, fetch, update, and delete.
+
+The domain model you bind to your Blazor form is the same object that validates user input, tracks what changed, and persists to the database. One model, one endpoint, front to back.
+
+## Key Features
+
+- **One model, front to back** — Your domain model binds to the Blazor UI, validates input, tracks changes, and persists to the database. No DTOs, no mapping layers, no translation.
+- **Transparent client-server transfer** — RemoteFactory moves domain object state across the wire through a single controller endpoint. Mark a method `[Remote]` and it runs on the server. No controller-per-operation, no routing boilerplate.
+- **Source-generated properties** — Partial properties generate backing fields, `PropertyChanged` events, validation triggers, and change tracking at compile time. Zero reflection.
+- **Validation and business rules** — Attribute validation (`[Required]`, `[Range]`), inline rules, async rules that call external services, and automatic error aggregation across the entire object graph.
+- **Change tracking** — `IsModified`, `IsSelfModified`, `IsNew`, `IsDeleted` cascade through parent-child graphs to the aggregate root. `ModifiedProperties` tells you exactly what changed.
+- **DDD aggregate support** — `EntityBase` for persistent entities, `ValidateBase` for value objects, `EntityListBase` for child collections. Interface-first design enforces aggregate boundaries at compile time.
+- **Blazor integration** — MudNeatoo components bind directly to domain model properties with two-way binding, validation display, and form integration out of the box.
+
+## Example
+
+For a complete working application with domain model, validation rules, authorization, persistence, unit tests, and a Blazor Server UI, see the [Person Example](src/Examples/Person/).
+
+Declare partial properties. Add validation attributes and business rules. Source generators handle the rest — backing fields, `PropertyChanged` events, change tracking, factory methods, and client-server state transfer are all produced at compile time. No reflection, no runtime magic.
 
 <!-- snippet: readme-teaser -->
 <a id='snippet-readme-teaser'></a>
@@ -70,18 +90,31 @@ public class AddressList : EntityListBase<IAddress>, IAddressList { }
 <sup><a href='/src/samples/ReadmeSamples.cs#L10-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-readme-teaser' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The example above demonstrates Neatoo's core features: partial property declarations, automatic validation, business rules, parent-child relationships, and change tracking. Source generators produce backing fields, factory methods, and metadata at compile time.
+## What a DDD Framework Gives You
 
-## Key Features
+### Updates Without Guesswork
 
-- **Source-generated properties** - Partial properties generate backing fields, PropertyChanged events, and validation triggers
-- **Validation system** - Attribute-based validation (Required, Range, etc.), custom validation rules, async validation with external service calls, automatic error aggregation across properties
-- **Business rules engine** - Declarative business rules with cross-property dependencies, action rules for computed properties, conditional execution, and rule ordering
-- **Parent-child graphs** - Automatic parent tracking, cascade validation, cascade modification state, and aggregate boundary enforcement
-- **Change tracking** - IsModified, IsSelfModified, IsNew, IsDeleted with cascade to aggregate root and ModifiedProperties collection
-- **Entity lifecycle** - IsNew/IsDeleted state management for persistence coordination, with optional RemoteFactory integration for client-server scenarios
-- **Blazor integration** - MudNeatoo package with two-way binding, validation display, and form integration
-- **Collection support** - EntityListBase and ValidateListBase with parent cascade and collection validation
+With transaction scripts, the client sends a partial payload and the server has to merge it with the current database state — figuring out what actually changed, what to update, and what to leave alone. That merge logic is fragile and grows with every new field.
+
+With Neatoo, the full aggregate comes back to the server with its state intact. Every entity tracks `IsNew`, `IsModified`, `IsDeleted`, and `ModifiedProperties` through the entire object graph. When you reach your `[Insert]`, `[Update]`, or `[Delete]` factory methods, there's no guessing — the domain model already knows exactly what changed and what needs to persist.
+
+### Business Logic That Can't Diverge
+
+In most applications, business logic drifts. Critical rules get duplicated between the UI and server, lighter rules live only in the UI, and the two definitions slowly diverge until they contradict each other.
+
+Neatoo puts validation and business rules in the domain model — one definition, compiled into both client and server. Rules are engineered to work with data-binding: when a property changes, dependent validation and action rules fire immediately, updating the UI in real time. The same rules execute again on the server during persistence. They can't diverge because they're the same code.
+
+### Authorization Defined Once, Enforced Everywhere
+
+Authorization follows the same pattern. Client-side checks control what the UI shows — can this user create an order? Edit this field? Delete this record? Server-side checks guard the actual operations. In most applications these are separate implementations that fall out of sync.
+
+Neatoo's `[AuthorizeFactory]` attributes define authorization on the factory operation itself. RemoteFactory always enforces these on the server, regardless of what the client sends. The same definitions also power `CanCreate`, `CanFetch`, `CanUpdate`, and `CanDelete` methods that the UI consumes to show or hide actions, disable buttons, and control navigation. One definition drives both enforcement and UI behavior.
+
+### Field-Level Validation Without the Plumbing
+
+Field-level validation — errors displayed next to the input that caused them, updating as the user works — is better UX than a banner at the top of the page. But it fell out of fashion because the plumbing is hard: per-property error tracking, real-time updates on change, cross-field dependencies, and aggregating validity across a parent-child graph.
+
+Neatoo makes it the path of least resistance. Validation rules are declared per-property and fire automatically when bound values change. Errors propagate through the object graph — `IsValid` on the aggregate root reflects every field in every child. MudNeatoo components display errors inline with no extra wiring. You get field-level validation by default, not as an afterthought.
 
 ## Installation
 
@@ -97,7 +130,7 @@ For Blazor support, install the MudNeatoo package:
 dotnet add package Neatoo.Blazor.MudNeatoo
 ```
 
-Neatoo targets .NET 8.0, 9.0, and 10.0.
+Neatoo targets .NET 9.0 and 10.0.
 
 ## Quick Start
 
