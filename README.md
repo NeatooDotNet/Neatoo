@@ -14,6 +14,20 @@ They aren't. Neatoo takes that insight to its conclusion.
 
 The domain model you bind to your Blazor form is the same object that validates user input, tracks what changed, and persists to the database. One model, front to back.
 
+## Key Features
+
+- **One model, front to back** — Your domain model binds to the Blazor UI, validates input, tracks changes, and persists to the database. No DTOs, no mapping layers, no translation.
+- **Transparent client-server transfer** — RemoteFactory moves domain object state across the wire. Mark a method `[Remote]` and it runs on the server. The client never knows the difference.
+- **Source-generated properties** — Partial properties generate backing fields, `PropertyChanged` events, validation triggers, and change tracking at compile time. Zero reflection.
+- **Validation and business rules** — Attribute validation (`[Required]`, `[Range]`), inline rules, async rules that call external services, and automatic error aggregation across the entire object graph.
+- **Change tracking** — `IsModified`, `IsSelfModified`, `IsNew`, `IsDeleted` cascade through parent-child graphs to the aggregate root. `ModifiedProperties` tells you exactly what changed.
+- **DDD aggregate support** — `EntityBase` for persistent entities, `ValidateBase` for value objects, `EntityListBase` for child collections. Interface-first design enforces aggregate boundaries at compile time.
+- **Blazor integration** — MudNeatoo components bind directly to domain model properties with two-way binding, validation display, and form integration out of the box.
+
+## Example
+
+Declare partial properties. Add validation attributes and business rules. Source generators handle the rest — backing fields, `PropertyChanged` events, change tracking, factory methods, and client-server state transfer are all produced at compile time. No reflection, no runtime magic.
+
 <!-- snippet: readme-teaser -->
 <a id='snippet-readme-teaser'></a>
 ```cs
@@ -73,18 +87,6 @@ public class AddressList : EntityListBase<IAddress>, IAddressList { }
 ```
 <sup><a href='/src/samples/ReadmeSamples.cs#L10-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-readme-teaser' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
-
-Declare partial properties. Add validation attributes and business rules. Source generators handle the rest — backing fields, `PropertyChanged` events, change tracking, factory methods, and client-server state transfer are all produced at compile time. No reflection, no runtime magic.
-
-## Key Features
-
-- **One model, front to back** — Your domain model binds to the Blazor UI, validates input, tracks changes, and persists to the database. No DTOs, no mapping layers, no translation.
-- **Transparent client-server transfer** — RemoteFactory moves domain object state across the wire. Mark a method `[Remote]` and it runs on the server. The client never knows the difference.
-- **Source-generated properties** — Partial properties generate backing fields, `PropertyChanged` events, validation triggers, and change tracking at compile time. Zero reflection.
-- **Validation and business rules** — Attribute validation (`[Required]`, `[Range]`), inline rules, async rules that call external services, and automatic error aggregation across the entire object graph.
-- **Change tracking** — `IsModified`, `IsSelfModified`, `IsNew`, `IsDeleted` cascade through parent-child graphs to the aggregate root. `ModifiedProperties` tells you exactly what changed.
-- **DDD aggregate support** — `EntityBase` for persistent entities, `ValidateBase` for value objects, `EntityListBase` for child collections. Interface-first design enforces aggregate boundaries at compile time.
-- **Blazor integration** — MudNeatoo components bind directly to domain model properties with two-way binding, validation display, and form integration out of the box.
 
 ## Installation
 
