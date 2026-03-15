@@ -99,19 +99,6 @@ public class EntityPropertyManager : ValidatePropertyManager<IEntityProperty>, I
         return property;
     }
 
-    /// <summary>
-    /// Creates a LazyLoadEntityProperty instead of LazyLoadValidateProperty for entity aggregates.
-    /// </summary>
-    [UnconditionalSuppressMessage("Trimming", "IL2055",
-        Justification = "MakeGenericType creates LazyLoadEntityProperty<T> " +
-        "with inner types from LazyLoad<T> properties. These inner types are preserved by " +
-        "[DynamicallyAccessedMembers] on the owning entity's type parameter.")]
-    protected override IValidateProperty CreateLazyLoadProperty(Type innerType, IPropertyInfo propertyInfo)
-    {
-        var entityPropertyType = typeof(LazyLoadEntityProperty<>).MakeGenericType(innerType);
-        return (IValidateProperty)Activator.CreateInstance(entityPropertyType, propertyInfo)!;
-    }
-
     [JsonIgnore]
     public bool IsModified { get; protected set; }
     [JsonIgnore]

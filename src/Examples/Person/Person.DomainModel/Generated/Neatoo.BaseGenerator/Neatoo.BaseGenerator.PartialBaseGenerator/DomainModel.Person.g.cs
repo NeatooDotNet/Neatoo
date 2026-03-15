@@ -32,6 +32,7 @@ namespace DomainModel
         protected IValidateProperty<string?> LastNameProperty => (IValidateProperty<string?>)PropertyManager[nameof(LastName)]!;
         protected IValidateProperty<string?> EmailProperty => (IValidateProperty<string?>)PropertyManager[nameof(Email)]!;
         protected IValidateProperty<string?> NotesProperty => (IValidateProperty<string?>)PropertyManager[nameof(Notes)]!;
+        protected IValidateProperty<LazyLoad<IPersonPhoneList>> PersonPhoneListProperty => (IValidateProperty<LazyLoad<IPersonPhoneList>>)PropertyManager[nameof(PersonPhoneList)]!;
 
         public partial Guid? Id
         {
@@ -103,6 +104,15 @@ namespace DomainModel
             }
         }
 
+        public partial LazyLoad<IPersonPhoneList> PersonPhoneList
+        {
+            get => PersonPhoneListProperty.Value;
+            set
+            {
+                PersonPhoneListProperty.LoadValue(value);
+            }
+        }
+
         public partial void MapModifiedTo(PersonEntity personEntity)
         {
             if (this[nameof(Id)].IsModified)
@@ -158,6 +168,7 @@ namespace DomainModel
             PropertyManager.Register(factory.Create<string?>(this, nameof(LastName)));
             PropertyManager.Register(factory.Create<string?>(this, nameof(Email)));
             PropertyManager.Register(factory.Create<string?>(this, nameof(Notes)));
+            PropertyManager.Register(factory.CreateLazyLoad<IPersonPhoneList>(this, nameof(PersonPhoneList)));
         }
     }
 }

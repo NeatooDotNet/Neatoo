@@ -6,8 +6,17 @@ namespace Neatoo.Internal;
 /// Marker interface for LazyLoad property subclasses.
 /// Used by NeatooBaseJsonTypeConverter to skip these entries in the PropertyManager
 /// serialization array (LazyLoad properties are serialized as top-level JSON properties).
+/// Also provides deserialization support via ReconnectAfterDeserialization.
 /// </summary>
-internal interface ILazyLoadProperty { }
+internal interface ILazyLoadProperty
+{
+    /// <summary>
+    /// Reconnects the property subclass to its LazyLoad wrapper's current inner value.
+    /// Called after deserialization when ApplyDeserializedState has modified the wrapper directly,
+    /// bypassing the generated setter. This ensures inner child event subscriptions are correct.
+    /// </summary>
+    void ReconnectAfterDeserialization();
+}
 
 /// <summary>
 /// Shared helper methods for LazyLoad property subclasses.
@@ -282,6 +291,23 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<LazyLoad<T>>, IVal
             // LazyLoad load error -> our IsValid/IsSelfValid depends on it
             OnPropertyChanged(nameof(IsValid));
             OnPropertyChanged(nameof(IsSelfValid));
+        }
+    }
+
+    // --- Deserialization support ---
+
+    /// <summary>
+    /// Reconnects inner child events after deserialization.
+    /// ApplyDeserializedState modifies the LazyLoad wrapper's inner value directly,
+    /// bypassing the generated setter. This method re-establishes event subscriptions.
+    /// </summary>
+    void ILazyLoadProperty.ReconnectAfterDeserialization()
+    {
+        if (this._value != null)
+        {
+            LazyLoadPropertyHelper.DisconnectInnerChild(ref _currentInnerChild, this.PassThruValueNeatooPropertyChanged);
+            var innerChild = ((ILazyLoadDeserializable)this._value).BoxedValue;
+            _currentInnerChild = LazyLoadPropertyHelper.ConnectInnerChild(innerChild, this.PassThruValueNeatooPropertyChanged);
         }
     }
 }

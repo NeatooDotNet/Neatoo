@@ -19,8 +19,7 @@ public partial class LazyLoadValidateObject : ValidateBase<LazyLoadValidateObjec
     public partial Guid ID { get; set; }
     public partial string Name { get; set; }
 
-    // LazyLoad<T> on ValidateBase -- same pattern as EntityBase
-    public LazyLoad<string> LazyContent { get; set; } = null!;
+    public partial LazyLoad<string> LazyContent { get; set; }
 
     [Fetch]
     public Task Fetch(Guid id, string name, string content, [Service] ILazyLoadFactory lazyLoadFactory)

@@ -37,12 +37,31 @@ internal static class PropertyExtractor
                 var needsInterfaceDeclaration = hasPartialInterface &&
                     !existingInterfaceProperties.Contains(propertyName);
 
+                // Detect LazyLoad<T> properties
+                var isLazyLoad = false;
+                string? lazyLoadInnerType = null;
+                var propertySymbol = classSymbol.GetMembers(propertyName)
+                    .OfType<IPropertySymbol>()
+                    .FirstOrDefault();
+
+                if (propertySymbol != null && propertySymbol.Type is INamedTypeSymbol namedType
+                    && namedType.IsGenericType
+                    && namedType.OriginalDefinition.Name == "LazyLoad"
+                    && namedType.OriginalDefinition.ContainingNamespace?.ToString() == "Neatoo"
+                    && namedType.TypeArguments.Length == 1)
+                {
+                    isLazyLoad = true;
+                    lazyLoadInnerType = namedType.TypeArguments[0].ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                }
+
                 return new PartialPropertyInfo(
                     Name: propertyName,
                     Type: propertyType,
                     Accessibility: accessibility,
                     HasSetter: hasSetter,
-                    NeedsInterfaceDeclaration: needsInterfaceDeclaration
+                    NeedsInterfaceDeclaration: needsInterfaceDeclaration,
+                    IsLazyLoad: isLazyLoad,
+                    LazyLoadInnerType: lazyLoadInnerType
                 );
             })
             .ToList();

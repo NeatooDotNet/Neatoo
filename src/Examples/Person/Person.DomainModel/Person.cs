@@ -50,16 +50,7 @@ internal partial class Person : EntityBase<Person>, IPerson
     [DisplayName("Notes")]
     public partial string? Notes { get; set; }
 
-    private LazyLoad<IPersonPhoneList> _personPhoneList = null!;
-    public LazyLoad<IPersonPhoneList> PersonPhoneList
-    {
-        get => _personPhoneList;
-        internal set
-        {
-            _personPhoneList = value;
-            RegisterLazyLoadProperties();
-        }
-    }
+    public partial LazyLoad<IPersonPhoneList> PersonPhoneList { get; set; }
 
     public void MapFrom(PersonEntity personEntity)
     {

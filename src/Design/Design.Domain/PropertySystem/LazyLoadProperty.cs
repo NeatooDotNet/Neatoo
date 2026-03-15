@@ -6,14 +6,13 @@
 // Their loaded values participate in PropertyManager via look-through property
 // subclasses (LazyLoadValidateProperty<T>, LazyLoadEntityProperty<T>).
 //
-// DESIGN DECISION: LazyLoad<T> is declared as a regular property because:
-// - It wraps a child entity/value, not a scalar property value
-// - It has its own lifecycle (IsLoaded, IsLoading, LoadAsync)
-// - It implements IValidateMetaProperties and IEntityMetaProperties
-//   for delegation to the loaded value
-// The LazyLoad<T> C# property itself is NOT a partial property and NOT
-// processed by the source generator. However, at runtime, a look-through
-// property subclass is registered with PropertyManager that delegates
+// DESIGN DECISION: LazyLoad<T> is declared as a partial property, matching
+// how every other Neatoo property works. The generator detects LazyLoad<T>
+// type and generates:
+// - Backing field accessor (IValidateProperty<LazyLoad<T>>)
+// - Setter using LoadValue (no rule triggering, no task tracking)
+// - Registration using factory.CreateLazyLoad<TInner> in InitializePropertyBackingFields
+// The factory creates a look-through property subclass that delegates
 // RunRules, PropertyMessages, IsValid, IsBusy, IsModified, WaitForTasks,
 // and ClearAllMessages to the inner entity loaded by LazyLoad.
 //
@@ -35,10 +34,10 @@
 // `LazyLoad<IOrderItemList?>` when the entity interface property is nullable.
 // The same `class?` constraint applies to ILazyLoadFactory and LazyLoadFactory.
 //
-// GENERATOR BEHAVIOR: The generators do NOT process LazyLoad<T> properties
-// because they are not partial properties. No backing field is generated.
-// Registration with PropertyManager happens at runtime in
-// RegisterLazyLoadProperties() (called from FactoryComplete/OnDeserialized).
+// GENERATOR BEHAVIOR: The generators detect LazyLoad<T> partial properties
+// via OriginalDefinition check. They generate backing fields, LoadValue-based
+// setters (no task tracking), and CreateLazyLoad<TInner> registration calls
+// in InitializePropertyBackingFields.
 //
 // SERIALIZATION: LazyLoad<T> has [JsonInclude] on Value/IsLoaded and
 // [JsonConstructor] for deserialization. The NeatooBaseJsonTypeConverter
@@ -60,19 +59,13 @@
 // - ClearAllMessages cascades through ValueIsValidateBase
 // This is unified through PropertyManager -- no parallel helper methods.
 //
-// REGISTRATION LIFECYCLE: RegisterLazyLoadProperties() is called at
-// FactoryComplete() and OnDeserialized(). It uses cached-per-type
-// reflection to discover LazyLoad properties and creates look-through
-// property subclass instances registered with PropertyManager.
-// If a LazyLoad property is assigned after these points (e.g., in
-// a custom property setter), call RegisterLazyLoadProperties() to
-// register or re-register the LazyLoad instance with PropertyManager.
-//
-// COMMON MISTAKE: Assigning a LazyLoad<T> property after FactoryComplete()
-// without calling RegisterLazyLoadProperties() in the setter. The
-// LazyLoad property will not be tracked by PropertyManager, so RunRules
-// cascading, PropertyMessages aggregation, and reactive state propagation
-// will not work for that property.
+// REGISTRATION LIFECYCLE: LazyLoad properties are registered with
+// PropertyManager during InitializePropertyBackingFields (in the constructor),
+// via the generated CreateLazyLoad<TInner> call. The generated setter uses
+// LoadValue to connect/disconnect inner child events when the LazyLoad
+// wrapper is assigned. After deserialization, OnDeserialized calls
+// ReconnectAfterDeserialization on each ILazyLoadProperty to re-establish
+// inner child event subscriptions after ApplyDeserializedState.
 // -----------------------------------------------------------------------------
 
 using Neatoo;
@@ -93,8 +86,9 @@ public partial class LazyLoadEntityDemo : EntityBase<LazyLoadEntityDemo>
 {
     public partial string? Name { get; set; }
 
-    // LazyLoad<T> is a regular property -- not partial, not in PropertyManager
-    public LazyLoad<string> LazyDescription { get; set; } = null!;
+    // LazyLoad<T> is a partial property -- the generator handles backing field,
+    // setter (uses LoadValue), and PropertyManager registration via CreateLazyLoad<TInner>.
+    public partial LazyLoad<string> LazyDescription { get; set; }
 
     public LazyLoadEntityDemo(IEntityBaseServices<LazyLoadEntityDemo> services) : base(services)
     {
@@ -130,8 +124,8 @@ public partial class LazyLoadValidateDemo : ValidateBase<LazyLoadValidateDemo>
 {
     public partial string? Label { get; set; }
 
-    // LazyLoad<T> on ValidateBase -- same pattern as EntityBase
-    public LazyLoad<string> LazyContent { get; set; } = null!;
+    // LazyLoad<T> on ValidateBase -- partial, same pattern as EntityBase
+    public partial LazyLoad<string> LazyContent { get; set; }
 
     public LazyLoadValidateDemo(IValidateBaseServices<LazyLoadValidateDemo> services) : base(services)
     {
@@ -151,22 +145,11 @@ public partial class LazyLoadValidateDemo : ValidateBase<LazyLoadValidateDemo>
 // DESIGN DECISION: When a LazyLoad<T> wraps a child entity (not a string),
 // the parent's IsModified, IsValid, IsBusy, and IsSavable include the child's
 // state. This is automatic via the look-through property subclass registered
-// with PropertyManager at FactoryComplete/OnDeserialized.
+// with PropertyManager during InitializePropertyBackingFields.
 //
-// If the LazyLoad property is assigned after FactoryComplete() (e.g., in
-// test setup or application code), use a custom setter:
+// LazyLoad properties are partial, just like every other Neatoo property:
 //
-//   private LazyLoad<IChildEntity> _lazyChild = null!;
-//   public LazyLoad<IChildEntity> LazyChild
-//   {
-//       get => _lazyChild;
-//       set
-//       {
-//           _lazyChild = value;
-//           RegisterLazyLoadProperties();
-//       }
-//   }
+//   public partial LazyLoad<IChildEntity> LazyChild { get; set; }
 //
-// This registers (or re-registers) the LazyLoad instance with PropertyManager,
-// enabling RunRules cascading, PropertyMessages aggregation, and reactive state
-// propagation for the inner entity.
+// The generated setter uses LoadValue, which handles connecting/disconnecting
+// inner child events whenever the LazyLoad wrapper is reassigned.

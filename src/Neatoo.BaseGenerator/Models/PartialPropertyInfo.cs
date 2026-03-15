@@ -9,5 +9,7 @@ internal readonly record struct PartialPropertyInfo(
     string Type,
     string Accessibility,
     bool HasSetter,
-    bool NeedsInterfaceDeclaration
+    bool NeedsInterfaceDeclaration,
+    bool IsLazyLoad,
+    string? LazyLoadInnerType
 ) : IEquatable<PartialPropertyInfo>;

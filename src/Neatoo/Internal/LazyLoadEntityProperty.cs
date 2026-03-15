@@ -235,4 +235,21 @@ internal class LazyLoadEntityProperty<T> : EntityProperty<LazyLoad<T>>, IEntityP
             base.OnPropertyChanged(propertyName);
         }
     }
+
+    // --- Deserialization support ---
+
+    /// <summary>
+    /// Reconnects inner child events after deserialization.
+    /// ApplyDeserializedState modifies the LazyLoad wrapper's inner value directly,
+    /// bypassing the generated setter. This method re-establishes event subscriptions.
+    /// </summary>
+    void ILazyLoadProperty.ReconnectAfterDeserialization()
+    {
+        if (this._value != null)
+        {
+            LazyLoadPropertyHelper.DisconnectInnerChild(ref _currentInnerChild, this.PassThruValueNeatooPropertyChanged);
+            var innerChild = ((ILazyLoadDeserializable)this._value).BoxedValue;
+            _currentInnerChild = LazyLoadPropertyHelper.ConnectInnerChild(innerChild, this.PassThruValueNeatooPropertyChanged);
+        }
+    }
 }

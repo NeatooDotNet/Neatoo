@@ -26,13 +26,29 @@ internal static class PropertyGenerator
     {
         foreach (var property in properties)
         {
-            if (property.HasSetter)
+            if (property.IsLazyLoad)
             {
-                sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; set {{ {property.Name}Property.Value = value; if (!{property.Name}Property.Task.IsCompleted) {{ Parent?.AddChildTask({property.Name}Property.Task); RunningTasks.AddTask({property.Name}Property.Task); }} }} }}");
+                // LazyLoad properties use LoadValue (no rule triggering, no task tracking)
+                if (property.HasSetter)
+                {
+                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; set {{ {property.Name}Property.LoadValue(value); }} }}");
+                }
+                else
+                {
+                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; }}");
+                }
             }
             else
             {
-                sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; }}");
+                // Scalar properties use .Value = (triggers rules and task tracking)
+                if (property.HasSetter)
+                {
+                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; set {{ {property.Name}Property.Value = value; if (!{property.Name}Property.Task.IsCompleted) {{ Parent?.AddChildTask({property.Name}Property.Task); RunningTasks.AddTask({property.Name}Property.Task); }} }} }}");
+                }
+                else
+                {
+                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; }}");
+                }
             }
         }
     }

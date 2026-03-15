@@ -299,40 +299,6 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	protected (bool IsValid, bool IsSelfValid, bool IsBusy) MetaState { get; private set; }
 
 	/// <summary>
-	/// Discovers all LazyLoad properties via cached reflection and registers them with PropertyManager
-	/// as look-through property subclasses. Call this in FactoryComplete, OnDeserialized, or after
-	/// assigning LazyLoad properties in a custom setter.
-	/// </summary>
-	/// <remarks>
-	/// Delegates to <see cref="IValidatePropertyManagerInternal{P}.FinalizeRegistration"/> which
-	/// handles reflection discovery, property creation (polymorphic for entity vs validate), reassignment
-	/// detection, and registration.
-	/// </remarks>
-	protected void RegisterLazyLoadProperties()
-	{
-		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
-		{
-			pmInternal.FinalizeRegistration(this, GetType());
-		}
-	}
-
-	/// <summary>
-	/// Registers a single LazyLoad property with PropertyManager explicitly (no reflection discovery).
-	/// Use this in custom property setters as the recommended alternative to the
-	/// reflection-based <see cref="RegisterLazyLoadProperties"/>.
-	/// </summary>
-	/// <typeparam name="TInner">The inner type of the LazyLoad wrapper.</typeparam>
-	/// <param name="name">The property name (must match the C# property name).</param>
-	/// <param name="lazyLoad">The LazyLoad instance to register.</param>
-	protected void RegisterLazyLoadProperty<TInner>(string name, LazyLoad<TInner> lazyLoad) where TInner : class?
-	{
-		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
-		{
-			pmInternal.RegisterLazyLoadProperty(this, name, lazyLoad);
-		}
-	}
-
-	/// <summary>
 	/// Raises property changed events if the value has changed from the cached state.
 	/// </summary>
 	/// <typeparam name="TValue">The type of the property value.</typeparam>
@@ -564,7 +530,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 		this.PropertyManager.NeatooPropertyChanged += this._PropertyManager_NeatooPropertyChanged;
 		this.PropertyManager.PropertyChanged += this._PropertyManager_PropertyChanged;
 
-		// Cast to internal interface to access GetProperties and FinalizeRegistration
+		// Cast to internal interface to access GetProperties
 		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
 		{
 			foreach (var property in pmInternal.GetProperties)
@@ -575,7 +541,17 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 				}
 			}
 
-			pmInternal.FinalizeRegistration(this, GetType());
+			// Reconnect LazyLoad property subclasses after deserialization.
+			// ApplyDeserializedState modifies the LazyLoad wrapper's inner value directly,
+			// bypassing the generated setter. ReconnectAfterDeserialization re-establishes
+			// inner child event subscriptions.
+			foreach (var property in pmInternal.GetProperties)
+			{
+				if (property is ILazyLoadProperty lazyProp)
+				{
+					lazyProp.ReconnectAfterDeserialization();
+				}
+			}
 		}
 
 		this.ResumeAllActions();
@@ -1003,10 +979,6 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </remarks>
 	public virtual void FactoryComplete(FactoryOperation factoryOperation)
 	{
-		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
-		{
-			pmInternal.FinalizeRegistration(this, GetType());
-		}
 		this.ResumeAllActions();
 	}
 }
