@@ -71,7 +71,7 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
         // AddActionAsync: when Trigger changes, await the lazy-loaded child
         RuleManager.AddActionAsync(async parent =>
         {
-            var child = await parent.LazyChild;
+            var child = await parent.LazyChild.LoadAsync();
             if (child != null)
             {
                 parent.LoadedData = child.Data;

@@ -35,7 +35,7 @@ internal class LazyLoadEntityProperty<T> : EntityProperty<LazyLoad<T>>, IEntityP
 
     /// <summary>
     /// Returns the inner entity (or null) instead of the LazyLoad wrapper.
-    /// Uses BoxedValue to avoid triggering auto-load on the LazyLoad.Value getter.
+    /// Uses BoxedValue for direct internal access to the backing value.
     /// The setter delegates to <see cref="LazyLoad{T}.SetValue(T?)"/> which sets the inner value,
     /// marks the LazyLoad as loaded, clears errors, and fires PropertyChanged events.
     /// </summary>
@@ -65,7 +65,7 @@ internal class LazyLoadEntityProperty<T> : EntityProperty<LazyLoad<T>>, IEntityP
 
     /// <summary>
     /// Looks through the LazyLoad wrapper to the inner entity.
-    /// Uses BoxedValue to avoid triggering auto-load.
+    /// Uses BoxedValue for direct internal access to the backing value.
     /// </summary>
     protected new IValidateBase? ValueAsBase => LazyLoadPropertyHelper.GetValueAsBase(this._value);
 

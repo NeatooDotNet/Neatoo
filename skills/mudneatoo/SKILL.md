@@ -216,7 +216,20 @@ A complete form page follows this structure:
 
 ### LazyLoad Databinding Pattern
 
-`LazyLoad<T>` properties use a 4-branch rendering pattern. Accessing `.Value` in a Razor expression auto-triggers the fire-and-forget load; Blazor re-renders when `PropertyChanged` fires on completion.
+`LazyLoad<T>` properties use a 4-branch rendering pattern. `.Value` is a passive read — it never triggers a load. Trigger the load explicitly in `OnInitializedAsync()`, then bind to `.Value` and state properties in Razor markup. Blazor re-renders when `PropertyChanged` fires on load completion.
+
+**Trigger the load in `OnInitializedAsync()`:**
+
+```csharp
+protected override async Task OnInitializedAsync()
+{
+    entity = await entityFactory.Fetch(orderId);
+    // Explicitly trigger the lazy load — does not block rendering
+    _ = entity.OrderLines.LoadAsync();
+}
+```
+
+**Bind to `.Value` and state properties in Razor:**
 
 ```razor
 @if (entity.OrderLines.HasLoadError)
@@ -246,7 +259,7 @@ else
 1. **HasLoadError** — show error state (load failed)
 2. **Value != null** — show data (loaded successfully with content)
 3. **IsLoaded** — loaded but null (rare — empty result)
-4. **else** — loading spinner (not yet loaded; `.Value` access triggered the load)
+4. **else** — loading spinner (load triggered in `OnInitializedAsync()`, not yet complete)
 
 **Accessing the inner collection** — use `.Value` to get the loaded entity:
 
@@ -261,8 +274,6 @@ private Task RemoveLine(IOrderLine line)
     return entity!.OrderLines.Value!.RemoveItem(line);
 }
 ```
-
-**Do NOT wrap LazyLoad in `@if (entity.OrderLines.IsLoaded)`** as the first check — this prevents the `.Value` auto-trigger from ever executing, so the load never starts.
 
 ### Child Entity Collections
 

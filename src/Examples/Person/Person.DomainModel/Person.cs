@@ -111,7 +111,7 @@ internal partial class Person : EntityBase<Person>, IPerson
         this.MapTo(personEntity);
         personContext.AddPerson(personEntity);
 
-        var phoneList = await this.PersonPhoneList;
+        var phoneList = await this.PersonPhoneList.LoadAsync();
         if (phoneList != null)
         {
             _personPhoneListFactory.Save(phoneList, personEntity.Phones, cancellationToken);
@@ -141,7 +141,7 @@ internal partial class Person : EntityBase<Person>, IPerson
 
         this.MapModifiedTo(personEntity);
 
-        var phoneList = await this.PersonPhoneList;
+        var phoneList = await this.PersonPhoneList.LoadAsync();
         if (phoneList != null)
         {
             _personPhoneListFactory.Save(phoneList, personEntity.Phones, cancellationToken);

@@ -181,7 +181,7 @@ namespace DomainModel.Tests.IntegrationTests
             Assert.Equal(personEntity.Notes, result.Notes);
 
             // PersonPhoneList is lazy — await it to load
-            var fetchedPhoneList = await result.PersonPhoneList;
+            var fetchedPhoneList = await result.PersonPhoneList.LoadAsync();
             Assert.NotNull(fetchedPhoneList);
             Assert.Equal(2, fetchedPhoneList.Count);
             Assert.Equal("1234567890", fetchedPhoneList[0].PhoneNumber);
@@ -221,7 +221,7 @@ namespace DomainModel.Tests.IntegrationTests
             var result = (IPerson?)await factory.Save(person, CancellationToken.None);
 
             // Await the lazy-loaded phone list after fetch-back from save
-            var phoneList = await result.PersonPhoneList;
+            var phoneList = await result.PersonPhoneList.LoadAsync();
             Assert.NotNull(phoneList);
 
             result.FirstName = this.firstName;

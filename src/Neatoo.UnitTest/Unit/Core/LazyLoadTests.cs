@@ -15,22 +15,25 @@ namespace Neatoo.UnitTest.Unit.Core;
 public class LazyLoadTests
 {
     [TestMethod]
-    public void Value_BeforeLoad_ReturnsNullSynchronously()
+    public void Value_BeforeLoad_ReturnsNullWithNoSideEffects()
     {
-        // Arrange -- Value getter triggers fire-and-forget load. With an async loader
-        // (one that genuinely yields), Value returns null on first access because
-        // the load hasn't completed yet.
-        var continueLoad = new TaskCompletionSource<TestValue?>();
-        var lazyLoad = new LazyLoad<TestValue>(async () => await continueLoad.Task);
+        // Arrange -- Value is a passive read. Accessing it on an unloaded instance
+        // returns null with no side effects (no load triggered, no state change).
+        var loadCount = 0;
+        var lazyLoad = new LazyLoad<TestValue>(() =>
+        {
+            Interlocked.Increment(ref loadCount);
+            return Task.FromResult<TestValue?>(new TestValue("loaded"));
+        });
 
         // Act
         var value = lazyLoad.Value;
 
-        // Assert -- Value is null synchronously (the async load hasn't completed yet)
+        // Assert -- Value is null, no load triggered, no state change
         Assert.IsNull(value);
-
-        // Cleanup
-        continueLoad.SetResult(new TestValue("loaded"));
+        Assert.IsFalse(lazyLoad.IsLoading, "IsLoading should remain false -- Value does not trigger loading");
+        Assert.IsFalse(lazyLoad.IsLoaded, "IsLoaded should remain false");
+        Assert.AreEqual(0, loadCount, "Loader should not have been invoked");
     }
 
     [TestMethod]
@@ -85,21 +88,6 @@ public class LazyLoadTests
         await loadTask;
 
         Assert.IsFalse(lazyLoad.IsLoading);
-        Assert.IsTrue(lazyLoad.IsLoaded);
-    }
-
-    [TestMethod]
-    public async Task Await_LoadsValue()
-    {
-        // Arrange
-        var expected = new TestValue("loaded");
-        var lazyLoad = new LazyLoad<TestValue>(() => Task.FromResult<TestValue?>(expected));
-
-        // Act
-        var result = await lazyLoad;  // Uses GetAwaiter
-
-        // Assert
-        Assert.AreSame(expected, result);
         Assert.IsTrue(lazyLoad.IsLoaded);
     }
 
@@ -241,56 +229,6 @@ public class LazyLoadTests
         Assert.IsFalse(((IValidateMetaProperties)lazyLoad).IsValid);
     }
 
-    #region Auto-Trigger Tests (Value getter triggers fire-and-forget load)
-
-    [TestMethod]
-    public async Task ValueAccess_TriggersFireAndForgetLoad()
-    {
-        // Arrange (Scenario 1, Rule 1 + 5) -- use a genuinely-async loader
-        // so we can observe the null-before-load and then-loaded states
-        var expected = new TestValue("loaded");
-        var continueLoad = new TaskCompletionSource<TestValue?>();
-        var lazyLoad = new LazyLoad<TestValue>(async () => await continueLoad.Task);
-
-        // Act -- access Value to trigger fire-and-forget load
-        var syncValue = lazyLoad.Value;
-
-        // Assert -- Value is null synchronously (load hasn't completed)
-        Assert.IsNull(syncValue);
-        Assert.IsTrue(lazyLoad.IsLoading, "Load should be in progress after Value access");
-
-        // Complete the load
-        continueLoad.SetResult(expected);
-        await lazyLoad.WaitForTasks();
-
-        // After load, Value holds the loaded data
-        Assert.AreSame(expected, lazyLoad.Value);
-        Assert.IsTrue(lazyLoad.IsLoaded);
-        Assert.IsFalse(lazyLoad.IsLoading);
-    }
-
-    [TestMethod]
-    public async Task ValueAccess_AutoTrigger_CompletesSuccessfully()
-    {
-        // Arrange (Scenario 5, Rule 1 + 5) -- verify PropertyChanged fires
-        var changedProperties = new List<string>();
-        var expected = new TestValue("loaded");
-        var lazyLoad = new LazyLoad<TestValue>(() => Task.FromResult<TestValue?>(expected));
-        lazyLoad.PropertyChanged += (s, e) => changedProperties.Add(e.PropertyName!);
-
-        // Act -- trigger auto-load via Value getter
-        _ = lazyLoad.Value;
-        await lazyLoad.WaitForTasks();
-
-        // Assert
-        Assert.AreSame(expected, lazyLoad.Value);
-        Assert.IsTrue(lazyLoad.IsLoaded);
-        Assert.IsFalse(lazyLoad.IsLoading);
-        CollectionAssert.Contains(changedProperties, nameof(LazyLoad<TestValue>.Value));
-        CollectionAssert.Contains(changedProperties, nameof(LazyLoad<TestValue>.IsLoaded));
-        CollectionAssert.Contains(changedProperties, nameof(LazyLoad<TestValue>.IsLoading));
-    }
-
     [TestMethod]
     public void ValueAccess_AlreadyLoaded_ReturnsCachedValue()
     {
@@ -314,9 +252,10 @@ public class LazyLoadTests
     }
 
     [TestMethod]
-    public async Task ValueAccess_DuringLoad_DoesNotStartSecondLoad()
+    public async Task ValueAccess_DuringLoad_ReturnsNullPassively()
     {
-        // Arrange (Scenario 3, Rule 3) -- explicit load in progress, then access Value
+        // Arrange -- explicit LoadAsync in progress, then access Value.
+        // Value is a passive read: returns null (load not complete yet), no side effects.
         var loadCount = 0;
         var continueLoad = new TaskCompletionSource<TestValue?>();
 
@@ -329,10 +268,10 @@ public class LazyLoadTests
         // Start explicit load
         var loadTask = lazyLoad.LoadAsync();
 
-        // Act -- access Value while load in progress
+        // Act -- access Value while load in progress (passive read)
         var value = lazyLoad.Value;
 
-        // Assert -- no second load triggered
+        // Assert -- returns null, load count unchanged (Value did not start another load)
         Assert.IsNull(value);
         Assert.AreEqual(1, loadCount);
 
@@ -356,59 +295,6 @@ public class LazyLoadTests
         Assert.IsFalse(lazyLoad.IsLoading);
         Assert.IsFalse(lazyLoad.IsLoaded);
         Assert.IsFalse(lazyLoad.HasLoadError);
-    }
-
-    [TestMethod]
-    public async Task ValueAccess_AutoTrigger_LoadFailure_SetsErrorState()
-    {
-        // Arrange (Scenario 6, Rule 6)
-        var lazyLoad = new LazyLoad<TestValue>(() => throw new InvalidOperationException("fail"));
-
-        // Act -- trigger auto-load via Value getter (fire-and-forget)
-        _ = lazyLoad.Value;
-
-        // Wait for the auto-triggered load to complete (it will fail)
-        // The TriggerLoadAsync wrapper catches the exception.
-        // WaitForTasks returns _loadTask which is faulted, so await will throw.
-        try
-        {
-            await lazyLoad.WaitForTasks();
-        }
-        catch (InvalidOperationException)
-        {
-            // Expected -- WaitForTasks surfaces the exception from the faulted _loadTask
-        }
-
-        // Assert -- error state is set, no unobserved exception
-        Assert.IsTrue(lazyLoad.HasLoadError);
-        Assert.AreEqual("fail", lazyLoad.LoadError);
-        Assert.IsFalse(lazyLoad.IsLoading);
-        Assert.IsFalse(lazyLoad.IsLoaded);
-        Assert.IsFalse(((IValidateMetaProperties)lazyLoad).IsValid);
-    }
-
-    [TestMethod]
-    public async Task ValueAccess_ConcurrentAccess_SharesOneLoad()
-    {
-        // Arrange (Scenario 7, Rule 7) -- multiple Value accesses before load starts
-        var loadCount = 0;
-        var continueLoad = new TaskCompletionSource<TestValue?>();
-        var lazyLoad = new LazyLoad<TestValue>(async () =>
-        {
-            Interlocked.Increment(ref loadCount);
-            return await continueLoad.Task;
-        });
-
-        // Act -- three concurrent Value accesses
-        _ = lazyLoad.Value;
-        _ = lazyLoad.Value;
-        _ = lazyLoad.Value;
-
-        continueLoad.SetResult(new TestValue("loaded"));
-        await lazyLoad.WaitForTasks();
-
-        // Assert -- only one loader invocation
-        Assert.AreEqual(1, loadCount);
     }
 
     [TestMethod]
@@ -450,13 +336,13 @@ public class LazyLoadTests
     }
 
     [TestMethod]
-    public async Task ExplicitLoadAsync_StillWorksIdentically()
+    public async Task LoadAsync_Works()
     {
-        // Arrange (Scenario 12, Rule 11)
+        // Arrange (Scenario 12, Rule 5)
         var expected = new TestValue("explicit");
         var lazyLoad = new LazyLoad<TestValue>(() => Task.FromResult<TestValue?>(expected));
 
-        // Act -- use explicit LoadAsync, not Value getter
+        // Act
         var result = await lazyLoad.LoadAsync();
 
         // Assert
@@ -466,9 +352,9 @@ public class LazyLoadTests
     }
 
     [TestMethod]
-    public async Task ExplicitLoadAsync_OnFailure_StillPropagatesException()
+    public async Task LoadAsync_OnFailure_PropagatesException()
     {
-        // Arrange (Scenario 12, Rule 11) -- explicit path must propagate exceptions
+        // Arrange (Scenario 5, Rule 6) -- LoadAsync must propagate exceptions
         var lazyLoad = new LazyLoad<TestValue>(() => throw new InvalidOperationException("explicit fail"));
 
         // Act & Assert -- exception propagates to caller
@@ -479,15 +365,16 @@ public class LazyLoadTests
     }
 
     [TestMethod]
-    public async Task WaitForTasks_AfterAutoTrigger_AwaitsLoad()
+    public async Task WaitForTasks_AfterExplicitLoad_AwaitsLoad()
     {
-        // Arrange (Scenario 13, Rule 12)
+        // Arrange (Scenario 13, Rule 14) -- explicit LoadAsync starts a load,
+        // then WaitForTasks awaits the in-progress _loadTask.
         var continueLoad = new TaskCompletionSource<TestValue?>();
         var expected = new TestValue("waited");
         var lazyLoad = new LazyLoad<TestValue>(async () => await continueLoad.Task);
 
-        // Act -- trigger auto-load
-        _ = lazyLoad.Value;
+        // Act -- start explicit load (fire-and-forget the returned task)
+        _ = lazyLoad.LoadAsync();
 
         // Load is in progress; WaitForTasks should return _loadTask
         Assert.IsTrue(lazyLoad.IsLoading);
@@ -500,8 +387,6 @@ public class LazyLoadTests
         Assert.IsTrue(lazyLoad.IsLoaded);
         Assert.IsFalse(lazyLoad.IsLoading);
     }
-
-    #endregion
 
     #region IEntityMetaProperties Tests
 
@@ -633,7 +518,7 @@ public class LazyLoadTests
 
         // Act
         var lazyLoad = factory.Create(() => Task.FromResult<TestValue?>(expected));
-        var result = await lazyLoad;
+        var result = await lazyLoad.LoadAsync();
 
         // Assert
         Assert.AreSame(expected, result);

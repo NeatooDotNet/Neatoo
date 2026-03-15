@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Neatoo.Rules;
 
@@ -19,18 +18,17 @@ internal interface ILazyLoadDeserializable
 
 /// <summary>
 /// Wrapper for async lazy loading of child entities or related data.
-/// Accessing <see cref="Value"/> auto-triggers a fire-and-forget load when the value
-/// hasn't been loaded yet and a loader delegate is present.
+/// <see cref="Value"/> is a passive read that returns the current value or <c>null</c>
+/// if not yet loaded. Use <see cref="LoadAsync"/> to trigger loading.
 /// </summary>
 /// <typeparam name="T">The type of value to lazy load. Must be a reference type.</typeparam>
 /// <remarks>
 /// <para>
-/// Key principle: Accessing <see cref="Value"/> triggers a fire-and-forget load if the value
-/// is not yet loaded, not currently loading, and a loader delegate is configured.
-/// The getter returns <c>null</c> synchronously; when the load completes,
+/// Key principle: <see cref="Value"/> never triggers a load. It returns the current state
+/// (<c>null</c> if not loaded, the loaded value otherwise). Call <see cref="LoadAsync"/>
+/// explicitly to invoke the loader delegate. When the load completes,
 /// <see cref="System.ComponentModel.INotifyPropertyChanged.PropertyChanged"/> fires for
 /// <see cref="Value"/>, <see cref="IsLoaded"/>, and <see cref="IsLoading"/>.
-/// Accessing <see cref="IsLoading"/> or <see cref="IsLoaded"/> does NOT trigger a load.
 /// </para>
 /// <para>
 /// Always use <see cref="ILazyLoadFactory"/> to create instances. Do not instantiate directly.
@@ -173,23 +171,14 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
     }
 
     /// <summary>
-    /// Gets the current value. Returns <c>null</c> synchronously if not yet loaded.
-    /// Auto-triggers a fire-and-forget <see cref="LoadAsync"/> when the value has not been loaded,
-    /// no load is in progress, and a loader delegate is configured.
-    /// When the load completes, <see cref="System.ComponentModel.INotifyPropertyChanged.PropertyChanged"/>
-    /// fires for Value, <see cref="IsLoaded"/>, and <see cref="IsLoading"/>.
+    /// Gets the current value. Returns <c>null</c> if not yet loaded.
+    /// This is a passive read with no side effects. Call <see cref="LoadAsync"/>
+    /// to trigger loading.
     /// </summary>
     [JsonInclude]
     public T? Value
     {
-        get
-        {
-            if (!_isLoaded && !_isLoading && _loader != null && _loadTask == null)
-            {
-                _ = TriggerLoadAsync();
-            }
-            return _value;
-        }
+        get => _value;
         private set => _value = value;
     }
 
@@ -277,36 +266,6 @@ public class LazyLoad<T> : INotifyPropertyChanged, IValidateMetaProperties, IEnt
             OnPropertyChanged(nameof(IsLoading));
         }
     }
-
-    /// <summary>
-    /// Wraps <see cref="LoadAsync"/> for the fire-and-forget path triggered by the
-    /// <see cref="Value"/> getter. Catches any exception thrown by LoadAsync to prevent
-    /// unobserved task exceptions. Errors are already recorded in <see cref="HasLoadError"/>
-    /// and <see cref="LoadError"/> by <c>LoadAsyncCore</c> before the rethrow, and surface
-    /// via <see cref="IValidateMetaProperties.IsValid"/> returning <c>false</c>.
-    /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
-        Justification = "Fire-and-forget path must catch all exceptions to prevent unobserved task exceptions. " +
-        "Errors are already recorded in HasLoadError/LoadError by LoadAsyncCore and surface via IsValid=false.")]
-    private async Task TriggerLoadAsync()
-    {
-        try
-        {
-            await LoadAsync();
-        }
-        catch (Exception)
-        {
-            // Exception already recorded in HasLoadError/LoadError by LoadAsyncCore.
-            // Swallow here to prevent unobserved task exception from the fire-and-forget discard.
-            // Error surfaces via HasLoadError=true, IsValid=false, PropertyChanged events.
-        }
-    }
-
-    /// <summary>
-    /// Gets an awaiter for this lazy load, enabling <c>await lazyLoad</c> syntax.
-    /// </summary>
-    /// <returns>A task awaiter that loads the value when awaited.</returns>
-    public TaskAwaiter<T?> GetAwaiter() => LoadAsync().GetAwaiter();
 
     #region IValidateMetaProperties
 

@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.22.0** (2026-03-14)
+**Neatoo 0.23.0** (2026-03-15)
 
 ---
 
@@ -12,8 +12,9 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.23.0](v0.23.0.md) | 2026-03-15 | **Breaking** | Revert LazyLoad.Value auto-trigger; Value is passive read; GetAwaiter removed |
 | [0.22.0](v0.22.0.md) | 2026-03-14 | **Breaking** | LazyLoad unified into PropertyManager; partial properties, look-through subclasses, no reflection |
-| [0.21.0](v0.21.0.md) | 2026-03-13 | Feature | LazyLoad.Value auto-triggers load; WaitForTasks awaits LazyLoad children |
+| [0.21.0](v0.21.0.md) | 2026-03-13 | Feature | LazyLoad.Value auto-triggers load (reverted in 0.23.0); WaitForTasks awaits LazyLoad children |
 | [0.20.1](v0.20.1.md) | 2026-03-13 | Bug Fix | WaitForTasks crash with LazyLoad remote fetch |
 | [0.20.0](v0.20.0.md) | 2026-03-12 | Feature | Nullable LazyLoad support |
 | [0.19.0](v0.19.0.md) | 2026-03-08 | Dependency | RemoteFactory 0.21.0; [Remote] methods must be internal |
@@ -47,6 +48,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [0.23.0](v0.23.0.md) | 2026-03-15 |
 | [0.22.0](v0.22.0.md) | 2026-03-14 |
 | [0.21.0](v0.21.0.md) | 2026-03-13 |
 | [0.20.1](v0.20.1.md) | 2026-03-13 |

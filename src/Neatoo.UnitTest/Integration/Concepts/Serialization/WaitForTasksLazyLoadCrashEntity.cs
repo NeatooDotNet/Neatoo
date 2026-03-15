@@ -80,7 +80,7 @@ internal partial class CrashParent : EntityBase<CrashParent>, ICrashParent
         // and store the loaded data. Mimics zTreatment VisitHub pattern.
         RuleManager.AddActionAsync(async parent =>
         {
-            var child = await parent.LazyChild;
+            var child = await parent.LazyChild.LoadAsync();
             if (child != null)
             {
                 parent.LoadedData = child.Data;
