@@ -108,6 +108,12 @@ Authorization follows the same pattern. Client-side checks control what the UI s
 
 Neatoo's `[AuthorizeFactory]` attributes define authorization on the factory operation itself. RemoteFactory always enforces these on the server, regardless of what the client sends. The same definitions also power `CanCreate`, `CanFetch`, `CanUpdate`, and `CanDelete` methods that the UI consumes to show or hide actions, disable buttons, and control navigation. One definition drives both enforcement and UI behavior.
 
+### Field-Level Validation Without the Plumbing
+
+Field-level validation — errors displayed next to the input that caused them, updating as the user works — is better UX than a banner at the top of the page. But it fell out of fashion because the plumbing is hard: per-property error tracking, real-time updates on change, cross-field dependencies, and aggregating validity across a parent-child graph.
+
+Neatoo makes it the path of least resistance. Validation rules are declared per-property and fire automatically when bound values change. Errors propagate through the object graph — `IsValid` on the aggregate root reflects every field in every child. MudNeatoo components display errors inline with no extra wiring. You get field-level validation by default, not as an afterthought.
+
 ## Installation
 
 Install the Neatoo package via NuGet.
