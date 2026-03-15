@@ -1,6 +1,6 @@
 ---
 name: MudNeatoo
-description: This skill should be used when writing or modifying .razor files that bind to Neatoo entities, when using MudBlazor components with Neatoo domain models, when the user mentions "MudNeatooTextField", "MudNeatooSelect", "MudNeatooDatePicker", "MudNeatooNumericField", "MudNeatooCheckBox", "NeatooValidationSummary", "EntityProperty", "@bind-Value with Neatoo", "form binding", "Blazor form", or asks to build a form, page, or dialog that edits a Neatoo entity. Also triggers when reviewing .razor files for correct Neatoo integration patterns. Assumes the Neatoo skill is also loaded for domain model concepts.
+description: This skill should be used when writing or modifying .razor files that bind to Neatoo entities, when using MudBlazor components with Neatoo domain models, when the user mentions "MudNeatooTextField", "MudNeatooSelect", "MudNeatooDatePicker", "MudNeatooNumericField", "MudNeatooCheckBox", "NeatooValidationSummary", "EntityProperty", "@bind-Value with Neatoo", "form binding", "Blazor form", "LazyLoad databinding", "LazyLoad in Razor", "LazyLoad Blazor pattern", "lazy load spinner", or asks to build a form, page, or dialog that edits a Neatoo entity. Also triggers when reviewing .razor files for correct Neatoo integration patterns, including LazyLoad rendering. Assumes the Neatoo skill is also loaded for domain model concepts.
 version: 1.0.0
 ---
 
@@ -213,6 +213,56 @@ A complete form page follows this structure:
 5. **Replace the entity reference after save** — `Save()` returns the updated entity
 6. **Implement `IDisposable`** — unsubscribe from `PropertyChanged`
 7. **No `EditForm`, no `DataAnnotationsValidator`** — use `MudForm` with MudNeatoo components
+
+### LazyLoad Databinding Pattern
+
+`LazyLoad<T>` properties use a 4-branch rendering pattern. Accessing `.Value` in a Razor expression auto-triggers the fire-and-forget load; Blazor re-renders when `PropertyChanged` fires on completion.
+
+```razor
+@if (entity.OrderLines.HasLoadError)
+{
+    <MudAlert Severity="Severity.Error">@entity.OrderLines.LoadError</MudAlert>
+}
+else if (entity.OrderLines.Value is { } orderLines)
+{
+    <MudButton OnClick="AddLine">Add Line</MudButton>
+    @foreach (var line in orderLines)
+    {
+        <MudNeatooTextField T="string"
+                            EntityProperty="@line[nameof(IOrderLine.ProductName)]" />
+    }
+}
+else if (entity.OrderLines.IsLoaded)
+{
+    <MudAlert Severity="Severity.Warning">No data available</MudAlert>
+}
+else
+{
+    <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+}
+```
+
+**Branch order matters:**
+1. **HasLoadError** — show error state (load failed)
+2. **Value != null** — show data (loaded successfully with content)
+3. **IsLoaded** — loaded but null (rare — empty result)
+4. **else** — loading spinner (not yet loaded; `.Value` access triggered the load)
+
+**Accessing the inner collection** — use `.Value` to get the loaded entity:
+
+```csharp
+private void AddLine()
+{
+    entity!.OrderLines.Value!.AddItem();
+}
+
+private Task RemoveLine(IOrderLine line)
+{
+    return entity!.OrderLines.Value!.RemoveItem(line);
+}
+```
+
+**Do NOT wrap LazyLoad in `@if (entity.OrderLines.IsLoaded)`** as the first check — this prevents the `.Value` auto-trigger from ever executing, so the load never starts.
 
 ### Child Entity Collections
 
