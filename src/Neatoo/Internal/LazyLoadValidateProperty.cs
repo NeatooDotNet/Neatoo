@@ -27,7 +27,7 @@ internal static class LazyLoadPropertyHelper
 {
     /// <summary>
     /// Gets the inner entity as IValidateBase by looking through the LazyLoad wrapper.
-    /// Uses BoxedValue to avoid triggering auto-load on the LazyLoad.Value getter.
+    /// Uses BoxedValue for direct internal access to the backing value.
     /// </summary>
     internal static IValidateBase? GetValueAsBase<T>(LazyLoad<T>? lazyLoad) where T : class?
     {
@@ -37,7 +37,7 @@ internal static class LazyLoadPropertyHelper
 
     /// <summary>
     /// Gets the inner entity as IValidateMetaProperties by looking through the LazyLoad wrapper.
-    /// Uses BoxedValue to avoid triggering auto-load on the LazyLoad.Value getter.
+    /// Uses BoxedValue for direct internal access to the backing value.
     /// </summary>
     internal static IValidateMetaProperties? GetValueIsValidateBase<T>(LazyLoad<T>? lazyLoad) where T : class?
     {
@@ -47,7 +47,7 @@ internal static class LazyLoadPropertyHelper
 
     /// <summary>
     /// Gets the inner entity as IEntityMetaProperties by looking through the LazyLoad wrapper.
-    /// Uses BoxedValue to avoid triggering auto-load on the LazyLoad.Value getter.
+    /// Uses BoxedValue for direct internal access to the backing value.
     /// </summary>
     internal static IEntityMetaProperties? GetEntityChild<T>(LazyLoad<T>? lazyLoad) where T : class?
     {
@@ -117,7 +117,7 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<LazyLoad<T>>, IVal
 
     /// <summary>
     /// Returns the inner entity (or null) instead of the LazyLoad wrapper.
-    /// Uses BoxedValue to avoid triggering auto-load on the LazyLoad.Value getter.
+    /// Uses BoxedValue for direct internal access to the backing value.
     /// The setter delegates to <see cref="LazyLoad{T}.SetValue(T?)"/> which sets the inner value,
     /// marks the LazyLoad as loaded, clears errors, and fires PropertyChanged events.
     /// </summary>
@@ -146,7 +146,7 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<LazyLoad<T>>, IVal
 
     /// <summary>
     /// Looks through the LazyLoad wrapper to the inner entity.
-    /// Uses BoxedValue to avoid triggering auto-load.
+    /// Uses BoxedValue for direct internal access to the backing value.
     /// </summary>
     protected new IValidateBase? ValueAsBase => LazyLoadPropertyHelper.GetValueAsBase(this._value);
 

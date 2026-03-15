@@ -449,32 +449,20 @@ The `PropertyChanged` subscription in Blazor should only trigger `StateHasChange
 
 ---
 
-## Anti-Pattern 9: Explicit Await for LazyLoad in Razor
+## Anti-Pattern 9: Blocking Await for LazyLoad in Razor Lifecycle
 
-Writing `await` boilerplate in page lifecycle methods to kick off LazyLoad fetches, instead of letting `.Value` access trigger the load automatically.
+Awaiting `LoadAsync()` with `await` in `OnInitializedAsync()`, which blocks rendering until data arrives. Use fire-and-forget instead.
 
 ### Wrong
 
-```razor
-@code {
-    protected override async Task OnInitializedAsync()
-    {
-        entity = await OrderFactory.Fetch(orderId);
-
-        // WRONG: Manually awaiting each LazyLoad property
-        await entity.OrderLines;
-        await entity.ShippingAddress;
-    }
-}
-```
-
-Or using `OnParametersSetAsync`:
-
 ```csharp
-protected override async Task OnParametersSetAsync()
+protected override async Task OnInitializedAsync()
 {
-    if (entity?.OrderLines.IsLoaded == false)
-        await entity.OrderLines.LoadAsync();
+    entity = await OrderFactory.Fetch(orderId);
+
+    // WRONG: Blocks rendering until load completes
+    await entity.OrderLines.LoadAsync();
+    await entity.ShippingAddress.LoadAsync();
 }
 ```
 
@@ -482,35 +470,26 @@ protected override async Task OnParametersSetAsync()
 
 - Blocks page rendering until all lazy loads complete — defeats the purpose of lazy loading
 - User sees nothing until all data arrives
-- Adding a new LazyLoad property requires updating the page lifecycle code
-- `.Value` auto-triggers the load as fire-and-forget — no explicit await needed in Razor
+- Multiple awaits run sequentially instead of concurrently
 
 ### Correct
 
-Let the Razor template trigger loads naturally by accessing `.Value`:
+Trigger loads fire-and-forget, let the 4-branch Razor pattern handle the loading state:
 
-```razor
-@if (Model.OrderLines.HasLoadError)
+```csharp
+protected override async Task OnInitializedAsync()
 {
-    <MudAlert Severity="Severity.Error">@Model.OrderLines.LoadError</MudAlert>
-}
-else if (Model.OrderLines.Value != null)
-{
-    <OrderLinesList Items="@Model.OrderLines.Value" />
-}
-else if (Model.OrderLines.IsLoaded)
-{
-    <MudAlert Severity="Severity.Warning">No data</MudAlert>
-}
-else
-{
-    <LoadingSpinner />
+    entity = await OrderFactory.Fetch(orderId);
+
+    // Fire-and-forget — page renders immediately with spinners
+    _ = entity.OrderLines.LoadAsync();
+    _ = entity.ShippingAddress.LoadAsync();
 }
 ```
 
-The page renders immediately with spinners. Each section fills in as its data arrives. No lifecycle code needed.
+The page renders immediately with spinners. Each section fills in as its `PropertyChanged` fires on load completion.
 
-**Note:** Explicit `await` is still correct in non-UI code — e.g., `await entity.WaitForTasks()` before save ensures lazy loads complete. The anti-pattern is only about Razor page rendering.
+**Note:** Blocking `await` IS correct in non-UI code — e.g., `var lines = await entity.OrderLines.LoadAsync()` in tests, domain logic, or before save (`await entity.WaitForTasks()`).
 
 ---
 

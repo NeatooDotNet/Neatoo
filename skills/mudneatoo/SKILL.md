@@ -214,6 +214,67 @@ A complete form page follows this structure:
 6. **Implement `IDisposable`** — unsubscribe from `PropertyChanged`
 7. **No `EditForm`, no `DataAnnotationsValidator`** — use `MudForm` with MudNeatoo components
 
+### LazyLoad Databinding Pattern
+
+`LazyLoad<T>` properties use a 4-branch rendering pattern. `.Value` is a passive read — it never triggers a load. Trigger the load explicitly in `OnInitializedAsync()`, then bind to `.Value` and state properties in Razor markup. Blazor re-renders when `PropertyChanged` fires on load completion.
+
+**Trigger the load in `OnInitializedAsync()`:**
+
+```csharp
+protected override async Task OnInitializedAsync()
+{
+    entity = await entityFactory.Fetch(orderId);
+    // Explicitly trigger the lazy load — does not block rendering
+    _ = entity.OrderLines.LoadAsync();
+}
+```
+
+**Bind to `.Value` and state properties in Razor:**
+
+```razor
+@if (entity.OrderLines.HasLoadError)
+{
+    <MudAlert Severity="Severity.Error">@entity.OrderLines.LoadError</MudAlert>
+}
+else if (entity.OrderLines.Value is { } orderLines)
+{
+    <MudButton OnClick="AddLine">Add Line</MudButton>
+    @foreach (var line in orderLines)
+    {
+        <MudNeatooTextField T="string"
+                            EntityProperty="@line[nameof(IOrderLine.ProductName)]" />
+    }
+}
+else if (entity.OrderLines.IsLoaded)
+{
+    <MudAlert Severity="Severity.Warning">No data available</MudAlert>
+}
+else
+{
+    <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+}
+```
+
+**Branch order matters:**
+1. **HasLoadError** — show error state (load failed)
+2. **Value != null** — show data (loaded successfully with content)
+3. **IsLoaded** — loaded but null (rare — empty result)
+4. **else** — loading spinner (load triggered in `OnInitializedAsync()`, not yet complete)
+
+**Accessing the inner collection** — use `.Value` to get the loaded entity:
+
+```csharp
+private void AddLine()
+{
+    entity!.OrderLines.Value!.AddItem();
+}
+
+private Task RemoveLine(IOrderLine line)
+{
+    return entity!.OrderLines.Value!.RemoveItem(line);
+}
+```
+
 ### Child Entity Collections
 
 Iterate over child collections and bind each child's properties:
@@ -237,73 +298,6 @@ Iterate over child collections and bind each child's properties:
     </MudGrid>
 }
 ```
-
-## LazyLoad Databinding
-
-`LazyLoad<T>` properties auto-trigger their deferred fetch when `.Value` is accessed. No `await` needed — the load runs as fire-and-forget, and `PropertyChanged` events cause Blazor to re-render when the data arrives.
-
-### The Pattern
-
-```razor
-@if (Model.OrderLines.HasLoadError)
-{
-    <MudAlert Severity="Severity.Error">@Model.OrderLines.LoadError</MudAlert>
-}
-else if (Model.OrderLines.Value != null)
-{
-    <OrderLinesList Items="@Model.OrderLines.Value" />
-}
-else if (Model.OrderLines.IsLoaded)
-{
-    <MudAlert Severity="Severity.Warning">No data</MudAlert>
-}
-else
-{
-    <LoadingSpinner />
-}
-```
-
-**Branch ordering matters:**
-
-1. **Error** — `HasLoadError` catches load failures (side-effect-free check)
-2. **Data available** — `.Value != null` triggers the load on first render (returns `null` synchronously), and on subsequent renders returns the loaded data
-3. **Loaded but null** — `IsLoaded` distinguishes "loaded with null result" from "still loading" (side-effect-free check). Handles nullable `LazyLoad<T?>` where `null` is a valid result.
-4. **Loading** — fallback shows a spinner while the fire-and-forget load is in progress
-
-### How It Works
-
-1. **First render:** `.Value` is accessed in Branch 2 → auto-triggers fire-and-forget load → returns `null` → falls through to Branch 4 → shows spinner
-2. **Load completes:** `PropertyChanged` fires for `Value`, `IsLoaded`, `IsLoading` → Blazor re-renders
-3. **Second render:** `.Value` returns loaded data → Branch 2 → shows data
-
-If the load fails, `PropertyChanged` fires for `HasLoadError` → re-render → Branch 1 → shows error.
-
-### Side-Effect Rules
-
-| Property | Triggers Load? | Safe for state checks? |
-|----------|---------------|----------------------|
-| `.Value` | **Yes** (when not loaded, not loading, has loader) | No |
-| `.IsLoaded` | No | Yes |
-| `.IsLoading` | No | Yes |
-| `.HasLoadError` | No | Yes |
-| `.LoadError` | No | Yes |
-
-### WaitForTasks Before Save
-
-`WaitForTasks()` awaits in-progress LazyLoad children. Always call before save to ensure lazy loads complete:
-
-```csharp
-private async Task Save()
-{
-    await entity!.WaitForTasks();  // Awaits lazy loads + async rules
-    if (!entity.IsSavable) return;
-    entity = await factory.Save(entity);
-}
-```
-
-See the Neatoo skill's `references/lazy-loading.md` for LazyLoad API details (`ILazyLoadFactory`, `LoadAsync`, serialization behavior).
-
-See `references/anti-patterns.md` → Anti-Pattern 9 for the explicit-await mistake this pattern replaces.
 
 ## IEntityProperty Metadata
 
@@ -355,4 +349,4 @@ For read-only display of entity values (not form inputs), bind directly to entit
 
 ## Reference Documentation
 
-- **`references/anti-patterns.md`** — Complete catalog of anti-patterns with correct alternatives (including Anti-Pattern 9: explicit await for LazyLoad in Razor)
+- **`references/anti-patterns.md`** — Complete catalog of anti-patterns with correct alternatives

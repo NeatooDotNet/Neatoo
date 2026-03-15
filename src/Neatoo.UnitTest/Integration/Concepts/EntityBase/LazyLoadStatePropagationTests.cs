@@ -75,12 +75,12 @@ public class LazyLoadStatePropagationTests : IntegrationTestBase
 }
 
 /// <summary>
-/// Tests that auto-triggered LazyLoad loads (from Value getter) propagate
-/// IsBusy and IsValid to the parent entity, and that WaitForTasks on the
-/// parent awaits in-progress LazyLoad children.
+/// Tests that explicit LoadAsync on LazyLoad children propagates IsBusy and IsValid
+/// to the parent entity, and that WaitForTasks on the parent awaits in-progress
+/// LazyLoad children.
 /// </summary>
 [TestClass]
-public class LazyLoadAutoTriggerPropagationTests : IntegrationTestBase
+public class LazyLoadExplicitLoadPropagationTests : IntegrationTestBase
 {
     private ILazyLoadEntityObject parent = null!;
 
@@ -96,9 +96,9 @@ public class LazyLoadAutoTriggerPropagationTests : IntegrationTestBase
     }
 
     [TestMethod]
-    public async Task ParentIsBusy_AfterAutoTriggeredChildLoad()
+    public async Task ParentIsBusy_AfterExplicitChildLoad()
     {
-        // Arrange (Scenario 10, Rule 9) -- set up a LazyLoad with a slow loader
+        // Arrange -- set up a LazyLoad with a slow loader
         var continueLoad = new TaskCompletionSource<ILazyLoadEntityObject?>();
 
         var factory = GetRequiredService<ILazyLoadEntityObjectFactory>();
@@ -106,8 +106,8 @@ public class LazyLoadAutoTriggerPropagationTests : IntegrationTestBase
 
         parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(async () => await continueLoad.Task);
 
-        // Act -- access Value to trigger fire-and-forget load
-        _ = parent.LazyChild.Value;
+        // Act -- start explicit load (fire-and-forget)
+        _ = parent.LazyChild.LoadAsync();
 
         // Assert -- parent IsBusy while child load is in progress
         Assert.IsTrue(parent.LazyChild.IsBusy, "LazyChild should be busy during load");
@@ -121,14 +121,14 @@ public class LazyLoadAutoTriggerPropagationTests : IntegrationTestBase
     }
 
     [TestMethod]
-    public async Task ParentIsValid_AfterAutoTriggeredChildLoadFailure()
+    public async Task ParentIsValid_AfterExplicitChildLoadFailure()
     {
-        // Arrange (Scenario 11, Rule 10) -- set up a LazyLoad with a failing loader
+        // Arrange -- set up a LazyLoad with a failing loader
         parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(
             () => throw new InvalidOperationException("load failed"));
 
-        // Act -- trigger auto-load via Value getter
-        _ = parent.LazyChild.Value;
+        // Act -- trigger explicit load (fire-and-forget)
+        _ = parent.LazyChild.LoadAsync();
 
         // Wait for the load to complete (it will fail)
         // WaitForTasks propagates the exception from the faulted _loadTask
@@ -148,9 +148,9 @@ public class LazyLoadAutoTriggerPropagationTests : IntegrationTestBase
     }
 
     [TestMethod]
-    public async Task ParentWaitForTasks_AwaitsAutoTriggeredLazyLoadChild()
+    public async Task ParentWaitForTasks_AwaitsExplicitLazyLoadChild()
     {
-        // Arrange (Scenario 14, Rule 13) -- LazyLoad with async loader
+        // Arrange -- LazyLoad with async loader
         var factory = GetRequiredService<ILazyLoadEntityObjectFactory>();
         var childEntity = await factory.Fetch(Guid.NewGuid(), "LazyChild", "lazy child desc");
 
@@ -158,9 +158,9 @@ public class LazyLoadAutoTriggerPropagationTests : IntegrationTestBase
 
         parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(async () => await continueLoad.Task);
 
-        // Act -- access Value to trigger fire-and-forget load
-        _ = parent.LazyChild.Value;
-        Assert.IsTrue(parent.LazyChild.IsLoading, "LazyChild should be loading after Value access");
+        // Act -- start explicit load (fire-and-forget)
+        _ = parent.LazyChild.LoadAsync();
+        Assert.IsTrue(parent.LazyChild.IsLoading, "LazyChild should be loading after LoadAsync()");
 
         // Complete the load
         continueLoad.SetResult(childEntity);
@@ -174,9 +174,9 @@ public class LazyLoadAutoTriggerPropagationTests : IntegrationTestBase
     }
 
     [TestMethod]
-    public async Task ParentWaitForTasksWithToken_AwaitsAutoTriggeredLazyLoadChild()
+    public async Task ParentWaitForTasksWithToken_AwaitsExplicitLazyLoadChild()
     {
-        // Arrange (Scenario 15, Rule 14) -- CancellationToken version
+        // Arrange -- CancellationToken version
         var factory = GetRequiredService<ILazyLoadEntityObjectFactory>();
         var childEntity = await factory.Fetch(Guid.NewGuid(), "LazyChild", "lazy child desc");
 
@@ -184,8 +184,8 @@ public class LazyLoadAutoTriggerPropagationTests : IntegrationTestBase
 
         parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(async () => await continueLoad.Task);
 
-        // Act -- trigger auto-load
-        _ = parent.LazyChild.Value;
+        // Act -- start explicit load (fire-and-forget)
+        _ = parent.LazyChild.LoadAsync();
 
         // Complete the load
         continueLoad.SetResult(childEntity);
@@ -220,15 +220,15 @@ public class LazyLoadAutoTriggerPropagationTests : IntegrationTestBase
     [TestMethod]
     public async Task ParentWaitForTasks_UnaccessedChild_CompletesWithoutTrigger()
     {
-        // Arrange (Scenario 17, Rule 15) -- LazyLoad child has never been accessed
+        // Arrange -- LazyLoad child has never been accessed. Neither Value nor LoadAsync called.
         parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(async () =>
         {
             // This loader should NOT be invoked by WaitForTasks
-            Assert.Fail("Loader should not be invoked by WaitForTasks -- only Value getter triggers loading");
+            Assert.Fail("Loader should not be invoked by WaitForTasks -- nothing triggers loading except explicit LoadAsync()");
             return await Task.FromResult<ILazyLoadEntityObject?>(null);
         });
 
-        // Act -- call WaitForTasks WITHOUT accessing Value first
+        // Act -- call WaitForTasks WITHOUT calling LoadAsync first
         await parent.WaitForTasks();
 
         // Assert -- no load triggered, child still unloaded

@@ -160,6 +160,10 @@
     {
         Message = "Fetching...";
         NewPerson(await PersonFactory.Fetch(CancellationToken.None));
+        // Trigger lazy load of phone list — fire-and-forget.
+        // The 4-branch Razor pattern shows a spinner until PropertyChanged fires on completion.
+        if (Person != null)
+            _ = Person.PersonPhoneList.LoadAsync();
         Message = string.Empty;
     }
 

@@ -16,18 +16,17 @@
 // RunRules, PropertyMessages, IsValid, IsBusy, IsModified, WaitForTasks,
 // and ClearAllMessages to the inner entity loaded by LazyLoad.
 //
-// DESIGN DECISION: Accessing Value auto-triggers a fire-and-forget load
-// when the value hasn't been loaded, no load is in progress, and a loader
-// delegate is present. The getter returns null synchronously; PropertyChanged
-// fires when the load completes. IsLoading and IsLoaded access does NOT
-// trigger a load. This eliminates the manual "await" boilerplate that was
-// consistently needed in Blazor Razor databinding.
+// DESIGN DECISION: Value is a passive read. It returns the current state
+// (null if not loaded, the loaded value otherwise) with no side effects.
+// Call LoadAsync() explicitly to trigger loading. PropertyChanged fires
+// when the load completes. Two patterns: LoadAsync() for imperative code
+// (tests, domain logic, OnInitializedAsync), .Value for binding.
 //
 // DESIGN DECISION: ValidateBase.WaitForTasks() awaits in-progress LazyLoad
 // children via PropertyManager.WaitForTasks(). This ensures that
-// "await entity.WaitForTasks()" before Save waits for any auto-triggered
-// loads to complete. WaitForTasks does NOT trigger loads on unaccessed
-// LazyLoad children (uses BoxedValue, not Value getter).
+// "await entity.WaitForTasks()" before Save waits for any explicitly
+// triggered loads to complete. WaitForTasks does NOT trigger loads on
+// unaccessed LazyLoad children.
 //
 // DESIGN DECISION: The generic constraint is `where T : class?` (not `where T : class`)
 // to support nullable reference types. This allows declarations like
