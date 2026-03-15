@@ -88,6 +88,26 @@ public class AddressList : EntityListBase<IAddress>, IAddressList { }
 <sup><a href='/src/samples/ReadmeSamples.cs#L10-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-readme-teaser' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+## What a DDD Framework Gives You
+
+### Updates Without Guesswork
+
+With transaction scripts, the client sends a partial payload and the server has to merge it with the current database state — figuring out what actually changed, what to update, and what to leave alone. That merge logic is fragile and grows with every new field.
+
+With Neatoo, the full aggregate comes back to the server with its state intact. Every entity tracks `IsNew`, `IsModified`, `IsDeleted`, and `ModifiedProperties` through the entire object graph. When you reach your `[Insert]`, `[Update]`, or `[Delete]` factory methods, there's no guessing — the domain model already knows exactly what changed and what needs to persist.
+
+### Business Logic That Can't Diverge
+
+In most applications, business logic drifts. Critical rules get duplicated between the UI and server, lighter rules live only in the UI, and the two definitions slowly diverge until they contradict each other.
+
+Neatoo puts validation and business rules in the domain model — one definition, compiled into both client and server. Rules are engineered to work with data-binding: when a property changes, dependent validation and action rules fire immediately, updating the UI in real time. The same rules execute again on the server during persistence. They can't diverge because they're the same code.
+
+### Authorization Defined Once, Enforced Everywhere
+
+Authorization follows the same pattern. Client-side checks control what the UI shows — can this user create an order? Edit this field? Delete this record? Server-side checks guard the actual operations. In most applications these are separate implementations that fall out of sync.
+
+Neatoo's `[AuthorizeFactory]` attributes define authorization on the factory operation itself. RemoteFactory always enforces these on the server, regardless of what the client sends. The same definitions also power `CanCreate`, `CanFetch`, `CanUpdate`, and `CanDelete` methods that the UI consumes to show or hide actions, disable buttons, and control navigation. One definition drives both enforcement and UI behavior.
+
 ## Installation
 
 Install the Neatoo package via NuGet.
