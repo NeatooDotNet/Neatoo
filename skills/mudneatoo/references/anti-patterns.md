@@ -449,6 +449,71 @@ The `PropertyChanged` subscription in Blazor should only trigger `StateHasChange
 
 ---
 
+## Anti-Pattern 9: Explicit Await for LazyLoad in Razor
+
+Writing `await` boilerplate in page lifecycle methods to kick off LazyLoad fetches, instead of letting `.Value` access trigger the load automatically.
+
+### Wrong
+
+```razor
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        entity = await OrderFactory.Fetch(orderId);
+
+        // WRONG: Manually awaiting each LazyLoad property
+        await entity.OrderLines;
+        await entity.ShippingAddress;
+    }
+}
+```
+
+Or using `OnParametersSetAsync`:
+
+```csharp
+protected override async Task OnParametersSetAsync()
+{
+    if (entity?.OrderLines.IsLoaded == false)
+        await entity.OrderLines.LoadAsync();
+}
+```
+
+### Why It's Wrong
+
+- Blocks page rendering until all lazy loads complete — defeats the purpose of lazy loading
+- User sees nothing until all data arrives
+- Adding a new LazyLoad property requires updating the page lifecycle code
+- `.Value` auto-triggers the load as fire-and-forget — no explicit await needed in Razor
+
+### Correct
+
+Let the Razor template trigger loads naturally by accessing `.Value`:
+
+```razor
+@if (Model.OrderLines.HasLoadError)
+{
+    <MudAlert Severity="Severity.Error">@Model.OrderLines.LoadError</MudAlert>
+}
+else if (Model.OrderLines.Value != null)
+{
+    <OrderLinesList Items="@Model.OrderLines.Value" />
+}
+else if (Model.OrderLines.IsLoaded)
+{
+    <MudAlert Severity="Severity.Warning">No data</MudAlert>
+}
+else
+{
+    <LoadingSpinner />
+}
+```
+
+The page renders immediately with spinners. Each section fills in as its data arrives. No lifecycle code needed.
+
+**Note:** Explicit `await` is still correct in non-UI code — e.g., `await entity.WaitForTasks()` before save ensures lazy loads complete. The anti-pattern is only about Razor page rendering.
+
+---
+
 ## Summary: The Decision Checklist
 
 When binding a MudBlazor component to a Neatoo entity property:
