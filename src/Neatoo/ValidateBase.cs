@@ -304,7 +304,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// assigning LazyLoad properties in a custom setter.
 	/// </summary>
 	/// <remarks>
-	/// Delegates to <see cref="IValidatePropertyManagerInternal{P}.RegisterLazyLoadProperties"/> which
+	/// Delegates to <see cref="IValidatePropertyManagerInternal{P}.FinalizeRegistration"/> which
 	/// handles reflection discovery, property creation (polymorphic for entity vs validate), reassignment
 	/// detection, and registration.
 	/// </remarks>
@@ -312,7 +312,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	{
 		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
 		{
-			pmInternal.RegisterLazyLoadProperties(this, GetType());
+			pmInternal.FinalizeRegistration(this, GetType());
 		}
 	}
 
@@ -431,12 +431,6 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 			if (eventArgs.Property.Value is ISetParent child)
 			{
 				child.SetParent(this);
-			}
-			// LazyLoad look-through: LazyLoad does not implement ISetParent,
-			// but the inner entity does. Look through the wrapper to call SetParent.
-			else if (eventArgs.Property.Value is ILazyLoadDeserializable ll && ll.BoxedValue is ISetParent llChild)
-			{
-				llChild.SetParent(this);
 			}
 
 			// The property fires PropertyChanged("Value"), but UI binds to entity.Name (not entity.NameProperty.Value).
@@ -570,7 +564,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 		this.PropertyManager.NeatooPropertyChanged += this._PropertyManager_NeatooPropertyChanged;
 		this.PropertyManager.PropertyChanged += this._PropertyManager_PropertyChanged;
 
-		// Cast to internal interface to access GetProperties
+		// Cast to internal interface to access GetProperties and FinalizeRegistration
 		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
 		{
 			foreach (var property in pmInternal.GetProperties)
@@ -580,9 +574,10 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 					setParent.SetParent(this);
 				}
 			}
+
+			pmInternal.FinalizeRegistration(this, GetType());
 		}
 
-		this.RegisterLazyLoadProperties();
 		this.ResumeAllActions();
 	}
 
@@ -1008,7 +1003,10 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </remarks>
 	public virtual void FactoryComplete(FactoryOperation factoryOperation)
 	{
-		this.RegisterLazyLoadProperties();
+		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
+		{
+			pmInternal.FinalizeRegistration(this, GetType());
+		}
 		this.ResumeAllActions();
 	}
 }

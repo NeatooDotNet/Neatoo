@@ -31,6 +31,36 @@ internal class LazyLoadEntityProperty<T> : EntityProperty<LazyLoad<T>>, IEntityP
         this.IsReadOnly = true;
     }
 
+    // --- Value override ---
+
+    /// <summary>
+    /// Returns the inner entity (or null) instead of the LazyLoad wrapper.
+    /// Uses BoxedValue to avoid triggering auto-load on the LazyLoad.Value getter.
+    /// The setter delegates to <see cref="LazyLoad{T}.SetValue(T?)"/> which sets the inner value,
+    /// marks the LazyLoad as loaded, clears errors, and fires PropertyChanged events.
+    /// </summary>
+    /// <remarks>
+    /// Uses 'new' because the base <see cref="ValidateProperty{T}.Value"/> is virtual with return type
+    /// <c>LazyLoad&lt;T&gt;?</c>, but we need <c>object?</c> for the inner entity.
+    /// The LazyLoad subclass re-declares <see cref="IEntityProperty"/> (which extends <see cref="IValidateProperty"/>)
+    /// to force interface re-implementation, so <c>IValidateProperty.Value</c> dispatches to this member
+    /// when accessed through the interface.
+    /// Note: <see cref="ValidateProperty{T}.PassThruValueNeatooPropertyChanged"/> and
+    /// <see cref="ValidateProperty{T}.OnDeserialized"/> call <c>this.Value</c> through virtual dispatch
+    /// which resolves to the base member (returns the LazyLoad wrapper), not this 'new' member.
+    /// This is correct -- those methods need the LazyLoad wrapper for event subscription.
+    /// </remarks>
+    public new object? Value
+    {
+        get => ((ILazyLoadDeserializable?)this._value)?.BoxedValue;
+        set
+        {
+            if (this._value == null)
+                throw new InvalidOperationException("Cannot set value: no LazyLoad wrapper is assigned.");
+            this._value.SetValue((T?)value);
+        }
+    }
+
     // --- Look-through overrides ---
 
     /// <summary>
@@ -95,14 +125,16 @@ internal class LazyLoadEntityProperty<T> : EntityProperty<LazyLoad<T>>, IEntityP
     // --- Lifecycle overrides ---
 
     /// <summary>
-    /// Throws InvalidOperationException. LazyLoad values are set by the load process,
-    /// not through PropertyManager.
+    /// Delegates to <see cref="LazyLoad{T}.SetValue(T?)"/> to set the inner value directly.
+    /// This is the path used by <see cref="IValidateProperty.SetValue(object?)"/> and
+    /// the property setter infrastructure.
     /// </summary>
     public override Task SetValue(object? newValue)
     {
-        throw new InvalidOperationException(
-            "Cannot set a LazyLoad property value through PropertyManager. " +
-            "LazyLoad values are populated by the load process.");
+        if (this._value == null)
+            throw new InvalidOperationException("Cannot set value: no LazyLoad wrapper is assigned.");
+        this._value.SetValue((T?)newValue);
+        return Task.CompletedTask;
     }
 
     /// <summary>

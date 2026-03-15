@@ -38,12 +38,13 @@ internal interface IValidatePropertyManagerInternal<out P> where P : IValidatePr
     bool TryGetRegisteredProperty(string propertyName, out IValidateProperty? property);
 
     /// <summary>
+    /// Finalizes property registration after object construction or deserialization.
     /// Discovers all LazyLoad properties on the owner via cached reflection and registers them
     /// with PropertyManager as look-through property subclasses.
     /// </summary>
     /// <param name="owner">The entity instance (needed to read property values via reflection).</param>
     /// <param name="concreteType">The concrete runtime type of the entity (from GetType()).</param>
-    void RegisterLazyLoadProperties(object owner, Type concreteType);
+    void FinalizeRegistration(object owner, Type concreteType);
 
     /// <summary>
     /// Registers a single LazyLoad property with PropertyManager explicitly (no reflection discovery).
@@ -430,7 +431,7 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
         Justification = "GetGenericArguments() on LazyLoad<T> property types discovered via cached " +
         "reflection. The T type argument is a domain type preserved by [DynamicallyAccessedMembers] " +
         "on the owning entity's type parameter.")]
-    void IValidatePropertyManagerInternal<P>.RegisterLazyLoadProperties(object owner, Type concreteType)
+    void IValidatePropertyManagerInternal<P>.FinalizeRegistration(object owner, Type concreteType)
     {
         var props = GetLazyLoadProperties(concreteType);
         if (props.Length == 0) return;
