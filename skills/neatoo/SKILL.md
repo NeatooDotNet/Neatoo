@@ -202,6 +202,7 @@ Detailed documentation for each topic area:
 - **`references/base-classes.md`** - Neatoo-to-DDD mapping, when to use each base
 - **`references/properties.md`** - Partial properties, change tracking, calculated properties
 - **`references/validation.md`** - RuleManager, attributes, async validation
+- **`references/shared-rules.md`** - Shared rules across entities via interface-typed AsyncRuleBase and DI injection
 - **`references/entities.md`** - EntityBase lifecycle, persistence, Save routing
 - **`references/collections.md`** - EntityListBase, parent-child relationships, deletion tracking
 - **`references/lazy-loading.md`** - LazyLoad&lt;T&gt;, ILazyLoadFactory, explicit LoadAsync(), passive Value read, WaitForTasks integration

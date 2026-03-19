@@ -1,6 +1,6 @@
 # Base Classes
 
-Neatoo provides base classes that map to Domain-Driven Design concepts. Choose the appropriate base class based on the DDD concept you're modeling.
+Neatoo provides base classes that map to Domain-Driven Design concepts. Choose the appropriate base class based on the DDD concept being modeled.
 
 ## Base Class to DDD Mapping
 
@@ -241,7 +241,7 @@ Use for query results that don't need editing.
 - Dropdown lists
 - Search results
 
-**Note:** For pure read-only data that doesn't need validation or change tracking, a standard class with `[Factory]` + `[Fetch]` via RemoteFactory works — no Neatoo base class required. Use `ValidateBase<T>` only when you need validation rules, `IsValid`, property change notifications, or change tracking on the read model.
+**Note:** For pure read-only data that doesn't need validation or change tracking, a standard class with `[Factory]` + `[Fetch]` via RemoteFactory works — no Neatoo base class required. Use `ValidateBase<T>` only when validation rules are needed, `IsValid`, property change notifications, or change tracking on the read model.
 
 
 <!-- snippet: readonly-base-sample -->
@@ -287,7 +287,7 @@ public class SkillEmployeeSummaryList : ValidateListBase<SkillEmployeeSummary>
 ## Inheritance Guidelines
 
 1. **Always inherit from the appropriate base class** - Don't implement interfaces directly
-2. **Use `partial` keyword** - Source generators extend your class
+2. **Use `partial` keyword** - Source generators extend the class
 3. **Follow DDD aggregate boundaries** - EntityBase for roots, children within the aggregate
 
 ## Related

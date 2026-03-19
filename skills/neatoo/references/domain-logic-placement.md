@@ -296,7 +296,7 @@ Child property triggers handle most parent-child reactivity. Reserve `NeatooProp
 - **Cross-sibling rules** — a list override that triggers rules on sibling items when one changes (see `HandleNeatooPropertyChanged` override pattern)
 
 ```csharp
-// NeatooPropertyChanged fallback — only when you need event args or broad matching
+// NeatooPropertyChanged fallback — only when event args or broad matching is needed
 NeatooPropertyChanged += (args) =>
 {
     if (args.OriginalEventArgs.Reason == ChangeReason.UserEdit)

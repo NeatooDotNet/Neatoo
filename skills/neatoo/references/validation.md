@@ -4,7 +4,7 @@ Neatoo provides a comprehensive validation system with synchronous and asynchron
 
 ## Basic Validation Rule
 
-Add validation rules in the `AddRules()` override:
+Add validation rules in the constructor using RuleManager:
 
 <!-- snippet: validation-basic -->
 <a id='snippet-validation-basic'></a>
@@ -200,6 +200,8 @@ public SkillGapEmployee(
 ```
 <sup><a href='/src/samples/SkillGapSamples.cs#L73-L82' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-registration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+For rules shared across multiple entity types, see [shared-rules.md](shared-rules.md) — the rule operates on a shared interface and is DI-injected directly into entities, eliminating the need to forward services through entity constructors.
 
 ### Fluent vs Class-Based Rules
 
