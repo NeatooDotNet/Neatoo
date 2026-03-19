@@ -33,9 +33,7 @@ Source: `NeatooATM/docs/todos/neatoo-blazor-implementation-plan.md`
 
 ### MudNeatoo Components
 
-- [ ] **MudNeatoo Component Namespace Gap**: Documentation shows `@using Neatoo.Blazor.MudNeatoo` but components are in sub-namespaces:
-  - `@using Neatoo.Blazor.MudNeatoo.Components` - for MudNeatooTextField, MudNeatooNumericField
-  - `@using Neatoo.Blazor.MudNeatoo.Validation` - for NeatooValidationSummary
+- [x] **MudNeatoo Component Namespace Gap**: ~~Documentation shows `@using Neatoo.Blazor.MudNeatoo` but components are in sub-namespaces.~~ Resolved by [mudneatoo-skill-gaps](mudneatoo-skill-gaps.md) -- added "Namespaces & @using Directives" section to `skills/mudneatoo/SKILL.md` listing all three namespaces (`Components`, `Validation`, `Extensions`).
 
 ### Entity Operations
 
