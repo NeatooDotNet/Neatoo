@@ -160,7 +160,7 @@ public void IsNew_DistinguishesNewFromExisting()
 <sup><a href='/src/samples/EntitiesSamples.cs#L391-L401' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-is-new' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The framework manages `IsNew` automatically through factory operations. FactoryComplete sets `IsNew = true` after Create and `IsNew = false` after Insert or Fetch.
+The framework manages `IsNew` automatically through factory operations. `FactoryComplete` sets `IsNew = true` after Create and `IsNew = false` after Insert or Update. For Fetch, `IsNew` stays at its default `false` because `FactoryComplete(Fetch)` performs no state changes.
 
 ## Entity Lifecycle
 
@@ -449,7 +449,7 @@ public void ModificationState_TracksChanges()
 <!-- endSnippet -->
 
 - **IsModified**: True if any property changed, entity is new (`IsNew == true`), entity is deleted (`IsDeleted == true`), or explicitly marked modified. Includes child modifications cascading from collections.
-- **IsSelfModified**: True if the entity's own properties changed, entity is new (`IsNew == true`), entity is deleted (`IsDeleted == true`), or explicitly marked modified. Excludes child modifications.
+- **IsSelfModified**: True if the entity's own properties changed, entity is deleted (`IsDeleted == true`), or explicitly marked modified. Excludes child modifications. Note: `IsNew` alone does NOT make `IsSelfModified` true -- it only contributes to `IsModified`.
 - **ModifiedProperties**: Collection of property names that changed since last save.
 - **IsMarkedModified**: Explicitly marked modified via `MarkModified()`.
 

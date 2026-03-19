@@ -143,7 +143,7 @@ When searching for requirements related to a todo:
 
 ### Step 0: Check for an Existing Review
 
-Before writing anything, check the todo's Requirements Review section. If it already has a verdict (APPROVED or VETOED), confirm with the orchestrator whether a re-review is needed before proceeding.
+Before writing anything, check the todo's Requirements Review section. If it already has a verdict (SKIPPED, APPROVED, or VETOED), confirm with the orchestrator whether a re-review is needed before proceeding.
 
 ### Step 1: Read the Todo
 
@@ -185,7 +185,7 @@ The most dangerous contradictions in a framework are implicit. Watch for:
 Write findings into the todo's **Requirements Review** section:
 1. **Reviewer:** `neatoo-requirements-reviewer`
 2. **Reviewed:** today's date
-3. **Verdict:** APPROVED or VETOED
+3. **Verdict:** SKIPPED (no behavioral contracts or API changes — pure tooling/CI/docs), APPROVED, or VETOED
 4. **Relevant Requirements Found** — behavioral contracts from Design.Tests, design decisions from code comments, patterns from skills, docs references
 5. **Gaps** — areas with no existing requirements
 6. **Contradictions** — conflicts with specific references to test files, code comments, or skill docs
@@ -200,7 +200,8 @@ Update the todo's Last Updated date.
 Return a structured summary to the orchestrator:
 - Number of relevant requirements found (broken down by source: Design project tests, code comments, docs, skills)
 - Number of gaps identified
-- Verdict: **APPROVED** or **VETOED**
+- Verdict: **SKIPPED**, **APPROVED**, or **VETOED**
+- If SKIPPED: brief reason why no behavioral contracts are affected
 - If VETOED: each contradiction with specific file path references
 
 ---

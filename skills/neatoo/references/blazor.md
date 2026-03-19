@@ -78,14 +78,14 @@ Each partial property is backed by its own `IValidateProperty` object (see [prop
 @if (emailProp.IsBusy) { <MudProgressCircular Size="Size.Small" /> }
 ```
 
-MudNeatoo components (`NeatooTextField`, etc.) handle Mode 2 internally — they bind to both the value and the property metadata automatically.
+MudNeatoo components (`MudNeatooTextField`, etc.) handle Mode 2 internally — they bind to both the value and the property metadata automatically.
 
 ### When to Use Each Mode
 
 | Goal | Mode | Example |
 |------|------|---------|
 | Show a property value | Mode 1 | `@order.Total` |
-| Show validation errors | Mode 2 (automatic via MudNeatoo) | `<NeatooTextField Property="@employee[nameof(employee.Email)]" />` |
+| Show validation errors | Mode 2 (automatic via MudNeatoo) | `<MudNeatooTextField T="string" EntityProperty="@employee[nameof(employee.Email)]" />` |
 | Custom validation display | Mode 2 (manual) | `employee["Email"].IsValid`, `employee["Email"].PropertyMessages` |
 | Show busy spinner per field | Mode 2 (manual) | `employee["Email"].IsBusy` |
 | Conditional UI from domain state | Mode 1 | `@if (order.QualifiesForDiscount)` |
@@ -243,15 +243,20 @@ Bind components to domain-computed properties. Ensure the values you bind to are
 
 | Component | Purpose |
 |-----------|---------|
-| `NeatooTextField` | Text input with validation |
-| `NeatooNumericField` | Numeric input |
-| `NeatooDatePicker` | Date selection |
-| `NeatooCheckbox` | Boolean toggle |
-| `NeatooSelect` | Dropdown selection |
-| `NeatooValidationSummary` | All validation errors |
-| `NeatooValidationMessage` | Single property validation |
+| `MudNeatooTextField<T>` | Text input with validation |
+| `MudNeatooNumericField<T>` | Numeric input |
+| `MudNeatooDatePicker` | Date selection |
+| `MudNeatooDateRangePicker` | Date range selection |
+| `MudNeatooTimePicker` | Time selection |
+| `MudNeatooCheckBox<T>` | Boolean toggle |
+| `MudNeatooSwitch<T>` | Boolean toggle (switch style) |
+| `MudNeatooSelect<T>` | Dropdown selection |
+| `MudNeatooAutocomplete<T>` | Autocomplete text input |
+| `MudNeatooRadioGroup<T>` | Radio button group |
+| `MudNeatooSlider<T>` | Slider input |
+| `NeatooValidationSummary` | All validation errors for an entity |
 
-All MudBlazor parameters pass through to the underlying component (Variant, Margin, HelperText, Adornment, etc.).
+All components take an `EntityProperty` parameter (the `IEntityProperty` from the entity's indexer). Common MudBlazor parameters (Variant, Margin, HelperText, Adornment, Class, etc.) are exposed as pass-through parameters on each component.
 
 ## Standard Practices
 

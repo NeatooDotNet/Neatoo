@@ -371,7 +371,8 @@ public class PropertiesSamplesTests : SamplesTestBase
         // LoadValue:
         // - Does NOT trigger validation rules
         // - Does NOT mark entity as modified
-        // - DOES fire PropertyChanged (for UI binding)
+        // - Does NOT fire PropertyChanged (suppressed during load)
+        // - DOES fire NeatooPropertyChanged with ChangeReason.Load
         // - DOES establish parent-child relationships
         invoice["CustomerName"].LoadValue("Acme Corp");
         invoice["Amount"].LoadValue(500.00m);

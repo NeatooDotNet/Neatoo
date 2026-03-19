@@ -7,13 +7,13 @@ The Neatoo guides cover core framework concepts and integration patterns. Each g
 ## Core Concepts
 
 ### [Async](async.md)
-Async validation rules, WaitForAllTasksAsync, CancellationToken support, and task coordination.
+Async validation rules, WaitForTasks, CancellationToken support, and task coordination.
 
 ### [Business Rules](business-rules.md)
 Business rule attributes, cross-property validation, aggregate-level rules, rule execution order, and async business rules.
 
 ### [Change Tracking](change-tracking.md)
-IsDirty tracking, MarkClean/MarkDirty, cascade to parent, change tracking in collections, and dirty state relationship with validation.
+IsModified/IsSelfModified tracking, MarkModified/MarkUnmodified, cascade to parent, change tracking in collections, and modification state relationship with validation.
 
 ### [Collections](collections.md)
 EntityListBase for entity collections, ValidateListBase for value object collections, Add/Remove operations, parent property cascade, and collection validation.

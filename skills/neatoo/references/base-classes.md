@@ -19,12 +19,13 @@ For validated criteria objects (search forms with rules and `IsValid`), use `Val
 
 Use for objects that need validation and change tracking but no persistence lifecycle.
 
-**DDD Concept:** Value Object - Immutable data identified by its attributes, not by identity.
+**DDD Concept:** Value Object, Read Model, or validated DTO. Despite the DDD "immutable" ideal, Neatoo value objects have setters for form-binding and validation-before-submit workflows.
 
 **When to use:**
 - Composite values (Address, Money, DateRange)
 - Form data that needs validation before submission
 - DTOs with business rules
+- Search/criteria objects with validation rules
 
 <!-- snippet: validate-base-sample -->
 <a id='snippet-validate-base-sample'></a>

@@ -8,13 +8,17 @@ When the same validation rule applies to multiple entity types, make the rule op
 
 The interface must extend `IValidateBase` to satisfy `AsyncRuleBase<T>`'s constraint (`where T : class, IValidateBase`). Include only the properties the rule needs:
 
-```csharp
+<!-- snippet: shared-rule-interface -->
+<a id='snippet-shared-rule-interface'></a>
+```cs
 public interface IHasUniqueId : IValidateBase
 {
     int? ID { get; }
     Guid ExcludeId { get; }
 }
 ```
+<sup><a href='/src/samples/SharedRulesSamples.cs#L14-L20' title='Snippet source file'>snippet source</a> | <a href='#snippet-shared-rule-interface' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 `IValidateBase` is already implemented by every Neatoo base class (`ValidateBase<T>`, `EntityBase<T>`, etc.), so adding it to the interface introduces no new obligations on implementing entities.
 
@@ -22,7 +26,9 @@ public interface IHasUniqueId : IValidateBase
 
 The rule's type parameter is the shared interface, not a specific entity:
 
-```csharp
+<!-- snippet: shared-rule-class -->
+<a id='snippet-shared-rule-class'></a>
+```cs
 public class IdUniquenessRule : AsyncRuleBase<IHasUniqueId>, IIdUniquenessRule
 {
     private readonly IIdUniquenessService _service;
@@ -45,45 +51,63 @@ public class IdUniquenessRule : AsyncRuleBase<IHasUniqueId>, IIdUniquenessRule
     }
 }
 ```
+<sup><a href='/src/samples/SharedRulesSamples.cs#L23-L45' title='Snippet source file'>snippet source</a> | <a href='#snippet-shared-rule-class' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ### 3. Create a DI interface for the rule
 
 The interface extends `IRule<IHasUniqueId>` so it can be passed directly to `RuleManager.AddRule`:
 
-```csharp
+<!-- snippet: shared-rule-di-interface -->
+<a id='snippet-shared-rule-di-interface'></a>
+```cs
 public interface IIdUniquenessRule : IRule<IHasUniqueId> { }
 ```
+<sup><a href='/src/samples/SharedRulesSamples.cs#L48-L50' title='Snippet source file'>snippet source</a> | <a href='#snippet-shared-rule-di-interface' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ### 4. Entities implement the shared interface and inject the rule
 
 Each entity maps its own primary key to the interface's properties:
 
-```csharp
+<!-- snippet: shared-rule-entity-usage -->
+<a id='snippet-shared-rule-entity-usage'></a>
+```cs
 [Factory]
-public partial class Employee : EntityBase<Employee>, IEmployee
+internal partial class SharedRuleEmployee : EntityBase<SharedRuleEmployee>, ISharedRuleEmployee
 {
-    public Employee(
-        IEntityBaseServices<Employee> services,
+    public SharedRuleEmployee(
+        IEntityBaseServices<SharedRuleEmployee> services,
         IIdUniquenessRule idUniquenessRule) : base(services)
     {
         RuleManager.AddRule(idUniquenessRule);
     }
 
+    [Create]
+    public void Create() { }
+
     public Guid ExcludeId => EmployeeID;
     public partial Guid EmployeeID { get; set; }
     public partial int? ID { get; set; }
+    public partial string Name { get; set; }
 }
 ```
+<sup><a href='/src/samples/SharedRulesSamples.cs#L53-L72' title='Snippet source file'>snippet source</a> | <a href='#snippet-shared-rule-entity-usage' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-`RuleManager.AddRule` is generic at the method level (`AddRule<T>`), not at the class level. When called with an `IRule<IHasUniqueId>`, T is inferred as `IHasUniqueId`. Since `Employee` implements `IHasUniqueId`, the rule executes against the entity at runtime.
+`RuleManager.AddRule` is generic at the method level (`AddRule<T>`), not at the class level. When called with an `IRule<IHasUniqueId>`, T is inferred as `IHasUniqueId`. Since `SharedRuleEmployee` implements `IHasUniqueId`, the rule executes against the entity at runtime.
 
 ### 5. Register in DI
 
-```csharp
-services.AddTransient<IIdUniquenessRule, IdUniquenessRule>();
+<!-- snippet: shared-rule-di-registration -->
+<a id='snippet-shared-rule-di-registration'></a>
+```cs
+// Use transient lifetime -- each entity instance gets its own rule instance
+// because rules track execution state.
+// services.AddTransient<IIdUniquenessRule, IdUniquenessRule>();
 ```
-
-Use transient lifetime — each entity instance should get its own rule instance because rules track execution state.
+<sup><a href='/src/samples/SharedRulesSamples.cs#L107-L111' title='Snippet source file'>snippet source</a> | <a href='#snippet-shared-rule-di-registration' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Why This Works
 
@@ -100,10 +124,15 @@ Use transient lifetime — each entity instance should get its own rule instance
 
 ## Contrast with Entity-Specific Rules
 
-For rules specific to one entity type, the simpler pattern still applies — inject the service into the entity and `new` the rule:
+For rules specific to one entity type, the simpler pattern still applies:
 
-```csharp
-RuleManager.AddRule(new HireDateRule()); // no DI needed, entity-specific
+<!-- snippet: shared-rule-entity-specific -->
+<a id='snippet-shared-rule-entity-specific'></a>
+```cs
+// For rules specific to one entity type, inject the service and new the rule:
+// RuleManager.AddRule(new HireDateRule()); // no DI needed, entity-specific
 ```
+<sup><a href='/src/samples/SharedRulesSamples.cs#L114-L117' title='Snippet source file'>snippet source</a> | <a href='#snippet-shared-rule-entity-specific' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 The shared-rule pattern is specifically for cross-entity rules where DI injection eliminates parameter forwarding and generics.
