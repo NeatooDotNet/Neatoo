@@ -10,6 +10,22 @@ MudNeatoo provides wrapper components around MudBlazor that bind directly to Nea
 
 **Required package:** `Neatoo.Blazor.MudNeatoo`
 
+## Namespaces & @using Directives
+
+Add these `@using` directives to your `_Imports.razor` or individual `.razor` files:
+
+```razor
+@using Neatoo.Blazor.MudNeatoo.Components
+@using Neatoo.Blazor.MudNeatoo.Validation
+@using Neatoo.Blazor.MudNeatoo.Extensions
+```
+
+| Namespace | Contains |
+|-----------|----------|
+| `Neatoo.Blazor.MudNeatoo.Components` | All MudNeatoo input components (`MudNeatooTextField`, `MudNeatooSelect`, etc.) |
+| `Neatoo.Blazor.MudNeatoo.Validation` | `NeatooValidationSummary` |
+| `Neatoo.Blazor.MudNeatoo.Extensions` | `EntityPropertyExtensions` (`GetValidationFunc<T>`, `GetErrorText`, `HasErrors`) |
+
 ## The Core Pattern
 
 Every MudNeatoo component takes an `EntityProperty` parameter — the `IEntityProperty` object accessed via the entity's indexer `entity["PropertyName"]`. This single binding point gives the component everything: value, label, validation messages, busy state, and read-only state.
@@ -75,7 +91,7 @@ See `references/anti-patterns.md` for the complete anti-pattern catalog with rea
 | `MudNeatooAutocomplete<T>` | `MudAutocomplete<T>` | Any type |
 | `NeatooValidationSummary` | `MudAlert` | (entity-level errors) |
 
-All MudBlazor parameters pass through — `Variant`, `Margin`, `HelperText`, `Adornment`, `Class`, `Min`, `Max`, etc.
+All MudBlazor parameters pass through — `Variant`, `Margin`, `HelperText`, `Adornment`, `Class`, `Min`, `Max`, etc. — **except `ReadOnly`** on components that wrap MudBlazor inputs with a `ReadOnly` parameter (hardcoded to `EntityProperty.IsReadOnly`; see ReadOnly Behavior below).
 
 ## Binding Patterns
 
@@ -335,6 +351,19 @@ For custom UI elements not covered by MudNeatoo components, access property meta
 
 This is what MudNeatoo components do internally — prefer the components, fall back to manual binding only for unsupported controls.
 
+### ReadOnly Behavior
+
+`ReadOnly` is **not** a pass-through parameter on MudNeatoo components that wrap a MudBlazor input with a `ReadOnly` parameter. These components hardcode `ReadOnly="@EntityProperty.IsReadOnly"` in their Razor templates. You cannot override it via a component parameter.
+
+**Exception:** `MudNeatooSlider` does not bind `ReadOnly`. MudBlazor's `MudSlider` has no `ReadOnly` parameter — the slider uses only `Disabled="@EntityProperty.IsBusy"`.
+
+`IsReadOnly` is determined by `propertyInfo.IsPrivateSetter`:
+- Property with `private set` or get-only (no setter) -> `IsReadOnly = true`
+- Property with public setter -> `IsReadOnly = false`
+- Property with `internal set` -> `IsReadOnly = false` (not treated as read-only; `PropertyInfoWrapper` checks `SetMethod?.IsPrivate`, and `internal` setters are not private)
+
+This means read-only state is controlled entirely by the domain model's property declaration. To make a property read-only, declare it with a `private set` or as get-only.
+
 ## Display-Only Binding
 
 For read-only display of entity values (not form inputs), bind directly to entity properties. The entity implements `INotifyPropertyChanged`, so Blazor re-renders automatically:
@@ -346,6 +375,36 @@ For read-only display of entity values (not form inputs), bind directly to entit
     @(entity.IsValid ? "Valid" : "Has Errors")
 </MudChip>
 ```
+
+## View/Edit Mode Pattern
+
+Since most MudNeatoo components bind `ReadOnly` from `IsReadOnly` automatically (with no override), the pattern for view/edit mode switching is conditional rendering — not toggling a ReadOnly parameter.
+
+Use plain MudBlazor display components in view mode and MudNeatoo components in edit mode:
+
+```razor
+@if (isEditing)
+{
+    <MudNeatooTextField T="string"
+                        EntityProperty="@entity[nameof(IPatient.FirstName)]" />
+    <MudNeatooTextField T="string"
+                        EntityProperty="@entity[nameof(IPatient.LastName)]" />
+
+    <MudButton OnClick="Save" Disabled="@(!entity.IsSavable)">Save</MudButton>
+    <MudButton OnClick="CancelEdit" Variant="Variant.Text">Cancel</MudButton>
+}
+else
+{
+    <MudText Typo="Typo.body1">@entity.FirstName @entity.LastName</MudText>
+    <MudButton OnClick="StartEdit" Variant="Variant.Text">Edit</MudButton>
+}
+```
+
+This is intentional — ReadOnly state belongs to the domain model (via private setters), not the UI. View/edit toggling is a UI concern handled with Razor conditionals.
+
+## MudBlazor 9.x Compatibility
+
+MudBlazor 9.x renamed `ShowMessageBox` to `ShowMessageBoxAsync` on `IDialogService`. If you use message box dialogs alongside MudNeatoo forms, update your calls accordingly. This is a MudBlazor API change, not a MudNeatoo change.
 
 ## Reference Documentation
 

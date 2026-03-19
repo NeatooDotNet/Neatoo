@@ -20,7 +20,61 @@ This document captures important patterns and behaviors when working with Neatoo
 | Parent maps child properties to EF entities inline | Child has no `[Insert]`/`[Update]`/`[Delete]`; persistence logic is untestable and tangled into parent | Parent calls `childFactory.SaveAsync(child)` — child handles its own EF mapping in its own factory methods |
 | Forgetting to iterate DeletedList in parent's `[Update]` | Removed children are never deleted from the database | After saving active children, iterate `ChildList.DeletedList` and call `childFactory.SaveAsync(deleted)` for each |
 | Forgetting items are modified when added to collections | Adding a fetched (non-new) item marks both item and list as `IsModified` | Expected behavior—adding to a new parent is a state change |
+| Kitchen-sink rule with early return | Only one form input shows an error at a time — user plays whack-a-mole | Use `new RuleMessages().If(...).If(...)` to return all errors, or use separate per-property rules |
 | Worrying about rules firing during Fetch/Create | **Not a real risk.** `LoadValue` uses `ChangeReason.Load` (rules skip it). Factory operations (`[Create]`, `[Fetch]`) are wrapped in `PauseAllActions()` by the framework. Rules do not fire during hydration — no defensive coding needed. | No action required — this is handled by the framework |
+
+---
+
+## Anti-Pattern: Kitchen-Sink Validation Rule
+
+A single class-based rule that validates multiple properties but early-returns after the first failure. Only one form input shows an error at a time — the user fixes it, submits, and a *different* error appears. This is a poor UX.
+
+```csharp
+// ANTI-PATTERN: Early return means only one error shows at a time
+public class EmployeeEditRule : RuleBase<Employee>
+{
+    public EmployeeEditRule()
+        : base(e => e.FirstName, e => e.LastName, e => e.Email) { }
+
+    protected override IRuleMessages Execute(Employee target)
+    {
+        if (string.IsNullOrEmpty(target.FirstName))
+            return (nameof(target.FirstName), "First name is required").AsRuleMessages();
+
+        if (string.IsNullOrEmpty(target.LastName))
+            return (nameof(target.LastName), "Last name is required").AsRuleMessages();
+
+        if (string.IsNullOrEmpty(target.Email))
+            return (nameof(target.Email), "Email is required").AsRuleMessages();
+
+        return None;
+    }
+}
+```
+
+**Fix:** Return all errors at once using the `RuleMessages.If()` fluent builder:
+
+```csharp
+// CORRECT: All errors returned — all invalid fields show errors simultaneously
+public class EmployeeEditRule : RuleBase<Employee>
+{
+    public EmployeeEditRule()
+        : base(e => e.FirstName, e => e.LastName, e => e.Email) { }
+
+    protected override IRuleMessages Execute(Employee target)
+    {
+        return new RuleMessages()
+            .If(string.IsNullOrEmpty(target.FirstName),
+                nameof(target.FirstName), "First name is required")
+            .If(string.IsNullOrEmpty(target.LastName),
+                nameof(target.LastName), "Last name is required")
+            .If(string.IsNullOrEmpty(target.Email),
+                nameof(target.Email), "Email is required");
+    }
+}
+```
+
+**Better yet** — if the validations are independent per-property checks, use separate rules or validation attributes instead of one combined rule. A class-based rule that spans multiple properties is appropriate for *cross-property* validation (e.g., "end date must be after start date"). For independent per-property checks, prefer `AddValidation` or `[Required]` attributes.
 
 ---
 

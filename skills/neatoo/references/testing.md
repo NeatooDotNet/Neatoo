@@ -1,6 +1,6 @@
 # Testing
 
-Testing Neatoo domain models requires a specific approach: **never mock Neatoo interfaces or classes**. Use real Neatoo objects to ensure your tests validate actual framework behavior.
+Testing Neatoo domain models requires a specific approach: **never mock Neatoo interfaces or classes**. Use real Neatoo objects to ensure tests validate actual framework behavior.
 
 ## Core Principle
 
@@ -42,7 +42,7 @@ public async Task RealVsMock_UseRealNeatooClasses()
 
 **Why no mocking:**
 1. Neatoo classes work together as a cohesive unit — mocking breaks this
-2. Mocks test your mock setup, not actual Neatoo behavior
+2. Mocks test the mock setup, not actual Neatoo behavior
 3. Real objects reveal integration issues that mocks hide
 
 ## Test Base Class Setup

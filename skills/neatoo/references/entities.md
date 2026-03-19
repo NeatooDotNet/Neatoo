@@ -447,7 +447,7 @@ Understanding how saves propagate through an aggregate hierarchy is critical. Ne
 
 ### State Cascades UP Automatically
 
-The framework automatically propagates `IsModified`, `IsValid`, and `IsBusy` up the object graph. When a child becomes modified, its parent's `IsModified` becomes true. This is framework behavior — you don't write code for it.
+The framework automatically propagates `IsModified`, `IsValid`, and `IsBusy` up the object graph. When a child becomes modified, its parent's `IsModified` becomes true. This is framework behavior — no code required.
 
 ```
 Grandchild.Name = "new"  →  Grandchild.IsModified = true

@@ -348,7 +348,7 @@ order.Items.Remove(existingItem);  // Goes to DeletedList, IsDeleted = true
 
 ### Intra-Aggregate Moves (Re-adding Removed Items)
 
-When you re-add an item that was removed from the same aggregate:
+When re-adding an item that was removed from the same aggregate:
 
 <!-- snippet: skill-coll-intra-aggregate-move -->
 <a id='snippet-skill-coll-intra-aggregate-move'></a>

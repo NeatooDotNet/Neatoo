@@ -6,7 +6,7 @@ Neatoo uses Roslyn source generators at compile time. **Understanding source gen
 
 For each `partial` property, the generator creates a backing `IValidateProperty<T>` field with change tracking, validation triggering, and `PropertyChanged` notifications wired in.
 
-For each class with `[Factory]`, the generator creates a factory interface (`IMyEntityFactory`) with methods matching your `[Create]`, `[Fetch]`, etc. methods.
+For each class with `[Factory]`, the generator creates a factory interface (`IMyEntityFactory`) with methods matching the `[Create]`, `[Fetch]`, etc. methods.
 
 ## IFactorySave — How entity.Save() Works
 
