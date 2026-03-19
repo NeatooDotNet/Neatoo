@@ -259,9 +259,8 @@ public async Task RunRulesManually_RevalidateEntity()
 
 RunRules overloads:
 - **RunRules(propertyName)**: Execute rules dependent on a specific property
-- **RunRules(RunRulesFlag.All)**: Clear all messages and run all rules
+- **RunRules(RunRulesFlag.All)**: Clear all messages and run all rules (this object and children)
 - **RunRules(RunRulesFlag.Self)**: Run only this object's rules (not children)
-- **RunRules(RunRulesFlag.Children)**: Run only child object rules
 - **RunRules(flag, token)**: Run with cancellation token support
 
 RunRulesFlag.All clears existing validation messages before running rules, providing a clean validation state. Other flags preserve existing messages and add new ones.
@@ -444,7 +443,7 @@ public void PauseAllActions_BatchUpdatesWithoutValidation()
 PauseAllActions behavior:
 - **IsPaused = true**: Validation rules do NOT execute
 - **Deferred events**: PropertyChanged and NeatooPropertyChanged are queued
-- **Deferred dirty tracking**: IsDirty calculation is suspended
+- **Deferred dirty tracking**: IsModified calculation is suspended
 - **Automatic resume**: Disposing the returned IDisposable calls ResumeAllActions
 - **Event catchup**: All deferred events fire when resumed
 - **Validation execution**: Rules run for changed properties after resume

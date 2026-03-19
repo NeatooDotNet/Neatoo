@@ -32,13 +32,11 @@ The constructor accepts dependency-injected services containing property factory
 
 #### Getter\<P\> / Setter\<P\>
 
-**Deprecated:** These methods exist for backward compatibility. Use partial properties instead.
+**Legacy:** These methods are superseded by partial properties. Use partial properties for all new code.
 
 ```csharp
-[Obsolete("Use partial properties instead")]
 protected virtual P? Getter<P>([CallerMemberName] string propertyName = "")
 
-[Obsolete("Use partial properties instead")]
 protected virtual void Setter<P>(P? value, [CallerMemberName] string propertyName = "")
 ```
 

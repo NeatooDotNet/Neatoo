@@ -382,9 +382,9 @@ internal class EarlyValidationRule : AsyncRuleBase<RuleBasicsDemo>
 // 2. Within same RuleOrder, registration order
 //
 // EXAMPLE:
-//   RuleManager.AddRule(new RuleA());  // RuleOrder = 0 (default)
+//   RuleManager.AddRule(new RuleA());  // RuleOrder = 1 (default)
 //   RuleManager.AddRule(new RuleB());  // RuleOrder = -10 (early)
-//   RuleManager.AddRule(new RuleC());  // RuleOrder = 0 (default)
+//   RuleManager.AddRule(new RuleC());  // RuleOrder = 1 (default)
 //
 //   // Execution order: RuleB, RuleA, RuleC
 //

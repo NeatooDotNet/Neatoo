@@ -311,6 +311,7 @@ public void IsSavable_CombinesStateChecks()
 - `IsValid == true` (passes validation)
 - `IsModified == true` (has changes)
 - `IsBusy == false` (no async operations pending)
+- `IsChild == false` (not a child entity -- children are saved through the aggregate root)
 
 ## Child Entity State
 

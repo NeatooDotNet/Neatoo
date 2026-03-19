@@ -4,7 +4,7 @@ Neatoo uses Roslyn source generators at compile time. **Understanding source gen
 
 ## What Gets Generated
 
-For each `partial` property, the generator creates a backing `IValidateProperty<T>` field with change tracking, validation triggering, and `PropertyChanged` notifications wired in.
+For each `partial` property, the generator creates a backing field with change tracking, validation triggering, and `PropertyChanged` notifications wired in. The backing field type depends on the base class: `IValidateProperty<T>` for `ValidateBase` subclasses, `IEntityProperty<T>` for `EntityBase` subclasses. `IEntityProperty<T>` adds per-property modification tracking (`IsModified`, `LoadValue()` for setting without marking modified, `MarkSelfUnmodified()`).
 
 For each class with `[Factory]`, the generator creates a factory interface (`IMyEntityFactory`) with methods matching the `[Create]`, `[Fetch]`, etc. methods.
 

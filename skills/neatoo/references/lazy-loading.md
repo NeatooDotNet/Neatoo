@@ -177,7 +177,6 @@ await entity.WaitForTasks();
 | `IsSelfModified` | Always `false` | Always `false` (wrapper itself is never modified) |
 | `IsNew` | `false` | Delegates to value's `IsNew` |
 | `IsDeleted` | `false` | Delegates to value's `IsDeleted` |
-| `IsSavable` | `false` | Delegates to value's `IsSavable` |
 
 ## Error Handling
 
