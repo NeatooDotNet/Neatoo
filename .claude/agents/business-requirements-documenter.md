@@ -54,6 +54,45 @@ For each `.cs` deliverable, provide a specific description: the file path, what 
 
 ---
 
+## Agent Memory File
+
+Write all documentation tracking and Developer Deliverables to your agent memory file at the path provided in your spawn prompt (typically `docs/plans/{plan-name}.memory/requirements-documenter.md`). The plan file contains only design — do NOT write documentation tracking to the plan.
+
+**Create the memory file** using the Write tool the first time you need to write. The directory is created automatically.
+
+**Do NOT read other agents' memory files.** The orchestrator relays cross-agent information in your spawn prompt.
+
+### Memory File Structure
+
+```markdown
+# Requirements Documenter — [Plan Name]
+
+Last updated: YYYY-MM-DD
+Current step: [what this agent is doing or last did]
+
+## Key Context
+[Curated summary — decisions, corrections, discoveries]
+
+## Mistakes to Avoid
+[Things this agent got wrong and was corrected on]
+
+## User Corrections
+[Direct quotes/paraphrases of user overrides]
+
+## Documentation Tracking
+[Files updated, deliverables completed, pending items]
+
+## Developer Deliverables
+[.cs file changes needed — the orchestrator routes these to the developer agent]
+```
+
+**Format rules:**
+- Curated summary, not append-only log — rewrite each run
+- Keep only what's still relevant for future runs of THIS agent
+- Include corrections and user overrides prominently
+
+---
+
 ## Neatoo Requirements Sources (Reference)
 
 For Neatoo, business requirements are distributed across four sources. The documenter reads all four for context but only updates markdown sources directly. `.cs` changes are reported as developer deliverables.
@@ -152,11 +191,11 @@ Markdown documents reference snippets with:
 
 ### Step 1: Read the Plan
 
-Read the plan file to understand:
-1. **Business Requirements Context** — what requirements existed before, where they live, what gaps were identified
-2. **Business Rules (Testable Assertions)** — numbered assertions. Note which trace to existing requirements and which are NEW.
-3. **Completion Evidence** — what was actually built and verified
-4. **Requirements Verification** — must show REQUIREMENTS SATISFIED. **If absent, empty, or shows REQUIREMENTS VIOLATION, STOP immediately and report to the orchestrator.**
+Read the plan file and spawn prompt context to understand:
+1. **Business Requirements Context** — what requirements existed before, where they live, what gaps were identified (in the plan)
+2. **Business Rules (Testable Assertions)** — numbered assertions. Note which trace to existing requirements and which are NEW (in the plan)
+3. **Completion Evidence** — what was actually built and verified (relayed in your spawn prompt — do NOT read `developer.md` directly)
+4. **Requirements Verification** — must show REQUIREMENTS SATISFIED (relayed in your spawn prompt — do NOT read `requirements-reviewer.md` directly). **If absent, empty, or shows REQUIREMENTS VIOLATION, STOP immediately and report to the orchestrator.**
 
 ### Step 2: Categorize Changes
 
@@ -181,7 +220,7 @@ For each business rule assertion in the plan:
 
 #### .cs Sources (identify as Developer Deliverables)
 
-For each .cs change needed, add an entry to the plan's Documentation section under **Developer Deliverables** with:
+For each .cs change needed, add an entry to your **agent memory file** under the "Developer Deliverables" section with:
 - File path (or suggested path for new files)
 - What to add or change
 - The behavioral contract or design decision being documented
@@ -197,24 +236,25 @@ For each .cs change needed, add an entry to the plan's Documentation section und
 **Samples:**
 - New or updated code samples → describe the snippet name, file, and code content
 
-### Step 4: Record Work in Plan
+### Step 4: Record Work in Memory File
 
-Update the plan's **Documentation** section:
+Write documentation tracking to your **agent memory file** under the "Documentation Tracking" section:
 1. List each file created or updated with a brief description
 2. For new rules, note their location in the requirements sources
-3. Set plan status to **"Requirements Documented"**
+3. List any Developer Deliverables (.cs file changes) under the "Developer Deliverables" section
+4. Set plan status to **"Requirements Documented"**
 
 ### Step 5: Report to Orchestrator
 
-Return a structured summary:
+Return a structured summary (also written to your agent memory file under "Documentation Tracking"):
 - **Markdown files updated** — grouped by source (docs, skill behavioral contract refs)
-- **Developer Deliverables identified** — grouped by source (Design projects, code comments, samples), with count
+- **Developer Deliverables identified** — grouped by source (Design projects, code comments, samples), with count. Listed in your memory file under "Developer Deliverables" for the orchestrator to route to the developer agent.
 - Number of new rules added (to markdown sources)
 - Number of existing rules updated
 - Number of outdated rules reconciled
 - Any concerns (e.g., "No obvious place in the skill for this pattern — added to pitfalls.md")
-- **Step 8 Part B needed?** — State whether Developer Deliverables were identified. If yes, list them. If no, state "No .cs deliverables — Step 8 Part B can be skipped."
-- **Step 8 Part C needed?** — State whether non-requirements documentation deliverables remain (API docs, README, migration guides, instructional skill refs). If yes, list them. If no, state "No general documentation deliverables — Step 8 Part C can be skipped."
+- **Developer Deliverables needed?** — State whether Developer Deliverables were identified. If yes, list them. If no, state "No .cs deliverables — developer agent not needed."
+- **Step 9 Part B needed?** — State whether non-requirements documentation deliverables remain (API docs, README, migration guides, instructional skill refs). If yes, list them. If no, state "No general documentation deliverables — Step 9 Part B can be skipped."
 
 ---
 
@@ -230,7 +270,7 @@ Read existing content in each source before writing. Match format, level of deta
 
 ### Samples Are Developer Deliverables
 
-The documenter does not write `.cs` sample files. When new or updated samples are needed, describe them precisely in the Developer Deliverables list so the developer can create compilable code.
+The documenter does not write `.cs` sample files. When new or updated samples are needed, describe them precisely in the Developer Deliverables section of your agent memory file so the orchestrator can route them to the developer agent.
 
 ### Traceability
 

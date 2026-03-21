@@ -138,6 +138,46 @@ Before creating a plan, assess whether you have enough information to proceed.
 
 ---
 
+## Agent Memory File
+
+Write all verification findings and workflow state to your agent memory file at the path provided in your spawn prompt (typically `docs/plans/{plan-name}.memory/architect.md`). The plan file contains only design — do NOT write verification results to the plan.
+
+**Create the memory file** using the Write tool the first time you need to write. The directory is created automatically.
+
+**Do NOT read other agents' memory files.** The orchestrator relays cross-agent information in your spawn prompt.
+
+### Memory File Structure
+
+```markdown
+# Architect — [Plan Name]
+
+Last updated: YYYY-MM-DD
+Current step: [what this agent is doing or last did]
+
+## Key Context
+[Curated summary — decisions, corrections, discoveries
+that matter for the next fresh run of THIS agent]
+
+## Mistakes to Avoid
+[Things this agent got wrong and was corrected on]
+
+## User Corrections
+[Direct quotes/paraphrases of user overrides]
+
+## Architectural Verification (Pre-Handoff)
+[Scope table, Design project evidence, breaking changes assessment]
+
+## Architect Verification (Post-Implementation)
+[Verdict, test results, design match, test scenario cross-check]
+```
+
+**Format rules:**
+- Curated summary, not append-only log — rewrite each run
+- Keep only what's still relevant for future runs of THIS agent
+- Include corrections and user overrides prominently
+
+---
+
 ## Workflow Integration
 
 ### When Invoked After Plan Mode
@@ -148,7 +188,7 @@ You will receive a plan file that plan mode created. Your job:
 2. **Read the linked todo** - Understand the user's core request
 3. **Assess whether you have enough information** (see Clarification Before Design above)
 4. **Perform deep codebase analysis** - Use tools to study relevant files and patterns
-5. **Complete the Architectural Verification section** in the plan:
+5. **Complete the Architectural Verification** — write findings to your agent memory file under "Architectural Verification (Pre-Handoff)":
    - Analyze all affected base classes
    - Analyze all affected factory operations
    - Perform Design project compilation verification for scope claims
@@ -210,7 +250,7 @@ Step 5: Compiles → "Verified (new code) at Design.Domain/Rules/CrossPropertyVa
 
 ## Architectural Verification Checklist
 
-Before handing off, you MUST complete:
+Before handing off, you MUST complete the following and write the results to your agent memory file:
 
 - [ ] All affected base classes analyzed (EntityBase, ValidateBase, EntityListBase, ValidateListBase)
 - [ ] All affected factory operations analyzed ([Create], [Fetch], [Insert], [Update], [Delete], [Execute])
@@ -229,6 +269,7 @@ When architectural design is complete:
 
 ```
 I've completed the architectural design and verification checklist.
+Verification findings are in my memory file at docs/plans/[name].memory/architect.md.
 
 Design project verification results:
 - [Feature]: Verified (existing code at path/to/file.cs:line)
@@ -237,7 +278,9 @@ Design project verification results:
 
 The plan at docs/plans/[name].md is ready for developer review.
 
-[Invoke neatoo-developer agent with prompt: "Review the plan at docs/plans/[name].md. Perform deep analysis and document concerns or create implementation contract if ready."]
+[Orchestrator invokes neatoo-developer with: "Review the plan at docs/plans/[name].md.
+The architect's verification findings: [orchestrator extracts key findings from architect.md].
+Write all review findings to your agent memory file at docs/plans/[name].memory/developer.md."]
 ```
 
 ---
@@ -245,11 +288,33 @@ The plan at docs/plans/[name].md is ready for developer review.
 ## After Developer Raises Concerns
 
 If developer finds issues and user asks you to address them:
-1. Read "Developer Review" section of the plan
+1. Read the developer's concerns as relayed in your spawn prompt (do NOT read the developer's memory file directly)
 2. Address each concern with architectural solutions
-3. Update the plan with resolutions
-4. Clear or mark concerns as addressed
+3. Update the plan design sections with resolutions
+4. Write resolution notes to your agent memory file
 5. Hand back to developer for re-review
+
+---
+
+## Post-Implementation Verification (Step 8 Part A)
+
+When invoked for post-implementation verification:
+
+1. Review the developer's completion evidence (relayed in your spawn prompt — do NOT read `developer.md` directly)
+2. **Independently run all builds and tests** — do NOT trust the developer's reported results:
+   - `dotnet build src/Neatoo.sln`
+   - `dotnet test src/Neatoo.sln`
+   - `dotnet build src/Design/Design.sln` (if applicable)
+3. **Check EVERY test result** — zero failures allowed. If any test fails, the work is NOT complete, even if the developer classified failures as "pre-existing"
+4. Verify the implementation matches the original design (compare against the plan's expected patterns)
+5. **Cross-check test scenarios** — For EACH numbered test scenario in the plan, verify a corresponding test method exists and passes
+6. If verification resources exist, verify they still pass
+7. **Write verification verdict and evidence** to your agent memory file under "Architect Verification (Post-Implementation)"
+8. Render a verdict:
+   - **VERIFIED**: All builds pass, all tests pass, all test scenarios verified → report to orchestrator
+   - **SENT BACK**: Failures or missing test coverage → write issues to memory file, report to orchestrator
+
+**Critical rule**: Any test failure — even one the developer classified as "pre-existing" — must be reported. Only the user can decide whether a failure is acceptable.
 
 ---
 

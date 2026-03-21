@@ -55,7 +55,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             {
                 if (!string.IsNullOrEmpty(id))
                 {
-                    options.ReferenceHandler.CreateResolver().AddReference(id, result);
+                    NeatooReferenceResolver.Current?.AddReference(id, result);
                 }
 
                 if (result is IJsonOnDeserialized jsonOnDeserialized)
@@ -76,7 +76,9 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             {
                 var refId = reader.GetString();
 
-                result = (T)options.ReferenceHandler.CreateResolver().ResolveReference(refId);
+                var resolver = NeatooReferenceResolver.Current
+                    ?? throw new JsonException("Cannot resolve $ref: no NeatooReferenceResolver is active. Use NeatooJsonSerializer for deserialization.");
+                result = (T)resolver.ResolveReference(refId);
 
                 reader.Read();
 
@@ -325,86 +327,95 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             ? pmInternal.GetProperties.ToList()
             : new List<IValidateProperty>();
 
-        var reference = options.ReferenceHandler.CreateResolver().GetReference(value, out var alreadyExists);
+        var resolver = NeatooReferenceResolver.Current;
 
-        if (alreadyExists)
+        if (resolver != null)
         {
-            writer.WriteStartObject();
-            writer.WritePropertyName("$ref");
-            writer.WriteStringValue(reference);
-            writer.WriteEndObject();
-        }
-        else
-        {
+            var reference = resolver.GetReference(value, out var alreadyExists);
+
+            if (alreadyExists)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("$ref");
+                writer.WriteStringValue(reference);
+                writer.WriteEndObject();
+                return;
+            }
+
             writer.WriteStartObject();
 
             writer.WritePropertyName("$id");
             writer.WriteStringValue(reference);
+        }
+        else
+        {
+            // No resolver: write without $id/$ref reference tracking (degraded but functional)
+            writer.WriteStartObject();
+        }
+
+        writer.WritePropertyName("$type");
+        writer.WriteStringValue(value.GetType().FullName);
+
+        writer.WritePropertyName("PropertyManager");
+
+        writer.WriteStartArray();
+
+        foreach (var p in properties)
+        {
+            // Skip LazyLoad property subclasses -- they are serialized as
+            // top-level JSON properties alongside the existing LazyLoad<> path,
+            // not as part of the PropertyManager array.
+            if (p is ILazyLoadProperty)
+                continue;
+
+            writer.WriteStartObject();
+
+            writer.WritePropertyName("$name");
+            writer.WriteStringValue(p.Name);
 
             writer.WritePropertyName("$type");
-            writer.WriteStringValue(value.GetType().FullName);
+            writer.WriteStringValue(p.GetType().GetGenericTypeDefinition().FullName);
 
-            writer.WritePropertyName("PropertyManager");
+            writer.WritePropertyName("$value");
 
-            writer.WriteStartArray();
-
-            foreach (var p in properties)
-            {
-                // Skip LazyLoad property subclasses -- they are serialized as
-                // top-level JSON properties alongside the existing LazyLoad<> path,
-                // not as part of the PropertyManager array.
-                if (p is ILazyLoadProperty)
-                    continue;
-
-                writer.WriteStartObject();
-
-                writer.WritePropertyName("$name");
-                writer.WriteStringValue(p.Name);
-
-                writer.WritePropertyName("$type");
-                writer.WriteStringValue(p.GetType().GetGenericTypeDefinition().FullName);
-
-                writer.WritePropertyName("$value");
-
-                JsonSerializer.Serialize(writer, p, p.GetType(), options);
-
-                writer.WriteEndObject();
-            }
-
-
-            writer.WriteEndArray();
-
-            if (value is IEntityMetaProperties editMetaProperties)
-            {
-                // IEntityMetaProperties intentionally does not extend IValidateMetaProperties
-                // so this reflection call only picks up persistence state (IsModified, IsChild, etc.)
-                // and not validation state (IsValid, IsBusy, PropertyMessages, etc.)
-                var editProperties = typeof(IEntityMetaProperties).GetProperties().ToList();
-                editProperties.AddRange(typeof(IFactorySaveMeta).GetProperties());
-
-                foreach (var p in editProperties)
-                {
-                    writer.WritePropertyName(p.Name);
-                    JsonSerializer.Serialize(writer, p.GetValue(editMetaProperties), p.PropertyType, options);
-                }
-            }
-
-            // Serialize LazyLoad<> properties on the concrete type
-            foreach (var property in value.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-            {
-                if (property.PropertyType.IsGenericType
-                    && property.PropertyType.GetGenericTypeDefinition() == typeof(LazyLoad<>))
-                {
-                    var propValue = property.GetValue(value);
-                    if (propValue != null)
-                    {
-                        writer.WritePropertyName(property.Name);
-                        JsonSerializer.Serialize(writer, propValue, property.PropertyType, options);
-                    }
-                }
-            }
+            JsonSerializer.Serialize(writer, p, p.GetType(), options);
 
             writer.WriteEndObject();
         }
+
+
+        writer.WriteEndArray();
+
+        if (value is IEntityMetaProperties editMetaProperties)
+        {
+            // IEntityMetaProperties intentionally does not extend IValidateMetaProperties
+            // so this reflection call only picks up persistence state (IsModified, IsChild, etc.)
+            // and not validation state (IsValid, IsBusy, PropertyMessages, etc.)
+            var editProperties = typeof(IEntityMetaProperties).GetProperties().ToList();
+            editProperties.AddRange(typeof(IFactorySaveMeta).GetProperties());
+
+            foreach (var p in editProperties)
+            {
+                writer.WritePropertyName(p.Name);
+                JsonSerializer.Serialize(writer, p.GetValue(editMetaProperties), p.PropertyType, options);
+            }
+        }
+
+        // Serialize LazyLoad<> properties on the concrete type
+        foreach (var property in value.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            if (property.PropertyType.IsGenericType
+                && property.PropertyType.GetGenericTypeDefinition() == typeof(LazyLoad<>))
+            {
+                var propValue = property.GetValue(value);
+                if (propValue != null)
+                {
+                    writer.WritePropertyName(property.Name);
+                    JsonSerializer.Serialize(writer, propValue, property.PropertyType, options);
+                }
+            }
+        }
+
+        writer.WriteEndObject();
     }
 }

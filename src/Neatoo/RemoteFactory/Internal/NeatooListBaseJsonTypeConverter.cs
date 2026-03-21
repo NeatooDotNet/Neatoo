@@ -37,7 +37,7 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
             {
                 if (!string.IsNullOrEmpty(id))
                 {
-                    options.ReferenceHandler.CreateResolver().AddReference(id, list);
+                    NeatooReferenceResolver.Current?.AddReference(id, list);
                 }
 
                 if (list is IJsonOnDeserialized jsonOnDeserialized)
@@ -57,7 +57,9 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
             if (propertyName == "$ref")
             {
                 var refId = reader.GetString();
-                list = (IList)options.ReferenceHandler.CreateResolver().ResolveReference(refId);
+                var resolver = NeatooReferenceResolver.Current
+                    ?? throw new JsonException("Cannot resolve $ref: no NeatooReferenceResolver is active. Use NeatooJsonSerializer for deserialization.");
+                list = (IList)resolver.ResolveReference(refId);
                 reader.Read();
                 return (T) list;
             }
@@ -131,10 +133,13 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
 
         writer.WriteStartObject();
 
-        var reference = options.ReferenceHandler.CreateResolver().GetReference(value, out var alreadyExists);
-
-        writer.WritePropertyName("$id");
-        writer.WriteStringValue(reference);
+        var resolver = NeatooReferenceResolver.Current;
+        if (resolver != null)
+        {
+            var reference = resolver.GetReference(value, out var alreadyExists);
+            writer.WritePropertyName("$id");
+            writer.WriteStringValue(reference);
+        }
 
         writer.WritePropertyName("$type");
         writer.WriteStringValue(value.GetType().FullName);
