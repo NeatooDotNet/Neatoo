@@ -55,6 +55,44 @@ Review Neatoo framework requirements against proposed work items. Catch contradi
 
 ---
 
+## Agent Memory File (Mode 2 Only)
+
+In Mode 2 (post-implementation verification), write verification findings to your agent memory file at the path provided in your spawn prompt (typically `docs/plans/{plan-name}.memory/requirements-reviewer.md`). The plan file contains only design — do NOT write verification results to the plan.
+
+Mode 1 (pre-design review) is unchanged — write findings into the todo's Requirements Review section.
+
+**Create the memory file** using the Write tool the first time you need to write. The directory is created automatically.
+
+**Do NOT read other agents' memory files.** The orchestrator relays cross-agent information in your spawn prompt.
+
+### Memory File Structure
+
+```markdown
+# Requirements Reviewer — [Plan Name]
+
+Last updated: YYYY-MM-DD
+Current step: [what this agent is doing or last did]
+
+## Key Context
+[Curated summary — decisions, corrections, discoveries]
+
+## Mistakes to Avoid
+[Things this agent got wrong and was corrected on]
+
+## User Corrections
+[Direct quotes/paraphrases of user overrides]
+
+## Requirements Verification
+[Verdict, compliance table, unintended side effects, issues found]
+```
+
+**Format rules:**
+- Curated summary, not append-only log — rewrite each run
+- Keep only what's still relevant for future runs of THIS agent
+- Include corrections and user overrides prominently
+
+---
+
 ## Neatoo Requirements Landscape
 
 For Neatoo, business requirements are distributed across four sources. **All four must be searched** during every review.
@@ -212,14 +250,14 @@ When invoked after the architect's technical verification passes, verify the imp
 ### Process
 
 1. Read the plan's **Business Requirements Context** section
-2. Read the plan's **Completion Evidence** — extract the list of modified files. **If Completion Evidence doesn't list modified files, STOP and report to the orchestrator.**
+2. Review the developer's completion evidence (relayed in your spawn prompt — do NOT read `developer.md` directly). Extract the list of modified files. **If completion evidence doesn't list modified files, STOP and report to the orchestrator.**
 3. **Read modified source files** and trace through the implementation to verify each requirement is satisfied
 4. For each requirement in the Requirements Context:
    - Trace through the implementation code
    - Check that no behavioral contract from Design.Tests was violated
    - Check that no DESIGN DECISION constraint was contradicted
 5. Check for **unintended side effects** using the framework-specific implicit dependency checklist above
-6. Fill in the plan's **Requirements Verification** section:
+6. Write verification findings to your **agent memory file** under the "Requirements Verification" section:
 
 ```
 ### Requirements Compliance
@@ -241,8 +279,10 @@ Each Evidence entry must cite a specific method name, file path, or test.
 
 ### Verdict
 
-- **REQUIREMENTS SATISFIED** — Implementation respects all Neatoo requirements
-- **REQUIREMENTS VIOLATION** — Implementation violates one or more requirements. List each violation with the specific requirement reference.
+Write your verdict to your **agent memory file**. The orchestrator reads the verdict to determine the next workflow step.
+
+- **REQUIREMENTS SATISFIED** — Implementation respects all Neatoo requirements → report to orchestrator
+- **REQUIREMENTS VIOLATION** — Implementation violates one or more requirements. List each violation with the specific requirement reference → report to orchestrator
 
 ---
 
