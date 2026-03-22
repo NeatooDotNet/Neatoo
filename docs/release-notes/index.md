@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.23.1** (2026-03-21)
+**Neatoo 0.23.2** (2026-03-21)
 
 ---
 
@@ -12,6 +12,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.23.2](v0.23.2.md) | 2026-03-21 | Patch | Migrate converters to NeatooReferenceResolver.Current API |
 | [0.23.1](v0.23.1.md) | 2026-03-21 | Patch | RemoteFactory 0.23.1; shared reference handling, factory fetch NRE fix |
 | [0.23.0](v0.23.0.md) | 2026-03-15 | **Breaking** | Revert LazyLoad.Value auto-trigger; Value is passive read; GetAwaiter removed |
 | [0.22.0](v0.22.0.md) | 2026-03-14 | **Breaking** | LazyLoad unified into PropertyManager; partial properties, look-through subclasses, no reflection |
@@ -49,6 +50,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [0.23.2](v0.23.2.md) | 2026-03-21 |
 | [0.23.1](v0.23.1.md) | 2026-03-21 |
 | [0.23.0](v0.23.0.md) | 2026-03-15 |
 | [0.22.0](v0.22.0.md) | 2026-03-14 |
