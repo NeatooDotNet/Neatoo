@@ -105,7 +105,7 @@ internal partial class Address : EntityBase<Address>, IAddress
     // =========================================================================
     [Remote]
     [Insert]
-    public void Insert([Service] IAddressOnlyRepository repository)
+    internal void Insert([Service] IAddressOnlyRepository repository)
     {
         // Only called if Address is used as aggregate root (rare)
         var generatedId = repository.Insert(Street!, City!, State!, ZipCode!, AddressType!);
@@ -114,14 +114,14 @@ internal partial class Address : EntityBase<Address>, IAddress
 
     [Remote]
     [Update]
-    public void Update([Service] IAddressOnlyRepository repository)
+    internal void Update([Service] IAddressOnlyRepository repository)
     {
         repository.Update(Id, Street!, City!, State!, ZipCode!, AddressType!);
     }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IAddressOnlyRepository repository)
+    internal void Delete([Service] IAddressOnlyRepository repository)
     {
         repository.Delete(Id);
     }

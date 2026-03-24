@@ -108,7 +108,7 @@ internal partial class Order : EntityBase<Order>, IOrder
 
     [Remote]
     [Fetch]
-    public void Fetch(int id,
+    internal void Fetch(int id,
         [Service] IOrderRepository repository,
         [Service] IOrderItemListFactory itemsFactory,
         [Service] IOrderItemFactory itemFactory)
@@ -148,7 +148,7 @@ internal partial class Order : EntityBase<Order>, IOrder
     // =========================================================================
     [Remote]
     [Insert]
-    public void Insert([Service] IOrderRepository repository)
+    internal void Insert([Service] IOrderRepository repository)
     {
         // Insert order first to get ID
         var generatedId = repository.InsertOrder(
@@ -172,7 +172,7 @@ internal partial class Order : EntityBase<Order>, IOrder
     // =========================================================================
     [Remote]
     [Update]
-    public void Update([Service] IOrderRepository repository)
+    internal void Update([Service] IOrderRepository repository)
     {
         // Update order header if changed
         if (IsSelfModified)
@@ -234,7 +234,7 @@ internal partial class Order : EntityBase<Order>, IOrder
 
     [Remote]
     [Delete]
-    public void Delete([Service] IOrderRepository repository)
+    internal void Delete([Service] IOrderRepository repository)
     {
         // Delete items first (FK constraint)
         foreach (var item in Items!)

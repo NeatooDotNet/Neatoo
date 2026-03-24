@@ -248,7 +248,7 @@ internal partial class SetValueVsLoadValueDemo : EntityBase<SetValueVsLoadValueD
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IPropertyDemoRepository repository)
+    internal void Fetch(int id, [Service] IPropertyDemoRepository repository)
     {
         // Using LoadValue - does NOT mark as modified
         var data = repository.GetById(id);
@@ -259,15 +259,15 @@ internal partial class SetValueVsLoadValueDemo : EntityBase<SetValueVsLoadValueD
 
     [Remote]
     [Insert]
-    public void Insert([Service] IPropertyDemoRepository repository) { }
+    internal void Insert([Service] IPropertyDemoRepository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IPropertyDemoRepository repository) { }
+    internal void Update([Service] IPropertyDemoRepository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IPropertyDemoRepository repository) { }
+    internal void Delete([Service] IPropertyDemoRepository repository) { }
 }
 
 // =============================================================================
@@ -304,7 +304,7 @@ internal partial class IndexerAccessDemo : EntityBase<IndexerAccessDemo>, IIndex
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IPropertyDemoRepository repository)
+    internal void Fetch(int id, [Service] IPropertyDemoRepository repository)
     {
         var data = repository.GetById(id);
 
@@ -325,15 +325,15 @@ internal partial class IndexerAccessDemo : EntityBase<IndexerAccessDemo>, IIndex
 
     [Remote]
     [Insert]
-    public void Insert([Service] IPropertyDemoRepository repository) { }
+    internal void Insert([Service] IPropertyDemoRepository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IPropertyDemoRepository repository) { }
+    internal void Update([Service] IPropertyDemoRepository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IPropertyDemoRepository repository) { }
+    internal void Delete([Service] IPropertyDemoRepository repository) { }
 }
 
 // =============================================================================

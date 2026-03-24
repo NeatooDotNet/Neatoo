@@ -128,7 +128,7 @@ internal partial class ModificationStateDemo : EntityBase<ModificationStateDemo>
 
     [Remote]
     [Fetch]
-    public void Fetch(int id,
+    internal void Fetch(int id,
         [Service] IStatePropertiesRepository repository,
         [Service] IModificationChildDemoFactory childFactory)
     {
@@ -185,15 +185,15 @@ internal partial class ModificationStateDemo : EntityBase<ModificationStateDemo>
 
     [Remote]
     [Insert]
-    public void Insert([Service] IStatePropertiesRepository repository) { }
+    internal void Insert([Service] IStatePropertiesRepository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IStatePropertiesRepository repository) { }
+    internal void Update([Service] IStatePropertiesRepository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IStatePropertiesRepository repository) { }
+    internal void Delete([Service] IStatePropertiesRepository repository) { }
 }
 
 [Factory]
@@ -227,7 +227,7 @@ internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IStatePropertiesRepository repository)
+    internal void Fetch(int id, [Service] IStatePropertiesRepository repository)
     {
         this["Name"].LoadValue(repository.GetById(id).Name);
     }
@@ -303,15 +303,15 @@ internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
 
     [Remote]
     [Insert]
-    public void Insert([Service] IStatePropertiesRepository repository) { }
+    internal void Insert([Service] IStatePropertiesRepository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IStatePropertiesRepository repository) { }
+    internal void Update([Service] IStatePropertiesRepository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IStatePropertiesRepository repository) { }
+    internal void Delete([Service] IStatePropertiesRepository repository) { }
 }
 
 /// <summary>

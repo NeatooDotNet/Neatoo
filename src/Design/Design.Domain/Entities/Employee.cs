@@ -121,7 +121,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // =========================================================================
     [Remote]
     [Fetch]
-    public void Fetch(int id,
+    internal void Fetch(int id,
         [Service] IEmployeeRepository repository,
         [Service] IAddressListFactory addressListFactory,
         [Service] IAddressFactory addressFactory)
@@ -165,7 +165,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // =========================================================================
     [Remote]
     [Insert]
-    public void Insert([Service] IEmployeeRepository repository)
+    internal void Insert([Service] IEmployeeRepository repository)
     {
         // Insert employee and get generated ID
         var generatedId = repository.InsertEmployee(
@@ -191,7 +191,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // =========================================================================
     [Remote]
     [Update]
-    public void Update([Service] IEmployeeRepository repository)
+    internal void Update([Service] IEmployeeRepository repository)
     {
         // Update employee if self modified
         if (IsSelfModified)
@@ -238,7 +238,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // =========================================================================
     [Remote]
     [Delete]
-    public void Delete([Service] IEmployeeRepository repository)
+    internal void Delete([Service] IEmployeeRepository repository)
     {
         // Delete all addresses first (FK constraint)
         foreach (var address in Addresses!)

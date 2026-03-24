@@ -152,7 +152,7 @@ internal partial class Gotcha2Parent : EntityBase<Gotcha2Parent>, IGotcha2Parent
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IGotcha2ItemListFactory itemListFactory)
+    internal void Fetch(int id, [Service] IGotcha2ItemListFactory itemListFactory)
     {
         using (PauseAllActions())
         {
@@ -163,15 +163,15 @@ internal partial class Gotcha2Parent : EntityBase<Gotcha2Parent>, IGotcha2Parent
 
     [Remote]
     [Insert]
-    public void Insert([Service] IGotcha2Repository repository) { }
+    internal void Insert([Service] IGotcha2Repository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IGotcha2Repository repository) { }
+    internal void Update([Service] IGotcha2Repository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IGotcha2Repository repository) { }
+    internal void Delete([Service] IGotcha2Repository repository) { }
 }
 
 [Factory]
@@ -293,22 +293,22 @@ internal partial class Gotcha3Demo : EntityBase<Gotcha3Demo>, IGotcha3Demo
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IServerOnlyService svc)
+    internal void Fetch(int id, [Service] IServerOnlyService svc)
     {
         this["Name"].LoadValue(svc.GetDataById(id));
     }
 
     [Remote]
     [Insert]
-    public void Insert([Service] IServerOnlyService svc) { }
+    internal void Insert([Service] IServerOnlyService svc) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IServerOnlyService svc) { }
+    internal void Update([Service] IServerOnlyService svc) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IServerOnlyService svc) { }
+    internal void Delete([Service] IServerOnlyService svc) { }
 }
 
 public interface IServerOnlyService
@@ -425,7 +425,7 @@ internal partial class Gotcha5Parent : EntityBase<Gotcha5Parent>, IGotcha5Parent
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IGotcha5ChildFactory childFactory)
+    internal void Fetch(int id, [Service] IGotcha5ChildFactory childFactory)
     {
         using (PauseAllActions())
         {
@@ -436,15 +436,15 @@ internal partial class Gotcha5Parent : EntityBase<Gotcha5Parent>, IGotcha5Parent
 
     [Remote]
     [Insert]
-    public void Insert([Service] IGotcha5Repository repository) { }
+    internal void Insert([Service] IGotcha5Repository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IGotcha5Repository repository) { }
+    internal void Update([Service] IGotcha5Repository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IGotcha5Repository repository) { }
+    internal void Delete([Service] IGotcha5Repository repository) { }
 }
 
 [Factory]

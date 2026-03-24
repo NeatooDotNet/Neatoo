@@ -65,7 +65,7 @@ internal partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>, IAsyncRulesD
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IAsyncRulesRepository repository)
+    internal void Fetch(int id, [Service] IAsyncRulesRepository repository)
     {
         var data = repository.GetById(id);
         this["Email"].LoadValue(data.Email);
@@ -74,15 +74,15 @@ internal partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>, IAsyncRulesD
 
     [Remote]
     [Insert]
-    public void Insert([Service] IAsyncRulesRepository repository) { }
+    internal void Insert([Service] IAsyncRulesRepository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IAsyncRulesRepository repository) { }
+    internal void Update([Service] IAsyncRulesRepository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IAsyncRulesRepository repository) { }
+    internal void Delete([Service] IAsyncRulesRepository repository) { }
 }
 
 // =============================================================================

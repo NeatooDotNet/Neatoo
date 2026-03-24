@@ -86,7 +86,7 @@ internal partial class FetchDemo : EntityBase<FetchDemo>, IFetchDemo
     // =========================================================================
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IFetchDemoRepository repository)
+    internal void Fetch(int id, [Service] IFetchDemoRepository repository)
     {
         var data = repository.GetById(id);
 
@@ -107,7 +107,7 @@ internal partial class FetchDemo : EntityBase<FetchDemo>, IFetchDemo
     // =========================================================================
     [Remote]
     [Fetch]
-    public void Fetch(FetchDemoCriteria criteria, [Service] IFetchDemoRepository repository)
+    internal void Fetch(FetchDemoCriteria criteria, [Service] IFetchDemoRepository repository)
     {
         var data = repository.GetByCriteria(criteria.Name, criteria.MinValue);
 
@@ -124,7 +124,7 @@ internal partial class FetchDemo : EntityBase<FetchDemo>, IFetchDemo
     // =========================================================================
     [Remote]
     [Fetch]
-    public void FetchOptimized(int id, [Service] IFetchDemoRepository repository)
+    internal void FetchOptimized(int id, [Service] IFetchDemoRepository repository)
     {
         using (PauseAllActions())
         {
@@ -143,21 +143,21 @@ internal partial class FetchDemo : EntityBase<FetchDemo>, IFetchDemo
     // Standard persistence methods
     [Remote]
     [Insert]
-    public void Insert([Service] IFetchDemoRepository repository)
+    internal void Insert([Service] IFetchDemoRepository repository)
     {
         repository.Insert(Name!, Description);
     }
 
     [Remote]
     [Update]
-    public void Update([Service] IFetchDemoRepository repository)
+    internal void Update([Service] IFetchDemoRepository repository)
     {
         repository.Update(Id, Name!, Description);
     }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IFetchDemoRepository repository)
+    internal void Delete([Service] IFetchDemoRepository repository)
     {
         repository.Delete(Id);
     }
@@ -207,7 +207,7 @@ internal partial class FetchWithChildrenDemo : EntityBase<FetchWithChildrenDemo>
     // =========================================================================
     [Remote]
     [Fetch]
-    public void Fetch(int id,
+    internal void Fetch(int id,
         [Service] IFetchParentRepository parentRepository,
         [Service] IFetchChildRepository childRepository,
         [Service] IFetchDemoItemListFactory itemsFactory,
@@ -243,15 +243,15 @@ internal partial class FetchWithChildrenDemo : EntityBase<FetchWithChildrenDemo>
 
     [Remote]
     [Insert]
-    public void Insert([Service] IFetchParentRepository parentRepository) { }
+    internal void Insert([Service] IFetchParentRepository parentRepository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IFetchParentRepository parentRepository) { }
+    internal void Update([Service] IFetchParentRepository parentRepository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IFetchParentRepository parentRepository) { }
+    internal void Delete([Service] IFetchParentRepository parentRepository) { }
 }
 
 [Factory]
