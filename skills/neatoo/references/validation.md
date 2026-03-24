@@ -210,7 +210,10 @@ For rules shared across multiple entity types, see [shared-rules.md](shared-rule
 | Best for | Simple single-expression rules | Complex rules, rules needing DI services |
 | DI access | Only via closure over constructor params | Direct constructor injection |
 | Reusability | Inline, not reusable | Reusable across entities |
+| Trigger properties | **Validation**: 1 only. **Action**: 1, 2, 3, or array | Any number via base constructor |
 | Multi-property writes | Awkward | Natural — full access to target |
+
+**Single trigger property limitation:** `AddValidation` and `AddValidationAsync` accept exactly one trigger property because the error message is associated with that property. `AddAction`/`AddActionAsync` support multiple triggers (1, 2, 3, or array overloads). When a validation rule must fire on multiple trigger properties, use a class-based rule (`RuleBase<T>` or `AsyncRuleBase<T>`) — pass multiple trigger properties to the base constructor and return targeted error messages via `(propertyName, message).AsRuleMessages()`.
 
 Rules operate directly on the target `T` — there is no `IRuleContext`, no `LoadProperty`/`SetProperty` indirection. Return validation messages via `(propertyName, message).AsRuleMessages()`, or `None` when validation passes.
 

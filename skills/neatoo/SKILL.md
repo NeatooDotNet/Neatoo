@@ -47,7 +47,8 @@ These patterns use `RuleManager.AddAction` and `AddActionAsync`, covered in Core
 | Computed/derived values | `AddAction` with trigger properties | `.razor` arithmetic/ternary |
 | Conditional visibility | Domain `bool` property via `AddAction` | `.razor` `@if` chains |
 | Parent reacts to child changes | `AddAction` with child trigger `t => t.Items![0].Prop` | UI event handlers |
-| Cross-property validation | `AddValidation` / `AddValidationAsync` | UI event handlers |
+| Cross-property validation (single trigger) | `AddValidation` / `AddValidationAsync` | UI event handlers |
+| Cross-property validation (multiple triggers) | `RuleBase<T>` / `AsyncRuleBase<T>` | UI event handlers |
 | Reactive data fetch | `AddActionAsync` | UI `OnChanged` handlers |
 | Cascading state changes | Chained rules (rule sets property -> triggers next rule) | UI code-behind |
 | Workflow transitions | Domain methods + `AddAction` for `CanX` properties | UI button click handlers |
@@ -157,7 +158,7 @@ public SkillValidationExample(IEntityBaseServices<SkillValidationExample> servic
 <sup><a href='/src/samples/SkillValidationSamples.cs#L52-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-RuleManager also provides `AddAction`, `AddActionAsync`, `AddValidationAsync`, and class-based rules. Rules do **not** fire during `[Create]`/`[Fetch]` or `LoadValue` — the framework wraps factory operations in `PauseAllActions()`. See `references/validation.md` for details.
+RuleManager also provides `AddAction`, `AddActionAsync`, `AddValidationAsync`, and class-based rules. **`AddValidation`/`AddValidationAsync` accept exactly one trigger property** — for multiple triggers, use a class-based rule. Rules do **not** fire during `[Create]`/`[Fetch]` or `LoadValue`. See `references/validation.md` for details.
 
 Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
 
