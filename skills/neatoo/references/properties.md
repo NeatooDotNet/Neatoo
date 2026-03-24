@@ -55,7 +55,7 @@ public void GeneratedImplementation_PropertyBackingField()
     Assert.Equal("Bob Smith", nameProperty.Value);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L234-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-generated-implementation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L264-L284' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-generated-implementation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Object-Per-Property Architecture
@@ -68,7 +68,7 @@ Each partial property declared on a Neatoo class is backed by its own `IValidate
 | `IsValid` | `IValidateProperty` | Whether this property passes its validation rules |
 | `PropertyMessages` | `IValidateProperty` | Validation error messages for this property |
 | `IsBusy` | `IValidateProperty` | Whether an async rule is currently running for this property |
-| `IsReadOnly` | `IValidateProperty` | Whether this property is read-only |
+| `IsReadOnly` | `IValidateProperty` | Whether this property is read-only (true for `private set` properties) |
 | `IsModified` | `IEntityProperty` only | Whether this property has been changed (EntityBase properties only, not ValidateBase) |
 
 Each property object fires its own `PropertyChanged` event independently. This enables fine-grained UI updates — a validation error on `Email` triggers a re-render only for the Email field's error display, not the entire form.
@@ -101,6 +101,94 @@ public void PropertyObjectAccess_IndexerReturnsMetadata()
 The source generator creates a strongly-typed backing field (e.g., `EmailProperty` of type `IValidateProperty<string>`) and wires the partial property's getter/setter through it. The indexer provides untyped access by property name.
 
 See [blazor.md](blazor.md) — Two Binding Modes for how this architecture enables per-field validation display and busy indicators in Blazor.
+
+## Private Setter Properties
+
+Use `private set` on partial properties to create properties that are writable from within the entity (rules, factory methods) but read-only to external consumers. The source generator respects the `private set` accessor:
+
+```csharp
+public partial decimal ComputedTotal { get; private set; }
+```
+
+### Generated Behavior
+
+For `public partial decimal ComputedTotal { get; private set; }`, the generator emits:
+
+- **Property implementation:** `private set` accessor calling `SetPrivateValue(value)` (bypasses `IsReadOnly` check)
+- **Interface declaration:** `decimal ComputedTotal { get; }` (no setter exposed)
+- **Backing field:** `IsReadOnly = true` (set from `PropertyInfoWrapper.IsPrivateSetter`)
+
+The generated code:
+```csharp
+// Generated property implementation
+public partial decimal ComputedTotal
+{
+    get => ComputedTotalProperty.Value;
+    private set
+    {
+        ComputedTotalProperty.SetPrivateValue(value);
+        if (!ComputedTotalProperty.Task.IsCompleted)
+        {
+            Parent?.AddChildTask(ComputedTotalProperty.Task);
+            RunningTasks.AddTask(ComputedTotalProperty.Task);
+        }
+    }
+}
+
+// Generated interface declaration
+decimal ComputedTotal { get; }  // No setter exposed
+```
+
+### Setting Private-Set Properties
+
+Private-set properties are set from within the entity, typically via `AddAction` rules:
+
+```csharp
+internal partial class OrderLine : EntityBase<OrderLine>, IOrderLine
+{
+    public partial int Quantity { get; set; }
+    public partial decimal UnitPrice { get; set; }
+    public partial decimal ComputedTotal { get; private set; }
+
+    public OrderLine(IEntityBaseServices<OrderLine> services) : base(services)
+    {
+        // Rule sets private-set property; triggers change tracking and PropertyChanged
+        RuleManager.AddAction(
+            t => t.ComputedTotal = t.Quantity * t.UnitPrice,
+            t => t.Quantity,
+            t => t.UnitPrice);
+    }
+}
+```
+
+### Indexer Behavior with Private-Set Properties
+
+| Operation | Behavior |
+|-----------|----------|
+| `entity["Prop"].SetValue(x)` | Throws `PropertyReadOnlyException` (IsReadOnly is true) |
+| `entity["Prop"].LoadValue(x)` | Sets value (Fetch escape hatch, bypasses IsReadOnly) |
+| `entity["Prop"].SetPrivateValue(x)` | Sets value bypassing IsReadOnly check |
+| `entity["Prop"].IsReadOnly` | Returns `true` |
+
+### MudNeatoo Integration
+
+MudNeatoo components bind `ReadOnly="@EntityProperty.IsReadOnly"`. Private-set properties automatically render as read-only in the UI with no additional configuration.
+
+### Protected and Internal Setters
+
+`protected set` and `internal set` preserve their accessor visibility in generated code but do NOT set `IsReadOnly = true`. Only `private set` maps to `IsReadOnly = true`, matching the runtime's `PropertyInfoWrapper.IsPrivateSetter` check (which only tests `SetMethod?.IsPrivate`). Protected and internal setters use the standard `.Value = value` path.
+
+### Serialization
+
+`IsReadOnly` survives client-server round-trips. The JSON converter serializes and deserializes `IsReadOnly` state. The property value itself is serialized through `PropertyManager.SetProperties()` which bypasses setters entirely, so private setters do not affect serialization.
+
+### IValidateProperty.SetPrivateValue
+
+`SetPrivateValue(object? newValue, bool quietly = false)` is a public method on the `IValidateProperty` interface. It sets the property value bypassing `IsReadOnly` checks. Used by:
+- Generated setters for `private set` properties
+- Framework internals (deprecated `Setter<P>()`, `ObjectInvalid` property)
+
+`SetPrivateValue` fires change tracking, PropertyChanged, and rule execution normally -- it only bypasses the `IsReadOnly` guard.
 
 ## Read-Only Properties
 
@@ -181,7 +269,7 @@ public void PropertyChanged_StandardNotification()
     Assert.Contains("Email", changedProperties);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L280-L302' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-property-changed' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L310-L332' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-property-changed' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Neatoo also fires `NeatooPropertyChanged`, which provides richer information than standard `PropertyChanged` -- including the `ChangeReason` (UserEdit vs Load) and the property object reference:
@@ -248,7 +336,7 @@ public void LoadValue_DataLoadingWithoutRules()
     Assert.Equal(500.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L363-L384' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L393-L413' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Suppressing Events
@@ -289,7 +377,7 @@ public void SuppressEvents_PauseAllActions()
     Assert.Equal(750.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L454-L485' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L483-L514' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Meta Properties
@@ -330,7 +418,7 @@ public async Task MetaProperties_QueryPropertyState()
     Assert.True(invoice["Amount"].PropertyMessages.Any());
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L386-L417' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L415-L446' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Direct Backing Field Access
@@ -362,7 +450,7 @@ public void BackingFieldAccess_PropertyWrapper()
     Assert.Equal("Carol Davis", typedProperty.Value);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L256-L278' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-backing-field-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L286-L308' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-backing-field-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Change Reason Tracking
@@ -399,7 +487,7 @@ public void ChangeReasonUserEdit_NormalPropertyAssignment()
     Assert.True(invoice["Amount"].IsValid);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L334-L361' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L364-L391' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Related

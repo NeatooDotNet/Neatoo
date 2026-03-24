@@ -60,6 +60,26 @@ public partial class ApiGeneratedSaveEntity : EntityBase<ApiGeneratedSaveEntity>
 
 If `[Insert]`/`[Update]`/`[Delete]` methods have non-service parameters (like a parent ID), `IFactorySave<T>` is not generated. The parent must call `factory.SaveAsync(child, parentId)` explicitly — this is the cascade save pattern described in [entities.md](entities.md).
 
+## Setter Accessibility
+
+The generator respects setter accessibility modifiers on partial properties:
+
+| Declaration | Generated Setter | Setter Body | Interface Declaration |
+|-------------|-----------------|-------------|----------------------|
+| `public partial string Name { get; set; }` | `set` (public) | `.Value = value` | `string Name { get; set; }` |
+| `public partial decimal Total { get; private set; }` | `private set` | `SetPrivateValue(value)` | `decimal Total { get; }` |
+| `protected partial string Data { get; protected set; }` | `protected set` | `.Value = value` | `string Data { get; set; }` |
+| `public partial string Info { get; internal set; }` | `internal set` | `.Value = value` | `string Info { get; }` |
+| `public partial string ReadOnly { get; }` | (none) | N/A | `string ReadOnly { get; }` |
+
+Key behaviors:
+- **`private set`** uses `SetPrivateValue()` which bypasses `IsReadOnly` checks. The property's `IsReadOnly` is `true` at runtime.
+- **`protected set`** and **`internal set`** use `.Value = value` (same as public). `IsReadOnly` is `false` at runtime.
+- Non-public setters generate `get;` only on the interface declaration.
+- LazyLoad properties with `private set` use `LoadValue(value)` (same as public LazyLoad), since LazyLoad already bypasses `IsReadOnly`.
+
+See [properties.md](properties.md) for runtime behavior of private-set properties.
+
 ## Suppressing Generation
 
 Use `[SuppressFactory]` to prevent factory generation for abstract base classes, test classes, or when manual factory implementation is needed:

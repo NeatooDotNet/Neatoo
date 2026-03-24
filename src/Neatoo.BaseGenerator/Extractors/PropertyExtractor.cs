@@ -34,6 +34,22 @@ internal static class PropertyExtractor
                     .Any(a => a.IsKind(SyntaxKind.SetAccessorDeclaration) ||
                               a.IsKind(SyntaxKind.InitAccessorDeclaration)) ?? false;
 
+                string? setterAccessibility = null;
+                if (hasSetter)
+                {
+                    var setAccessor = property.AccessorList?.Accessors
+                        .FirstOrDefault(a => a.IsKind(SyntaxKind.SetAccessorDeclaration) ||
+                                             a.IsKind(SyntaxKind.InitAccessorDeclaration));
+                    if (setAccessor != null)
+                    {
+                        var accessModifier = setAccessor.Modifiers.FirstOrDefault();
+                        if (accessModifier != default)
+                        {
+                            setterAccessibility = accessModifier.ToString();
+                        }
+                    }
+                }
+
                 var needsInterfaceDeclaration = hasPartialInterface &&
                     !existingInterfaceProperties.Contains(propertyName);
 
@@ -59,6 +75,7 @@ internal static class PropertyExtractor
                     Type: propertyType,
                     Accessibility: accessibility,
                     HasSetter: hasSetter,
+                    SetterAccessibility: setterAccessibility,
                     NeedsInterfaceDeclaration: needsInterfaceDeclaration,
                     IsLazyLoad: isLazyLoad,
                     LazyLoadInnerType: lazyLoadInnerType

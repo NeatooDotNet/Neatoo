@@ -31,6 +31,17 @@ public interface IPropertyChildDemo : IValidateBase
 }
 
 /// <summary>
+/// Root interface for private-set property demo.
+/// Note: ComputedTotal has get-only (no setter) because the entity uses private set.
+/// </summary>
+public interface IPrivateSetPropertyDemo : IEntityRoot
+{
+    int Quantity { get; set; }
+    decimal UnitPrice { get; set; }
+    decimal ComputedTotal { get; }
+}
+
+/// <summary>
 /// Root interface for SetValue vs LoadValue demo entity.
 /// </summary>
 public interface ISetValueVsLoadValueDemo : IEntityRoot

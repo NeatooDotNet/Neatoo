@@ -6668,6 +6668,309 @@ partial class UniqueNameRuleTests
 
 		}
 
+		/// <summary>Tracks and configures behavior for SetPrivateValue(object? newValue, bool quietly) -> System.Threading.Tasks.Task.</summary>
+		public sealed class IEntityProperty_SetPrivateValueInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::Neatoo.IValidateProperty? _source;
+
+			/// <summary>Callback delegate for SetPrivateValue(object? newValue, bool quietly) -> System.Threading.Tasks.Task.</summary>
+			public delegate global::System.Threading.Tasks.Task SetPrivateValueDelegate(object? newValue, bool quietly);
+
+			/// <summary>Predicate delegate for SetPrivateValue(object? newValue, bool quietly) -> System.Threading.Tasks.Task.</summary>
+			public delegate bool SetPrivateValuePredicate(object? newValue, bool quietly);
+
+			public IEntityProperty_SetPrivateValueInterceptor() : base("SetPrivateValue") { }
+			public IEntityProperty_SetPrivateValueInterceptor(global::System.Func<object> smartDefaultFactory) : base("SetPrivateValue", smartDefaultFactory) { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = ((object? newValue, bool quietly))args!;
+				((SetPrivateValueDelegate)del)(typedArgs.newValue, typedArgs.quietly);
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = ((object? newValue, bool quietly))args!;
+				return ((SetPrivateValueDelegate)del)(typedArgs.newValue, typedArgs.quietly);
+			}
+			protected override global::System.Delegate CreateValueDelegate(object? value) => (SetPrivateValueDelegate)((_, _) => (global::System.Threading.Tasks.Task)value!);
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
+			{
+				if (tracking is SetPrivateValueImpl impl) impl.RecordArg(((object? newValue, bool quietly))args!);
+			}
+			protected override void RecordUnconfiguredArgs(object? args)
+			{
+				var typedArgs = ((object? newValue, bool quietly))args!;
+				_unconfiguredLastArgs = (typedArgs.newValue, typedArgs.quietly);
+			}
+
+			private (object? newValue, bool quietly)? _unconfiguredLastArgs;
+
+			/// <summary>Last arguments from the most recently called registration.</summary>
+			public (object? newValue, bool quietly)? LastArgs
+			{
+				get
+				{
+					if ((_returnValueTracking?._callCount ?? 0) > 0 && _returnValueTracking is SetPrivateValueImpl rvb) return rvb.LastArgs;
+					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is SetPrivateValueImpl cb) return cb.LastArgs;
+					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is SetPrivateValueImpl sb) return sb.LastArgs;
+					return _unconfiguredCallCount > 0 ? _unconfiguredLastArgs : default;
+				}
+			}
+
+			/// <summary>Configures callback for SetPrivateValue(object? newValue, bool quietly) -> System.Threading.Tasks.Task.</summary>
+			public SetPrivateValueImpl Call(SetPrivateValueDelegate callback)
+			{
+				var builder = new SetPrivateValueImpl(this);
+				SetupReturnCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Configures callback for SetPrivateValue(object? newValue, bool quietly). Task.CompletedTask auto-returned.</summary>
+			public SetPrivateValueImpl Call(global::System.Action<object?, bool> callback)
+			{
+				var builder = new SetPrivateValueImpl(this);
+				SetupReturnCallback((SetPrivateValueDelegate)((object? newValue, bool quietly) => { callback(newValue, quietly); return global::System.Threading.Tasks.Task.CompletedTask; }), builder);
+				return builder;
+			}
+
+			/// <summary>Sets return value for SetPrivateValue(object? newValue, bool quietly) -> System.Threading.Tasks.Task.</summary>
+			/// <param name="value">The value to return.</param>
+			public SetPrivateValueImpl Return(global::System.Threading.Tasks.Task value)
+			{
+				var builder = new SetPrivateValueImpl(this);
+				SetupReturnValue(value, builder);
+				return builder;
+			}
+
+			/// <summary>Configures sequence of return values. Each value returned once, last repeats.</summary>
+			public SetPrivateValueSequence Return(global::System.Threading.Tasks.Task first, params global::System.Threading.Tasks.Task[] rest)
+			{
+				var builder = Return(first);
+				if (rest.Length == 0)
+				{
+					return builder.ThenReturn(first);
+				}
+				var seq = builder.ThenReturn(rest[0]);
+				for (int i = 1; i < rest.Length; i++)
+				{
+					seq.ThenReturn(rest[i]);
+				}
+				return seq;
+			}
+
+			/// <summary>Configures parameter matching for SetPrivateValue(object? newValue, bool quietly) -> System.Threading.Tasks.Task. Matches exact values using Object.Equals. Returns builder for Return().</summary>
+			public WhenBuilder When(object? newValue, bool quietly)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, (args) => global::System.Object.Equals(args.newValue, newValue) && global::System.Object.Equals(args.quietly, quietly));
+			}
+
+			/// <summary>Configures parameter matching for SetPrivateValue(object? newValue, bool quietly) -> System.Threading.Tasks.Task. Matches using predicate. Returns builder for Return().</summary>
+			public WhenBuilder When(SetPrivateValuePredicate predicate)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, (args) => predicate(args.newValue, args.quietly));
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal global::System.Threading.Tasks.Task Invoke(bool strict, object? newValue, bool quietly)
+			{
+				object __args = ((object? newValue, bool quietly))(newValue, quietly);
+				var (__handled, __result) = RunPriorityChain(__args);
+				if (__handled) return (global::System.Threading.Tasks.Task)__result!;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(__args);
+				var (__seqHandled, __seqResult) = HandleNonVoidSequenceExhaustedRepeat(strict, __args);
+				if (__seqHandled) return __seqResult is null ? global::System.Threading.Tasks.Task.CompletedTask : (global::System.Threading.Tasks.Task)__seqResult;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) return src.SetPrivateValue(newValue, quietly);
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "SetPrivateValue");
+				return global::System.Threading.Tasks.Task.CompletedTask;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_unconfiguredLastArgs = default;
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class SetPrivateValueImpl : ReturnMethodCallBuilderBase, global::KnockOff.IMethodReturnBuilderArgs<SetPrivateValueDelegate, (object? newValue, bool quietly)>
+			{
+				private readonly IEntityProperty_SetPrivateValueInterceptor _typedInterceptor;
+				private (object? newValue, bool quietly) _lastArgs;
+
+				public SetPrivateValueImpl(IEntityProperty_SetPrivateValueInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				public (object? newValue, bool quietly) LastArgs => _lastArgs;
+				public void RecordArg((object? newValue, bool quietly) args) => _lastArgs = (args.newValue, args.quietly);
+
+				public override void Reset() { base.Reset(); _lastArgs = default; }
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public SetPrivateValueSequence ThenReturn(SetPrivateValueDelegate callback)
+				{
+					ThenReturnCallbackBase(callback);
+					return new SetPrivateValueSequence(_typedInterceptor);
+				}
+
+				/// <summary>Elevates to sequence mode and adds a value. Returns sequence for further chaining.</summary>
+				public SetPrivateValueSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_, _) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetPrivateValueSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					if (values.Length == 0) { ElevateToSequenceBase(); return new SetPrivateValueSequence(_typedInterceptor); }
+					var seq = ThenReturn(values[0]);
+					for (int i = 1; i < values.Length; i++) seq.ThenReturn(values[i]);
+					return seq;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetPrivateValueImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public SetPrivateValueImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetPrivateValueImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodTrackingArgs<(object? newValue, bool quietly)> global::KnockOff.IMethodTrackingArgs<(object? newValue, bool quietly)>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTrackingArgs<(object? newValue, bool quietly)> global::KnockOff.IMethodTrackingArgs<(object? newValue, bool quietly)>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnBuilderArgs<SetPrivateValueDelegate, (object? newValue, bool quietly)> global::KnockOff.IMethodReturnBuilderArgs<SetPrivateValueDelegate, (object? newValue, bool quietly)>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodReturnBuilderArgs<SetPrivateValueDelegate, (object? newValue, bool quietly)> global::KnockOff.IMethodReturnBuilderArgs<SetPrivateValueDelegate, (object? newValue, bool quietly)>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<SetPrivateValueDelegate> global::KnockOff.IMethodReturnBuilderArgs<SetPrivateValueDelegate, (object? newValue, bool quietly)>.ThenReturn(SetPrivateValueDelegate callback) => ThenReturn(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
+			public sealed class SetPrivateValueSequence : ReturnMethodSequenceBase, global::KnockOff.IMethodReturnSequence<SetPrivateValueDelegate>
+			{
+				private readonly IEntityProperty_SetPrivateValueInterceptor _typedInterceptor;
+
+				public SetPrivateValueSequence(IEntityProperty_SetPrivateValueInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public SetPrivateValueSequence ThenReturn(SetPrivateValueDelegate callback) { ThenReturnCallbackBase(callback); return this; }
+
+				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
+				public SetPrivateValueSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_, _) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetPrivateValueSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					foreach (var value in values) ThenReturn(value);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetPrivateValueSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetPrivateValueImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodReturnSequence<SetPrivateValueDelegate> global::KnockOff.IMethodReturnSequence<SetPrivateValueDelegate>.ThenReturn(SetPrivateValueDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<SetPrivateValueDelegate> global::KnockOff.IMethodReturnSequence<SetPrivateValueDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+			/// <summary>Predicate-based When matcher that returns a stored value.</summary>
+			private sealed class WhenMatcherPredicateValueBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<(object? newValue, bool quietly), bool> _predicate;
+				private readonly object? _value;
+
+				public WhenMatcherPredicateValueBase(global::System.Func<(object? newValue, bool quietly), bool> predicate, object? value) { _predicate = predicate; _value = value; }
+
+				public override bool Matches(object? args) => _predicate(((object? newValue, bool quietly))args!);
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _value;
+				public override bool IsTerminal => false;
+			}
+
+			/// <summary>Terminal always-matching callback matcher for non-void When chains.</summary>
+			private sealed class WhenMatcherTerminalCallbackBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<object?, object?> _callback;
+
+				public WhenMatcherTerminalCallbackBase(global::System.Func<object?, object?> callback) { _callback = callback; }
+
+				public override bool Matches(object? args) => true;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _callback(args);
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Terminal no-op matcher for ThenNone() on non-void When chains.</summary>
+			private sealed class WhenMatcherNoneBase : WhenMatcherBase
+			{
+				public override bool Matches(object? args) => false;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => null;
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
+			public sealed class WhenBuilder : WhenBuilderBase
+			{
+				private readonly global::System.Func<(object? newValue, bool quietly), bool> _predicate;
+
+				public WhenBuilder(IEntityProperty_SetPrivateValueInterceptor interceptor, global::System.Func<(object? newValue, bool quietly), bool> predicate) : base(interceptor)
+				{
+					_predicate = predicate;
+				}
+
+				/// <summary>Configures the return value when predicate matches.</summary>
+				public WhenChain Return(global::System.Threading.Tasks.Task value)
+				{
+					AddValueMatcher(new WhenMatcherPredicateValueBase(_predicate, value));
+					return new WhenChain((IEntityProperty_SetPrivateValueInterceptor)_interceptor);
+				}
+			}
+
+			/// <summary>When chain implementation with ThenWhen, ThenCall, ThenNone, verification support.</summary>
+			public sealed class WhenChain : WhenChainBase
+			{
+				private readonly IEntityProperty_SetPrivateValueInterceptor _typedInterceptor;
+
+				public WhenChain(IEntityProperty_SetPrivateValueInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another matcher with exact value matching.</summary>
+				public WhenBuilder ThenWhen(object? newValue, bool quietly)
+				{
+					return new WhenBuilder(_typedInterceptor, (args) => global::System.Object.Equals(args.newValue, newValue) && global::System.Object.Equals(args.quietly, quietly));
+				}
+
+				/// <summary>Adds another matcher with predicate matching.</summary>
+				public WhenBuilder ThenWhen(SetPrivateValuePredicate predicate) => new WhenBuilder(_typedInterceptor, (args) => predicate(args.newValue, args.quietly));
+
+				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
+				public WhenChain ThenCall(SetPrivateValueDelegate callback)
+				{
+					AddTerminalCallbackMatcher(new WhenMatcherTerminalCallbackBase((object? args) => { var typedArgs = ((object? newValue, bool quietly))args!; return (object?)callback(typedArgs.newValue, typedArgs.quietly); }));
+					return this;
+				}
+
+				/// <summary>Closes chain with no matcher.</summary>
+				public WhenChain ThenNone() { AddNoneMatcher(new WhenMatcherNoneBase()); return this; }
+
+				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
+				public WhenChain Verifiable() { VerifiableBase(); return this; }
+			}
+
+		}
+
 		/// <summary>Tracks and configures behavior for RunRules(Neatoo.RunRulesFlag runRules, System.Threading.CancellationToken? token) -> System.Threading.Tasks.Task.</summary>
 		public sealed class IEntityProperty_RunRulesInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
 		{
@@ -7238,6 +7541,9 @@ partial class UniqueNameRuleTests
 			/// <summary>Interceptor for GetAwaiter.</summary>
 			public IEntityProperty_GetAwaiterInterceptor GetAwaiter { get; } = new();
 
+			/// <summary>Interceptor for SetPrivateValue.</summary>
+			public IEntityProperty_SetPrivateValueInterceptor SetPrivateValue { get; } = new();
+
 			/// <summary>Interceptor for RunRules.</summary>
 			public IEntityProperty_RunRulesInterceptor RunRules { get; } = new();
 
@@ -7306,6 +7612,11 @@ partial class UniqueNameRuleTests
 			global::System.Runtime.CompilerServices.TaskAwaiter global::Neatoo.IValidateProperty.GetAwaiter()
 			{
 				return GetAwaiter.Invoke(Strict);
+			}
+
+			global::System.Threading.Tasks.Task global::Neatoo.IValidateProperty.SetPrivateValue(object? newValue, bool quietly)
+			{
+				return SetPrivateValue.Invoke(Strict, newValue, quietly);
 			}
 
 			global::System.Threading.Tasks.Task global::Neatoo.IValidateProperty.RunRules(global::Neatoo.RunRulesFlag runRules, global::System.Threading.CancellationToken? token)
@@ -7414,6 +7725,7 @@ partial class UniqueNameRuleTests
 				LoadValue._source = source;
 				WaitForTasks._source = source;
 				GetAwaiter._source = source;
+				SetPrivateValue._source = source;
 				RunRules._source = source;
 			}
 
@@ -7442,6 +7754,7 @@ partial class UniqueNameRuleTests
 				LoadValue._source = source;
 				WaitForTasks._source = source;
 				GetAwaiter._source = source;
+				SetPrivateValue._source = source;
 				RunRules._source = source;
 			}
 
@@ -7470,6 +7783,7 @@ partial class UniqueNameRuleTests
 				LoadValue._source = null;
 				WaitForTasks._source = null;
 				GetAwaiter._source = null;
+				SetPrivateValue._source = null;
 				RunRules._source = null;
 			}
 
@@ -7498,6 +7812,7 @@ partial class UniqueNameRuleTests
 				LoadValue._source = null;
 				WaitForTasks._source = null;
 				GetAwaiter._source = null;
+				SetPrivateValue._source = null;
 				RunRules._source = null;
 			}
 
@@ -7528,6 +7843,7 @@ partial class UniqueNameRuleTests
 				if (LoadValue.CheckVerification() is { } loadvalueFailure) failures.Add(loadvalueFailure);
 				if (WaitForTasks.CheckVerification() is { } waitfortasksFailure) failures.Add(waitfortasksFailure);
 				if (GetAwaiter.CheckVerification() is { } getawaiterFailure) failures.Add(getawaiterFailure);
+				if (SetPrivateValue.CheckVerification() is { } setprivatevalueFailure) failures.Add(setprivatevalueFailure);
 				if (RunRules.CheckVerification() is { } runrulesFailure) failures.Add(runrulesFailure);
 				if (PropertyChanged.CheckVerification() is { } propertychangedFailure) failures.Add(propertychangedFailure);
 				if (NeatooPropertyChanged.CheckVerification() is { } neatoopropertychangedFailure) failures.Add(neatoopropertychangedFailure);
@@ -7563,6 +7879,7 @@ partial class UniqueNameRuleTests
 				if (LoadValue.CheckVerificationAll() is { } loadvalueFailure) failures.Add(loadvalueFailure);
 				if (WaitForTasks.CheckVerificationAll() is { } waitfortasksFailure) failures.Add(waitfortasksFailure);
 				if (GetAwaiter.CheckVerificationAll() is { } getawaiterFailure) failures.Add(getawaiterFailure);
+				if (SetPrivateValue.CheckVerificationAll() is { } setprivatevalueFailure) failures.Add(setprivatevalueFailure);
 				if (RunRules.CheckVerificationAll() is { } runrulesFailure) failures.Add(runrulesFailure);
 				if (PropertyChanged.CheckVerificationAll() is { } propertychangedFailure) failures.Add(propertychangedFailure);
 				if (NeatooPropertyChanged.CheckVerificationAll() is { } neatoopropertychangedFailure) failures.Add(neatoopropertychangedFailure);
