@@ -158,7 +158,7 @@ public SkillValidationExample(IEntityBaseServices<SkillValidationExample> servic
 <sup><a href='/src/samples/SkillValidationSamples.cs#L52-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-RuleManager also provides `AddAction`, `AddActionAsync`, `AddValidationAsync`, and class-based rules. **`AddValidation`/`AddValidationAsync` accept exactly one trigger property** — the error message is associated with that property. `AddAction`/`AddActionAsync` support multiple triggers (1, 2, 3, or array). When a validation rule needs multiple trigger properties, use a class-based rule (`RuleBase<T>` or `AsyncRuleBase<T>`). Rules do **not** fire during `[Create]`/`[Fetch]` or `LoadValue` — the framework wraps factory operations in `PauseAllActions()`. See `references/validation.md` for details.
+RuleManager also provides `AddAction`, `AddActionAsync`, `AddValidationAsync`, and class-based rules. **`AddValidation`/`AddValidationAsync` accept exactly one trigger property** — for multiple triggers, use a class-based rule. Rules do **not** fire during `[Create]`/`[Fetch]` or `LoadValue`. See `references/validation.md` for details.
 
 Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
 
