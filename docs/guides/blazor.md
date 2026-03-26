@@ -19,7 +19,7 @@ In `Program.cs`, add MudBlazor services:
 builder.Services.AddMudServices();
 ```
 
-MudNeatoo requires MudBlazor 6.0 or later and targets .NET 8.0, 9.0, and 10.0.
+MudNeatoo requires MudBlazor 9.0 or later and targets .NET 9.0 and 10.0.
 
 ## Component Overview
 
@@ -57,7 +57,7 @@ public void TextFieldBindsToEntityProperty()
     // Access the property through indexer
     var nameProperty = employee["Name"];
 
-    // Property has display name from DisplayAttribute
+    // Property has display name from DisplayNameAttribute
     Assert.Equal("Full Name", nameProperty.DisplayName);
 
     // Set value through property (simulates component binding)
@@ -487,7 +487,7 @@ This ensures UI changes trigger the full Neatoo rule pipeline while maintaining 
 
 ## StateHasChanged Integration
 
-MudNeatoo components subscribe to the `PropertyChanged` event on `IEntityProperty` during `OnInitialized`. When key properties change (`PropertyMessages`, `IsValid`, `IsBusy`, `IsReadOnly`, `Value`), the component calls `InvokeAsync(StateHasChanged)` to re-render on the Blazor synchronization context. Components unsubscribe in `Dispose` to prevent memory leaks.
+MudNeatoo components subscribe to the `PropertyChanged` event on `IEntityProperty` during `OnInitialized`. When key properties change (`PropertyMessages`, `IsValid`, `IsBusy`, `IsReadOnly`), the component calls `InvokeAsync(StateHasChanged)` to re-render on the Blazor synchronization context. Most components also re-render on `Value` changes; `MudNeatooTextField` does not, since it manages its own value display through the MudBlazor binding. Components unsubscribe in `Dispose` to prevent memory leaks.
 
 Property change triggers automatic re-render:
 
@@ -544,7 +544,7 @@ Manual binding requires implementing validation display (reading `PropertyMessag
 
 ## Performance Considerations
 
-MudNeatoo components subscribe to `PropertyChanged` events and re-render when `PropertyMessages`, `IsValid`, `IsBusy`, `IsReadOnly`, or `Value` change. For forms with many fields:
+MudNeatoo components subscribe to `PropertyChanged` events and re-render when `PropertyMessages`, `IsValid`, `IsBusy`, or `IsReadOnly` change (most also re-render on `Value` changes). For forms with many fields:
 
 - Use `PauseAllActions` during bulk updates to prevent excessive re-renders. This queues `PropertyChanged` events and fires them after the `using` block completes.
 - Prefer batch validation after multiple changes with `await entity.RunRules()` once all properties are set.
@@ -602,4 +602,4 @@ This ensures:
 
 ---
 
-**UPDATED:** 2026-01-27
+**UPDATED:** 2026-03-19

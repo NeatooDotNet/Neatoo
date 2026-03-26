@@ -114,6 +114,10 @@ public abstract class SamplesTestBase : IDisposable
         services.AddTransient<AggregateValidationRule>();
         services.AddTransient<DateRangeValidationRule>();
 
+        // Shared rules samples
+        services.AddScoped<IIdUniquenessService, MockIdUniquenessService>();
+        services.AddTransient<IIdUniquenessRule, IdUniquenessRule>();
+
         // Skill sample repository mocks
         services.AddScoped<ISkillEmployeeRepository, SkillMockEmployeeRepository>();
         services.AddScoped<ISkillCustomerRepository, MockCustomerRepository>();

@@ -614,7 +614,7 @@ public class PropertyNotificationTests : SamplesTestBase
         Assert.Equal("Doe", customer.LastName);
     }
 
-    #region properties-change-reason-useredit
+    #region skill-change-reason-useredit
     /// <summary>
     /// Test ChangeReason tracking.
     /// </summary>

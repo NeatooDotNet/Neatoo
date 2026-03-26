@@ -48,7 +48,7 @@ The framework marks trigger properties as busy using unique execution IDs. While
 
 ## Async Business Rules
 
-Use `AddActionAsync` to create inline async business rules that execute when properties change. These rules perform side effects (computed properties, external service calls) without producing validation messages or affecting the entity's `IsValid` state. The `RuleManager.AddActionAsync` method creates an `AsyncActionFluentRule<T>` internally that executes the lambda when trigger properties change.
+Use `AddActionAsync` to create inline async business rules that execute when properties change. These rules perform side effects (computed properties, external service calls) without producing validation messages or affecting the entity's `IsValid` state. The `RuleManager.AddActionAsync` method creates an `ActionAsyncFluentRule<T>` internally that executes the lambda when trigger properties change.
 
 Register an async action rule in your constructor:
 

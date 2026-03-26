@@ -1,10 +1,10 @@
 # Properties
 
-All Neatoo properties use `Getter<T>()` and `Setter()` methods for automatic change tracking, validation triggering, and property change notifications.
+Neatoo uses C# partial properties with source generation. Declare the property signature; the generator provides change tracking, validation triggering, and property change notifications. (The old `Getter<T>()`/`Setter()` pattern is deprecated.)
 
 ## Basic Property Declaration
 
-Declare properties as partial with `Getter<T>()` and `Setter()`:
+Declare properties as `partial` -- the source generator fills in the implementation:
 
 <!-- snippet: properties-partial-declaration -->
 <a id='snippet-properties-partial-declaration'></a>
@@ -62,14 +62,14 @@ public void GeneratedImplementation_PropertyBackingField()
 
 Each partial property declared on a Neatoo class is backed by its own `IValidateProperty<T>` object. This is not just a backing field — it is a full object that owns:
 
-| Member | Purpose |
-|--------|---------|
-| `Value` | The current property value |
-| `IsValid` | Whether this property passes its validation rules |
-| `PropertyMessages` | Validation error messages for this property |
-| `IsBusy` | Whether an async rule is currently running for this property |
-| `IsReadOnly` | Whether this property is read-only |
-| `IsModified` | Whether this property has been changed |
+| Member | Interface | Purpose |
+|--------|-----------|---------|
+| `Value` | `IValidateProperty` | The current property value |
+| `IsValid` | `IValidateProperty` | Whether this property passes its validation rules |
+| `PropertyMessages` | `IValidateProperty` | Validation error messages for this property |
+| `IsBusy` | `IValidateProperty` | Whether an async rule is currently running for this property |
+| `IsReadOnly` | `IValidateProperty` | Whether this property is read-only |
+| `IsModified` | `IEntityProperty` only | Whether this property has been changed (EntityBase properties only, not ValidateBase) |
 
 Each property object fires its own `PropertyChanged` event independently. This enables fine-grained UI updates — a validation error on `Email` triggers a re-render only for the Email field's error display, not the entire form.
 
@@ -104,7 +104,7 @@ See [blazor.md](blazor.md) — Two Binding Modes for how this architecture enabl
 
 ## Read-Only Properties
 
-For calculated or read-only properties, use only `Getter<T>()`:
+For calculated or read-only properties, declare the partial property with only a getter:
 
 <!-- snippet: properties-read-only -->
 <a id='snippet-properties-read-only'></a>
@@ -183,12 +183,46 @@ public void PropertyChanged_StandardNotification()
 ```
 <sup><a href='/src/samples/PropertiesSamples.cs#L280-L302' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-property-changed' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+Neatoo also fires `NeatooPropertyChanged`, which provides richer information than standard `PropertyChanged` -- including the `ChangeReason` (UserEdit vs Load) and the property object reference:
+
 <!-- snippet: properties-neatoo-property-changed -->
+<a id='snippet-properties-neatoo-property-changed'></a>
+```cs
+[Fact]
+public async Task NeatooPropertyChanged_ExtendedNotification()
+{
+    var factory = GetRequiredService<IPropOrderFactory>();
+    var order = factory.Create();
+    var receivedEvents = new List<NeatooPropertyChangedEventArgs>();
+
+    // Subscribe to NeatooPropertyChanged
+    order.NeatooPropertyChanged += (args) =>
+    {
+        receivedEvents.Add(args);
+        return Task.CompletedTask;
+    };
+
+    // Set property
+    order.OrderNumber = "ORD-001";
+
+    // Wait for async event handling
+    await order.WaitForTasks();
+
+    // Event provides extended information
+    var orderNumberEvent = receivedEvents.FirstOrDefault(e => e.PropertyName == "OrderNumber");
+    Assert.NotNull(orderNumberEvent);
+    Assert.Equal("OrderNumber", orderNumberEvent.PropertyName);
+    Assert.Equal("OrderNumber", orderNumberEvent.FullPropertyName);
+    Assert.Equal(ChangeReason.UserEdit, orderNumberEvent.Reason);
+}
+```
+<sup><a href='/src/samples/PropertiesSamples.cs#L304-L332' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Loading Values Without Triggering Rules
 
-Use `LoadProperty()` to set values without triggering validation or marking dirty:
+Use `LoadValue()` to set values without triggering validation or marking dirty:
 
 <!-- snippet: properties-load-value -->
 <a id='snippet-properties-load-value'></a>
@@ -203,7 +237,8 @@ public void LoadValue_DataLoadingWithoutRules()
     // LoadValue:
     // - Does NOT trigger validation rules
     // - Does NOT mark entity as modified
-    // - DOES fire PropertyChanged (for UI binding)
+    // - Does NOT fire PropertyChanged (suppressed during load)
+    // - DOES fire NeatooPropertyChanged with ChangeReason.Load
     // - DOES establish parent-child relationships
     invoice["CustomerName"].LoadValue("Acme Corp");
     invoice["Amount"].LoadValue(500.00m);
@@ -213,7 +248,7 @@ public void LoadValue_DataLoadingWithoutRules()
     Assert.Equal(500.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L363-L383' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L363-L384' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Suppressing Events
@@ -254,7 +289,7 @@ public void SuppressEvents_PauseAllActions()
     Assert.Equal(750.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L453-L484' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L454-L485' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Meta Properties
@@ -295,7 +330,7 @@ public async Task MetaProperties_QueryPropertyState()
     Assert.True(invoice["Amount"].PropertyMessages.Any());
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L385-L416' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L386-L417' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Direct Backing Field Access
@@ -365,34 +400,6 @@ public void ChangeReasonUserEdit_NormalPropertyAssignment()
 }
 ```
 <sup><a href='/src/samples/PropertiesSamples.cs#L334-L361' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-properties-change-reason-useredit-1'></a>
-```cs
-/// <summary>
-/// Test ChangeReason tracking.
-/// </summary>
-[Fact]
-public void ChangeReason_TracksUserEdits()
-{
-    var factory = GetRequiredService<ISkillPropNotifyEntityFactory>();
-    var entity = factory.Create();
-
-    var reasons = new List<(string Property, ChangeReason Reason)>();
-    entity.NeatooPropertyChanged += (e) =>
-    {
-        reasons.Add((e.PropertyName, e.Reason));
-        return Task.CompletedTask;
-    };
-
-    // Normal property set via setter = UserEdit
-    entity.Name = "Test";
-
-    // Filter for Name property changes
-    var nameReasons = reasons.Where(r => r.Property == "Name").ToList();
-    Assert.True(nameReasons.Any(), "Name property should fire change event");
-    Assert.Equal(ChangeReason.UserEdit, nameReasons.Last().Reason);
-}
-```
-<sup><a href='/src/samples/TestingPatternsTests.cs#L617-L642' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Related

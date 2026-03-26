@@ -752,11 +752,14 @@ await entity.RunRules(RunRulesFlag.All);
 <!-- endSnippet -->
 
 The `RunRulesFlag` enum supports different execution modes:
-- `All`: Run all rules
+- `All`: Clear all messages and run all rules (this object and children)
+- `Self`: Run all rules on this object only (skip child property rules)
 - `NotExecuted`: Run only rules that haven't executed yet
 - `Executed`: Run only rules that have already executed
-- `NoMessages`: Run rules that produced no validation messages
-- `Messages`: Run rules that produced validation messages
+- `None`: No-op (run nothing)
+- `NoMessages` / `Messages`: **Known bug** -- `NoMessages` always matches and `Messages` never matches because the per-rule `Messages` collection is never populated. Avoid these flags until fixed.
+
+Flags are combinable (e.g., `NotExecuted | Executed` runs all rules). `All` is the most common choice; `Self` is useful when you want to skip child cascade.
 
 Run rules for a specific property:
 

@@ -171,7 +171,7 @@ PropertyChanged behavior:
 - Includes property name in event args
 - Does NOT fire during LoadValue operations (LoadValue only fires NeatooPropertyChanged)
 - Does not include old/new value comparison
-- Fires for meta-properties (IsValid, IsDirty, IsBusy)
+- Fires for meta-properties (IsValid, IsSelfValid, IsBusy, and on EntityBase: IsModified, IsSelfModified, IsSavable, IsDeleted)
 
 UI binding relies on this event to update when properties change.
 
@@ -273,34 +273,6 @@ public void ChangeReasonUserEdit_NormalPropertyAssignment()
 }
 ```
 <sup><a href='/src/samples/PropertiesSamples.cs#L334-L361' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit' title='Start of snippet'>anchor</a></sup>
-<a id='snippet-properties-change-reason-useredit-1'></a>
-```cs
-/// <summary>
-/// Test ChangeReason tracking.
-/// </summary>
-[Fact]
-public void ChangeReason_TracksUserEdits()
-{
-    var factory = GetRequiredService<ISkillPropNotifyEntityFactory>();
-    var entity = factory.Create();
-
-    var reasons = new List<(string Property, ChangeReason Reason)>();
-    entity.NeatooPropertyChanged += (e) =>
-    {
-        reasons.Add((e.PropertyName, e.Reason));
-        return Task.CompletedTask;
-    };
-
-    // Normal property set via setter = UserEdit
-    entity.Name = "Test";
-
-    // Filter for Name property changes
-    var nameReasons = reasons.Where(r => r.Property == "Name").ToList();
-    Assert.True(nameReasons.Any(), "Name property should fire change event");
-    Assert.Equal(ChangeReason.UserEdit, nameReasons.Last().Reason);
-}
-```
-<sup><a href='/src/samples/TestingPatternsTests.cs#L617-L642' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit-1' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### ChangeReason.Load
@@ -322,7 +294,8 @@ public void LoadValue_DataLoadingWithoutRules()
     // LoadValue:
     // - Does NOT trigger validation rules
     // - Does NOT mark entity as modified
-    // - DOES fire PropertyChanged (for UI binding)
+    // - Does NOT fire PropertyChanged (suppressed during load)
+    // - DOES fire NeatooPropertyChanged with ChangeReason.Load
     // - DOES establish parent-child relationships
     invoice["CustomerName"].LoadValue("Acme Corp");
     invoice["Amount"].LoadValue(500.00m);
@@ -332,7 +305,7 @@ public void LoadValue_DataLoadingWithoutRules()
     Assert.Equal(500.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L363-L383' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L363-L384' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 LoadValue behavior:
@@ -385,7 +358,7 @@ public async Task MetaProperties_QueryPropertyState()
     Assert.True(invoice["Amount"].PropertyMessages.Any());
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L385-L416' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L386-L417' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Available meta-properties:
@@ -509,7 +482,7 @@ public void SuppressEvents_PauseAllActions()
     Assert.Equal(750.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L453-L484' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L454-L485' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 PauseAllActions behavior:
@@ -562,7 +535,7 @@ public void IndexerAccess_DynamicPropertyAccess()
     Assert.Equal("eva@example.com", employee.Email);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L486-L511' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-indexer-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L487-L512' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-indexer-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Indexer patterns:
@@ -609,7 +582,7 @@ public async Task TaskTracking_AsyncOperations()
     Assert.True(zipProperty.Task.IsCompleted);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L513-L539' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-task-tracking' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L514-L540' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-task-tracking' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Task tracking behavior:
@@ -662,7 +635,7 @@ public async Task ValidationIntegration_PropertyValidation()
     Assert.True(invoice.IsValid);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L541-L573' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-validation-integration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L542-L574' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-validation-integration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Validation flow:
@@ -720,7 +693,7 @@ public async Task ChangePropagation_ChildToParent()
     Assert.NotNull(propagatedEvent);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L575-L612' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-propagation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L576-L613' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-propagation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade behavior:
@@ -762,7 +735,7 @@ public void ConstructorAssignment_UseLoadValueInstead()
     Assert.Equal("default@example.com", employee.Email);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L614-L635' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-constructor-assignment' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L615-L636' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-constructor-assignment' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The analyzer warns about constructor assignments and offers a code fix to convert to LoadValue. This ensures new entities start in an unmodified state.

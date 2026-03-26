@@ -19,7 +19,7 @@ The following type parameters have `[DynamicallyAccessedMembers(PublicProperties
 
 | Type | Parameter | Purpose |
 |------|-----------|---------|
-| `ValidateBase<T>` | `T` | Property discovery via `PropertyInfoList<T>` and LazyLoad reflection |
+| `ValidateBase<T>` | `T` | Property discovery via `PropertyInfoList<T>` |
 | `EntityBase<T>` | `T` | Inherits from ValidateBase; same property preservation |
 | `IPropertyInfoList<T>` | `T` | Interface for property registry |
 | `PropertyInfoList<T>` | `T` | Discovers properties via `Type.GetProperties()` at startup |
@@ -45,7 +45,6 @@ These methods have `[UnconditionalSuppressMessage]` because they use reflection 
 | Method | Warning(s) | Justification |
 |--------|-----------|---------------|
 | `PropertyInfoList.RegisterProperties()` | IL2075 | BaseType walk; T annotation preserves entire hierarchy |
-| `ValidateBase.GetLazyLoadProperties()` | IL2070 | Callers use `GetType()` which returns concrete type preserved by T annotation |
 | `ValidatePropertyManager.GetProperty()` | IL2075, IL2060 | `GetType().GetMethod` + `MakeGenericMethod` on framework types always preserved |
 | `NeatooBaseJsonConverterFactory.CanConvert()` | IL2070 | `GetInterfaces` on types from serialization graph |
 | `NeatooBaseJsonConverterFactory.CreateConverter()` | IL2070, IL2055 | `GetInterfaces` + `MakeGenericType`; types preserved by RemoteFactory generated `FactoryServiceRegistrar` |
@@ -86,13 +85,13 @@ Add trimming configuration to the Blazor WASM app:
 </PropertyGroup>
 
 <ItemGroup>
-    <RuntimeHostConfigurationOption Include="NeatooRuntime.IsServerRuntime"
+    <RuntimeHostConfigurationOption Include="Neatoo.RemoteFactory.IsServerRuntime"
                                     Value="false"
                                     Trim="true" />
 </ItemGroup>
 ```
 
-The `RuntimeHostConfigurationOption` sets `NeatooRuntime.IsServerRuntime` to `false` at trim time, enabling dead code elimination of server-only factory method bodies (internal methods with `IsServerRuntime` guards).
+The `RuntimeHostConfigurationOption` sets `Neatoo.RemoteFactory.IsServerRuntime` to `false` at trim time, enabling dead code elimination of server-only factory method bodies (internal methods with `IsServerRuntime` guards).
 
 ## Trimming Results (Person Example)
 
@@ -115,4 +114,4 @@ IL trimming works in concert with the internal factory methods pattern. Child en
 
 - [Entities](entities.md) - Child Entity Factory Method Visibility section
 - [Source Generation](source-generation.md) - What gets generated
-- RemoteFactory skill - `NeatooRuntime.IsServerRuntime` feature switch
+- RemoteFactory skill - `Neatoo.RemoteFactory.IsServerRuntime` feature switch

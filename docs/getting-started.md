@@ -7,7 +7,7 @@ Get up and running with Neatoo in minutes. This guide covers installation, your 
 ## Prerequisites
 
 Neatoo targets modern .NET:
-- .NET 8.0, 9.0, or 10.0
+- .NET 9.0 or 10.0
 - C# 12 or later (for source generator features)
 - Visual Studio 2022, Rider, or VS Code with C# Dev Kit
 
@@ -63,7 +63,7 @@ After building, check that source generation succeeded:
 
 1. In Visual Studio: Expand the project node → Dependencies → Analyzers → Neatoo.BaseGenerator
 2. In Rider: Look for generated files in the project tree under "Generated Code"
-3. Or check `obj/Debug/net8.0/generated/` for the generated files
+3. Or check `obj/Debug/net9.0/generated/` for the generated files
 
 You should see generated files with names like `CustomerValidator.g.cs` containing the backing field implementations.
 
@@ -102,8 +102,8 @@ public void ValidateBase_CheckValidationState()
 Key validation meta-properties:
 - `IsValid` - True if this object and all children are valid
 - `IsSelfValid` - True if this object (excluding children) is valid
-- `BrokenRules` - Collection of all validation errors
-- `[propertyName]` indexer - Access property-specific validation messages
+- `PropertyMessages` - Collection of all validation error messages
+- `[propertyName]` indexer - Access property-specific validation state and messages
 
 ## Your First Entity
 

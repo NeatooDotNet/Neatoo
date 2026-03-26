@@ -2,7 +2,7 @@
 
 [← Entities](entities.md) | [↑ Guides](index.md) | [Properties →](properties.md)
 
-Neatoo implements parent-child relationships through the Parent property on ValidateBase, enabling aggregate graphs where validation, dirty state, and lifecycle events cascade from children to their owning parents. This creates a tree structure where the aggregate root coordinates state across all child entities and value objects.
+Neatoo implements parent-child relationships through the Parent property on ValidateBase, enabling aggregate graphs where validation, modification state, and lifecycle events cascade from children to their owning parents. This creates a tree structure where the aggregate root coordinates state across all child entities and value objects.
 
 ## Parent Property Behavior
 
@@ -214,9 +214,9 @@ Cascade behavior:
 
 This ensures the aggregate root's validation state reflects all validation errors across the entire aggregate graph.
 
-## Cascade Dirty State
+## Cascade Modification State
 
-Dirty state cascades from children to parents. When a child becomes dirty, the parent's IsDirty becomes true. This enables tracking modifications anywhere in the aggregate.
+Modification state cascades from children to parents. When a child becomes modified, the parent's IsModified becomes true. This enables tracking modifications anywhere in the aggregate.
 
 Child modifications cascade to parent:
 
@@ -253,10 +253,10 @@ public void CascadeDirty_ChildModificationCascadesToParent()
 <sup><a href='/src/samples/ParentChildSamples.cs#L268-L295' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-dirty' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Cascade rules for IsDirty:
-- When a child's IsDirty changes to true, parent's IsDirty becomes true
-- When a child's IsDirty changes to false, parent recalculates IsDirty from all children
-- Collections aggregate IsDirty from all items
+Cascade rules for IsModified:
+- When a child's IsModified changes to true, parent's IsModified becomes true
+- When a child's IsModified changes to false, parent recalculates IsModified from all children
+- Collections aggregate IsModified from all items
 - EntityBase distinguishes IsSelfModified (entity's own properties) from IsModified (includes children)
 - Adding a new child to a collection marks the parent as modified (IsModified becomes true)
 - Removing an existing child marks the parent as modified
@@ -325,7 +325,7 @@ When a child entity is added to a collection:
 2. Root is recalculated from Parent (recursively to aggregate root)
 3. IsChild is set to true
 4. ContainingList is set to the collection
-5. Validation and dirty state cascade to parent
+5. Validation and modification state cascade to parent
 6. Cross-aggregate validation ensures Root compatibility
 
 ## Collection Navigation
@@ -525,16 +525,16 @@ During deserialization and factory operations, the framework pauses parent casca
 While paused:
 - Parent changes don't trigger cascade
 - Validation state changes don't propagate
-- Dirty state changes don't propagate
+- Modification state changes don't propagate
 - Property change events are deferred
 
 After resuming:
 - Cached validation state is recalculated from all children
-- Cached dirty state is recalculated from all children
+- Cached modification state is recalculated from all children
 - Property change events fire for any accumulated changes
 
 This ensures efficient bulk operations while maintaining eventual consistency of aggregate state.
 
 ---
 
-**UPDATED:** 2026-03-02
+**UPDATED:** 2026-03-19

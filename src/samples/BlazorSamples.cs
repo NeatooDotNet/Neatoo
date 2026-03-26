@@ -123,7 +123,7 @@ public class BlazorSamples : SamplesTestBase
         // Access the property through indexer
         var nameProperty = employee["Name"];
 
-        // Property has display name from DisplayAttribute
+        // Property has display name from DisplayNameAttribute
         Assert.Equal("Full Name", nameProperty.DisplayName);
 
         // Set value through property (simulates component binding)
