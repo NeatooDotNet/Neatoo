@@ -127,7 +127,7 @@ internal partial class CreateDemo : EntityBase<CreateDemo>, ICreateDemo
     // =========================================================================
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] ICreateDemoRepository repository)
+    internal void Fetch(int id, [Service] ICreateDemoRepository repository)
     {
         using (PauseAllActions())
         {
@@ -139,21 +139,21 @@ internal partial class CreateDemo : EntityBase<CreateDemo>, ICreateDemo
 
     [Remote]
     [Insert]
-    public void Insert([Service] ICreateDemoRepository repository)
+    internal void Insert([Service] ICreateDemoRepository repository)
     {
         repository.Insert(Name!, Priority);
     }
 
     [Remote]
     [Update]
-    public void Update([Service] ICreateDemoRepository repository)
+    internal void Update([Service] ICreateDemoRepository repository)
     {
         repository.Update(Name!, Priority);
     }
 
     [Remote]
     [Delete]
-    public void Delete([Service] ICreateDemoRepository repository)
+    internal void Delete([Service] ICreateDemoRepository repository)
     {
         repository.Delete(Name!);
     }

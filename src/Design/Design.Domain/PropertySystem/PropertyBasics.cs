@@ -123,6 +123,75 @@ internal partial class PropertyChildDemo : ValidateBase<PropertyChildDemo>, IPro
 }
 
 // =============================================================================
+// Private Setter Properties
+// =============================================================================
+// DESIGN DECISION: When a partial property has `private set`, the generator:
+// 1. Emits `private set` on the implementation (preserving accessibility)
+// 2. Emits `get;` only on the interface (no setter exposed)
+// 3. Uses SetPrivateValue() in the setter body (bypasses IsReadOnly check)
+//
+// This enables computed/derived properties that:
+// - Are read-only to external consumers (interface exposes only getter)
+// - Can be set by internal rules (AddAction lambda calls the private setter)
+// - Have IsReadOnly=true (PropertyInfoWrapper detects private setter)
+// - Render as ReadOnly in MudNeatoo components automatically
+//
+// GENERATOR BEHAVIOR for `public partial decimal ComputedTotal { get; private set; }`:
+//
+//   protected IValidateProperty<decimal> ComputedTotalProperty => ...;
+//   public partial decimal ComputedTotal
+//   {
+//       get => ComputedTotalProperty.Value;
+//       private set
+//       {
+//           ComputedTotalProperty.SetPrivateValue(value);
+//           if (!ComputedTotalProperty.Task.IsCompleted)
+//           {
+//               Parent?.AddChildTask(ComputedTotalProperty.Task);
+//               RunningTasks.AddTask(ComputedTotalProperty.Task);
+//           }
+//       }
+//   }
+//
+// On the interface:
+//   decimal ComputedTotal { get; }  // No setter exposed
+//
+// COMMON MISTAKE: Using .Value = value for private-set properties.
+// .Value = value routes to SetValue() which throws PropertyReadOnlyException
+// because IsReadOnly is true for private-set properties. Always use
+// SetPrivateValue() which bypasses the IsReadOnly check.
+// =============================================================================
+
+/// <summary>
+/// Demonstrates: Private setter properties with computed values via rules.
+/// </summary>
+[Factory]
+internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDemo>, IPrivateSetPropertyDemo
+{
+    // Writable properties - external consumers can set these
+    public partial int Quantity { get; set; }
+    public partial decimal UnitPrice { get; set; }
+
+    // Private-set property - only settable from within the entity
+    // The interface exposes only `get;` - consumers see this as read-only
+    // MudNeatoo components automatically bind ReadOnly="true"
+    public partial decimal ComputedTotal { get; private set; }
+
+    public PrivateSetPropertyDemo(IEntityBaseServices<PrivateSetPropertyDemo> services) : base(services)
+    {
+        // Rule: when Quantity or UnitPrice changes, recompute Total
+        // The lambda sets the private setter, which calls SetPrivateValue internally
+        RuleManager.AddAction(
+            t => t.ComputedTotal = t.Quantity * t.UnitPrice,
+            t => t.Quantity,
+            t => t.UnitPrice);
+    }
+
+    [Create]
+    public void Create() { }
+}
+
+// =============================================================================
 // SetValue vs LoadValue - Critical Distinction
 // =============================================================================
 // The property system has TWO ways to set a value:
@@ -179,7 +248,7 @@ internal partial class SetValueVsLoadValueDemo : EntityBase<SetValueVsLoadValueD
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IPropertyDemoRepository repository)
+    internal void Fetch(int id, [Service] IPropertyDemoRepository repository)
     {
         // Using LoadValue - does NOT mark as modified
         var data = repository.GetById(id);
@@ -190,15 +259,15 @@ internal partial class SetValueVsLoadValueDemo : EntityBase<SetValueVsLoadValueD
 
     [Remote]
     [Insert]
-    public void Insert([Service] IPropertyDemoRepository repository) { }
+    internal void Insert([Service] IPropertyDemoRepository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IPropertyDemoRepository repository) { }
+    internal void Update([Service] IPropertyDemoRepository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IPropertyDemoRepository repository) { }
+    internal void Delete([Service] IPropertyDemoRepository repository) { }
 }
 
 // =============================================================================
@@ -235,7 +304,7 @@ internal partial class IndexerAccessDemo : EntityBase<IndexerAccessDemo>, IIndex
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IPropertyDemoRepository repository)
+    internal void Fetch(int id, [Service] IPropertyDemoRepository repository)
     {
         var data = repository.GetById(id);
 
@@ -256,15 +325,15 @@ internal partial class IndexerAccessDemo : EntityBase<IndexerAccessDemo>, IIndex
 
     [Remote]
     [Insert]
-    public void Insert([Service] IPropertyDemoRepository repository) { }
+    internal void Insert([Service] IPropertyDemoRepository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IPropertyDemoRepository repository) { }
+    internal void Update([Service] IPropertyDemoRepository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IPropertyDemoRepository repository) { }
+    internal void Delete([Service] IPropertyDemoRepository repository) { }
 }
 
 // =============================================================================

@@ -563,4 +563,311 @@ public class PartialPropertyGenerationTests
     }
 
     #endregion
+
+    #region Private Setter Tests
+
+    /// <summary>
+    /// Scenario 1: WHEN a partial property has private set, THEN the generated setter has private set accessor.
+    /// </summary>
+    [TestMethod]
+    public void PartialProperty_PrivateSetter_GeneratesPrivateSetAccessor()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public partial interface ITestEntity : Neatoo.IEntityBase
+                {
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial string? Name { get; private set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated, "Should generate code for TestEntity");
+        Assert.IsTrue(generated.Contains("private set"),
+            "Generated setter should have 'private set' accessor");
+        Assert.IsTrue(generated.Contains("SetPrivateValue(value)"),
+            "Private setter should call SetPrivateValue(value)");
+    }
+
+    /// <summary>
+    /// Scenario 2: WHEN a partial property has private set and NeedsInterfaceDeclaration=true,
+    /// THEN the generated interface declaration has get; only (no set;).
+    /// </summary>
+    [TestMethod]
+    public void PartialProperty_PrivateSetter_InterfaceIsGetOnly()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public partial interface ITestEntity : Neatoo.IEntityBase
+                {
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial string? Name { get; private set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated, "Should generate code for TestEntity");
+        // Interface should have get; only for private set properties
+        Assert.IsTrue(generated.Contains("string? Name { get; }"),
+            "Interface declaration should have 'get;' only for private set property");
+        Assert.IsFalse(generated.Contains("string? Name { get; set; }"),
+            "Interface declaration should NOT have 'get; set;' for private set property");
+    }
+
+    /// <summary>
+    /// Scenario 3: WHEN a partial property has private set, THEN the generated setter body
+    /// calls SetPrivateValue(value) instead of .Value = value.
+    /// </summary>
+    [TestMethod]
+    public void PartialProperty_PrivateSetter_UsesSetPrivateValue()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public partial interface ITestEntity : Neatoo.IEntityBase
+                {
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial string? Name { get; private set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated, "Should generate code for TestEntity");
+        Assert.IsTrue(generated.Contains("NameProperty.SetPrivateValue(value)"),
+            "Private setter should use SetPrivateValue(value)");
+        Assert.IsFalse(generated.Contains("NameProperty.Value = value"),
+            "Private setter should NOT use .Value = value");
+    }
+
+    /// <summary>
+    /// Scenario 4: WHEN a partial property has protected set, THEN the generated setter has
+    /// protected set accessor and uses .Value = value (same as public set).
+    /// </summary>
+    [TestMethod]
+    public void PartialProperty_ProtectedSetter_PreservesAccessorAndUsesValueAssignment()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public partial interface ITestEntity : Neatoo.IEntityBase
+                {
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial string? Derived { get; protected set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated, "Should generate code for TestEntity");
+        Assert.IsTrue(generated.Contains("protected set"),
+            "Generated setter should have 'protected set' accessor");
+        Assert.IsTrue(generated.Contains("DerivedProperty.Value = value"),
+            "Protected setter should use .Value = value (same as public)");
+        Assert.IsFalse(generated.Contains("SetPrivateValue"),
+            "Protected setter should NOT use SetPrivateValue");
+    }
+
+    /// <summary>
+    /// Scenario 5: WHEN a partial property has internal set, THEN the generated setter has
+    /// internal set accessor and uses .Value = value (same as public set).
+    /// </summary>
+    [TestMethod]
+    public void PartialProperty_InternalSetter_PreservesAccessorAndUsesValueAssignment()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public partial interface ITestEntity : Neatoo.IEntityBase
+                {
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial string? Data { get; internal set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated, "Should generate code for TestEntity");
+        Assert.IsTrue(generated.Contains("internal set"),
+            "Generated setter should have 'internal set' accessor");
+        Assert.IsTrue(generated.Contains("DataProperty.Value = value"),
+            "Internal setter should use .Value = value (same as public)");
+        Assert.IsFalse(generated.Contains("SetPrivateValue"),
+            "Internal setter should NOT use SetPrivateValue");
+    }
+
+    /// <summary>
+    /// Scenario 6: WHEN a partial property has private set and is a LazyLoad property,
+    /// THEN the generated setter has private set and uses LoadValue(value).
+    /// </summary>
+    [TestMethod]
+    public void PartialProperty_LazyLoadWithPrivateSetter_UsesLoadValue()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public interface IChildEntity : Neatoo.IEntityBase { }
+
+                public partial interface ITestEntity : Neatoo.IEntityBase
+                {
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; private set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated, "Should generate code for TestEntity");
+        Assert.IsTrue(generated.Contains("private set"),
+            "LazyLoad private setter should have 'private set' accessor");
+        Assert.IsTrue(generated.Contains("LazyChildProperty.LoadValue(value)"),
+            "LazyLoad private setter should use LoadValue(value)");
+        Assert.IsFalse(generated.Contains("SetPrivateValue"),
+            "LazyLoad setter should NOT use SetPrivateValue (LoadValue already bypasses IsReadOnly)");
+        Assert.IsFalse(generated.Contains("RunningTasks.AddTask"),
+            "LazyLoad setter should NOT include task tracking");
+    }
+
+    /// <summary>
+    /// Scenario 7: WHEN a partial property has no setter (get-only), THEN generation is unchanged.
+    /// Verifies the existing getter-only behavior is not broken by private setter changes.
+    /// </summary>
+    [TestMethod]
+    public void PartialProperty_GetOnlyProperty_UnchangedByPrivateSetterFeature()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public partial interface ITestEntity : Neatoo.IEntityBase
+                {
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial string? ReadOnly { get; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated, "Should generate code for TestEntity");
+        Assert.IsTrue(generated.Contains("ReadOnlyProperty.Value;"),
+            "Getter-only property should have getter accessing .Value");
+        Assert.IsFalse(generated.Contains("set {") || generated.Contains("set{"),
+            "Getter-only property should NOT have a setter");
+        Assert.IsFalse(generated.Contains("SetPrivateValue"),
+            "Getter-only property should NOT reference SetPrivateValue");
+    }
+
+    /// <summary>
+    /// Scenario 12: WHEN an entity has both public set and private set properties,
+    /// THEN public uses .Value = value and private uses SetPrivateValue.
+    /// </summary>
+    [TestMethod]
+    public void PartialProperty_MixedPublicAndPrivateSetters_GeneratesCorrectPatterns()
+    {
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public partial interface ITestEntity : Neatoo.IEntityBase
+                {
+                    string? PublicName { get; set; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
+                {
+                    public partial string? PublicName { get; set; }
+                    public partial decimal ComputedTotal { get; private set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+        var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
+
+        Assert.IsNotNull(generated, "Should generate code for TestEntity");
+
+        // Public property uses .Value = value
+        Assert.IsTrue(generated.Contains("PublicNameProperty.Value = value"),
+            "Public setter should use .Value = value");
+
+        // Private property uses SetPrivateValue
+        Assert.IsTrue(generated.Contains("ComputedTotalProperty.SetPrivateValue(value)"),
+            "Private setter should use SetPrivateValue(value)");
+
+        // Interface: PublicName has get; set; (already in interface, not regenerated)
+        // Interface: ComputedTotal has get; only (generated by generator)
+        Assert.IsTrue(generated.Contains("decimal ComputedTotal { get; }"),
+            "Private set property should have get; only on interface");
+    }
+
+    #endregion
 }

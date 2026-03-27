@@ -157,7 +157,7 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IFluentRulesRepository repository)
+    internal void Fetch(int id, [Service] IFluentRulesRepository repository)
     {
         var data = repository.GetById(id);
         this["Name"].LoadValue(data.Name);
@@ -169,15 +169,15 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
 
     [Remote]
     [Insert]
-    public void Insert([Service] IFluentRulesRepository repository) { }
+    internal void Insert([Service] IFluentRulesRepository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IFluentRulesRepository repository) { }
+    internal void Update([Service] IFluentRulesRepository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IFluentRulesRepository repository) { }
+    internal void Delete([Service] IFluentRulesRepository repository) { }
 }
 
 // =============================================================================

@@ -98,7 +98,7 @@ internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRem
     // =========================================================================
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IRemoteDemoRepository repository)
+    internal void Fetch(int id, [Service] IRemoteDemoRepository repository)
     {
         // This method body runs on SERVER only.
         // repository is resolved from server's DI container.
@@ -109,7 +109,7 @@ internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRem
 
     [Remote]
     [Insert]
-    public void Insert([Service] IRemoteDemoRepository repository)
+    internal void Insert([Service] IRemoteDemoRepository repository)
     {
         var generatedId = repository.Insert(Name!);
         this["Id"].LoadValue(generatedId);
@@ -117,14 +117,14 @@ internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRem
 
     [Remote]
     [Update]
-    public void Update([Service] IRemoteDemoRepository repository)
+    internal void Update([Service] IRemoteDemoRepository repository)
     {
         repository.Update(Id, Name!);
     }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IRemoteDemoRepository repository)
+    internal void Delete([Service] IRemoteDemoRepository repository)
     {
         repository.Delete(Id);
     }
@@ -190,7 +190,7 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
     // =========================================================================
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IDbContext dbContext)
+    internal void Fetch(int id, [Service] IDbContext dbContext)
     {
         // dbContext only exists on server
         var data = dbContext.Find<EntityData>(id);
@@ -199,7 +199,7 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
 
     [Remote]
     [Insert]
-    public void Insert([Service] IDbContext dbContext)
+    internal void Insert([Service] IDbContext dbContext)
     {
         dbContext.Add(new EntityData { Name = Name });
         dbContext.SaveChanges();
@@ -207,14 +207,14 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
 
     [Remote]
     [Update]
-    public void Update([Service] IDbContext dbContext)
+    internal void Update([Service] IDbContext dbContext)
     {
         // Server-only operation
     }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IDbContext dbContext)
+    internal void Delete([Service] IDbContext dbContext)
     {
         // Server-only operation
     }
@@ -261,7 +261,7 @@ internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IDualUseRepository repository)
+    internal void Fetch(int id, [Service] IDualUseRepository repository)
     {
         // Called via factory when this is an aggregate root
         var data = repository.GetAddressById(id);
@@ -272,7 +272,7 @@ internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
 
     [Remote]
     [Insert]
-    public void Insert([Service] IDualUseRepository repository)
+    internal void Insert([Service] IDualUseRepository repository)
     {
         // Called via factory when root, or by parent when child
         var newId = repository.InsertAddress(Street!, City!);
@@ -281,14 +281,14 @@ internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
 
     [Remote]
     [Update]
-    public void Update([Service] IDualUseRepository repository)
+    internal void Update([Service] IDualUseRepository repository)
     {
         repository.UpdateAddress(Id, Street!, City!);
     }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IDualUseRepository repository)
+    internal void Delete([Service] IDualUseRepository repository)
     {
         repository.DeleteAddress(Id);
     }

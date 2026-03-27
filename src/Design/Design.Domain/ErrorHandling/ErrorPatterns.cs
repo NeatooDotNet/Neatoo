@@ -137,7 +137,7 @@ internal partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IErrorDemoRepository repository)
+    internal void Fetch(int id, [Service] IErrorDemoRepository repository)
     {
         var data = repository.GetById(id);
         this["Name"].LoadValue(data.Name);
@@ -147,15 +147,15 @@ internal partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>
 
     [Remote]
     [Insert]
-    public void Insert([Service] IErrorDemoRepository repository) { }
+    internal void Insert([Service] IErrorDemoRepository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IErrorDemoRepository repository) { }
+    internal void Update([Service] IErrorDemoRepository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IErrorDemoRepository repository) { }
+    internal void Delete([Service] IErrorDemoRepository repository) { }
 }
 
 // =============================================================================

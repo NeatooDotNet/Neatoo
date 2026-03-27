@@ -84,6 +84,15 @@ public interface IValidateProperty : INotifyPropertyChanged, INotifyNeatooProper
     TaskAwaiter GetAwaiter() => Task.GetAwaiter();
 
     /// <summary>
+    /// Sets the value bypassing IsReadOnly checks.
+    /// Used by generated setters for private-set properties and by framework internals.
+    /// </summary>
+    /// <param name="newValue">The new value to set.</param>
+    /// <param name="quietly">If <c>true</c>, suppresses Neatoo property change notifications (but still fires <see cref="INotifyPropertyChanged.PropertyChanged"/>).</param>
+    /// <returns>A task representing the asynchronous set operation.</returns>
+    Task SetPrivateValue(object? newValue, bool quietly = false);
+
+    /// <summary>
     /// Gets the declared type of the property.
     /// </summary>
     Type Type { get; }

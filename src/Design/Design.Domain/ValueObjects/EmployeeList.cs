@@ -48,7 +48,7 @@ internal partial class EmployeeList : ValidateListBase<IEmployeeListItem>, IEmpl
     // =========================================================================
     [Remote]
     [Fetch]
-    public void Fetch([Service] IEmployeeListRepository repository, [Service] IEmployeeListItemFactory itemFactory)
+    internal void Fetch([Service] IEmployeeListRepository repository, [Service] IEmployeeListItemFactory itemFactory)
     {
         // Note: List bases don't have PauseAllActions - items are added directly
         foreach (var data in repository.GetAll())
@@ -69,7 +69,7 @@ internal partial class EmployeeList : ValidateListBase<IEmployeeListItem>, IEmpl
     // =========================================================================
     [Remote]
     [Fetch]
-    public void Fetch(EmployeeSearchCriteria criteria,
+    internal void Fetch(EmployeeSearchCriteria criteria,
         [Service] IEmployeeListRepository repository,
         [Service] IEmployeeListItemFactory itemFactory)
     {

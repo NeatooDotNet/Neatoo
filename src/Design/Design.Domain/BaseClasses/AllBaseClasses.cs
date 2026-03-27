@@ -264,7 +264,7 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IDemoRepository repository)
+    internal void Fetch(int id, [Service] IDemoRepository repository)
     {
         // Method [Service] injection - repository only available on server.
         // After Fetch completes, entity is: IsNew=false, IsModified=false
@@ -281,7 +281,7 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
 
     [Remote]
     [Insert]
-    public void Insert([Service] IDemoRepository repository)
+    internal void Insert([Service] IDemoRepository repository)
     {
         // Called by Save() when IsNew=true
         repository.Insert(Name!, Value);
@@ -293,7 +293,7 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
 
     [Remote]
     [Update]
-    public void Update([Service] IDemoRepository repository)
+    internal void Update([Service] IDemoRepository repository)
     {
         // Called by Save() when IsNew=false && IsModified=true && !IsDeleted
         repository.Update(Name!, Value);
@@ -304,7 +304,7 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
 
     [Remote]
     [Delete]
-    public void Delete([Service] IDemoRepository repository)
+    internal void Delete([Service] IDemoRepository repository)
     {
         // Called by Save() when IsDeleted=true && IsNew=false
         repository.Delete(Name!);
@@ -361,7 +361,7 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 
     [Remote]
     [Fetch]
-    public void Fetch([Service] IDemoRepository repository, [Service] IDemoValueObjectFactory valueObjectFactory)
+    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoValueObjectFactory valueObjectFactory)
     {
         // Fetch returns a list of value objects
         var items = repository.GetAllNames();

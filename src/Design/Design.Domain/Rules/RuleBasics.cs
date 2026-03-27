@@ -67,7 +67,7 @@ internal partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>, IRuleBasicsD
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IRulesDemoRepository repository)
+    internal void Fetch(int id, [Service] IRulesDemoRepository repository)
     {
         var data = repository.GetById(id);
         this["Name"].LoadValue(data.Name);
@@ -78,15 +78,15 @@ internal partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>, IRuleBasicsD
 
     [Remote]
     [Insert]
-    public void Insert([Service] IRulesDemoRepository repository) { }
+    internal void Insert([Service] IRulesDemoRepository repository) { }
 
     [Remote]
     [Update]
-    public void Update([Service] IRulesDemoRepository repository) { }
+    internal void Update([Service] IRulesDemoRepository repository) { }
 
     [Remote]
     [Delete]
-    public void Delete([Service] IRulesDemoRepository repository) { }
+    internal void Delete([Service] IRulesDemoRepository repository) { }
 }
 
 // =============================================================================

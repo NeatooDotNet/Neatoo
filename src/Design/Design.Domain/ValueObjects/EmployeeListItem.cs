@@ -61,7 +61,7 @@ internal partial class EmployeeListItem : ValidateBase<EmployeeListItem>, IEmplo
     // =========================================================================
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IEmployeeListRepository repository)
+    internal void Fetch(int id, [Service] IEmployeeListRepository repository)
     {
         var data = repository.GetById(id);
 

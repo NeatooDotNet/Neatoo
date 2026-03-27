@@ -206,6 +206,36 @@ public partial class PropInvoice : ValidateBase<PropInvoice>
     public void Create() { }
 }
 
+/// <summary>
+/// Entity demonstrating private setter properties with computed values via rules.
+/// </summary>
+// begin-snippet: properties-private-setter-declaration
+[Factory]
+public partial class PropPrivateSetterDemo : ValidateBase<PropPrivateSetterDemo>
+{
+    public PropPrivateSetterDemo(IValidateBaseServices<PropPrivateSetterDemo> services) : base(services)
+    {
+        // Rule: when Quantity or UnitPrice changes, recompute ComputedTotal
+        // The lambda calls the C# private setter, which routes through SetPrivateValue
+        RuleManager.AddAction(
+            t => t.ComputedTotal = t.Quantity * t.UnitPrice,
+            t => t.Quantity,
+            t => t.UnitPrice);
+    }
+
+    // Writable properties - external consumers can set these
+    public partial int Quantity { get; set; }
+    public partial decimal UnitPrice { get; set; }
+
+    // Private-set property - writable from within the entity, read-only externally
+    // Generated interface exposes get-only; IsReadOnly = true at runtime
+    public partial decimal ComputedTotal { get; private set; }
+
+    [Create]
+    public void Create() { }
+}
+// end-snippet
+
 // -----------------------------------------------------------------
 // Test classes for properties samples
 // -----------------------------------------------------------------
@@ -733,4 +763,56 @@ public class PropertiesSamplesTests : SamplesTestBase
 
         Assert.Equal(0.0825m, product.TaxRate);
     }
+
+    // begin-snippet: properties-private-setter-usage
+    [Fact]
+    public void PrivateSetter_RuleRecomputesValue()
+    {
+        var factory = GetRequiredService<IPropPrivateSetterDemoFactory>();
+        var entity = factory.Create();
+
+        // Set writable properties - rule recomputes ComputedTotal
+        entity.Quantity = 5;
+        entity.UnitPrice = 12.50m;
+
+        Assert.Equal(62.50m, entity.ComputedTotal);
+
+        // Change one input - rule fires again
+        entity.Quantity = 10;
+        Assert.Equal(125.00m, entity.ComputedTotal);
+    }
+
+    [Fact]
+    public void PrivateSetter_IsReadOnly()
+    {
+        var factory = GetRequiredService<IPropPrivateSetterDemoFactory>();
+        var entity = factory.Create();
+
+        // Private-set property has IsReadOnly = true
+        Assert.True(entity["ComputedTotal"].IsReadOnly);
+
+        // Writable properties have IsReadOnly = false
+        Assert.False(entity["Quantity"].IsReadOnly);
+        Assert.False(entity["UnitPrice"].IsReadOnly);
+    }
+
+    [Fact]
+    public async Task PrivateSetter_SetValueThrows()
+    {
+        var factory = GetRequiredService<IPropPrivateSetterDemoFactory>();
+        var entity = factory.Create();
+
+        // SetValue on a private-set property throws PropertyException
+        // (PropertyReadOnlyException is internal; catch the public base class)
+        try
+        {
+            await entity["ComputedTotal"].SetValue(99.99m);
+            Assert.Fail("Expected PropertyException to be thrown for read-only property");
+        }
+        catch (PropertyException)
+        {
+            // Expected: read-only property rejects SetValue
+        }
+    }
+    // end-snippet
 }

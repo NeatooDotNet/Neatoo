@@ -72,7 +72,7 @@ public void GeneratedImplementation_PropertyBackingField()
     Assert.Equal("Bob Smith", nameProperty.Value);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L234-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-generated-implementation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L264-L284' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-generated-implementation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The generated code creates:
@@ -115,7 +115,7 @@ public void BackingFieldAccess_PropertyWrapper()
     Assert.Equal("Carol Davis", typedProperty.Value);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L256-L278' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-backing-field-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L286-L308' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-backing-field-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Property wrappers provide:
@@ -163,7 +163,7 @@ public void PropertyChanged_StandardNotification()
     Assert.Contains("Email", changedProperties);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L280-L302' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-property-changed' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L310-L332' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-property-changed' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 PropertyChanged behavior:
@@ -212,7 +212,7 @@ public async Task NeatooPropertyChanged_ExtendedNotification()
     Assert.Equal(ChangeReason.UserEdit, orderNumberEvent.Reason);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L304-L332' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L334-L362' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 NeatooPropertyChanged provides:
@@ -272,7 +272,7 @@ public void ChangeReasonUserEdit_NormalPropertyAssignment()
     Assert.True(invoice["Amount"].IsValid);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L334-L361' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L364-L391' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### ChangeReason.Load
@@ -305,7 +305,7 @@ public void LoadValue_DataLoadingWithoutRules()
     Assert.Equal(500.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L363-L384' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L393-L414' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 LoadValue behavior:
@@ -358,7 +358,7 @@ public async Task MetaProperties_QueryPropertyState()
     Assert.True(invoice["Amount"].PropertyMessages.Any());
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L386-L417' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L416-L447' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Available meta-properties:
@@ -442,6 +442,120 @@ Read-only properties:
 
 Read-only properties are common for identity fields and computed values.
 
+## Private Setter Properties
+
+Use `private set` on partial properties to create properties that are writable from within the entity but read-only to external consumers. This is the pattern for computed/derived properties that are set by rules.
+
+The source generator respects `private set`:
+- Emits `private set` on the property implementation
+- Emits `get;` only on the generated interface (no setter exposed)
+- Uses `SetPrivateValue()` in the setter body, bypassing the `IsReadOnly` check
+- Sets `IsReadOnly = true` at runtime, so MudNeatoo components automatically render read-only
+
+Declare a private-set property with an `AddAction` rule:
+
+<!-- snippet: properties-private-setter-declaration -->
+<a id='snippet-properties-private-setter-declaration'></a>
+```cs
+[Factory]
+public partial class PropPrivateSetterDemo : ValidateBase<PropPrivateSetterDemo>
+{
+    public PropPrivateSetterDemo(IValidateBaseServices<PropPrivateSetterDemo> services) : base(services)
+    {
+        // Rule: when Quantity or UnitPrice changes, recompute ComputedTotal
+        // The lambda calls the C# private setter, which routes through SetPrivateValue
+        RuleManager.AddAction(
+            t => t.ComputedTotal = t.Quantity * t.UnitPrice,
+            t => t.Quantity,
+            t => t.UnitPrice);
+    }
+
+    // Writable properties - external consumers can set these
+    public partial int Quantity { get; set; }
+    public partial decimal UnitPrice { get; set; }
+
+    // Private-set property - writable from within the entity, read-only externally
+    // Generated interface exposes get-only; IsReadOnly = true at runtime
+    public partial decimal ComputedTotal { get; private set; }
+
+    [Create]
+    public void Create() { }
+}
+```
+<sup><a href='/src/samples/PropertiesSamples.cs#L212-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-private-setter-declaration' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The rule's lambda calls the C# private setter, which routes through `SetPrivateValue()`. Change tracking, PropertyChanged, and downstream rules fire normally.
+
+Use the entity and verify private-set behavior:
+
+<!-- snippet: properties-private-setter-usage -->
+<a id='snippet-properties-private-setter-usage'></a>
+```cs
+[Fact]
+public void PrivateSetter_RuleRecomputesValue()
+{
+    var factory = GetRequiredService<IPropPrivateSetterDemoFactory>();
+    var entity = factory.Create();
+
+    // Set writable properties - rule recomputes ComputedTotal
+    entity.Quantity = 5;
+    entity.UnitPrice = 12.50m;
+
+    Assert.Equal(62.50m, entity.ComputedTotal);
+
+    // Change one input - rule fires again
+    entity.Quantity = 10;
+    Assert.Equal(125.00m, entity.ComputedTotal);
+}
+
+[Fact]
+public void PrivateSetter_IsReadOnly()
+{
+    var factory = GetRequiredService<IPropPrivateSetterDemoFactory>();
+    var entity = factory.Create();
+
+    // Private-set property has IsReadOnly = true
+    Assert.True(entity["ComputedTotal"].IsReadOnly);
+
+    // Writable properties have IsReadOnly = false
+    Assert.False(entity["Quantity"].IsReadOnly);
+    Assert.False(entity["UnitPrice"].IsReadOnly);
+}
+
+[Fact]
+public async Task PrivateSetter_SetValueThrows()
+{
+    var factory = GetRequiredService<IPropPrivateSetterDemoFactory>();
+    var entity = factory.Create();
+
+    // SetValue on a private-set property throws PropertyException
+    // (PropertyReadOnlyException is internal; catch the public base class)
+    try
+    {
+        await entity["ComputedTotal"].SetValue(99.99m);
+        Assert.Fail("Expected PropertyException to be thrown for read-only property");
+    }
+    catch (PropertyException)
+    {
+        // Expected: read-only property rejects SetValue
+    }
+}
+```
+<sup><a href='/src/samples/PropertiesSamples.cs#L767-L817' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-private-setter-usage' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### Indexer Behavior
+
+Accessing a private-set property through the indexer:
+- `entity["Total"].SetValue(x)` throws `PropertyException` (read-only)
+- `entity["Total"].LoadValue(x)` sets the value (Fetch escape hatch)
+- `entity["Total"].SetPrivateValue(x)` sets the value, bypassing `IsReadOnly`
+
+### Protected and Internal Setters
+
+`protected set` and `internal set` preserve their accessor visibility but do NOT set `IsReadOnly = true`. Only `private set` maps to read-only. Protected and internal setters use the standard `.Value = value` path.
+
 ## Suppressing Property Events
 
 Sometimes you need to set multiple properties without the framework reacting to each one individually. During initialization from a DTO, you don't want intermediate validation states. During a batch edit (swapping two field values), you want the rules to see the final state, not an in-between state. And when setting many properties at once, you don't want N separate rule executions when one pass at the end will do.
@@ -482,7 +596,7 @@ public void SuppressEvents_PauseAllActions()
     Assert.Equal(750.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L454-L485' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L484-L515' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 PauseAllActions behavior:
@@ -535,7 +649,7 @@ public void IndexerAccess_DynamicPropertyAccess()
     Assert.Equal("eva@example.com", employee.Email);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L487-L512' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-indexer-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L517-L542' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-indexer-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Indexer patterns:
@@ -582,7 +696,7 @@ public async Task TaskTracking_AsyncOperations()
     Assert.True(zipProperty.Task.IsCompleted);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L514-L540' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-task-tracking' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L544-L570' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-task-tracking' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Task tracking behavior:
@@ -635,7 +749,7 @@ public async Task ValidationIntegration_PropertyValidation()
     Assert.True(invoice.IsValid);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L542-L574' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-validation-integration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L572-L604' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-validation-integration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Validation flow:
@@ -693,7 +807,7 @@ public async Task ChangePropagation_ChildToParent()
     Assert.NotNull(propagatedEvent);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L576-L613' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-propagation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L606-L643' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-propagation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade behavior:
@@ -735,7 +849,7 @@ public void ConstructorAssignment_UseLoadValueInstead()
     Assert.Equal("default@example.com", employee.Email);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L615-L636' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-constructor-assignment' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L645-L666' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-constructor-assignment' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The analyzer warns about constructor assignments and offers a code fix to convert to LoadValue. This ensures new entities start in an unmodified state.

@@ -31,7 +31,8 @@ internal static class PropertyGenerator
                 // LazyLoad properties use LoadValue (no rule triggering, no task tracking)
                 if (property.HasSetter)
                 {
-                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; set {{ {property.Name}Property.LoadValue(value); }} }}");
+                    var setterPrefix = property.SetterAccessibility != null ? $"{property.SetterAccessibility} " : "";
+                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; {setterPrefix}set {{ {property.Name}Property.LoadValue(value); }} }}");
                 }
                 else
                 {
@@ -43,7 +44,21 @@ internal static class PropertyGenerator
                 // Scalar properties use .Value = (triggers rules and task tracking)
                 if (property.HasSetter)
                 {
-                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; set {{ {property.Name}Property.Value = value; if (!{property.Name}Property.Task.IsCompleted) {{ Parent?.AddChildTask({property.Name}Property.Task); RunningTasks.AddTask({property.Name}Property.Task); }} }} }}");
+                    if (property.SetterAccessibility == "private")
+                    {
+                        // Private setter: use SetPrivateValue to bypass IsReadOnly check
+                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; private set {{ {property.Name}Property.SetPrivateValue(value); if (!{property.Name}Property.Task.IsCompleted) {{ Parent?.AddChildTask({property.Name}Property.Task); RunningTasks.AddTask({property.Name}Property.Task); }} }} }}");
+                    }
+                    else if (property.SetterAccessibility != null)
+                    {
+                        // Protected/internal setter: use .Value = (same as public, with accessor)
+                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; {property.SetterAccessibility} set {{ {property.Name}Property.Value = value; if (!{property.Name}Property.Task.IsCompleted) {{ Parent?.AddChildTask({property.Name}Property.Task); RunningTasks.AddTask({property.Name}Property.Task); }} }} }}");
+                    }
+                    else
+                    {
+                        // Public setter: unchanged
+                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; set {{ {property.Name}Property.Value = value; if (!{property.Name}Property.Task.IsCompleted) {{ Parent?.AddChildTask({property.Name}Property.Task); RunningTasks.AddTask({property.Name}Property.Task); }} }} }}");
+                    }
                 }
                 else
                 {
@@ -64,7 +79,7 @@ internal static class PropertyGenerator
         {
             if (property.NeedsInterfaceDeclaration)
             {
-                var accessors = property.HasSetter ? "get; set;" : "get;";
+                var accessors = property.HasSetter && property.SetterAccessibility == null ? "get; set;" : "get;";
                 sb.AppendLine($"{property.Type} {property.Name} {{ {accessors} }}");
             }
         }

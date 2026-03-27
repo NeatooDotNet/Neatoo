@@ -75,7 +75,7 @@ internal partial class SaveDemo : EntityBase<SaveDemo>, ISaveDemo
 
     [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] ISaveDemoRepository repository)
+    internal void Fetch(int id, [Service] ISaveDemoRepository repository)
     {
         var data = repository.GetById(id);
         this["Id"].LoadValue(data.Id);
@@ -95,7 +95,7 @@ internal partial class SaveDemo : EntityBase<SaveDemo>, ISaveDemo
     // =========================================================================
     [Remote]
     [Insert]
-    public void Insert([Service] ISaveDemoRepository repository)
+    internal void Insert([Service] ISaveDemoRepository repository)
     {
         // Database assigns the Id - we get it back and store it
         var generatedId = repository.Insert(Name!, Amount);
@@ -120,7 +120,7 @@ internal partial class SaveDemo : EntityBase<SaveDemo>, ISaveDemo
     // =========================================================================
     [Remote]
     [Update]
-    public void Update([Service] ISaveDemoRepository repository)
+    internal void Update([Service] ISaveDemoRepository repository)
     {
         repository.Update(Id, Name!, Amount);
 
@@ -139,7 +139,7 @@ internal partial class SaveDemo : EntityBase<SaveDemo>, ISaveDemo
     // =========================================================================
     [Remote]
     [Delete]
-    public void Delete([Service] ISaveDemoRepository repository)
+    internal void Delete([Service] ISaveDemoRepository repository)
     {
         repository.Delete(Id);
 
@@ -177,7 +177,7 @@ internal partial class SaveAggregateDemo : EntityBase<SaveAggregateDemo>, ISaveA
 
     [Remote]
     [Fetch]
-    public void Fetch(int id,
+    internal void Fetch(int id,
         [Service] ISaveAggregateRepository repository,
         [Service] ISaveDemoItemListFactory itemsFactory,
         [Service] ISaveDemoItemFactory itemFactory)
@@ -212,7 +212,7 @@ internal partial class SaveAggregateDemo : EntityBase<SaveAggregateDemo>, ISaveA
     // =========================================================================
     [Remote]
     [Insert]
-    public void Insert(
+    internal void Insert(
         [Service] ISaveAggregateRepository repository,
         [Service] ISaveDemoItemFactory itemFactory)
     {
@@ -244,7 +244,7 @@ internal partial class SaveAggregateDemo : EntityBase<SaveAggregateDemo>, ISaveA
     // =========================================================================
     [Remote]
     [Update]
-    public void Update([Service] ISaveAggregateRepository repository)
+    internal void Update([Service] ISaveAggregateRepository repository)
     {
         // Update parent if it has changes
         if (IsSelfModified)
@@ -293,7 +293,7 @@ internal partial class SaveAggregateDemo : EntityBase<SaveAggregateDemo>, ISaveA
 
     [Remote]
     [Delete]
-    public void Delete([Service] ISaveAggregateRepository repository)
+    internal void Delete([Service] ISaveAggregateRepository repository)
     {
         // Delete children first (FK constraint)
         foreach (var item in Items!)
