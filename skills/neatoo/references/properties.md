@@ -305,7 +305,7 @@ public async Task NeatooPropertyChanged_ExtendedNotification()
     Assert.Equal(ChangeReason.UserEdit, orderNumberEvent.Reason);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L304-L332' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L334-L362' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Loading Values Without Triggering Rules
@@ -336,7 +336,7 @@ public void LoadValue_DataLoadingWithoutRules()
     Assert.Equal(500.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L393-L413' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L393-L414' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Suppressing Events
@@ -377,7 +377,7 @@ public void SuppressEvents_PauseAllActions()
     Assert.Equal(750.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L483-L514' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L484-L515' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Meta Properties
@@ -418,7 +418,7 @@ public async Task MetaProperties_QueryPropertyState()
     Assert.True(invoice["Amount"].PropertyMessages.Any());
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L415-L446' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L416-L447' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Direct Backing Field Access

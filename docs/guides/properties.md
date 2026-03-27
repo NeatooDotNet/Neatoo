@@ -305,7 +305,7 @@ public void LoadValue_DataLoadingWithoutRules()
     Assert.Equal(500.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L393-L413' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L393-L414' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 LoadValue behavior:
@@ -358,7 +358,7 @@ public async Task MetaProperties_QueryPropertyState()
     Assert.True(invoice["Amount"].PropertyMessages.Any());
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L415-L446' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L416-L447' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Available meta-properties:
@@ -542,7 +542,7 @@ public async Task PrivateSetter_SetValueThrows()
     }
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L766-L816' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-private-setter-usage' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L767-L817' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-private-setter-usage' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Indexer Behavior
@@ -596,7 +596,7 @@ public void SuppressEvents_PauseAllActions()
     Assert.Equal(750.00m, invoice.Amount);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L483-L514' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L484-L515' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 PauseAllActions behavior:
@@ -649,7 +649,7 @@ public void IndexerAccess_DynamicPropertyAccess()
     Assert.Equal("eva@example.com", employee.Email);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L516-L541' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-indexer-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L517-L542' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-indexer-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Indexer patterns:
@@ -696,7 +696,7 @@ public async Task TaskTracking_AsyncOperations()
     Assert.True(zipProperty.Task.IsCompleted);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L543-L569' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-task-tracking' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L544-L570' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-task-tracking' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Task tracking behavior:
@@ -749,7 +749,7 @@ public async Task ValidationIntegration_PropertyValidation()
     Assert.True(invoice.IsValid);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L571-L603' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-validation-integration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L572-L604' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-validation-integration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Validation flow:
@@ -807,7 +807,7 @@ public async Task ChangePropagation_ChildToParent()
     Assert.NotNull(propagatedEvent);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L605-L642' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-propagation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L606-L643' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-propagation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade behavior:
@@ -849,7 +849,7 @@ public void ConstructorAssignment_UseLoadValueInstead()
     Assert.Equal("default@example.com", employee.Email);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L644-L665' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-constructor-assignment' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/PropertiesSamples.cs#L645-L666' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-constructor-assignment' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The analyzer warns about constructor assignments and offers a code fix to convert to LoadValue. This ensures new entities start in an unmodified state.
