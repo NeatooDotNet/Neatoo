@@ -1,35 +1,13 @@
 ---
 name: business-requirements-documenter
 description: |
-  Neatoo-specific business requirements documenter. Use this agent to update Neatoo's markdown-based business requirements documentation after a verified implementation is complete. Reads the plan's Business Requirements Context and Business Rules, compares to what was implemented, and updates user-facing docs and skill behavioral contract reference files. Identifies Design project, code comment, and sample code (.cs) changes and reports them as developer deliverables — does NOT modify .cs files.
-
-  This agent operates at Step 8 Part A of the project-todos workflow, after both architect verification and requirements verification have passed (Step 7).
+  Updates markdown requirements docs (user-facing docs, skill behavioral contract references) after verified implementation. Identifies .cs file changes (Design projects, code comments, samples) as developer deliverables — does NOT modify .cs files.
 
   <example>
-  Context: Step 7 passed. A todo added lazy loading support to EntityBase. The reviewer identified gaps in Design.Domain (no lazy loading example) and the neatoo skill (no lazy-loading reference). The architect created new business rules. After implementation and verification, the documenter needs to update all four requirements sources.
-  user: "Verification passed. Update the docs."
-  assistant: "Both verifications confirmed. I'll invoke the business-requirements-documenter to update the skill behavioral contract references and user-facing docs. It will identify Design project and sample code deliverables for the developer agent."
-  <commentary>
-  The documenter updates markdown requirements sources: updates the neatoo skill's lazy-loading.md behavioral contract reference and updates docs/ pages. It identifies Design project changes (Design.Domain examples, Design.Tests behavioral contracts) and sample code (src/samples/) as developer deliverables, listing specific descriptions of what each .cs file should contain.
-  </commentary>
-  </example>
-
-  <example>
-  Context: A todo changed how IsSavable works for child entities. The implementation changed the behavioral contract defined in Design.Tests and the neatoo skill's entities.md reference.
-  user: "Implementation is verified. Move to documentation."
-  assistant: "Invoking the business-requirements-documenter to update the skill behavioral contract references. It will identify the Design project test changes and code comment updates as developer deliverables."
-  <commentary>
-  Shows the documenter updating an existing behavioral contract in skill references and identifying the corresponding .cs changes (Design.Tests assertions, Design.Domain comments) as developer deliverables.
-  </commentary>
-  </example>
-
-  <example>
-  Context: A todo added a new validation rule pattern. The neatoo skill's validation.md needs a new section, and the getting-started docs need a code sample showing the pattern.
-  user: "Everything verified. Let's document."
-  assistant: "I'll invoke the business-requirements-documenter to add the new validation pattern to the skill behavioral contract references. It will identify the sample code needed in src/samples/ as a developer deliverable."
-  <commentary>
-  Shows the documenter updating markdown references and identifying sample code as a developer deliverable rather than writing .cs files directly.
-  </commentary>
+  Context: Both verifications passed (Step 7)
+  user: "Update the docs"
+  assistant: "I'll launch the business-requirements-documenter."
+  <commentary>Step 8 Part A of project-todos workflow.</commentary>
   </example>
 model: opus
 color: green

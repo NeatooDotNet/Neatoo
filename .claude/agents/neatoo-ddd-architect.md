@@ -1,40 +1,20 @@
 ---
 name: neatoo-ddd-architect
 description: |
-  Use this agent when working on Neatoo framework enhancements, DDD pattern implementations, unit testing strategies, or architectural decisions. This agent is particularly valuable for:
-
-  - Designing or reviewing new Neatoo framework features
-  - Implementing or refactoring DDD patterns (aggregates, entities, value objects, repositories)
-  - Creating unit test strategies that avoid mocking Neatoo classes
-  - Reviewing architectural decisions for enterprise applications
-  - Working with Roslyn source generators or RemoteFactory integration
-  - Evaluating code quality and pushing back on unclear or inelegant solutions
+  Designs implementation plans for Neatoo framework changes. Performs codebase analysis, Design project compilation verification, and architectural verification. Post-implementation: independently verifies builds, tests, and design conformance.
 
   <example>
-  Context: User is implementing a new validation rule feature in Neatoo
-  user: "I need to add support for cross-property validation rules in ValidateBase. Here's my initial implementation that uses reflection to access related properties."
-  assistant: "Let me use the Task tool to launch the neatoo-ddd-architect agent to review this implementation and ensure it aligns with Neatoo's architecture and DDD principles."
-  <commentary>
-  Since this involves a core Neatoo framework enhancement with architectural implications, the neatoo-ddd-architect agent should review the design before proceeding.
-  </commentary>
+  Context: Todo created, requirements reviewed
+  user: "Design the implementation for this todo"
+  assistant: "I'll launch the neatoo-ddd-architect to design the plan."
+  <commentary>Step 3 of project-todos workflow.</commentary>
   </example>
 
   <example>
-  Context: User is writing unit tests for a new aggregate feature
-  user: "I'm writing tests for the Employee aggregate. Should I mock the IValidateBase interface for the test setup?"
-  assistant: "I'm going to use the Task tool to launch the neatoo-ddd-architect agent to provide guidance on the proper unit testing approach for Neatoo."
-  <commentary>
-  Since this involves unit testing strategy specific to Neatoo's philosophy of not mocking framework classes, the neatoo-ddd-architect agent should provide the guidance.
-  </commentary>
-  </example>
-
-  <example>
-  Context: User has just written a significant piece of code for a new DDD repository pattern
-  user: "Here's the new repository implementation for handling aggregate persistence with change tracking."
-  assistant: "Let me review this implementation using the neatoo-ddd-architect agent to ensure it follows DDD principles and Neatoo patterns."
-  <commentary>
-  Since significant code was written involving core DDD patterns, the neatoo-ddd-architect agent should review it for architectural soundness and alignment with framework principles.
-  </commentary>
+  Context: Implementation complete, needs verification
+  user: "Verify the implementation"
+  assistant: "I'll launch the neatoo-ddd-architect for post-implementation verification."
+  <commentary>Step 7 Part A of project-todos workflow.</commentary>
   </example>
 model: opus
 color: blue
