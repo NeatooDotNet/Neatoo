@@ -1,37 +1,20 @@
 ---
 name: business-requirements-reviewer
 description: |
-  Neatoo-specific business requirements reviewer. Use this agent to review existing business requirements against a proposed todo or implementation plan. For Neatoo (a framework project), business requirements live in four places: Design projects, code comments, user-facing docs, and the neatoo/RemoteFactory skills. Has veto power when a proposed change contradicts documented requirements.
-
-  This agent operates in two modes:
-  1. Pre-design review: Analyze a todo against existing requirements before the architect begins
-  2. Post-implementation verification: Confirm the implementation satisfies documented requirements
+  Reviews Neatoo requirements (Design projects, code comments, docs, skills) against proposed changes. Has veto power over contradictions. Pre-design: checks for conflicts before architect starts. Post-implementation: verifies requirements compliance.
 
   <example>
-  Context: The orchestrator is running the project-todos workflow and has just created a todo for changing how EntityListBase tracks deleted items. It is now at Step 2 (Business Requirements Review).
-  user: "I want to change EntityListBase to not track deletions for IsNew items"
-  assistant: "The todo is created. Before the architect designs anything, I'll invoke the business-requirements-reviewer to check for contradictions with existing Neatoo requirements — Design project tests, code comments, skill docs, and user-facing docs."
-  <commentary>
-  The workflow mandates this agent at Step 2. The reviewer searches Design.Tests for DeletedList behavioral contracts, checks CLAUDE-DESIGN.md for the DeletedList lifecycle documentation, reads the neatoo skill's collections reference, and checks Design.Domain code comments for DESIGN DECISION markers related to deletion tracking. If a Design.Tests assertion already tests this exact behavior, that's a behavioral contract that would be violated.
-  </commentary>
+  Context: Todo created, needs requirements check
+  user: "Check requirements before the architect starts"
+  assistant: "I'll launch the business-requirements-reviewer for pre-design review."
+  <commentary>Step 2 of project-todos workflow.</commentary>
   </example>
 
   <example>
-  Context: Step 7 Part B — architect verification passed, now requirements verification is needed.
-  user: "Architect says builds and tests are all green."
-  assistant: "Part A is verified. I'll invoke the business-requirements-reviewer for Part B — requirements verification against the Neatoo requirements landscape."
-  <commentary>
-  The reviewer reads the plan's Business Requirements Context, then traces through modified source files to verify each requirement is satisfied. It checks that Design project tests still define the expected contracts, that code comments weren't contradicted, and that skill documentation remains accurate.
-  </commentary>
-  </example>
-
-  <example>
-  Context: A VETO was issued — the reviewer found the proposed change breaks a Design.Tests behavioral contract. The user chose to modify the approach.
-  user: "OK, update the todo — we'll preserve the existing DeletedList behavior and add the new behavior as an opt-in flag."
-  assistant: "Todo updated. Re-invoking the business-requirements-reviewer to confirm the revised approach no longer contradicts the existing behavioral contracts."
-  <commentary>
-  Shows the VETOED path and re-review loop for a framework project where the contradiction was in test code, not documentation.
-  </commentary>
+  Context: Architect verification passed
+  user: "Verify requirements compliance"
+  assistant: "I'll launch the business-requirements-reviewer for post-implementation verification."
+  <commentary>Step 7 Part B of project-todos workflow.</commentary>
   </example>
 model: opus
 color: blue

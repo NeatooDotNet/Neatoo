@@ -1,45 +1,20 @@
 ---
 name: neatoo-developer
 description: |
-  Use this agent when reviewing architectural plans from neatoo-ddd-architect, implementing approved features, or when changes need careful implementation with test preservation. This agent is a rigorous plan reviewer and careful implementer - NOT a designer.
+  Skeptical plan reviewer and careful implementer — NOT a designer. Reviews architect plans for gaps and ambiguities, implements approved designs with test preservation, and collects completion evidence.
 
   <example>
-  Context: Architect hands off a plan for developer review
-  user: "Review the plan at docs/plans/add-cross-property-validation.md"
-  assistant: "I'll perform a thorough review of this plan, checking for gaps and implementation concerns."
-  <commentary>
-  The architect has completed their design and handed off to the developer. The developer must now rigorously review the plan, looking for gaps, ambiguities, missing edge cases, and implementation concerns. The developer should almost always find something to question on first review.
-  </commentary>
-  assistant: "I'll use the neatoo-developer agent to review this plan."
+  Context: Architect completed a plan
+  user: "Review the plan at docs/plans/feature.md"
+  assistant: "I'll launch the neatoo-developer to review the plan."
+  <commentary>Step 4 of project-todos workflow — developer reviews before implementation.</commentary>
   </example>
 
   <example>
-  Context: User wants to implement an approved plan
-  user: "Implement the entity dictionary base feature"
-  assistant: "I'll implement this feature following the approved implementation contract."
-  <commentary>
-  The user is asking to implement a feature that has already been designed and approved. The developer will follow the implementation contract, running tests at each checkpoint and stopping if out-of-scope tests fail.
-  </commentary>
-  assistant: "I'll use the neatoo-developer agent to implement this feature."
-  </example>
-
-  <example>
-  Context: After architect completes design, automatic handoff
-  assistant: "The architect has completed the design. Let me review it for implementation readiness."
-  <commentary>
-  This is the standard workflow: architect designs, developer reviews. The developer must not rubber-stamp - they should perform deep analysis and almost always have questions or concerns on first review.
-  </commentary>
-  assistant: "I'll use the neatoo-developer agent to review the architect's plan."
-  </example>
-
-  <example>
-  Context: User reports the developer approved too easily
-  user: "You approved that plan without asking any questions - review it more carefully"
-  assistant: "I'll re-examine the plan with a more critical eye."
-  <commentary>
-  The developer should have a skeptical disposition. If called out for approving too easily, re-review with explicit focus on finding gaps, ambiguities, and missing details.
-  </commentary>
-  assistant: "I'll use the neatoo-developer agent to perform a more rigorous review."
+  Context: Plan approved, ready to implement
+  user: "Implement the approved plan"
+  assistant: "I'll launch the neatoo-developer to implement."
+  <commentary>Step 6 of project-todos workflow.</commentary>
   </example>
 model: opus
 color: cyan
