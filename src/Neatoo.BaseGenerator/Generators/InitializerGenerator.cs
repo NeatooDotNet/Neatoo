@@ -41,8 +41,8 @@ internal static class InitializerGenerator
             {
                 if (property.IsLazyLoad)
                 {
-                    // LazyLoad properties use CreateLazyLoad<TInner> with the inner type
-                    sb.AppendLine($"            PropertyManager.Register(factory.CreateLazyLoad<{property.LazyLoadInnerType}>({thisRef}, nameof({property.Name})));");
+                    // EntityLazyLoad properties use CreateEntityLazyLoad<TInner> with the inner type
+                    sb.AppendLine($"            PropertyManager.Register(factory.CreateEntityLazyLoad<{property.LazyLoadInnerType}>({thisRef}, nameof({property.Name})));");
                 }
                 else
                 {

@@ -27,7 +27,7 @@ public class LazyLoadStatePropagationTests : IntegrationTestBase
         child = await factory.Fetch(Guid.NewGuid(), "Child", "child desc");
 
         // Set child into parent's LazyLoad property (pre-loaded)
-        parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(child);
+        parent.LazyChild = new EntityLazyLoad<ILazyLoadEntityObject>(child);
     }
 
     [TestMethod]
@@ -104,7 +104,7 @@ public class LazyLoadExplicitLoadPropagationTests : IntegrationTestBase
         var factory = GetRequiredService<ILazyLoadEntityObjectFactory>();
         var childEntity = await factory.Fetch(Guid.NewGuid(), "Child", "child desc");
 
-        parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(async () => await continueLoad.Task);
+        parent.LazyChild = new EntityLazyLoad<ILazyLoadEntityObject>(async () => await continueLoad.Task);
 
         // Act -- start explicit load (fire-and-forget)
         _ = parent.LazyChild.LoadAsync();
@@ -124,7 +124,7 @@ public class LazyLoadExplicitLoadPropagationTests : IntegrationTestBase
     public async Task ParentIsValid_AfterExplicitChildLoadFailure()
     {
         // Arrange -- set up a LazyLoad with a failing loader
-        parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(
+        parent.LazyChild = new EntityLazyLoad<ILazyLoadEntityObject>(
             () => throw new InvalidOperationException("load failed"));
 
         // Act -- trigger explicit load (fire-and-forget)
@@ -156,7 +156,7 @@ public class LazyLoadExplicitLoadPropagationTests : IntegrationTestBase
 
         var continueLoad = new TaskCompletionSource<ILazyLoadEntityObject?>();
 
-        parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(async () => await continueLoad.Task);
+        parent.LazyChild = new EntityLazyLoad<ILazyLoadEntityObject>(async () => await continueLoad.Task);
 
         // Act -- start explicit load (fire-and-forget)
         _ = parent.LazyChild.LoadAsync();
@@ -182,7 +182,7 @@ public class LazyLoadExplicitLoadPropagationTests : IntegrationTestBase
 
         var continueLoad = new TaskCompletionSource<ILazyLoadEntityObject?>();
 
-        parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(async () => await continueLoad.Task);
+        parent.LazyChild = new EntityLazyLoad<ILazyLoadEntityObject>(async () => await continueLoad.Task);
 
         // Act -- start explicit load (fire-and-forget)
         _ = parent.LazyChild.LoadAsync();
@@ -206,7 +206,7 @@ public class LazyLoadExplicitLoadPropagationTests : IntegrationTestBase
         var factory = GetRequiredService<ILazyLoadEntityObjectFactory>();
         var childEntity = await factory.Fetch(Guid.NewGuid(), "Child", "child desc");
 
-        parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(childEntity);
+        parent.LazyChild = new EntityLazyLoad<ILazyLoadEntityObject>(childEntity);
         Assert.IsTrue(parent.LazyChild.IsLoaded, "LazyChild should already be loaded");
 
         // Act -- WaitForTasks should complete immediately
@@ -221,7 +221,7 @@ public class LazyLoadExplicitLoadPropagationTests : IntegrationTestBase
     public async Task ParentWaitForTasks_UnaccessedChild_CompletesWithoutTrigger()
     {
         // Arrange -- LazyLoad child has never been accessed. Neither Value nor LoadAsync called.
-        parent.LazyChild = new LazyLoad<ILazyLoadEntityObject>(async () =>
+        parent.LazyChild = new EntityLazyLoad<ILazyLoadEntityObject>(async () =>
         {
             // This loader should NOT be invoked by WaitForTasks
             Assert.Fail("Loader should not be invoked by WaitForTasks -- nothing triggers loading except explicit LoadAsync()");

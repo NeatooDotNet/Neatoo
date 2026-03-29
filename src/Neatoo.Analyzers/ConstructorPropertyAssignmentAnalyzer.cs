@@ -111,7 +111,7 @@ public class ConstructorPropertyAssignmentAnalyzer : DiagnosticAnalyzer
 
     /// <summary>
     /// Gets the names of all partial properties declared in the class,
-    /// excluding LazyLoad properties (their generated setter uses LoadValue,
+    /// excluding EntityLazyLoad properties (their generated setter uses LoadValue,
     /// so constructor assignment is safe).
     /// </summary>
     private static HashSet<string> GetPartialPropertyNames(ClassDeclarationSyntax classDeclaration)
@@ -124,10 +124,10 @@ public class ConstructorPropertyAssignmentAnalyzer : DiagnosticAnalyzer
 
         foreach (var property in properties)
         {
-            // Skip LazyLoad<T> properties -- their generated setter uses LoadValue,
+            // Skip EntityLazyLoad<T> properties -- their generated setter uses LoadValue,
             // not .Value =, so constructor assignment does not trigger modification tracking.
             var typeText = property.Type.ToString();
-            if (typeText.StartsWith("LazyLoad<") || typeText.StartsWith("Neatoo.LazyLoad<"))
+            if (typeText.StartsWith("EntityLazyLoad<") || typeText.StartsWith("Neatoo.EntityLazyLoad<"))
             {
                 continue;
             }

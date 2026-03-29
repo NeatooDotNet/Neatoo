@@ -1,6 +1,6 @@
 ---
 name: Neatoo
-description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, lazy loading, LazyLoad, ILazyLoadFactory, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, AddActionAsync, AddValidationAsync, AddAction, AddValidation, IsBusy, WaitForTasks, IsLoaded, IsLoading, and base class behavior. This skill also provides guidance on where business logic belongs -- computed properties, conditional visibility, reactive behavior, and validation should live in the domain model (not the UI). Consult this skill when writing .razor files that bind to Neatoo entities to ensure logic stays in the domain layer. Neatoo is the domain model framework -- it does NOT include factory generation. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill, which is independent and works with any .NET class.
+description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, lazy loading, EntityLazyLoad, IEntityLazyLoadFactory, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, AddActionAsync, AddValidationAsync, AddAction, AddValidation, IsBusy, WaitForTasks, IsLoaded, IsLoading, and base class behavior. This skill also provides guidance on where business logic belongs -- computed properties, conditional visibility, reactive behavior, and validation should live in the domain model (not the UI). Consult this skill when writing .razor files that bind to Neatoo entities to ensure logic stays in the domain layer. Neatoo is the domain model framework -- it does NOT include factory generation. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill, which is independent and works with any .NET class.
 version: 1.0.0
 ---
 
@@ -206,7 +206,7 @@ Detailed documentation for each topic area:
 - **`references/shared-rules.md`** - Shared rules across entities via interface-typed AsyncRuleBase and DI injection
 - **`references/entities.md`** - EntityBase lifecycle, persistence, Save routing
 - **`references/collections.md`** - EntityListBase, parent-child relationships, deletion tracking
-- **`references/lazy-loading.md`** - LazyLoad&lt;T&gt;, ILazyLoadFactory, explicit LoadAsync(), passive Value read, WaitForTasks integration
+- **`references/lazy-loading.md`** - EntityLazyLoad&lt;T&gt;, IEntityLazyLoadFactory, explicit LoadAsync(), passive Value read, WaitForTasks integration
 - **`references/source-generation.md`** - What gets generated, Generated/ folder, [SuppressFactory]
 - **`references/trimming.md`** - IL trimming annotations, suppression strategy, consumer project setup
 - **`references/blazor.md`** - Blazor-specific binding and component patterns (see also the **MudNeatoo skill** for component binding and anti-patterns)

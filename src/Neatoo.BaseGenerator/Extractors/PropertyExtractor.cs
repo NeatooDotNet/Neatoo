@@ -62,7 +62,7 @@ internal static class PropertyExtractor
 
                 if (propertySymbol != null && propertySymbol.Type is INamedTypeSymbol namedType
                     && namedType.IsGenericType
-                    && namedType.OriginalDefinition.Name == "LazyLoad"
+                    && namedType.OriginalDefinition.Name == "EntityLazyLoad"
                     && namedType.OriginalDefinition.ContainingNamespace?.ToString() == "Neatoo"
                     && namedType.TypeArguments.Length == 1)
                 {

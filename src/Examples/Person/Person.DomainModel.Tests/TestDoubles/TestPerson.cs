@@ -13,7 +13,7 @@ internal class TestPerson : Person
     public int RunRulesCallCount { get; private set; }
 
     public TestPerson(IEntityBaseServices<Person> services, IUniqueNameRule rule,
-                      IPersonPhoneListFactory personPhoneListFactory, ILazyLoadFactory lazyLoadFactory)
+                      IPersonPhoneListFactory personPhoneListFactory, IEntityLazyLoadFactory lazyLoadFactory)
         : base(services, rule, personPhoneListFactory, lazyLoadFactory)
     {
     }

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Neatoo.RemoteFactory.Internal;
 
 namespace Neatoo.Internal;
 
@@ -20,7 +21,7 @@ namespace Neatoo.Internal;
 /// but LazyLoad assignment should not mark the property as self-modified either.
 /// We suppress this by overriding OnPropertyChanged for the "Value" case.
 /// </remarks>
-internal class LazyLoadEntityProperty<T> : EntityProperty<LazyLoad<T>>, IEntityProperty, ILazyLoadProperty
+internal class LazyLoadEntityProperty<T> : EntityProperty<EntityLazyLoad<T>>, IEntityProperty, ILazyLoadProperty
     where T : class?
 {
     private object? _currentInnerChild;
@@ -36,12 +37,12 @@ internal class LazyLoadEntityProperty<T> : EntityProperty<LazyLoad<T>>, IEntityP
     /// <summary>
     /// Returns the inner entity (or null) instead of the LazyLoad wrapper.
     /// Uses BoxedValue for direct internal access to the backing value.
-    /// The setter delegates to <see cref="LazyLoad{T}.SetValue(T?)"/> which sets the inner value,
+    /// The setter delegates to <see cref="EntityLazyLoad{T}.SetValue(T?)"/> which sets the inner value,
     /// marks the LazyLoad as loaded, clears errors, and fires PropertyChanged events.
     /// </summary>
     /// <remarks>
     /// Uses 'new' because the base <see cref="ValidateProperty{T}.Value"/> is virtual with return type
-    /// <c>LazyLoad&lt;T&gt;?</c>, but we need <c>object?</c> for the inner entity.
+    /// <c>EntityLazyLoad&lt;T&gt;?</c>, but we need <c>object?</c> for the inner entity.
     /// The LazyLoad subclass re-declares <see cref="IEntityProperty"/> (which extends <see cref="IValidateProperty"/>)
     /// to force interface re-implementation, so <c>IValidateProperty.Value</c> dispatches to this member
     /// when accessed through the interface.
@@ -140,7 +141,7 @@ internal class LazyLoadEntityProperty<T> : EntityProperty<LazyLoad<T>>, IEntityP
     /// <summary>
     /// Extends base HandleNonNullValue to connect to the already-loaded inner child.
     /// </summary>
-    protected override void HandleNonNullValue(LazyLoad<T> value, bool quietly = false)
+    protected override void HandleNonNullValue(EntityLazyLoad<T> value, bool quietly = false)
     {
         LazyLoadPropertyHelper.DisconnectInnerChild(ref _currentInnerChild, this.PassThruValueNeatooPropertyChanged);
 
@@ -168,7 +169,7 @@ internal class LazyLoadEntityProperty<T> : EntityProperty<LazyLoad<T>>, IEntityP
 
         base.LoadValue(value);
 
-        if (value is LazyLoad<T> lazyLoad)
+        if (value is EntityLazyLoad<T> lazyLoad)
         {
             var innerChild = ((ILazyLoadDeserializable)lazyLoad).BoxedValue;
             _currentInnerChild = LazyLoadPropertyHelper.ConnectInnerChild(innerChild, this.PassThruValueNeatooPropertyChanged);

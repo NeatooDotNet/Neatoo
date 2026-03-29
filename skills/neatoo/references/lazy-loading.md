@@ -1,11 +1,11 @@
 # Lazy Loading
 
-`LazyLoad<T>` provides async lazy loading for child entities or related data within Neatoo domain objects. `Value` is a passive read that returns the current value or `null` if not yet loaded. Call `LoadAsync()` explicitly to trigger loading. `IsLoading`, `IsLoaded`, `HasLoadError`, and `LoadError` are side-effect-free state checks.
+`EntityLazyLoad<T>` provides async lazy loading for child entities or related data within Neatoo domain objects. It inherits core loading logic from `Neatoo.RemoteFactory.LazyLoad<T>` and adds Neatoo-specific meta-property interfaces (`IValidateMetaProperties`, `IEntityMetaProperties`). `Value` is a passive read that returns the current value or `null` if not yet loaded. Call `LoadAsync()` explicitly to trigger loading. `IsLoading`, `IsLoaded`, `HasLoadError`, and `LoadError` are side-effect-free state checks.
 
 ## Key Principles
 
 - **Value is a passive read** — Accessing `Value` returns the current value or `null` if not yet loaded. It never triggers a load. Call `LoadAsync()` to trigger loading explicitly.
-- **Nullable reference types supported** — The generic constraint is `where T : class?`, so `T` can be a nullable reference type (e.g., `LazyLoad<IOrderItemList?>`).
+- **Nullable reference types supported** — The generic constraint is `where T : class?`, so `T` can be a nullable reference type (e.g., `EntityLazyLoad<IOrderItemList?>`).
 - **Thread-safe** — Multiple concurrent awaits share a single load operation.
 - **UI-friendly** — Implements `INotifyPropertyChanged` with `IsLoading`, `IsLoaded`, `HasLoadError`, and `LoadError` for binding.
 - **Meta property delegation** — Implements `IValidateMetaProperties` and `IEntityMetaProperties`, delegating to the loaded value.
@@ -13,7 +13,7 @@
 
 ## Creating Instances
 
-Always use `ILazyLoadFactory` (registered in DI via `AddNeatooServices`):
+Always use `IEntityLazyLoadFactory` (registered in DI via `AddNeatooServices`):
 
 ```csharp
 // Deferred loading — value loaded via explicit LoadAsync() call
@@ -23,9 +23,9 @@ var lazy = lazyLoadFactory.Create<IChild>(async () => await childFactory.Fetch(p
 var lazy = lazyLoadFactory.Create<IChild>(existingChild);
 ```
 
-## The Correct Pattern: Constructor-Based LazyLoad
+## The Correct Pattern: Constructor-Based EntityLazyLoad
 
-**Create `LazyLoad<T>` in the constructor.** The constructor runs on both server and client (during DI-based deserialization), so the loader delegate is always present. The Neatoo JSON converter merges deserialized state (`Value`, `IsLoaded`) into the constructor-created instance, preserving the loader.
+**Create `EntityLazyLoad<T>` in the constructor.** The constructor runs on both server and client (during DI-based deserialization), so the loader delegate is always present. The Neatoo JSON converter merges deserialized state (`Value`, `IsLoaded`) into the constructor-created instance, preserving the loader.
 
 The loader lambda captures factory dependencies from DI and references `this.Id` (or similar state). `this.Id` is resolved at load-time, not capture-time, so it works even though the constructor runs before `[Fetch]` sets the Id.
 
@@ -38,7 +38,7 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
     public SkillLazyParent(
         IEntityBaseServices<SkillLazyParent> services,
         ISkillLazyChildFactory childFactory,
-        ILazyLoadFactory lazyLoadFactory) : base(services)
+        IEntityLazyLoadFactory lazyLoadFactory) : base(services)
     {
         // Create LazyLoad in the constructor.
         // The loader lambda captures the factory from DI and references this.Id,
@@ -68,7 +68,7 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
     // LazyLoad property -- partial, just like every other Neatoo property.
     // The generator handles backing field, setter (LoadValue), and registration.
     // Meta properties (IsValid, IsModified, etc.) propagate from the loaded child.
-    public partial LazyLoad<ISkillLazyChild> LazyChild { get; set; }
+    public partial EntityLazyLoad<ISkillLazyChild> LazyChild { get; set; }
 
     [Remote]
     [Fetch]
@@ -89,26 +89,26 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
 
 ### Why This Works with Serialization
 
-1. **Server**: Constructor runs → creates `LazyLoad` with loader. `[Fetch]` runs → sets `Id`.
-2. **Serialization**: `LazyLoad` written to JSON (`Value`, `IsLoaded`). Loader delegate is `[JsonIgnore]`.
-3. **Client deserialization**: Constructor runs again via DI → creates **new** `LazyLoad` with loader (factory injected from client DI).
-4. **Converter merges**: `NeatooBaseJsonTypeConverter` finds the existing `LazyLoad` instance and merges deserialized state into it via `ILazyLoadDeserializable.ApplyDeserializedState` — the loader is preserved.
+1. **Server**: Constructor runs → creates `EntityLazyLoad` with loader. `[Fetch]` runs → sets `Id`.
+2. **Serialization**: `EntityLazyLoad` written to JSON (`Value`, `IsLoaded`). Loader delegate is `[JsonIgnore]`.
+3. **Client deserialization**: Constructor runs again via DI → creates **new** `EntityLazyLoad` with loader (factory injected from client DI).
+4. **Converter merges**: `NeatooBaseJsonTypeConverter` finds the existing `EntityLazyLoad` instance and merges deserialized state into it via `ILazyLoadDeserializable.ApplyDeserializedState` — the loader is preserved.
 5. **Usage**: `AddActionAsync` triggers → calls `LazyChild.LoadAsync()` → loader executes with correct `this.Id` → child loaded via `[Remote]` call.
 
-### LazyLoad Property Declaration
+### EntityLazyLoad Property Declaration
 
-Declare as a `partial` property — just like every other Neatoo property. The source generator handles the backing field, setter (using `LoadValue`), and registration (using `factory.CreateLazyLoad<TInner>()`). Meta properties (`IsValid`, `IsModified`, `IsBusy`, etc.) automatically propagate from the loaded child through look-through property subclasses in PropertyManager.
+Declare as a `partial` property — just like every other Neatoo property. The source generator handles the backing field, setter (using `LoadValue`), and registration (using `factory.CreateEntityLazyLoad<TInner>()`). Meta properties (`IsValid`, `IsModified`, `IsBusy`, etc.) automatically propagate from the loaded child through look-through property subclasses in PropertyManager.
 
 ```csharp
 // That's it. No manual backing field, no SubscribeToLazyLoadProperties().
-public partial LazyLoad<IChild> LazyChild { get; set; }
+public partial EntityLazyLoad<IChild> LazyChild { get; set; }
 ```
 
 The generator produces a `LazyLoadValidateProperty<IChild>` (or `LazyLoadEntityProperty<IChild>` for EntityBase) backing field that sees through to the inner entity for all framework operations.
 
 ## SetValue — Direct Value Assignment
 
-`LazyLoad<T>.SetValue(T?)` assigns a value directly, bypassing the loader delegate. This marks the instance as loaded, clears any load error, and fires `PropertyChanged`. Use this in `[Create]` methods to pre-load with an empty or default value:
+`EntityLazyLoad<T>.SetValue(T?)` assigns a value directly, bypassing the loader delegate. This marks the instance as loaded, clears any load error, and fires `PropertyChanged`. Use this in `[Create]` methods to pre-load with an empty or default value:
 
 ```csharp
 [Create]
@@ -123,8 +123,8 @@ public void Create([Service] IPersonPhoneList emptyPhoneList)
 
 ## Anti-Patterns
 
-- **Do NOT create `LazyLoad<T>` in `[Fetch]` or `[Create]`** — these only run server-side. The loader delegate is `[JsonIgnore]` and lost during serialization. Always create in the constructor.
-- **Do NOT use `OnDeserialized`/`InitializeLazyLoaders`/`ReinitializeLazyLoaders`** — unnecessary complexity. The converter preserves constructor-created instances. Move LazyLoad creation to the constructor instead.
+- **Do NOT create `EntityLazyLoad<T>` in `[Fetch]` or `[Create]`** — these only run server-side. The loader delegate is `[JsonIgnore]` and lost during serialization. Always create in the constructor.
+- **Do NOT use `OnDeserialized`/`InitializeLazyLoaders`/`ReinitializeLazyLoaders`** — unnecessary complexity. The converter preserves constructor-created instances. Move EntityLazyLoad creation to the constructor instead.
 - **Do NOT use manual backing fields or `SubscribeToLazyLoadProperties()`** — this is the old pattern. Declare as `partial` and let the generator handle registration and meta property propagation.
 
 ## Loading
@@ -166,7 +166,7 @@ await entity.WaitForTasks();
 
 ## Meta Property Delegation
 
-`LazyLoad<T>` delegates meta properties to the loaded value when present:
+`EntityLazyLoad<T>` delegates meta properties to the loaded value when present:
 
 | Property | Before Load | After Load |
 |----------|-------------|------------|
@@ -180,7 +180,7 @@ await entity.WaitForTasks();
 
 ## Error Handling
 
-If the loader throws, the exception propagates to the `LoadAsync()` caller. Error state is also captured on the `LazyLoad<T>` instance:
+If the loader throws, the exception propagates to the `LoadAsync()` caller. Error state is also captured on the `EntityLazyLoad<T>` instance:
 
 ```csharp
 try
@@ -200,7 +200,7 @@ If the load was triggered fire-and-forget (`_ = lazy.LoadAsync()`) and the paren
 
 ## UI Binding (Blazor / WPF)
 
-`LazyLoad<T>` implements `INotifyPropertyChanged` and fires change events for `Value`, `IsLoaded`, and `IsLoading` during the load lifecycle. Trigger the load explicitly in `OnInitializedAsync()`, then bind to `.Value` and state properties in Razor markup. Blazor re-renders when `PropertyChanged` fires on load completion.
+`EntityLazyLoad<T>` implements `INotifyPropertyChanged` and fires change events for `Value`, `IsLoaded`, and `IsLoading` during the load lifecycle. Trigger the load explicitly in `OnInitializedAsync()`, then bind to `.Value` and state properties in Razor markup. Blazor re-renders when `PropertyChanged` fires on load completion.
 
 **Trigger the load in `OnInitializedAsync()`:**
 
@@ -240,12 +240,12 @@ The 4-branch pattern handles all states: error, loaded with data, loaded with nu
 
 **Eager loading in the parent's `[Fetch]` method is preferred** for most cases — it keeps data access visible and avoids N+1 query problems.
 
-Use `LazyLoad<T>` when:
+Use `EntityLazyLoad<T>` when:
 - The child data is large and not always needed
 - Loading the child data is expensive (separate API call, complex query)
 - The UI can progressively reveal data as it loads
 
-Do **not** use `LazyLoad<T>` when:
+Do **not** use `EntityLazyLoad<T>` when:
 - The child data is always needed immediately
 - Loading a small, cheap collection (eager load in `[Fetch]` instead)
 

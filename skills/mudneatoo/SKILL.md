@@ -230,9 +230,9 @@ A complete form page follows this structure:
 6. **Implement `IDisposable`** — unsubscribe from `PropertyChanged`
 7. **No `EditForm`, no `DataAnnotationsValidator`** — use `MudForm` with MudNeatoo components
 
-### LazyLoad Databinding Pattern
+### EntityLazyLoad Databinding Pattern
 
-`LazyLoad<T>` properties use a 4-branch rendering pattern. `.Value` is a passive read — it never triggers a load. Trigger the load explicitly in `OnInitializedAsync()`, then bind to `.Value` and state properties in Razor markup. Blazor re-renders when `PropertyChanged` fires on load completion.
+`EntityLazyLoad<T>` properties use a 4-branch rendering pattern. `.Value` is a passive read — it never triggers a load. Trigger the load explicitly in `OnInitializedAsync()`, then bind to `.Value` and state properties in Razor markup. Blazor re-renders when `PropertyChanged` fires on load completion.
 
 **Trigger the load in `OnInitializedAsync()`:**
 

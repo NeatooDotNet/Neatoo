@@ -362,13 +362,13 @@ public class PartialPropertyGenerationTests
 
                 public interface ITestEntity : Neatoo.IEntityBase
                 {
-                    Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                    Neatoo.EntityLazyLoad<IChildEntity> LazyChild { get; set; }
                 }
 
                 [Neatoo.RemoteFactory.Factory]
                 public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
                 {
-                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                    public partial Neatoo.EntityLazyLoad<IChildEntity> LazyChild { get; set; }
                 }
             }
             """;
@@ -386,7 +386,7 @@ public class PartialPropertyGenerationTests
     }
 
     [TestMethod]
-    public void LazyLoadProperty_GeneratesCreateLazyLoadRegistration()
+    public void LazyLoadProperty_GeneratesCreateEntityLazyLoadRegistration()
     {
         var source = $$"""
             {{GeneratorTestHelper.StandardUsings}}
@@ -398,13 +398,13 @@ public class PartialPropertyGenerationTests
 
                 public interface ITestEntity : Neatoo.IEntityBase
                 {
-                    Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                    Neatoo.EntityLazyLoad<IChildEntity> LazyChild { get; set; }
                 }
 
                 [Neatoo.RemoteFactory.Factory]
                 public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
                 {
-                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                    public partial Neatoo.EntityLazyLoad<IChildEntity> LazyChild { get; set; }
                 }
             }
             """;
@@ -413,9 +413,9 @@ public class PartialPropertyGenerationTests
         var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
 
         Assert.IsNotNull(generated, "Should generate code for TestEntity");
-        Assert.IsTrue(generated.Contains("factory.CreateLazyLoad<IChildEntity>"),
-            "LazyLoad registration should use CreateLazyLoad<TInner>");
-        Assert.IsFalse(generated.Contains("factory.Create<Neatoo.LazyLoad<IChildEntity>>"),
+        Assert.IsTrue(generated.Contains("factory.CreateEntityLazyLoad<IChildEntity>"),
+            "LazyLoad registration should use CreateEntityLazyLoad<TInner>");
+        Assert.IsFalse(generated.Contains("factory.Create<Neatoo.EntityLazyLoad<IChildEntity>>"),
             "LazyLoad registration should NOT use Create<LazyLoad<T>>");
     }
 
@@ -432,13 +432,13 @@ public class PartialPropertyGenerationTests
 
                 public interface ITestEntity : Neatoo.IEntityBase
                 {
-                    Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                    Neatoo.EntityLazyLoad<IChildEntity> LazyChild { get; set; }
                 }
 
                 [Neatoo.RemoteFactory.Factory]
                 public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
                 {
-                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                    public partial Neatoo.EntityLazyLoad<IChildEntity> LazyChild { get; set; }
                 }
             }
             """;
@@ -447,7 +447,7 @@ public class PartialPropertyGenerationTests
         var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
 
         Assert.IsNotNull(generated);
-        Assert.IsTrue(generated.Contains("IValidateProperty<Neatoo.LazyLoad<IChildEntity>>"),
+        Assert.IsTrue(generated.Contains("IValidateProperty<Neatoo.EntityLazyLoad<IChildEntity>>"),
             "Backing field should use the full LazyLoad<T> wrapper type");
         Assert.IsTrue(generated.Contains("LazyChildProperty"),
             "Should have LazyChildProperty backing field");
@@ -467,14 +467,14 @@ public class PartialPropertyGenerationTests
                 public interface ITestEntity : Neatoo.IEntityBase
                 {
                     string? Name { get; set; }
-                    Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                    Neatoo.EntityLazyLoad<IChildEntity> LazyChild { get; set; }
                 }
 
                 [Neatoo.RemoteFactory.Factory]
                 public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
                 {
                     public partial string? Name { get; set; }
-                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; set; }
+                    public partial Neatoo.EntityLazyLoad<IChildEntity> LazyChild { get; set; }
                 }
             }
             """;
@@ -489,11 +489,11 @@ public class PartialPropertyGenerationTests
         // LazyLoad property uses LoadValue and no task tracking
         Assert.IsTrue(generated.Contains("LazyChildProperty.LoadValue(value)"),
             "LazyLoad property should use LoadValue setter");
-        // Registration: scalar uses Create, LazyLoad uses CreateLazyLoad
+        // Registration: scalar uses Create, LazyLoad uses CreateEntityLazyLoad
         Assert.IsTrue(generated.Contains("factory.Create<string?>"),
             "Scalar should use factory.Create");
-        Assert.IsTrue(generated.Contains("factory.CreateLazyLoad<IChildEntity>"),
-            "LazyLoad should use factory.CreateLazyLoad");
+        Assert.IsTrue(generated.Contains("factory.CreateEntityLazyLoad<IChildEntity>"),
+            "LazyLoad should use factory.CreateEntityLazyLoad");
     }
 
     [TestMethod]
@@ -509,13 +509,13 @@ public class PartialPropertyGenerationTests
 
                 public interface ITestEntity : Neatoo.IEntityBase
                 {
-                    Neatoo.LazyLoad<IChildEntity> LazyChild { get; }
+                    Neatoo.EntityLazyLoad<IChildEntity> LazyChild { get; }
                 }
 
                 [Neatoo.RemoteFactory.Factory]
                 public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
                 {
-                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; }
+                    public partial Neatoo.EntityLazyLoad<IChildEntity> LazyChild { get; }
                 }
             }
             """;
@@ -541,13 +541,13 @@ public class PartialPropertyGenerationTests
             {
                 public interface ITestEntity : Neatoo.IEntityBase
                 {
-                    Neatoo.LazyLoad<string> LazyDesc { get; set; }
+                    Neatoo.EntityLazyLoad<string> LazyDesc { get; set; }
                 }
 
                 [Neatoo.RemoteFactory.Factory]
                 public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
                 {
-                    public partial Neatoo.LazyLoad<string> LazyDesc { get; set; }
+                    public partial Neatoo.EntityLazyLoad<string> LazyDesc { get; set; }
                 }
             }
             """;
@@ -556,8 +556,8 @@ public class PartialPropertyGenerationTests
         var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
 
         Assert.IsNotNull(generated);
-        Assert.IsTrue(generated.Contains("factory.CreateLazyLoad<string>"),
-            "LazyLoad<string> should use CreateLazyLoad<string>");
+        Assert.IsTrue(generated.Contains("factory.CreateEntityLazyLoad<string>"),
+            "LazyLoad<string> should use CreateEntityLazyLoad<string>");
         Assert.IsTrue(generated.Contains("LazyDescProperty.LoadValue(value)"),
             "LazyLoad<string> should use LoadValue setter");
     }
@@ -767,7 +767,7 @@ public class PartialPropertyGenerationTests
                 [Neatoo.RemoteFactory.Factory]
                 public partial class TestEntity : Neatoo.EntityBase<TestEntity>, ITestEntity
                 {
-                    public partial Neatoo.LazyLoad<IChildEntity> LazyChild { get; private set; }
+                    public partial Neatoo.EntityLazyLoad<IChildEntity> LazyChild { get; private set; }
                 }
             }
             """;

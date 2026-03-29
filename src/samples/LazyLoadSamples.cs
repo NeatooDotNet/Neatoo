@@ -21,7 +21,7 @@ public interface ISkillLazyParent : IEntityRoot
     Guid Id { get; set; }
     string Trigger { get; set; }
     string LoadedData { get; }
-    LazyLoad<ISkillLazyChild> LazyChild { get; }
+    EntityLazyLoad<ISkillLazyChild> LazyChild { get; }
 }
 
 // -- Child entity (fetched via [Remote]) --------------------------------------
@@ -56,7 +56,7 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
     public SkillLazyParent(
         IEntityBaseServices<SkillLazyParent> services,
         ISkillLazyChildFactory childFactory,
-        ILazyLoadFactory lazyLoadFactory) : base(services)
+        IEntityLazyLoadFactory lazyLoadFactory) : base(services)
     {
         // Create LazyLoad in the constructor.
         // The loader lambda captures the factory from DI and references this.Id,
@@ -86,7 +86,7 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
     // LazyLoad property -- partial, just like every other Neatoo property.
     // The generator handles backing field, setter (LoadValue), and registration.
     // Meta properties (IsValid, IsModified, etc.) propagate from the loaded child.
-    public partial LazyLoad<ISkillLazyChild> LazyChild { get; set; }
+    public partial EntityLazyLoad<ISkillLazyChild> LazyChild { get; set; }
 
     [Remote]
     [Fetch]
@@ -112,7 +112,7 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
 // and any attempt to await it throws InvalidOperationException.
 //
 // [Fetch]
-// internal Task Fetch(Guid id, [Service] ILazyLoadFactory lazyLoadFactory,
+// internal Task Fetch(Guid id, [Service] IEntityLazyLoadFactory lazyLoadFactory,
 //     [Service] IChildFactory childFactory)
 // {
 //     this["Id"].LoadValue(id);

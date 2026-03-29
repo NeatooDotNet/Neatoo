@@ -133,7 +133,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                 lazyLoadProperties = result.GetType()
                     .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                     .Where(p => p.PropertyType.IsGenericType
-                        && p.PropertyType.GetGenericTypeDefinition() == typeof(LazyLoad<>)
+                        && p.PropertyType.GetGenericTypeDefinition() == typeof(EntityLazyLoad<>)
                         && p.SetMethod != null)
                     .ToList();
 
@@ -405,7 +405,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
         foreach (var property in value.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
         {
             if (property.PropertyType.IsGenericType
-                && property.PropertyType.GetGenericTypeDefinition() == typeof(LazyLoad<>))
+                && property.PropertyType.GetGenericTypeDefinition() == typeof(EntityLazyLoad<>))
             {
                 var propValue = property.GetValue(value);
                 if (propValue != null)

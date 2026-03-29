@@ -109,7 +109,7 @@ public static class AddNeatooServicesExtension
 
         services.AddTransient<IAllRequiredRulesExecuted, AllRequiredRulesExecuted>();
 
-        services.AddTransient<ILazyLoadFactory, LazyLoadFactory>();
+        services.AddTransient<IEntityLazyLoadFactory, EntityLazyLoadFactory>();
 
         if (!assemblies.Contains(typeof(AddNeatooServicesExtension).Assembly))
         {
