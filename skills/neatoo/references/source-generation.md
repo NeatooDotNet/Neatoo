@@ -76,7 +76,7 @@ Key behaviors:
 - **`private set`** uses `SetPrivateValue()` which bypasses `IsReadOnly` checks. The property's `IsReadOnly` is `true` at runtime.
 - **`protected set`** and **`internal set`** use `.Value = value` (same as public). `IsReadOnly` is `false` at runtime.
 - Non-public setters generate `get;` only on the interface declaration.
-- LazyLoad properties with `private set` use `LoadValue(value)` (same as public LazyLoad), since LazyLoad already bypasses `IsReadOnly`.
+- EntityLazyLoad properties with `private set` use `LoadValue(value)` (same as public EntityLazyLoad), since EntityLazyLoad already bypasses `IsReadOnly`.
 
 See [properties.md](properties.md) for runtime behavior of private-set properties.
 

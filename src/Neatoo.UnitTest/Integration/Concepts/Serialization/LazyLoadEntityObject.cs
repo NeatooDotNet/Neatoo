@@ -6,8 +6,8 @@ public interface ILazyLoadEntityObject : IEntityBase
 {
     Guid ID { get; set; }
     string Name { get; set; }
-    LazyLoad<string> LazyDescription { get; set; }
-    LazyLoad<ILazyLoadEntityObject> LazyChild { get; set; }
+    EntityLazyLoad<string> LazyDescription { get; set; }
+    EntityLazyLoad<ILazyLoadEntityObject> LazyChild { get; set; }
 }
 
 [Factory]
@@ -20,12 +20,12 @@ public partial class LazyLoadEntityObject : EntityBase<LazyLoadEntityObject>, IL
     public partial Guid ID { get; set; }
     public partial string Name { get; set; }
 
-    public partial LazyLoad<string> LazyDescription { get; set; }
+    public partial EntityLazyLoad<string> LazyDescription { get; set; }
 
-    public partial LazyLoad<ILazyLoadEntityObject> LazyChild { get; set; }
+    public partial EntityLazyLoad<ILazyLoadEntityObject> LazyChild { get; set; }
 
     [Fetch]
-    public Task Fetch(Guid id, string name, [Service] ILazyLoadFactory lazyLoadFactory)
+    public Task Fetch(Guid id, string name, [Service] IEntityLazyLoadFactory lazyLoadFactory)
     {
         using (PauseAllActions())
         {
@@ -37,7 +37,7 @@ public partial class LazyLoadEntityObject : EntityBase<LazyLoadEntityObject>, IL
     }
 
     [Fetch]
-    public Task Fetch(Guid id, string name, string description, [Service] ILazyLoadFactory lazyLoadFactory)
+    public Task Fetch(Guid id, string name, string description, [Service] IEntityLazyLoadFactory lazyLoadFactory)
     {
         using (PauseAllActions())
         {

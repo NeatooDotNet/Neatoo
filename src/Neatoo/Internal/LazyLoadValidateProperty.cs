@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Neatoo.RemoteFactory.Internal;
 
 namespace Neatoo.Internal;
 
@@ -29,7 +30,7 @@ internal static class LazyLoadPropertyHelper
     /// Gets the inner entity as IValidateBase by looking through the LazyLoad wrapper.
     /// Uses BoxedValue for direct internal access to the backing value.
     /// </summary>
-    internal static IValidateBase? GetValueAsBase<T>(LazyLoad<T>? lazyLoad) where T : class?
+    internal static IValidateBase? GetValueAsBase<T>(EntityLazyLoad<T>? lazyLoad) where T : class?
     {
         if (lazyLoad == null) return null;
         return ((ILazyLoadDeserializable)lazyLoad).BoxedValue as IValidateBase;
@@ -39,7 +40,7 @@ internal static class LazyLoadPropertyHelper
     /// Gets the inner entity as IValidateMetaProperties by looking through the LazyLoad wrapper.
     /// Uses BoxedValue for direct internal access to the backing value.
     /// </summary>
-    internal static IValidateMetaProperties? GetValueIsValidateBase<T>(LazyLoad<T>? lazyLoad) where T : class?
+    internal static IValidateMetaProperties? GetValueIsValidateBase<T>(EntityLazyLoad<T>? lazyLoad) where T : class?
     {
         if (lazyLoad == null) return null;
         return ((ILazyLoadDeserializable)lazyLoad).BoxedValue as IValidateMetaProperties;
@@ -49,7 +50,7 @@ internal static class LazyLoadPropertyHelper
     /// Gets the inner entity as IEntityMetaProperties by looking through the LazyLoad wrapper.
     /// Uses BoxedValue for direct internal access to the backing value.
     /// </summary>
-    internal static IEntityMetaProperties? GetEntityChild<T>(LazyLoad<T>? lazyLoad) where T : class?
+    internal static IEntityMetaProperties? GetEntityChild<T>(EntityLazyLoad<T>? lazyLoad) where T : class?
     {
         if (lazyLoad == null) return null;
         return ((ILazyLoadDeserializable)lazyLoad).BoxedValue as IEntityMetaProperties;
@@ -102,7 +103,7 @@ internal static class LazyLoadPropertyHelper
 /// to the subclass overrides when accessed through IValidateProperty interface references,
 /// which is how PropertyManager accesses them.
 /// </remarks>
-internal class LazyLoadValidateProperty<T> : ValidateProperty<LazyLoad<T>>, IValidateProperty, ILazyLoadProperty
+internal class LazyLoadValidateProperty<T> : ValidateProperty<EntityLazyLoad<T>>, IValidateProperty, ILazyLoadProperty
     where T : class?
 {
     private object? _currentInnerChild;
@@ -118,12 +119,12 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<LazyLoad<T>>, IVal
     /// <summary>
     /// Returns the inner entity (or null) instead of the LazyLoad wrapper.
     /// Uses BoxedValue for direct internal access to the backing value.
-    /// The setter delegates to <see cref="LazyLoad{T}.SetValue(T?)"/> which sets the inner value,
+    /// The setter delegates to <see cref="EntityLazyLoad{T}.SetValue(T?)"/> which sets the inner value,
     /// marks the LazyLoad as loaded, clears errors, and fires PropertyChanged events.
     /// </summary>
     /// <remarks>
     /// Uses 'new' because the base <see cref="ValidateProperty{T}.Value"/> is virtual with return type
-    /// <c>LazyLoad&lt;T&gt;?</c>, but we need <c>object?</c> for the inner entity.
+    /// <c>EntityLazyLoad&lt;T&gt;?</c>, but we need <c>object?</c> for the inner entity.
     /// The LazyLoad subclass re-declares <see cref="IValidateProperty"/> to force interface re-implementation,
     /// so <c>IValidateProperty.Value</c> dispatches to this member when accessed through the interface.
     /// Note: <see cref="ValidateProperty{T}.PassThruValueNeatooPropertyChanged"/> and
@@ -217,7 +218,7 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<LazyLoad<T>>, IVal
     /// Extends base HandleNonNullValue to connect to the already-loaded inner child
     /// after the base handles LazyLoad-level subscriptions.
     /// </summary>
-    protected override void HandleNonNullValue(LazyLoad<T> value, bool quietly = false)
+    protected override void HandleNonNullValue(EntityLazyLoad<T> value, bool quietly = false)
     {
         // Disconnect any existing inner child before base reassigns _value
         LazyLoadPropertyHelper.DisconnectInnerChild(ref _currentInnerChild, this.PassThruValueNeatooPropertyChanged);
@@ -249,7 +250,7 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<LazyLoad<T>>, IVal
 
         base.LoadValue(value);
 
-        if (value is LazyLoad<T> lazyLoad)
+        if (value is EntityLazyLoad<T> lazyLoad)
         {
             var innerChild = ((ILazyLoadDeserializable)lazyLoad).BoxedValue;
             _currentInnerChild = LazyLoadPropertyHelper.ConnectInnerChild(innerChild, this.PassThruValueNeatooPropertyChanged);

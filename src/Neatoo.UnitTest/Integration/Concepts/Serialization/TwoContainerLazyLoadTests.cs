@@ -58,7 +58,7 @@ public class TwoContainerLazyLoadTests : ClientServerTestBase
         // Create a new unloaded LazyLoad on the client side
         // (The fetched one is pre-loaded, so LoadAsync would succeed.
         // We need to test an unloaded one.)
-        entity.LazyDescription = new LazyLoad<string>(); // Unloaded, no loader
+        entity.LazyDescription = new EntityLazyLoad<string>(); // Unloaded, no loader
 
         // Assert - LoadAsync should throw because loader was not serialized
         await Assert.ThrowsExactlyAsync<InvalidOperationException>(

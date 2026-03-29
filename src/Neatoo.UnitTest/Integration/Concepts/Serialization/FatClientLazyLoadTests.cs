@@ -30,7 +30,7 @@ public class FatClientLazyLoadTests : IntegrationTestBase
         var entity = GetRequiredService<ILazyLoadEntityObject>();
         entity.ID = Guid.NewGuid();
         entity.Name = "TestEntity";
-        entity.LazyDescription = new LazyLoad<string>("hello");
+        entity.LazyDescription = new EntityLazyLoad<string>("hello");
 
         // Act
         var json = Serialize(entity);
@@ -52,7 +52,7 @@ public class FatClientLazyLoadTests : IntegrationTestBase
         var entity = GetRequiredService<ILazyLoadEntityObject>();
         entity.ID = Guid.NewGuid();
         entity.Name = "TestEntity";
-        entity.LazyDescription = new LazyLoad<string>("hello");
+        entity.LazyDescription = new EntityLazyLoad<string>("hello");
 
         // Act
         var json = Serialize(entity);
@@ -76,7 +76,7 @@ public class FatClientLazyLoadTests : IntegrationTestBase
         var validate = GetRequiredService<ILazyLoadValidateObject>();
         validate.ID = Guid.NewGuid();
         validate.Name = "TestValidate";
-        validate.LazyContent = new LazyLoad<string>("test content");
+        validate.LazyContent = new EntityLazyLoad<string>("test content");
 
         // Act
         var json = Serialize(validate);
@@ -102,7 +102,7 @@ public class FatClientLazyLoadTests : IntegrationTestBase
         var entity = GetRequiredService<ILazyLoadEntityObject>();
         entity.ID = Guid.NewGuid();
         entity.Name = "TestEntity";
-        entity.LazyDescription = new LazyLoad<string>(); // Not loaded
+        entity.LazyDescription = new EntityLazyLoad<string>(); // Not loaded
 
         // Act
         var json = Serialize(entity);
@@ -129,15 +129,15 @@ public class FatClientLazyLoadTests : IntegrationTestBase
         var entity = GetRequiredService<ILazyLoadEntityObject>();
         entity.ID = Guid.NewGuid();
         entity.Name = "Parent";
-        entity.LazyDescription = new LazyLoad<string>("parent description");
+        entity.LazyDescription = new EntityLazyLoad<string>("parent description");
 
         var childEntity = GetRequiredService<ILazyLoadEntityObject>();
         childEntity.ID = Guid.NewGuid();
         childEntity.Name = "Child";
-        childEntity.LazyDescription = new LazyLoad<string>("child description");
+        childEntity.LazyDescription = new EntityLazyLoad<string>("child description");
 
         // Set the LazyChild to point to the child entity
-        entity.LazyChild = new LazyLoad<ILazyLoadEntityObject>(childEntity);
+        entity.LazyChild = new EntityLazyLoad<ILazyLoadEntityObject>(childEntity);
 
         // Act
         var json = Serialize(entity);
@@ -171,7 +171,7 @@ public class FatClientLazyLoadTests : IntegrationTestBase
         var entity = GetRequiredService<ILazyLoadEntityObject>();
         entity.ID = Guid.NewGuid();
         entity.Name = "TestEntity";
-        entity.LazyDescription = new LazyLoad<string>(); // Not loaded, no loader
+        entity.LazyDescription = new EntityLazyLoad<string>(); // Not loaded, no loader
 
         var json = Serialize(entity);
         var deserialized = Deserialize<ILazyLoadEntityObject>(json);
@@ -199,7 +199,7 @@ public class FatClientLazyLoadTests : IntegrationTestBase
         var entity = GetRequiredService<ILazyLoadEntityObject>();
         entity.ID = id;
         entity.Name = "TestEntity";
-        entity.LazyDescription = new LazyLoad<string>("desc");
+        entity.LazyDescription = new EntityLazyLoad<string>("desc");
 
         // Act
         var json = Serialize(entity);

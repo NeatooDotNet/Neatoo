@@ -6,7 +6,7 @@ public interface ILazyLoadValidateObject : IValidateBase
 {
     Guid ID { get; set; }
     string Name { get; set; }
-    LazyLoad<string> LazyContent { get; set; }
+    EntityLazyLoad<string> LazyContent { get; set; }
 }
 
 [Factory]
@@ -19,10 +19,10 @@ public partial class LazyLoadValidateObject : ValidateBase<LazyLoadValidateObjec
     public partial Guid ID { get; set; }
     public partial string Name { get; set; }
 
-    public partial LazyLoad<string> LazyContent { get; set; }
+    public partial EntityLazyLoad<string> LazyContent { get; set; }
 
     [Fetch]
-    public Task Fetch(Guid id, string name, string content, [Service] ILazyLoadFactory lazyLoadFactory)
+    public Task Fetch(Guid id, string name, string content, [Service] IEntityLazyLoadFactory lazyLoadFactory)
     {
         ID = id;
         Name = name;

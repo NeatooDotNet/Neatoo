@@ -31,13 +31,13 @@ public interface IPropertyFactory<[DynamicallyAccessedMembers(DynamicallyAccesse
     IValidateProperty<TProperty> Create<TProperty>(TOwner owner, string propertyName);
 
     /// <summary>
-    /// Creates a LazyLoad property backing field that wraps an inner type.
+    /// Creates an EntityLazyLoad property backing field that wraps an inner type.
     /// The returned property subclass provides look-through behavior for
     /// IsValid, IsBusy, IsModified, WaitForTasks, etc.
     /// </summary>
-    /// <typeparam name="TInner">The inner type of the LazyLoad wrapper (the T in LazyLoad&lt;T&gt;).</typeparam>
+    /// <typeparam name="TInner">The inner type of the EntityLazyLoad wrapper (the T in EntityLazyLoad&lt;T&gt;).</typeparam>
     /// <param name="owner">The Neatoo object that owns this property.</param>
     /// <param name="propertyName">The name of the property.</param>
-    /// <returns>A new <see cref="IValidateProperty"/> instance for LazyLoad look-through.</returns>
-    IValidateProperty CreateLazyLoad<TInner>(TOwner owner, string propertyName) where TInner : class?;
+    /// <returns>A new <see cref="IValidateProperty"/> instance for EntityLazyLoad look-through.</returns>
+    IValidateProperty CreateEntityLazyLoad<TInner>(TOwner owner, string propertyName) where TInner : class?;
 }

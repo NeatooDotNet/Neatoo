@@ -56,7 +56,7 @@ public interface ICrashParent : IEntityRoot
 {
     string Trigger { get; set; }
     string LoadedData { get; }
-    LazyLoad<ICrashChild> LazyChild { get; }
+    EntityLazyLoad<ICrashChild> LazyChild { get; }
     Guid Id { get; set; }
 }
 
@@ -66,7 +66,7 @@ internal partial class CrashParent : EntityBase<CrashParent>, ICrashParent
     public CrashParent(
         IEntityBaseServices<CrashParent> services,
         ICrashChildFactory childFactory,
-        ILazyLoadFactory lazyLoadFactory) : base(services)
+        IEntityLazyLoadFactory lazyLoadFactory) : base(services)
     {
         // Create LazyLoad in the constructor so it survives deserialization.
         // The loader lambda captures the factory from DI and uses this.Id,
@@ -92,7 +92,7 @@ internal partial class CrashParent : EntityBase<CrashParent>, ICrashParent
     public partial string LoadedData { get; set; }
     public partial Guid Id { get; set; }
 
-    public partial LazyLoad<ICrashChild> LazyChild { get; set; }
+    public partial EntityLazyLoad<ICrashChild> LazyChild { get; set; }
 
     [Remote]
     [Fetch]

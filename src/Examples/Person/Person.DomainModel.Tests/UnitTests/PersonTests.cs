@@ -13,7 +13,7 @@ namespace DomainModel.Tests.UnitTests
         private Stubs.IPersonDbContext personDbContextStub;
         private PersonPhoneListFactoryStub phoneListFactoryStub;
         private TestUniqueNameRule testUniqueNameRule;
-        private LazyLoadFactory lazyLoadFactory;
+        private EntityLazyLoadFactory lazyLoadFactory;
         private TestPerson testPerson;
 
         public PersonTests()
@@ -21,7 +21,7 @@ namespace DomainModel.Tests.UnitTests
             personDbContextStub = new Stubs.IPersonDbContext();
             phoneListFactoryStub = new PersonPhoneListFactoryStub();
             testUniqueNameRule = new TestUniqueNameRule();
-            lazyLoadFactory = new LazyLoadFactory();
+            lazyLoadFactory = new EntityLazyLoadFactory();
 
             testPerson = new TestPerson(new EntityBaseServices<Person>(null), testUniqueNameRule, phoneListFactoryStub, lazyLoadFactory)
             {

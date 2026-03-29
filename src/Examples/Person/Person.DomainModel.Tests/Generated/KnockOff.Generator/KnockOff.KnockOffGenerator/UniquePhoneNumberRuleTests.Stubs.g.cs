@@ -4184,7 +4184,7 @@ partial class UniquePhoneNumberRuleTests
 		public class IPerson : global::DomainModel.IPerson, global::KnockOff.IKnockOffStub
 		{
 			/// <summary>Interceptor for PersonPhoneList.</summary>
-			public global::KnockOff.Interceptors.PropertyGetInterceptor<global::Neatoo.LazyLoad<global::DomainModel.IPersonPhoneList>> PersonPhoneList { get; } = new("PersonPhoneList", () => new global::Neatoo.LazyLoad<global::DomainModel.IPersonPhoneList>());
+			public global::KnockOff.Interceptors.PropertyGetInterceptor<global::Neatoo.EntityLazyLoad<global::DomainModel.IPersonPhoneList>> PersonPhoneList { get; } = new("PersonPhoneList", () => new global::Neatoo.EntityLazyLoad<global::DomainModel.IPersonPhoneList>());
 
 			/// <summary>Interceptor for Id.</summary>
 			public global::KnockOff.Interceptors.PropertyGetSetInterceptor<global::System.Guid?> Id { get; } = new("Id");
@@ -4285,7 +4285,7 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for NeatooPropertyChanged event.</summary>
 			public IPerson_NeatooPropertyChangedInterceptor NeatooPropertyChanged { get; } = new();
 
-			global::Neatoo.LazyLoad<global::DomainModel.IPersonPhoneList> global::DomainModel.IPerson.PersonPhoneList
+			global::Neatoo.EntityLazyLoad<global::DomainModel.IPersonPhoneList> global::DomainModel.IPerson.PersonPhoneList
 			{
 				get => PersonPhoneList.InvokeGet(Strict);
 			}

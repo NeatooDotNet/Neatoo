@@ -14,7 +14,7 @@ public interface IDeferredLazyLoadEntity : IEntityBase
 {
     Guid ID { get; set; }
     string Name { get; set; }
-    LazyLoad<string> LazyDescription { get; }
+    EntityLazyLoad<string> LazyDescription { get; }
 }
 
 [Factory]
@@ -28,7 +28,7 @@ public partial class DeferredLazyLoadEntity : EntityBase<DeferredLazyLoadEntity>
     /// </summary>
     public DeferredLazyLoadEntity(
         IEntityBaseServices<DeferredLazyLoadEntity> services,
-        [Service] ILazyLoadFactory lazyLoadFactory) : base(services)
+        [Service] IEntityLazyLoadFactory lazyLoadFactory) : base(services)
     {
         LazyDescription = lazyLoadFactory.Create<string>(async () =>
         {
@@ -38,7 +38,7 @@ public partial class DeferredLazyLoadEntity : EntityBase<DeferredLazyLoadEntity>
 
     public partial Guid ID { get; set; }
     public partial string Name { get; set; }
-    public partial LazyLoad<string> LazyDescription { get; set; }
+    public partial EntityLazyLoad<string> LazyDescription { get; set; }
 
     /// <summary>
     /// Create method that leaves the deferred LazyLoad from the constructor in place.
@@ -76,7 +76,7 @@ public partial class DeferredLazyLoadEntity : EntityBase<DeferredLazyLoadEntity>
     /// Used for comparison -- this path should NOT exhibit the bug.
     /// </summary>
     [Fetch]
-    public Task Fetch(Guid id, string name, string description, [Service] ILazyLoadFactory lazyLoadFactory)
+    public Task Fetch(Guid id, string name, string description, [Service] IEntityLazyLoadFactory lazyLoadFactory)
     {
         using (PauseAllActions())
         {

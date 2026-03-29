@@ -20,7 +20,7 @@ public class LazyLoadTests
         // Arrange -- Value is a passive read. Accessing it on an unloaded instance
         // returns null with no side effects (no load triggered, no state change).
         var loadCount = 0;
-        var lazyLoad = new LazyLoad<TestValue>(() =>
+        var lazyLoad = new EntityLazyLoad<TestValue>(() =>
         {
             Interlocked.Increment(ref loadCount);
             return Task.FromResult<TestValue?>(new TestValue("loaded"));
@@ -40,7 +40,7 @@ public class LazyLoadTests
     public void IsLoaded_BeforeLoad_ReturnsFalse()
     {
         // Arrange
-        var lazyLoad = new LazyLoad<TestValue>(() => Task.FromResult<TestValue?>(new TestValue("loaded")));
+        var lazyLoad = new EntityLazyLoad<TestValue>(() => Task.FromResult<TestValue?>(new TestValue("loaded")));
 
         // Act & Assert
         Assert.IsFalse(lazyLoad.IsLoaded);
@@ -51,7 +51,7 @@ public class LazyLoadTests
     {
         // Arrange
         var expected = new TestValue("loaded");
-        var lazyLoad = new LazyLoad<TestValue>(() => Task.FromResult<TestValue?>(expected));
+        var lazyLoad = new EntityLazyLoad<TestValue>(() => Task.FromResult<TestValue?>(expected));
 
         // Act
         var result = await lazyLoad.LoadAsync();
@@ -69,7 +69,7 @@ public class LazyLoadTests
         var loadStarted = new TaskCompletionSource<bool>();
         var continueLoad = new TaskCompletionSource<TestValue?>();
 
-        var lazyLoad = new LazyLoad<TestValue>(async () =>
+        var lazyLoad = new EntityLazyLoad<TestValue>(async () =>
         {
             loadStarted.SetResult(true);
             return await continueLoad.Task;
@@ -99,7 +99,7 @@ public class LazyLoadTests
         var loadStarted = new TaskCompletionSource<bool>();
         var continueLoad = new TaskCompletionSource<TestValue?>();
 
-        var lazyLoad = new LazyLoad<TestValue>(async () =>
+        var lazyLoad = new EntityLazyLoad<TestValue>(async () =>
         {
             Interlocked.Increment(ref loadCount);
             loadStarted.TrySetResult(true);
@@ -127,7 +127,7 @@ public class LazyLoadTests
     {
         // Arrange
         var loadCount = 0;
-        var lazyLoad = new LazyLoad<TestValue>(() =>
+        var lazyLoad = new EntityLazyLoad<TestValue>(() =>
         {
             Interlocked.Increment(ref loadCount);
             return Task.FromResult<TestValue?>(new TestValue("loaded"));
@@ -147,7 +147,7 @@ public class LazyLoadTests
     {
         // Arrange
         var expectedException = new InvalidOperationException("Load failed");
-        var lazyLoad = new LazyLoad<TestValue>(() => throw expectedException);
+        var lazyLoad = new EntityLazyLoad<TestValue>(() => throw expectedException);
 
         // Act
         TestValue? result = null;
@@ -173,16 +173,16 @@ public class LazyLoadTests
     {
         // Arrange
         var changedProperties = new List<string>();
-        var lazyLoad = new LazyLoad<TestValue>(() => Task.FromResult<TestValue?>(new TestValue("loaded")));
+        var lazyLoad = new EntityLazyLoad<TestValue>(() => Task.FromResult<TestValue?>(new TestValue("loaded")));
         lazyLoad.PropertyChanged += (s, e) => changedProperties.Add(e.PropertyName!);
 
         // Act
         await lazyLoad.LoadAsync();
 
         // Assert
-        CollectionAssert.Contains(changedProperties, nameof(LazyLoad<TestValue>.Value));
-        CollectionAssert.Contains(changedProperties, nameof(LazyLoad<TestValue>.IsLoaded));
-        CollectionAssert.Contains(changedProperties, nameof(LazyLoad<TestValue>.IsLoading));
+        CollectionAssert.Contains(changedProperties, nameof(EntityLazyLoad<TestValue>.Value));
+        CollectionAssert.Contains(changedProperties, nameof(EntityLazyLoad<TestValue>.IsLoaded));
+        CollectionAssert.Contains(changedProperties, nameof(EntityLazyLoad<TestValue>.IsLoading));
     }
 
     [TestMethod]
@@ -190,7 +190,7 @@ public class LazyLoadTests
     {
         // Arrange
         var busyValue = new TestValidateValue { IsBusyValue = true };
-        var lazyLoad = new LazyLoad<TestValidateValue>(() => Task.FromResult<TestValidateValue?>(busyValue));
+        var lazyLoad = new EntityLazyLoad<TestValidateValue>(() => Task.FromResult<TestValidateValue?>(busyValue));
 
         // Act
         await lazyLoad.LoadAsync();
@@ -204,7 +204,7 @@ public class LazyLoadTests
     {
         // Arrange
         var continueLoad = new TaskCompletionSource<TestValue?>();
-        var lazyLoad = new LazyLoad<TestValue>(async () => await continueLoad.Task);
+        var lazyLoad = new EntityLazyLoad<TestValue>(async () => await continueLoad.Task);
 
         // Act
         var _ = lazyLoad.LoadAsync();
@@ -220,7 +220,7 @@ public class LazyLoadTests
     public void IsValid_WhenHasLoadError_ReturnsFalse()
     {
         // Arrange
-        var lazyLoad = new LazyLoad<TestValue>(() => throw new Exception("fail"));
+        var lazyLoad = new EntityLazyLoad<TestValue>(() => throw new Exception("fail"));
 
         // Act
         try { lazyLoad.LoadAsync().GetAwaiter().GetResult(); } catch { }
@@ -235,13 +235,13 @@ public class LazyLoadTests
         // Arrange (Scenario 2, Rule 2) -- pre-loaded instance
         var loadCount = 0;
         var expected = new TestValue("hello");
-        var lazyLoad = new LazyLoad<TestValue>(() =>
+        var lazyLoad = new EntityLazyLoad<TestValue>(() =>
         {
             Interlocked.Increment(ref loadCount);
             return Task.FromResult<TestValue?>(new TestValue("should not load"));
         });
         // Pre-load using the pre-loaded constructor
-        lazyLoad = new LazyLoad<TestValue>(expected);
+        lazyLoad = new EntityLazyLoad<TestValue>(expected);
 
         // Act
         var value = lazyLoad.Value;
@@ -259,7 +259,7 @@ public class LazyLoadTests
         var loadCount = 0;
         var continueLoad = new TaskCompletionSource<TestValue?>();
 
-        var lazyLoad = new LazyLoad<TestValue>(async () =>
+        var lazyLoad = new EntityLazyLoad<TestValue>(async () =>
         {
             Interlocked.Increment(ref loadCount);
             return await continueLoad.Task;
@@ -285,7 +285,7 @@ public class LazyLoadTests
     public void ValueAccess_NoLoader_ReturnsNullWithoutException()
     {
         // Arrange (Scenario 4, Rule 4) -- deserialized instance with no loader
-        var lazyLoad = new LazyLoad<TestValue>(); // Parameterless constructor, _loader = null
+        var lazyLoad = new EntityLazyLoad<TestValue>(); // Parameterless constructor, _loader = null
 
         // Act -- access Value on instance with no loader
         var value = lazyLoad.Value;
@@ -302,7 +302,7 @@ public class LazyLoadTests
     {
         // Arrange (Scenario 8, Rule 8)
         var loadCount = 0;
-        var lazyLoad = new LazyLoad<TestValue>(() =>
+        var lazyLoad = new EntityLazyLoad<TestValue>(() =>
         {
             Interlocked.Increment(ref loadCount);
             return Task.FromResult<TestValue?>(new TestValue("loaded"));
@@ -321,7 +321,7 @@ public class LazyLoadTests
     {
         // Arrange (Scenario 9, Rule 8)
         var loadCount = 0;
-        var lazyLoad = new LazyLoad<TestValue>(() =>
+        var lazyLoad = new EntityLazyLoad<TestValue>(() =>
         {
             Interlocked.Increment(ref loadCount);
             return Task.FromResult<TestValue?>(new TestValue("loaded"));
@@ -340,7 +340,7 @@ public class LazyLoadTests
     {
         // Arrange (Scenario 12, Rule 5)
         var expected = new TestValue("explicit");
-        var lazyLoad = new LazyLoad<TestValue>(() => Task.FromResult<TestValue?>(expected));
+        var lazyLoad = new EntityLazyLoad<TestValue>(() => Task.FromResult<TestValue?>(expected));
 
         // Act
         var result = await lazyLoad.LoadAsync();
@@ -355,7 +355,7 @@ public class LazyLoadTests
     public async Task LoadAsync_OnFailure_PropagatesException()
     {
         // Arrange (Scenario 5, Rule 6) -- LoadAsync must propagate exceptions
-        var lazyLoad = new LazyLoad<TestValue>(() => throw new InvalidOperationException("explicit fail"));
+        var lazyLoad = new EntityLazyLoad<TestValue>(() => throw new InvalidOperationException("explicit fail"));
 
         // Act & Assert -- exception propagates to caller
         await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => lazyLoad.LoadAsync());
@@ -371,7 +371,7 @@ public class LazyLoadTests
         // then WaitForTasks awaits the in-progress _loadTask.
         var continueLoad = new TaskCompletionSource<TestValue?>();
         var expected = new TestValue("waited");
-        var lazyLoad = new LazyLoad<TestValue>(async () => await continueLoad.Task);
+        var lazyLoad = new EntityLazyLoad<TestValue>(async () => await continueLoad.Task);
 
         // Act -- start explicit load (fire-and-forget the returned task)
         _ = lazyLoad.LoadAsync();
@@ -395,7 +395,7 @@ public class LazyLoadTests
     {
         // Arrange
         var modifiedValue = new TestEntityValue { IsModifiedValue = true };
-        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(modifiedValue));
+        var lazyLoad = new EntityLazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(modifiedValue));
 
         // Act
         await lazyLoad.LoadAsync();
@@ -408,19 +408,19 @@ public class LazyLoadTests
     public void IsModified_BeforeLoad_ReturnsFalse()
     {
         // Arrange
-        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
+        var lazyLoad = new EntityLazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
 
         // Assert
         Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsModified);
     }
 
-    // IsSavable tests removed — IsSavable moved to IEntityRoot, no longer on IEntityMetaProperties or LazyLoad<T>
+    // IsSavable tests removed — IsSavable moved to IEntityRoot, no longer on IEntityMetaProperties or EntityLazyLoad<T>
 
     [TestMethod]
     public void IsChild_BeforeLoad_ReturnsFalse()
     {
         // Arrange
-        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
+        var lazyLoad = new EntityLazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
 
         // Assert
         Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsChild);
@@ -430,7 +430,7 @@ public class LazyLoadTests
     public void IsSelfModified_AlwaysReturnsFalse()
     {
         // Arrange - LazyLoad wrapper itself is never modified
-        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue { IsModifiedValue = true }));
+        var lazyLoad = new EntityLazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue { IsModifiedValue = true }));
 
         // Assert
         Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsSelfModified);
@@ -441,7 +441,7 @@ public class LazyLoadTests
     {
         // Arrange
         var newValue = new TestEntityValue { IsNewValue = true };
-        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(newValue));
+        var lazyLoad = new EntityLazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(newValue));
 
         // Act
         await lazyLoad.LoadAsync();
@@ -454,7 +454,7 @@ public class LazyLoadTests
     public void IsNew_BeforeLoad_ReturnsFalse()
     {
         // Arrange
-        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
+        var lazyLoad = new EntityLazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
 
         // Assert
         Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsNew);
@@ -465,7 +465,7 @@ public class LazyLoadTests
     {
         // Arrange
         var deletedValue = new TestEntityValue { IsDeletedValue = true };
-        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(deletedValue));
+        var lazyLoad = new EntityLazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(deletedValue));
 
         // Act
         await lazyLoad.LoadAsync();
@@ -478,7 +478,7 @@ public class LazyLoadTests
     public void IsDeleted_BeforeLoad_ReturnsFalse()
     {
         // Arrange
-        var lazyLoad = new LazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
+        var lazyLoad = new EntityLazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
 
         // Assert
         Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsDeleted);
@@ -492,12 +492,12 @@ public class LazyLoadTests
     public void Serialization_PreserveValueAndLoadedState()
     {
         // Arrange
-        var factory = new LazyLoadFactory();
+        var factory = new EntityLazyLoadFactory();
         var original = factory.Create(new TestValue("serialized"));
 
         // Act
         var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<LazyLoad<TestValue>>(json);
+        var deserialized = JsonSerializer.Deserialize<EntityLazyLoad<TestValue>>(json);
 
         // Assert
         Assert.IsNotNull(deserialized);
@@ -513,7 +513,7 @@ public class LazyLoadTests
     public async Task Factory_Create_WithLoader_CreatesLazyLoad()
     {
         // Arrange
-        var factory = new LazyLoadFactory();
+        var factory = new EntityLazyLoadFactory();
         var expected = new TestValue("loaded");
 
         // Act
@@ -528,7 +528,7 @@ public class LazyLoadTests
     public void Factory_Create_WithValue_CreatesPreLoadedLazyLoad()
     {
         // Arrange
-        var factory = new LazyLoadFactory();
+        var factory = new EntityLazyLoadFactory();
         var expected = new TestValue("preloaded");
 
         // Act
@@ -548,11 +548,11 @@ public class LazyLoadTests
         var provider = services.BuildServiceProvider();
 
         // Act
-        var factory = provider.GetService<ILazyLoadFactory>();
+        var factory = provider.GetService<IEntityLazyLoadFactory>();
 
         // Assert
         Assert.IsNotNull(factory);
-        Assert.IsInstanceOfType(factory, typeof(LazyLoadFactory));
+        Assert.IsInstanceOfType(factory, typeof(EntityLazyLoadFactory));
     }
 
     #endregion
@@ -564,7 +564,7 @@ public class LazyLoadTests
     {
         // Arrange
         var expected = new TestValue("nullable-loaded");
-        var lazyLoad = new LazyLoad<TestValue?>(() => Task.FromResult<TestValue?>(expected));
+        var lazyLoad = new EntityLazyLoad<TestValue?>(() => Task.FromResult<TestValue?>(expected));
 
         // Act
         var result = await lazyLoad.LoadAsync();
@@ -582,7 +582,7 @@ public class LazyLoadTests
         var expected = new TestValue("nullable-preloaded");
 
         // Act
-        var lazyLoad = new LazyLoad<TestValue?>(expected);
+        var lazyLoad = new EntityLazyLoad<TestValue?>(expected);
 
         // Assert
         Assert.IsTrue(lazyLoad.IsLoaded);
@@ -593,7 +593,7 @@ public class LazyLoadTests
     public async Task NullableType_Factory_WithLoader_CreatesLazyLoad()
     {
         // Arrange
-        var factory = new LazyLoadFactory();
+        var factory = new EntityLazyLoadFactory();
         var expected = new TestValue("factory-nullable");
 
         // Act
@@ -608,7 +608,7 @@ public class LazyLoadTests
     public void NullableType_Factory_WithValue_CreatesPreLoadedLazyLoad()
     {
         // Arrange
-        var factory = new LazyLoadFactory();
+        var factory = new EntityLazyLoadFactory();
         var expected = new TestValue("factory-nullable-preloaded");
 
         // Act
