@@ -431,13 +431,15 @@ public void PauseAllActions_BatchUpdatesWithoutValidation()
     }
 
     // After resume (automatic when using block ends):
-    // - Validation rules execute for changed properties
-    // - PropertyChanged events fire
+    // - IsPaused is false — future property changes will trigger rules
+    // - Rules do NOT run for changes made while paused
+    // - PropertyChanged does NOT fire for changes made while paused
+    // - To run rules after batch updates: await order.RunRules(RunRulesFlag.All);
     Assert.False(order.IsPaused);
     Assert.Equal("PROD-001", order.ProductCode);
 }
 ```
-<sup><a href='/src/samples/ValidationSamples.cs#L718-L743' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-pause-actions' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L718-L745' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-pause-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 PauseAllActions behavior:
@@ -477,7 +479,7 @@ public void LoadValue_DataLoadingWithoutValidation()
     // (In real usage, factory method would call RunRules after loading)
 }
 ```
-<sup><a href='/src/samples/ValidationSamples.cs#L745-L763' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-load-value' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L747-L765' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-load-value' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ChangeReason integration:
@@ -526,7 +528,7 @@ public void ValidationCascade_ChildToParent()
     Assert.True(invoice.IsValid);
 }
 ```
-<sup><a href='/src/samples/ValidationSamples.cs#L765-L794' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cascade' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L767-L796' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cascade' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade characteristics:
@@ -575,7 +577,7 @@ public async Task MetaProperties_TrackValidationState()
     Assert.NotEmpty(account.PropertyMessages);
 }
 ```
-<sup><a href='/src/samples/ValidationSamples.cs#L796-L824' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-meta-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L798-L826' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-meta-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Meta-property definitions:
@@ -622,7 +624,7 @@ public async Task ValidateBeforeSave_IsSavableCheck()
     Assert.True(order.IsSavable);
 }
 ```
-<sup><a href='/src/samples/ValidationSamples.cs#L826-L852' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L828-L854' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Save validation patterns:
@@ -668,7 +670,7 @@ public async Task CancellationToken_CancelAsyncValidation()
     // Assert.Equal("Validation cancelled", order.ObjectInvalid);
 }
 ```
-<sup><a href='/src/samples/ValidationSamples.cs#L854-L879' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cancellation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L856-L881' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cancellation behavior:
@@ -737,7 +739,7 @@ public async Task WorkWithValidationMessages_FilterAndAccess()
     Assert.Equal(2, product.PropertyMessages.Count);
 }
 ```
-<sup><a href='/src/samples/ValidationSamples.cs#L881-L912' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-messages-collection' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L883-L914' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-messages-collection' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Message collection operations:

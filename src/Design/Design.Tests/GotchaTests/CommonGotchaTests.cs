@@ -50,7 +50,7 @@ public class CommonGotchaTests
     }
 
     [TestMethod]
-    public async Task Gotcha1_RulesFireAfterCreate_WithWaitForTasks()
+    public async Task Gotcha1_RulesFireAfterCreate_WithExplicitRunRules()
     {
         // Arrange
         var factory = _scope.GetRequiredService<IGotcha1DemoFactory>();
@@ -58,8 +58,7 @@ public class CommonGotchaTests
         // Act
         var entity = factory.Create();
 
-        // After Create completes, we can trigger rules by modifying a property
-        // OR by calling RunRules explicitly
+        // RunRules works even after factory (IsPaused is now false)
         await entity.RunRules(RunRulesFlag.All);
 
         // Assert - Now the rule has run
@@ -68,18 +67,19 @@ public class CommonGotchaTests
     }
 
     [TestMethod]
-    public void Gotcha1_ExplicitCalculationInCreate_WorksCorrectly()
+    public async Task Gotcha1_RunRulesInsideFactoryMethod_WorksWhilePaused()
     {
         // Arrange
         var factory = _scope.GetRequiredService<IGotcha1DemoFactory>();
 
-        // Act - Use the Create overload that calculates explicitly
-        var entity = factory.CreateWithExplicitCalculation();
+        // Act - Use the Create overload that calls RunRules inside the factory method
+        var entity = await factory.CreateWithRunRules();
 
-        // Assert - Total is set explicitly in Create, no rule needed
+        // Assert - RunRules executed all rules even while paused during factory
         Assert.AreEqual(10, entity.Quantity);
         Assert.AreEqual(5.00m, entity.Price);
-        Assert.AreEqual(50.00m, entity.Total, "Total should be 50 from explicit calculation");
+        Assert.AreEqual(50.00m, entity.Total, "Total should be 50 from RunRules inside factory");
+        Assert.IsTrue(entity.RuleHasRun, "Rule should have run via RunRules inside factory");
     }
 
     [TestMethod]
@@ -210,6 +210,25 @@ public class CommonGotchaTests
 
         // Assert - Now Total is calculated
         Assert.AreEqual(50.00m, entity.Total, "Total should be calculated after explicit RunRules");
+    }
+
+    [TestMethod]
+    public async Task Gotcha4_RunRulesWhilePaused_WorksCorrectly()
+    {
+        // Arrange
+        var factory = _scope.GetRequiredService<IGotcha4DemoFactory>();
+        var entity = factory.Create();
+
+        // Act - RunRules inside paused block (no IsPaused guard)
+        using (entity.PauseAllActions())
+        {
+            entity.Quantity = 10;
+            entity.Price = 5.00m;
+            await entity.RunRules(RunRulesFlag.All);
+        }
+
+        // Assert - RunRules executed even while paused
+        Assert.AreEqual(50.00m, entity.Total, "Total should be calculated - RunRules works while paused");
     }
 
     [TestMethod]
