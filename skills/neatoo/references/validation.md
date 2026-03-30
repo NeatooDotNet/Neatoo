@@ -380,13 +380,15 @@ public void PauseAllActions_BatchUpdatesWithoutValidation()
     }
 
     // After resume (automatic when using block ends):
-    // - Validation rules execute for changed properties
-    // - PropertyChanged events fire
+    // - IsPaused is false — future property changes will trigger rules
+    // - Rules do NOT run for changes made while paused
+    // - PropertyChanged does NOT fire for changes made while paused
+    // - To run rules after batch updates: await order.RunRules(RunRulesFlag.All);
     Assert.False(order.IsPaused);
     Assert.Equal("PROD-001", order.ProductCode);
 }
 ```
-<sup><a href='/src/samples/ValidationSamples.cs#L718-L743' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-pause-actions' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L718-L745' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-pause-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Cascading Validation
@@ -425,7 +427,7 @@ public void ValidationCascade_ChildToParent()
     Assert.True(invoice.IsValid);
 }
 ```
-<sup><a href='/src/samples/ValidationSamples.cs#L765-L794' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cascade' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L767-L796' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-cascade' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Meta Properties for Validation
@@ -463,7 +465,7 @@ public async Task MetaProperties_TrackValidationState()
     Assert.NotEmpty(account.PropertyMessages);
 }
 ```
-<sup><a href='/src/samples/ValidationSamples.cs#L796-L824' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-meta-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L798-L826' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-meta-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Validation Before Save
@@ -499,7 +501,7 @@ public async Task ValidateBeforeSave_IsSavableCheck()
     Assert.True(order.IsSavable);
 }
 ```
-<sup><a href='/src/samples/ValidationSamples.cs#L826-L852' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ValidationSamples.cs#L828-L854' title='Snippet source file'>snippet source</a> | <a href='#snippet-validation-before-save' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Async Action Rules (AddActionAsync)
@@ -567,9 +569,9 @@ RuleManager.AddActionAsync(
 `AddActionAsync` rules do **not** fire during `LoadValue` or deserialization:
 
 - `LoadValue` fires `NeatooPropertyChanged` with `ChangeReason.Load`. The framework skips rules for `Load` events — only `SetParent` is called.
-- During factory operations (`[Create]`, `[Fetch]`, etc.) and JSON deserialization, `PauseAllActions()` is called. Rules are suppressed until `ResumeAllActions()` runs after the operation completes.
+- During factory operations (`[Create]`, `[Fetch]`, etc.) and JSON deserialization, `PauseAllActions()` is called. Rules are suppressed. `ResumeAllActions()` does NOT run rules — it only recalculates cached validity and resets meta state. `PropertyChanged` does NOT fire for changes made while paused.
 
-This means properties populated via `LoadValue` in a `[Fetch]` method will not trigger `AddActionAsync` rules. To run rules after loading, call `RunRules(RunRulesFlag.All)` explicitly.
+This means properties populated via `LoadValue` in a `[Fetch]` method will not trigger `AddActionAsync` rules. To run rules after loading, call `await RunRules(RunRulesFlag.All)` at the end of the factory method. `RunRules` has no `IsPaused` guard — it works even while paused. See [rules-lifecycle.md](rules-lifecycle.md).
 
 ### Exception Propagation
 

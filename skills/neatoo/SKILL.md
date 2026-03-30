@@ -158,9 +158,28 @@ public SkillValidationExample(IEntityBaseServices<SkillValidationExample> servic
 <sup><a href='/src/samples/SkillValidationSamples.cs#L52-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-RuleManager also provides `AddAction`, `AddActionAsync`, `AddValidationAsync`, and class-based rules. **`AddValidation`/`AddValidationAsync` accept exactly one trigger property** — for multiple triggers, use a class-based rule. Rules do **not** fire during `[Create]`/`[Fetch]` or `LoadValue`. See `references/validation.md` for details.
+RuleManager also provides `AddAction`, `AddActionAsync`, `AddValidationAsync`, and class-based rules. **`AddValidation`/`AddValidationAsync` accept exactly one trigger property** — for multiple triggers, use a class-based rule. See `references/validation.md` for details.
 
 Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
+
+### Rules Do NOT Fire During Factory Methods
+
+**Rules (including AddAction computed properties) do NOT fire during `[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]`, or `LoadValue`.** Factory operations are wrapped in `PauseAllActions()`. `ResumeAllActions()` does NOT run rules — it only recalculates cached validity. `PropertyChanged` does NOT fire for changes made while paused.
+
+**`RunRules` works while paused** — it has no `IsPaused` guard. Call `await RunRules(RunRulesFlag.All)` at the end of any factory method that sets properties with dependent AddAction rules:
+
+```csharp
+[Create]
+public async Task Create()
+{
+    Quantity = 10;
+    UnitPrice = 5.00m;
+    await RunRules(RunRulesFlag.All);  // Forces computed properties to populate
+    // Total is now 50.00
+}
+```
+
+Without this call, computed properties remain at their default values when the entity reaches the client. See `references/rules-lifecycle.md` for the complete execution lifecycle, `RunRulesFlag` enum reference, and the factory method timeline.
 
 ### Child Property Triggers — Parent Reacts to Child Changes
 
@@ -203,6 +222,7 @@ Detailed documentation for each topic area:
 - **`references/base-classes.md`** - Neatoo-to-DDD mapping, when to use each base
 - **`references/properties.md`** - Partial properties, change tracking, calculated properties
 - **`references/validation.md`** - RuleManager, attributes, async validation
+- **`references/rules-lifecycle.md`** - When rules fire and when they don't, RunRulesFlag enum, factory method gap, RunRules works while paused
 - **`references/shared-rules.md`** - Shared rules across entities via interface-typed AsyncRuleBase and DI injection
 - **`references/entities.md`** - EntityBase lifecycle, persistence, Save routing
 - **`references/collections.md`** - EntityListBase, parent-child relationships, deletion tracking

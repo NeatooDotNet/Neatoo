@@ -31,18 +31,20 @@ namespace Design.Domain;
 //       // Total is still 0! The calculation rule hasn't run.
 //   }
 //
-// RIGHT (Option 1): Calculate explicitly in Create:
+// RIGHT: Call RunRules at the end of your factory method.
+// RunRules works even while paused — it has no IsPaused guard.
 //   [Create]
-//   public void Create() {
+//   public async Task Create() {
 //       Quantity = 10;
 //       Price = 5.00m;
-//       Total = Quantity * Price;  // Set explicitly
+//       await RunRules(RunRulesFlag.All);  // Forces all rules to execute
+//       // Total is now 50.00
 //   }
 //
-// RIGHT (Option 2): Await rules after Create completes:
-//   var entity = factory.Create();
-//   await entity.WaitForTasks();  // Rules run after FactoryComplete
-//   // Now Total is calculated
+// NOTE: ResumeAllActions (called by FactoryComplete) does NOT run rules.
+// It only recalculates cached validity. PropertyChanged does NOT fire
+// for changes made while paused. The only thing that runs rules is
+// an explicit RunRules() call or a property change after unpausing.
 //
 // WHY: Rules are paused during factory operations to prevent partial state
 // from triggering validation failures or infinite loops.
@@ -89,14 +91,16 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
     }
 
     /// <summary>
-    /// RIGHT WAY: Calculate explicitly during Create.
+    /// RIGHT WAY: Call RunRules at end of factory method.
+    /// RunRules works even while paused — no IsPaused guard.
     /// </summary>
     [Create]
-    public void CreateWithExplicitCalculation()
+    public async Task CreateWithRunRules()
     {
         Quantity = 10;
         Price = 5.00m;
-        Total = Quantity * Price;  // Calculate explicitly
+        await RunRules(RunRulesFlag.All);  // Forces all rules to execute
+        // Total is now 50.00
     }
 }
 
@@ -332,25 +336,20 @@ public interface IServerOnlyService
 //       entity.Price = 5.00m;
 //   }
 //   // Expecting Total to be 50.00 - BUT rules haven't run yet!
-//   // ResumeAllActions() resumes the ability to fire rules,
-//   // but doesn't automatically run rules for changes made while paused.
+//   // ResumeAllActions() does NOT run rules. It does NOT fire PropertyChanged
+//   // for changes made while paused. It only recalculates cached validity.
 //
-// RIGHT (Option 1): Run rules explicitly after resume:
+// RIGHT: Call RunRules inside or after the paused block.
+// RunRules works even while paused — it has no IsPaused guard.
 //   using (entity.PauseAllActions()) {
 //       entity.Quantity = 10;
 //       entity.Price = 5.00m;
+//       await entity.RunRules(RunRulesFlag.All);  // Works while paused
 //   }
-//   await entity.RunRules(RunRulesFlag.All);  // Explicitly run all rules
-//   // Now Total is 50.00
-//
-// RIGHT (Option 2): Set one property at a time without pausing:
-//   entity.Quantity = 10;
-//   entity.Price = 5.00m;  // Each setter triggers rules
-//   await entity.WaitForTasks();  // Wait for async rules
 //   // Total is 50.00
 //
 // DESIGN DECISION: PauseAllActions is for performance during batch updates.
-// You must explicitly run rules afterward if you need calculations.
+// You must explicitly call RunRules() if you need computed values.
 // =============================================================================
 
 /// <summary>
@@ -490,8 +489,8 @@ public interface IGotcha5Repository
 // +-----+------------------------------------------+-----------------------------+
 // | #   | Gotcha                                   | Solution                    |
 // +-----+------------------------------------------+-----------------------------+
-// | 1   | Rules don't fire during [Create]        | Calculate explicitly or     |
-// |     |                                          | await WaitForTasks()        |
+// | 1   | Rules don't fire during [Create]        | await RunRules() at end     |
+// |     |                                          | of factory method           |
 // +-----+------------------------------------------+-----------------------------+
 // | 2   | DeletedList ignores IsNew=true items    | Expected behavior - new     |
 // |     |                                          | items don't need deletion   |
@@ -499,8 +498,8 @@ public interface IGotcha5Repository
 // | 3   | [Service] on methods needs [Remote]     | Add [Remote] or use         |
 // |     |                                          | constructor injection       |
 // +-----+------------------------------------------+-----------------------------+
-// | 4   | PauseAllActions stops rule calculations | Call RunRules() after       |
-// |     |                                          | ResumeAllActions()          |
+// | 4   | PauseAllActions stops rule calculations | Call RunRules() explicitly  |
+// |     |                                          | (works even while paused)   |
 // +-----+------------------------------------------+-----------------------------+
 // | 5   | IsModified includes children            | Use IsSelfModified for      |
 // |     |                                          | current object only         |

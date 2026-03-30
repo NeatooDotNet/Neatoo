@@ -21,7 +21,7 @@ This document captures important patterns and behaviors when working with Neatoo
 | Forgetting to iterate DeletedList in parent's `[Update]` | Removed children are never deleted from the database | After saving active children, iterate `ChildList.DeletedList` and call `childFactory.SaveAsync(deleted)` for each |
 | Forgetting items are modified when added to collections | Adding a fetched (non-new) item marks both item and list as `IsModified` | Expected behavior—adding to a new parent is a state change |
 | Kitchen-sink rule with early return | Only one form input shows an error at a time — user plays whack-a-mole | Use `new RuleMessages().If(...).If(...)` to return all errors, or use separate per-property rules |
-| Worrying about rules firing during Fetch/Create | **Not a real risk.** `LoadValue` uses `ChangeReason.Load` (rules skip it). Factory operations (`[Create]`, `[Fetch]`) are wrapped in `PauseAllActions()` by the framework. Rules do not fire during hydration — no defensive coding needed. | No action required — this is handled by the framework |
+| Expecting AddAction computed properties to populate during `[Create]`/`[Fetch]` | **Rules do NOT fire during factory methods.** Factory operations are wrapped in `PauseAllActions()`. `ResumeAllActions()` does NOT run rules — it only recalculates cached validity. `PropertyChanged` does NOT fire for changes made while paused. Computed properties (AddAction) remain at their default values. | Call `await RunRules(RunRulesFlag.All)` at the end of the factory method. `RunRules` has no `IsPaused` guard — it works even while paused. See [rules-lifecycle.md](rules-lifecycle.md) |
 
 ---
 

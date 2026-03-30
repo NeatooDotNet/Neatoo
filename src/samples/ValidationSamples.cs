@@ -735,8 +735,10 @@ public class ValidationSamplesTests : SamplesTestBase
         }
 
         // After resume (automatic when using block ends):
-        // - Validation rules execute for changed properties
-        // - PropertyChanged events fire
+        // - IsPaused is false — future property changes will trigger rules
+        // - Rules do NOT run for changes made while paused
+        // - PropertyChanged does NOT fire for changes made while paused
+        // - To run rules after batch updates: await order.RunRules(RunRulesFlag.All);
         Assert.False(order.IsPaused);
         Assert.Equal("PROD-001", order.ProductCode);
     }
