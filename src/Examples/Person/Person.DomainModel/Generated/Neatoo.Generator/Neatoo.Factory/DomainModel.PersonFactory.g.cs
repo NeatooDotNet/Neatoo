@@ -677,6 +677,7 @@ namespace DomainModel
             services.TryAddTransient<IPersonAuth, PersonAuth>();
             // DTO constructor registrations (IL trimming support)
             DtoConstructorRegistry.Register<global::Person.Dal.PersonEntity>(() => new global::Person.Dal.PersonEntity());
+            DtoConstructorRegistry.Register<global::Person.Dal.PersonPhoneEntity>(() => new global::Person.Dal.PersonPhoneEntity());
             services.AddScoped<FetchDelegate>(cc =>
             {
                 var factory = cc.GetRequiredService<PersonFactory>();
