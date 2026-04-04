@@ -1,5 +1,7 @@
-﻿using Neatoo.RemoteFactory;
+﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Neatoo.RemoteFactory;
+using Neatoo.RemoteFactory.Internal;
 
 namespace Neatoo;
 
@@ -554,6 +556,11 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// </remarks>
     public override void FactoryComplete(FactoryOperation factoryOperation)
     {
+        var typeName = this.GetType().Name;
+        var opName = factoryOperation.ToString();
+        Logger.FactoryCompleteStarted(opName, typeName, this.IsNew, this.IsDeleted, this.IsModified);
+        var fcSw = Stopwatch.StartNew();
+
         base.FactoryComplete(factoryOperation);
 
         switch (factoryOperation)
@@ -575,6 +582,9 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
         }
 
         this.ResumeAllActions();
+
+        fcSw.Stop();
+        Logger.FactoryCompleteFinished(opName, typeName, fcSw.ElapsedMilliseconds);
     }
 
     /// <summary>

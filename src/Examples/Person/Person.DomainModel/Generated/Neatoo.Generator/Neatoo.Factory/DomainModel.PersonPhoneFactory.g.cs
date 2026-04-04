@@ -221,6 +221,9 @@ namespace DomainModel
             services.AddScoped<IPersonPhoneFactory, PersonPhoneFactory>();
             services.AddTransient<PersonPhone>();
             services.AddTransient<IPersonPhone, PersonPhone>();
+            // DTO constructor registrations (IL trimming support)
+            DtoConstructorRegistry.Register<global::Person.Dal.PersonPhoneEntity>(() => new global::Person.Dal.PersonPhoneEntity());
+            DtoConstructorRegistry.Register<global::Person.Dal.PersonEntity>(() => new global::Person.Dal.PersonEntity());
             // Event registrations
             if (remoteLocal == NeatooFactory.Remote)
             {

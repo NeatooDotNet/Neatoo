@@ -1,7 +1,11 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Neatoo.Internal;
 using Neatoo.Rules;
 
@@ -12,11 +16,14 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
 {
     private readonly IServiceProvider scope;
     private readonly IServiceAssemblies localAssemblies;
+    private readonly ILogger trace;
 
     public NeatooBaseJsonTypeConverter(IServiceProvider scope, IServiceAssemblies localAssemblies)
     {
         this.scope = scope;
         this.localAssemblies = localAssemblies;
+        this.trace = scope.GetService<ILoggerFactory>()?.CreateLogger("Neatoo.Trace")
+            ?? NullLoggerFactory.Instance.CreateLogger("Neatoo.Trace");
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026",
@@ -91,8 +98,12 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             else if (propertyName == "$type")
             {
                 var fullName = reader.GetString();
+                trace.EntityReadResolvingType(fullName ?? "null");
+                var typeSw = Stopwatch.StartNew();
                 var type = this.localAssemblies.FindType(fullName);
                 result = (T)this.scope.GetService(type);
+                typeSw.Stop();
+                trace.EntityReadTypeResolved(fullName ?? "null", typeSw.ElapsedMilliseconds);
 
                 if(result == null)
                 {
@@ -140,7 +151,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             }
             else if (propertyName == "PropertyManager")
             {
-
+                var pmSw = Stopwatch.StartNew();
                 var list = new List<IValidateProperty>();
 
                 if (reader.TokenType != JsonTokenType.StartArray) { throw new JsonException(); }
@@ -177,16 +188,26 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                         }
                         else if (propertyName == "$value")
                         {
+                            var propSw = Stopwatch.StartNew();
                             var property = DeserializeValidateProperty(ref reader, propertyType, options);
+                            propSw.Stop();
+                            trace.EntityReadPropertyDeserialized(pName ?? "?", propSw.ElapsedMilliseconds);
                             list.Add(property);
                         }
                     }
                 }
 
+                pmSw.Stop();
+                var entityTypeName = result?.GetType().Name ?? "?";
+                trace.EntityReadPropertyManagerComplete(entityTypeName, list.Count, pmSw.ElapsedMilliseconds);
+
                 // Cast to internal interface to access PropertyManager
                 if (result is IValidateBaseInternal resultInternal)
                 {
+                    var setSw = Stopwatch.StartNew();
                     resultInternal.PropertyManager.SetProperties(list);
+                    setSw.Stop();
+                    trace.EntityReadSetProperties(entityTypeName, setSw.ElapsedMilliseconds);
 
                     if (resultInternal.PropertyManager is IJsonOnDeserialized jsonOnDeserialized)
                     {
@@ -321,6 +342,10 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
         "IEntityMetaProperties and IFactorySaveMeta are framework interfaces always preserved.")]
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
+        var writeTypeName = value?.GetType().Name ?? "null";
+        trace.EntityWriteStarted(writeTypeName);
+        var writeSw = Stopwatch.StartNew();
+
         // Cast to internal interface to access GetProperties
         var properties = ((value is IValidateBaseInternal baseInternal)
             && baseInternal.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
@@ -417,5 +442,8 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
         }
 
         writer.WriteEndObject();
+
+        writeSw.Stop();
+        trace.EntityWriteCompleted(writeTypeName, writeSw.ElapsedMilliseconds, properties.Count);
     }
 }

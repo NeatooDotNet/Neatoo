@@ -229,6 +229,9 @@ namespace DomainModel
             services.AddScoped<IPersonPhoneListFactory, PersonPhoneListFactory>();
             services.AddTransient<PersonPhoneList>();
             services.AddTransient<IPersonPhoneList, PersonPhoneList>();
+            // DTO constructor registrations (IL trimming support)
+            DtoConstructorRegistry.Register<global::Person.Dal.PersonPhoneEntity>(() => new global::Person.Dal.PersonPhoneEntity());
+            DtoConstructorRegistry.Register<global::Person.Dal.PersonEntity>(() => new global::Person.Dal.PersonEntity());
             services.AddScoped<Fetch1Delegate>(cc =>
             {
                 var factory = cc.GetRequiredService<PersonPhoneListFactory>();

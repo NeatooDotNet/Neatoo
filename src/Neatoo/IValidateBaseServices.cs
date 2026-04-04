@@ -1,4 +1,5 @@
-﻿using Neatoo.Rules;
+﻿using Microsoft.Extensions.Logging;
+using Neatoo.Rules;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Neatoo;
@@ -33,6 +34,11 @@ public interface IValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAc
     /// during object initialization.
     /// </remarks>
     IPropertyFactory<T> PropertyFactory { get; }
+
+    /// <summary>
+    /// Gets the trace-level logger for Neatoo framework diagnostics (category: "Neatoo.Trace").
+    /// </summary>
+    ILogger Logger { get; }
 
     /// <summary>
     /// Creates a new rule manager for the specified target object.

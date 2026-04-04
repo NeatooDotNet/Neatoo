@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Neatoo.Internal;
 using Neatoo.RemoteFactory;
 using Neatoo.Rules;
@@ -187,6 +188,11 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// Contains the property factory, property info list, and other infrastructure services.
 	/// </remarks>
 	protected IValidateBaseServices<T> Services { get; private set; }
+
+	/// <summary>
+	/// Gets the trace-level logger for Neatoo framework diagnostics (category: "Neatoo.Trace").
+	/// </summary>
+	protected ILogger Logger => Services.Logger;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="ValidateBase{T}"/> class.

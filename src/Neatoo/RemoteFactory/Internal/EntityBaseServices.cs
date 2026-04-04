@@ -1,4 +1,6 @@
-﻿using Neatoo.RemoteFactory;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Neatoo.RemoteFactory;
 using Neatoo.Rules;
 using System.Diagnostics.CodeAnalysis;
 
@@ -52,6 +54,20 @@ public class EntityBaseServices<[DynamicallyAccessedMembers(DynamicallyAccessedM
         CreateEntityPropertyManager propertyManager,
         IPropertyInfoList<T> propertyInfoList,
         RuleManagerFactory<T> ruleManager,
+        ILoggerFactory loggerFactory)
+    {
+        this.PropertyInfoList = propertyInfoList;
+        this.ruleManagerFactory = ruleManager;
+        var internalFactory = new DefaultFactory();
+        this.EntityPropertyManager = propertyManager(propertyInfoList);
+        this.PropertyFactory = new EntityPropertyFactory<T>(propertyInfoList, internalFactory);
+        this.Logger = loggerFactory.CreateLogger("Neatoo.Trace");
+    }
+
+    public EntityBaseServices(
+        CreateEntityPropertyManager propertyManager,
+        IPropertyInfoList<T> propertyInfoList,
+        RuleManagerFactory<T> ruleManager,
         IFactorySave<T>? factory)
     {
         this.PropertyInfoList = propertyInfoList;
@@ -61,5 +77,22 @@ public class EntityBaseServices<[DynamicallyAccessedMembers(DynamicallyAccessedM
         // EntityBase classes require EntityPropertyFactory to create EntityProperty instances
         this.PropertyFactory = new EntityPropertyFactory<T>(propertyInfoList, internalFactory);
         this.Factory = factory;
+    }
+
+    public EntityBaseServices(
+        CreateEntityPropertyManager propertyManager,
+        IPropertyInfoList<T> propertyInfoList,
+        RuleManagerFactory<T> ruleManager,
+        IFactorySave<T>? factory,
+        ILoggerFactory? loggerFactory)
+    {
+        this.PropertyInfoList = propertyInfoList;
+        this.ruleManagerFactory = ruleManager;
+        var internalFactory = new DefaultFactory();
+        this.EntityPropertyManager = propertyManager(propertyInfoList);
+        this.PropertyFactory = new EntityPropertyFactory<T>(propertyInfoList, internalFactory);
+        this.Factory = factory;
+        this.Logger = loggerFactory?.CreateLogger("Neatoo.Trace")
+            ?? NullLoggerFactory.Instance.CreateLogger("Neatoo.Trace");
     }
 }
