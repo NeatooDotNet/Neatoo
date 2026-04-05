@@ -149,10 +149,10 @@ namespace DomainModel
         {
             return sourceExpression switch
             {
-                @"RequiredAttribute_FirstName" => 1u,
-                @"RequiredAttribute_LastName" => 2u,
-                @"uniqueNameRule" => 3u,
-                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+                @"RequiredAttribute_FirstName" => 0xB73D3942u,
+                @"RequiredAttribute_LastName" => 0xC500B1EAu,
+                @"uniqueNameRule" => 0x80F53A53u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to base for unknown expressions
             };
         }
 

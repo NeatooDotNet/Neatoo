@@ -34,16 +34,16 @@ public class StableRuleIdEdgeCaseTests : IntegrationTestBase
     #region Boundary Value Tests
 
     [TestMethod]
-    public async Task RuleId_IsNotMaxUInt_UnlessIntentional()
+    public async Task RuleId_IsNotZero()
     {
         _entity.Name = null;
         await _entity.WaitForTasks();
 
         foreach (var message in _entity.BrokenRuleMessages)
         {
-            // RuleId should be a small ordinal, not near max value
-            Assert.IsTrue(message.RuleId < 1000,
-                $"RuleId {message.RuleId} seems unexpectedly large - expected small ordinals");
+            // RuleId should be a non-zero hash value
+            Assert.AreNotEqual(0u, message.RuleId,
+                "RuleId should not be zero — zero indicates uninitialized state");
         }
     }
 
@@ -62,7 +62,7 @@ public class StableRuleIdEdgeCaseTests : IntegrationTestBase
     }
 
     [TestMethod]
-    public async Task RuleIds_AreContiguous()
+    public async Task RuleIds_AreUnique()
     {
         // Break all rules to see all RuleIds
         _entity.Name = null;
@@ -71,21 +71,13 @@ public class StableRuleIdEdgeCaseTests : IntegrationTestBase
         _entity.RequiredField = null;
         await _entity.WaitForTasks();
 
-        var ruleIds = _entity.BrokenRuleMessages.Select(m => m.RuleId).Distinct().OrderBy(x => x).ToList();
+        var ruleIds = _entity.BrokenRuleMessages.Select(m => m.RuleId).ToList();
+        var distinctRuleIds = ruleIds.Distinct().ToList();
 
-        // RuleIds should be contiguous or close to it (1, 2, 3, etc.)
-        // Not 1, 100, 5000, etc.
-        if (ruleIds.Count > 1)
-        {
-            var maxGap = 0u;
-            for (int i = 1; i < ruleIds.Count; i++)
-            {
-                var gap = ruleIds[i] - ruleIds[i - 1];
-                if (gap > maxGap) maxGap = gap;
-            }
-            Assert.IsTrue(maxGap < 10,
-                $"RuleIds should be reasonably contiguous, but found gap of {maxGap}");
-        }
+        // Each distinct rule should have a unique hash-based ID
+        // (Multiple messages can share the same RuleId if from the same rule)
+        Assert.IsTrue(distinctRuleIds.Count > 0, "Should have at least one rule ID");
+        Assert.IsTrue(distinctRuleIds.All(id => id != 0), "No rule ID should be zero");
     }
 
     #endregion

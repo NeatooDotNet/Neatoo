@@ -95,11 +95,11 @@ namespace DomainModel
         {
             return sourceExpression switch
             {
-                @"RequiredAttribute_PhoneNumber" => 1u,
-                @"RequiredAttribute_PhoneType" => 2u,
-                @"uniquePhoneNumberRule" => 3u,
-                @"uniquePhoneTypeRule" => 4u,
-                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions
+                @"RequiredAttribute_PhoneNumber" => 0xBADA8D96u,
+                @"RequiredAttribute_PhoneType" => 0x1510600Fu,
+                @"uniquePhoneNumberRule" => 0xBC5BA8FDu,
+                @"uniquePhoneTypeRule" => 0x854FDE20u,
+                _ => base.GetRuleId(sourceExpression) // Fall back to base for unknown expressions
             };
         }
 

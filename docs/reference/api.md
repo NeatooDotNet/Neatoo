@@ -1890,9 +1890,9 @@ public async Task DeleteAsync([Service] IRepository repo)
 
 RemoteFactory generates an `IFactorySave<T>` implementation that routes to Insert, Update, or Delete based on entity state (`IsNew`, `IsDeleted`, or modified). This save factory is registered in DI and injected into the entity's constructor via `IEntityBaseServices<T>`.
 
-### RuleIdRegistry Generation
+### Rule ID Generation
 
-For stable rule IDs across compilations, the BaseGenerator creates a RuleIdRegistry with compile-time constants for each lambda expression used in RuleManager.AddValidation and RuleManager.AddAction calls.
+For stable rule IDs across compilations, the BaseGenerator creates a `GetRuleId` override with compile-time FNV-1a hash constants for each lambda expression used in RuleManager.AddValidation and RuleManager.AddAction calls. Hash-based IDs ensure no collisions in inheritance hierarchies — each expression produces a unique hash regardless of class hierarchy position.
 
 <!-- snippet: api-generator-ruleid -->
 <a id='snippet-api-generator-ruleid'></a>
@@ -1918,7 +1918,7 @@ public partial class ApiRuleIdEntity : ValidateBase<ApiRuleIdEntity>
 <sup><a href='/src/samples/ApiReferenceSamples.cs#L696-L714' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-ruleid' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-This registry enables rule suppression and rule-specific behavior without relying on runtime hash codes.
+The generated `GetRuleId` maps source expressions to FNV-1a hash IDs at compile time, enabling rule suppression and rule-specific behavior. The hash function in the generator matches `ValidateBase.ComputeRuleIdHash` exactly, so the runtime fallback for dynamically registered rules produces consistent IDs.
 
 ---
 

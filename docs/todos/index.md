@@ -66,6 +66,7 @@
 
 See `completed/` directory. Key completions include:
 
+- **Rule ID Collision Fix** - Hash-based rule IDs for inheritance hierarchy support (rule-id-collision-in-inheritance)
 - **IEntityRoot Interface** - Root vs child entity distinction (issavable-intuitive-api)
 - **LazyLoad\<T>** - Explicit lazy loading type (lazy-loading-v2-design, lazyload-serialization-bug, lazyload-state-propagation)
 - **Design.Domain** - Authoritative API design reference (design-source-of-truth, design-source-improvements, design-interface-first-pattern)
