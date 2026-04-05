@@ -791,7 +791,7 @@ For targeted rule type execution, expose a custom method on the entity that call
 
 In RemoteFactory scenarios, the domain model graph crosses the client-server boundary. If a rule fails server-side, that broken state travels back to the client with the graph. When the user fixes the data, the client needs to know exactly which rule to re-run and clear. This only works if the same rule has the same ID on both sides.
 
-Neatoo assigns deterministic rule IDs based on the source expression used to register rules. The `RuleManager` uses `CallerArgumentExpression` to capture the exact lambda expression text when calling `AddAction`, `AddValidation`, or `AddRule`. For custom rule classes, the rule ID is based on the rule's type name. For fluent rules, the ID is a hash of the source expression text.
+Neatoo assigns deterministic rule IDs based on the source expression used to register rules. The `RuleManager` uses `CallerArgumentExpression` to capture the exact lambda expression text when calling `AddAction`, `AddValidation`, or `AddRule`. For custom rule classes, the rule ID is based on the rule's type name. For fluent rules, the ID is an FNV-1a hash of the source expression text. Hash-based IDs ensure no collisions across inheritance hierarchies — a derived class's rule expressions produce different hashes from its base class, regardless of hierarchy depth.
 
 ---
 

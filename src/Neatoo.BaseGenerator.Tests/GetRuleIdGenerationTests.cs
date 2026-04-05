@@ -251,10 +251,10 @@ public class GetRuleIdGenerationTests
 
     #endregion
 
-    #region Ordinal Assignment Tests
+    #region Hash-Based ID Tests
 
     [TestMethod]
-    public void GetRuleId_OrdinalsStartAtOne()
+    public void GetRuleId_UsesHashBasedIds()
     {
         var source = $$"""
             {{GeneratorTestHelper.StandardUsings}}
@@ -280,12 +280,13 @@ public class GetRuleIdGenerationTests
         var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
 
         Assert.IsNotNull(generated);
-        Assert.IsTrue(generated.Contains("=> 1u"), "First ordinal should be 1, not 0");
-        Assert.IsFalse(generated.Contains("=> 0u,"), "Should not have ordinal 0 in switch arms");
+        // Should use hex hash IDs, not sequential ordinals
+        Assert.IsTrue(generated.Contains("=> 0x"), "Should use hash-based hex IDs");
+        Assert.IsFalse(generated.Contains("=> 1u,"), "Should not use sequential ordinals");
     }
 
     [TestMethod]
-    public void GetRuleId_OrdinalsAreSortedAlphabetically()
+    public void GetRuleId_ExpressionsAreSortedAlphabetically()
     {
         var source = $$"""
             {{GeneratorTestHelper.StandardUsings}}
@@ -320,7 +321,7 @@ public class GetRuleIdGenerationTests
 
         Assert.IsNotNull(generated);
 
-        // RuleA should come before RuleZ alphabetically, so RuleA gets ordinal 1
+        // RuleA should come before RuleZ alphabetically
         var ruleAIndex = generated.IndexOf("new RuleA()");
         var ruleZIndex = generated.IndexOf("new RuleZ()");
 
@@ -392,6 +393,206 @@ public class GetRuleIdGenerationTests
         Assert.IsNotNull(generated);
         Assert.IsTrue(generated.Contains("_ => base.GetRuleId"),
             "Should have fallback to base.GetRuleId for unknown expressions");
+    }
+
+    #endregion
+
+    #region Inheritance Tests
+
+    [TestMethod]
+    public void GetRuleId_DerivedClassWithRules_HashIdsDoNotCollide()
+    {
+        // Hash-based IDs are derived from expression content, so different
+        // expressions in base and derived classes get different IDs.
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public interface IBaseEntity : Neatoo.IEntityBase
+                {
+                    string? A { get; set; }
+                    string? B { get; set; }
+                    string? Foo { get; set; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class BaseEntity : Neatoo.EntityBase<BaseEntity>, IBaseEntity
+                {
+                    public BaseEntity()
+                    {
+                        RuleManager.AddAction(
+                            t => t.Foo = t.A + t.B,
+                            t => t.A,
+                            t => t.B);
+                    }
+
+                    public partial string? A { get; set; }
+                    public partial string? B { get; set; }
+                    public partial string? Foo { get; set; }
+                }
+
+                public interface IDerivedEntity : IBaseEntity
+                {
+                    string? C { get; set; }
+                    string? Bar { get; set; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class DerivedEntity : BaseEntity, IDerivedEntity
+                {
+                    public DerivedEntity()
+                    {
+                        RuleManager.AddAction(
+                            t => t.Bar = t.C,
+                            t => t.C);
+                    }
+
+                    public partial string? C { get; set; }
+                    public partial string? Bar { get; set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+
+        var baseGenerated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "BaseEntity");
+        var derivedGenerated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "DerivedEntity");
+
+        Assert.IsNotNull(baseGenerated, "Should generate code for BaseEntity");
+        Assert.IsNotNull(derivedGenerated, "Should generate code for DerivedEntity");
+
+        Assert.IsTrue(baseGenerated.Contains("GetRuleId"), "BaseEntity should have GetRuleId");
+        Assert.IsTrue(derivedGenerated.Contains("GetRuleId"), "DerivedEntity should have GetRuleId");
+
+        // Both use hash-based IDs — different expressions produce different hashes
+        Assert.IsTrue(baseGenerated.Contains("=> 0x"), "BaseEntity should use hash-based IDs");
+        Assert.IsTrue(derivedGenerated.Contains("=> 0x"), "DerivedEntity should use hash-based IDs");
+
+        // Extract the hash values and verify they don't collide
+        var baseHash = ExtractHashValue(baseGenerated, "t => t.Foo = t.A + t.B");
+        var derivedHash = ExtractHashValue(derivedGenerated, "t => t.Bar = t.C");
+
+        Assert.IsNotNull(baseHash, "Should find hash for base expression");
+        Assert.IsNotNull(derivedHash, "Should find hash for derived expression");
+        Assert.AreNotEqual(baseHash, derivedHash,
+            "Base and derived expressions must produce different hash IDs");
+    }
+
+    [TestMethod]
+    public void GetRuleId_ThreeLevelHierarchy_AllHashIdsUnique()
+    {
+        // Three-level hierarchy: Base → Middle → Leaf, each with rules.
+        // Hash-based IDs ensure no collisions across hierarchy levels.
+        var source = $$"""
+            {{GeneratorTestHelper.StandardUsings}}
+            {{GeneratorTestHelper.NeatooStubs}}
+
+            namespace TestNamespace
+            {
+                public interface IBaseEntity : Neatoo.IEntityBase
+                {
+                    string? A { get; set; }
+                    string? ComputedA { get; set; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class BaseEntity : Neatoo.EntityBase<BaseEntity>, IBaseEntity
+                {
+                    public BaseEntity()
+                    {
+                        RuleManager.AddAction(
+                            t => t.ComputedA = t.A,
+                            t => t.A);
+                    }
+
+                    public partial string? A { get; set; }
+                    public partial string? ComputedA { get; set; }
+                }
+
+                public interface IMiddleEntity : IBaseEntity
+                {
+                    string? B { get; set; }
+                    string? ComputedB { get; set; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class MiddleEntity : BaseEntity, IMiddleEntity
+                {
+                    public MiddleEntity()
+                    {
+                        RuleManager.AddAction(
+                            t => t.ComputedB = t.B,
+                            t => t.B);
+                    }
+
+                    public partial string? B { get; set; }
+                    public partial string? ComputedB { get; set; }
+                }
+
+                public interface ILeafEntity : IMiddleEntity
+                {
+                    string? C { get; set; }
+                    string? ComputedC { get; set; }
+                }
+
+                [Neatoo.RemoteFactory.Factory]
+                public partial class LeafEntity : MiddleEntity, ILeafEntity
+                {
+                    public LeafEntity()
+                    {
+                        RuleManager.AddAction(
+                            t => t.ComputedC = t.C,
+                            t => t.C);
+                    }
+
+                    public partial string? C { get; set; }
+                    public partial string? ComputedC { get; set; }
+                }
+            }
+            """;
+
+        var result = GeneratorTestHelper.RunGenerator(source);
+
+        var baseGenerated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "BaseEntity");
+        var middleGenerated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "MiddleEntity");
+        var leafGenerated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "LeafEntity");
+
+        Assert.IsNotNull(baseGenerated);
+        Assert.IsNotNull(middleGenerated);
+        Assert.IsNotNull(leafGenerated);
+
+        // Extract hashes and verify all three are unique
+        var baseHash = ExtractHashValue(baseGenerated, "t => t.ComputedA = t.A");
+        var middleHash = ExtractHashValue(middleGenerated, "t => t.ComputedB = t.B");
+        var leafHash = ExtractHashValue(leafGenerated, "t => t.ComputedC = t.C");
+
+        Assert.IsNotNull(baseHash);
+        Assert.IsNotNull(middleHash);
+        Assert.IsNotNull(leafHash);
+
+        Assert.AreNotEqual(baseHash, middleHash, "Base and Middle must have different hashes");
+        Assert.AreNotEqual(middleHash, leafHash, "Middle and Leaf must have different hashes");
+        Assert.AreNotEqual(baseHash, leafHash, "Base and Leaf must have different hashes");
+    }
+
+    /// <summary>
+    /// Extracts the hex hash value from generated GetRuleId code for a given expression.
+    /// </summary>
+    private static string? ExtractHashValue(string generated, string expression)
+    {
+        // Look for pattern: @"expression" => 0xHHHHHHHHu
+        var escapedExpr = expression.Replace("\"", "\"\"");
+        var marker = $"@\"{escapedExpr}\" => ";
+        var index = generated.IndexOf(marker);
+        if (index < 0) return null;
+
+        var start = index + marker.Length;
+        var end = generated.IndexOf('u', start);
+        if (end < 0) return null;
+
+        return generated.Substring(start, end - start);
     }
 
     #endregion

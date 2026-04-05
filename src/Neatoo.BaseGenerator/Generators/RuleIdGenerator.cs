@@ -19,7 +19,7 @@ internal static class RuleIdGenerator
         sb.AppendLine();
         sb.AppendLine("        /// <summary>");
         sb.AppendLine("        /// Generated override for stable rule identification.");
-        sb.AppendLine("        /// Maps source expressions to deterministic ordinal IDs.");
+        sb.AppendLine("        /// Maps source expressions to deterministic FNV-1a hash IDs.");
         sb.AppendLine("        /// </summary>");
         sb.AppendLine("        protected override uint GetRuleId(string sourceExpression)");
         sb.AppendLine("        {");
@@ -29,13 +29,31 @@ internal static class RuleIdGenerator
         for (int i = 0; i < ruleInfo.SortedExpressions.Count; i++)
         {
             var expr = ruleInfo.SortedExpressions[i];
-            var ordinal = (uint)(i + 1);
+            var hash = ComputeFnv1aHash(expr);
             var escapedExpr = expr.Replace("\"", "\"\"");
-            sb.AppendLine($"                @\"{escapedExpr}\" => {ordinal}u,");
+            sb.AppendLine($"                @\"{escapedExpr}\" => 0x{hash:X8}u,");
         }
 
-        sb.AppendLine("                _ => base.GetRuleId(sourceExpression) // Fall back to hash for unknown expressions");
+        sb.AppendLine("                _ => base.GetRuleId(sourceExpression) // Fall back to base for unknown expressions");
         sb.AppendLine("            };");
         sb.AppendLine("        }");
+    }
+
+    /// <summary>
+    /// Computes FNV-1a hash for a source expression.
+    /// Must match ValidateBase.ComputeRuleIdHash exactly.
+    /// </summary>
+    private static uint ComputeFnv1aHash(string sourceExpression)
+    {
+        unchecked
+        {
+            uint hash = 2166136261; // FNV-1a offset basis
+            foreach (char c in sourceExpression)
+            {
+                hash ^= c;
+                hash *= 16777619; // FNV-1a prime
+            }
+            return hash;
+        }
     }
 }
