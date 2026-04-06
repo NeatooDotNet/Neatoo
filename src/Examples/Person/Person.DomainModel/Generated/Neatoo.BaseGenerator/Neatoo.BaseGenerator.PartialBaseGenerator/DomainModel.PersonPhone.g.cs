@@ -89,7 +89,7 @@ namespace DomainModel
 
         /// <summary>
         /// Generated override for stable rule identification.
-        /// Maps source expressions to deterministic ordinal IDs.
+        /// Maps source expressions to deterministic FNV-1a hash IDs.
         /// </summary>
         protected override uint GetRuleId(string sourceExpression)
         {

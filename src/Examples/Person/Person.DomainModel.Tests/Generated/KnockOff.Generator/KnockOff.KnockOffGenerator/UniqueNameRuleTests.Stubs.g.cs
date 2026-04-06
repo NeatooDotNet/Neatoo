@@ -5607,6 +5607,118 @@ partial class UniqueNameRuleTests
 
 		}
 
+		/// <summary>Tracks and configures behavior for MarkReadOnly().</summary>
+		public sealed class IEntityProperty_MarkReadOnlyInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::Neatoo.IValidateProperty? _source;
+
+			/// <summary>Callback delegate for MarkReadOnly().</summary>
+			public delegate void MarkReadOnlyDelegate();
+
+			public IEntityProperty_MarkReadOnlyInterceptor() : base("MarkReadOnly") { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				((MarkReadOnlyDelegate)del)();
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking) { }
+			protected override void RecordUnconfiguredArgs(object? args) { }
+
+			/// <summary>Configures callback for MarkReadOnly().</summary>
+			public MarkReadOnlyImpl Call(MarkReadOnlyDelegate callback)
+			{
+				var builder = new MarkReadOnlyImpl(this);
+				SetupVoidCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal void Invoke(bool strict)
+			{
+				if (RunVoidPriorityChain(null)) return;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(null);
+				if (HandleVoidSequenceExhaustedRepeat(strict, null)) return;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) { src.MarkReadOnly(); return; }
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "MarkReadOnly");
+				return;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class MarkReadOnlyImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<MarkReadOnlyDelegate>
+			{
+				private readonly IEntityProperty_MarkReadOnlyInterceptor _typedInterceptor;
+
+				public MarkReadOnlyImpl(IEntityProperty_MarkReadOnlyInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+
+				public override void Reset() => base.Reset();
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public MarkReadOnlySequence ThenCall(MarkReadOnlyDelegate callback)
+				{
+					ThenCallBase(callback);
+					return new MarkReadOnlySequence(_typedInterceptor);
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public MarkReadOnlyImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public MarkReadOnlyImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override MethodCallBuilderBase CreateNextBuilder() => new MarkReadOnlyImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallBuilder<MarkReadOnlyDelegate> global::KnockOff.IMethodCallBuilder<MarkReadOnlyDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodCallBuilder<MarkReadOnlyDelegate> global::KnockOff.IMethodCallBuilder<MarkReadOnlyDelegate>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodCallSequence<MarkReadOnlyDelegate> global::KnockOff.IMethodCallBuilder<MarkReadOnlyDelegate>.ThenCall(MarkReadOnlyDelegate callback) => ThenCall(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenCall chaining.</summary>
+			public sealed class MarkReadOnlySequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<MarkReadOnlyDelegate>
+			{
+				private readonly IEntityProperty_MarkReadOnlyInterceptor _typedInterceptor;
+
+				public MarkReadOnlySequence(IEntityProperty_MarkReadOnlyInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public MarkReadOnlySequence ThenCall(MarkReadOnlyDelegate callback)
+				{
+					var tracking = new MarkReadOnlyImpl(_typedInterceptor);
+					AddToSequence(callback, tracking);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public MarkReadOnlySequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override MethodCallBuilderBase CreateNextBuilder() => new MarkReadOnlyImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodCallSequence<MarkReadOnlyDelegate> global::KnockOff.IMethodCallSequence<MarkReadOnlyDelegate>.ThenCall(MarkReadOnlyDelegate callback) => ThenCall(callback);
+				global::KnockOff.IMethodCallSequence<MarkReadOnlyDelegate> global::KnockOff.IMethodCallSequence<MarkReadOnlyDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+		}
+
 		/// <summary>Tracks and configures behavior for AddMarkedBusy(long id).</summary>
 		public sealed class IEntityProperty_AddMarkedBusyInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
 		{
@@ -7526,6 +7638,9 @@ partial class UniqueNameRuleTests
 			/// <summary>Interceptor for SetValue.</summary>
 			public IEntityProperty_SetValueInterceptor SetValue { get; } = new();
 
+			/// <summary>Interceptor for MarkReadOnly.</summary>
+			public IEntityProperty_MarkReadOnlyInterceptor MarkReadOnly { get; } = new();
+
 			/// <summary>Interceptor for AddMarkedBusy.</summary>
 			public IEntityProperty_AddMarkedBusyInterceptor AddMarkedBusy { get; } = new();
 
@@ -7587,6 +7702,11 @@ partial class UniqueNameRuleTests
 			global::System.Threading.Tasks.Task global::Neatoo.IValidateProperty.SetValue(object? newValue)
 			{
 				return SetValue.Invoke(Strict, newValue);
+			}
+
+			void global::Neatoo.IValidateProperty.MarkReadOnly()
+			{
+				MarkReadOnly.Invoke(Strict);
 			}
 
 			void global::Neatoo.IValidateProperty.AddMarkedBusy(long id)
@@ -7720,6 +7840,7 @@ partial class UniqueNameRuleTests
 				MarkSelfUnmodified._source = source;
 				ApplyPropertyInfo._source = source;
 				SetValue._source = source;
+				MarkReadOnly._source = source;
 				AddMarkedBusy._source = source;
 				RemoveMarkedBusy._source = source;
 				LoadValue._source = source;
@@ -7749,6 +7870,7 @@ partial class UniqueNameRuleTests
 				MarkSelfUnmodified._source = null;
 				ApplyPropertyInfo._source = null;
 				SetValue._source = source;
+				MarkReadOnly._source = source;
 				AddMarkedBusy._source = source;
 				RemoveMarkedBusy._source = source;
 				LoadValue._source = source;
@@ -7778,6 +7900,7 @@ partial class UniqueNameRuleTests
 				MarkSelfUnmodified._source = null;
 				ApplyPropertyInfo._source = null;
 				SetValue._source = null;
+				MarkReadOnly._source = null;
 				AddMarkedBusy._source = null;
 				RemoveMarkedBusy._source = null;
 				LoadValue._source = null;
@@ -7807,6 +7930,7 @@ partial class UniqueNameRuleTests
 				MarkSelfUnmodified._source = null;
 				ApplyPropertyInfo._source = null;
 				SetValue._source = null;
+				MarkReadOnly._source = null;
 				AddMarkedBusy._source = null;
 				RemoveMarkedBusy._source = null;
 				LoadValue._source = null;
@@ -7838,6 +7962,7 @@ partial class UniqueNameRuleTests
 				if (MarkSelfUnmodified.CheckVerification() is { } markselfunmodifiedFailure) failures.Add(markselfunmodifiedFailure);
 				if (ApplyPropertyInfo.CheckVerification() is { } applypropertyinfoFailure) failures.Add(applypropertyinfoFailure);
 				if (SetValue.CheckVerification() is { } setvalueFailure) failures.Add(setvalueFailure);
+				if (MarkReadOnly.CheckVerification() is { } markreadonlyFailure) failures.Add(markreadonlyFailure);
 				if (AddMarkedBusy.CheckVerification() is { } addmarkedbusyFailure) failures.Add(addmarkedbusyFailure);
 				if (RemoveMarkedBusy.CheckVerification() is { } removemarkedbusyFailure) failures.Add(removemarkedbusyFailure);
 				if (LoadValue.CheckVerification() is { } loadvalueFailure) failures.Add(loadvalueFailure);
@@ -7874,6 +7999,7 @@ partial class UniqueNameRuleTests
 				if (MarkSelfUnmodified.CheckVerificationAll() is { } markselfunmodifiedFailure) failures.Add(markselfunmodifiedFailure);
 				if (ApplyPropertyInfo.CheckVerificationAll() is { } applypropertyinfoFailure) failures.Add(applypropertyinfoFailure);
 				if (SetValue.CheckVerificationAll() is { } setvalueFailure) failures.Add(setvalueFailure);
+				if (MarkReadOnly.CheckVerificationAll() is { } markreadonlyFailure) failures.Add(markreadonlyFailure);
 				if (AddMarkedBusy.CheckVerificationAll() is { } addmarkedbusyFailure) failures.Add(addmarkedbusyFailure);
 				if (RemoveMarkedBusy.CheckVerificationAll() is { } removemarkedbusyFailure) failures.Add(removemarkedbusyFailure);
 				if (LoadValue.CheckVerificationAll() is { } loadvalueFailure) failures.Add(loadvalueFailure);
