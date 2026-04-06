@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.26.1** (2026-04-04)
+**Neatoo 0.27.0** (2026-04-06)
 
 ---
 
@@ -12,6 +12,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.27.0](v0.27.0.md) | 2026-04-06 | Feature | Field-level authorization via `MarkReadOnly()` |
 | [0.26.1](v0.26.1.md) | 2026-04-04 | Bug Fix | Hash-based rule IDs fix inheritance collision |
 | [0.24.0](v0.24.0.md) | 2026-03-23 | Feature | Private setter support in source generator; SetPrivateValue on IValidateProperty |
 | [0.23.2](v0.23.2.md) | 2026-03-21 | Patch | Migrate converters to NeatooReferenceResolver.Current API |
@@ -52,6 +53,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [0.27.0](v0.27.0.md) | 2026-04-06 |
 | [0.26.1](v0.26.1.md) | 2026-04-04 |
 | [0.24.0](v0.24.0.md) | 2026-03-23 |
 | [0.23.2](v0.23.2.md) | 2026-03-21 |
