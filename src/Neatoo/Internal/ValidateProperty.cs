@@ -119,7 +119,27 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
         this.OnPropertyChanged(nameof(IsBusy));
     }
 
-    public bool IsReadOnly { get; protected set; } = false;
+    private bool _isReadOnly = false;
+
+    public bool IsReadOnly
+    {
+        get => _isReadOnly;
+        protected set
+        {
+            // One-and-done: once true, cannot be set back to false
+            if (_isReadOnly && !value) return;
+            _isReadOnly = value;
+        }
+    }
+
+    public void MarkReadOnly()
+    {
+        if (!IsReadOnly)
+        {
+            IsReadOnly = true;
+            OnPropertyChanged(nameof(IsReadOnly));
+        }
+    }
 
     public virtual Task SetValue(object? newValue)
     {

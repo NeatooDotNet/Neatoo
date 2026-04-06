@@ -48,6 +48,7 @@ public static class DesignTestServices
                 services.AddTransient<Design.Domain.FactoryOperations.ISaveDemoRepository, MockSaveDemoRepository>();
                 services.AddTransient<Design.Domain.FactoryOperations.ISaveAggregateRepository, MockSaveAggregateRepository>();
                 services.AddTransient<Design.Domain.PropertySystem.IPropertyDemoRepository, MockPropertyDemoRepository>();
+                services.AddTransient<Design.Domain.PropertySystem.IFieldLevelAuthRepository, MockFieldLevelAuthRepository>();
                 services.AddTransient<Design.Domain.Rules.IRulesDemoRepository, MockRulesDemoRepository>();
                 services.AddTransient<Design.Domain.Rules.IFluentRulesRepository, MockFluentRulesRepository>();
 
@@ -180,6 +181,12 @@ internal class MockSaveAggregateRepository : Design.Domain.FactoryOperations.ISa
 internal class MockPropertyDemoRepository : Design.Domain.PropertySystem.IPropertyDemoRepository
 {
     public (string Name, int Value) GetById(int id) => ($"Property-{id}", id * 2);
+}
+
+internal class MockFieldLevelAuthRepository : Design.Domain.PropertySystem.IFieldLevelAuthRepository
+{
+    public (string Name, decimal Salary, string Department) GetById(int id)
+        => ($"Employee-{id}", 75000m, "Engineering");
 }
 
 internal class MockRulesDemoRepository : Design.Domain.Rules.IRulesDemoRepository

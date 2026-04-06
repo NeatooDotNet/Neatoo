@@ -141,17 +141,11 @@ After save, replace the bound reference so the UI re-binds:
 
 ---
 
-### 6. No Per-Property Authorization (CanRead/CanWrite)
+### 6. ~~No Per-Property Authorization (CanRead/CanWrite)~~ — RESOLVED
 
 **CSLA pattern:** `CanReadProperty()`, `CanWriteProperty()` with role-based authorization rules per property.
 
-**Neatoo reality:** `IValidateProperty.IsReadOnly` exists but is structural (set from `PropertyInfo.IsPrivateSetter`), not dynamic or role-based. No `CanReadProperty` / `CanWriteProperty` system. Authorization is at factory operation level via `[AuthorizeFactory<T>]` and `[AspAuthorize]` (documented in RemoteFactory skill).
-
-**Recommended skill fix:** Add to `pitfalls.md`:
-
-```
-| Expecting per-property authorization (CanRead/CanWrite) | Neatoo has `IsReadOnly` on properties (structural, from private setter) but no dynamic role-based per-property authorization. | Use `[AuthorizeFactory<T>]` for operation-level auth (see RemoteFactory skill). For dynamic read-only, set `IsReadOnly` in rules or factory methods. |
-```
+**Neatoo solution:** `IValidateProperty.MarkReadOnly()` provides dynamic per-property write authorization. Call `this["FieldName"].MarkReadOnly()` in factory methods (e.g., `[Fetch]`) based on user permissions. One-and-done — once read-only, always read-only. `IsReadOnly` serializes to the client, and MudNeatoo components automatically bind `ReadOnly="@EntityProperty.IsReadOnly"`. No `CanReadProperty` equivalent — all properties remain readable. Authorization is at factory operation level via `[AuthorizeFactory<T>]` and `[AspAuthorize]` (documented in RemoteFactory skill).
 
 ---
 

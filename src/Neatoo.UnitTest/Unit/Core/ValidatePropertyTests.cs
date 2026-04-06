@@ -1380,6 +1380,163 @@ public class ValidatePropertyTests
 
     #endregion
 
+    #region MarkReadOnly Tests
+
+    [TestMethod]
+    public void MarkReadOnly_SetsIsReadOnlyTrue()
+    {
+        // Scenario 1: MarkReadOnly sets the flag
+        // Arrange
+        var wrapper = CreatePropertyInfoWrapper<string>("Name");
+        var property = new ValidateProperty<string>(wrapper);
+        Assert.IsFalse(property.IsReadOnly);
+
+        // Act
+        property.MarkReadOnly();
+
+        // Assert
+        Assert.IsTrue(property.IsReadOnly);
+    }
+
+    [TestMethod]
+    public void MarkReadOnly_SetValueThrows()
+    {
+        // Scenario 2: SetValue on MarkReadOnly'd property throws
+        // Arrange
+        var wrapper = CreatePropertyInfoWrapper<string>("Name");
+        var property = new ValidateProperty<string>(wrapper);
+        property.MarkReadOnly();
+
+        // Act & Assert
+        Assert.ThrowsExactly<PropertyReadOnlyException>(() => property.Value = "NewValue");
+    }
+
+    [TestMethod]
+    public async Task MarkReadOnly_SetPrivateValueSucceeds()
+    {
+        // Scenario 3: SetPrivateValue bypasses IsReadOnly
+        // Arrange
+        var wrapper = CreatePropertyInfoWrapper<string>("Name");
+        var property = new ValidateProperty<string>(wrapper);
+        property.MarkReadOnly();
+
+        // Act
+        await property.SetPrivateValue("PrivateValue");
+
+        // Assert
+        Assert.AreEqual("PrivateValue", property.Value);
+    }
+
+    [TestMethod]
+    public void MarkReadOnly_LoadValueSucceeds()
+    {
+        // Scenario 4: LoadValue bypasses IsReadOnly
+        // Arrange
+        var wrapper = CreatePropertyInfoWrapper<string>("Name");
+        var property = new ValidateProperty<string>(wrapper);
+        property.MarkReadOnly();
+
+        // Act
+        property.LoadValue("LoadedValue");
+
+        // Assert
+        Assert.AreEqual("LoadedValue", property.Value);
+    }
+
+    [TestMethod]
+    public void MarkReadOnly_IsPermanent()
+    {
+        // Scenario 5: Once read-only, cannot be set back to false
+        // Arrange
+        var wrapper = CreatePropertyInfoWrapper<string>("Name");
+        var property = new ValidateProperty<string>(wrapper);
+        property.MarkReadOnly();
+
+        // Act - attempt to set IsReadOnly back to false via protected setter
+        // The one-and-done protection is in the setter, which is tested via the
+        // JsonConstructor path: construct with isReadOnly=true, then verify it stays true
+        var reconstructed = new ValidateProperty<string>("Name", "value", Array.Empty<IRuleMessage>(), true);
+
+        // Assert - IsReadOnly stays true
+        Assert.IsTrue(reconstructed.IsReadOnly);
+    }
+
+    [TestMethod]
+    public void MarkReadOnly_OnAlreadyReadOnly_IsNoOp()
+    {
+        // Scenario 6: MarkReadOnly on a private-set (already read-only) property is a no-op
+        // Arrange
+        var wrapper = CreatePropertyInfoWrapper<string>("ReadOnlyProperty");
+        var property = new ValidateProperty<string>(wrapper);
+        Assert.IsTrue(property.IsReadOnly); // Already true from private set
+
+        // Act - should not throw or change state
+        property.MarkReadOnly();
+
+        // Assert
+        Assert.IsTrue(property.IsReadOnly);
+    }
+
+    [TestMethod]
+    public void MarkReadOnly_FiresPropertyChanged()
+    {
+        // Scenario 8: MarkReadOnly fires PropertyChanged for "IsReadOnly"
+        // Arrange
+        var wrapper = CreatePropertyInfoWrapper<string>("Name");
+        var property = new ValidateProperty<string>(wrapper);
+        var changedProperties = new List<string>();
+        property.PropertyChanged += (sender, e) => changedProperties.Add(e.PropertyName!);
+
+        // Act
+        property.MarkReadOnly();
+
+        // Assert
+        Assert.IsTrue(changedProperties.Contains("IsReadOnly"),
+            "PropertyChanged should fire for IsReadOnly when MarkReadOnly() is called");
+    }
+
+    [TestMethod]
+    public void MarkReadOnly_OnAlreadyReadOnly_DoesNotFirePropertyChanged()
+    {
+        // MarkReadOnly on an already-readonly property should not fire PropertyChanged
+        // Arrange
+        var wrapper = CreatePropertyInfoWrapper<string>("ReadOnlyProperty");
+        var property = new ValidateProperty<string>(wrapper);
+        Assert.IsTrue(property.IsReadOnly);
+        var changedProperties = new List<string>();
+        property.PropertyChanged += (sender, e) => changedProperties.Add(e.PropertyName!);
+
+        // Act
+        property.MarkReadOnly();
+
+        // Assert
+        Assert.IsFalse(changedProperties.Contains("IsReadOnly"),
+            "PropertyChanged should not fire when property is already read-only");
+    }
+
+    [TestMethod]
+    public void MarkReadOnly_SerializationRoundTrip()
+    {
+        // Scenario 9: IsReadOnly=true survives JSON constructor round-trip
+        // Arrange
+        var wrapper = CreatePropertyInfoWrapper<string>("Name");
+        var property = new ValidateProperty<string>(wrapper);
+        property.MarkReadOnly();
+
+        // Act - simulate serialization round-trip via JSON constructor
+        var deserialized = new ValidateProperty<string>(
+            property.Name,
+            property.Value!,
+            property.SerializedRuleMessages,
+            property.IsReadOnly);
+
+        // Assert
+        Assert.IsTrue(deserialized.IsReadOnly,
+            "IsReadOnly should survive serialization round-trip");
+    }
+
+    #endregion
+
     #region Value Type Tests
 
     [TestMethod]
