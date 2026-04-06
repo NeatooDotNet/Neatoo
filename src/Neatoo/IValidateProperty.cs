@@ -50,6 +50,14 @@ public interface IValidateProperty : INotifyPropertyChanged, INotifyNeatooProper
     bool IsReadOnly { get; }
 
     /// <summary>
+    /// Permanently marks this property as read-only.
+    /// Once called, <see cref="SetValue"/> will throw <see cref="PropertyReadOnlyException"/>.
+    /// <see cref="SetPrivateValue"/> and <see cref="LoadValue"/> continue to work.
+    /// This cannot be reversed — once read-only, always read-only.
+    /// </summary>
+    void MarkReadOnly();
+
+    /// <summary>
     /// Marks the property as busy with the specified identifier.
     /// </summary>
     /// <param name="id">A unique identifier for the busy operation.</param>
