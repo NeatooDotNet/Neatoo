@@ -18,6 +18,12 @@ public partial class MudNeatooDatePicker : ComponentBase, IDisposable
     public IEntityProperty EntityProperty { get; set; } = default!;
 
     /// <summary>
+    /// If true, the field is disabled regardless of the entity property's busy state.
+    /// </summary>
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    /// <summary>
     /// The visual variant of the date picker.
     /// </summary>
     [Parameter]

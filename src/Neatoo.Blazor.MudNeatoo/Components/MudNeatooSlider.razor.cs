@@ -20,6 +20,12 @@ public partial class MudNeatooSlider<T> : ComponentBase, IDisposable where T : s
     public IEntityProperty EntityProperty { get; set; } = default!;
 
     /// <summary>
+    /// If true, the field is disabled regardless of the entity property's busy state.
+    /// </summary>
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    /// <summary>
     /// The label text displayed above the slider.
     /// If not specified, uses the EntityProperty.DisplayName.
     /// </summary>

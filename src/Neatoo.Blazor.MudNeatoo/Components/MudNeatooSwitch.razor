@@ -7,7 +7,7 @@
                Value="@TypedValue"
                ValueChanged="@OnValueChanged"
                Label="@DisplayLabel"
-               Disabled="@EntityProperty.IsBusy"
+               Disabled="@(EntityProperty.IsBusy || Disabled)"
                ReadOnly="@EntityProperty.IsReadOnly"
                Color="@Color"
                UncheckedColor="@UncheckedColor"

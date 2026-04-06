@@ -19,6 +19,12 @@ public partial class MudNeatooRadioGroup<T> : ComponentBase, IDisposable
     public IEntityProperty EntityProperty { get; set; } = default!;
 
     /// <summary>
+    /// If true, the field is disabled regardless of the entity property's busy state.
+    /// </summary>
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    /// <summary>
     /// The child content containing MudRadio elements.
     /// </summary>
     [Parameter]

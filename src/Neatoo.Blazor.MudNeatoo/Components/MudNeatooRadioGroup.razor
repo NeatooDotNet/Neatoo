@@ -5,7 +5,7 @@
 <MudRadioGroup T="T"
                Value="@TypedValue"
                ValueChanged="@OnValueChanged"
-               Disabled="@EntityProperty.IsBusy"
+               Disabled="@(EntityProperty.IsBusy || Disabled)"
                ReadOnly="@EntityProperty.IsReadOnly"
                Class="@Class">
     @ChildContent
