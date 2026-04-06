@@ -11,7 +11,7 @@
     <MudSlider T="T"
                Value="@TypedValue"
                ValueChanged="@OnValueChanged"
-               Disabled="@EntityProperty.IsBusy"
+               Disabled="@(EntityProperty.IsBusy || Disabled)"
                Min="@Min"
                Max="@Max"
                Step="@Step"

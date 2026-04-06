@@ -41,7 +41,7 @@ The component automatically:
 - Displays `DisplayName` as the label
 - Calls `SetValue()` on change (triggers business rules)
 - Shows `PropertyMessages` as validation errors
-- Disables when `IsBusy` (async rules running)
+- Disables when `IsBusy` (async rules running) or when the caller passes `Disabled="true"`
 - Sets read-only when `IsReadOnly`
 
 ### What NOT to Do
@@ -91,7 +91,7 @@ See `references/anti-patterns.md` for the complete anti-pattern catalog with rea
 | `MudNeatooAutocomplete<T>` | `MudAutocomplete<T>` | Any type |
 | `NeatooValidationSummary` | `MudAlert` | (entity-level errors) |
 
-All MudBlazor parameters pass through — `Variant`, `Margin`, `HelperText`, `Adornment`, `Class`, `Min`, `Max`, etc. — **except `ReadOnly`** on components that wrap MudBlazor inputs with a `ReadOnly` parameter (hardcoded to `EntityProperty.IsReadOnly`; see ReadOnly Behavior below).
+All MudBlazor parameters pass through — `Variant`, `Margin`, `HelperText`, `Adornment`, `Class`, `Min`, `Max`, etc. — **except `ReadOnly`** (hardcoded to `EntityProperty.IsReadOnly`; see ReadOnly Behavior below) and **`Disabled`** (OR'd with `EntityProperty.IsBusy`; see Disabled Behavior below).
 
 ## Binding Patterns
 
@@ -224,7 +224,7 @@ A complete form page follows this structure:
 
 1. **Inject the factory interface** — not the concrete class
 2. **Use `IsSavable` to disable save button** — it combines `IsValid && IsModified && !IsBusy && !IsChild`
-3. **Subscribe to `PropertyChanged`** — so Blazor re-renders when `IsSavable` changes
+3. **Subscribe to `PropertyChanged`** — so Blazor re-renders when `IsSavable` changes. This is sufficient here because root meta flags (`IsValid`, `IsModified`, `IsBusy`) bubble through `PropertyChanged` even when the trigger is a descendant change. For components that need to react to descendant *property names* (e.g. a custom validation summary), use `NeatooPropertyChanged` instead. See `references/property-change-events.md`.
 4. **Call `WaitForTasks()` before save** — ensures async validation completes
 5. **Replace the entity reference after save** — `Save()` returns the updated entity
 6. **Implement `IDisposable`** — unsubscribe from `PropertyChanged`
@@ -355,7 +355,7 @@ This is what MudNeatoo components do internally — prefer the components, fall 
 
 `ReadOnly` is **not** a pass-through parameter on MudNeatoo components that wrap a MudBlazor input with a `ReadOnly` parameter. These components hardcode `ReadOnly="@EntityProperty.IsReadOnly"` in their Razor templates. You cannot override it via a component parameter.
 
-**Exception:** `MudNeatooSlider` does not bind `ReadOnly`. MudBlazor's `MudSlider` has no `ReadOnly` parameter — the slider uses only `Disabled="@EntityProperty.IsBusy"`.
+**Exception:** `MudNeatooSlider` does not bind `ReadOnly`. MudBlazor's `MudSlider` has no `ReadOnly` parameter — the slider uses `Disabled="@(EntityProperty.IsBusy || Disabled)"`, following the same Disabled Behavior as all other MudNeatoo components.
 
 `IsReadOnly` is determined by `propertyInfo.IsPrivateSetter`:
 - Property with `private set` or get-only (no setter) -> `IsReadOnly = true`
@@ -364,9 +364,32 @@ This is what MudNeatoo components do internally — prefer the components, fall 
 
 This means read-only state is controlled entirely by the domain model's property declaration. To make a property read-only, declare it with a `private set` or as get-only.
 
+### Disabled Behavior
+
+Every MudNeatoo component accepts an optional `Disabled` parameter (default `false`). The inner MudBlazor component is disabled when EITHER `EntityProperty.IsBusy` is true (async rules running) OR the caller passes `Disabled="true"`. The template expression is:
+
+```razor
+Disabled="@(EntityProperty.IsBusy || Disabled)"
+```
+
+This means:
+- Without a `Disabled` parameter, components disable only during async rule execution (backward-compatible default)
+- Passing `Disabled="true"` (or binding to a condition) forces the field disabled regardless of `IsBusy`
+- You cannot force a field *enabled* while `IsBusy` is true — `IsBusy` always wins
+
+Common use case — disable fields based on a domain condition:
+
+```razor
+<MudNeatooTextField T="string"
+                    EntityProperty="@entity[nameof(IOrder.ShippingAddress)]"
+                    Disabled="@(!entity.RequiresShipping)" />
+```
+
+**Contrast with ReadOnly:** `ReadOnly` is hardcoded to `EntityProperty.IsReadOnly` with no caller override — read-only state is owned entirely by the domain model. `Disabled` allows both domain-driven (`IsBusy`) and UI-driven disabling.
+
 ## Display-Only Binding
 
-For read-only display of entity values (not form inputs), bind directly to entity properties. The entity implements `INotifyPropertyChanged`, so Blazor re-renders automatically:
+For read-only display of entity values (not form inputs), bind directly to entity properties. Blazor does **not** auto-subscribe to `INotifyPropertyChanged` — these bindings re-render because the containing form page is already subscribed to entity `PropertyChanged` for `IsSavable` (see the Page Structure Pattern above), and display bindings piggyback on that re-render cycle. If you render a view-only page with no form subscription, subscribe explicitly — see `references/property-change-events.md`.
 
 ```razor
 <MudText>@entity.Total</MudText>
@@ -409,3 +432,5 @@ MudBlazor 9.x renamed `ShowMessageBox` to `ShowMessageBoxAsync` on `IDialogServi
 ## Reference Documentation
 
 - **`references/anti-patterns.md`** — Complete catalog of anti-patterns with correct alternatives
+- **`references/property-change-events.md`** — `PropertyChanged` vs `NeatooPropertyChanged`: which to use, why MudNeatoo components only need `PropertyChanged`, and how to build custom container components that react to deep-graph changes
+- **`references/aggregate-reactive-vm.md`** — ViewModel computed properties that stay in sync with live aggregate edits via PropertyChanged subscription

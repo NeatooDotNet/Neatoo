@@ -5,7 +5,7 @@
                TimeChanged="@OnValueChanged"
                Validation="@ValidateAsync"
                Label="@EntityProperty.DisplayName"
-               Disabled="@EntityProperty.IsBusy"
+               Disabled="@(EntityProperty.IsBusy || Disabled)"
                ReadOnly="@EntityProperty.IsReadOnly"
                Variant="@Variant"
                Margin="@Margin"
