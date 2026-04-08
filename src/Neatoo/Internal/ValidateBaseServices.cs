@@ -12,7 +12,7 @@ public class ValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAccesse
     public IPropertyInfoList<T> PropertyInfoList { get; protected set; }
     public IValidatePropertyManager<IValidateProperty> ValidatePropertyManager { get; }
     public IPropertyFactory<T> PropertyFactory { get; protected set; }
-    public ILogger Logger { get; protected set; }
+    public ILogger<T> Logger { get; protected set; }
 
     public RuleManagerFactory<T> ruleManagerFactory { get; protected set; }
 
@@ -23,7 +23,7 @@ public class ValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAccesse
         this.ValidatePropertyManager = new ValidatePropertyManager<IValidateProperty>(PropertyInfoList, factory);
         this.PropertyFactory = new DefaultPropertyFactory<T>(PropertyInfoList, factory);
         this.ruleManagerFactory = new RuleManagerFactory<T>(new AttributeToRule());
-        this.Logger = NullLoggerFactory.Instance.CreateLogger("Neatoo.Trace");
+        this.Logger = new NullLogger<T>();
     }
 
     public ValidateBaseServices(IPropertyInfoList<T> propertyInfoList, RuleManagerFactory<T> createRuleManager)
@@ -32,7 +32,7 @@ public class ValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAccesse
         var factory = new DefaultFactory();
         this.PropertyFactory = new DefaultPropertyFactory<T>(PropertyInfoList, factory);
         this.ruleManagerFactory = createRuleManager;
-        this.Logger = NullLoggerFactory.Instance.CreateLogger("Neatoo.Trace");
+        this.Logger = new NullLogger<T>();
     }
 
     public ValidateBaseServices(CreateValidatePropertyManager validatePropertyManager, IPropertyInfoList<T> propertyInfoList, RuleManagerFactory<T> createRuleManager)
@@ -42,7 +42,7 @@ public class ValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAccesse
         ValidatePropertyManager = validatePropertyManager(PropertyInfoList);
         this.PropertyFactory = new DefaultPropertyFactory<T>(PropertyInfoList, factory);
         this.ruleManagerFactory = createRuleManager;
-        this.Logger = NullLoggerFactory.Instance.CreateLogger("Neatoo.Trace");
+        this.Logger = new NullLogger<T>();
     }
 
     public ValidateBaseServices(
@@ -55,7 +55,7 @@ public class ValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAccesse
         ValidatePropertyManager = validatePropertyManager(PropertyInfoList);
         this.PropertyFactory = propertyFactory;
         this.ruleManagerFactory = createRuleManager;
-        this.Logger = NullLoggerFactory.Instance.CreateLogger("Neatoo.Trace");
+        this.Logger = new NullLogger<T>();
     }
 
     public ValidateBaseServices(
@@ -69,8 +69,8 @@ public class ValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAccesse
         ValidatePropertyManager = validatePropertyManager(PropertyInfoList);
         this.PropertyFactory = propertyFactory;
         this.ruleManagerFactory = createRuleManager;
-        this.Logger = loggerFactory?.CreateLogger("Neatoo.Trace")
-            ?? NullLoggerFactory.Instance.CreateLogger("Neatoo.Trace");
+        this.Logger = loggerFactory?.CreateLogger<T>()
+            ?? new NullLogger<T>();
     }
 
     public IRuleManager<T> CreateRuleManager(T target)

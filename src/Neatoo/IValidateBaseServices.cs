@@ -36,9 +36,9 @@ public interface IValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAc
     IPropertyFactory<T> PropertyFactory { get; }
 
     /// <summary>
-    /// Gets the trace-level logger for Neatoo framework diagnostics (category: "Neatoo.Trace").
+    /// Gets the logger for this entity type (category: the entity's type name).
     /// </summary>
-    ILogger Logger { get; }
+    ILogger<T> Logger { get; }
 
     /// <summary>
     /// Creates a new rule manager for the specified target object.

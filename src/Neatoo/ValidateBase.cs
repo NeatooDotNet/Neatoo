@@ -190,9 +190,9 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	protected IValidateBaseServices<T> Services { get; private set; }
 
 	/// <summary>
-	/// Gets the trace-level logger for Neatoo framework diagnostics (category: "Neatoo.Trace").
+	/// Gets the logger for this entity type (category: the entity's type name).
 	/// </summary>
-	protected ILogger Logger => Services.Logger;
+	protected ILogger<T> Logger => Services.Logger;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="ValidateBase{T}"/> class.
