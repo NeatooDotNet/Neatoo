@@ -61,7 +61,7 @@ public class EntityBaseServices<[DynamicallyAccessedMembers(DynamicallyAccessedM
         var internalFactory = new DefaultFactory();
         this.EntityPropertyManager = propertyManager(propertyInfoList);
         this.PropertyFactory = new EntityPropertyFactory<T>(propertyInfoList, internalFactory);
-        this.Logger = loggerFactory.CreateLogger("Neatoo.Trace");
+        this.Logger = loggerFactory.CreateLogger<T>();
     }
 
     public EntityBaseServices(
@@ -92,7 +92,7 @@ public class EntityBaseServices<[DynamicallyAccessedMembers(DynamicallyAccessedM
         this.EntityPropertyManager = propertyManager(propertyInfoList);
         this.PropertyFactory = new EntityPropertyFactory<T>(propertyInfoList, internalFactory);
         this.Factory = factory;
-        this.Logger = loggerFactory?.CreateLogger("Neatoo.Trace")
-            ?? NullLoggerFactory.Instance.CreateLogger("Neatoo.Trace");
+        this.Logger = loggerFactory?.CreateLogger<T>()
+            ?? new NullLogger<T>();
     }
 }
