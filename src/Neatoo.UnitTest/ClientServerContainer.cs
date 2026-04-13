@@ -55,7 +55,7 @@ namespace Neatoo.UnitTest
             return result;
         }
 
-        public async Task ForDelegateEvent(Type delegateType, object?[]? parameters)
+        public async Task ForDelegateEvent(Type delegateType, object?[]? parameters, CancellationToken cancellationToken = default)
         {
             // For events, we simulate the fire-and-forget pattern
             // The server handles in a new scope, but we await acknowledgment
@@ -67,7 +67,7 @@ namespace Neatoo.UnitTest
             // Use the Server's container - fire and forget semantics (no return value needed)
             await serviceProvider.GetRequiredService<ServerServiceProvider>()
                                  .serverProvider
-                                 .GetRequiredService<HandleRemoteDelegateRequest>()(remoteRequestOnServer, default);
+                                 .GetRequiredService<HandleRemoteDelegateRequest>()(remoteRequestOnServer, cancellationToken);
         }
     }
 
