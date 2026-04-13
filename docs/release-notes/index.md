@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.28.0** (2026-04-08)
+**Neatoo 0.28.1** (2026-04-12)
 
 ---
 
@@ -12,6 +12,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.28.1](v0.28.1.md) | 2026-04-12 | Bug Fix | `PropertyInfoWrapper` attribute caches thread-safe; fixes shared-wrapper Dictionary corruption under concurrent load |
 | [0.28.0](v0.28.0.md) | 2026-04-08 | Feature | `Logger` is now `ILogger<T>` for consumer logging |
 | [0.27.0](v0.27.0.md) | 2026-04-06 | Feature | Field-level authorization via `MarkReadOnly()` |
 | [0.26.1](v0.26.1.md) | 2026-04-04 | Bug Fix | Hash-based rule IDs fix inheritance collision |
