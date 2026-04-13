@@ -43,6 +43,18 @@ public partial class MudNeatooTextField<T> : ComponentBase, IDisposable
     public int Lines { get; set; } = 1;
 
     /// <summary>
+    /// The resizing behavior of the input. Use <see cref="InputSizing.Auto"/> for a textarea that grows with its content (requires <see cref="Lines"/> &gt; 1).
+    /// </summary>
+    [Parameter]
+    public InputSizing Sizing { get; set; } = InputSizing.Fixed;
+
+    /// <summary>
+    /// The maximum number of lines the textarea will grow to when <see cref="Sizing"/> is <see cref="InputSizing.Auto"/>. 0 means unlimited.
+    /// </summary>
+    [Parameter]
+    public int MaxLines { get; set; }
+
+    /// <summary>
     /// Helper text displayed below the input.
     /// </summary>
     [Parameter]
