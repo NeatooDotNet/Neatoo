@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.29.0** (2026-04-13)
+**Neatoo 0.30.1** (2026-04-14)
 
 ---
 
@@ -12,6 +12,8 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.30.1](v0.30.1.md) | 2026-04-14 | Bug Fix | MudNeatooTextField no longer forwards `null` `UserAttributes`; fixes MudBlazor `ArgumentNullException` on init |
+| [0.30.0](v0.30.0.md) | 2026-04-13 | Feature | MudNeatooTextField `UserAttributes` escape hatch for native HTML attributes |
 | [0.29.0](v0.29.0.md) | 2026-04-13 | Feature + Fix | MudNeatooTextField `Sizing`/`MaxLines`; MudNeatooNumericField no longer clamps to 0 when Min/Max/Step unset |
 | [0.28.1](v0.28.1.md) | 2026-04-12 | Bug Fix | `PropertyInfoWrapper` attribute caches thread-safe; fixes shared-wrapper Dictionary corruption under concurrent load |
 | [0.28.0](v0.28.0.md) | 2026-04-08 | Feature | `Logger` is now `ILogger<T>` for consumer logging |
@@ -56,6 +58,10 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [0.30.1](v0.30.1.md) | 2026-04-14 |
+| [0.30.0](v0.30.0.md) | 2026-04-13 |
+| [0.29.0](v0.29.0.md) | 2026-04-13 |
+| [0.28.1](v0.28.1.md) | 2026-04-12 |
 | [0.28.0](v0.28.0.md) | 2026-04-08 |
 | [0.27.0](v0.27.0.md) | 2026-04-06 |
 | [0.26.1](v0.26.1.md) | 2026-04-04 |
