@@ -102,7 +102,7 @@ public partial class MudNeatooTextField<T> : ComponentBase, IDisposable
     /// for example <c>spellcheck="true"</c> or <c>style="resize: vertical;"</c>.
     /// </summary>
     [Parameter]
-    public Dictionary<string, object>? UserAttributes { get; set; }
+    public Dictionary<string, object> UserAttributes { get; set; } = new();
 
     private T? TypedValue => (T?)this.EntityProperty.Value;
 
