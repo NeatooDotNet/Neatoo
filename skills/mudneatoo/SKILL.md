@@ -93,6 +93,37 @@ See `references/anti-patterns.md` for the complete anti-pattern catalog with rea
 
 All MudBlazor parameters pass through — `Variant`, `Margin`, `HelperText`, `Adornment`, `Class`, `Min`, `Max`, etc. — **except `ReadOnly`** (hardcoded to `EntityProperty.IsReadOnly`; see ReadOnly Behavior below) and **`Disabled`** (OR'd with `EntityProperty.IsBusy`; see Disabled Behavior below).
 
+### `MudNeatooTextField` escape hatch: `UserAttributes`
+
+`MudNeatooTextField<T>` forwards a `UserAttributes` (`Dictionary<string, object>?`) parameter to `MudTextField`. MudBlazor spreads the dictionary onto the native `<input>` or `<textarea>`, so any HTML attribute works — including ones with no typed MudBlazor parameter. Use it for:
+
+- **Spellcheck** — MudBlazor does NOT expose a `Spellcheck` parameter on `MudTextField` or `MudInput`. Set `["spellcheck"] = "true"` via `UserAttributes`.
+- **Drag-handle resize** — CSS `resize: vertical` on the `<textarea>`. Set `["style"] = "resize: vertical;"` via `UserAttributes`.
+
+```razor
+@* Auto-growing textarea with browser spellcheck *@
+<MudNeatooTextField T="string"
+                    EntityProperty="@entity[nameof(IPatient.Notes)]"
+                    Lines="4"
+                    Sizing="InputSizing.Auto"
+                    MaxLines="20"
+                    UserAttributes="@(new() { ["spellcheck"] = "true" })" />
+
+@* Fixed-height textarea with user drag handle *@
+<MudNeatooTextField T="string"
+                    EntityProperty="@entity[nameof(IPatient.Notes)]"
+                    Lines="4"
+                    UserAttributes="@(new() { ["style"] = "resize: vertical;" })" />
+```
+
+### Multi-line text: `Lines`, `Sizing`, `MaxLines`
+
+`MudNeatooTextField<T>` also forwards MudBlazor's multi-line parameters:
+
+- `Lines` (`int`, default `1`) — set greater than `1` for a `<textarea>`.
+- `Sizing` (`InputSizing`, default `Fixed`) — `InputSizing.Auto` grows the textarea with its content (requires `Lines > 1`).
+- `MaxLines` (`int`, default `0`) — upper bound on auto-grow. `0` means unlimited.
+
 ## Binding Patterns
 
 ### Text and Numeric Fields

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
-using Neatoo;
 using System.ComponentModel;
 
 namespace Neatoo.Blazor.MudNeatoo.Components;
@@ -95,6 +94,15 @@ public partial class MudNeatooTextField<T> : ComponentBase, IDisposable
     /// </summary>
     [Parameter]
     public string? Class { get; set; }
+
+    /// <summary>
+    /// Arbitrary HTML attributes forwarded to the underlying MudBlazor component, which
+    /// spreads them onto the native <c>&lt;input&gt;</c> or <c>&lt;textarea&gt;</c> element.
+    /// Use this as an escape hatch for attributes not exposed as typed parameters --
+    /// for example <c>spellcheck="true"</c> or <c>style="resize: vertical;"</c>.
+    /// </summary>
+    [Parameter]
+    public Dictionary<string, object>? UserAttributes { get; set; }
 
     private T? TypedValue => (T?)this.EntityProperty.Value;
 
