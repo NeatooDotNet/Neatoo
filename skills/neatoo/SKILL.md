@@ -93,12 +93,12 @@ See `references/domain-logic-placement.md` for detailed patterns: computed prope
 
 | Property | Type | Meaning |
 |----------|------|---------|
-| `IsModified` | bool | Has unsaved changes (this or children) |
-| `IsSelfModified` | bool | This object (only) has changes |
+| `IsModified` | bool | Needs persistence: `PropertyManager.IsModified \|\| IsDeleted \|\| IsNew \|\| IsSelfModified`. True after Create (because IsNew), false after Fetch. |
+| `IsSelfModified` | bool | This object's own properties changed (excludes children, excludes IsNew) |
 | `IsValid` | bool | This object and all children pass validation |
 | `IsSelfValid` | bool | This object (only) passes validation |
 | `IsSavable` | bool | `IsValid && IsModified && !IsBusy && !IsChild` |
-| `IsNew` | bool | Not yet persisted |
+| `IsNew` | bool | Not yet persisted. Set true by Create, set false by Fetch/Insert. Implies `IsModified`. |
 | `IsDeleted` | bool | Marked for deletion |
 | `RuleManager` | IRuleManager | Access to validation rules |
 

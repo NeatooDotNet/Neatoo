@@ -58,35 +58,17 @@ Remove items from entity collections (tracks for deletion):
 <!-- snippet: collections-remove-entity -->
 <a id='snippet-collections-remove-entity'></a>
 ```cs
-[Fact]
-public void RemoveFromEntityList_TracksForDeletion()
-{
-    var orderFactory = GetRequiredService<ICollectionOrderFactory>();
-    var order = orderFactory.Create();
+// Remove from EntityListBase - existing item goes to DeletedList
+order.Items.Remove(item);
 
-    // Create an "existing" item (simulating loaded from database)
-    var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
-    var item = itemFactory.Fetch("WIDGET-001", 19.99m, 1);
+// Item removed from active list
+Assert.Empty(order.Items);
 
-    // Add fetched item to order
-    order.Items.Add(item);
-    order.DoMarkUnmodified();
-
-    Assert.Single(order.Items);
-    Assert.False(item.IsNew);
-
-    // Remove from EntityListBase - existing item goes to DeletedList
-    order.Items.Remove(item);
-
-    // Item removed from active list
-    Assert.Empty(order.Items);
-
-    // Item is marked deleted and tracked for persistence
-    Assert.True(item.IsDeleted);
-    Assert.Equal(1, order.Items.DeletedCount);
-}
+// Item is marked deleted and tracked for persistence
+Assert.True(item.IsDeleted);
+Assert.Equal(1, order.Items.DeletedCount);
 ```
-<sup><a href='/src/samples/CollectionsSamples.cs#L181-L209' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-entity' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L198-L208' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-remove-entity' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 For validate-only collections (ValidateListBase), items are simply removed:
@@ -290,33 +272,15 @@ Entity collections track deleted items:
 <!-- snippet: collections-deleted-list -->
 <a id='snippet-collections-deleted-list'></a>
 ```cs
-[Fact]
-public void DeletedList_TracksRemovedEntitiesUntilSave()
-{
-    var orderFactory = GetRequiredService<ICollectionOrderFactory>();
-    var order = orderFactory.Create();
+// Remove an item - goes to DeletedList
+order.Items.Remove(item1);
+Assert.True(item1.IsDeleted);
+Assert.Equal(1, order.Items.DeletedCount);
 
-    var itemFactory = GetRequiredService<ICollectionOrderItemFactory>();
-
-    // Create "existing" items (simulating loaded from database)
-    var item1 = itemFactory.Fetch("ITEM-001", 10m, 1);
-    var item2 = itemFactory.Fetch("ITEM-002", 20m, 2);
-
-    // Add fetched items
-    order.Items.Add(item1);
-    order.Items.Add(item2);
-    order.DoMarkUnmodified();
-
-    // Remove an item - goes to DeletedList
-    order.Items.Remove(item1);
-    Assert.True(item1.IsDeleted);
-    Assert.Equal(1, order.Items.DeletedCount);
-
-    // Collection is modified because of DeletedList
-    Assert.True(order.Items.IsModified);
-}
+// Collection is modified because of DeletedList
+Assert.True(order.Items.IsModified);
 ```
-<sup><a href='/src/samples/CollectionsSamples.cs#L347-L373' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-deleted-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/CollectionsSamples.cs#L364-L372' title='Snippet source file'>snippet source</a> | <a href='#snippet-collections-deleted-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Deletion State Behavior
