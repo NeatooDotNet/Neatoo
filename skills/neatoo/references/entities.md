@@ -6,7 +6,7 @@
 
 ### Creating New Entities
 
-New entities have `IsNew = true` until saved:
+After Create: `IsNew = true` and `IsModified = true` (because `IsModified` includes `IsNew` in its formula — a new object needs to be persisted). After Fetch: `IsNew = false` and `IsModified = false` (the object matches its persisted state).
 
 <!-- snippet: entities-is-new -->
 <a id='snippet-entities-is-new'></a>
@@ -208,36 +208,23 @@ public void ModificationState_TracksChanges()
 <sup><a href='/src/samples/EntitiesSamples.cs#L532-L557' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-modification-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-### Marking Clean/Dirty
+### Marking Modified
 
-Manually control dirty state:
+`MarkModified()` is a **protected** method on `EntityBase`. Call it from within the entity to force `IsModified = true` without changing any properties (e.g., to trigger a timestamp update on save):
 
-<!-- snippet: entities-mark-modified -->
-<a id='snippet-entities-mark-modified'></a>
-```cs
-[Fact]
-public void MarkModified_ForcesEntityToBeSaved()
+```csharp
+// Inside entity class — MarkModified() is protected
+[Update]
+internal async Task Update([Service] IRepository repo)
 {
-    var factory = GetRequiredService<IEntitiesOrderFactory>();
+    // ... persist
+}
 
-    // Fetch existing order
-    var order = factory.Fetch(1, "ORD-001", DateTime.Today);
-
-    Assert.False(order.IsModified);
-    Assert.False(order.IsMarkedModified);
-
-    // Force entity to be saved (e.g., timestamp update)
-    order.DoMarkModified();
-
-    Assert.True(order.IsModified);
-    Assert.True(order.IsSelfModified);
-    Assert.True(order.IsMarkedModified);
+public void TouchForSave()
+{
+    MarkModified(); // Forces IsSavable = true even with no property changes
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L559-L578' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-mark-modified' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-<!-- snippet: entities-mark-unmodified -->
-<!-- endSnippet -->
 
 ## Persistence State
 
