@@ -75,6 +75,153 @@ When writing or reviewing `.razor` files: if there are more than 3 conditional/c
 
 See `references/domain-logic-placement.md` for detailed patterns: computed properties, conditional visibility, cascading state, async side-effects, workflow state machines, child property triggers for parent-child reactivity, class-based rules with DI, and the refactoring smell test table.
 
+## The Three-Phase Pattern
+
+Every user interaction in a Neatoo app follows three sequential, non-overlapping phases:
+
+**1. Set state.** Business methods — on the root, on children, called by any consumer — mutate properties. `IsModified` becomes true. `PropertyChanged` fires. Adding items to child collections (e.g., `order.Items.AddItem()`, `plan.PendingAuditRecordsEntity.Add(...)`) is also phase 1; these are state mutations, not persistence.
+
+**2. Validate.** Rules re-run on the affected properties — sync (`AddAction`, `AddValidation`) and async (`AddActionAsync`, `AddValidationAsync`, class-based `AsyncRuleBase<T>`). `IsSelfValid` is the entity alone; `IsValid` aggregates the entity plus every descendant. Consumers call `await entity.WaitForTasks()` if async rules may be in flight before reading `IsValid` / calling `Save()`.
+
+**3. Save.** The caller invokes `Save()` on the root. Factory methods (`[Insert]` / `[Update]` / `[Delete]`, routed by `IsNew` / `IsDeleted`) execute the persistence cascade: `MapTo` the EF entity, call repositories, commit transactions, raise factory events, persist audit records queued in phase 1, invoke `childFactory.Save` (save cascade).
+
+**The phases don't cross.** Business methods never open transactions, call repositories, or raise factory events. Factory methods never call business methods or reach back into phase 1 logic. What factory methods need to read, they read from state that phase 1 set.
+
+### Factory Method vs. Business Method Boundary
+
+| Factory methods own | Business methods own |
+|---|---|
+| `MapTo` / `MapFrom` the EF entity | Property setters |
+| Repository calls | Call other business methods on `this` |
+| Transaction begin / commit | Call business methods on children (`this.Child.Method()`) |
+| Raise factory events (via `[Service] IFactoryEvents`) | Add items to child collections |
+| Call `childFactory.Save` (save cascade) | Queue records onto state-collection properties |
+| `[Service]` parameter injection | Read `Parent` reference for ambient root state |
+| DB-snapshot-vs-in-memory diffing | (No `[Service]` injection, no repositories, no transactions, no event raises) |
+
+### What the Save Needs Must Be State
+
+Factory methods can only read what's on the entity graph. They cannot read call-context, local variables from the business method that triggered the save, or "intentions" the caller held in their head.
+
+If a save decision depends on something, put it on an entity:
+
+- "Emit the deferred APPROVED audit at archive time" → `[Update]` reads `IsApproved && !PreHasApprovedAudit && ((IVisit)Parent!).Archived`
+- "Force a side-effect on this save" → a flag the business method sets and the `[Update]` reads (e.g., `ForceEndReassess`)
+- "This save is an extension, not a modification" → loaded state from Fetch (e.g., `PreApprovedTreatments`) compared against current in-memory value
+- "Idempotency — don't emit this audit twice" → a `PreHasX` flag loaded during Fetch
+
+Don't:
+
+- Pass flags as parameters to `Save()` — Save's signature is fixed
+- Stash post-business state in a service instance
+- Reach from `[Update]` back into a business method to "ask" about something
+- Infer intent from `IsModified` alone when the save decision depends on a combination of in-memory values and ambient state
+
+## The Aggregate Is a Graph, Not a Façade
+
+Strict DDD treats the aggregate root as the single entry point: a `Visit` class would expose `EndPlanEarly(reason)` that internally calls `Plan.EndEarly(reason)`; consumers only ever touch the root; children are hidden implementation details.
+
+Neatoo rejects that encapsulation boundary. The aggregate is a graph whose nodes are all directly addressable by any consumer:
+
+```csharp
+// ViewModel calls a child business method directly
+visit.Plan.EndEarly(reason);
+
+// Razor component binds to a deep property
+<MudNeatooTextField EntityProperty="@visit.Plan[nameof(IPlan.EndedEarlyReason)]" />
+
+// Service reads any depth
+var sku = order.LineItems[0].Product.Sku;
+```
+
+**The root is a coordinator, not a gate.** It owns `Save()`, raises factory events at save time, and its `IsValid` / `IsModified` / `IsSavable` aggregate every descendant. But it does not mediate access to children.
+
+**Encapsulation lives at the property level.** Private setters, business methods, and validation rules guard state wherever it lives. You don't need the root to mediate; each entity's own surface does.
+
+**Consequence:** design every entity as though any consumer can call its methods and bind to its properties. Don't try to rebuild strict DDD gatekeeping by routing every child mutation through root wrappers — you'll fight the framework and end up duplicating logic between the root and child.
+
+## Designing Rules for Open Mutation
+
+Because any consumer can call `visit.Plan.EndEarly(reason)` as a first-class operation, your rule graph must converge correctly after that call:
+
+1. `Plan.EndEarly` sets `Plan.EndedEarly = true` and `Plan.EndedEarlyReason = reason`
+2. `Plan`'s own rules run — child-level validation
+3. `Plan.IsValid` / `Plan.IsSelfValid` update; `PropertyChanged` / `NeatooPropertyChanged` fires
+4. `Visit`'s rules that trigger on `Plan` properties re-run (via `AddAction` with a child-property trigger, or `HandleNeatooPropertyChanged`)
+5. `Visit.IsValid` aggregates — root valid only if self plus every descendant is valid
+6. `PropertyChanged` fires on the root for `IsValid` / `IsSavable`; bindings re-render
+
+**Design rule:** every mutation a consumer can make must leave the root in a correct state after all rules have run. If external mutation of a child can put the root into an invalid-but-unreported state, the rule graph is incomplete. This is the rule author's responsibility, not a framework guarantee.
+
+### Rule placement by scope
+
+| Invariant scope | Where the rule lives | Trigger |
+|---|---|---|
+| Child's own state | Child class | Own property |
+| Root state that depends on child state | Root class | Child-property trigger on root rule |
+| Summary of child state exposed on root | Root class (`AddAction`) | Child-property trigger |
+| Sibling consistency in a list | Root class | Override `HandleNeatooPropertyChanged` |
+
+**Convergence check.** After any business method that mutates a descendant, confirm `root.IsValid` reflects the full graph. If not, a rule is missing — typically on the root or an ancestor, triggered by the child property that was mutated. See `references/domain-logic-placement.md` → Pattern 6 (Child Property Triggers) and `references/rules-lifecycle.md` for trigger semantics.
+
+## Parent — The Child's Window to Ambient State
+
+Every child entity has a `Parent` reference populated automatically by the Neatoo source generator when the child is assigned to its parent (partial property set on the parent, or insertion into a child collection). `Parent` is a first-class API, not an implementation detail.
+
+### Inside a child rule
+
+```csharp
+// In the child class constructor — read ambient root state
+RuleManager.AddAction(
+    t => t.IsAvailable = t.InStock && !((IOrder)t.Parent!).IsOnHold,
+    t => t.InStock);
+```
+
+### Inside a child factory method
+
+```csharp
+[Update]
+internal async Task Update(
+    [Service] ITreatmentPlanChangeFactory auditFactory,
+    [Service] ITreatmentPlanChangeListFactory auditListFactory)
+{
+    // Read parent (root) state to decide what this save should emit
+    var visitArchived = ((IVisit)this.Parent!).Archived;
+    if (visitArchived && IsApproved && !PreHasApprovedAudit)
+    {
+        EnsureAuditList(auditListFactory);
+        PendingAuditRecordsEntity!.Add(auditFactory.CreateApproved(...));
+    }
+    // ... normal update path ...
+}
+```
+
+### Inside a child business method
+
+```csharp
+public void RefreshPrice()
+{
+    var currency = ((IOrder)this.Parent!).Currency;
+    this.Price = _priceService.GetPrice(this.Sku, currency);
+}
+```
+
+### Cast pattern
+
+`Parent` is typed as the framework base (effectively `object?` / `IBase?` at the use site). Cast to the root's interface when accessed: `((IRoot)this.Parent!).X`. If the same child type can be attached to different roots in different contexts, guard with `is IRoot root` pattern matching.
+
+### Rules of use
+
+- **Children read Parent; parents write children.** Don't mutate through `Parent` from child code — it inverts the graph.
+- **Parent access is aggregate-scoped.** A child shouldn't use `Parent` to reach an entity belonging to a *different* aggregate. If you need that, the aggregate boundary is drawn wrong.
+- **`Parent` is nullable at the type level, non-null at runtime once attached.** Before attachment (just-constructed, not yet assigned to a parent), `Parent` is null. In business methods and `[Update]` paths the entity is always attached.
+
+### Why Parent is under-taught in DDD literature
+
+DDD orthodoxy flags child→parent references as smelly: "children shouldn't know about parents; if they need parent state, the parent should call a child method passing the data." Neatoo's position: **domain aggregates are inherently coupled graphs.** Coupling inside the aggregate boundary is expected and wanted. `Parent` is the natural API for a child to read ambient aggregate context, and building workarounds to avoid it produces duplicate state flow and harder-to-follow code.
+
+The coupling concerns DDD raises are real — they apply to coupling *across* aggregate boundaries, not within. Neatoo's `Parent` stays within the aggregate by design.
+
 ## Base Class Quick Reference
 
 | DDD Concept | Neatoo Base Class | Use When |
