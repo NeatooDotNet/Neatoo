@@ -2,6 +2,8 @@
 
 This reference provides detailed guidance for placing business logic in Neatoo domain models instead of the UI layer. The core principle: **the domain model is the home for all business logic.** The UI is a thin binding layer.
 
+> **Design assumption: open mutation.** Neatoo aggregates are graphs, not façades — any consumer (ViewModel, Razor binding, service) can call business methods on children or bind directly to deep properties. Design rules so that mutating any descendant leaves the root's `IsValid` / `IsModified` correct after all rules settle. See the main `/neatoo` skill → "The Aggregate Is a Graph, Not a Façade" and "Designing Rules for Open Mutation."
+
 ## The Logic Placement Decision Tree
 
 When encountering any business logic during implementation, apply this decision tree:
