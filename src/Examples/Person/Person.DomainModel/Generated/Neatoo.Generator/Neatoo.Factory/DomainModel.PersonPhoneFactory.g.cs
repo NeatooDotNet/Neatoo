@@ -224,14 +224,6 @@ namespace DomainModel
             // DTO constructor registrations (IL trimming support)
             DtoConstructorRegistry.Register<global::Person.Dal.PersonPhoneEntity>(() => new global::Person.Dal.PersonPhoneEntity());
             DtoConstructorRegistry.Register<global::Person.Dal.PersonEntity>(() => new global::Person.Dal.PersonEntity());
-            // Event registrations
-            if (remoteLocal == NeatooFactory.Remote)
-            {
-            }
-
-            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
-            {
-            }
         }
     }
 }

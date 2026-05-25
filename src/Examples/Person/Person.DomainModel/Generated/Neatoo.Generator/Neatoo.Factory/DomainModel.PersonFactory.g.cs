@@ -498,6 +498,11 @@ namespace DomainModel
             return Task.FromResult(CanSave(cancellationToken));
         }
 
+        Task<Authorized> IFactorySave<Person>.CanSave(Person target, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new Authorized(true));
+        }
+
         public virtual Authorized CanCreate(CancellationToken cancellationToken = default)
         {
             return LocalCanCreate(cancellationToken);
@@ -639,19 +644,7 @@ namespace DomainModel
                 return authorized;
             }
 
-            authorized = ipersonauth.HasAccess();
-            if (!authorized.HasAccess)
-            {
-                return authorized;
-            }
-
             authorized = ipersonauth.HasUpdate();
-            if (!authorized.HasAccess)
-            {
-                return authorized;
-            }
-
-            authorized = ipersonauth.HasAccess();
             if (!authorized.HasAccess)
             {
                 return authorized;
@@ -688,14 +681,6 @@ namespace DomainModel
                 var factory = cc.GetRequiredService<PersonFactory>();
                 return (IPerson target, CancellationToken cancellationToken = default) => factory.LocalSave(target, cancellationToken);
             });
-            // Event registrations
-            if (remoteLocal == NeatooFactory.Remote)
-            {
-            }
-
-            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
-            {
-            }
         }
     }
 }
