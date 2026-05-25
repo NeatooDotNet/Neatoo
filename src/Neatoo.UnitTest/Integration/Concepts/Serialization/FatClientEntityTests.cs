@@ -126,6 +126,37 @@ public class FatClientEntityTests : IntegrationTestBase
     }
 
     [TestMethod]
+    public void FatClientEntity_StringAssignmentOfEqualValueFromSeparateDeserialization_DoesNotFlipIsModified()
+    {
+        // Regression: zTreatment reported spurious MODIFY audit events after a mirror write
+        // like `plan.ApprovedProtocol = recipe.Protocol`, where both strings were content-equal
+        // but came from independent JSON deserializations (distinct heap allocations). The
+        // property setter must compare strings by value, not by reference.
+        _target.MarkUnmodified();
+        var json = Serialize(_target);
+
+        // Two independent deserializations of the same payload -> two entities whose Name strings
+        // are content-equal but distinct instances. This mirrors the zTreatment Open->client->Save
+        // round-trip allocation pattern.
+        var targetA = DeserializeEntity(json);
+        var targetB = DeserializeEntity(json);
+
+        Assert.IsFalse(targetA.IsModified, "Baseline: deserialized targetA should not be modified.");
+        Assert.AreEqual(targetA.Name, targetB.Name, "Sanity: Names must be content-equal across the two deserializations.");
+        Assert.IsFalse(ReferenceEquals(targetA.Name, targetB.Name),
+            "Sanity: the two Names must be distinct instances for this regression to be exercised. " +
+            "If this fails, the JSON pipeline is interning strings and the bug cannot reproduce here.");
+
+        // Mirror write: equal content, distinct instance.
+        targetA.Name = targetB.Name;
+
+        Assert.IsFalse(targetA.IsSelfModified,
+            "IsSelfModified must not flip when mirror-writing a content-equal string from a separately deserialized entity.");
+        Assert.IsFalse(targetA.IsModified,
+            "IsModified must not flip when mirror-writing a content-equal string from a separately deserialized entity.");
+    }
+
+    [TestMethod]
     public void FatClientEntity_IsNew()
     {
 

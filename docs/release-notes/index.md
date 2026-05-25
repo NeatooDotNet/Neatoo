@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.30.1** (2026-04-14)
+**Neatoo 0.30.2** (2026-05-24)
 
 ---
 
@@ -12,6 +12,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.30.2](v0.30.2.md) | 2026-05-24 | Bug Fix + Dependency | `AreSame<P>` uses value equality for reference types — equal-content string writes no longer flip `IsModified`; RemoteFactory 1.6.1 |
 | [0.30.1](v0.30.1.md) | 2026-04-14 | Bug Fix | MudNeatooTextField no longer forwards `null` `UserAttributes`; fixes MudBlazor `ArgumentNullException` on init |
 | [0.30.0](v0.30.0.md) | 2026-04-13 | Feature | MudNeatooTextField `UserAttributes` escape hatch for native HTML attributes |
 | [0.29.0](v0.29.0.md) | 2026-04-13 | Feature + Fix | MudNeatooTextField `Sizing`/`MaxLines`; MudNeatooNumericField no longer clamps to 0 when Min/Max/Step unset |
@@ -58,6 +59,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [0.30.2](v0.30.2.md) | 2026-05-24 |
 | [0.30.1](v0.30.1.md) | 2026-04-14 |
 | [0.30.0](v0.30.0.md) | 2026-04-13 |
 | [0.29.0](v0.29.0.md) | 2026-04-13 |

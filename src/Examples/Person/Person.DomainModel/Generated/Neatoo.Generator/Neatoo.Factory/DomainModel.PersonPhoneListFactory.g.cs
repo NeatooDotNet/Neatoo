@@ -237,14 +237,6 @@ namespace DomainModel
                 var factory = cc.GetRequiredService<PersonPhoneListFactory>();
                 return (Guid personId, CancellationToken cancellationToken = default) => factory.LocalFetch1(personId, cancellationToken);
             });
-            // Event registrations
-            if (remoteLocal == NeatooFactory.Remote)
-            {
-            }
-
-            if (remoteLocal == NeatooFactory.Logical || remoteLocal == NeatooFactory.Server)
-            {
-            }
         }
     }
 }
