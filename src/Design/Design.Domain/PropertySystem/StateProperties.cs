@@ -29,7 +29,6 @@ namespace Design.Domain.PropertySystem;
 // - IsSelfModified: This object's properties changed (excluding children)
 // - IsDeleted: Marked for deletion
 // - IsSavable: Can call Save() successfully
-// - IsChild: Part of a parent aggregate
 // - Root: Reference to aggregate root
 // - ModifiedProperties: Names of changed properties
 // - IsMarkedModified: Explicitly marked (not from property changes)
@@ -208,7 +207,7 @@ internal partial class ModificationChildDemo : EntityBase<ModificationChildDemo>
 }
 
 /// <summary>
-/// Demonstrates: IsSavable, IsDeleted, IsChild, Root.
+/// Demonstrates: IsSavable, IsDeleted, Root.
 /// </summary>
 [Factory]
 internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
@@ -235,13 +234,16 @@ internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
     // =========================================================================
     // IsSavable - Can Save() Be Called?
     // =========================================================================
-    // IsSavable = IsModified && IsValid && !IsBusy && !IsChild
+    // IsSavable = IsModified && IsValid && !IsBusy
     //
     // All conditions must be true:
     // - IsModified: Must have changes to persist
     // - IsValid: All validation must pass
     // - !IsBusy: No async operations in progress
-    // - !IsChild: Not a child entity (children save through parent)
+    //
+    // Children are never saved directly: their interfaces (IEntityBase) do not
+    // expose Save()/IsSavable, and concretes are internal. The aggregate root
+    // persists them through its own Save().
     //
     // COMMON MISTAKE: Checking IsSavable without awaiting tasks.
     //
@@ -269,18 +271,21 @@ internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
     // =========================================================================
 
     // =========================================================================
-    // IsChild - Aggregate Membership
+    // Aggregate Membership - Children Persist Through the Root
     // =========================================================================
-    // IsChild = true: Entity is part of a parent aggregate.
-    //   - Set when added to an EntityListBase
-    //   - Cannot call Save() directly (throws SaveOperationException)
-    //   - Persisted through parent's Save()
+    // A child entity is part of a parent aggregate once added to an
+    // EntityListBase (or assigned as a child property). Its Root points to the
+    // aggregate root.
+    //   - Child interfaces extend IEntityBase, which exposes neither Save() nor
+    //     IsSavable, and concretes are internal — consumers cannot save a child
+    //     on its own.
+    //   - The aggregate root's Save() coordinates persistence of all children.
     //
-    // COMMON MISTAKE: Trying to save child entities.
+    // COMMON MISTAKE: Trying to save child entities directly.
     //
     // WRONG:
     //   parent.Items[0].Name = "Changed";
-    //   await parent.Items[0].Save();  // THROWS! IsChild=true, IsSavable=false
+    //   parent.Items[0].Save();  // Does not compile: IEntityBase has no Save()
     //
     // RIGHT:
     //   parent.Items[0].Name = "Changed";

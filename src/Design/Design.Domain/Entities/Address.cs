@@ -15,8 +15,8 @@ namespace Design.Domain.Entities;
 /// Demonstrates: Child entity within an aggregate.
 ///
 /// Key points:
-/// - Part of Employee aggregate (IsChild=true when in AddressList)
-/// - Cannot call Save() directly (IsSavable always false when IsChild)
+/// - Part of Employee aggregate (added to AddressList)
+/// - Cannot call Save() directly — its child interface has no Save(); persisted by Employee
 /// - Insert/Update/Delete called by parent's persistence methods
 /// - Has own validation rules
 /// </summary>
@@ -132,9 +132,8 @@ internal partial class Address : EntityBase<Address>, IAddress
 // =============================================================================
 // When an Address is added to AddressList:
 // 1. InsertItem() is called on the list
-// 2. MarkAsChild() sets address.IsChild = true
-// 3. SetContainingList() tracks ownership
-// 4. If address was deleted, UnDelete() is called
+// 2. SetContainingList() tracks ownership (Root walks to the Employee)
+// 3. If address was deleted, UnDelete() is called
 //
 // When an Address is removed from AddressList:
 // 1. RemoveItem() is called on the list
@@ -155,8 +154,7 @@ internal partial class Address : EntityBase<Address>, IAddress
 // WRONG:
 //   var employee = await employeeFactory.Fetch(1);
 //   employee.Addresses[0].City = "Seattle";
-//   await employee.Addresses[0].Save();  // THROWS SaveOperationException!
-//   // SaveFailureReason.IsChildObject
+//   employee.Addresses[0].Save();  // Does not compile: child interface has no Save()
 //
 // RIGHT:
 //   var employee = await employeeFactory.Fetch(1);

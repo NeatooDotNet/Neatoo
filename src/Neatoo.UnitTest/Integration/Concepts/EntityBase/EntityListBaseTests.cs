@@ -86,17 +86,6 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
-    public void EntityListBaseTest_ModifyChild_IsSavable()
-    {
-
-        child.FirstName = Guid.NewGuid().ToString();
-
-        // Lists do not expose IsSavable (not on IEntityListBase interface)
-        // Child entities are not savable (IsSavable false because IsChild=true)
-        Assert.IsFalse(child.IsSavable);
-    }
-
-    [TestMethod]
     public void EntityListBaseTest_Remove()
     {
         list.Remove(list.First());

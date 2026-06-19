@@ -90,12 +90,6 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     public bool IsDeleted => false;
 
     /// <summary>
-    /// Gets a value indicating whether the list is a child of another entity.
-    /// Always returns <c>false</c> as lists manage child relationships through their items.
-    /// </summary>
-    public bool IsChild => false;
-
-    /// <summary>
     /// Gets the aggregate root of the object graph this list belongs to.
     /// </summary>
     /// <value>
@@ -191,7 +185,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// <summary>
     /// Inserts an item into the collection at the specified index.
     /// When not paused, handles entity state management including undeleting previously deleted items,
-    /// marking existing items as modified, setting child status, and managing ContainingList.
+    /// marking existing items as modified, and managing ContainingList.
     /// </summary>
     /// <param name="index">The zero-based index at which to insert the item.</param>
     /// <param name="item">The entity item to insert into the collection.</param>
@@ -244,12 +238,10 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
                 itemInternal.MarkModified();
             }
 
-            itemInternal.MarkAsChild();
-
             // Set ContainingList to this list
             itemInternal.SetContainingList(this);
 
-            // Update cached modified state - item will be modified after MarkAsChild/MarkModified
+            // Update cached modified state - item will be modified after MarkModified
             if (item.IsModified)
             {
                 _cachedChildrenModified = true;

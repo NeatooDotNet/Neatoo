@@ -90,7 +90,7 @@ public interface IOrder : IEntityRoot { ... }
 public interface IOrderLine : IEntityBase { ... }
 ```
 
-**Why this exists:** `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. Developers naturally used `IsSavable` in save cascade logic to check whether children need persisting -- but it silently returned false, skipping saves (real bug in zTreatment). The fix is not to make `IsSavable` work on children -- it is to remove it from the child interface entirely. Child entity factory methods (`[Insert]`/`[Update]`) have signatures that outside consumers cannot fulfill (they often need the parent entity or parent ID), and entity classes are `internal`, so external callers should not be able to save children at all.
+**Why this exists:** `EntityBase` defines `IsSavable` (`IsModified && IsValid && !IsBusy`) and `Save()` as concrete members, so a modified child *concrete* looks savable -- but children are persisted by their aggregate root, never on their own. Exposing `IsSavable`/`Save()` on a child interface is misleading: developers naturally use `IsSavable` in save cascade logic and try to call `Save()` on a child, which the framework does not support (real bug in zTreatment, where `IsSavable` was used to decide whether children needed persisting). The fix is to keep `IsSavable`/`Save()` off the child interface entirely. Child entity factory methods (`[Insert]`/`[Update]`) have signatures that outside consumers cannot fulfill (they often need the parent entity or parent ID), and entity classes are `internal`, so external callers cannot save children at all.
 
 ### State Properties
 - `IsModified` - True when object has unsaved changes
@@ -98,7 +98,7 @@ public interface IOrderLine : IEntityBase { ... }
 - `IsNew` - True when object hasn't been persisted yet
 - `IsValid` - True when all validation rules pass
 - `IsSelfValid` - True when this object's rules pass (not children)
-- `IsSavable` - True when entity can be saved (IsModified && IsValid && !IsBusy && !IsChild). **Only on `IEntityRoot`** -- not on `IEntityBase` or `IEntityListBase`. Child entities and entity lists never expose this property through their interfaces.
+- `IsSavable` - True when entity can be saved (IsModified && IsValid && !IsBusy). **Only on `IEntityRoot`** -- not on `IEntityBase` or `IEntityListBase`. Child entities and entity lists never expose this property through their interfaces.
 
 ### Factory Operations
 

@@ -28,8 +28,6 @@ public interface IDisplayNameTestEntity : IEntityBase
     /// Child entity for testing nested DisplayName preservation.
     /// </summary>
     IDisplayNameTestEntity? Child { get; set; }
-
-    void MarkEntityAsChild();
 }
 
 /// <summary>
@@ -50,11 +48,6 @@ internal partial class DisplayNameTestEntity : EntityBase<DisplayNameTestEntity>
     public partial string? NameWithoutDisplayName { get; set; }
 
     public partial IDisplayNameTestEntity? Child { get; set; }
-
-    void IDisplayNameTestEntity.MarkEntityAsChild()
-    {
-        MarkAsChild();
-    }
 }
 
 #endregion
@@ -138,7 +131,6 @@ public class DisplayNameSerializationTests : IntegrationTestBase
         var child = GetRequiredService<IDisplayNameTestEntity>();
         child.Id = Guid.NewGuid();
         child.NameWithDisplayName = "Child Value";
-        child.MarkEntityAsChild();
         _target.Child = child;
 
         var originalChildDisplayName = child[nameof(IDisplayNameTestEntity.NameWithDisplayName)]!.DisplayName;

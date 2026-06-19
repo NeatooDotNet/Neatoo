@@ -27,7 +27,7 @@ Neatoo's equivalent of CSLA's DataPortal is split into the **RemoteFactory** —
 | `DataPortal.Fetch<T>()` | `factory.Fetch()` / `factory.FetchAsync()` | Generated from `[Fetch]` method | Documented (RemoteFactory skill) |
 | `DataPortal.Update()` / `Save()` | `entity.Save()` / `factory.SaveAsync()` | Routes to `[Insert]`/`[Update]`/`[Delete]` based on state | Documented |
 | `DataPortal.Delete<T>()` | `entity.Delete()` then `Save()` | Deferred deletion pattern | Documented |
-| `DataPortal.CreateChild<T>()` | `childFactory.Create()` | No separate child factory — same factory, framework sets `IsChild` on list add | Documented |
+| `DataPortal.CreateChild<T>()` | `childFactory.Create()` | No separate child factory — same factory; a child's `Root` points to the aggregate root after list add | Documented |
 | `DataPortal_Create` | `[Create] public void Create()` | Method attribute instead of convention | Documented |
 | `DataPortal_Fetch` | `[Fetch] public void Fetch(...)` | Method attribute | Documented |
 | `DataPortal_Insert` | `[Insert] public void Insert(...)` | Method attribute. Parent/child relationship is explicit in method parameters (e.g., child `[Insert]` takes parent ID). More explicit than CSLA. | Documented |
@@ -112,10 +112,10 @@ Authorization is handled by **RemoteFactory**, not Neatoo core. The RemoteFactor
 | `IsSelfDirty` | `IsSelfModified` | Same rename | Documented |
 | `IsValid` | `IsValid` | Same | Documented |
 | `IsSelfValid` | `IsSelfValid` | Same | Documented |
-| `IsSavable` | `IsSavable` | Same formula, only on `IEntityRoot` | Documented |
+| `IsSavable` | `IsSavable` | Only on `IEntityRoot`; Neatoo's formula omits the `!IsChild` term | Documented |
 | `IsNew` | `IsNew` | Same | Documented |
 | `IsDeleted` | `IsDeleted` | Same | Documented |
-| `IsChild` | `IsChild` | Same | Documented |
+| `IsChild` | _(removed)_ | Neatoo has no `IsChild`; children are constrained by the `IEntityBase` interface (no `Save()`/`IsSavable`) | Documented |
 | `IsBusy` | `IsBusy` | Same | Documented |
 | `MarkNew()` | `MarkNew()` (protected) | Exposed via wrapper in tests | Partially documented |
 | `MarkOld()` | `MarkOld()` (protected) | Exposed via wrapper in tests | Partially documented |

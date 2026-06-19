@@ -30,7 +30,6 @@ public class EntityParentChildFetchTests
 
         child.MarkOld();
         child.MarkUnmodified();
-        child.MarkAsChild();
         parent.MarkOld();
         parent.MarkUnmodified();
 
@@ -51,9 +50,6 @@ public class EntityParentChildFetchTests
 
         AssertMeta(parent);
         AssertMeta(child);
-
-        Assert.IsFalse(parent.IsChild);
-        Assert.IsTrue(child.IsChild);
 
     }
 
@@ -88,7 +84,6 @@ public class EntityParentChildFetchTests
         await parent.WaitForTasks();
 
         Assert.IsTrue(parent.IsSavable);
-        Assert.IsFalse(child.IsSavable);
 
     }
 

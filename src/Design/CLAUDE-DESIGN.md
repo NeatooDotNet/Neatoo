@@ -57,9 +57,9 @@ public interface IOrderItem : IEntityBase { ... }
 
 The concrete `EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`, so it retains `IsSavable` and `Save()` as concrete members. This does not matter because entity classes should be `internal` -- consumers interact through the interface, which is the access control mechanism.
 
-**Why this design exists:** `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. This created a trap where developers used `IsSavable` in save cascade logic to check whether children need persisting, but it silently returned false, skipping saves. This caused a real production bug (zTreatment). The right fix is not to make `IsSavable` work on children -- it is to remove it from the child interface entirely. Child entity factory methods (`[Insert]`/`[Update]`) have signatures that outside consumers cannot fulfill (they often need the parent entity or parent ID). Combined with `internal` on entity classes, external callers should not be able to save children at all.
+**Why this design exists:** `EntityBase` defines `IsSavable` (`IsModified && IsValid && !IsBusy`) and `Save()` as concrete members, so a modified child *concrete* looks savable -- but children are persisted by their aggregate root, never on their own. Exposing `IsSavable`/`Save()` on a child interface is therefore misleading: it invites developers to use them in save-cascade logic and to call `Save()` on a child, which the framework does not support. (This caused a real production bug in zTreatment, where `IsSavable` was used to decide whether children needed persisting.) The fix is to keep `IsSavable`/`Save()` off the child interface entirely. Child entity factory methods (`[Insert]`/`[Update]`) also have signatures that outside consumers cannot fulfill (they often need the parent entity or parent ID); combined with `internal` on entity classes, external callers cannot save children at all.
 
-**EntityListBase does not expose IsSavable.** `IsSavable` on entity lists was always false for every child -- it was faithfully propagating a lie. Removing it from the interface is not losing functionality.
+**EntityListBase does not expose IsSavable.** Lists are always persisted through the aggregate root, so a list never needs a savability flag. Removing it from the interface is not losing functionality.
 
 See `Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs` for the authoritative example.
 
@@ -70,7 +70,7 @@ See `Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs` for the author
 **EntityBase<T>** - Use for persistent entities:
 - Has IsNew, IsModified, IsDeleted, IsSavable, Save()
 - Save() routes to Insert/Update/Delete based on state
-- Child entities have IsChild=true and cannot save independently
+- Child entities cannot save independently -- they are persisted by the aggregate root
 - Root entity interfaces extend `IEntityRoot` (exposes IsSavable, Save())
 - Child entity interfaces extend `IEntityBase` (no IsSavable, no Save())
 
@@ -190,7 +190,7 @@ This routing is determined by Neatoo's state properties, not RemoteFactory.
 ### Adding a Child Entity
 
 Same as above, but:
-- The entity will have `IsChild=true` when added to an EntityListBase
+- The entity becomes part of the aggregate when added to an EntityListBase (its `Root` points to the aggregate root)
 - Do NOT add `[Remote]` to Insert/Update/Delete - parent handles persistence
 - The child entity interface extends `IEntityBase` (NOT `IEntityRoot`) -- consumers cannot access `IsSavable` or `Save()` on child entities
 - Child `[Insert]`/`[Update]` methods often require the parent entity or parent ID as parameters, which outside consumers cannot fulfill
@@ -310,8 +310,7 @@ When updating Design projects:
 | `IsModified` | EntityBase | Has unsaved changes (includes children) |
 | `IsSelfModified` | EntityBase | This object has changes (excludes children) |
 | `IsDeleted` | EntityBase | Marked for deletion |
-| `IsSavable` | EntityBase (IEntityRoot only) | IsModified && IsValid && !IsBusy && !IsChild. Only on `IEntityRoot` interface -- not on `IEntityBase` or entity lists |
-| `IsChild` | EntityBase | Part of parent aggregate |
+| `IsSavable` | EntityBase (IEntityRoot only) | IsModified && IsValid && !IsBusy. Only on `IEntityRoot` interface -- not on `IEntityBase` or entity lists |
 | `IsValid` | ValidateBase | All rules pass (includes children) |
 | `IsSelfValid` | ValidateBase | This object's rules pass (excludes children) |
 | `IsBusy` | ValidateBase | Async operations pending |
@@ -410,7 +409,6 @@ Neatoo uses custom JSON converters for client-server state transfer:
 | `IsNew` | Yes | Via `IEntityMetaProperties` |
 | `IsDeleted` | Yes | Via `IEntityMetaProperties` |
 | `IsModified` | Yes | Via `IEntityMetaProperties` |
-| `IsChild` | Yes | Via `IEntityMetaProperties` |
 | `DeletedList` items | Yes | Serialized as part of list |
 | Validation messages | No | Rules re-run on deserialization |
 | `IsBusy` | No | Reset on deserialization |

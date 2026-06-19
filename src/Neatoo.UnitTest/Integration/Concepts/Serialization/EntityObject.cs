@@ -10,7 +10,6 @@ public interface IEntityObject : IEntityRoot
 
     IEntityObject Child { get; set; }
     IEntityObjectList ChildList { get; set; }
-    void MarkAsChild();
 
     void MarkNew();
 
@@ -47,11 +46,6 @@ public partial class EntityObject : EntityBase<EntityObject>, IEntityObject
     public partial IEntityObjectList ChildList { get; set; }
     [Required]
     public partial int? Required { get; set; }
-
-    void IEntityObject.MarkAsChild()
-    {
-        this.MarkAsChild();
-    }
 
     void IEntityObject.MarkDeleted()
     {

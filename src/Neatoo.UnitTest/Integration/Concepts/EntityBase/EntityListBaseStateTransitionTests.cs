@@ -313,24 +313,6 @@ public class EntityListBaseStateTransitionTests
     }
 
     [TestMethod]
-    public void Add_Item_IsChildSetToTrue()
-    {
-        // Arrange
-        var aggregateRoot = new EntityPerson { FirstName = "Root" };
-        var list = new EntityPersonList();
-        aggregateRoot.ChildList = list;
-
-        var item = new EntityPerson { FirstName = "Child" };
-        Assert.IsFalse(item.IsChild);
-
-        // Act
-        list.Add(item);
-
-        // Assert
-        Assert.IsTrue(item.IsChild);
-    }
-
-    [TestMethod]
     public void Add_Item_WhenPaused_ParentNotSet()
     {
         // Arrange
@@ -352,27 +334,6 @@ public class EntityListBaseStateTransitionTests
 
         // Parent IS set by ListBase even when paused
         Assert.AreEqual(aggregateRoot, item.Parent);
-    }
-
-    [TestMethod]
-    public void Add_Item_WhenPaused_IsChildNotSet()
-    {
-        // Arrange
-        var aggregateRoot = new EntityPerson { FirstName = "Root" };
-        var list = new EntityPersonList();
-        aggregateRoot.ChildList = list;
-
-        list.FactoryStart(FactoryOperation.Fetch);
-
-        var item = new EntityPerson { FirstName = "Child" };
-
-        // Act
-        list.Add(item);
-
-        list.FactoryComplete(FactoryOperation.Fetch);
-
-        // Assert - IsChild is NOT set when paused (MarkAsChild is in EntityListBase, skipped when paused)
-        Assert.IsFalse(item.IsChild);
     }
 
     #endregion

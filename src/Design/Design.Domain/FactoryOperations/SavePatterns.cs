@@ -330,7 +330,7 @@ internal partial class SaveDemoItem : EntityBase<SaveDemoItem>, ISaveDemoItem
     // REJECTED PATTERN:
     //   // In parent Update:
     //   foreach (var item in Items) {
-    //       await item.Save();  // NO! Child can't save (IsChild=true)
+    //       item.Save();  // NO! Won't compile — child interface has no Save()
     //   }
     //
     // WHY NOT: Children are part of the aggregate. The aggregate root owns

@@ -136,21 +136,15 @@ public void AggregateBoundary_EnforcedByParentProperty()
     // Child entity: Parent set, Root points to aggregate root
     Assert.Same(order, lineItem.Parent);
     Assert.Same(order, lineItem.Root);
-
-    // Child is marked as child entity
-    Assert.True(lineItem.IsChild);
-
-    // Aggregate root is not a child
-    Assert.False(order.IsChild);
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L193-L227' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-aggregate-boundary' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L193-L221' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-aggregate-boundary' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Aggregate boundary rules:
 - Aggregate roots have Parent == null and Root == null
 - Child entities have Parent set and Root pointing to the aggregate root
-- Child entities cannot be saved independently (IsChild == true)
+- Child entities cannot be saved independently -- their interface (`IEntityBase`) has no `Save()`
 - Crossing aggregate boundaries requires explicit relationship management
 - Parent changes are restricted to prevent cross-aggregate contamination
 
@@ -202,7 +196,7 @@ public async Task CascadeValidation_ChildInvalidMakesParentInvalid()
     Assert.True(order.IsValid);
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L229-L266' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L223-L260' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade behavior:
@@ -250,7 +244,7 @@ public void CascadeDirty_ChildModificationCascadesToParent()
     Assert.True(item.IsModified);
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L268-L295' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-dirty' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L262-L289' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-dirty' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade rules for IsModified:
@@ -286,36 +280,32 @@ public void ChildLifecycle_MarkedWhenAddedToCollection()
     item.UnitPrice = 99.99m;
     item.Quantity = 1;
 
-    // Before adding: not a child
-    Assert.False(item.IsChild);
+    // Before adding: standalone entity with no aggregate root
     Assert.Null(item.Root);
 
     // Add to collection
     order.LineItems.Add(item);
 
     // After adding:
-    // 1. IsChild is set to true
-    Assert.True(item.IsChild);
-
-    // 2. Root points to aggregate root
+    // 1. Root points to aggregate root
     Assert.Same(order, item.Root);
 
-    // 3. Parent is set
+    // 2. Parent is set
     Assert.Same(order, item.Parent);
 
-    // 4. Child interfaces (IEntityBase) don't expose IsSavable or Save().
+    // 3. Child interfaces (IEntityBase) don't expose IsSavable or Save().
     //    Only IEntityRoot exposes those members.
     //    This is enforced at the type level — no runtime check needed.
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L297-L333' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-lifecycle' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L291-L323' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-lifecycle' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Child entity restrictions:
 - `IEntityBase` (the child entity interface) does not expose `IsSavable` or `Save()` -- these are on `IEntityRoot` only
-- If a caller somehow accesses `Save()` on the concrete class, it throws `SaveOperationException` with `SaveFailureReason.IsChildObject`
+- Calling `Save()` on a child does not compile -- `IEntityBase` (the child interface) has no `Save()`
 - Must be saved through the aggregate root
-- Marked as `IsChild` when added to a collection
+- Added to the aggregate when placed in a collection (its `Root` points to the aggregate root)
 - Cannot be added to a different aggregate while already belonging to one
 
 This restriction is enforced at the type level. Child entity interfaces extend `IEntityBase`, so `IsSavable` and `Save()` simply do not exist on the interface. No runtime check needed for well-typed code.
@@ -323,10 +313,9 @@ This restriction is enforced at the type level. Child entity interfaces extend `
 When a child entity is added to a collection:
 1. Parent is set to the collection's Parent (the owning entity)
 2. Root is recalculated from Parent (recursively to aggregate root)
-3. IsChild is set to true
-4. ContainingList is set to the collection
-5. Validation and modification state cascade to parent
-6. Cross-aggregate validation ensures Root compatibility
+3. ContainingList is set to the collection
+4. Validation and modification state cascade to parent
+5. Cross-aggregate validation ensures Root compatibility
 
 ## Collection Navigation
 
@@ -376,7 +365,7 @@ public void CollectionNavigation_AccessSiblingsThroughParent()
     Assert.Equal(50.00m, total); // (10*1) + (20*2)
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L335-L374' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-containing-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L325-L364' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-containing-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Navigation patterns:
@@ -429,7 +418,7 @@ public void RootAccess_FromChildEntity()
     Assert.Equal(new DateTime(2024, 6, 15), orderRoot.OrderDate);
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L376-L406' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-root-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L366-L396' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-root-access' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Root access patterns:
@@ -506,7 +495,7 @@ public void CollectionParent_AutomaticManagement()
     Assert.Same(order, item2.Root);
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L408-L442' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-collection-parent' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ParentChildSamples.cs#L398-L432' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-collection-parent' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Collection parent propagation:

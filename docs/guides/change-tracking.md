@@ -350,9 +350,8 @@ An entity is savable when all of the following are true:
 - `IsModified` - The entity has changes requiring persistence
 - `IsValid` - All validation rules pass
 - `!IsBusy` - No async operations are in progress
-- `!IsChild` - The entity is not a child (child entities save through their parent)
 
-**Why IsSavable is IEntityRoot only:** `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. Developers naturally used `IsSavable` in save cascade logic to check whether children need persisting, but it silently returned false, skipping saves. This caused a real production bug. The fix removes `IsSavable` from the child interface entirely. Aggregate root interfaces extend `IEntityRoot`; child entity interfaces extend `IEntityBase`.
+**Why IsSavable is IEntityRoot only:** `EntityBase` defines `IsSavable` (`IsModified && IsValid && !IsBusy`) and `Save()` as concrete members, so a modified child *concrete* looks savable -- but children are persisted by their aggregate root, never on their own. Exposing `IsSavable`/`Save()` on a child interface is misleading: developers naturally use `IsSavable` in save-cascade logic and try to call `Save()` on a child, which the framework does not support (a real production bug in zTreatment). The fix is to keep `IsSavable`/`Save()` off the child interface entirely. Aggregate root interfaces extend `IEntityRoot`; child entity interfaces extend `IEntityBase`.
 
 This architecture ensures child entities within an aggregate cannot be saved independently, maintaining aggregate consistency:
 
@@ -372,15 +371,14 @@ public void IsSavable_CombinesModificationAndValidation()
     // Modify the entity
     employee.Name = "Bob";
 
-    // Modified, valid, not busy, not child = savable
+    // Modified, valid, not busy = savable
     Assert.True(employee.IsModified);
     Assert.True(employee.IsValid);
     Assert.False(employee.IsBusy);
-    Assert.False(employee.IsChild);
     Assert.True(employee.IsSavable);
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L354-L375' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-savable' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L354-L374' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-savable' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `Save()` method checks `IsSavable` and throws `SaveOperationException` with a specific reason code if the preconditions are not met:
@@ -405,11 +403,10 @@ public async Task Save_ThrowsWithSpecificReason()
     Assert.Equal(SaveFailureReason.NotModified, exception.Reason);
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L377-L394' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-save-checks' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L376-L393' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-save-checks' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Common `SaveFailureReason` values:
-- `IsChildObject` - Entity is a child and must be saved through its parent
 - `IsInvalid` - Validation rules have failed
 - `NotModified` - No changes detected (nothing to persist)
 - `IsBusy` - Async operations still in progress
@@ -447,7 +444,7 @@ public void PauseAllActions_PreventsModificationTracking()
     Assert.Empty(employee.ModifiedProperties);
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L396-L419' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-pause-actions' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L395-L418' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-pause-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 While paused, property setters still execute but tracking mechanisms are disabled:
@@ -487,7 +484,7 @@ public void IsNew_IndicatesUnpersistedEntity()
     Assert.True(employee.IsModified);
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L421-L434' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-new' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L420-L433' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-new' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `IsNew` flag is automatically set by factory Create methods and cleared after successful Insert. New entities are always considered modified (`IsNew` contributes to `IsModified`).
@@ -520,7 +517,7 @@ public void IsDeleted_MarksEntityForDeletion()
     Assert.False(employee.IsModified);
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L436-L459' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-deleted' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L435-L458' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-deleted' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `IsDeleted` flag is set by calling `Delete()` and can be reversed with `UnDelete()` before saving. Deleted entities contribute to both `IsModified` and `IsSelfModified`, ensuring they are recognized as changed and savable.

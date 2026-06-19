@@ -56,21 +56,6 @@ public class OrderAggregateTests
     }
 
     [TestMethod]
-    public void AddItem_ItemBecomesChild()
-    {
-        // Arrange
-        var order = _orderFactory.Create();
-        var item = _itemFactory.Create("Widget", 5, 10.00m);
-
-        // Act
-        order.Items!.Add(item);
-
-        // Assert
-        Assert.IsTrue(item.IsChild, "Added item should have IsChild=true");
-        Assert.AreEqual(1, order.Items.Count);
-    }
-
-    [TestMethod]
     public void Item_CalculatesLineTotal_OnPropertyChange()
     {
         // Arrange - Create item with initial values
@@ -115,8 +100,8 @@ public class OrderAggregateTests
         // Assert — IOrderItem extends IEntityBase, which does NOT have IsSavable or Save().
         // This is the interface-first pattern at work: the interface controls access.
         // The concrete OrderItem has IsSavable (inherited from EntityBase), but consumers
-        // only see IOrderItem, so IsSavable is invisible.
-        Assert.IsTrue(item.IsChild);
+        // only see IOrderItem, so IsSavable is invisible — a child cannot be saved on its own.
+        Assert.AreEqual(1, order.Items!.Count, "Item is persisted as part of the Order aggregate");
         // item.IsSavable — does not compile: IOrderItem (IEntityBase) has no IsSavable
         // item.Save()    — does not compile: IOrderItem (IEntityBase) has no Save()
     }

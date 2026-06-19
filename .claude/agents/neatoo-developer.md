@@ -469,7 +469,7 @@ These are common issues in Neatoo plans. Check for each:
 2. **Factory operation lifecycle impacts?** Does the change affect [Create], [Fetch], [Insert], [Update], [Delete], [Execute] behavior?
 3. **Property system impacts?** Getter/Setter, change tracking, LoadValue vs SetValue
 4. **Validation rule interactions?** RuleManager, AddValidation, AddAction, async rules, rule triggers
-5. **Parent-child relationships?** IsChild, Parent, Root, ContainingList, aggregate boundary enforcement
+5. **Parent-child relationships?** Parent, Root, ContainingList, aggregate boundary enforcement
 6. **Serialization/state transfer?** Client-server boundary, what survives JSON round-trip, $id/$ref handling
 7. **RemoteFactory source generation impacts?** Factory interface generation, [Remote] attribute, HTTP proxies
 8. **State property consistency?** IsModified, IsNew, IsValid, IsBusy, IsPaused, IsDeleted, IsSavable

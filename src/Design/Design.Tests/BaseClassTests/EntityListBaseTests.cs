@@ -43,21 +43,6 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
-    public void Add_MarksItemAsChild()
-    {
-        // Arrange
-        var list = _listFactory.Create();
-        var item = _itemFactory.Create();
-        item.Name = "Test";
-
-        // Act
-        list.Add(item);
-
-        // Assert
-        Assert.IsTrue(item.IsChild, "Item added to list should have IsChild=true");
-    }
-
-    [TestMethod]
     public void Add_IncreasesCount()
     {
         // Arrange

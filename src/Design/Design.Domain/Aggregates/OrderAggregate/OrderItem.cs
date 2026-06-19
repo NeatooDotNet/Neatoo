@@ -15,7 +15,7 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 /// Demonstrates: Child entity within an aggregate.
 ///
 /// Key points:
-/// - IsChild=true when in OrderItemList (cannot save independently)
+/// - In an OrderItemList; not savable on its own (IOrderItem has no Save())
 /// - ContainingList tracks which list owns this item
 /// - Root property points to Order (aggregate root)
 /// - Delete/UnDelete managed by list operations
@@ -66,9 +66,8 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
     // =========================================================================
     // When OrderItem is in a list:
     //
-    // IsChild = true
-    //   - Set by list.Add() calling MarkAsChild()
-    //   - Makes IsSavable = false (cannot save independently)
+    // Root = the Order (aggregate root)
+    //   - Walked from ContainingList; child persists through the root's Save()
     //
     // ContainingList = the OrderItemList
     //   - Set by list.Add() calling SetContainingList()
@@ -123,9 +122,8 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //      - Remove from old list's DeletedList (intra-aggregate move)
 //   5. If item.IsDeleted: item.UnDelete()
 //   6. If !item.IsNew: item.MarkModified()
-//   7. item.MarkAsChild() -> IsChild = true
-//   8. item.SetContainingList(this)
-//   9. Add to collection
+//   7. item.SetContainingList(this)
+//   8. Add to collection
 //
 // REMOVING EXISTING ITEM:
 //   var item = order.Items[0];  // item.IsNew = false
@@ -175,9 +173,8 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //
 // WRONG:
 //   order.Items[0].ProductName = "New Name";
-//   await order.Items[0].Save();
-//   // THROWS: SaveOperationException(SaveFailureReason.IsChildObject)
-//   // Because: order.Items[0].IsChild = true -> IsSavable = false
+//   order.Items[0].Save();
+//   // Does not compile: IOrderItem extends IEntityBase, which has no Save()
 //
 // RIGHT:
 //   order.Items[0].ProductName = "New Name";

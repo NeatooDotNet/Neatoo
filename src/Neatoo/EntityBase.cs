@@ -92,7 +92,6 @@ public interface IEntityRoot : IEntityBase
 /// <item><description>New/existing state tracking via <see cref="IsNew"/></description></item>
 /// <item><description>Soft delete support via <see cref="Delete"/> and <see cref="IsDeleted"/></description></item>
 /// <item><description>Savability determination via <see cref="IsSavable"/></description></item>
-/// <item><description>Child entity support for aggregate patterns via <see cref="IsChild"/></description></item>
 /// </list>
 /// <para>
 /// Entity objects can be persisted through the factory pattern. The <see cref="Save()"/> method
@@ -171,7 +170,7 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// <remarks>
     /// Child entities cannot be saved independently; they must be saved through their parent aggregate root.
     /// </remarks>
-    public virtual bool IsSavable => this.IsModified && this.IsValid && !this.IsBusy && !this.IsChild;
+    public virtual bool IsSavable => this.IsModified && this.IsValid && !this.IsBusy;
 
     /// <summary>
     /// Gets or sets a value indicating whether this is a new entity that has not been persisted.
@@ -190,15 +189,6 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// </summary>
     /// <value>An enumerable collection of modified property names.</value>
     public virtual IEnumerable<string> ModifiedProperties => this.PropertyManager.ModifiedProperties;
-
-    /// <summary>
-    /// Gets or sets a value indicating whether this entity is a child within an aggregate.
-    /// </summary>
-    /// <value><c>true</c> if this is a child entity; otherwise, <c>false</c>.</value>
-    /// <remarks>
-    /// Child entities are saved as part of their parent aggregate and cannot call <see cref="Save()"/> directly.
-    /// </remarks>
-    public virtual bool IsChild { get; protected set; }
 
     /// <summary>
     /// Gets or sets the list that contains this entity.
@@ -273,18 +263,6 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// Gets a value indicating whether this entity has been explicitly marked as modified for interface implementation.
     /// </summary>
     bool IEntityMetaProperties.IsMarkedModified => this.IsMarkedModified;
-
-    /// <summary>
-    /// Marks this entity as a child entity within an aggregate.
-    /// </summary>
-    /// <remarks>
-    /// Child entities cannot be saved independently; they are persisted through their parent aggregate root.
-    /// This method is typically called by list containers when an entity is added.
-    /// </remarks>
-    protected virtual void MarkAsChild()
-    {
-        this.IsChild = true;
-    }
 
     /// <summary>
     /// Marks this entity as unmodified, clearing all modification tracking.
@@ -431,18 +409,11 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// <item><description>If <see cref="IsDeleted"/> is <c>true</c>, calls the Delete method</description></item>
     /// <item><description>Otherwise, calls the Update method</description></item>
     /// </list>
-    /// <para>
-    /// Child entities cannot be saved directly; they must be saved through their parent aggregate root.
-    /// </para>
     /// </remarks>
     public virtual async Task<IEntityBase> Save()
     {
         if (!this.IsSavable)
         {
-            if (this.IsChild)
-            {
-                throw new SaveOperationException(SaveFailureReason.IsChildObject);
-            }
             if (!this.IsValid)
             {
                 throw new SaveOperationException(SaveFailureReason.IsInvalid);
@@ -593,14 +564,6 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     void IEntityBaseInternal.MarkModified()
     {
         this.MarkModified();
-    }
-
-    /// <summary>
-    /// Explicit interface implementation for marking the entity as a child.
-    /// </summary>
-    void IEntityBaseInternal.MarkAsChild()
-    {
-        this.MarkAsChild();
     }
 
     /// <summary>

@@ -63,7 +63,6 @@ public class EntityRootInterfaceTests
         // This is verified by the fact that the following would NOT compile:
         //   entityBase.IsSavable  // CS1061: IEntityBase does not contain IsSavable
         //   entityBase.Save()     // CS1061: IEntityBase does not contain Save
-        Assert.IsTrue(entityBase.IsChild, "Child entity should be a child");
         Assert.IsTrue(entityBase.IsModified, "Child entity should be modified");
     }
 

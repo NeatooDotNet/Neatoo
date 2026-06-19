@@ -81,7 +81,6 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
         // Assert
         Assert.IsTrue(entity.IsValid, "Entity should be valid");
         Assert.IsFalse(entity.IsBusy, "Entity should not be busy");
-        Assert.IsFalse(entity.IsChild, "Entity should not be a child");
         Assert.IsTrue(entity.IsSavable, "Entity should be savable after Create operation");
     }
 

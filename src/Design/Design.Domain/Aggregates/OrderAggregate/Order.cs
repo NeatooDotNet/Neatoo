@@ -136,11 +136,11 @@ internal partial class Order : EntityBase<Order>, IOrder
                 item["LineTotal"].LoadValue(itemData.LineTotal);
 
                 Items.Add(item);
-                // item.IsChild = true, item.ContainingList = Items
+                // item.ContainingList = Items, item.Root = this Order
             }
         }
         // After Fetch: Order.IsNew=false, Order.IsModified=false
-        // Each item: IsNew=false, IsModified=false, IsChild=true
+        // Each item: IsNew=false, IsModified=false
     }
 
     // =========================================================================

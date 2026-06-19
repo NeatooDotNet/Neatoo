@@ -133,8 +133,8 @@ public partial class SkillRfIntegrationChild : EntityBase<SkillRfIntegrationChil
     [Create]
     public void Create()
     {
-        // IsChild = true (set when added to parent collection)
-        // IsSavable/Save() not accessible on IEntityBase (child interface)
+        // IsSavable/Save() not accessible on IEntityBase (child interface) —
+        // children persist through the aggregate root, never on their own
     }
 
     [Fetch]
@@ -182,14 +182,13 @@ public static class SkillRemoteFactoryStateSamples
     /// </summary>
     public static async Task<bool> CheckSavableBeforeSave(SkillRfIntegrationRoot entity)
     {
-        // IsSavable = IsModified && IsValid && !IsBusy && !IsChild
+        // IsSavable = IsModified && IsValid && !IsBusy
         if (!entity.IsSavable)
         {
             // Don't persist - one or more conditions failed:
             // - !IsModified: No changes to save
             // - !IsValid: Validation failed
             // - IsBusy: Async rules still running
-            // - IsChild: Must save through parent aggregate
             return false;
         }
 
@@ -216,8 +215,8 @@ public static class SkillRemoteFactoryStateSamples
         // - child.IsBusy = true → parent.IsBusy = true
 
         // Child cannot save independently:
-        // - child.IsChild = true (after adding to collection)
         // - IsSavable/Save() not accessible on child interface (IEntityBase)
+        //   — children persist through the aggregate root
     }
     #endregion
 

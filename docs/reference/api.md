@@ -416,12 +416,10 @@ Accepts entity services containing property manager, rule manager factory, and s
 ```csharp
 public virtual bool IsNew { get; protected set; }
 public virtual bool IsDeleted { get; protected set; }
-public virtual bool IsChild { get; protected set; }
 ```
 
 - **IsNew**: Entity has not been persisted (Insert operation on save)
 - **IsDeleted**: Entity marked for deletion (Delete operation on save)
-- **IsChild**: Entity is part of an aggregate and cannot be saved independently
 
 <!-- snippet: api-entitybase-persistence-state -->
 <a id='snippet-api-entitybase-persistence-state'></a>
@@ -435,7 +433,6 @@ public void PersistenceState_TracksEntityLifecycle()
     var newEmployee = factory.Create();
     Assert.True(newEmployee.IsNew);   // New entity - will Insert on save
     Assert.False(newEmployee.IsDeleted);
-    Assert.False(newEmployee.IsChild);
 
     // Fetch existing entity
     var existingEmployee = factory.Fetch(1, "Alice", "Engineering");
@@ -446,7 +443,7 @@ public void PersistenceState_TracksEntityLifecycle()
     Assert.True(existingEmployee.IsDeleted);  // Will Delete on save
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L875-L895' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-persistence-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L875-L894' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-persistence-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Modification Tracking
@@ -486,7 +483,7 @@ public void ModificationTracking_DetectsChanges()
     Assert.Contains("Name", employee.ModifiedProperties);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L897-L917' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-modification' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L896-L916' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-modification' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Savability
@@ -495,7 +492,7 @@ public void ModificationTracking_DetectsChanges()
 public virtual bool IsSavable { get; }
 ```
 
-Entity can be saved when: `IsModified && IsValid && !IsBusy && !IsChild`
+Entity can be saved when: `IsModified && IsValid && !IsBusy`
 
 `IsSavable` exists on the concrete `EntityBase<T>` class, but is only exposed through the `IEntityRoot` interface -- not through `IEntityBase`. This means child entities (whose interfaces extend `IEntityBase`) never expose `IsSavable` to consumers. Aggregate root interfaces extend `IEntityRoot`, which adds `IsSavable` and `Save()`.
 
@@ -535,7 +532,7 @@ public void Root_FindsAggregateRoot()
     Assert.Null(order.Root);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L919-L942' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-root' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L918-L941' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-root' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Save Operations
@@ -636,7 +633,7 @@ public void Delete_MarksForDeletion()
     Assert.False(employee.IsDeleted);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L944-L964' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L943-L963' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### State Management Methods
@@ -647,7 +644,6 @@ protected virtual void MarkOld()
 protected virtual void MarkModified()
 protected virtual void MarkUnmodified()
 protected virtual void MarkDeleted()
-protected virtual void MarkAsChild()
 ```
 
 Control entity state programmatically. `MarkUnmodified()` is called automatically after successful Insert/Update operations.
@@ -677,7 +673,7 @@ public void MarkMethods_ControlEntityState()
     Assert.False(employee.IsDeleted);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L966-L988' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-mark-methods' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L965-L987' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-mark-methods' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Property Access
@@ -743,7 +739,7 @@ public void ValidateListBase_ParentRelationship()
     Assert.Same(address, address.Items.Parent);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L990-L1011' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-parent' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L989-L1010' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-parent' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Aggregated Meta Properties
@@ -783,7 +779,7 @@ public async Task ValidateListBase_AggregatesState()
     Assert.True(list.IsSelfValid); // Lists have no own validation
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1013-L1036' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-metaproperties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1012-L1035' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-metaproperties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Validation Operations
@@ -828,7 +824,7 @@ public async Task ValidateListBase_RunRulesOnAll()
     Assert.Empty(item1.PropertyMessages);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1038-L1066' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1037-L1065' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Task Management
@@ -897,7 +893,7 @@ public void ValidateListBase_StandardOperations()
     Assert.Empty(list);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1068-L1094' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-collection-ops' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1067-L1093' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-collection-ops' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ---
@@ -922,7 +918,6 @@ public bool IsSelfModified { get; }     // Always false (lists have no own prope
 public bool IsMarkedModified { get; }   // Always false
 public bool IsNew { get; }              // Always false
 public bool IsDeleted { get; }          // Always false
-public bool IsChild { get; }            // Always false
 ```
 
 Lists derive their modification state from their items and deleted list. `IsSavable` is not present -- lists are always saved through the aggregate root, and the property was always false (dead code).
@@ -957,7 +952,7 @@ public void EntityListBase_ModificationFromItems()
     Assert.False(order.Items.IsSelfModified);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1096-L1123' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-metaproperties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1095-L1122' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-metaproperties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Aggregate Root
@@ -1003,14 +998,14 @@ public void EntityListBase_TracksDeleted()
     Assert.Equal(1, order.Items.DeletedCount);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1125-L1149' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-deletedlist' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1124-L1148' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-deletedlist' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Collection Operations
 
 When adding items:
 - Undeletes previously deleted items if re-added from the same aggregate
-- Marks items as child entities (`IsChild = true`)
+- Adds items to the aggregate (the item's `Root` points to the aggregate root)
 - Sets Parent reference to the list's parent (not to the list)
 - Sets ContainingList reference to this collection
 - Prevents adding items that are already in a different containing list
@@ -1037,8 +1032,7 @@ public void EntityListBase_AddRemoveBehavior()
     newItem.ProductCode = "NEW-001";
     order.Items.Add(newItem);
 
-    // Item is marked as child and is new
-    Assert.True(newItem.IsChild);
+    // Item is new and parented to the aggregate root
     Assert.True(newItem.IsNew);
     Assert.Same(order, newItem.Parent);
 
@@ -1059,7 +1053,7 @@ public void EntityListBase_AddRemoveBehavior()
     Assert.True(existingItem.IsDeleted);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1151-L1186' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-add-remove' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1150-L1184' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-add-remove' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Factory Lifecycle
@@ -1119,7 +1113,7 @@ public void IValidateBase_CoreValidationInterface()
     Assert.NotNull(nameProperty);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1188-L1210' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ivalidatebase' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1186-L1208' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ivalidatebase' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### IEntityBase
@@ -1149,7 +1143,6 @@ public void IEntityBase_EntityInterface()
     // IEntityBase adds persistence properties
     Assert.True(employee.IsNew);  // After Create, IsNew is true
     Assert.False(employee.IsDeleted);
-    Assert.False(employee.IsChild);
     Assert.True(employee.IsModified);  // New entity is considered modified
 
     // Delete and UnDelete methods
@@ -1163,14 +1156,14 @@ public void IEntityBase_EntityInterface()
     Assert.Null(employee.Root);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1212-L1235' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ientitybase' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1210-L1232' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ientitybase' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### IEntityRoot
 
 Extends `IEntityBase` with `IsSavable` and `Save()` for aggregate roots. Child entities should use `IEntityBase` -- they cannot save independently, and `IsSavable`/`Save()` should not appear on their interface.
 
-The separation exists because `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. Developers naturally used `IsSavable` in save cascade logic to check whether children need persisting, but it silently returned false, skipping saves. Rather than fixing the semantics, the right answer is to remove `IsSavable` and `Save()` from the child interface entirely. Child entity `[Insert]`/`[Update]` methods have signatures that outside consumers cannot fulfill, and entity classes are `internal`, so external callers should never save children at all.
+The separation exists because `EntityBase` defines `IsSavable` (`IsModified && IsValid && !IsBusy`) and `Save()` as concrete members, so a modified child *concrete* looks savable -- but children are persisted by their aggregate root, never on their own. Exposing `IsSavable`/`Save()` on a child interface is misleading: developers naturally use `IsSavable` in save-cascade logic and try to call `Save()` on a child, which the framework does not support (a real production bug in zTreatment). The right answer is to keep `IsSavable` and `Save()` off the child interface entirely. Child entity `[Insert]`/`[Update]` methods have signatures that outside consumers cannot fulfill, and entity classes are `internal`, so external callers should never save children at all.
 
 ```csharp
 public interface IEntityRoot : IEntityBase
@@ -1252,7 +1245,7 @@ public async Task IValidateProperty_PropertyInterface()
     await property.WaitForTasks();
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1237-L1271' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ivalidateproperty' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1234-L1268' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ivalidateproperty' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### IEntityProperty
@@ -1300,7 +1293,7 @@ public void IPropertyInfo_PropertyMetadata()
     Assert.Equal(typeof(string), property.Type);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1273-L1287' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ipropertyinfo' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1270-L1284' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ipropertyinfo' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### IValidateMetaProperties
@@ -1324,7 +1317,6 @@ Meta property interface for entity state. Note that `IsSavable` is not part of t
 ```csharp
 public interface IEntityMetaProperties : IFactorySaveMeta
 {
-    bool IsChild { get; }
     bool IsModified { get; }
     bool IsSelfModified { get; }
     bool IsMarkedModified { get; }
@@ -1351,7 +1343,6 @@ public void IMetaProperties_ValidationAndEntityState()
     IEntityMetaProperties entityMeta = employeeFactory.Create();
     Assert.True(entityMeta.IsNew);  // After Create
     Assert.False(entityMeta.IsDeleted);
-    Assert.False(entityMeta.IsChild);
     Assert.True(entityMeta.IsModified);  // New entity
     Assert.False(entityMeta.IsSelfModified);
     Assert.False(entityMeta.IsMarkedModified);
@@ -1360,7 +1351,7 @@ public void IMetaProperties_ValidationAndEntityState()
     Assert.True(((IEntityRoot)entityMeta).IsSavable);  // New entity is savable
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1289-L1315' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-imetaproperties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ApiReferenceSamples.cs#L1286-L1311' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-imetaproperties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ---

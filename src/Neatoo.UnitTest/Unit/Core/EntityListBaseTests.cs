@@ -54,7 +54,6 @@ public class EntityListBaseTests
         // Expose protected members for testing
         public new void MarkNew() => base.MarkNew();
         public new void MarkOld() => base.MarkOld();
-        public new void MarkAsChild() => base.MarkAsChild();
         public new void MarkModified() => base.MarkModified();
         public new void MarkUnmodified() => base.MarkUnmodified();
     }
@@ -168,16 +167,6 @@ public class EntityListBaseTests
         Assert.IsFalse(list.IsDeleted);
     }
 
-    [TestMethod]
-    public void IsChild_AlwaysFalse()
-    {
-        // Lists manage child relationships through their items
-        var list = new TestEntityList();
-
-        // Assert
-        Assert.IsFalse(list.IsChild);
-    }
-
     #endregion
 
     #region IsModified Tests
@@ -251,21 +240,6 @@ public class EntityListBaseTests
     #region Add Item Tests
 
     [TestMethod]
-    public void Add_NewItem_MarksAsChild()
-    {
-        // Arrange
-        var list = new TestEntityList();
-        var item = CreateNewItem();
-        Assert.IsFalse(item.IsChild);
-
-        // Act
-        list.Add(item);
-
-        // Assert
-        Assert.IsTrue(item.IsChild);
-    }
-
-    [TestMethod]
     public void Add_ExistingItem_MarksAsModified()
     {
         // Arrange
@@ -293,21 +267,6 @@ public class EntityListBaseTests
 
         // Assert
         Assert.IsFalse(item.IsDeleted);
-    }
-
-    [TestMethod]
-    public void Add_WhenPaused_DoesNotMarkAsChild()
-    {
-        // Arrange
-        var list = new TestEntityList();
-        list.IsPaused = true;
-        var item = CreateNewItem();
-
-        // Act
-        list.Add(item);
-
-        // Assert
-        Assert.IsFalse(item.IsChild);
     }
 
     [TestMethod]

@@ -19,7 +19,7 @@ They happen to agree that the answer involves self-validating objects with save 
 | Save boundary = root object | Aggregate root | Editable root (children can't self-save) | Yes |
 | Identity tracking | Entity has identity | `BusinessBase` tracks `IsNew`, state | Yes |
 | Persistence separated from domain | Repository pattern | DataPortal abstracts persistence | Yes |
-| Children can't be saved independently | Aggregate consistency | `IsChild` prevents independent save | Yes |
+| Children can't be saved independently | Aggregate consistency | Child interface (`IEntityBase`) has no `Save()`; the root persists children | Yes |
 
 ## Where they diverge
 

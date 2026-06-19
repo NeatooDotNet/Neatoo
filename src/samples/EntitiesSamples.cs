@@ -648,7 +648,6 @@ public class EntitiesSamplesTests : SamplesTestBase
         Assert.True(order.IsModified);    // Something changed
         Assert.True(order.IsValid);       // Passes validation
         Assert.False(order.IsBusy);       // No async operations
-        Assert.False(order.IsChild);      // Not a child entity
         Assert.True(order.IsSavable);     // Can save!
     }
     #endregion
@@ -668,11 +667,10 @@ public class EntitiesSamplesTests : SamplesTestBase
         item.Price = 29.99m;
         item.Quantity = 1;
 
-        // Add to collection marks entity as child
+        // Add to collection (the item becomes part of the aggregate)
         order.Items.Add(item);
 
-        // Child entity state
-        Assert.True(item.IsChild);
+        // Child entity is reachable through its aggregate root
         Assert.Same(order, item.Root);
 
         // Child interfaces (IEntityBase) don't expose IsSavable or Save().
@@ -740,35 +738,13 @@ public class EntitiesSamplesTests : SamplesTestBase
     }
 
     [Fact]
-    public void AggregateRoot_HasIsChildFalse()
+    public void AggregateRoot_HasNoRootAbove()
     {
         var factory = GetRequiredService<IEntitiesOrderFactory>();
         var order = factory.Create();
 
-        // Aggregate roots are not children
-        Assert.False(order.IsChild);
-
-        // Aggregate roots can call Save() directly
-        Assert.Null(order.Root); // Root has no root above it
-    }
-
-    [Fact]
-    public void ChildEntity_MarkedWhenAddedToList()
-    {
-        var orderFactory = GetRequiredService<IEntitiesOrderFactory>();
-        var itemFactory = GetRequiredService<IEntitiesOrderItemFactory>();
-
-        var order = orderFactory.Create();
-        var item = itemFactory.Create();
-
-        // Before adding to collection
-        Assert.False(item.IsChild);
-
-        // Add to collection
-        order.Items.Add(item);
-
-        // After adding - marked as child
-        Assert.True(item.IsChild);
+        // Aggregate roots can call Save() directly and have no root above them
+        Assert.Null(order.Root);
     }
 
     [Fact]

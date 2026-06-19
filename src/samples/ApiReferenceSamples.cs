@@ -882,7 +882,6 @@ public class ApiReferenceSamplesTests : SamplesTestBase
         var newEmployee = factory.Create();
         Assert.True(newEmployee.IsNew);   // New entity - will Insert on save
         Assert.False(newEmployee.IsDeleted);
-        Assert.False(newEmployee.IsChild);
 
         // Fetch existing entity
         var existingEmployee = factory.Fetch(1, "Alice", "Engineering");
@@ -1162,8 +1161,7 @@ public class ApiReferenceSamplesTests : SamplesTestBase
         newItem.ProductCode = "NEW-001";
         order.Items.Add(newItem);
 
-        // Item is marked as child and is new
-        Assert.True(newItem.IsChild);
+        // Item is new and parented to the aggregate root
         Assert.True(newItem.IsNew);
         Assert.Same(order, newItem.Parent);
 
@@ -1219,7 +1217,6 @@ public class ApiReferenceSamplesTests : SamplesTestBase
         // IEntityBase adds persistence properties
         Assert.True(employee.IsNew);  // After Create, IsNew is true
         Assert.False(employee.IsDeleted);
-        Assert.False(employee.IsChild);
         Assert.True(employee.IsModified);  // New entity is considered modified
 
         // Delete and UnDelete methods
@@ -1304,7 +1301,6 @@ public class ApiReferenceSamplesTests : SamplesTestBase
         IEntityMetaProperties entityMeta = employeeFactory.Create();
         Assert.True(entityMeta.IsNew);  // After Create
         Assert.False(entityMeta.IsDeleted);
-        Assert.False(entityMeta.IsChild);
         Assert.True(entityMeta.IsModified);  // New entity
         Assert.False(entityMeta.IsSelfModified);
         Assert.False(entityMeta.IsMarkedModified);

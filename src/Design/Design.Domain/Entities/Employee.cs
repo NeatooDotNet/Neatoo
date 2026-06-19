@@ -151,7 +151,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
                 address["AddressType"].LoadValue(addrData.AddressType);
 
                 Addresses.Add(address);
-                // Add sets: address.IsChild=true, address.ContainingList=Addresses
+                // Add sets: address.ContainingList=Addresses, address.Root=this Employee
             }
         }
         // After Fetch: IsNew=false, IsModified=false for Employee and all Addresses

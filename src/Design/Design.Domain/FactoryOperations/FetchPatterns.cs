@@ -231,14 +231,14 @@ internal partial class FetchWithChildrenDemo : EntityBase<FetchWithChildrenDemo>
                 item["Id"].LoadValue(childData.Id);
                 item["Name"].LoadValue(childData.Name);
 
-                // Add to list - this sets IsChild=true on the item
+                // Add to list - establishes ContainingList and Root on the item
                 Items.Add(item);
             }
         }
 
         // After fetch:
         // - Parent: IsNew=false, IsModified=false
-        // - Each child: IsNew=false, IsModified=false, IsChild=true
+        // - Each child: IsNew=false, IsModified=false
     }
 
     [Remote]

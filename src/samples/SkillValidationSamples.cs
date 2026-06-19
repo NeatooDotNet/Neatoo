@@ -348,7 +348,7 @@ public partial class SkillValidInvoice : ValidateBase<SkillValidInvoice>
 
 // EntityBase checks validation before save:
 //
-// entity.IsSavable = entity.IsValid && entity.IsModified && !entity.IsBusy && !entity.IsChild
+// entity.IsSavable = entity.IsValid && entity.IsModified && !entity.IsBusy
 //
 // Save() will fail if !IsSavable
 

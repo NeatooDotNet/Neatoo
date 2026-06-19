@@ -94,7 +94,7 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 //   var order = await orderFactory.Fetch(1);
 //   var newItem = orderItemFactory.Create("New Product", 5, 10.00m);
 //   order.Items.Add(newItem);
-//   // newItem: IsNew=true, IsChild=true, ContainingList=order.Items
+//   // newItem: IsNew=true, ContainingList=order.Items
 //
 // Remove:
 //   order.Items.Remove(newItem);
@@ -124,7 +124,7 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 // Add new:
 //   var newItem = orderItemFactory.Create("New", 1, 5.00m);
 //   order.Items.Add(newItem);
-//   // newItem: IsNew=true, IsChild=true
+//   // newItem: IsNew=true
 //
 // Remove existing:
 //   var removedItem = order.Items[1];

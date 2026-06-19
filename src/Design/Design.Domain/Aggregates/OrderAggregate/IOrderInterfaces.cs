@@ -30,7 +30,8 @@
 //
 // WRONG:
 //   public interface IOrderItem : IEntityRoot { ... }
-//   // IOrderItem.IsSavable is always false (IsChild=true), confusing
+//   // Exposes IsSavable/Save() on a child — but children are persisted by the
+//   // aggregate root, so a savable-looking child is misleading and unsupported.
 //
 // RIGHT:
 //   public interface IOrderItem : IEntityBase { ... }

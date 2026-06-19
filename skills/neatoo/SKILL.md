@@ -99,6 +99,32 @@ Every user interaction in a Neatoo app follows three sequential, non-overlapping
 | `[Service]` parameter injection | Read `Parent` reference for ambient root state |
 | DB-snapshot-vs-in-memory diffing | (No `[Service]` injection, no repositories, no transactions, no event raises) |
 
+### Self-Only Persistence — Factory Methods Touch ONLY Their Own Entity
+
+A Neatoo entity's factory methods persist **that entity and nothing else**. The save cascade handles children by calling `childFactory.Save`; it does NOT reach across aggregates or into sibling entities' EF rows.
+
+**Hard rules:**
+
+- **A Neatoo entity must NOT `MapTo` / `MapFrom` another entity's EF row.** `Visit`'s factory maps `Visit ↔ VisitEntity`. It does NOT map `PlanEntity`, `TreatmentEntity`, `PatientEntity`, or any other table. If you need a sibling's data, load that sibling as a child via its own factory.
+- **A Neatoo factory method must NOT inject another entity's `IXxxRepository`.** `VisitFactory` may inject `IVisitRepository`. It must NOT inject `IPlanRepository`, `ITreatmentRepository`, etc. Cross-entity persistence happens through child factories (`childFactory.Save`), not by reaching into a foreign repository.
+- **No "while I'm here" writes.** Don't update a sibling row inline because it's convenient — that breaks the save cascade contract and hides the dependency from the aggregate graph.
+
+**Why this is non-negotiable:** the save cascade depends on every entity owning its own row. The moment one entity writes another's row, you have two writers for one row, ambiguous ordering, broken `IsModified` accounting, and silent data corruption when the "real" owner saves later. Cross-entity edits must go through the owning entity's business methods + factory, full stop.
+
+**Rare-exception protocol (NOT a precedent):**
+
+In the rare case a cross-entity touch is genuinely required and **the user has explicitly approved it**, the code MUST carry an inline comment of this exact shape:
+
+```csharp
+// CROSS-ENTITY EXCEPTION — APPROVED BY USER on <date>
+// Why: <one-sentence justification>
+// DO NOT REPEAT — this is not a pattern. Default is self-only persistence.
+```
+
+No approval comment, no exception. Reviewers reject on sight.
+
+**Local code is not the standard.** If you find an existing entity that violates self-only (maps a sibling, injects a foreign repository), that is residue, not a pattern to copy. Ask before mirroring it.
+
 ### What the Save Needs Must Be State
 
 Factory methods can only read what's on the entity graph. They cannot read call-context, local variables from the business method that triggered the save, or "intentions" the caller held in their head.
@@ -244,7 +270,7 @@ The coupling concerns DDD raises are real — they apply to coupling *across* ag
 | `IsSelfModified` | bool | This object's own properties changed (excludes children, excludes IsNew) |
 | `IsValid` | bool | This object and all children pass validation |
 | `IsSelfValid` | bool | This object (only) passes validation |
-| `IsSavable` | bool | `IsValid && IsModified && !IsBusy && !IsChild` |
+| `IsSavable` | bool | `IsValid && IsModified && !IsBusy` |
 | `IsNew` | bool | Not yet persisted. Set true by Create, set false by Fetch/Insert. Implies `IsModified`. |
 | `IsDeleted` | bool | Marked for deletion |
 | `RuleManager` | IRuleManager | Access to validation rules |
