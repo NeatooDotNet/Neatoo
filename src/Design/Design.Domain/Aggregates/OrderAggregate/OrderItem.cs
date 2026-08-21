@@ -228,17 +228,17 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //   order.Items[0].ProductName = "New Name";
 //   await order.Save();  // Parent save handles child changes
 //
-// COMMON MISTAKE: Calling Delete() on child expecting immediate DB delete.
+// COMMON MISTAKE: Calling Delete() on a child and expecting the row to be gone.
 //
-// WRONG:
+// WRONG - stopping at the Delete() call:
 //   order.Items[0].Delete();
-//   // Expecting item is deleted from DB - IT IS NOT
-//   // What actually happens:
-//   // - Delete() delegates to list.Remove(this) for consistency
-//   // - Item is marked deleted and goes to DeletedList
-//   // - Item is still in memory, still has data
+//   // The row is NOT deleted yet. What actually happened:
+//   // - Delete() delegated to list.Remove(this) for consistency
+//   // - The item is marked deleted and moved to DeletedList
+//   // - It is still in memory, still holding its data
+//   // Nothing reaches persistence until the aggregate root is saved.
 //
-// RIGHT:
+// RIGHT - Delete() marks, Save() persists:
 //   order.Items[0].Delete();   // OR order.Items.Remove(order.Items[0])
-//   await order.Save();        // NOW the delete is persisted
+//   await order.Save();        // NOW the delete is issued
 // =============================================================================

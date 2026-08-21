@@ -129,6 +129,42 @@ public class ListFactoryStateTests : ClientServerTestBase
     }
 
     [TestMethod]
+    public async Task FetchedChild_RemovedThenReAdded_LeavesDeletedList()
+    {
+        // A bug ISNEW-003 fixed incidentally, pinned so it cannot silently return.
+        // The re-add path only clears the item from DeletedList when it has a
+        // ContainingList (EntityListBase.InsertItem). Before fetched children got
+        // one, a removed-then-re-added child stayed in DeletedList AND went back
+        // into the collection - so the next save would both update and delete it.
+        var invoiceId = SaveLifecycleStore.SeedInvoice("Rejoin Co",
+            ("Consulting", 500.00m), ("Support", 250.00m));
+
+        var invoice = await _factory.Fetch(invoiceId);
+        var line = invoice.Lines![0];
+        var lineId = line.Id;
+
+        // Act - remove, then change your mind
+        invoice.Lines.Remove(line);
+        Assert.AreEqual(1, invoice.Lines.DeletedCount, "Queued for deletion");
+
+        invoice.Lines.Add(line);
+        await invoice.WaitForTasks();
+
+        // Assert - the queued deletion is withdrawn
+        Assert.AreEqual(0, invoice.Lines.DeletedCount,
+            "Re-adding must withdraw the pending deletion");
+        Assert.AreEqual(2, invoice.Lines.Count);
+
+        invoice = (IInvoice)await invoice.Save();
+
+        Assert.AreEqual(0, SaveLifecycleStore.DeletedLineIds.Count,
+            "A re-added line must not be deleted");
+        Assert.AreEqual(2, SaveLifecycleStore.GetLines(invoiceId).Count(),
+            "Both lines survive");
+        CollectionAssert.Contains(SaveLifecycleStore.Lines.Keys.ToList(), lineId);
+    }
+
+    [TestMethod]
     public async Task FetchedChild_CrossesTheBoundary_AndKeepsIdentity()
     {
         // The fetched graph on the CLIENT is a deserialized graph. Assert the

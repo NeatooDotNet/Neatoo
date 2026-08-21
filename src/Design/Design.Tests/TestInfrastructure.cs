@@ -48,7 +48,7 @@ public static class DesignTestServices
                 services.AddTransient<Design.Domain.FactoryOperations.IFetchDemoRepository, MockFetchDemoRepository>();
                 services.AddTransient<Design.Domain.FactoryOperations.IFetchParentRepository, MockFetchParentRepository>();
                 services.AddTransient<Design.Domain.FactoryOperations.IFetchChildRepository, MockFetchChildRepository>();
-                services.AddTransient<Design.Domain.FactoryOperations.ISaveDemoRepository, MockSaveDemoRepository>();
+                services.AddScoped<Design.Domain.FactoryOperations.ISaveDemoRepository, MockSaveDemoRepository>();
                 // Scoped + recording, same rationale as MockOrderRepository above
                 services.AddScoped<Design.Domain.FactoryOperations.ISaveAggregateRepository, MockSaveAggregateRepository>();
                 services.AddTransient<Design.Domain.PropertySystem.IPropertyDemoRepository, MockPropertyDemoRepository>();
@@ -176,14 +176,26 @@ internal class MockFetchChildRepository : Design.Domain.FactoryOperations.IFetch
 
 internal class MockSaveDemoRepository : Design.Domain.FactoryOperations.ISaveDemoRepository
 {
-    private int _nextId = 1;
+    // Seeded clear of fetched ids so an inserted id can never collide with one
+    private int _nextId = 500;
+
+    // Recorded interactions — SaveTests asserts which persistence path Save() took
+    public List<int> InsertedIds { get; } = new();
+    public List<int> UpdatedIds { get; } = new();
+    public List<int> DeletedIds { get; } = new();
 
     public (int Id, string Name, decimal Amount) GetById(int id)
         => (id, $"SaveDemo-{id}", id * 100m);
 
-    public int Insert(string name, decimal amount) => _nextId++;
-    public void Update(int id, string name, decimal amount) { }
-    public void Delete(int id) { }
+    public int Insert(string name, decimal amount)
+    {
+        var id = _nextId++;
+        InsertedIds.Add(id);
+        return id;
+    }
+
+    public void Update(int id, string name, decimal amount) => UpdatedIds.Add(id);
+    public void Delete(int id) => DeletedIds.Add(id);
 }
 
 internal class MockSaveAggregateRepository : Design.Domain.FactoryOperations.ISaveAggregateRepository

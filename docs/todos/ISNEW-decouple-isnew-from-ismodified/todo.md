@@ -72,7 +72,7 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 | 003 | [003-list-cache-audit](./plans/003-list-cache-audit.md) | List correctness across factory ops (caches + child marking) | Done |
 | 004 | [004-decouple-flip](./plans/004-decouple-flip.md) | The flip: IsModified/IsSavable/attach-marking | In Progress (gates) |
 | 005 | [005-docs-and-release](./plans/005-docs-and-release.md) | Docs, skill, README, release notes, 0.29.0 | Draft (stub) |
-| 006 | [006-design-tests-tech-debt](./plans/006-design-tests-tech-debt.md) | Design.Tests pre-existing coverage debt | Draft (stub) |
+| 006 | [006-design-tests-tech-debt](./plans/006-design-tests-tech-debt.md) | Design.Tests + harness coverage debt | Done |
 | 007 | [007-entities-demo-lifecycle](./plans/007-entities-demo-lifecycle.md) | Entities demo aggregate (Employee/Address) to canonical | Done |
 | 008 | [008-list-metastate-baseline](./plans/008-list-metastate-baseline.md) | List meta-state baseline + paused delete | Draft (stub) |
 | 009 | [009-setitem-replaced-item](./plans/009-setitem-replaced-item.md) | SetItem: identity + replaced-item persistence | Draft (stub) |
