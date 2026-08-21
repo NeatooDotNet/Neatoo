@@ -162,6 +162,18 @@ internal interface IEntityListBaseInternal
     /// </summary>
     /// <param name="item">The entity to remove from the deleted list.</param>
     void RemoveFromDeletedList(IEntityBase item);
+
+    /// <summary>
+    /// Whether the list is currently inside a paused window (a factory operation or
+    /// deserialization).
+    /// </summary>
+    /// <remarks>
+    /// Deliberately internal rather than on <see cref="IEntityListBase"/>: pause state is a
+    /// framework implementation detail, and exposing it publicly would invite consumers to
+    /// branch on it. Used by <c>EntityBase.Delete()</c> to avoid delegating a deletion into a
+    /// paused <c>RemoveItem</c>, which discards it.
+    /// </remarks>
+    bool IsPaused { get; }
 }
 
 /// <summary>

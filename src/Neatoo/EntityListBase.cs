@@ -135,6 +135,11 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     }
 
     /// <summary>
+    /// Framework-internal view of pause state. See <see cref="IEntityListBaseInternal.IsPaused"/>.
+    /// </summary>
+    bool IEntityListBaseInternal.IsPaused => this.IsPaused;
+
+    /// <summary>
     /// Handles the <see cref="INotifyPropertyChanged.PropertyChanged"/> event from child items.
     /// Updates cached IsModified property based on the child's state transition.
     /// </summary>

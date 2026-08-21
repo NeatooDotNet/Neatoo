@@ -410,9 +410,25 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// </remarks>
     public void Delete()
     {
-        if (this.ContainingList != null)
+        // Delegate to the list's Remove method for consistency - but ONLY when the list
+        // is live. RemoveItem does its mark-deleted-and-queue work inside `if (!IsPaused)`,
+        // so delegating into a paused list would remove the child and record nothing:
+        // no MarkDeleted, no DeletedList entry, no DELETE at save time. The row is
+        // silently orphaned.
+        //
+        // That paused branch is correct for its own purpose - during a fetch or
+        // deserialization, removals are baseline construction rather than user deletions,
+        // and queueing them would manufacture phantom DELETEs. Delete() is different: it
+        // is an explicit statement of intent, so it records the deletion in place instead.
+        // The canonical list [Update] pattern iterates `this.Union(DeletedList)` and filters
+        // on IsDeleted, so a marked-deleted item still in the list is persisted correctly.
+        //
+        // Reachable only because ISNEW-003 began setting ContainingList on fetched
+        // children; no canonical flow calls Delete() inside a factory body today, and the
+        // framework itself routes through MarkDeleted rather than Delete() precisely to
+        // avoid this path. (LIST-004)
+        if (this.ContainingList is IEntityListBaseInternal { IsPaused: false })
         {
-            // Delegate to the list's Remove method for consistency
             this.ContainingList.Remove(this);
             return;
         }

@@ -51,6 +51,17 @@ public class EntityListBaseTests
 
         public void Resume() => ResumeAllActions();
 
+        /// <summary>
+        /// Test helper: makes the item busy by adding a pending task.
+        /// Call the returned action to release the busy state.
+        /// </summary>
+        public Action MarkBusyForTest()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            RunningTasks.AddTask(tcs.Task);
+            return () => tcs.SetResult(true);
+        }
+
         // Expose protected members for testing
         public new void MarkNew() => base.MarkNew();
         public new void MarkOld() => base.MarkOld();
@@ -982,6 +993,156 @@ public class EntityListBaseTests
             + $"pause-guarded. Raised: [{string.Join(", ", raised)}]");
 
         list.FactoryComplete(FactoryOperation.Fetch);
+    }
+
+    #endregion
+
+    #region Paused-Path Guards (LIST-004)
+
+    [TestMethod]
+    public void Delete_WhenListPaused_RecordsTheDeletionInsteadOfDiscardingIt()
+    {
+        // Arrange - THE LIST-004 DEFECT.
+        //
+        // Delete() used to delegate unconditionally to ContainingList.Remove(this).
+        // RemoveItem does its mark-deleted-and-queue work inside `if (!IsPaused)`, so
+        // delegating into a paused list removed the child and recorded NOTHING: no
+        // MarkDeleted, no DeletedList entry, and therefore no DELETE at save time. The
+        // row was silently orphaned.
+        //
+        // Reachable only because ISNEW-003 began setting ContainingList on children
+        // added during a paused window.
+        var item = CreateExistingItem();
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Fetch);
+        list.Add(item);
+        Assert.IsTrue(list.IsPaused, "Precondition: the list is inside a paused window");
+
+        // Act
+        item.Delete();
+
+        // Assert - the intent survives
+        Assert.IsTrue(item.IsDeleted, "The deletion must be recorded, not discarded");
+        Assert.IsTrue(
+            list.Contains(item),
+            "Marked in place rather than removed: the canonical list [Update] iterates "
+            + "this.Union(DeletedList) and filters on IsDeleted, so a marked item still in "
+            + "the list is persisted correctly");
+
+        list.FactoryComplete(FactoryOperation.Fetch);
+    }
+
+    [TestMethod]
+    public void Delete_WhenListIsLive_StillRoutesThroughTheList()
+    {
+        // Arrange - the other half of the LIST-004 contract: the live path is UNCHANGED.
+        // Delete() on a child of a live list must still route through Remove, so the item
+        // leaves the list and lands in DeletedList exactly as before.
+        var item = CreateExistingItem();
+        var list = FetchListWith(item);
+        Assert.IsFalse(list.IsPaused, "Precondition: the list is live");
+
+        // Act
+        item.Delete();
+
+        // Assert
+        Assert.IsFalse(list.Contains(item), "A live delete removes the item from the list");
+        Assert.AreEqual(1, list.DeletedList.Count, "...and queues it for persistence deletion");
+        Assert.IsTrue(item.IsDeleted);
+    }
+
+    [TestMethod]
+    public void Delete_WhenParentless_MarksDeleted()
+    {
+        // Arrange - the third routing case, unchanged by LIST-004: an entity with no
+        // containing list marks itself.
+        var item = CreateExistingItem();
+
+        // Act
+        item.Delete();
+
+        // Assert
+        Assert.IsTrue(item.IsDeleted);
+    }
+
+    [TestMethod]
+    public void Add_WhenPaused_AllowsDuplicate_UnlikeTheLivePath()
+    {
+        // Arrange - dispositions one of the guards the paused InsertItem branch skips.
+        //
+        // The live branch rejects a duplicate add outright. The paused branch skips that
+        // check, along with the busy-item and cross-aggregate checks, because factory and
+        // deserialization input is trusted and the checks cost a scan per add on a path
+        // that loads whole graphs.
+        //
+        // Asserted in the direction the code actually behaves so the skip is a recorded
+        // decision rather than an open question. If the paused branch is ever made to
+        // enforce this, this test fails and the decision gets revisited deliberately.
+        var item = CreateExistingItem();
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        list.Add(item);
+        list.Add(item);
+
+        // Assert
+        Assert.AreEqual(2, list.Count, "The paused branch does not screen duplicates");
+
+        list.FactoryComplete(FactoryOperation.Fetch);
+    }
+
+    [TestMethod]
+    public void Add_WhenPaused_AllowsBusyItem_UnlikeTheLivePath()
+    {
+        // Arrange - the busy half of the same disposition. The live branch refuses a
+        // busy item because adding one mid-async-rule would fold an indeterminate
+        // IsValid into the list's cache. The paused branch skips the check: factory
+        // input is trusted, and the resume recalculates the caches wholesale anyway.
+        var item = CreateExistingItem();
+        var release = item.MarkBusyForTest();
+        Assert.IsTrue(item.IsBusy, "Precondition: the item is busy");
+
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        list.Add(item);
+
+        // Assert
+        Assert.AreEqual(1, list.Count, "The paused branch does not screen busy items");
+
+        release();
+        list.FactoryComplete(FactoryOperation.Fetch);
+    }
+
+    [TestMethod]
+    public void Add_WhenLive_RejectsBusyItem()
+    {
+        // Arrange - the live-path counterpart of the busy skip.
+        var item = CreateExistingItem();
+        var release = item.MarkBusyForTest();
+        var list = new TestEntityList();
+
+        // Act & Assert
+        var ex = Assert.ThrowsExactly<InvalidOperationException>(() => list.Add(item));
+        Assert.IsTrue(
+            ex.Message.Contains("busy"),
+            $"The refusal should name the reason: {ex.Message}");
+
+        release();
+    }
+
+    [TestMethod]
+    public void Add_WhenLive_RejectsDuplicate()
+    {
+        // Arrange - the live-path counterpart, so the pair shows the asymmetry is real
+        // and deliberate rather than an accident of which branch got the check.
+        var item = CreateExistingItem();
+        var list = FetchListWith(item);
+
+        // Act & Assert
+        Assert.ThrowsExactly<InvalidOperationException>(() => list.Add(item));
     }
 
     #endregion
