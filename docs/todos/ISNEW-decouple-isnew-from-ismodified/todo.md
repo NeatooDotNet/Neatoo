@@ -33,22 +33,22 @@ aggregate save coverage, and list-cache correctness across factory ops. Ships as
 
 ## Acceptance Criteria
 
-- [ ] Design.Domain OrderAggregate demonstrates the lifecycle-correct canonical pattern
+- [x] Design.Domain OrderAggregate demonstrates the lifecycle-correct canonical pattern
       (fetched children `IsNew=false`; post-save graph fully clean; no comments claiming
       framework behavior that doesn't exist)
-- [ ] E2E aggregate save integration tests cover fetch→modify→save, create→save, and child
+- [x] E2E aggregate save integration tests cover fetch→modify→save, create→save, and child
       add/remove/delete flows, asserting graph state at each stage
-- [ ] `ValidateListBase.FactoryComplete` cache staleness is fixed or explicitly dispositioned
-- [ ] After Create: `IsNew=true, IsModified=false, IsSavable=true` — including aggregates
+- [x] `ValidateListBase.FactoryComplete` cache staleness is fixed or explicitly dispositioned
+- [x] After Create: `IsNew=true, IsModified=false, IsSavable=true` — including aggregates
       with factory-populated children; `MarkModified()` in a `[Create]` body yields
       `IsModified=true`
-- [ ] A new child attached by user code to a fetched aggregate makes the parent modified and
+- [x] A new child attached by user code to a fetched aggregate makes the parent modified and
       savable, and its insert is not skipped by `IsModified`-guarded cascades
-- [ ] The pinned tests named in design.md are updated to the new semantics; full suite green
-- [ ] The Why is documented per design.md: code comments, neatoo skill (incl. the COMMON
+- [x] The pinned tests named in design.md are updated to the new semantics; full suite green
+- [x] The Why is documented per design.md: code comments, neatoo skill (incl. the COMMON
       MISTAKE), change-tracking guide, api reference + samples, README brief mention with
       link, release notes with migration guide
-- [ ] Version is 0.29.0
+- [x] Version is 0.29.0
 
 ## Out of Scope
 
