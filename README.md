@@ -20,7 +20,7 @@ The domain model you bind to your Blazor form is the same object that validates 
 - **Transparent client-server transfer** — RemoteFactory moves domain object state across the wire through a single controller endpoint. Mark a method `[Remote]` and it runs on the server. No controller-per-operation, no routing boilerplate.
 - **Source-generated properties** — Partial properties generate backing fields, `PropertyChanged` events, validation triggers, and change tracking at compile time. Zero reflection.
 - **Validation and business rules** — Attribute validation (`[Required]`, `[Range]`), inline rules, async rules that call external services, and automatic error aggregation across the entire object graph.
-- **Change tracking** — `IsModified`, `IsSelfModified`, `IsNew`, `IsDeleted` cascade through parent-child graphs to the aggregate root. `ModifiedProperties` tells you exactly what changed.
+- **Change tracking** — `IsModified`, `IsSelfModified`, `IsNew`, `IsDeleted` cascade through parent-child graphs to the aggregate root. `ModifiedProperties` tells you exactly what changed. `IsModified` and `IsNew` answer different questions on purpose: a freshly created entity is savable but *not* modified, so unsaved-changes guards stay quiet until the user actually edits something ([why](docs/guides/change-tracking.md#why-isnew-is-not-part-of-ismodified)).
 - **DDD aggregate support** — `EntityBase` for persistent entities, `ValidateBase` for value objects, `EntityListBase` for child collections. Interface-first design enforces aggregate boundaries at compile time.
 - **Blazor integration** — MudNeatoo components bind directly to domain model properties with two-way binding, validation display, and form integration out of the box.
 

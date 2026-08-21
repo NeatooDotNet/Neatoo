@@ -380,7 +380,7 @@ When `FactoryComplete(FactoryOperation.Update)` fires:
 
 ### Adding Existing Items Marks Them Modified
 
-Adding a fetched (non-new) item to a collection marks both the item and collection as modified:
+Adding an item to a live collection marks both the item and the collection as modified — whether the item is new or already persisted:
 
 <!-- snippet: skill-coll-add-existing-marks-modified -->
 <a id='snippet-skill-coll-add-existing-marks-modified'></a>
@@ -391,7 +391,11 @@ list.Add(item);  // Now: item.IsModified = true, list.IsModified = true
 <sup><a href='/src/samples/CollectionSamples.cs#L201-L204' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-coll-add-existing-marks-modified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-This is intentional—adding an existing entity to a new parent represents a state change that must be persisted.
+This is intentional—attaching an entity to a live parent is a change to that graph, and must be persisted.
+
+It is also load-bearing for **new** items. `IsNew` never aggregates upward (a parent ignores its children's `IsNew`; lists report `IsNew => false`), so modification state is the only channel by which a parent learns a child was attached. Without the mark, adding a newly created child to a fetched aggregate would leave the parent clean and unsavable — and the child's insert would be skipped by save cascades guarded on `IsModified`.
+
+Items added while the collection is **paused** — a factory `[Fetch]`/`[Create]` populating it, or deserialization — are baseline population and are not marked. That is what keeps a fetched or richly-created graph clean.
 
 ### Cross-Aggregate Transfer
 

@@ -1150,7 +1150,7 @@ public void IEntityBase_EntityInterface()
     Assert.True(employee.IsNew);  // After Create, IsNew is true
     Assert.False(employee.IsDeleted);
     Assert.False(employee.IsChild);
-    Assert.True(employee.IsModified);  // New entity is considered modified
+    Assert.False(employee.IsModified);  // ...but a new entity is not "modified"
 
     // Delete and UnDelete methods
     employee.Delete();
@@ -1352,7 +1352,7 @@ public void IMetaProperties_ValidationAndEntityState()
     Assert.True(entityMeta.IsNew);  // After Create
     Assert.False(entityMeta.IsDeleted);
     Assert.False(entityMeta.IsChild);
-    Assert.True(entityMeta.IsModified);  // New entity
+    Assert.False(entityMeta.IsModified);  // New, but holds no user work
     Assert.False(entityMeta.IsSelfModified);
     Assert.False(entityMeta.IsMarkedModified);
     // IsSavable is on IEntityRoot, not IEntityMetaProperties

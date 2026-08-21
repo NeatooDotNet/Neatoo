@@ -93,12 +93,14 @@ public interface IOrderLine : IEntityBase { ... }
 **Why this exists:** `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. Developers naturally used `IsSavable` in save cascade logic to check whether children need persisting -- but it silently returned false, skipping saves (real bug in zTreatment). The fix is not to make `IsSavable` work on children -- it is to remove it from the child interface entirely. Child entity factory methods (`[Insert]`/`[Update]`) have signatures that outside consumers cannot fulfill (they often need the parent entity or parent ID), and entity classes are `internal`, so external callers should not be able to save children at all.
 
 ### State Properties
-- `IsModified` - True when object has unsaved changes
+- `IsModified` - True when the object graph differs from the baseline its last factory operation left. Answers "would discarding this lose work?" **Does NOT include `IsNew`.**
 - `IsSelfModified` - True when this object (not children) has changes
-- `IsNew` - True when object hasn't been persisted yet
+- `IsNew` - True when object hasn't been persisted yet. Pure routing state (Insert vs Update) -- it does **not** make an object modified, and it never aggregates upward (lists are always `IsNew => false`; a parent ignores its children's `IsNew`).
 - `IsValid` - True when all validation rules pass
 - `IsSelfValid` - True when this object's rules pass (not children)
-- `IsSavable` - True when entity can be saved (IsModified && IsValid && !IsBusy && !IsChild). **Only on `IEntityRoot`** -- not on `IEntityBase` or `IEntityListBase`. Child entities and entity lists never expose this property through their interfaces.
+- `IsSavable` - True when entity can be saved (`(IsModified || IsNew) && IsValid && !IsBusy && !IsChild`). **Only on `IEntityRoot`** -- not on `IEntityBase` or `IEntityListBase`. Child entities and entity lists never expose this property through their interfaces.
+
+**IsNew vs IsModified (0.29.0).** After `[Create]`: `IsNew=true, IsModified=false, IsSavable=true`. A created object needs inserting but holds no user work, so unsaved-changes guards bound to `IsModified` stay quiet on it. A `[Create]` whose result *is* the user's work opts in with `MarkModified()` in its body -- **not** to make it savable (new objects already are), but to say a guard should speak. Because dirt (never `IsNew`) is what aggregates up a graph, attaching a child to a live parent -- adding to a list, or assigning a new child entity to a property -- marks the child modified so the parent becomes modified and savable.
 
 ### Factory Operations
 
