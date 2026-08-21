@@ -78,6 +78,27 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 
 ## Discovery Log
 
+### 2026-08-21 — ISNEW (plan order)
+- **Finding:** ISNEW-006 (test-debt cleanup) queued ahead of ISNEW-004 would produce tests
+  written against pre-flip semantics that the flip then invalidates, and several of its items
+  (delete paths, savability assertions) only settle after the flip.
+- **Decision:** Re-split — run ISNEW-004 before ISNEW-006 while the ISNEW-002/003 safety net
+  is fresh.
+- **Index changes:** Order changed to 001, 007, 002, 003, **004, 006, 005**; no plans added
+  or dropped.
+- **Follow-up:** ISNEW-004
+
+### 2026-08-21 — ISNEW-003 (defect 1 reachability)
+- **Finding:** The first cache-staleness regression test passed with the fix reverted —
+  `HandlePropertyChanged` has no pause guard, so caches self-heal on any later event, and
+  fetched children start valid (rules don't run during factory ops). The stale window only
+  exists for items already invalid at the moment of a paused add. Separately, three existing
+  characterization tests pinned the child-identity defect.
+- **Decision:** Amend — regression test rewritten at the reachable level and verified failing
+  on revert; the three characterization tests updated to the corrected behavior with a new
+  test pinning the other half of the paused-add contract (plan Amendments).
+- **Follow-up:** n/a
+
 ### 2026-08-21 — ISNEW-002 (test review)
 - **Finding:** The static shared store made the client/server round trip unprovable (tests
   passed identically in-process), and the created-untouched savability test was pinned to

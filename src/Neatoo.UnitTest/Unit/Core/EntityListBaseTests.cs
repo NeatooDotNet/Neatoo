@@ -296,7 +296,7 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
-    public void Add_WhenPaused_DoesNotMarkAsChild()
+    public void Add_WhenPaused_MarksAsChild()
     {
         // Arrange
         var list = new TestEntityList();
@@ -306,8 +306,30 @@ public class EntityListBaseTests
         // Act
         list.Add(item);
 
+        // Assert - child identity is baseline-neutral state, applied on every
+        // add. Paused adds skip the dirt-producing steps (MarkModified), not
+        // the identity ones: a child loaded by a factory [Fetch] is still a
+        // child, and without this Delete() would bypass list routing (ISNEW-003;
+        // previously this asserted IsChild stayed false).
+        Assert.IsTrue(item.IsChild);
+    }
+
+    [TestMethod]
+    public void Add_WhenPaused_DoesNotMarkModified()
+    {
+        // Arrange - the other half of the paused-add contract: identity yes,
+        // dirt no. An existing item added while paused must stay clean, which
+        // is what keeps a factory [Fetch] baseline-clean.
+        var list = new TestEntityList();
+        list.IsPaused = true;
+        var item = CreateExistingItem();
+
+        // Act
+        list.Add(item);
+
         // Assert
-        Assert.IsFalse(item.IsChild);
+        Assert.IsFalse(item.IsModified, "A paused add must not dirty the item");
+        Assert.IsFalse(list.IsModified, "A paused add must not dirty the list");
     }
 
     [TestMethod]

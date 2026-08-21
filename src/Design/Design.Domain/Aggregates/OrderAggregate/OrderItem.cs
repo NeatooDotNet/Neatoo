@@ -159,14 +159,15 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //
 // FETCHED ITEM (factory flow, paused list):
 //   Items loaded inside OrderItemList.Fetch are added while the list is paused
-//   by its own factory operation. The paused add path skips the state
-//   management above - fetched items currently have IsChild=false and
-//   ContainingList=null (framework gap tracked as ISNEW-003). Parent/Root ARE
-//   established, but one step later than the adds: during the list's own
-//   [Fetch] the list has no Parent yet, so each add propagates null; when the
-//   parent assigns `Items = itemsFactory.Fetch(id)`, SetParent flows through
-//   the list to every item. Remove fetched items through
-//   list.Remove(item) / RemoveAt - not item.Delete() - until ISNEW-003 lands.
+//   by its own factory operation. The paused add path skips the DIRT-producing
+//   steps above (notably MarkModified) but still applies child IDENTITY:
+//   fetched items get IsChild=true and ContainingList, so item.Delete() routes
+//   through the list exactly as it does for a live add.
+//
+//   Parent/Root are established one step later than the adds: during the list's
+//   own [Fetch] the list has no Parent yet, so each add propagates null; when
+//   the parent assigns `Items = itemsFactory.Fetch(id)`, SetParent flows
+//   through the list to every item.
 //
 // REMOVING EXISTING ITEM:
 //   var item = order.Items[0];  // item.IsNew = false
@@ -232,14 +233,12 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 // WRONG:
 //   order.Items[0].Delete();
 //   // Expecting item is deleted from DB - IT IS NOT
-//   // What actually happens (item added through a live list, ContainingList set):
+//   // What actually happens:
 //   // - Delete() delegates to list.Remove(this) for consistency
 //   // - Item is marked deleted and goes to DeletedList
 //   // - Item is still in memory, still has data
-//   // (For items loaded by the list's own Fetch, ContainingList is not yet
-//   //  set - see ISNEW-003 - so prefer list.Remove(item) universally.)
 //
 // RIGHT:
-//   order.Items.Remove(order.Items[0]);
+//   order.Items[0].Delete();   // OR order.Items.Remove(order.Items[0])
 //   await order.Save();        // NOW the delete is persisted
 // =============================================================================

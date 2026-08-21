@@ -355,7 +355,32 @@ public class EntityListBaseStateTransitionTests
     }
 
     [TestMethod]
-    public void Add_Item_WhenPaused_IsChildNotSet()
+    public async Task FactoryComplete_AfterPausedAddOfInvalidItem_ListReportsInvalid()
+    {
+        // Arrange - an item that is ALREADY invalid before it is added. This is
+        // the only window where the cached state can go stale: InsertItem skips
+        // its cache update while paused, and no later PropertyChanged fires to
+        // heal it (HandlePropertyChanged has no pause guard, so an item that
+        // becomes invalid *after* the add updates the cache normally).
+        var list = new EntityPersonList();
+        var invalidItem = new EntityPerson { FirstName = "Error" };
+        await invalidItem.WaitForTasks();
+        Assert.IsFalse(invalidItem.IsValid, "Precondition: item is invalid before the add");
+
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        list.Add(invalidItem);
+        list.FactoryComplete(FactoryOperation.Fetch);
+
+        // Assert - factory completion recalculates cached meta state, so the
+        // list reflects its children. Before ISNEW-003 it resumed without
+        // recalculating and reported the state of an empty list (IsValid=true).
+        Assert.IsFalse(list.IsValid, "A list holding an invalid child is not valid");
+    }
+
+    [TestMethod]
+    public void Add_Item_WhenPaused_IsChildIsSet()
     {
         // Arrange
         var aggregateRoot = new EntityPerson { FirstName = "Root" };
@@ -371,8 +396,17 @@ public class EntityListBaseStateTransitionTests
 
         list.FactoryComplete(FactoryOperation.Fetch);
 
-        // Assert - IsChild is NOT set when paused (MarkAsChild is in EntityListBase, skipped when paused)
-        Assert.IsFalse(item.IsChild);
+        // Assert - a child loaded through a factory [Fetch] is a child. Child
+        // identity is baseline-neutral, so it applies on paused adds too; only
+        // the dirt-producing steps are skipped while paused (ISNEW-003;
+        // previously this asserted IsChild stayed false, which meant fetched
+        // children silently bypassed list routing on Delete()).
+        Assert.IsTrue(item.IsChild);
+
+        // Note: this item is dirtied by its own property initializer before the
+        // add, so it cannot show whether the ADD contributed dirt. The paused
+        // add's clean-ness contract is pinned separately, on a clean item, by
+        // EntityListBaseTests.Add_WhenPaused_DoesNotMarkModified.
     }
 
     #endregion

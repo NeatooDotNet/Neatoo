@@ -313,9 +313,11 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 // IMPORTANT: ContainingList stays SET when item is removed.
 // It's only cleared in the list's FactoryComplete after successful persistence.
 //
-// IMPORTANT: ContainingList (and IsChild) are set by the LIVE add path -
-// items loaded while the list is paused by its own [Fetch] do not currently
-// get them (framework gap tracked as ISNEW-003).
+// ContainingList and IsChild are child IDENTITY, applied on every add -
+// live or paused. Items loaded by the list's own [Fetch] get them too, which
+// is what makes Delete() routing work for fetched children. (ContainingList
+// cannot be serialized, so the paused add path is also what re-establishes it
+// on the client after a round trip.)
 //
 // Timeline (live add):
 //   Add to list      -> ContainingList = list

@@ -257,6 +257,20 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
         }
         else
         {
+            // Paused adds are baseline population: a factory operation loading
+            // its children, or deserialization restoring them. No dirt-producing
+            // step runs here (notably MarkModified), but the child IDENTITY
+            // steps do: being a child of this list is what the object IS, not a
+            // change to it, and both marks are baseline-neutral.
+            //
+            // Without this, children loaded by the canonical list [Fetch] would
+            // have IsChild=false and no ContainingList, so Delete() would
+            // silently bypass list routing. ContainingList also cannot be
+            // serialized, so this is what restores it after deserialization.
+            var pausedItemInternal = (IEntityBaseInternal)item;
+            pausedItemInternal.MarkAsChild();
+            pausedItemInternal.SetContainingList(this);
+
             if (item.IsDeleted)
             {
                 this.DeletedList.Add(item);

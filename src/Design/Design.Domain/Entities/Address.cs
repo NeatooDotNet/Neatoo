@@ -189,11 +189,11 @@ internal partial class Address : EntityBase<Address>, IAddress
 // 4. If address was deleted, UnDelete() is called
 //
 // When addresses are loaded by AddressList.Fetch, the list is paused by its own
-// factory operation and the paused add path skips steps 2-3: fetched addresses
-// currently have IsChild=false and ContainingList=null (framework gap tracked
-// as ISNEW-003). Parent/Root are established when the parent assigns
-// Addresses = addressListFactory.Fetch(id). Remove fetched children through
-// list.Remove(address) rather than address.Delete() until ISNEW-003 lands.
+// factory operation. The paused add path skips the DIRT-producing steps but
+// still applies child identity (steps 2-3), so fetched addresses have
+// IsChild=true and a ContainingList - address.Delete() routes through the list
+// exactly as it does for a live add. Parent/Root are established one step
+// later, when the parent assigns Addresses = addressListFactory.Fetch(id).
 //
 // When an Address is removed from AddressList:
 // 1. RemoveItem() is called on the list
