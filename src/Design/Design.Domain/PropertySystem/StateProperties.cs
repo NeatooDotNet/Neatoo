@@ -174,7 +174,8 @@ internal partial class ModificationStateDemo : EntityBase<ModificationStateDemo>
     //   - Save() will call [Insert]
     //
     // IsNew = false: Object exists in database.
-    //   - Set by FactoryComplete(Insert/Fetch) calling MarkOld()
+    //   - The default: [Fetch] never marks new, so a fetched object simply
+    //     stays IsNew=false. FactoryComplete(Insert/Update) calls MarkOld().
     //   - Save() will call [Update] or [Delete]
     //
     // STATE TRANSITIONS:

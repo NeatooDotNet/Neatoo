@@ -15,10 +15,12 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 /// Demonstrates: Child entity within an aggregate.
 ///
 /// Key points:
-/// - IsChild=true when in OrderItemList (cannot save independently)
+/// - IsChild=true when added to a live OrderItemList (cannot save independently)
 /// - ContainingList tracks which list owns this item
 /// - Root property points to Order (aggregate root)
 /// - Delete/UnDelete managed by list operations
+/// - Local (non-[Remote]) Insert/Update ops reachable only through the
+///   aggregate's save flow
 /// </summary>
 [Factory]
 internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
@@ -62,59 +64,87 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
     }
 
     // =========================================================================
-    // Child Entity State Properties
+    // Child Fetch - Called from OrderItemList.Fetch
     // =========================================================================
-    // When OrderItem is in a list:
+    // GENERATOR BEHAVIOR: instance [Create]/[Fetch]/[Insert]/[Update] methods
+    // run inside FactoryStart/FactoryComplete on THIS object - the object is
+    // paused for the duration of the method body, so plain property assignment
+    // loads values without marking anything modified, and rules do not fire.
     //
-    // IsChild = true
-    //   - Set by list.Add() calling MarkAsChild()
-    //   - Makes IsSavable = false (cannot save independently)
+    // After Fetch: IsNew=false (IsNew defaults to false; only a completed
+    // [Create] marks an entity new), IsModified=false.
     //
-    // ContainingList = the OrderItemList
-    //   - Set by list.Add() calling SetContainingList()
-    //   - Used for Delete() routing and intra-aggregate moves
-    //   - Stays set when removed (until FactoryComplete clears it)
-    //
-    // Root = the Order
-    //   - Computed from Parent chain
-    //   - Used for aggregate boundary enforcement
-    //
-    // IsDeleted = true when removed from list (and not new)
-    //   - Set by list.Remove() calling MarkDeleted()
-    //   - Item goes to DeletedList
-    //   - Order's Update method will delete from DB
+    // DESIGN DECISION: LineTotal is loaded from persistence rather than
+    // recalculated - rules do not run while the factory operation is paused.
     // =========================================================================
+    [Fetch]
+    internal void Fetch(int id, string productName, int quantity, decimal unitPrice, decimal lineTotal)
+    {
+        Id = id;
+        ProductName = productName;
+        Quantity = quantity;
+        UnitPrice = unitPrice;
+        LineTotal = lineTotal;
+    }
 
     // =========================================================================
-    // No Insert/Update/Delete with [Remote]
+    // Child Insert/Update - Called (via the generated factory Save) from
+    // OrderItemList.Update
     // =========================================================================
-    // Child entities don't have their own remote persistence methods.
-    // The parent (Order) handles all persistence.
+    // DESIGN DECISION: Child entities DO have [Insert]/[Update] factory
+    // operations - they are local (no [Remote]), internal, and their signatures
+    // require the parent's identity (orderId), which only the aggregate's save
+    // flow can supply. Outside consumers cannot persist a child:
+    // IOrderItem extends IEntityBase (no Save()), and the child factory's Save
+    // needs parameters the consumer does not have.
     //
-    // DID NOT DO THIS: Give child entities independent [Remote] persistence.
+    // GENERATOR BEHAVIOR: because Insert and Update share the same parameter
+    // list, the generated IOrderItemFactory exposes a single
+    // Save(IOrderItem target, int orderId) that routes on the ITEM's own
+    // IsDeleted/IsNew. Each routed call wraps the method with
+    // FactoryStart/FactoryComplete on the item - and FactoryComplete(Insert)
+    // and FactoryComplete(Update) call MarkUnmodified() and MarkOld().
+    // THAT is how child entities come out clean after an aggregate save:
+    // per-item factory saves, not a cascade. Lifecycle hooks fire only on the
+    // single factory target - there is no FactoryComplete cascade through the
+    // object graph.
+    //
+    // DID NOT DO THIS: Give child entities [Remote] persistence.
     //
     // REJECTED PATTERN:
     //   [Remote]
     //   [Insert]
-    //   public void Insert([Service] IOrderItemRepository repo) { ... }
+    //   public void Insert([Service] IOrderRepository repo) { ... }
     //
-    // WHY NOT: This would allow calling orderItem.Save() which shouldn't work.
-    // Child entities are part of the aggregate - persistence goes through root.
-    //
-    // These empty methods exist only for the interface contract.
-    // The Order's Insert/Update/Delete does the actual persistence.
+    // WHY NOT: [Remote] + a signature any consumer can fulfill would let a
+    // child be persisted outside its aggregate. Child persistence is
+    // coordinated by the aggregate root's save.
     // =========================================================================
+    [Insert]
+    internal void Insert(int orderId, [Service] IOrderRepository repository)
+    {
+        // Object is paused (factory operation) - plain assignment stays clean
+        Id = repository.InsertItem(orderId, ProductName!, Quantity, UnitPrice, LineTotal);
+    }
+
+    [Update]
+    internal void Update(int orderId, [Service] IOrderRepository repository)
+    {
+        // orderId is unused here - it exists so Insert and Update share a
+        // signature and the generator produces a single Save(target, orderId)
+        repository.UpdateItem(Id, ProductName!, Quantity, UnitPrice, LineTotal);
+    }
 }
 
 // =============================================================================
 // Child Entity Lifecycle - Detailed Documentation
 // =============================================================================
 //
-// ADDING NEW ITEM:
+// ADDING NEW ITEM (user flow, live list):
 //   var item = orderItemFactory.Create("Widget", 5, 10.00m);
 //   order.Items.Add(item);
 //
-//   What happens in list.InsertItem():
+//   What happens in list.InsertItem() (list is not paused):
 //   1. Check: item not already in list (throws if duplicate)
 //   2. Check: item not busy (throws if IsBusy=true)
 //   3. Check: item.Root == this.Root OR item.Root == null
@@ -127,6 +157,17 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //   8. item.SetContainingList(this)
 //   9. Add to collection
 //
+// FETCHED ITEM (factory flow, paused list):
+//   Items loaded inside OrderItemList.Fetch are added while the list is paused
+//   by its own factory operation. The paused add path skips the state
+//   management above - fetched items currently have IsChild=false and
+//   ContainingList=null (framework gap tracked as ISNEW-003). Parent/Root ARE
+//   established, but one step later than the adds: during the list's own
+//   [Fetch] the list has no Parent yet, so each add propagates null; when the
+//   parent assigns `Items = itemsFactory.Fetch(id)`, SetParent flows through
+//   the list to every item. Remove fetched items through
+//   list.Remove(item) / RemoveAt - not item.Delete() - until ISNEW-003 lands.
+//
 // REMOVING EXISTING ITEM:
 //   var item = order.Items[0];  // item.IsNew = false
 //   order.Items.Remove(item);
@@ -137,7 +178,7 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //      - Add item to DeletedList
 //   2. If item.IsNew:
 //      - Just remove (never persisted, nothing to delete)
-//   3. ContainingList stays set (for save routing)
+//   3. ContainingList stays set if it was set (for save routing)
 //   4. Remove from collection
 //
 // SAVING THE AGGREGATE:
@@ -145,17 +186,21 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //
 //   In Order.Update():
 //   1. Update order header if IsSelfModified
-//   2. For each item in Items:
-//      - If item.IsNew: Insert
-//      - If item.IsSelfModified && !item.IsNew: Update
-//   3. For each item in Items.DeletedList:
-//      - Call repository.DeleteItem()
+//   2. Delegate child persistence: orderItemListFactory.Save(Items, Id)
 //
-//   In FactoryComplete(Update):
-//   1. MarkUnmodified() on Order
-//   2. For each item: MarkUnmodified()
-//   3. DeletedList.Clear()
-//   4. For each deleted item: SetContainingList(null)
+//   In OrderItemList.Update() (list runs its own factory operation):
+//   - Deleted items (DeletedList or in-list IsDeleted): repository delete
+//   - Other items: orderItemFactory.Save(item, orderId), routed by the
+//     item's own IsNew -> Insert, else Update
+//
+//   FactoryComplete runs per factory target as each save completes:
+//   - Each saved item: MarkUnmodified() + MarkOld()
+//   - The list (FactoryOperation.Update): DeletedList cleared,
+//     ContainingList cleared on deleted items, modified-cache recalculated
+//   - The order: MarkUnmodified() + MarkOld()
+//   There is NO graph-wide cascade - each object is cleaned by ITS factory
+//   call. An update flow that writes child data to the repository directly,
+//   without per-item factory saves, leaves child state dirty after save.
 //
 // INTRA-AGGREGATE MOVE:
 //   // If Order had two lists (hypothetically)
@@ -176,8 +221,7 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 // WRONG:
 //   order.Items[0].ProductName = "New Name";
 //   await order.Items[0].Save();
-//   // THROWS: SaveOperationException(SaveFailureReason.IsChildObject)
-//   // Because: order.Items[0].IsChild = true -> IsSavable = false
+//   // Does not compile: IOrderItem (IEntityBase) has no Save()
 //
 // RIGHT:
 //   order.Items[0].ProductName = "New Name";
@@ -188,12 +232,14 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 // WRONG:
 //   order.Items[0].Delete();
 //   // Expecting item is deleted from DB - IT IS NOT
-//   // What actually happens:
-//   // - Delete() delegates to list.Remove() (because ContainingList is set)
+//   // What actually happens (item added through a live list, ContainingList set):
+//   // - Delete() delegates to list.Remove(this) for consistency
 //   // - Item is marked deleted and goes to DeletedList
 //   // - Item is still in memory, still has data
+//   // (For items loaded by the list's own Fetch, ContainingList is not yet
+//   //  set - see ISNEW-003 - so prefer list.Remove(item) universally.)
 //
 // RIGHT:
-//   order.Items[0].Delete();  // OR order.Items.Remove(item)
-//   await order.Save();        // NOW the [Delete] is called
+//   order.Items.Remove(order.Items[0]);
+//   await order.Save();        // NOW the delete is persisted
 // =============================================================================

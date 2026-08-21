@@ -17,7 +17,7 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 /// Key points:
 /// - Aggregate root owns the Save() operation
 /// - Child entities (OrderItems) cannot save independently
-/// - DeletedList tracks removed items for persistence
+/// - Child loading and child persistence are delegated to the child factories
 /// - Root property allows children to find the aggregate root
 /// - Aggregate boundaries are enforced
 /// </summary>
@@ -46,6 +46,7 @@ internal partial class Order : EntityBase<Order>, IOrder
     // - New items are inserted
     // - Modified items are updated
     // - Removed items (in DeletedList) are deleted
+    // The mechanics live in OrderItemList.Update - see that file.
     // =========================================================================
     public partial IOrderItemList? Items { get; set; }
 
@@ -106,73 +107,90 @@ internal partial class Order : EntityBase<Order>, IOrder
         OrderNumber = $"ORD-{DateTime.Now:yyyyMMddHHmmss}";
     }
 
+    // =========================================================================
+    // Aggregate Fetch - Load Root, Delegate Children to the List Factory
+    // =========================================================================
+    // GENERATOR BEHAVIOR: instance factory methods run inside
+    // FactoryStart/FactoryComplete on this object — the Order is paused for
+    // the duration of the body. No explicit PauseAllActions() is needed (and
+    // wrapping the body in `using (PauseAllActions())` would actually resume
+    // EARLY, when the using disposes, before the factory operation completes).
+    //
+    // DESIGN DECISION: Children load through the LIST factory's [Fetch], which
+    // in turn loads each item through the ITEM factory's [Fetch]. Every object
+    // in the graph gets its own factory lifecycle, so every object lands with
+    // the right persistence state: IsNew=false, IsModified=false throughout.
+    //
+    // This[...].LoadValue is shown for the root's own properties — plain
+    // property assignment is equally clean here because the object is paused;
+    // LoadValue makes the load explicit and works even when not paused.
+    // =========================================================================
     [Remote]
     [Fetch]
     internal void Fetch(int id,
         [Service] IOrderRepository repository,
-        [Service] IOrderItemListFactory itemsFactory,
-        [Service] IOrderItemFactory itemFactory)
+        [Service] IOrderItemListFactory itemsFactory)
     {
-        using (PauseAllActions())
-        {
-            var data = repository.GetById(id);
+        var data = repository.GetById(id);
 
-            this["Id"].LoadValue(data.Id);
-            this["OrderNumber"].LoadValue(data.OrderNumber);
-            this["CustomerName"].LoadValue(data.CustomerName);
-            this["OrderDate"].LoadValue(data.OrderDate);
-            this["Status"].LoadValue(data.Status);
-            this["TotalAmount"].LoadValue(data.TotalAmount);
+        this["Id"].LoadValue(data.Id);
+        this["OrderNumber"].LoadValue(data.OrderNumber);
+        this["CustomerName"].LoadValue(data.CustomerName);
+        this["OrderDate"].LoadValue(data.OrderDate);
+        this["Status"].LoadValue(data.Status);
+        this["TotalAmount"].LoadValue(data.TotalAmount);
 
-            // Load items
-            Items = itemsFactory.Create();
-            foreach (var itemData in repository.GetItems(id))
-            {
-                var item = itemFactory.Create();
-                item["Id"].LoadValue(itemData.Id);
-                item["ProductName"].LoadValue(itemData.ProductName);
-                item["Quantity"].LoadValue(itemData.Quantity);
-                item["UnitPrice"].LoadValue(itemData.UnitPrice);
-                item["LineTotal"].LoadValue(itemData.LineTotal);
+        // Items and every item within: IsNew=false, IsModified=false
+        Items = itemsFactory.Fetch(id);
 
-                Items.Add(item);
-                // item.IsChild = true, item.ContainingList = Items
-            }
-        }
-        // After Fetch: Order.IsNew=false, Order.IsModified=false
-        // Each item: IsNew=false, IsModified=false, IsChild=true
+        // After Fetch completes: Order.IsNew=false, Order.IsModified=false
     }
 
     // =========================================================================
-    // Aggregate Insert - Save Root and All Children
+    // Aggregate Insert - Save Root, Delegate Children to the List Factory
+    // =========================================================================
+    // DESIGN DECISION: Insert and Update delegate child persistence to the
+    // SAME list factory Save. The list is never new or deleted, so the list
+    // factory routes to OrderItemList.Update, and each item's own IsNew
+    // decides insert vs update — for a brand-new order, every item is new and
+    // gets inserted.
     // =========================================================================
     [Remote]
     [Insert]
-    internal void Insert([Service] IOrderRepository repository)
+    internal void Insert([Service] IOrderRepository repository,
+        [Service] IOrderItemListFactory itemsFactory)
     {
-        // Insert order first to get ID
-        var generatedId = repository.InsertOrder(
+        // Insert order first to get ID (object is paused — assignment is clean)
+        Id = repository.InsertOrder(
             OrderNumber!, CustomerName!, OrderDate, Status!, TotalAmount);
-        this["Id"].LoadValue(generatedId);
 
-        // Insert all items (all are new for a new order)
-        foreach (var item in Items!)
-        {
-            var itemId = repository.InsertItem(
-                Id, item.ProductName!, item.Quantity, item.UnitPrice, item.LineTotal);
-            item["Id"].LoadValue(itemId);
-        }
+        itemsFactory.Save(Items!, Id);
     }
 
     // =========================================================================
-    // Aggregate Update - Coordinate All Child Persistence
+    // Aggregate Update - Delegate Child Persistence to the List Factory
     // =========================================================================
-    // This is where the DeletedList pattern is most important.
-    // We must handle: modified items, new items, AND deleted items.
+    // The list factory Save runs OrderItemList.Update inside the LIST's own
+    // factory operation: deleted items are removed from persistence, new and
+    // modified items go through per-item factory saves, and the list's
+    // FactoryComplete(Update) clears the DeletedList and recalculates its
+    // modified cache. Each saved item's FactoryComplete marks it unmodified
+    // and old. When this Update returns, the framework calls
+    // FactoryComplete(Update) on the ORDER — MarkUnmodified() + MarkOld() —
+    // and the whole graph reads IsModified=false.
+    //
+    // COMMON MISTAKE: Writing child rows to the repository directly here
+    // (foreach item -> repository.UpdateItem(...)). The rows get written, but
+    // no child factory operation runs, so no child is ever marked unmodified
+    // or old: the aggregate still reports IsModified=true after Save, new
+    // children keep IsNew=true and re-insert on the next Save, and the
+    // DeletedList never clears (FactoryComplete fires per factory target —
+    // never as a cascade from the parent).
     // =========================================================================
     [Remote]
     [Update]
-    internal void Update([Service] IOrderRepository repository)
+    internal void Update([Service] IOrderRepository repository,
+        [Service] IOrderItemListFactory itemsFactory)
     {
         // Update order header if changed
         if (IsSelfModified)
@@ -180,63 +198,16 @@ internal partial class Order : EntityBase<Order>, IOrder
             repository.UpdateOrder(Id, OrderNumber!, CustomerName!, OrderDate, Status!, TotalAmount);
         }
 
-        // Process active items
-        foreach (var item in Items!)
-        {
-            if (item.IsNew)
-            {
-                // New item - insert
-                var itemId = repository.InsertItem(
-                    Id, item.ProductName!, item.Quantity, item.UnitPrice, item.LineTotal);
-                item["Id"].LoadValue(itemId);
-            }
-            else if (item.IsSelfModified)
-            {
-                // Existing item modified - update
-                repository.UpdateItem(item.Id, item.ProductName!, item.Quantity, item.UnitPrice, item.LineTotal);
-            }
-            // Unmodified items - no action needed
-        }
-
-        // =====================================================================
-        // Process Deleted Items - The DeletedList Pattern
-        // =====================================================================
-        // Items removed from the collection are in DeletedList.
-        // We must delete them from the database.
-        //
-        // DESIGN DECISION: The aggregate root coordinates deletion.
-        // DeletedList is protected, accessed here via internal mechanism.
-        //
-        // In real generated code, the framework handles this in FactoryComplete.
-        // This demonstrates the pattern explicitly.
-        // =====================================================================
-        ProcessDeletedItems(repository);
-
-        // After Update completes, FactoryComplete(Update) will:
-        // - Call MarkUnmodified() on Order
-        // - Clear DeletedList
-        // - Clear ContainingList on deleted items
-    }
-
-    private void ProcessDeletedItems(IOrderRepository repository)
-    {
-        // Access DeletedList through internal interface
-        // In production code, this is handled by the framework
-        // Here we demonstrate what happens conceptually
-
-        // foreach (var deletedItem in Items!.GetDeletedItemsForPersistence())
-        // {
-        //     repository.DeleteItem(deletedItem.Id);
-        // }
-
-        // The framework iterates DeletedList and calls delete
+        itemsFactory.Save(Items!, Id);
     }
 
     [Remote]
     [Delete]
     internal void Delete([Service] IOrderRepository repository)
     {
-        // Delete items first (FK constraint)
+        // Delete items first (FK constraint). Direct repository deletes are
+        // INTENTIONAL here - deleted children get no factory operation
+        // (see OrderItemList.Update), and the whole aggregate is going away.
         foreach (var item in Items!)
         {
             repository.DeleteItem(item.Id);

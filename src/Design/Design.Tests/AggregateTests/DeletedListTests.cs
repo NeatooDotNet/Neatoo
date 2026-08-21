@@ -4,10 +4,10 @@
 // Tests demonstrating DeletedList behavior in EntityListBase including
 // item removal, new item handling, and modification tracking.
 //
-// NOTE: These tests focus on new item behavior since the Design.Domain
-// Order entity does not expose methods to mark items as Old. For full
-// DeletedList testing with existing items, see Neatoo.UnitTest which uses
-// test entities that expose MarkOld/MarkUnmodified.
+// NOTE: These tests focus on new (created) item behavior. Existing-item
+// flows - fetched children (IsNew=false) removed and persisted - are covered
+// by AggregateLifecycleTests, which fetch through the canonical list/item
+// [Fetch] chain.
 // -----------------------------------------------------------------------------
 
 using Design.Domain.Aggregates.OrderAggregate;

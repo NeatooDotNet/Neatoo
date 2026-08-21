@@ -295,7 +295,8 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     [Update]
     internal void Update([Service] IDemoRepository repository)
     {
-        // Called by Save() when IsNew=false && IsModified=true && !IsDeleted
+        // Called by Save() when !IsDeleted && !IsNew (routing never consults
+        // IsModified; EntityBase.Save()'s IsSavable gate stops unmodified saves)
         repository.Update(Name!, Value);
 
         // After Update completes:
@@ -306,7 +307,8 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     [Delete]
     internal void Delete([Service] IDemoRepository repository)
     {
-        // Called by Save() when IsDeleted=true && IsNew=false
+        // Called by Save() when IsDeleted=true (checked FIRST — IsDeleted wins
+        // over IsNew in generated routing)
         repository.Delete(Name!);
     }
 }
@@ -409,9 +411,13 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 //        +-- item.ContainingList reference PRESERVED (for save routing)
 //
 // 2. DURING AGGREGATE SAVE (Root.Save()):
-//    |-- For each item in DeletedList:
-//    |   +-- [Delete] factory method called to persist deletion
-//    |-- After successful persistence:
+//    |-- Root's [Update] delegates to the LIST factory's Save, which runs the
+//    |   list's [Update] inside the list's own factory operation
+//    |-- The list's [Update] deletes DeletedList items from persistence and
+//    |   routes surviving items through per-item factory saves
+//    |-- When the list's operation completes (FactoryComplete(Update) on the
+//        LIST - fired because the list is a factory target, never as a
+//        cascade from the parent):
 //        |-- DeletedList.Clear() called
 //        +-- ContainingList references cleared on deleted items
 //
@@ -424,7 +430,9 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 //    +-- Result: Item moves without triggering persistence delete
 //
 // 4. FACTORY COMPLETE CLEANUP:
-//    +-- FactoryComplete(FactoryOperation.Update) triggers DeletedList cleanup
+//    +-- EntityListBase.FactoryComplete(FactoryOperation.Update) performs the
+//        cleanup - it runs when the LIST itself is saved through its factory
+//        (factory lifecycle hooks fire only on the single factory target)
 //
 // DID NOT DO THIS: Keep deleted items in the main list with a flag.
 //

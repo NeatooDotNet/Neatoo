@@ -2,7 +2,8 @@
 // Design.Domain - OrderItemList (EntityListBase in Aggregate)
 // -----------------------------------------------------------------------------
 // This file documents EntityListBase with extensive DeletedList documentation.
-// OrderItemList manages OrderItem entities within the Order aggregate.
+// OrderItemList manages OrderItem entities within the Order aggregate, including
+// the canonical child fetch and child persistence factory operations.
 // -----------------------------------------------------------------------------
 
 using Neatoo;
@@ -11,14 +12,16 @@ using Neatoo.RemoteFactory;
 namespace Design.Domain.Aggregates.OrderAggregate;
 
 /// <summary>
-/// Demonstrates: EntityListBase&lt;I&gt; with DeletedList lifecycle management.
+/// Demonstrates: EntityListBase&lt;I&gt; with DeletedList lifecycle management
+/// and the canonical child fetch/persistence pattern.
 ///
 /// Key points:
 /// - IsModified = any child modified OR DeletedList.Any()
 /// - DeletedList tracks removed non-new items
 /// - Root references aggregate root (Order)
 /// - Enforces aggregate boundaries on Add
-/// - Coordinates FactoryComplete cleanup
+/// - The list's own [Fetch] loads children; its own [Update] persists them
+///   through per-item factory saves
 /// </summary>
 [Factory]
 internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemList
@@ -33,6 +36,82 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
     public void Create()
     {
         // Empty list
+    }
+
+    // =========================================================================
+    // Canonical Child Fetch - Items Load Inside the LIST's Own Factory Op
+    // =========================================================================
+    // DESIGN DECISION: The list's own [Fetch] populates the list, and each item
+    // comes from the ITEM factory's [Fetch]. The list is paused by its own
+    // factory operation while items are added, so the adds are baseline loads:
+    // nothing is marked modified. Each item completes its own [Fetch], so
+    // IsNew=false and IsModified=false - the states Update routing depends on.
+    //
+    // COMMON MISTAKE: Loading children with itemFactory.Create() + LoadValue
+    // inside the parent's [Fetch].
+    //   var item = itemFactory.Create();     // FactoryComplete(Create) -> MarkNew()
+    //   item["Id"].LoadValue(data.Id); ...   // properties clean, but...
+    //   Items.Add(item);                     // item.IsNew is TRUE
+    //   // On the next Save, Update routing sees IsNew=true and RE-INSERTS
+    //   // every fetched item. Children must be loaded via [Fetch].
+    // =========================================================================
+    [Fetch]
+    internal void Fetch(int orderId,
+                        [Service] IOrderRepository repository,
+                        [Service] IOrderItemFactory itemFactory)
+    {
+        foreach (var d in repository.GetItems(orderId))
+        {
+            Add(itemFactory.Fetch(d.Id, d.ProductName, d.Quantity, d.UnitPrice, d.LineTotal));
+        }
+    }
+
+    // =========================================================================
+    // Canonical Child Persistence - Per-Item Factory Saves
+    // =========================================================================
+    // Called (via the generated list factory Save) from Order.Insert and
+    // Order.Update. The generated Save routes on the LIST's state - lists are
+    // never new or deleted, so it always lands here.
+    //
+    // DESIGN DECISION: Every surviving child goes through the ITEM factory's
+    // Save, which routes on the item's own IsNew (insert vs update) and wraps
+    // the call with the item's FactoryStart/FactoryComplete - marking the item
+    // unmodified and old as its save completes. Deleted children are removed
+    // from persistence directly; they get no factory operation.
+    //
+    // GENERATOR BEHAVIOR: When this [Update] completes, the framework calls
+    // FactoryComplete(FactoryOperation.Update) on the LIST, and
+    // EntityListBase.FactoryComplete then clears the DeletedList, clears
+    // ContainingList on the deleted items, and recalculates the cached
+    // modified state. The cleanup happens because the list is saved through
+    // its OWN factory operation - there is no graph-wide cascade.
+    //
+    // The IsNew/IsModified guard: unmodified existing children are skipped -
+    // no repository write, no factory call (they are already clean). New
+    // children and modified children go through Save.
+    // =========================================================================
+    [Update]
+    internal void Update(int orderId,
+                         [Service] IOrderRepository repository,
+                         [Service] IOrderItemFactory itemFactory)
+    {
+        foreach (var item in this.Union(DeletedList).ToList())
+        {
+            if (item.IsDeleted)
+            {
+                // The !IsNew check is defensive: a new item removed from the
+                // list is discarded (never enters DeletedList), so deleted
+                // items reaching here are expected to be persisted ones.
+                if (!item.IsNew)
+                {
+                    repository.DeleteItem(item.Id);
+                }
+            }
+            else if (item.IsNew || item.IsModified)
+            {
+                itemFactory.Save(item, orderId);
+            }
+        }
     }
 }
 
@@ -56,20 +135,17 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 //
 // Setup:
 //   var order = await orderFactory.Fetch(1);
-//   // order.Items has 3 items, all IsNew=false (from DB)
+//   // order.Items has items loaded via the list's [Fetch]: all IsNew=false
 //   var itemToRemove = order.Items[0];
-//   // itemToRemove: IsNew=false, IsDeleted=false, ContainingList=order.Items
 //
 // Remove:
 //   order.Items.RemoveAt(0);
 //   // OR: order.Items.Remove(itemToRemove);
-//   // OR: itemToRemove.Delete();  // Delegates to list.Remove()
 //
 // After Remove:
-//   // itemToRemove: IsNew=false, IsDeleted=true, ContainingList=order.Items
-//   // order.Items.Count = 2
+//   // itemToRemove: IsNew=false, IsDeleted=true
+//   // order.Items.Count decremented
 //   // order.Items.DeletedList.Count = 1
-//   // order.Items.DeletedList[0] == itemToRemove
 //   // order.Items.IsModified = true (because DeletedList.Any())
 //   // order.IsModified = true (child list is modified)
 //
@@ -77,10 +153,13 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 //   await order.Save();
 //
 // In Order.Update():
-//   // Iterate Items - process active items (insert new, update modified)
-//   // Iterate DeletedList - call repository.DeleteItem(id) for each
+//   // Delegates to orderItemListFactory.Save(Items, Id)
 //
-// In FactoryComplete(Update):
+// In OrderItemList.Update():
+//   // Deleted item: repository.DeleteItem(id)
+//   // Other items: per-item factory Save if new or modified
+//
+// In the LIST's FactoryComplete(Update):
 //   // DeletedList.Clear()
 //   // For each deleted item: SetContainingList(null)
 //   // order.Items.IsModified = false (no deletedlist, no modified children)
@@ -138,10 +217,11 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 //
 // Save:
 //   await order.Save();
-//   // In Update():
-//   //   - Items[0] (modified): call UpdateItem
-//   //   - newItem (new): call InsertItem
-//   //   - removedItem (deleted): call DeleteItem
+//   // In OrderItemList.Update():
+//   //   - Items[0] (modified): itemFactory.Save -> routed to Update
+//   //   - newItem (new): itemFactory.Save -> routed to Insert
+//   //   - removedItem (deleted): repository.DeleteItem
+//   // After: every surviving item IsNew=false, IsModified=false
 // =============================================================================
 
 // =============================================================================
@@ -231,12 +311,16 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 //    list an item belongs to (even if removed).
 //
 // IMPORTANT: ContainingList stays SET when item is removed.
-// It's only cleared in FactoryComplete after successful persistence.
+// It's only cleared in the list's FactoryComplete after successful persistence.
 //
-// Timeline:
-//   Add to list     -> ContainingList = list
+// IMPORTANT: ContainingList (and IsChild) are set by the LIVE add path -
+// items loaded while the list is paused by its own [Fetch] do not currently
+// get them (framework gap tracked as ISNEW-003).
+//
+// Timeline (live add):
+//   Add to list      -> ContainingList = list
 //   Remove from list -> ContainingList = list (stays set!)
-//   Save completes  -> ContainingList = null (cleared)
+//   Save completes   -> ContainingList = null (cleared)
 // =============================================================================
 
 // =============================================================================
@@ -244,23 +328,14 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 // =============================================================================
 // EntityListBase.FactoryComplete(FactoryOperation.Update) does cleanup:
 //
-// protected override void FactoryComplete(FactoryOperation factoryOperation)
-// {
-//     base.FactoryComplete(factoryOperation);
+//   - Clear ContainingList on deleted items
+//   - Clear DeletedList
+//   - Recalculate cached IsModified
 //
-//     if (factoryOperation == FactoryOperation.Update)
-//     {
-//         // Clear ContainingList on deleted items
-//         foreach (var item in DeletedList)
-//         {
-//             ((IEntityBaseInternal)item).SetContainingList(null);
-//         }
-//
-//         // Clear DeletedList
-//         DeletedList.Clear();
-//
-//         // Recalculate cached IsModified
-//         _cachedChildrenModified = this.Any(c => c.IsModified);
-//     }
-// }
+// It runs because the list is saved through its OWN factory operation
+// (orderItemListFactory.Save -> [Update] -> FactoryComplete on the list).
+// Factory lifecycle hooks fire only on the single factory target: a parent's
+// FactoryComplete does NOT cascade to lists or items. An aggregate whose
+// update flow bypasses the list factory never triggers this cleanup - the
+// DeletedList would survive the save and re-delete on the next one.
 // =============================================================================
