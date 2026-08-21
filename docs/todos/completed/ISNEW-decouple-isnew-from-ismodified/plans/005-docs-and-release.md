@@ -1,4 +1,4 @@
-# Docs, Skill, README, Release Notes, 0.29.0
+# Docs, Skill, README, Release Notes, 0.31.0
 
 **Plan #:** 005
 **Date:** 2026-08-21
@@ -23,7 +23,7 @@ the pre-flip `IsSavable`; it loads into every agent session here, so staleness m
 future work), `docs/guides/change-tracking.md` (full treatment) and the other
 guides, `docs/reference/api.md` + `src/samples/` snippets, Design.Domain semantics
 commentary, a **brief** README mention linking to the change-tracking guide, release notes
-`docs/release-notes/v0.29.0.md` with the migration guide, and the version bump to 0.29.0 in
+`docs/release-notes/v0.31.0.md` with the migration guide, and the version bump to 0.31.0 in
 `Directory.Build.props`. MarkdownSnippets rerun per repo rules.
 
 ---
@@ -50,11 +50,11 @@ commentary, a **brief** README mention linking to the change-tracking guide, rel
   re-run and the regenerated blocks verified (the "New entity is considered modified" lines
   are gone). `ChangeTrackingSamples.IsNew_IndicatesUnpersistedEntity` was rewritten to teach
   the new rule rather than merely flip a boolean.
-- **`docs/release-notes/v0.29.0.md`** — summary, the why, core semantics, opt-in create,
+- **`docs/release-notes/v0.31.0.md`** — summary, the why, core semantics, opt-in create,
   attach-marking, the five bundled defect fixes, the Design.Domain documentation correction,
   and a five-point migration guide (starting with the silent-skip risk on
   `if (IsModified) Save()`).
-- **`Directory.Build.props`** — `<Version>` 0.28.1 → 0.29.0.
+- **`Directory.Build.props`** — `<Version>` 0.30.2 → 0.31.0.
 
 Publishing (tag, push, NuGet) is deliberately out of scope per the todo and the repo's CI
 standards — it is user-initiated.

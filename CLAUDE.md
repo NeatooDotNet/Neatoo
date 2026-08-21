@@ -100,7 +100,7 @@ public interface IOrderLine : IEntityBase { ... }
 - `IsSelfValid` - True when this object's rules pass (not children)
 - `IsSavable` - True when entity can be saved (`(IsModified || IsNew) && IsValid && !IsBusy && !IsChild`). **Only on `IEntityRoot`** -- not on `IEntityBase` or `IEntityListBase`. Child entities and entity lists never expose this property through their interfaces.
 
-**IsNew vs IsModified (0.29.0).** After `[Create]`: `IsNew=true, IsModified=false, IsSavable=true`. A created object needs inserting but holds no user work, so unsaved-changes guards bound to `IsModified` stay quiet on it. A `[Create]` whose result *is* the user's work opts in with `MarkModified()` in its body -- **not** to make it savable (new objects already are), but to say a guard should speak. Because dirt (never `IsNew`) is what aggregates up a graph, attaching a child to a live parent -- adding to a list, or assigning a new child entity to a property -- marks the child modified so the parent becomes modified and savable.
+**IsNew vs IsModified (0.31.0).** After `[Create]`: `IsNew=true, IsModified=false, IsSavable=true`. A created object needs inserting but holds no user work, so unsaved-changes guards bound to `IsModified` stay quiet on it. A `[Create]` whose result *is* the user's work opts in with `MarkModified()` in its body -- **not** to make it savable (new objects already are), but to say a guard should speak. Because dirt (never `IsNew`) is what aggregates up a graph, attaching a child to a live parent -- adding to a list, or assigning a new child entity to a property -- marks the child modified so the parent becomes modified and savable.
 
 ### Factory Operations
 

@@ -28,7 +28,7 @@ After Create an untouched object is savable but not modified; a `[Create]` that 
 represents user work opts into dirty with `MarkModified()`; attaching a child to a live graph
 marks the child modified (dirt, never `IsNew`, is what aggregates upward). Land this on a
 verified baseline: the Design.Domain reference aggregate made lifecycle-faithful, real E2E
-aggregate save coverage, and list-cache correctness across factory ops. Ships as **0.29.0
+aggregate save coverage, and list-cache correctness across factory ops. Ships as **0.31.0
 (breaking)** with the why documented in code, skill, docs, and briefly in the README.
 
 ## Acceptance Criteria
@@ -48,7 +48,7 @@ aggregate save coverage, and list-cache correctness across factory ops. Ships as
 - [x] The Why is documented per design.md: code comments, neatoo skill (incl. the COMMON
       MISTAKE), change-tracking guide, api reference + samples, README brief mention with
       link, release notes with migration guide
-- [x] Version is 0.29.0
+- [x] Version is 0.31.0
 
 ## Out of Scope
 
@@ -56,7 +56,7 @@ aggregate save coverage, and list-cache correctness across factory ops. Ships as
 - RemoteFactory generator changes — save routing (`IsDeleted`/`IsNew` dispatch) is untouched
 - MudNeatoo — consults none of these flags (verified)
 - `EntityLazyLoad` behavior changes beyond verifying lazy loads stay baseline-clean
-- Publishing/releasing 0.29.0 (tag, push, NuGet) — user-initiated per CI standards
+- Publishing/releasing 0.31.0 (tag, push, NuGet) — user-initiated per CI standards
 
 ---
 
@@ -71,7 +71,7 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 | 002 | [002-e2e-save-coverage](./plans/002-e2e-save-coverage.md) | E2E aggregate save lifecycle integration tests | Done |
 | 003 | [003-list-cache-audit](./plans/003-list-cache-audit.md) | List correctness across factory ops (caches + child marking) | Done |
 | 004 | [004-decouple-flip](./plans/004-decouple-flip.md) | The flip: IsModified/IsSavable/attach-marking | Done |
-| 005 | [005-docs-and-release](./plans/005-docs-and-release.md) | Docs, skill, README, release notes, 0.29.0 | Done |
+| 005 | [005-docs-and-release](./plans/005-docs-and-release.md) | Docs, skill, README, release notes, 0.31.0 | Done |
 | 006 | [006-design-tests-tech-debt](./plans/006-design-tests-tech-debt.md) | Design.Tests + harness coverage debt | Done |
 | 007 | [007-entities-demo-lifecycle](./plans/007-entities-demo-lifecycle.md) | Entities demo aggregate (Employee/Address) to canonical | Done |
 | 008 | _(carved out)_ | List meta-state baseline + paused delete | Retired — became [LIST-001](../LIST-entitylist-state-machinery/plans/001-metastate-baseline-and-paused-delete.md) |
@@ -264,7 +264,7 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 still teaching the removed semantics, or container integrity.
 
 - V1 `docs/reference/api.md` stated the pre-flip `IsModified` derivation verbatim — fixed.
-- V2 `docs/release-notes/v0.29.0.md` shipped the justification the ISNEW-004 gate disproved,
+- V2 `docs/release-notes/v0.31.0.md` shipped the justification the ISNEW-004 gate disproved,
   and listed two of four attach-marking channels — fixed.
 - V3 `docs/guides/entities.md` (+ its sample) taught the removed rule in three places — fixed.
 - V4 Design.Domain contradicted itself: `AllBaseClasses.cs` said "New Entity: IsModified=true"
@@ -313,7 +313,7 @@ each reviewer reasoned from first principles about what "clean" means here.
 | 10 | Parent-side lazy-load assertion (ISNEW-004's accepted `MISSING`) | ISNEW-008 | Behavior correct and doubly protected, but unasserted |
 | 11 | `SetItem`: displaced item orphaned, no child identity, no guards | ISNEW-009 | Replacing a persisted child silently orphans its row — needs its own release note |
 | 12 | `MapModifiedTo` over an entity-child property | Accepted (`reviews/004-test-review.md`) | Unchanged for scalars, which is every current usage |
-| 13 | Publishing 0.29.0 (tag, push, NuGet) | Out of Scope, per CI standards | User-initiated |
+| 13 | Publishing 0.31.0 (tag, push, NuGet) | Out of Scope, per CI standards | User-initiated |
 
 ---
 
@@ -381,7 +381,7 @@ Discovery Log: 11 entries.
 Gates: 4 test reviews, 4 code reviews, 1 plan review, 1 close-out audit.
 Close-Out Audit: CONCERNS (7 veto) → all resolved.
 Tests: 2144 → 2178 (solution), 110 → 129 (Design.Tests). Zero failures, 2 pre-existing skips.
-Version: 0.28.1 → 0.29.0 (breaking).
+Version: 0.30.2 → 0.31.0 (breaking).
 ```
 
 ISNEW-008 and ISNEW-009 remain open as Draft stubs and do not block this todo's Goal. They

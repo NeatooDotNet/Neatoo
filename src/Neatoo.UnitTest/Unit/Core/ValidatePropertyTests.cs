@@ -1111,6 +1111,30 @@ public class ValidatePropertyTests
     }
 
     [TestMethod]
+    public void AreSame_ContentEqualButDistinctStringInstance_TreatedAsSame()
+    {
+        // Regression: equal-content strings from separate allocations (e.g., post-JSON-deserialization
+        // mirror writes between entities) must NOT be treated as a change. ReferenceEquals returns
+        // false for distinct instances; value equality should be used for strings.
+        var wrapper = CreatePropertyInfoWrapper<string>("Name");
+        var property = new ValidateProperty<string>(wrapper);
+        property.Value = "pn:initial:10";
+
+        var eventRaised = false;
+        property.PropertyChanged += (sender, e) =>
+        {
+            if (e.PropertyName == "Value")
+                eventRaised = true;
+        };
+
+        // new string(char[]) guarantees a distinct heap allocation, bypassing string interning
+        property.Value = new string("pn:initial:10".ToCharArray());
+
+        Assert.IsFalse(eventRaised,
+            "PropertyChanged for Value must not fire when the new string equals the existing value, even if it is a distinct instance.");
+    }
+
+    [TestMethod]
     public void IsReadOnly_InheritedFromPropertyInfo()
     {
         // Arrange - using a property with private setter

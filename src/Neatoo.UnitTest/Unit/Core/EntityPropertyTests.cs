@@ -237,6 +237,27 @@ public class EntityPropertyTests
     }
 
     [TestMethod]
+    public void IsSelfModified_AfterValueChangeToContentEqualButDistinctString_StaysUnmodified()
+    {
+        // Regression: the sibling test above passes only because the C# compiler interns string
+        // literals, so both writes share the same reference. When the new string is content-equal
+        // but a distinct allocation (as happens with strings produced by JSON deserialization),
+        // IsSelfModified must still stay false. Real-world trigger: mirror writes between two
+        // entities deserialized from separate payloads.
+        var wrapper = CreatePropertyInfoWrapper("Name");
+        var property = new EntityProperty<string>(wrapper);
+        property.Value = "InitialValue";
+        property.MarkSelfUnmodified();
+
+        property.Value = new string("InitialValue".ToCharArray());
+
+        Assert.IsFalse(property.IsSelfModified,
+            "IsSelfModified must not flip when the new string is content-equal but a distinct instance.");
+        Assert.IsFalse(property.IsModified,
+            "IsModified must not flip when the new string is content-equal but a distinct instance.");
+    }
+
+    [TestMethod]
     public void IsSelfModified_AfterValueChangeToDifferentValue_ReturnsTrue()
     {
         // Arrange

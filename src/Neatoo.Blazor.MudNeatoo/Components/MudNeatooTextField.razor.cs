@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
-using Neatoo;
 using System.ComponentModel;
 
 namespace Neatoo.Blazor.MudNeatoo.Components;
@@ -43,6 +42,18 @@ public partial class MudNeatooTextField<T> : ComponentBase, IDisposable
     public int Lines { get; set; } = 1;
 
     /// <summary>
+    /// The resizing behavior of the input. Use <see cref="InputSizing.Auto"/> for a textarea that grows with its content (requires <see cref="Lines"/> &gt; 1).
+    /// </summary>
+    [Parameter]
+    public InputSizing Sizing { get; set; } = InputSizing.Fixed;
+
+    /// <summary>
+    /// The maximum number of lines the textarea will grow to when <see cref="Sizing"/> is <see cref="InputSizing.Auto"/>. 0 means unlimited.
+    /// </summary>
+    [Parameter]
+    public int MaxLines { get; set; }
+
+    /// <summary>
     /// Helper text displayed below the input.
     /// </summary>
     [Parameter]
@@ -83,6 +94,15 @@ public partial class MudNeatooTextField<T> : ComponentBase, IDisposable
     /// </summary>
     [Parameter]
     public string? Class { get; set; }
+
+    /// <summary>
+    /// Arbitrary HTML attributes forwarded to the underlying MudBlazor component, which
+    /// spreads them onto the native <c>&lt;input&gt;</c> or <c>&lt;textarea&gt;</c> element.
+    /// Use this as an escape hatch for attributes not exposed as typed parameters --
+    /// for example <c>spellcheck="true"</c> or <c>style="resize: vertical;"</c>.
+    /// </summary>
+    [Parameter]
+    public Dictionary<string, object> UserAttributes { get; set; } = new();
 
     private T? TypedValue => (T?)this.EntityProperty.Value;
 

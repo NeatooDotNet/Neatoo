@@ -85,19 +85,19 @@ public partial class MudNeatooNumericField<T> : ComponentBase, IDisposable
     public string? Format { get; set; }
 
     /// <summary>
-    /// The minimum allowed value.
+    /// The minimum allowed value. When unset, MudBlazor's default (<c>T.MinValue</c>) is used.
     /// </summary>
     [Parameter]
     public T? Min { get; set; }
 
     /// <summary>
-    /// The maximum allowed value.
+    /// The maximum allowed value. When unset, MudBlazor's default (<c>T.MaxValue</c>) is used.
     /// </summary>
     [Parameter]
     public T? Max { get; set; }
 
     /// <summary>
-    /// The increment/decrement step when using spin buttons.
+    /// The increment/decrement step when using spin buttons. When unset, MudBlazor's default (<c>1</c>) is used.
     /// </summary>
     [Parameter]
     public T? Step { get; set; }
@@ -115,6 +115,22 @@ public partial class MudNeatooNumericField<T> : ComponentBase, IDisposable
     public string? Class { get; set; }
 
     private T? TypedValue => (T?)this.EntityProperty.Value;
+
+    // Splat only the Min/Max/Step values the caller actually set.
+    // Forwarding null would be converted to default(T) (e.g. 0 for int) and silently clamp values --
+    // instead we omit the attribute entirely so MudNumericField uses its own T.MinValue/T.MaxValue/1 defaults.
+    // This works for both non-nullable (int) and nullable (int?) T.
+    private Dictionary<string, object> MinMaxStepAttributes
+    {
+        get
+        {
+            var attrs = new Dictionary<string, object>();
+            if (this.Min is not null) attrs["Min"] = this.Min;
+            if (this.Max is not null) attrs["Max"] = this.Max;
+            if (this.Step is not null) attrs["Step"] = this.Step;
+            return attrs;
+        }
+    }
 
     protected override void OnInitialized()
     {

@@ -348,6 +348,12 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
     protected virtual bool AreSame<P>(P? oldValue, P? newValue)
     {
+        // Use value equality (via EqualityComparer<P>.Default) so reference types that override
+        // Equals -- string, decimal-as-reference, any IEquatable<T> -- are compared by value.
+        // For reference types without an Equals override (e.g. EntityBase/ValidateBase children),
+        // EqualityComparer<T>.Default falls back to object.Equals -> reference equality, preserving
+        // the prior behavior. The leading null guard mirrors the original method shape and avoids
+        // any difference in how EqualityComparer handles two nulls vs. one-null comparisons.
         if (oldValue == null && newValue == null)
         {
             return true;
@@ -357,14 +363,7 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
             return false;
         }
 
-        if (!typeof(P).IsValueType)
-        {
-            return (ReferenceEquals(oldValue, newValue));
-        }
-        else
-        {
-            return oldValue.Equals(newValue);
-        }
+        return EqualityComparer<P>.Default.Equals(oldValue, newValue);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

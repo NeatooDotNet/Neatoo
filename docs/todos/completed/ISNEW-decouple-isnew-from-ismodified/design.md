@@ -9,7 +9,7 @@ savable but not modified. Surfaced during zTreatmentFluency E2E work (the fluenc
 tab's unsaved-changes guard); the tension has appeared repeatedly before that.
 **Design finalized:** 2026-08-21 — Keith + Claude, full design session. Opt-IN dirty create via
 `MarkModified()` in the `[Create]` body; attach-marking replaces the weld's child-flow job;
-pre-existing lifecycle findings fixed first in the same arc; ships as **0.29.0 (breaking)**.
+pre-existing lifecycle findings fixed first in the same arc; ships as **0.31.0 (breaking)**.
 
 ---
 
@@ -256,13 +256,13 @@ Tracked in [todo.md](./todo.md)'s Plan Index (plans ISNEW-001…ISNEW-005):
   attach-marking (InsertItem / SetItem / EntityProperty), update pinned tests, add new
   state-transition and serialization round-trip tests.
 - **Docs & release (ISNEW-005):** skill, guides, api reference + samples, Design.Domain comments,
-  README brief mention, release notes, version bump to 0.29.0.
+  README brief mention, release notes, version bump to 0.31.0.
 
 ---
 
-## Breaking Change & Migration — 0.29.0
+## Breaking Change & Migration — 0.31.0
 
-Version: `0.28.1 → 0.29.0`. **Release notes must be explicit and clear** (Keith, 2026-08-21);
+Version: `0.30.2 → 0.31.0`. **Release notes must be explicit and clear** (Keith, 2026-08-21);
 same for the Neatoo skill.
 
 Consumer-facing changes to document:
@@ -340,7 +340,7 @@ it briefly in the README with a link to the docs."
 - **`README.md` — brief mention only, linking to the change-tracking guide** for the full why
 - `src/Design/Design.Domain` — `Order.cs`, `OrderItem.cs`, `OrderItemList.cs` (lifecycle
   comments largely rewritten by Plan 1), `BaseClasses/AllBaseClasses.cs`, `CommonGotchas.cs`
-- `docs/release-notes/v0.29.0.md` (template per CI standards; link back to this todo)
+- `docs/release-notes/v0.31.0.md` (template per CI standards; link back to this todo)
 - Skill/docs should state plainly: **`IsNew` does not aggregate** — per-object routing state;
   only `IsModified`/`IsValid`/`IsBusy` flow upward.
 

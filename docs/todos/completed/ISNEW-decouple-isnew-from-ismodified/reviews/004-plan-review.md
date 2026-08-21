@@ -12,7 +12,7 @@ common case: the property never self-dirties, but the parent is dirtied *through
 because `EntityProperty.IsModified => IsSelfModified || EntityChild?.IsModified` and a new
 child's `IsModified` was true **only via the weld**. So this channel was mandatory — the same
 silent-data-loss shape as the list channel — not a bonus. The error made the work look safer
-than it was, and would have shipped verbatim in the 0.29.0 release notes.
+than it was, and would have shipped verbatim in the 0.31.0 release notes.
 **Fixed:** design.md corrected at both the attach-marking section and the migration bullet;
 the plan's Current State rewritten; the channel promoted into Constraints; and a
 characterization test (`ChildPropertyAttachTests`) written **before** the library edit as a

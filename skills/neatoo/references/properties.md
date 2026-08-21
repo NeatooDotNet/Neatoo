@@ -68,7 +68,7 @@ Each partial property declared on a Neatoo class is backed by its own `IValidate
 | `IsValid` | `IValidateProperty` | Whether this property passes its validation rules |
 | `PropertyMessages` | `IValidateProperty` | Validation error messages for this property |
 | `IsBusy` | `IValidateProperty` | Whether an async rule is currently running for this property |
-| `IsReadOnly` | `IValidateProperty` | Whether this property is read-only (true for `private set` properties) |
+| `IsReadOnly` | `IValidateProperty` | Whether this property is read-only (true for `private set` properties, or after `MarkReadOnly()` is called at runtime) |
 | `IsModified` | `IEntityProperty` only | Whether this property has been changed (EntityBase properties only, not ValidateBase) |
 
 Each property object fires its own `PropertyChanged` event independently. This enables fine-grained UI updates — a validation error on `Email` triggers a re-render only for the Email field's error display, not the entire form.
@@ -189,6 +189,64 @@ MudNeatoo components bind `ReadOnly="@EntityProperty.IsReadOnly"`. Private-set p
 - Framework internals (deprecated `Setter<P>()`, `ObjectInvalid` property)
 
 `SetPrivateValue` fires change tracking, PropertyChanged, and rule execution normally -- it only bypasses the `IsReadOnly` guard.
+
+## Field-Level Authorization via MarkReadOnly
+
+`IValidateProperty` exposes `void MarkReadOnly()` for locking a single property on a specific instance at runtime. Unlike `private set` (which is compile-time and applies to every instance of the class), `MarkReadOnly()` is decided per-instance — typically during `[Fetch]` based on the current user's permissions.
+
+```csharp
+[Remote]
+[Fetch]
+internal void Fetch(int id, bool canEditSalary, [Service] IEmployeeRepository repo)
+{
+    var data = repo.GetById(id);
+    this["Name"].LoadValue(data.Name);
+    this["Salary"].LoadValue(data.Salary);
+
+    // This instance's Salary is read-only; other FieldLevelAuthDemo instances are unaffected.
+    if (!canEditSalary)
+    {
+        this["Salary"].MarkReadOnly();
+    }
+}
+```
+
+### Semantics
+
+- **One-and-done.** Once called, `IsReadOnly` stays `true` permanently on that property object. There is no `MarkWritable()` counterpart — prevents accidental re-enabling and matches the authorization model (server decides during Fetch, client respects).
+- **Per-instance, not per-class.** Targets `this["PropertyName"]`, so one `FieldLevelAuthDemo` can have `Salary` locked while another does not. Compare to `private set`, which is a class-wide declaration.
+- **No generator involvement.** `MarkReadOnly()` is a runtime API on `IValidateProperty`; no attributes, no source generation.
+
+### Interaction with SetValue / SetPrivateValue / LoadValue
+
+After `MarkReadOnly()`:
+
+| Operation | Behavior |
+|-----------|----------|
+| `entity["Prop"].SetValue(x)` | Throws `PropertyReadOnlyException` |
+| Partial property setter (`entity.Prop = x`) | Throws `PropertyReadOnlyException` (setter calls `SetValue`) |
+| `entity["Prop"].SetPrivateValue(x)` | Succeeds — rules and computed properties continue to work |
+| `entity["Prop"].LoadValue(x)` | Succeeds — Fetch and deserialization are unaffected |
+
+This is the same contract as `private set`: the external write path is blocked, internal and load paths still function.
+
+### Serialization and Client-Server Round-Trip
+
+`IsReadOnly` is serialized by the Neatoo JSON converter. When the server calls `MarkReadOnly()` during `[Fetch]`, the flag travels with the entity to the client. No `[Remote]` plumbing is required beyond the normal Fetch — the property arrives already locked.
+
+### MudNeatoo Integration
+
+MudNeatoo components bind `ReadOnly="@EntityProperty.IsReadOnly"`. A `MarkReadOnly`'d property renders as read-only in the UI automatically, the same as a `private set` property.
+
+### When to Use MarkReadOnly vs. private set
+
+| Requirement | Use |
+|-------------|-----|
+| Property is always computed / never writable by users | `private set` on the partial property |
+| Property is writable for some users but not others | `MarkReadOnly()` in `[Fetch]` based on permissions |
+| Property becomes read-only after a state transition on this instance | `MarkReadOnly()` during the state transition (factory or business method) |
+
+Do not call `MarkReadOnly()` outside factory methods or controlled state transitions. It is permanent, so calling it in a setter or rule will silently lock the instance for the rest of its lifetime.
 
 ## Read-Only Properties
 

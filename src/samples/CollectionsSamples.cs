@@ -178,7 +178,6 @@ public class CollectionsSamplesTests : SamplesTestBase
     }
     #endregion
 
-    #region collections-remove-entity
     [Fact]
     public void RemoveFromEntityList_TracksForDeletion()
     {
@@ -196,6 +195,7 @@ public class CollectionsSamplesTests : SamplesTestBase
         Assert.Single(order.Items);
         Assert.False(item.IsNew);
 
+        #region collections-remove-entity
         // Remove from EntityListBase - existing item goes to DeletedList
         order.Items.Remove(item);
 
@@ -205,8 +205,8 @@ public class CollectionsSamplesTests : SamplesTestBase
         // Item is marked deleted and tracked for persistence
         Assert.True(item.IsDeleted);
         Assert.Equal(1, order.Items.DeletedCount);
+        #endregion
     }
-    #endregion
 
     #region collections-parent-cascade
     [Fact]
@@ -344,7 +344,6 @@ public class CollectionsSamplesTests : SamplesTestBase
     }
     #endregion
 
-    #region collections-deleted-list
     [Fact]
     public void DeletedList_TracksRemovedEntitiesUntilSave()
     {
@@ -362,6 +361,7 @@ public class CollectionsSamplesTests : SamplesTestBase
         order.Items.Add(item2);
         order.DoMarkUnmodified();
 
+        #region collections-deleted-list
         // Remove an item - goes to DeletedList
         order.Items.Remove(item1);
         Assert.True(item1.IsDeleted);
@@ -369,6 +369,6 @@ public class CollectionsSamplesTests : SamplesTestBase
 
         // Collection is modified because of DeletedList
         Assert.True(order.Items.IsModified);
+        #endregion
     }
-    #endregion
 }
