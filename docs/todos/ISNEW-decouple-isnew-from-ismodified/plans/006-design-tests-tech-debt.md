@@ -26,3 +26,17 @@ belongs to aggregate 'Order'"), which is unhelpful and may warrant a library mes
 (instance identity, not just type name; coordinate with ISNEW-003/ISNEW-004 if a library edit is
 preferred); root delete paths (`Order.Delete`, `SaveAggregateDemo.Delete`); and the
 "must have at least one item" validation rule on non-Draft orders.
+
+Added from the ISNEW-007 gate (`reviews/007-*.md`): `Employee.Update` header-guard positive
+direction; `Employee.Delete` coverage (it also ignores `DeletedList`, same shape as
+`Order.Delete`); Employee/Address validation-rule coverage; `Address.Create(street, …)`
+overload never exercised; `MockEmployeeRepository.GetAddresses` ignoring its `employeeId`.
+
+Added from the ISNEW-002 gate (`reviews/002-test-review.md`) — these live in
+Neatoo.UnitTest rather than Design.Tests, so this plan's scope widens to "test-infrastructure
+debt across both suites": a remote-call counter on `MakeRemoteDelegateRequest` exposed through
+`ClientServerTestBase` (would prove the wire was used for every two-container test at once,
+replacing the per-test instance-identity proxy; `TwoContainerMetaStateTests` has the same
+blind spot); an explicit parallelization policy for Neatoo.UnitTest (several fixtures depend
+on implicit sequential execution — static containers, `SaveLifecycleStore`); and `[Delete]`
+paths on the SaveLifecycle aggregate.

@@ -56,6 +56,9 @@ public static class DesignTestServices
                 services.AddTransient<Design.Domain.Rules.IRulesDemoRepository, MockRulesDemoRepository>();
                 services.AddTransient<Design.Domain.Rules.IFluentRulesRepository, MockFluentRulesRepository>();
 
+                // Entities demo aggregate (Employee/Address) — scoped + recording
+                services.AddScoped<Design.Domain.Entities.IEmployeeRepository, MockEmployeeRepository>();
+
                 // Gotcha demo repositories
                 services.AddTransient<Design.Domain.IGotcha2Repository, MockGotcha2Repository>();
                 services.AddTransient<Design.Domain.IServerOnlyService, MockServerOnlyService>();
@@ -219,6 +222,65 @@ internal class MockSaveAggregateRepository : Design.Domain.FactoryOperations.ISa
 
     public void UpdateChild(int id, string name, int quantity) => UpdatedChildIds.Add(id);
     public void DeleteChild(int id) => DeletedChildIds.Add(id);
+}
+
+internal class MockEmployeeRepository : Design.Domain.Entities.IEmployeeRepository
+{
+    // Seeded well clear of the fetched ids (201/202/203) so an inserted id can
+    // never collide with a fetched one — exact-match routing assertions in the
+    // lifecycle tests would otherwise be able to pass by coincidence.
+    private int _nextEmployeeId = 100;
+    private int _nextAddressId = 300;
+
+    // Recorded interactions — aggregate lifecycle tests assert against these.
+    public List<int> InsertedEmployeeIds { get; } = new();
+    public List<int> UpdatedEmployeeIds { get; } = new();
+    public List<int> InsertedAddressIds { get; } = new();
+    public List<int> UpdatedAddressIds { get; } = new();
+    public List<int> DeletedAddressIds { get; } = new();
+
+    /// <summary>
+    /// Parent id each InsertAddress call received, in call order. Pins FK
+    /// propagation: the root must write its own generated Id before delegating
+    /// child persistence, or children are written with employeeId = 0.
+    /// </summary>
+    public List<int> InsertAddressParentIds { get; } = new();
+
+    public (int Id, string FirstName, string LastName, string Email, DateTime? HireDate, decimal Salary, bool IsActive) GetById(int id)
+        => (id, "Ada", "Lovelace", "ada@example.com", new DateTime(2020, 1, 15), 120000m, true);
+
+    public IEnumerable<(int Id, string Street, string City, string State, string ZipCode, string AddressType)> GetAddresses(int employeeId)
+        => new[]
+        {
+            (201, "1 Main St", "Springfield", "IL", "62701", "Home"),
+            (202, "2 Work Way", "Springfield", "IL", "62702", "Work"),
+            (203, "3 Quiet Ln", "Springfield", "IL", "62703", "Other"),
+        };
+
+    public int InsertEmployee(string firstName, string lastName, string email, DateTime? hireDate, decimal salary, bool isActive)
+    {
+        var id = _nextEmployeeId++;
+        InsertedEmployeeIds.Add(id);
+        return id;
+    }
+
+    public void UpdateEmployee(int id, string firstName, string lastName, string email, DateTime? hireDate, decimal salary, bool isActive)
+        => UpdatedEmployeeIds.Add(id);
+
+    public void DeleteEmployee(int id) { }
+
+    public int InsertAddress(int employeeId, string street, string city, string state, string zipCode, string addressType)
+    {
+        var id = _nextAddressId++;
+        InsertedAddressIds.Add(id);
+        InsertAddressParentIds.Add(employeeId);
+        return id;
+    }
+
+    public void UpdateAddress(int id, string street, string city, string state, string zipCode, string addressType)
+        => UpdatedAddressIds.Add(id);
+
+    public void DeleteAddress(int id) => DeletedAddressIds.Add(id);
 }
 
 internal class MockPropertyDemoRepository : Design.Domain.PropertySystem.IPropertyDemoRepository

@@ -10,13 +10,15 @@ using Neatoo.RemoteFactory;
 namespace Design.Domain.Entities;
 
 /// <summary>
-/// Demonstrates: EntityListBase&lt;I&gt; for child entity collections.
+/// Demonstrates: EntityListBase&lt;I&gt; for child entity collections, including
+/// the canonical child fetch and child persistence factory operations.
 ///
 /// Key points:
 /// - IsModified aggregates from children + DeletedList.Any()
 /// - DeletedList tracks removed items pending deletion
 /// - Root property references aggregate root (Employee)
-/// - Items marked as children when added
+/// - Items added to a live list are marked as children
+/// - The list's own [Fetch] loads children; its own [Update] persists them
 /// </summary>
 [Factory]
 internal partial class AddressList : EntityListBase<IAddress>, IAddressList
@@ -47,27 +49,80 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
     }
 
     // =========================================================================
-    // No [Fetch] - Lists Don't Fetch Independently
+    // [Fetch] - The List Loads Its Own Children
     // =========================================================================
-    // The parent's Fetch creates the list and populates it.
+    // DESIGN DECISION: the list has its own [Fetch], and it populates itself
+    // through the ITEM factory's [Fetch]. Two things fall out of this:
     //
-    // DID NOT DO THIS: Give lists their own Fetch.
+    // 1. The list is PAUSED by its own factory operation while items are added,
+    //    so the adds are baseline loads - nothing is marked modified.
+    // 2. Every child completes its own factory lifecycle, so each lands
+    //    IsNew=false / IsModified=false - the states Update routing depends on.
     //
-    // REJECTED PATTERN:
-    //   [Remote]
-    //   [Fetch]
-    //   public void Fetch(int employeeId, [Service] IAddressRepository repo) { ... }
+    // The aggregate root still controls WHEN children load: it calls this
+    // through the list factory inside its own [Fetch]. The operation is
+    // internal and non-[Remote], so no outside consumer can load the list.
     //
-    // WHY NOT: The list is part of the aggregate. The aggregate root (Employee)
-    // controls when and how child data is loaded.
+    // COMMON MISTAKE: populating the list from the parent's [Fetch] with
+    // itemFactory.Create() + LoadValue. Create marks each child NEW, and
+    // nothing marks it old - so the next Save re-INSERTS every fetched child.
     // =========================================================================
+    [Fetch]
+    internal void Fetch(int employeeId,
+                        [Service] IEmployeeRepository repository,
+                        [Service] IAddressFactory addressFactory)
+    {
+        foreach (var d in repository.GetAddresses(employeeId))
+        {
+            Add(addressFactory.Fetch(d.Id, d.Street, d.City, d.State, d.ZipCode, d.AddressType));
+        }
+    }
 
     // =========================================================================
-    // No [Insert]/[Update]/[Delete] - Lists Don't Persist Directly
+    // [Update] - The List Coordinates Child Persistence
     // =========================================================================
-    // The parent coordinates all child persistence in its Insert/Update/Delete.
-    // Lists don't have their own Save() or persistence methods.
+    // Called (via the generated list factory Save) from Employee.Insert and
+    // Employee.Update. The generated Save routes on the LIST's state - lists
+    // are never new or deleted, so it always lands here.
+    //
+    // DESIGN DECISION: every surviving child goes through the ADDRESS factory's
+    // Save, which routes on the child's own IsNew (insert vs update) and wraps
+    // the call with the child's FactoryStart/FactoryComplete - marking it
+    // unmodified and old as its save completes. Removed children are deleted
+    // from persistence directly; they get no factory operation.
+    //
+    // GENERATOR BEHAVIOR: when this [Update] completes, the framework calls
+    // FactoryComplete(FactoryOperation.Update) on the LIST, and
+    // EntityListBase.FactoryComplete clears the DeletedList, clears
+    // ContainingList on deleted items, and recalculates the cached modified
+    // state. That cleanup happens because the list is saved through its OWN
+    // factory operation - there is no graph-wide cascade from the parent.
+    //
+    // Unmodified existing children are skipped: no repository write, no factory
+    // call (they are already clean).
     // =========================================================================
+    [Update]
+    internal void Update(int employeeId,
+                         [Service] IEmployeeRepository repository,
+                         [Service] IAddressFactory addressFactory)
+    {
+        foreach (var address in this.Union(DeletedList).ToList())
+        {
+            if (address.IsDeleted)
+            {
+                // Defensive: new addresses removed from the list are discarded,
+                // never queued for deletion
+                if (!address.IsNew)
+                {
+                    repository.DeleteAddress(address.Id);
+                }
+            }
+            else if (address.IsNew || address.IsModified)
+            {
+                addressFactory.Save(address, employeeId);
+            }
+        }
+    }
 }
 
 // =============================================================================
@@ -87,9 +142,10 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
 //   // 4. address removed from main list
 //
 //   await employee.Save();
-//   // In Employee.Update():
-//   // - Repository.DeleteAddress(address.Id) called
-//   // In FactoryComplete(Update):
+//   // In Employee.Update(): delegates to addressListFactory.Save(Addresses, Id)
+//   // In AddressList.Update(): repository.DeleteAddress(address.Id) called
+//   // In the LIST's FactoryComplete(Update) - fired because the list is a
+//   // factory target, never as a cascade from the parent:
 //   // - DeletedList.Clear()
 //   // - ContainingList cleared on deleted items
 //

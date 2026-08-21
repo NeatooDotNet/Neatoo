@@ -67,16 +67,43 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 | # | File | Title | Status |
 |---|------|-------|--------|
 | 001 | [001-design-domain-lifecycle](./plans/001-design-domain-lifecycle.md) | Design.Domain OrderAggregate to Person-canonical lifecycle | Done |
-| 002 | [002-e2e-save-coverage](./plans/002-e2e-save-coverage.md) | E2E aggregate save lifecycle integration tests | Draft (stub) |
+| 002 | [002-e2e-save-coverage](./plans/002-e2e-save-coverage.md) | E2E aggregate save lifecycle integration tests | Done |
 | 003 | [003-list-cache-audit](./plans/003-list-cache-audit.md) | List correctness across factory ops (caches + child marking) | Draft (stub) |
 | 004 | [004-decouple-flip](./plans/004-decouple-flip.md) | The flip: IsModified/IsSavable/attach-marking | Draft (stub) |
 | 005 | [005-docs-and-release](./plans/005-docs-and-release.md) | Docs, skill, README, release notes, 0.29.0 | Draft (stub) |
 | 006 | [006-design-tests-tech-debt](./plans/006-design-tests-tech-debt.md) | Design.Tests pre-existing coverage debt | Draft (stub) |
-| 007 | [007-entities-demo-lifecycle](./plans/007-entities-demo-lifecycle.md) | Entities demo aggregate (Employee/Address) to canonical | Draft (stub) |
+| 007 | [007-entities-demo-lifecycle](./plans/007-entities-demo-lifecycle.md) | Entities demo aggregate (Employee/Address) to canonical | Done |
 
 ---
 
 ## Discovery Log
+
+### 2026-08-21 — ISNEW-002 (test review)
+- **Finding:** The static shared store made the client/server round trip unprovable (tests
+  passed identically in-process), and the created-untouched savability test was pinned to
+  property dirt rather than the `IsNew` weld — both would have hidden ISNEW-004 regressions.
+  Also: a user-attached new child was never isolated from other dirt.
+- **Decision:** Amend — boundary proof, rich `[Create]` overload, and isolated attach/remove
+  tests added (plan Amendments; `reviews/002-test-review.md`).
+- **Follow-up:** ISNEW-006 (harness remote-call counter; parallelization policy)
+
+### 2026-08-21 — ISNEW-007 (code review: Address standalone role)
+- **Finding:** Address's standalone-root role was both unreachable (`IAddress : IEntityBase`
+  declares child) and harmful: any parent-less `[Remote]` op makes the generator emit a
+  **public** `Save(IAddress)`, letting consumers persist a child outside its aggregate — a
+  hole the canonical `IOrderItemFactory` does not have. `RemoteBoundary.cs` also still taught
+  the pre-ISNEW-001 rule by name.
+- **Decision:** Amend — role removed (with `IAddressOnlyRepository`), duality teaching moved
+  and corrected in `RemoteBoundary.cs`; the plan's "preserve dual-role commentary" constraint
+  was overridden (plan Amendments; `reviews/007-code-review.md`).
+- **Follow-up:** ISNEW-006 (Employee.Delete + DeletedList, rule coverage, header guard)
+
+### 2026-08-21 — ISNEW-007 (test review: FK propagation)
+- **Finding:** Child inserts discarded the parent id in the mock, so reordering
+  `Employee.Insert` (delegate before writing own Id) would orphan every child at
+  `employeeId = 0` with all tests still green.
+- **Decision:** Amend — mock records parent ids; both save tests assert FK correctness.
+- **Follow-up:** n/a
 
 ### 2026-08-21 — ISNEW-001 (code review: Entities aggregate + routing docs)
 - **Finding:** Code review (`reviews/001-code-review.md`) found (a)
