@@ -1026,6 +1026,167 @@ public class EntityListBaseTests
 
     #endregion
 
+    #region SetItem: displaced item and incoming identity (LIST-002)
+
+    [TestMethod]
+    public void SetItem_ReplacingPersistedChild_QueuesItForDeletion()
+    {
+        // Arrange - THE LIST-002 DEFECT. Before this, SetItem dropped the displaced item
+        // with no MarkDeleted and no DeletedList entry, so replacing a persisted child
+        // SILENTLY ORPHANED its row - no DELETE was ever issued for it.
+        var doomed = CreateExistingItem();
+        var list = FetchListWith(doomed);
+
+        // Act
+        var replacement = CreateExistingItem();
+        replacement.MarkUnmodified();
+        list[0] = replacement;
+
+        // Assert
+        Assert.IsTrue(doomed.IsDeleted, "The displaced persisted child is marked deleted");
+        Assert.AreEqual(1, list.DeletedList.Count, "...and queued so the save issues the DELETE");
+        CollectionAssert.Contains(list.DeletedList, doomed);
+        Assert.IsTrue(list.IsModified, "A queued deletion is unsaved work");
+    }
+
+    [TestMethod]
+    public void SetItem_ReplacingNewChild_DiscardsItWithoutQueueingDeletion()
+    {
+        // Arrange - the other half of the RemoveItem parity rule: a never-persisted
+        // child has no row to delete, so it is discarded rather than queued. Mirrors
+        // RemoveItem's `if (!item.IsNew)`.
+        var list = new TestEntityList();
+        var neverSaved = CreateNewItem();
+        list.Add(neverSaved);
+        Assert.IsTrue(neverSaved.IsNew, "Precondition: the displaced child was never persisted");
+
+        // Act
+        var replacement = CreateExistingItem();
+        replacement.MarkUnmodified();
+        list[0] = replacement;
+
+        // Assert
+        Assert.AreEqual(0, list.DeletedList.Count, "Nothing to delete - it was never persisted");
+        Assert.IsFalse(neverSaved.IsDeleted);
+    }
+
+    [TestMethod]
+    public void SetItem_IncomingItem_ReceivesChildIdentity()
+    {
+        // Arrange - SetItem was the one channel by which a child joins a list that did
+        // not confer identity. Without IsChild and ContainingList, save routing and
+        // Delete() do not work on the item. InsertItem sets both on both branches.
+        var list = FetchListWith(CreateExistingItem());
+        var replacement = CreateExistingItem();
+        replacement.MarkUnmodified();
+
+        // Act
+        list[0] = replacement;
+
+        // Assert
+        Assert.IsTrue(replacement.IsChild, "The incoming item is a child of this aggregate");
+
+        // ContainingList is what Delete() routes through - prove it works end to end
+        // rather than reaching for an internal accessor.
+        replacement.Delete();
+        Assert.IsFalse(list.Contains(replacement), "Delete() routed through the list it was given");
+    }
+
+    [TestMethod]
+    public void SetItem_ReplacingWithItself_IsANoOp()
+    {
+        // Arrange - guards the boundary the deletion rule creates. Replacing an item
+        // with itself is not a removal, and must not queue the live item for deletion -
+        // which would delete a row that is still in the list.
+        var item = CreateExistingItem();
+        var list = FetchListWith(item);
+
+        // Act
+        list[0] = item;
+
+        // Assert
+        Assert.AreEqual(0, list.DeletedList.Count, "Self-replacement queues no deletion");
+        Assert.IsFalse(item.IsDeleted, "...and does not mark the still-present item deleted");
+        Assert.IsTrue(list.Contains(item));
+    }
+
+    [TestMethod]
+    public void SetItem_ReplacingPersistedChild_AnnouncesIsModified()
+    {
+        // Arrange - the same silent-transition shape LIST-003 fixed for FactoryComplete
+        // and RemoveItem already carried. base.SetItem runs its meta check against the
+        // PRE-change state, so without an announce at the end the false->true flip
+        // caused by the queued deletion never reaches a parent or a binding.
+        var list = FetchListWith(CreateExistingItem());
+        Assert.IsFalse(list.IsModified, "Precondition: the fetched list is clean");
+
+        var raised = CaptureNotifications(list);
+
+        // Act
+        var replacement = CreateExistingItem();
+        replacement.MarkUnmodified();
+        list[0] = replacement;
+
+        // Assert
+        CollectionAssert.Contains(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            $"The replacement must be announced, not just computed. Raised: [{string.Join(", ", raised)}]");
+    }
+
+    [TestMethod]
+    public void SetItem_WhenLive_EnforcesTheSameGuardsAsAdd()
+    {
+        // Arrange - Step 3's guard decision, asserted. A replacement is an add in every
+        // sense that matters, so the three things that make an add illegal now make a
+        // replacement illegal too. Previously SetItem bypassed all three.
+        var list = FetchListWith(CreateExistingItem(), CreateExistingItem());
+
+        // Duplicate: the incoming item is already elsewhere in this list
+        var alreadyPresent = list[1];
+        var duplicateEx = Assert.ThrowsExactly<InvalidOperationException>(() => list[0] = alreadyPresent);
+        Assert.IsTrue(duplicateEx.Message.Contains("already in this list"), duplicateEx.Message);
+
+        // Busy
+        var busy = CreateExistingItem();
+        var release = busy.MarkBusyForTest();
+        var busyEx = Assert.ThrowsExactly<InvalidOperationException>(() => list[0] = busy);
+        Assert.IsTrue(busyEx.Message.Contains("busy"), busyEx.Message);
+        release();
+
+        // The third guard - aggregate boundary - needs a list with a Root, which
+        // TestEntityList has no parent to provide. It is asserted at the tier that can
+        // express it: RootPropertyTests.SetItem_ItemFromDifferentAggregate_Throws.
+    }
+
+    [TestMethod]
+    public void SetItem_WhenPaused_QueuesNothing()
+    {
+        // Arrange - the paused branch stays trusted input, consistent with InsertItem
+        // and with LIST-004's disposition. A factory or deserializer replacing an
+        // element is building a baseline, not deleting a row.
+        var original = CreateExistingItem();
+        var list = FetchListWith(original);
+
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        var replacement = CreateExistingItem();
+        list[0] = replacement;
+
+        // Assert
+        Assert.AreEqual(0, list.DeletedList.Count, "A paused replacement queues no deletion");
+        Assert.IsFalse(original.IsDeleted);
+
+        // ...but identity is still conferred on the paused branch, exactly as InsertItem
+        // does after ISNEW-003
+        Assert.IsTrue(replacement.IsChild, "Identity is conferred on both branches");
+
+        list.FactoryComplete(FactoryOperation.Fetch);
+    }
+
+    #endregion
+
     #region Paused-Path Guards (LIST-004)
 
     [TestMethod]
@@ -1260,8 +1421,25 @@ public class EntityListBaseTests
         newUnmodifiedItem.MarkUnmodified();
         list[0] = newUnmodifiedItem;
 
-        // Assert
-        Assert.IsFalse(list.IsModified);
+        // Assert - the children-modified cache recalculated to false. This is the
+        // behavior the test was written for and it still holds: no surviving child is
+        // modified, so that term of IsModified is false.
+        Assert.IsTrue(
+            list.All(i => !i.IsModified),
+            "The children-modified cache recalculated - no surviving child is modified");
+
+        // UPDATED BY LIST-002. This test used to assert `list.IsModified == false`
+        // outright. That was only true because replacing a PERSISTED child silently
+        // orphaned its row - no MarkDeleted, no DeletedList entry, no DELETE ever
+        // issued. The assertion was characterizing that defect, not a deliberate
+        // contract: with a real pending deletion, a list that reports "not modified"
+        // is lying, and its aggregate would refuse to save work that needs saving.
+        //
+        // The displaced item is now queued, so IsModified stays true through the
+        // DeletedList term until the save drains it. Behavior change recorded in the
+        // 0.32.0 release notes.
+        Assert.AreEqual(1, list.DeletedList.Count, "The displaced persisted item is queued for deletion");
+        Assert.IsTrue(list.IsModified, "A queued deletion is real unsaved work");
     }
 
     [TestMethod]
@@ -1580,8 +1758,21 @@ public class EntityListBaseTests
         list.ResumeAllActions();
         unmodifiedItem.MarkUnmodified();
 
-        // Assert
-        Assert.IsFalse(list.IsModified);
+        // Assert - the cache recalculated correctly across 500 items, which is what
+        // this test exists to check: no surviving child is modified.
+        Assert.IsTrue(
+            list.All(i => !i.IsModified),
+            "The children-modified cache recalculated correctly across a large list");
+
+        // UPDATED BY LIST-002, same reason as
+        // SetItem_ReplaceModifiedWithUnmodified_WhenOnlyModified_ListBecomesUnmodified.
+        // The FIRST replacement above (list[250] = modifiedItem) ran live and displaced
+        // a persisted item, so that item is now queued for deletion and IsModified stays
+        // true through the DeletedList term. The second replacement runs paused, which
+        // deliberately queues nothing - trusted factory input, consistent with
+        // InsertItem and LIST-004.
+        Assert.AreEqual(1, list.DeletedList.Count, "Only the live replacement queued a deletion");
+        Assert.IsTrue(list.IsModified, "The queued deletion is still pending a save");
     }
 
     [TestMethod]

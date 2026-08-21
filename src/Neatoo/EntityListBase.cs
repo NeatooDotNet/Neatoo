@@ -360,11 +360,60 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// <param name="item">The new item to set at the specified index.</param>
     protected override void SetItem(int index, I item)
     {
+        ArgumentNullException.ThrowIfNull(item);
+
         bool oldWasModified = false;
 
         if (!this.IsPaused)
         {
-            oldWasModified = this[index].IsModified;
+            var displaced = this[index];
+            oldWasModified = displaced.IsModified;
+
+            // Guards, matching InsertItem's live branch. A replacement is an add in
+            // every sense that matters, so the same three things that make an add
+            // illegal make a replacement illegal. Deliberately NOT applied on the
+            // paused branch, consistent with InsertItem and with LIST-004: factory
+            // and deserialization input is trusted. (LIST-002)
+            if (this.Contains(item) && !ReferenceEquals(displaced, item))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot replace with {item.GetType().Name}: item is already in this list.");
+            }
+
+            if (item.IsBusy)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot replace with {item.GetType().Name}: item is busy (async rules running).");
+            }
+
+            if (item.Root != null && item.Root != this.Root)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot replace with {item.GetType().Name}: it belongs to a different aggregate. " +
+                    "Aggregate boundaries cannot be crossed - create a new child in the " +
+                    "target aggregate and remove the original instead.");
+            }
+
+            // The DISPLACED item leaves the list, so give it exactly what RemoveItem
+            // gives a removed item: mark deleted and queue for persistence deletion if
+            // it was persisted; discard it if it was new.
+            //
+            // Before LIST-002 the displaced item was simply dropped - no MarkDeleted, no
+            // DeletedList entry - so replacing a persisted child SILENTLY ORPHANED its
+            // row and no DELETE was ever issued.
+            //
+            // Skipped when replacing an item with itself, which is a no-op, not a
+            // removal. ContainingList is deliberately left set, matching RemoveItem:
+            // the item is still owned by this list for persistence purposes, and
+            // FactoryComplete(Update) clears it once the deletion is saved.
+            if (!ReferenceEquals(displaced, item))
+            {
+                if (!displaced.IsNew)
+                {
+                    ((IEntityBaseInternal)displaced).MarkDeleted();
+                    this.DeletedList.Add(displaced);
+                }
+            }
 
             // Mark a NEW incoming item, exactly as InsertItem does. Replacement
             // DID dirty the graph for new items before the IsNew/IsModified split:
@@ -375,14 +424,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
             //
             // Scoped to new items for the same reason the child-property mark is:
             // replacing with an already-persisted, unmodified item did not dirty
-            // the list before and still does not.
-            //
-            // SetItem's other defects are NOT addressed here and are tracked as
-            // LIST-002 (carved from ISNEW-009): the DISPLACED item is dropped without MarkDeleted and
-            // without entering DeletedList (silently orphaning its row), the
-            // incoming item gets no IsChild/ContainingList, and none of Add's
-            // guards (duplicate / busy / aggregate boundary) run. Those change
-            // save-side behavior and need their own review and release note.
+            // the list before and still does not. (ISNEW-004)
             if (item.IsNew)
             {
                 ((IEntityBaseInternal)item).MarkModified();
@@ -390,6 +432,14 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
         }
 
         base.SetItem(index, item);
+
+        // Child identity for the incoming item, on BOTH branches - the one channel by
+        // which a child joins a list that did not confer it. Without this the new item
+        // has no IsChild and no ContainingList, so save routing and Delete() do not
+        // work on it. InsertItem sets both on both branches; this now matches. (LIST-002)
+        var itemInternal = (IEntityBaseInternal)item;
+        itemInternal.MarkAsChild();
+        itemInternal.SetContainingList(this);
 
         // Update cached modified state
         if (!this.IsPaused)
@@ -404,6 +454,14 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
                 // Old was modified, new is not → may need to recalculate
                 _cachedChildrenModified = this.Any(c => c.IsModified);
             }
+
+            // Announce, for the same reason RemoveItem does (see :346). The queued
+            // deletion above can flip IsModified false->true, and the cache arithmetic
+            // can flip it true->false, both AFTER base.SetItem already ran its meta
+            // check against the pre-change state. Without this the transition is
+            // silent and a parent's cached IsModified never refreshes. (LIST-002,
+            // same defect shape as LIST-003)
+            this.CheckIfMetaPropertiesChanged();
         }
     }
 

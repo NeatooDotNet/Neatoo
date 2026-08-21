@@ -208,6 +208,34 @@ public class RootPropertyTests
     }
 
     [TestMethod]
+    public void SetItem_ItemFromDifferentAggregate_Throws()
+    {
+        // Arrange - the aggregate-boundary guard for SetItem (LIST-002). Add has
+        // enforced this since before ISNEW; a replacement bypassed it entirely, so
+        // `list[0] = itemFromAnotherAggregate` silently smuggled a child across a
+        // boundary that `list.Add(...)` refuses. Asserted here rather than in
+        // EntityListBaseTests because the guard compares Roots, and this fixture is
+        // the one with real aggregate roots.
+        var aggregate1 = new EntityPerson();
+        var list1 = new EntityPersonList();
+        aggregate1.ChildList = list1;
+        list1.Add(new EntityPerson());
+
+        var aggregate2 = new EntityPerson();
+        var list2 = new EntityPersonList();
+        aggregate2.ChildList = list2;
+        var foreigner = new EntityPerson();
+        list2.Add(foreigner);
+
+        // Act & Assert
+        Assert.AreEqual(aggregate2, foreigner.Root, "Precondition: it belongs to the other aggregate");
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => list1[0] = foreigner);
+        Assert.IsTrue(
+            exception.Message.Contains("different aggregate"),
+            $"The refusal should name the boundary: {exception.Message}");
+    }
+
+    [TestMethod]
     public void Root_AfterRemoveFromList_StillPointsToPreviousAggregate()
     {
         // Arrange

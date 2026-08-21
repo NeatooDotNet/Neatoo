@@ -16,6 +16,7 @@ namespace Neatoo.UnitTest.Integration.Aggregates.LocalSaveLifecycle;
 public class LocalSaveLifecycleTests : IntegrationTestBase
 {
     private ILocalOrderFactory _orderFactory = null!;
+    private ILocalOrderLineFactory _lineFactory = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -23,6 +24,7 @@ public class LocalSaveLifecycleTests : IntegrationTestBase
         LocalSaveStore.Reset();
         InitializeScope();
         _orderFactory = GetRequiredService<ILocalOrderFactory>();
+        _lineFactory = GetRequiredService<ILocalOrderLineFactory>();
     }
 
     [TestMethod]
@@ -59,6 +61,35 @@ public class LocalSaveLifecycleTests : IntegrationTestBase
         Assert.IsTrue(saved.Lines!.IsModified, "The list holds an edited child");
         Assert.IsTrue(saved.IsModified, "The edit must reach the aggregate root");
         Assert.IsTrue(saved.IsSavable, "An aggregate with unsaved work must be savable");
+    }
+
+    [TestMethod]
+    public async Task ReplacingAPersistedChild_ThenSave_IssuesTheDelete()
+    {
+        // Arrange - LIST-002 end to end. Before it, `list[i] = replacement` dropped the
+        // displaced child with no MarkDeleted and no DeletedList entry, so its row was
+        // silently orphaned: the save issued an INSERT or UPDATE for the replacement and
+        // nothing at all for the row it displaced.
+        var order = _orderFactory.Fetch(9, "Northwind");
+        var displaced = order.Lines!.First();
+        var displacedId = displaced.Id;
+
+        // Act - replace it, then save locally
+        var replacement = _lineFactory.Create("Replacement line");
+        order.Lines![0] = replacement;
+
+        Assert.IsTrue(order.IsModified, "The replacement is unsaved work");
+        Assert.IsTrue(order.IsSavable);
+
+        var saved = (ILocalOrder)await order.Save();
+
+        // Assert - the displaced row was actually deleted
+        CollectionAssert.Contains(
+            LocalSaveStore.DeletedLineIds,
+            displacedId,
+            "The displaced persisted child's row must be DELETEd, not orphaned");
+        Assert.AreEqual(0, saved.Lines!.DeletedCount, "The save drained the queue");
+        Assert.IsFalse(saved.IsModified, "Nothing left pending after the save");
     }
 
     [TestMethod]
