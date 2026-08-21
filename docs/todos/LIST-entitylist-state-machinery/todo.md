@@ -43,7 +43,9 @@ defect with a green suite.
       — LIST-001: correct for lists (unreachable canonically), pinned by
       `FactoryComplete_WhenNeverPaused_LeavesLiveMaintainedStateIntact`. The reachable
       entity-side variant is deferred to FABLE-001.
-- [ ] The remaining test-infrastructure debt inherited from ISNEW is closed or accepted
+- [x] The remaining test-infrastructure debt inherited from ISNEW is closed or accepted
+      — LIST-005; one of the four (`NoFactoryMethod`) was already covered, so the finding
+      was recorded as stale rather than duplicated
 
 ## Out of Scope
 
@@ -60,7 +62,7 @@ defect with a green suite.
 | 002 | [002-setitem-replaced-item](./plans/002-setitem-replaced-item.md) | SetItem: identity + replaced-item persistence | Draft (stub) |
 | 003 | [003-metastate-baseline-and-notification](./plans/003-metastate-baseline-and-notification.md) | Stale meta-state baseline after a save carrying deletions; `IsModified` notification coverage | Done |
 | 004 | [004-paused-path-guards](./plans/004-paused-path-guards.md) | Paused `Delete()` seam; paused `InsertItem` guard dispositioning | Done |
-| 005 | [005-inherited-test-debt](./plans/005-inherited-test-debt.md) | Test-infrastructure debt inherited from ISNEW | Draft (stub) |
+| 005 | [005-inherited-test-debt](./plans/005-inherited-test-debt.md) | Test-infrastructure debt inherited from ISNEW | Done |
 
 *Plans 001 and 002 were written as ISNEW-008 and ISNEW-009 and carry their original provenance
 lines; cross-references to those IDs in ISNEW's records point here. Plan 001 was re-split at

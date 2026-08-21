@@ -107,8 +107,21 @@ internal class MockOrderRepository : Design.Domain.Aggregates.OrderAggregate.IOr
     public (int Id, string OrderNumber, string CustomerName, DateTime OrderDate, string Status, decimal TotalAmount) GetById(int id)
         => (id, $"ORD-{id}", "Test Customer", DateTime.Today, "Draft", 100.00m);
 
+    /// <summary>
+    /// Per-order child rows. Seed this to make a test's child-loading order-specific.
+    /// </summary>
+    /// <remarks>
+    /// GetItems used to ignore its orderId and return the same two rows for every order,
+    /// so no per-parent child-loading test was expressible: a fetch that loaded the wrong
+    /// order's items would have passed. Seeding takes precedence when present; unseeded
+    /// orders keep the original two rows so existing tests are unaffected. (LIST-005)
+    /// </remarks>
+    public Dictionary<int, (int Id, string ProductName, int Quantity, decimal UnitPrice, decimal LineTotal)[]> ItemsByOrderId { get; } = new();
+
     public IEnumerable<(int Id, string ProductName, int Quantity, decimal UnitPrice, decimal LineTotal)> GetItems(int orderId)
-        => new[] { (1, "Widget", 2, 10.00m, 20.00m), (2, "Gadget", 1, 50.00m, 50.00m) };
+        => ItemsByOrderId.TryGetValue(orderId, out var seeded)
+            ? seeded
+            : new[] { (1, "Widget", 2, 10.00m, 20.00m), (2, "Gadget", 1, 50.00m, 50.00m) };
 
     public int InsertOrder(string orderNumber, string customerName, DateTime orderDate, string status, decimal totalAmount)
     {
@@ -261,8 +274,16 @@ internal class MockEmployeeRepository : Design.Domain.Entities.IEmployeeReposito
     public (int Id, string FirstName, string LastName, string Email, DateTime? HireDate, decimal Salary, bool IsActive) GetById(int id)
         => (id, "Ada", "Lovelace", "ada@example.com", new DateTime(2020, 1, 15), 120000m, true);
 
+    /// <summary>
+    /// Per-employee address rows. Seed this to make a test's child-loading employee-specific.
+    /// See <c>MockOrderRepository.ItemsByOrderId</c> for why. (LIST-005)
+    /// </summary>
+    public Dictionary<int, (int Id, string Street, string City, string State, string ZipCode, string AddressType)[]> AddressesByEmployeeId { get; } = new();
+
     public IEnumerable<(int Id, string Street, string City, string State, string ZipCode, string AddressType)> GetAddresses(int employeeId)
-        => new[]
+        => AddressesByEmployeeId.TryGetValue(employeeId, out var seeded)
+            ? seeded
+            : new[]
         {
             (201, "1 Main St", "Springfield", "IL", "62701", "Home"),
             (202, "2 Work Way", "Springfield", "IL", "62702", "Work"),
