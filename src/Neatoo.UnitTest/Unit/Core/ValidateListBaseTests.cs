@@ -533,6 +533,79 @@ public class ValidateListBaseTests
         Assert.IsFalse(list.IsPaused);
     }
 
+    [TestMethod]
+    public void FactoryComplete_AfterPausedAddOfInvalidItem_ValidateListReportsInvalid()
+    {
+        // Arrange - the symptom the original feedback named (FableFeedback.md:118,
+        // "stale IsValid cache after a paused Fetch"), asserted at the tier where
+        // the defect actually lives.
+        //
+        // InsertItem only maintains _cachedIsValid on its un-paused branch
+        // (ValidateListBase.cs:146), and _cachedIsValid starts life at true (:55).
+        // So before FactoryComplete was routed through ResumeAllActions, a list
+        // fetched full of invalid children kept the cached value of an EMPTY list
+        // and reported IsValid = true.
+        //
+        // What this adds: EntityListBaseStateTransitionTests already pins the
+        // invalid and busy halves, and EntityListBaseTests the modified half - but
+        // all three go through EntityListBase. The broken and fixed code is
+        // ValidateListBase.FactoryComplete, which is also a base class consumers use
+        // directly for read models. This pins it at that tier, so an EntityListBase
+        // override could not mask a ValidateListBase regression. Reverting
+        // FactoryComplete to `IsPaused = false` fails this test. (LIST-001)
+        var list = new TestValidateList();
+        var item = new TestValidateItem();
+        item.Resume();
+        item.AddValidationError("Invalid for the test");
+        Assert.IsFalse(item.IsValid, "Precondition: the item is invalid before the add");
+
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        list.Add(item);
+        list.FactoryComplete(FactoryOperation.Fetch);
+
+        // Assert
+        Assert.IsFalse(list.IsValid, "A list holding an invalid child is invalid");
+    }
+
+    [TestMethod]
+    public void FactoryComplete_WhenNeverPaused_LeavesLiveMaintainedStateIntact()
+    {
+        // Arrange - the disposition of ResumeAllActions' `if (IsPaused)` guard
+        // (ValidateListBase.cs:546), which makes FactoryComplete a no-op on a list
+        // that was never paused.
+        //
+        // That no-op is CORRECT, not a hole, and this test is what says so. A list
+        // can only be paused through FactoryStart - ValidateListBase and
+        // EntityListBase expose no PauseAllActions() of their own, and IsPaused does
+        // not cascade from a parent - and the generated factories always emit
+        // FactoryStart and FactoryComplete as a pair. So a never-paused completion is
+        // unreachable from a canonical flow; only a direct call like this one gets
+        // there. When it does happen, the live InsertItem branch (:146) and the
+        // unguarded CheckIfMetaPropertiesChanged at the end of HandlePropertyChanged
+        // (:407) have already maintained the caches and the baseline, so there is
+        // nothing for the resume to repair.
+        //
+        // Guard the seam in both directions: completion must not manufacture a wrong
+        // value here, and it must not silently "fix" state that was already right.
+        var list = new TestValidateList();
+        var item = new TestValidateItem();
+        item.Resume();
+        item.AddValidationError("Invalid for the test");
+
+        // Act - added live, so the un-paused InsertItem branch maintains the cache
+        list.Add(item);
+        Assert.IsFalse(list.IsValid, "Precondition: the live add already made the list invalid");
+        Assert.IsFalse(list.IsPaused, "Precondition: this list was never paused");
+
+        list.FactoryComplete(FactoryOperation.Fetch);
+
+        // Assert
+        Assert.IsFalse(list.IsValid, "Completion must not discard correct live-maintained state");
+        Assert.IsFalse(list.IsPaused);
+    }
+
     #endregion
 
     #region MetaState Change Notification Tests
