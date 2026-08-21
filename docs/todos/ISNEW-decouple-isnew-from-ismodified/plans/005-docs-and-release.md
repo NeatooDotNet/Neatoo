@@ -5,8 +5,8 @@
 **Related Todo:** [../todo.md](../todo.md)
 **Status:** Done (doc-only; verified by mdsnippets regeneration + full-suite runs)
 **Last Updated:** 2026-08-21
-**Plan-review opt-in:** TBD at draft
-**Code-review opt-in:** TBD at draft (doc-only — expect No)
+**Plan-review opt-in:** No (doc-only; no behavior change to review)
+**Code-review opt-in:** No (doc-only)
 
 ---
 

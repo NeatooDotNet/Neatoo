@@ -413,9 +413,9 @@ public class EntitiesSamplesTests : SamplesTestBase
 
         // After Create completes:
         Assert.True(order.IsNew);            // New entity
-        Assert.True(order.IsSelfModified);   // Properties were modified after create
+        Assert.True(order.IsSelfModified);   // The properties set above are real dirt
         Assert.True(order.IsValid);          // Passes validation
-        Assert.True(order.IsModified);       // IsNew makes entity modified
+        Assert.True(order.IsModified);       // ...which is what makes it modified - NOT IsNew
         Assert.True(order.IsSavable);        // New entity is savable (needs Insert)
     }
     #endregion

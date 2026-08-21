@@ -238,6 +238,13 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
   files citing plan IDs in comments). `_ids.md` bootstrapped with the same change.
 - Step 1 reconnaissance agents — recon performed directly in the 2026-08-20/21 design
   session (full code walk recorded in design.md and plan Current State sections).
+- ISNEW-005 — Step 5 gate skipped (doc-only plan; no behavior to review). Verified instead by
+  `dotnet mdsnippets` regeneration plus full-suite runs.
+- ISNEW-006 — Step 5 gate skipped (test-only, additive; the coverage it adds was itemized by
+  the ISNEW-001/003/007 gates rather than designed fresh). Flagged by the close-out audit,
+  which spot-checked the ungated `AggregateCoverageGapTests.cs` and found its assertions
+  substantive — exact-match routing counts, a rules-run-ordering teaching point, and a
+  save-twice idempotency check. Recorded as process hygiene, not a coverage gap.
 
 ---
 

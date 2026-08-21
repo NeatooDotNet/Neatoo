@@ -67,5 +67,6 @@ ISNEW-001 Discovery Log entry recording the gap as a defect before implementatio
 
 ## Logs
 
-`003-build.log` / `003-test.log`, `003-design-build.log` / `003-design-test.log`. Final state
-after the fix loop: solution 2162 passed / 2 pre-existing skips, Design.Tests 116/116.
+`003-build.log` / `003-test.log`, `003-design-build.log` / `003-design-test.log`. **These
+archived logs predate this plan's fix loop** (they show 2160 and 113) — the verified final
+state for the whole arc is in `reviews/final-test.log` (2178) and `final-design-test.log` (129).

@@ -216,11 +216,20 @@ it passed pre-flip via the weld and passes post-flip via attach-marking).
 | Replacing a list element with a new item dirties the list | `[unit]` | `EntityListBaseTests.SetItem_ReplaceWithNewItem_ListBecomesModified` (verified failing on revert) | ✓ |
 | Attach-then-remove returns parent to clean (reversible, not sticky) | `[integration]` | `DecoupledSemanticsTests.AttachThenRemoveNewChild_ReturnsParentToClean`; `Design.Tests DeletedListTests.AddThenRemoveNewItem_LeavesOrderCleanButSavable` | ✓ |
 | Baseline population stays clean | `[integration]` | `ListFactoryStateTests.FetchedGraph_IsCompletelyClean`; `ChildPropertyAttachTests.AssignChildDuringPausedFactoryOperation_LeavesParentClean`; `EntityListBaseTests.Add_WhenPaused_DoesNotMarkModified` | ✓ |
-| Lazy-loading a child does not dirty its parent | `[integration]` | `DecoupledSemanticsTests.LazyLoadingAChild_DoesNotDirtyTheParent`; pre-existing `LazyLoadStatePropagationTests` (green throughout) | ✓ |
+| Lazy-loading a child does not dirty its parent | `[integration]` | **MISSING — accepted, see below.** The originally cited `DecoupledSemanticsTests.LazyLoadingAChild_DoesNotDirtyTheParent` was renamed to `ReadingAFetchedGraph_DoesNotDirtyIt` by the code-review gate (C1) because it lazy-loaded nothing; that test is real coverage for graph traversal, not for lazy load. The fallback citation, `LazyLoadStatePropagationTests.LazyLoadChild_InitialState_ParentNotModified`, asserts only `child.IsModified` despite its name — it never touches the parent. | ✗ |
 | Post-save clean, second save refused; created-then-deleted routes | `[integration]` | `AggregateSaveLifecycleTests.SavedAggregate_SecondSave_ThrowsNotModified`; `DecoupledSemanticsTests.CreatedThenDeleted_IsSavable_AndSaveDeletesNothing` (now actually saves) and `..._FetchedThenDeleted_Save_RoutesToDelete` | ✓ |
 | Every weld-pinned test reports the new semantics | `[unit]` | Updated: `EntityBaseStateTests.IsModified_WhenIsNew_ReturnsFalse`, `.IsSavable_WhenNew_ReturnsTrue`, `.Scenario_NewEntityLifecycle`; `TwoContainerMetaStateTests.Create_TwoContainer_IsModified_ReturnsFalse`, `.Create_ServerSideOnly_IsModified_ReturnsFalse`; `RequiredDuringFactoryTests.RunRules_DuringFactoryInsert_...`; `Design.Tests` `EntityBaseTests` + `DeletedListTests`; samples `ApiReferenceSamples` (×2), `ChangeTrackingSamples` | ✓ |
 | Save guard reports the accurate reason for a new-but-**busy** entity | `[unit]` | `EntityBaseStateTests.Save_WhenNewAndBusy_ThrowsIsBusy_NotNotModified` — the only case that makes the guard's `\|\| IsNew` term load-bearing; verified failing on revert. (An earlier evidence row reworded this bullet to "unsavable" and cited a test of *invalidity*, `DecoupledSemanticsTests.SaveGuard_ReportsAccurateReason_ForNewButInvalid`, which never reaches the line. That test is kept — it covers a different, real case.) | ✓ |
-| Build + both suites green | `[explicit-skip]` | `reviews/004-*.log` — solution 2173 passed / 2 pre-existing skips; Design.Tests 116/116 | — |
+| Build + both suites green | `[explicit-skip]` | `reviews/004-*.log` / `reviews/final-*.log` — solution **2178** passed / 2 pre-existing skips; Design.Tests **129/129** | — |
+
+**Accepted `MISSING` row — lazy-load bullet.** Recorded rather than closed, per the close-out
+audit (veto V6). The behavior was traced and is **correct**: the mark reads
+`EntityProperty<T>.EntityChild`, which for a lazy property is the `EntityLazyLoad<T>` wrapper
+(`LazyLoadEntityProperty.EntityChild` is declared `new`, not `override`, so it does not
+participate), and `EntityLazyLoad<T>` implements neither `IEntityBaseInternal` nor
+`IEntityListBase` — so neither pattern match can fire. The generated lazy setter also assigns
+via `LoadValue`, which raises no `Value` notification at all. Two independent protections, no
+test asserting either. Queued to **ISNEW-008** as a parent-side lazy assertion.
 
 ---
 

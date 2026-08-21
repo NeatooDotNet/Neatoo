@@ -223,7 +223,7 @@ A complete form page follows this structure:
 ### Key Points in the Page Structure
 
 1. **Inject the factory interface** — not the concrete class
-2. **Use `IsSavable` to disable save button** — it combines `IsValid && IsModified && !IsBusy && !IsChild`
+2. **Use `IsSavable` to disable save button** — it combines `IsValid && (IsModified || IsNew) && !IsBusy && !IsChild`, so a freshly created entity enables the button without reporting unsaved changes
 3. **Subscribe to `PropertyChanged`** — so Blazor re-renders when `IsSavable` changes. This is sufficient here because root meta flags (`IsValid`, `IsModified`, `IsBusy`) bubble through `PropertyChanged` even when the trigger is a descendant change. For components that need to react to descendant *property names* (e.g. a custom validation summary), use `NeatooPropertyChanged` instead. See `references/property-change-events.md`.
 4. **Call `WaitForTasks()` before save** — ensures async validation completes
 5. **Replace the entity reference after save** — `Save()` returns the updated entity

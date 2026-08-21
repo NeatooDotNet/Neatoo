@@ -5,8 +5,8 @@
 **Related Todo:** [../todo.md](../todo.md)
 **Status:** Done (see Outcome; no separate gate — test-only plan whose additions were verified by the full-suite runs in reviews/006-*.log)
 **Last Updated:** 2026-08-21
-**Plan-review opt-in:** TBD at draft
-**Code-review opt-in:** TBD at draft
+**Plan-review opt-in:** No (test-only; closes coverage debt already itemized by three prior gates)
+**Code-review opt-in:** No (test-only, additive)
 
 ---
 

@@ -185,9 +185,9 @@ public void NewEntity_StartsUnmodifiedAfterCreate()
 
     // After Create completes:
     Assert.True(order.IsNew);            // New entity
-    Assert.True(order.IsSelfModified);   // Properties were modified after create
+    Assert.True(order.IsSelfModified);   // The properties set above are real dirt
     Assert.True(order.IsValid);          // Passes validation
-    Assert.True(order.IsModified);       // IsNew makes entity modified
+    Assert.True(order.IsModified);       // ...which is what makes it modified - NOT IsNew
     Assert.True(order.IsSavable);        // New entity is savable (needs Insert)
 }
 ```
@@ -196,10 +196,13 @@ public void NewEntity_StartsUnmodifiedAfterCreate()
 
 After Create completes (before setting properties):
 - `IsNew == true`
-- `IsModified == true` (new entities are inherently modified due to IsNew)
+- `IsModified == false` — a created entity holds no user work, so unsaved-changes guards stay quiet on it ([why](change-tracking.md#why-isnew-is-not-part-of-ismodified))
 - `IsSelfModified == false` (no properties changed yet)
 - `IsValid` depends on validation rules
-- `IsSavable == true` (IsNew makes IsModified true, which satisfies the formula)
+- `IsSavable == true` — savability admits `IsNew`, so the Insert can still happen
+
+(The sample above reports `IsModified == true` because it sets properties inside the
+factory method; that is ordinary property dirt, not a consequence of `IsNew`.)
 
 After setting properties:
 - `IsSelfModified == true` (properties were changed)

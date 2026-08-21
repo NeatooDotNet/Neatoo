@@ -4,12 +4,17 @@
 
 ---
 
+> **Two registries.** Flat-file todos are indexed here. Todos in the iterative-todo folder
+> form (`{ID}-{name}/todo.md`) are registered in [`_ids.md`](_ids.md), which is the authority
+> for their IDs. Folder-form todos are also listed below so this file stays a complete index.
+
 ## Active Todos
 
 ### Features
 
 | Todo | Priority | Effort | Status |
 |------|----------|--------|--------|
+| [ISNEW - Decouple IsNew from IsModified](ISNEW-decouple-isnew-from-ismodified/todo.md) *(folder form)* | High | Large | In Progress — 7 plans Done, 2 queued |
 | [C1 - Domain Events Support](C1-domain-events-support.md) | Critical | Low | Not Started |
 | [M2 - Value Object Base Type](M2-value-object-base.md) | Medium | Medium | Not Started |
 | [Entity Dictionary Base](entity-dictionary-base.md) | Medium | Medium | Pending |

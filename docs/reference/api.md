@@ -458,7 +458,7 @@ public virtual bool IsMarkedModified { get; protected set; }
 public virtual IEnumerable<string> ModifiedProperties { get; }
 ```
 
-- **IsModified**: Aggregates modification state: `PropertyManager.IsModified || IsDeleted || IsNew || IsSelfModified`. This means new entities, deleted entities, and entities with property changes all report as modified.
+- **IsModified**: Aggregates modification state: `PropertyManager.IsModified || IsDeleted || IsSelfModified`. Deleted entities and entities with property changes report as modified. New entities do **not** — `IsNew` is deliberately not a term, so a created-but-untouched entity is savable without claiming unsaved work ([why](../guides/change-tracking.md#why-isnew-is-not-part-of-ismodified)).
 - **IsSelfModified**: Tracks whether direct property values have changed on this entity (excludes child modifications)
 - **IsMarkedModified**: Entity explicitly marked modified via `MarkModified()`
 - **ModifiedProperties**: Collection of property names whose values have changed since last mark unmodified

@@ -152,7 +152,10 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //   4. If item.ContainingList != null (was in another list):
 //      - Remove from old list's DeletedList (intra-aggregate move)
 //   5. If item.IsDeleted: item.UnDelete()
-//   6. If !item.IsNew: item.MarkModified()
+//   6. item.MarkModified() - unconditionally. Attaching to a live list is a
+//      change to this graph whatever the item's own persistence state, and it
+//      is the ONLY channel by which a new child's arrival reaches the parent
+//      (IsNew never aggregates upward)
 //   7. item.MarkAsChild() -> IsChild = true
 //   8. item.SetContainingList(this)
 //   9. Add to collection

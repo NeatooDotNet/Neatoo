@@ -165,7 +165,7 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 //
 // STATE MACHINE: Entity persistence states
 //
-// New Entity: IsNew=true, IsModified=true
+// New Entity: IsNew=true, IsModified=false (savable via the IsNew term)
 //     -> Save() calls [Insert] factory method
 //     -> After success: MarkOld(), MarkUnmodified()
 //
@@ -266,7 +266,8 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     {
         // After this method completes, FactoryComplete(FactoryOperation.Create)
         // is called, which calls MarkNew().
-        // Result: IsNew=true, IsModified=true (empty but new = modified)
+        // Result: IsNew=true, IsModified=false - nothing was set, so there is no
+        // user work here. It is still savable: IsSavable admits IsNew.
     }
 
     [Remote]
