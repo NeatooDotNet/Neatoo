@@ -428,8 +428,17 @@ public class ChangeTrackingSamplesTests : SamplesTestBase
         // Factory.Create sets IsNew automatically
         Assert.True(employee.IsNew);
 
-        // New entities are considered modified (need Insert)
-        Assert.True(employee.IsModified);
+        // IsNew and IsModified answer different questions. A created entity is
+        // new (persistence does not know it) but not modified (nothing has been
+        // edited, so discarding it loses nothing) - which is what keeps
+        // unsaved-changes prompts quiet on a freshly created object.
+        Assert.False(employee.IsModified);
+
+        // It is savable anyway: IsSavable admits IsNew, so the Insert can happen.
+        Assert.True(((IEntityRoot)employee).IsSavable);
+
+        // A [Create] whose result IS the user's work opts in by calling
+        // MarkModified() in the factory method body.
     }
     #endregion
 

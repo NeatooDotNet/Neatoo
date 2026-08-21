@@ -380,6 +380,30 @@ public class EntityListBaseStateTransitionTests
     }
 
     [TestMethod]
+    public void FactoryComplete_AfterPausedAddOfBusyItem_ListReportsBusy()
+    {
+        // The busy half of the cache fix - mirror of the invalid-item test.
+        // The live add path refuses busy items outright (EntityListBase throws),
+        // which is the framework conceding the scenario is real; the paused path
+        // has no such guard, so a busy item CAN enter a paused list and the
+        // cached IsBusy must reflect it once the operation completes.
+        var list = new EntityPersonList();
+        var busyItem = new EntityPerson();
+        var releaseBusy = ((IEntityPerson)busyItem).MarkBusyForTest();
+        Assert.IsTrue(busyItem.IsBusy, "Precondition: item is busy before the add");
+
+        list.FactoryStart(FactoryOperation.Fetch);
+        list.Add(busyItem);
+        list.FactoryComplete(FactoryOperation.Fetch);
+
+        // Assert - the list reflects its busy child rather than reporting the
+        // state of an empty list
+        Assert.IsTrue(list.IsBusy, "A list holding a busy child is busy");
+
+        releaseBusy();
+    }
+
+    [TestMethod]
     public void Add_Item_WhenPaused_IsChildIsSet()
     {
         // Arrange

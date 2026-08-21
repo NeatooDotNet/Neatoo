@@ -60,6 +60,9 @@ attaching a child must mark it.
   generated routing short-circuits this only when a `[Delete]` exists in the signature group
   — see the ISNEW-007 finding).
 - Baseline population must stay clean: paused adds and factory-op writes must not mark.
+- **The entity-child-property channel must keep dirtying the parent.** It does so today
+  through the weld (see Current State); parity across the flip is required, not optional —
+  losing it is the same silent-data-loss shape as losing the list channel.
 - LazyLoad must stay clean: loading a lazy child is a load, not user work.
 - Post-save the whole graph must still come back clean, and a second save must still be
   refused.
@@ -75,9 +78,12 @@ attaching a child must mark it.
    guard admit new objects directly.
 2. Keep `MarkNew` pure routing state — nothing about dirt.
 3. Remove the exemption that stops newly-created items being marked when they are attached
-   to a live list, and apply the same marking when a child entity is assigned to a live
-   parent property; leave the lazy-load path suppressed and leave paused population alone.
-4. Cover the replaced-item path on lists so a swap behaves like a remove plus an attach.
+   to a live list, and apply the same marking when a child **entity** is assigned to a live
+   parent property; leave the lazy-load path suppressed, leave paused population alone, and
+   leave list-valued properties alone (their dirt already flows from their children).
+4. Leave list-element replacement alone entirely — it has never dirtied the graph, an
+   existing test pins that, and design.md never decided it. All of `SetItem` (incoming-item
+   marking and identity, displaced-item disposition, missing guards) goes to ISNEW-009.
 5. Write the why at each changed seam — the two questions, savable-vs-modified, and that
    dirt (not `IsNew`) is what aggregates.
 6. Update the tests that pinned the welded semantics, distinguishing assertions that
@@ -96,15 +102,22 @@ attaching a child must mark it.
       remote round trip `[integration]`
 - [ ] An unsaved-changes guard bound to modified-state stays quiet on a fresh create and
       speaks up after the first real edit `[unit]`
-- [ ] Attaching a new child to a live parent — via a list and via a child property — makes
-      the parent modified and savable, and the child's insert is not skipped by
-      modified-guarded cascades `[integration]`
+- [ ] Attaching a new child to a live parent — via a list, via a single-entity child
+      property, and via a list-valued child property — makes the parent modified and savable,
+      and the child's insert is not skipped by modified-guarded cascades `[integration]`
+- [ ] Attaching a new child and then removing it returns the parent to clean — attach-marking
+      is reversible, not sticky `[integration]`
 - [ ] Baseline population stays clean: factory-loaded and factory-created children produce a
       graph that reports not-modified `[integration]`
 - [ ] Lazy-loading a child does not dirty its parent `[integration]`
 - [ ] Post-save the whole graph is clean and a second save is still refused; a created object
       that is then deleted still routes correctly `[integration]`
-- [ ] The pinned tests named in design.md report the new semantics `[unit]`
+- [ ] Every test that pinned the welded semantics reports the new semantics, whether or not
+      design.md named it — design.md's list is known incomplete (e.g.
+      `Design.Tests/AggregateTests/DeletedListTests.IsModified_TrueWhenNewItemRemoved`, whose
+      "New order is always modified" intent the flip deletes outright) `[unit]`
+- [ ] The save guard still reports the *accurate* failure reason for a new-but-busy entity —
+      admitting `IsNew` must not make a busy object report `NotModified` `[unit]`
 - [ ] Build and both suites green `[explicit-skip: meta-bullet, gate run]`
 
 ---
@@ -122,12 +135,46 @@ Walked 2026-08-21 before the first edit (line numbers as of this branch):
   `EntityListBase.cs:242-245`: `if (!item.IsNew) { itemInternal.MarkModified(); }` — the
   `!IsNew` guard is the exemption to remove. `SetItem` (`:315-340`) marks nothing today.
   The paused branch (post-ISNEW-003) applies identity only — that must stay.
-- **Child-property assignment.** `EntityProperty.OnPropertyChanged`
-  (`Internal/EntityPropertyManager.cs:41-53`) sets `IsSelfModified = true && EntityChild ==
-  null`, i.e. deliberately never self-dirties when holding a Neatoo object — so assigning a
-  child entity to a parent property dirties nothing today.
-  `LazyLoadEntityProperty.OnPropertyChanged` (`Internal/LazyLoadEntityProperty.cs:213-233`)
-  already suppresses and actively undoes `IsSelfModified`, so the lazy path is insulated.
+- **Child-property assignment — CORRECTED by the plan review (veto B1).** The property never
+  self-dirties when holding a Neatoo object (`Internal/EntityPropertyManager.cs:41-53`), but
+  the **parent is dirtied today anyway**, through the child:
+  `EntityProperty.IsModified => IsSelfModified || EntityChild?.IsModified` (`:56`), and
+  `EntityPropertyManager.Property_PropertyChanged` recalculates from
+  `PropertyBag.Any(p => p.Value.IsModified)` (`:167-176`), which feeds
+  `EntityBase.IsModified`. A new child's `IsModified` is true **only via the weld** — so
+  `parent.Child = childFactory.Create()` dirties a live parent today, and cutting the weld
+  without property attach-marking would break it. This channel is **mandatory**, the same
+  shape as the list case; it is not the "quirk fix" the first draft of this plan (and
+  design.md) called it. The same chain runs on the paused path via
+  `EntityPropertyManager.ResumeAllActions` (`:140-148`), which is why rich `[Create]` with a
+  property-held child lands modified today.
+- **List-valued child properties need no marking.** `EntityChild` is `IEntityMetaProperties`,
+  which `EntityListBase` also implements — and a list has no `MarkModified`
+  (`IsMarkedModified => false`, `EntityListBase.cs:76`). It does not need one: list dirt
+  aggregates from children, which are attach-marked as they are added.
+- **Mark placement is constrained.** `LazyLoadEntityProperty.OnPropertyChanged`
+  (`Internal/LazyLoadEntityProperty.cs:213-233`) *calls* `base.OnPropertyChanged` and then
+  undoes `IsSelfModified` — an undo written against `IsSelfModified` would not undo a mark
+  placed on the child. The lazy path is additionally insulated because the generated lazy
+  setter assigns via `LoadValue`, which raises no `Value` notification
+  (`Internal/ValidateProperty.cs:218-220`). Both protections are properties of *this* call
+  graph: the mark must go inside `EntityProperty.OnPropertyChanged`'s Value branch, not in
+  `SetValue` or `HandleNonNullValue`.
+- **`SetItem` today** (`EntityListBase.cs`) does cache arithmetic only — no identity, no
+  marking, and the displaced item is dropped without `MarkDeleted` or `DeletedList` entry
+  (silently orphaning its row). This plan marks only the incoming item; the displaced item's
+  disposition is ISNEW-009.
+- **Ordering/re-entrancy is bounded.** `MarkModified()` → `CheckIfMetaPropertiesChanged()`
+  raises `PropertyChanged` *before* `base.InsertItem` subscribes the item, so for a fresh
+  item the event has no subscribers (which is why the manual cache update at
+  `EntityListBase.cs:265` exists). Newly reachable: an item that already has a `Parent`
+  (intra-aggregate move, or re-add after `RemoveItem`, which unsubscribes but leaves
+  `Parent`) now fires that upward notification for *new* items too. Existing pathway, one
+  more object state — not new machinery.
+- **Other generated consumer:** `Neatoo.BaseGenerator/Generators/MapperGenerator.cs:47` emits
+  `if (this[nameof(P)].IsModified)` in `MapModifiedTo`. That is *property-level* `IsModified`,
+  whose semantics the flip does not change for scalars; a mapper over an entity-child
+  property would change behavior because property-level `IsModified` delegates to the child.
 - **What the removed term is doing today** (must be replaced, not just deleted): the only
   upward channel is `child.IsNew → child.IsModified → list cache → EntityProperty →
   PropertyManager → parent.IsModified`. `EntityListBase.IsNew => false` (`:84`) and
@@ -155,14 +202,68 @@ Walked 2026-08-21 before the first edit (line numbers as of this branch):
 
 ## Test Evidence
 
-_Filled after implementation, before the gate._
+New tests in `Integration/Aggregates/SaveLifecycle/DecoupledSemanticsTests.cs` and
+`Integration/Concepts/EntityBase/ChildPropertyAttachTests.cs` (the latter written **before**
+the library edit, as a parity anchor for the previously-uncovered child-property channel —
+it passed pre-flip via the weld and passes post-flip via attach-marking).
 
 | Acceptance bullet (short) | Tier declared | Test method | Tier confirmed |
 |---|---|---|---|
-| | | | |
+| Created object incl. factory-built children: not modified, still savable | `[integration]` | `AggregateSaveLifecycleTests.RichCreate_Untouched_IsSavableFromIsNewAlone_AndSaveInserts`; `Design.Tests EntityBaseTests.Create_SetsIsModifiedFalse_ButStillSavable` | ✓ |
+| `MarkModified()` opt-in create reports modified, survives a round trip | `[integration]` | `DecoupledSemanticsTests.CreateThatIsUserWork_OptsIntoModified_AndItSurvivesTheWire` (asserts `RemoteCallCount` advanced) | ✓ |
+| Unsaved-changes guard quiet on fresh create, speaks after first edit | `[unit]` | `DecoupledSemanticsTests.UnsavedChangesGuard_QuietOnFreshCreate_SpeaksAfterFirstEdit`; `..._QuietImmediatelyAfterSave` (the originating regression) — tier note: written at `[integration]` because the guard's value comes from the real factory/save path, which is stricter than the declared tier | ✓ (stricter) |
+| Attach via list / single-entity property / list-valued property dirties parent; insert not skipped | `[integration]` | `AggregateSaveLifecycleTests.FetchedRoot_AddOneNewChild_IsModifiedAndSavable_AndChildInserts`; `ChildPropertyAttachTests.AssignNewChildToCleanParent_DirtiesParent`; `..._AssignListValuedChildProperty_DirtIsCarriedByItsChildren` | ✓ |
+| Attach-then-remove returns parent to clean (reversible, not sticky) | `[integration]` | `DecoupledSemanticsTests.AttachThenRemoveNewChild_ReturnsParentToClean`; `Design.Tests DeletedListTests.AddThenRemoveNewItem_LeavesOrderCleanButSavable` | ✓ |
+| Baseline population stays clean | `[integration]` | `ListFactoryStateTests.FetchedGraph_IsCompletelyClean`; `ChildPropertyAttachTests.AssignChildDuringPausedFactoryOperation_LeavesParentClean`; `EntityListBaseTests.Add_WhenPaused_DoesNotMarkModified` | ✓ |
+| Lazy-loading a child does not dirty its parent | `[integration]` | `DecoupledSemanticsTests.LazyLoadingAChild_DoesNotDirtyTheParent`; pre-existing `LazyLoadStatePropagationTests` (green throughout) | ✓ |
+| Post-save clean, second save refused; created-then-deleted routes | `[integration]` | `AggregateSaveLifecycleTests.SavedAggregate_SecondSave_ThrowsNotModified`; `DecoupledSemanticsTests.CreatedThenDeleted_IsStillSavable_AndDeletesNothing` | ✓ |
+| Every weld-pinned test reports the new semantics | `[unit]` | Updated: `EntityBaseStateTests.IsModified_WhenIsNew_ReturnsFalse`, `.IsSavable_WhenNew_ReturnsTrue`, `.Scenario_NewEntityLifecycle`; `TwoContainerMetaStateTests.Create_TwoContainer_IsModified_ReturnsFalse`, `.Create_ServerSideOnly_IsModified_ReturnsFalse`; `RequiredDuringFactoryTests.RunRules_DuringFactoryInsert_...`; `Design.Tests` `EntityBaseTests` + `DeletedListTests`; samples `ApiReferenceSamples` (×2), `ChangeTrackingSamples` | ✓ |
+| Save guard reports the accurate reason for a new-but-unsavable entity | `[unit]` | `DecoupledSemanticsTests.SaveGuard_ReportsAccurateReason_ForNewButInvalid` | ✓ |
+| Build + both suites green | `[explicit-skip]` | `reviews/004-*.log` — solution 2173 passed / 2 pre-existing skips; Design.Tests 116/116 | — |
 
 ---
 
 ## Plan Amendments
 
-_None yet._
+### 2026-08-21 — Child-property marking scoped to NEW children (parity, not expansion)
+
+- **Section affected:** Step 3, Constraints
+- **Original said:** mark the assigned child when a child entity is assigned to a live parent
+  property.
+- **What changed:** the mark applies only when the assigned child `IsNew`.
+- **Why:** marking every assignment turned six existing tests red — the entity-child
+  *derivation* tests (`EntityPropertyManagerTests.IsModified_WithUnmodifiedEntityChild_ReturnsFalse`,
+  `EntityPropertyTests.IsModified_WhenEntityChildIsNotModified_ReturnsFalse`, and the
+  `EntityChild_*` scenarios). Their intent is the invariant "a property HOLDING an unmodified
+  child is not modified", with assignment only as setup — a real invariant, not weld
+  characterization. The plan review was explicit that this channel requires *parity*, and
+  parity is exactly what the weld dirtied: new children only. design.md's migration bullet
+  was corrected a second time to match.
+- **Discovery Log link:** 2026-08-21 — ISNEW-004 (property-channel scope)
+
+### 2026-08-21 — `SetItem` dropped from this plan entirely
+
+- **Section affected:** Step 4, Acceptance
+- **Original said:** mark the incoming item on list-element replacement.
+- **What changed:** `SetItem` is untouched; a comment there records why and points at
+  ISNEW-009.
+- **Why:** marking broke `EntityListBaseTests.SetItem_ReplaceModifiedWithUnmodified_WhenOnlyModified_ListBecomesUnmodified`,
+  whose intent is a deliberate cache invariant. Replacement has never dirtied the graph, and
+  design.md never decided it — so changing it is a separate decision, not a consequence of
+  the IsNew/IsModified split. This is the narrower half of the plan review's veto B2.
+- **Discovery Log link:** 2026-08-21 — ISNEW-004 (property-channel scope)
+
+### 2026-08-21 — `RemoveItem` now announces its modified-state change
+
+- **Section affected:** Steps (attach-marking), Acceptance (reversibility bullet)
+- **Original said:** nothing about list notifications.
+- **What changed:** `EntityListBase.RemoveItem` calls `CheckIfMetaPropertiesChanged()` after
+  recalculating its cache.
+- **Why:** the reversibility acceptance bullet (added on the plan review's Pass A callout)
+  failed and exposed a pre-existing bug: `base.RemoveItem` runs its meta-property check
+  *before* `EntityListBase` updates `_cachedChildrenModified`, so the list's IsModified
+  true→false transition was never announced and the parent's cached IsModified stayed true
+  forever. Symptom: add a child, remove it, and the aggregate still claims unsaved changes
+  with nothing to save. Fixing it was required by this plan's own acceptance; the broader
+  list-notification hole stays with ISNEW-008.
+- **Discovery Log link:** 2026-08-21 — ISNEW-004 (RemoveItem notification)

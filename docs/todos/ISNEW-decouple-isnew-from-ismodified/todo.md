@@ -14,7 +14,8 @@ findings, and The Why (canonical explanation). Plans inherit it; they do not res
 single branch; single PR review at the end. Gates (test-reviewer, code-reviewer,
 plan-reviewer where warranted) still run. Discoveries outside the active plan are logged
 here rather than pausing; stop only for findings that contradict the decided design scope.
-Plan order: ISNEW-007 → 002 → 003 → 006 → 004 → 005.
+Plan order (as executed): ISNEW-001 → 007 → 002 → 003 → 006-infra → 004 → 006-coverage → 005,
+with ISNEW-008 and ISNEW-009 carved out along the way.
 
 ---
 
@@ -68,15 +69,50 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 |---|------|-------|--------|
 | 001 | [001-design-domain-lifecycle](./plans/001-design-domain-lifecycle.md) | Design.Domain OrderAggregate to Person-canonical lifecycle | Done |
 | 002 | [002-e2e-save-coverage](./plans/002-e2e-save-coverage.md) | E2E aggregate save lifecycle integration tests | Done |
-| 003 | [003-list-cache-audit](./plans/003-list-cache-audit.md) | List correctness across factory ops (caches + child marking) | Draft (stub) |
-| 004 | [004-decouple-flip](./plans/004-decouple-flip.md) | The flip: IsModified/IsSavable/attach-marking | Draft (stub) |
+| 003 | [003-list-cache-audit](./plans/003-list-cache-audit.md) | List correctness across factory ops (caches + child marking) | Done |
+| 004 | [004-decouple-flip](./plans/004-decouple-flip.md) | The flip: IsModified/IsSavable/attach-marking | In Progress (gates) |
 | 005 | [005-docs-and-release](./plans/005-docs-and-release.md) | Docs, skill, README, release notes, 0.29.0 | Draft (stub) |
 | 006 | [006-design-tests-tech-debt](./plans/006-design-tests-tech-debt.md) | Design.Tests pre-existing coverage debt | Draft (stub) |
 | 007 | [007-entities-demo-lifecycle](./plans/007-entities-demo-lifecycle.md) | Entities demo aggregate (Employee/Address) to canonical | Done |
+| 008 | [008-list-metastate-baseline](./plans/008-list-metastate-baseline.md) | List meta-state baseline + paused delete | Draft (stub) |
+| 009 | [009-setitem-replaced-item](./plans/009-setitem-replaced-item.md) | SetItem: identity + replaced-item persistence | Draft (stub) |
 
 ---
 
 ## Discovery Log
+
+### 2026-08-21 — ISNEW-004 (RemoveItem notification)
+- **Finding:** The reversibility acceptance bullet exposed a pre-existing bug —
+  `EntityListBase.RemoveItem` updates its modified cache *after* `base.RemoveItem` has
+  already run the meta-property check, so the list's IsModified true→false was never
+  announced and the parent's cached IsModified stayed true. Add a child, remove it, and the
+  aggregate still claimed unsaved changes with nothing to save.
+- **Decision:** Amend — `RemoveItem` now announces the change (required by this plan's own
+  acceptance); the broader list-notification hole stays queued to ISNEW-008.
+- **Follow-up:** ISNEW-008
+
+### 2026-08-21 — ISNEW-004 (property-channel scope)
+- **Finding:** Marking *every* assigned child broke six existing tests whose intent is the
+  derivation invariant "a property holding an unmodified child is not modified". Parity with
+  the weld means marking **new** children only. Separately, marking on `SetItem` broke a
+  deliberate cache invariant, and design.md never decided replacement semantics.
+- **Decision:** Amend — property marking scoped to new children; `SetItem` dropped from this
+  plan entirely and routed to ISNEW-009 (plan Amendments; design.md migration bullet
+  corrected a second time).
+- **Follow-up:** ISNEW-009
+
+### 2026-08-21 — ISNEW-004 (plan review vetoes)
+- **Finding:** Plan review returned CONCERNS with two vetoes. B1: design.md itself was
+  factually wrong — assigning a child entity to a parent property was described as never
+  dirtying the parent ("a quirk this fixes") when it dirties it today for **new** children,
+  through the weld; the channel is mandatory, not a bonus. B2: the original Step 4 silently
+  decided a persistence question design.md left open. Also: repo-root `CLAUDE.md` documents
+  the pre-flip `IsSavable` and was on no touchpoint list, and design.md cited a SKILL.md
+  string that does not exist.
+- **Decision:** Amend — design.md corrected at both places, `CLAUDE.md` added to ISNEW-005
+  touchpoints with the real SKILL.md line numbers, ISNEW-009 created for `SetItem`, and a
+  characterization test for the child-property channel written before the library edit.
+- **Follow-up:** ISNEW-009, ISNEW-005
 
 ### 2026-08-21 — ISNEW-006 (infrastructure subset pulled forward)
 - **Finding:** Two ISNEW-006 items are verification infrastructure rather than coverage debt —

@@ -106,11 +106,14 @@ public class RequiredDuringFactoryTests
         // LastName intentionally left empty — the [Required] violation
         entity.SimulateFactoryComplete(FactoryOperation.Create);
 
-        // Entity is now: New, Modified, IsValid=true (no rules ever ran for LastName)
+        // Entity is now: New, IsValid=true (no rules ever ran for LastName)
         Assert.IsTrue(entity.IsNew, "Should be new after Create");
-        Assert.IsTrue(entity.IsModified, "Should be modified after setting FirstName");
+        Assert.IsFalse(entity.IsModified,
+            "Factory-op writes run paused, so FirstName produced no dirt. (This assertion " +
+            "previously read true and claimed it was 'after setting FirstName' — it was " +
+            "actually true only because IsNew was welded into IsModified.)");
         Assert.IsTrue(entity.IsValid, "IsValid is true because no rules ran for LastName yet");
-        Assert.IsTrue(entity.IsSavable, "IsSavable appears true — no validation errors yet");
+        Assert.IsTrue(entity.IsSavable, "IsSavable appears true — new, and no validation errors yet");
 
         // Simulate factory Insert — this is what happens before [Insert] method runs
         entity.SimulateFactoryStart(FactoryOperation.Insert);

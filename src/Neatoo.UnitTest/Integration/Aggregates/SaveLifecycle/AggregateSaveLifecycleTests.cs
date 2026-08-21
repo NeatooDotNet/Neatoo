@@ -227,13 +227,21 @@ public class AggregateSaveLifecycleTests : ClientServerTestBase
             "Factory-op writes are paused - no property dirt on the root");
         Assert.AreEqual(2, invoice.Lines!.Count, "Factory-populated children");
 
-        // ...yet it is savable, and (pre-flip) reports modified.
-        // ISNEW-004 flips IsModified here to false; IsSavable must stay true,
-        // carried by the new `|| IsNew` term rather than by the weld.
+        // ...yet it is savable. This is the motivating case for the whole ISNEW
+        // arc: a rich Create that fully populates an aggregate lands with nothing
+        // for an unsaved-changes guard to complain about, while still being
+        // savable so the insert can happen.
         Assert.IsTrue(invoice.IsNew);
-        Assert.IsTrue(invoice.IsModified,
-            "Pre-flip: IsModified is true solely because IsNew is welded into it");
-        Assert.IsTrue(invoice.IsSavable, "A valid new aggregate must be savable");
+        Assert.IsFalse(invoice.IsModified,
+            "A richly-created aggregate holds no user work - guards must stay quiet");
+        Assert.IsTrue(invoice.IsSavable,
+            "...yet it is savable, carried by the IsNew term rather than by dirt");
+
+        // The child list too: factory-built children are baseline population, not
+        // user work, so the list is clean. (Pre-flip this read true, because each
+        // child's IsNew was welded into its IsModified.)
+        Assert.IsFalse(invoice.Lines.IsModified,
+            "Factory-populated children are not user work");
 
         // Act
         invoice = (IInvoice)await invoice.Save();

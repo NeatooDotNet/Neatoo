@@ -315,6 +315,33 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
+    public void FactoryComplete_AfterPausedAddOfModifiedItem_ListReportsModified()
+    {
+        // Arrange - the POSITIVE direction of the cached-modified recalculation.
+        // InsertItem skips its cache update while paused, so before ISNEW-003
+        // routed FactoryComplete through ResumeAllActions, _cachedChildrenModified
+        // stayed at its initial false for every Fetch and Create - a list holding
+        // a modified child reported IsModified=false.
+        //
+        // This is also the ISNEW-004 baseline: once IsNew is decoupled from
+        // IsModified, a list holding only NEW children reports false again,
+        // while a list holding a genuinely edited child (this test) stays true.
+        var list = new TestEntityList();
+        var item = CreateExistingItem();
+        item.Name = "Edited";
+        Assert.IsTrue(item.IsModified, "Precondition: item is modified before the add");
+
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        list.Add(item);
+        list.FactoryComplete(FactoryOperation.Fetch);
+
+        // Assert
+        Assert.IsTrue(list.IsModified, "A list holding a modified child is modified");
+    }
+
+    [TestMethod]
     public void Add_WhenPaused_DoesNotMarkModified()
     {
         // Arrange - the other half of the paused-add contract: identity yes,
@@ -327,9 +354,14 @@ public class EntityListBaseTests
         // Act
         list.Add(item);
 
-        // Assert
+        // Assert - during the paused window...
         Assert.IsFalse(item.IsModified, "A paused add must not dirty the item");
         Assert.IsFalse(list.IsModified, "A paused add must not dirty the list");
+
+        // ...and the resume must not manufacture dirt either
+        list.FactoryComplete(FactoryOperation.Fetch);
+        Assert.IsFalse(item.IsModified, "Factory completion must not dirty the item");
+        Assert.IsFalse(list.IsModified, "Factory completion must not dirty the list");
     }
 
     [TestMethod]

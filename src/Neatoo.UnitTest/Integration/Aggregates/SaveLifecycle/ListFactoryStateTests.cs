@@ -89,8 +89,10 @@ public class ListFactoryStateTests : ClientServerTestBase
 
         Assert.AreEqual(1, invoice.Lines!.Count);
         Assert.IsTrue(invoice.Lines[0].IsChild,
-            "A child loaded through the canonical fetch path is a child - it survived " +
-            "serialization and the paused add path set it server-side");
+            "A child loaded through the canonical fetch path is a child");
+        // Note: this asserts the end state on the client. The mechanism itself -
+        // that the PAUSED add applies child identity - is pinned at unit level by
+        // EntityListBaseTests.Add_WhenPaused_MarksAsChild.
     }
 
     [TestMethod]
@@ -127,16 +129,21 @@ public class ListFactoryStateTests : ClientServerTestBase
     }
 
     [TestMethod]
-    public async Task DeserializedChildren_KeepIdentityAndCleanState()
+    public async Task FetchedChild_CrossesTheBoundary_AndKeepsIdentity()
     {
-        // The fetched graph on the CLIENT is a deserialized graph: this asserts
-        // the round trip preserves child identity (IsChild rides the wire;
-        // ContainingList cannot, so the paused add path re-establishes it) and
-        // does not manufacture dirt.
+        // The fetched graph on the CLIENT is a deserialized graph. Assert the
+        // wire was genuinely used, then that child identity survived it:
+        // IsChild rides the wire, ContainingList cannot (not public, not on the
+        // interface), so the paused add path is what re-establishes it.
         var invoiceId = SaveLifecycleStore.SeedInvoice("Initech",
             ("Consulting", 500.00m), ("Support", 250.00m));
 
+        var remoteCallsBefore = RemoteCallCount;
         var invoice = await _factory.Fetch(invoiceId);
+
+        Assert.IsTrue(RemoteCallCount > remoteCallsBefore,
+            "Fetch must execute remotely - otherwise this asserts nothing about " +
+            "deserialization, since both containers share this process");
 
         Assert.AreEqual(2, invoice.Lines!.Count);
         foreach (var line in invoice.Lines)

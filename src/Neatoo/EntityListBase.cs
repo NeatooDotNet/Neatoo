@@ -251,10 +251,17 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
                 item.UnDelete();
             }
 
-            if (!item.IsNew)
-            {
-                itemInternal.MarkModified();
-            }
+            // Attaching an item to a LIVE list is a change to this graph, whatever
+            // the item's own persistence state: a new child is work the user will
+            // lose if they walk away, exactly as an existing child moved in is.
+            //
+            // This mark is what carries child state upward now that IsNew is no
+            // longer welded into IsModified. IsNew itself never aggregates - it is
+            // per-object routing state - so without this a user-added new child
+            // would leave its parent clean and unsavable, and modified-guarded save
+            // cascades would skip its insert. Paused adds are baseline population
+            // and are deliberately excluded (see the paused branch below).
+            itemInternal.MarkModified();
 
             itemInternal.MarkAsChild();
 
@@ -329,6 +336,14 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
         {
             // Removed a modified item, check if any others are still modified
             _cachedChildrenModified = this.Any(c => c.IsModified);
+
+            // Announce it. base.RemoveItem already ran its meta-property check
+            // ABOVE, while this cache was still stale, so without this the list's
+            // IsModified true->false transition is silent - and the parent's own
+            // cached IsModified (refreshed only by a property-changed event) stays
+            // true forever. Symptom: add a child, remove it again, and the
+            // aggregate still claims unsaved changes with nothing to save.
+            this.CheckIfMetaPropertiesChanged();
         }
     }
 
@@ -345,6 +360,20 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
         if (!this.IsPaused)
         {
             oldWasModified = this[index].IsModified;
+
+            // SetItem deliberately applies NO attach-marking and NO child identity.
+            // Unlike Add, replacement has never dirtied the graph here, and an
+            // existing test pins that (replacing the only modified item with an
+            // unmodified one leaves the list unmodified) - so marking here would
+            // change a separate, deliberate behavior rather than replace the weld's
+            // job, which is what the IsNew/IsModified split is scoped to.
+            //
+            // SetItem does have real defects: the DISPLACED item is dropped without
+            // MarkDeleted and without entering DeletedList (silently orphaning its
+            // row), the incoming item gets no IsChild/ContainingList, and none of
+            // Add's guards (duplicate / busy / aggregate boundary) run. All of that
+            // is tracked as ISNEW-009, which changes save-side behavior and needs
+            // its own review and release note.
         }
 
         base.SetItem(index, item);

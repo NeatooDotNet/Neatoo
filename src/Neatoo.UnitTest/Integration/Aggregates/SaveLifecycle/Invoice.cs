@@ -57,6 +57,40 @@ internal partial class Invoice : EntityBase<Invoice>, IInvoice
         Lines = lineListFactory.CreateWithStandardLines();
     }
 
+    /// <summary>
+    /// A create whose result IS the user's work - the "New Invoice button" case -
+    /// which opts into modified state explicitly.
+    /// </summary>
+    /// <remarks>
+    /// This is the opt-in half of the IsNew/IsModified split. Nothing here is
+    /// needed to make the invoice SAVABLE (IsSavable admits IsNew on its own);
+    /// MarkModified() says something different — that discarding this object
+    /// would lose something the user did, so unsaved-changes guards should speak.
+    /// </remarks>
+    [Create]
+    public void CreateAsUserWork(string customer, [Service] IInvoiceLineListFactory lineListFactory)
+    {
+        Customer = customer;
+        Lines = lineListFactory.Create();
+        MarkModified();
+    }
+
+    /// <summary>
+    /// Probe for whether a server-side MarkModified() survives serialization.
+    /// </summary>
+    /// <remarks>
+    /// Fetch (not Create), so IsNew is false and the only possible source of
+    /// modified state on the client is the marked flag crossing the wire.
+    /// </remarks>
+    [Remote]
+    [Fetch]
+    internal void FetchOptInProbe(string customer, [Service] IInvoiceLineListFactory lineListFactory)
+    {
+        this["Customer"].LoadValue(customer);
+        Lines = lineListFactory.Create();
+        MarkModified();
+    }
+
     [Remote]
     [Fetch]
     internal void Fetch(int id, [Service] IInvoiceLineListFactory lineListFactory)

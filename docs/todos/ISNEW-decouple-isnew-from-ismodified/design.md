@@ -148,10 +148,33 @@ because the weld made marking them redundant. The change is removing the exempti
 - **`SetItem` (un-paused): same treatment** for the incoming item (today it marks nothing —
   pre-existing gap; the plan should also decide what happens to the replaced item).
 - **Entity-child property assignment (un-paused): `MarkModified()` the assigned child** in
-  `EntityProperty.OnPropertyChanged`. Today assigning a Neatoo child never dirties the parent
-  at all (`EntityPropertyManager.cs:46` — "Never consider ourself modified if holding a
-  Neatoo object") — a pre-existing quirk this fixes. `LazyLoadEntityProperty` keeps its
-  suppression (lazy loads are loads, not user work).
+  `EntityProperty.OnPropertyChanged`'s Value branch.
+
+  **CORRECTED 2026-08-21 (ISNEW-004 plan review, veto B1).** An earlier version of this
+  section claimed assigning a Neatoo child "never dirties the parent at all — a pre-existing
+  quirk this fixes." That is **false for new children, which is the common case**, and the
+  error made the property channel look like a bonus when it is in fact mandatory. What is
+  true: the *property* never self-dirties (`EntityPropertyManager.cs:46`, "Never consider
+  ourself modified if holding a Neatoo object"), but the *parent* is dirtied through the
+  child, because `EntityProperty.IsModified => IsSelfModified || EntityChild?.IsModified`
+  and a new child's `IsModified` is true **only via the weld**. So assigning a created child
+  to a live parent dirties it today, and cutting the weld without property attach-marking
+  would break that — the same silent-data-loss shape as the list case, not a quirk fix.
+  This channel is therefore mandatory on equal footing with the list channel.
+
+  **List-valued child properties need no marking.** `EntityChild` is typed
+  `IEntityMetaProperties`, which entity *lists* also implement — and a list has no
+  `MarkModified` (`EntityListBase.IsMarkedModified => false`). It does not need one: a list's
+  `IsModified` aggregates from its children, and children are attach-marked as they are added
+  to the list, so dirt reaches the parent through the existing channel. Marking applies to
+  entity children only.
+
+  **Placement matters:** the mark must live inside `EntityProperty.OnPropertyChanged`'s Value
+  branch. `LazyLoadEntityProperty` calls `base.OnPropertyChanged` and then *undoes*
+  `IsSelfModified` — an undo written against `IsSelfModified` would not undo a mark placed on
+  the child. Lazy assignment is additionally insulated because the generated lazy setter uses
+  `LoadValue`, which deliberately raises no `Value` notification. Placing the mark anywhere
+  else (`SetValue`, `HandleNonNullValue`) loses that insulation.
 
 Attach-marking is **mandatory, not optional**: without it, a user-added new child no longer
 enables Save on a fetched parent (silent data loss — the child's insert is skipped by
@@ -255,8 +278,14 @@ Consumer-facing changes to document:
 - **User-attached items are now explicitly marked modified** (new items included; previously
   only non-new items were marked, new ones were dirty via the weld). Observable shift:
   user-attached items report `IsMarkedModified`/`IsSelfModified = true`.
-- **Assigning an entity child to a parent property now dirties the parent** (previously it
-  never did — quirk fix).
+- **Assigning an entity child to a parent property keeps dirtying the parent, by a new
+  mechanism — no observable change.** (Corrected twice on 2026-08-21. An earlier draft
+  claimed it "previously never did"; it did, for new children, through the weld. A second
+  draft then claimed assigning an *unmodified existing* child would newly dirty the parent —
+  that was implemented and rejected during ISNEW-004: it breaks the separate, deliberate
+  invariant that a property HOLDING an unmodified child is not modified, which has its own
+  unit coverage. The mark is scoped to **new** children, giving exact parity with the weld.
+  Widening it is a distinct decision, not a side effect of this one.)
 - zTreatment's hand-splits (`a.IsNew ? a.HasData : a.IsModified`) remain correct and become
   deletable.
 - Factory save routing is untouched: generated `Save` dispatches on `IsDeleted`/`IsNew` only
@@ -295,9 +324,17 @@ it briefly in the README with a link to the docs."
 - **Code comments** — XML remarks on `EntityBase.IsModified`, `IsSavable`, `MarkNew`,
   `MarkModified` and the attach-mark site in `EntityListBase.InsertItem` state the why (the
   two questions, savable-vs-modified, dirt-not-IsNew aggregates)
-- `skills/neatoo/SKILL.md` — Key Properties table ("True after Create (because IsNew)" line),
-  the Why, and the COMMON MISTAKE (MarkModified is not needed for savability), plus
-  `references/collections.md`; copy to `~/.claude/skills/neatoo/` per repo rule
+- `skills/neatoo/SKILL.md` — **verified stale lines (2026-08-21): `:100`** (Key Properties
+  table row `IsSavable | bool | IsValid && IsModified && !IsBusy && !IsChild`) **and `:241`**
+  ("`IsSavable` requires both `IsValid` and `IsModified`"). An earlier version of this list
+  cited a line reading "True after Create (because IsNew)" — that string does not exist in
+  the file; do not hunt for it. Add the Why and the COMMON MISTAKE (MarkModified is not
+  needed for savability), plus `references/collections.md`; copy to `~/.claude/skills/neatoo/`
+  per repo rule
+- **Repo-root `CLAUDE.md`** — its State Properties section defines `IsSavable` as
+  `(IsModified && IsValid && !IsBusy && !IsChild)` (`:88`-ish). This file is loaded into every
+  agent session in this repo, so leaving it stale actively mis-teaches future work. Added to
+  the touchpoint list 2026-08-21 (ISNEW-004 plan review, Pass A callout 3)
 - `docs/guides/change-tracking.md` — full why treatment; `docs/guides/entities.md`,
   `docs/guides/remote-factory.md`, `docs/reference/api.md` (+ `src/samples/`)
 - **`README.md` — brief mention only, linking to the change-tracking guide** for the full why

@@ -3,7 +3,7 @@
 **Plan #:** 003
 **Date:** 2026-08-21
 **Related Todo:** [../todo.md](../todo.md)
-**Status:** In Progress
+**Status:** Done (test-review gate closed — reviews/003-test-review.md; code review clean, no vetoes)
 **Last Updated:** 2026-08-21
 **Plan-review opt-in:** No (two contained defects in the list base classes, both diagnosed against source in the ISNEW-001 pre-flight and discovery log; the flip that depends on them is separately reviewed in ISNEW-004)
 **Code-review opt-in:** Yes (first library change of the arc; touches state machinery ISNEW-004 then builds on)
@@ -81,19 +81,19 @@ documentation caveats those plans added be removed.
 
 ## Acceptance
 
-- [ ] A list populated through its own `[Fetch]` reports validity that reflects its children
+- [x] A list populated through its own `[Fetch]` reports validity that reflects its children
       once the operation completes `[integration]`
-- [ ] A child loaded through the canonical fetch path reports itself as a child and knows its
+- [x] A child loaded through the canonical fetch path reports itself as a child and knows its
       containing list `[integration]`
-- [ ] Calling `Delete()` on such a child routes through the list — it lands in the deleted
+- [x] Calling `Delete()` on such a child routes through the list — it lands in the deleted
       set and is deleted at save, rather than silently doing nothing `[integration]`
-- [ ] Fetching still produces a completely clean graph: no item and no list reports modified
+- [x] Fetching still produces a completely clean graph: no item and no list reports modified
       after the change `[integration]`
-- [ ] Deserialization of a list with children preserves child identity and clean state
+- [x] Deserialization of a list with children preserves child identity and clean state
       `[integration]`
-- [ ] Documentation caveats citing this plan are removed from Design.Domain
+- [x] Documentation caveats citing this plan are removed from Design.Domain
       `[explicit-skip: prose cleanup, verified by the opted-in code review]`
-- [ ] Build and both suites green `[explicit-skip: meta-bullet, gate run]`
+- [x] Build and both suites green `[explicit-skip: meta-bullet, gate run]`
 
 ---
 
