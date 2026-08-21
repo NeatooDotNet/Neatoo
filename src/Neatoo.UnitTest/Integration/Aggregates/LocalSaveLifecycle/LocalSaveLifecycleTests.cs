@@ -49,6 +49,7 @@ public class LocalSaveLifecycleTests : IntegrationTestBase
         var saved = (ILocalOrder)await order.Save();
         Assert.IsFalse(saved.IsModified, "The save cleared the pending deletion");
         Assert.IsFalse(saved.IsSavable, "Nothing left to save right after the save");
+        Assert.AreEqual(0, saved.Lines!.DeletedCount, "The DeletedList was drained by the save");
         CollectionAssert.Contains(LocalSaveStore.DeletedLineIds, doomed.Id, "The deletion was persisted");
 
         // Act - the user edits a surviving line

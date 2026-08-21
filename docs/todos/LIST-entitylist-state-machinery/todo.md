@@ -72,6 +72,35 @@ its own Step 2 — see the Discovery Log entry below for what moved where.*
 
 ## Discovery Log
 
+### 2026-08-21 — LIST-003 gates: an undocumented ordering dependency, traced
+
+- **Finding (from the LIST-003 code review, traced not assumed):** the list-level `IsModified`
+  announcement LIST-003 added **does** reach a parent during a nested aggregate save — harmlessly,
+  but by a route worth recording. The **sync** `PropertyChanged` path is blocked: it bubbles to
+  `PropertyManager.Property_PropertyChanged`, which early-returns on `if (this.IsPaused)`
+  (`Internal/ValidatePropertyManager.cs:147`) — gated on the *parent's* `PropertyManager.IsPaused`,
+  still true for the whole nested `Update`. The **async** `NeatooPropertyChanged` path is *not*
+  gated that way (`:82-85` forwards unconditionally) and lands in
+  `ValidateBase.ChildNeatooPropertyChanged` (`ValidateBase.cs:381-397`); because the parent is
+  paused it takes the `else` branch — a bare `ResetMetaState()`, not a re-entrant `FactoryComplete`
+  — and that snapshot is overwritten moments later by the parent's own `FactoryComplete(Update)`.
+  Net: no lost notification, no double-fire, no unbounded recursion.
+- **Why it matters:** this is safe **only** because of the pause → resume → `MarkUnmodified`
+  ordering in `EntityBase.FactoryComplete`. LIST-003 depends on that ordering and did not say so.
+  Anyone changing it — or doing further paused-path work — must re-check this interaction.
+- **Decision:** recorded rather than fixed; nothing is wrong today. Both LIST-003 gates returned
+  **no must-cover and no veto-tier findings**. Their two lesser findings were adopted: a
+  `FactoryComplete_Create_AnnouncesNothing` test (the Acceptance bullet named `Create` but only
+  `Fetch` had a test, and "structurally unreachable" is a property of the current guard, not of
+  the design), and a `DeletedCount == 0` assertion for symmetry with the control.
+- **Correction to the record:** `reviews/003-revert-unit.log` (`Total: 1838`) and
+  `003-test.log` (`Total: 1840`) differ by exactly the two `LocalSaveLifecycleTests`, because the
+  unit revert ran **before** the integration fixture existed and the integration revert ran after,
+  filtered. The claim of one unit + one integration failure holds — both logs name the failing
+  tests and their assertion messages — but the two runs were at different tree states, which the
+  Test Evidence row now says outright.
+- **Follow-up:** LIST-004 (paused-path work), and any future change to `EntityBase.FactoryComplete`
+
 ### 2026-08-21 — LIST-001 findings: coverage premise corrected; entity-side pause-scope defect (out of scope)
 
 - **Finding (premise corrected):** the ISNEW-003 test review's "false coverage" concern was

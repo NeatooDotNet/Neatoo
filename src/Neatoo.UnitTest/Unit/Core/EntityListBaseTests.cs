@@ -966,6 +966,35 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
+    public void FactoryComplete_Create_AnnouncesNothing()
+    {
+        // Arrange - the Create half of the silence invariant.
+        //
+        // Added on the LIST-003 test gate's recommendation. The fix sits inside
+        // `if (factoryOperation == Update)`, so Create is unreachable *by construction*
+        // today - but "structurally unreachable" is a property of the current guard, not
+        // of the design. A future refactor that consolidated the guard the other way
+        // round (say `if (factoryOperation != Fetch)`) would start announcing on Create
+        // and the Fetch test alone would not notice.
+        var item = CreateExistingItem();
+        item.Name = "Modified before the create completes";
+
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Create);
+        list.Add(item);
+
+        var raised = CaptureNotifications(list);
+        list.FactoryComplete(FactoryOperation.Create);
+
+        // Assert
+        Assert.IsTrue(list.IsModified, "The list does hold a modified child...");
+        CollectionAssert.DoesNotContain(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            $"...but completing a create must not announce it. Raised: [{string.Join(", ", raised)}]");
+    }
+
+    [TestMethod]
     public void HandlePropertyChanged_MetaCheckIsNotPauseGuarded()
     {
         // Arrange - pins a deliberate ASYMMETRY that looks like an oversight.
