@@ -457,6 +457,22 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
             // Recalculate cached modified state since DeletedList was cleared
             // and items may have been marked unmodified during the save
             _cachedChildrenModified = this.Any(c => c.IsModified);
+
+            // Compare-and-announce rather than leaving the snapshot the resume took.
+            //
+            // base.FactoryComplete resumed us, and the resume calls ResetMetaState()
+            // while DeletedList is still populated - so the baseline was captured at
+            // IsModified = true. Clearing DeletedList above makes the real value false.
+            // Without this call the list sits at actual-false / baseline-true, and the
+            // user's NEXT child edit compares true-against-true and announces nothing:
+            // the value silently self-heals (HandlePropertyChanged's meta check is
+            // unguarded) but no parent or binding ever hears about it, so an aggregate
+            // with real unsaved work in it keeps reporting not-savable.
+            //
+            // Only reachable on a local / fat-client save: a [Remote] save deserializes
+            // the returned graph and OnDeserialized rebuilds a correct baseline, which
+            // is why every [Remote] SaveLifecycle fixture missed this. (LIST-003)
+            this.CheckIfMetaPropertiesChanged();
         }
     }
 

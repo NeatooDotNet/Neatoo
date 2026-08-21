@@ -817,14 +817,172 @@ public class EntityListBaseTests
         Assert.IsFalse(list.IsModified, "Final state: Item unmodified - list should not be modified");
     }
 
-    // NOTE: PropertyChanged tests for IsModified are NOT included because
-    // EntityListBase.IsModified is computed (uses Any()) and EntityProperty
-    // does not raise PropertyChanged for IsModified changes. This is existing
-    // behavior - the list correctly computes IsModified but doesn't get
-    // notifications when children's IsModified state changes.
-    //
-    // If we add caching/notification for IsModified in the future, we should
-    // add tests similar to ValidateListBase's IsValid notification tests.
+    // The NOTE that stood here said PropertyChanged tests for IsModified were not
+    // included because "EntityListBase.IsModified is computed (uses Any()) and ...
+    // does not raise PropertyChanged". That predates _cachedChildrenModified and
+    // EntityListBase.CheckIfMetaPropertiesChanged, and LIST-003 disproved it: the
+    // control test below shows a list DOES announce IsModified. The tests the NOTE
+    // deferred are the four that follow.
+
+    /// <summary>
+    /// Captures PropertyChanged names raised by a list. The event is protected on
+    /// ObservableCollection, so it is reachable only through the interface.
+    /// </summary>
+    private static List<string> CaptureNotifications(TestEntityList list)
+    {
+        var raised = new List<string>();
+        ((INotifyPropertyChanged)list).PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName is { } name)
+            {
+                raised.Add(name);
+            }
+        };
+        return raised;
+    }
+
+    /// <summary>
+    /// Fetches a list holding the given persisted, unmodified children, the way a
+    /// factory would - paused, then completed.
+    /// </summary>
+    private static TestEntityList FetchListWith(params TestEntityItem[] items)
+    {
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Fetch);
+        foreach (var item in items)
+        {
+            list.Add(item);
+        }
+        list.FactoryComplete(FactoryOperation.Fetch);
+        return list;
+    }
+
+    [TestMethod]
+    public void SaveCarryingDeletions_ThenChildEdit_AnnouncesIsModified()
+    {
+        // Arrange - THE LIST-003 DEFECT.
+        //
+        // FactoryComplete(Update) resumes first, and the resume snapshots the
+        // meta-state baseline while DeletedList is still populated - so the baseline
+        // records IsModified = true. The Update branch then clears DeletedList, making
+        // the real value false. Before LIST-003 nothing corrected the baseline, so the
+        // list sat at actual-false / baseline-true and the user's NEXT edit compared
+        // true-against-true and announced nothing. The value self-healed (the meta
+        // check at the end of HandlePropertyChanged is unguarded) but no parent or
+        // binding ever heard, so an aggregate holding real unsaved work kept reporting
+        // not-savable.
+        //
+        // Only reachable on a LOCAL save: a [Remote] save deserializes the returned
+        // graph and OnDeserialized rebuilds a correct baseline, which is why every
+        // [Remote] SaveLifecycle fixture missed this.
+        var keep = CreateExistingItem();
+        var drop = CreateExistingItem();
+        var list = FetchListWith(keep, drop);
+        Assert.IsFalse(list.IsModified, "Precondition: a fetched list is clean");
+
+        list.Remove(drop);
+        Assert.IsTrue(list.IsModified, "Precondition: the queued deletion dirties the list");
+        Assert.AreEqual(1, list.DeletedList.Count);
+
+        // Act - a local save, no serialization round trip
+        list.FactoryStart(FactoryOperation.Update);
+        list.FactoryComplete(FactoryOperation.Update);
+        Assert.IsFalse(list.IsModified, "Precondition: the save cleared the deletion");
+
+        var raised = CaptureNotifications(list);
+        keep.Name = "Edited after the save";
+
+        // Assert
+        Assert.IsTrue(list.IsModified, "The edit dirties the list");
+        CollectionAssert.Contains(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            $"The list must announce the edit, not just compute it. Raised: [{string.Join(", ", raised)}]");
+    }
+
+    [TestMethod]
+    public void SaveWithoutDeletions_ThenChildEdit_AnnouncesIsModified()
+    {
+        // Arrange - THE CONTROL for the test above, and the reason that test means
+        // anything. It is the identical sequence minus the deletion. Because this one
+        // announced even before LIST-003, the pair isolates the stale baseline as the
+        // cause rather than "lists never announce IsModified" - which is exactly what
+        // the NOTE removed from this file used to claim.
+        var keep = CreateExistingItem();
+        var list = FetchListWith(keep);
+
+        // Act - a local save that carried no deletions
+        list.FactoryStart(FactoryOperation.Update);
+        list.FactoryComplete(FactoryOperation.Update);
+        Assert.IsFalse(list.IsModified, "Precondition: nothing was pending");
+
+        var raised = CaptureNotifications(list);
+        keep.Name = "Edited after a clean save";
+
+        // Assert
+        Assert.IsTrue(list.IsModified);
+        CollectionAssert.Contains(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            $"Raised: [{string.Join(", ", raised)}]");
+    }
+
+    [TestMethod]
+    public void FactoryComplete_Fetch_AnnouncesNothing()
+    {
+        // Arrange - the silence invariant that bounds the LIST-003 fix.
+        //
+        // Resume is deliberately silent: after a factory operation the post-factory
+        // state IS the new baseline, so ResumeAllActions snapshots without announcing.
+        // A fetch is not news. LIST-003 added a compare-and-announce to the UPDATE
+        // branch only; if that ever migrates out of the Update branch, this fails.
+        var item = CreateExistingItem();
+        item.Name = "Modified before the fetch completes";
+
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Fetch);
+        list.Add(item);
+
+        var raised = CaptureNotifications(list);
+        list.FactoryComplete(FactoryOperation.Fetch);
+
+        // Assert
+        Assert.IsTrue(list.IsModified, "The list does hold a modified child...");
+        CollectionAssert.DoesNotContain(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            $"...but completing a fetch must not announce it. Raised: [{string.Join(", ", raised)}]");
+    }
+
+    [TestMethod]
+    public void HandlePropertyChanged_MetaCheckIsNotPauseGuarded()
+    {
+        // Arrange - pins a deliberate ASYMMETRY that looks like an oversight.
+        //
+        // HandlePropertyChanged guards its cache arithmetic on pause state but ends
+        // with an UNGUARDED CheckIfMetaPropertiesChanged(). Adding an `if (!IsPaused)`
+        // around that call "for symmetry" would reopen the ISNEW-003 defect with a
+        // green suite, because it is what lets a list's meta state converge after
+        // items change during a paused window. This test is the tripwire: it fails if
+        // someone adds that guard.
+        var item = CreateExistingItem();
+        var list = FetchListWith(item);
+        item.MarkUnmodified();
+
+        // Act - mutate a child while the list is paused
+        list.FactoryStart(FactoryOperation.Fetch);
+        var raised = CaptureNotifications(list);
+        item.Name = "Edited during the paused window";
+
+        // Assert - the meta check ran despite the pause
+        CollectionAssert.Contains(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            "The meta check at the end of HandlePropertyChanged is intentionally NOT "
+            + $"pause-guarded. Raised: [{string.Join(", ", raised)}]");
+
+        list.FactoryComplete(FactoryOperation.Fetch);
+    }
 
     #endregion
 

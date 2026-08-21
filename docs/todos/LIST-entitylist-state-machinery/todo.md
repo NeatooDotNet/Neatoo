@@ -25,14 +25,18 @@ defect with a green suite.
 
 ## Acceptance Criteria
 
-- [ ] After a save that carried child deletions, editing a child again makes the aggregate
-      savable — on a local/fat-client save, not only a remote one
+- [x] After a save that carried child deletions, editing a child again makes the aggregate
+      savable — on a local/fat-client save, not only a remote one — LIST-003, pinned at both
+      tiers; the new `LocalSaveLifecycle` fixture is the local save path the suite lacked
 - [ ] Replacing a persisted child in a list results in that child's row being deleted, not
       silently orphaned
 - [ ] `Delete()` on a child inside a paused window either routes correctly or is prevented
-- [ ] The list's `IsModified` transitions raise `PropertyChanged` so bindings and parents see them
-- [ ] The pause-guard asymmetry in `HandlePropertyChanged` is asserted, so adding a guard
+- [x] The list's `IsModified` transitions raise `PropertyChanged` so bindings and parents see them
+      — LIST-003; the standing NOTE claiming they do not was **disproven** by the control test
+      and removed, replaced by the four tests it had deferred
+- [x] The pause-guard asymmetry in `HandlePropertyChanged` is asserted, so adding a guard
       "for symmetry" fails a test instead of silently reopening the ISNEW-003 defect
+      — LIST-003, `HandlePropertyChanged_MetaCheckIsNotPauseGuarded`
 - [x] `FactoryComplete` on a never-paused list is either correct or explicitly dispositioned
       — LIST-001: correct for lists (unreachable canonically), pinned by
       `FactoryComplete_WhenNeverPaused_LeavesLiveMaintainedStateIntact`. The reachable
@@ -52,7 +56,7 @@ defect with a green suite.
 |---|------|-------|--------|
 | 001 | [001-resume-guard-never-paused-list](./plans/001-resume-guard-never-paused-list.md) | `ResumeAllActions` guard makes `FactoryComplete` a no-op on a never-paused list | Done (no library change) |
 | 002 | [002-setitem-replaced-item](./plans/002-setitem-replaced-item.md) | SetItem: identity + replaced-item persistence | Draft (stub) |
-| 003 | [003-metastate-baseline-and-notification](./plans/003-metastate-baseline-and-notification.md) | Stale meta-state baseline after a save carrying deletions; `IsModified` notification coverage | Draft (stub) |
+| 003 | [003-metastate-baseline-and-notification](./plans/003-metastate-baseline-and-notification.md) | Stale meta-state baseline after a save carrying deletions; `IsModified` notification coverage | Done |
 | 004 | [004-paused-path-guards](./plans/004-paused-path-guards.md) | Paused `Delete()` seam; paused `InsertItem` guard dispositioning | Draft (stub) |
 | 005 | [005-inherited-test-debt](./plans/005-inherited-test-debt.md) | Test-infrastructure debt inherited from ISNEW | Draft (stub) |
 
