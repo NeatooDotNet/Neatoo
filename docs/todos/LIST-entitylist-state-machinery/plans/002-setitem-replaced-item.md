@@ -3,7 +3,7 @@
 **Plan #:** 002
 **Date:** 2026-08-21
 **Related Todo:** [../todo.md](../todo.md)
-**Status:** Draft
+**Status:** Draft — BLOCKED on a user decision (see `reviews/002-plan-review.md` Veto 1)
 **Last Updated:** 2026-08-21
 **Plan-review opt-in:** **Yes** — changes save-side behavior for existing consumers: a row that
 survives today starts being deleted. Reviewed before implementation.
@@ -50,7 +50,18 @@ the aggregate rather than an item that happens to be in a collection.
 - **This is an observable behavior change for existing consumers** and needs its own release
   note: a persisted child that is replaced will now be DELETEd where previously its row survived.
   The old behavior is not defensible — it is an orphaned row nobody asked for — but consumers who
-  worked around it by replacing rather than removing will see new DELETEs.
+  worked around it by replacing rather than removing will see new DELETEs. **The release note must
+  also cover whichever way Step 3's guard question lands**: adopting `InsertItem`'s
+  aggregate-boundary guard would be a *second* save-side break (silent success → thrown exception),
+  not covered by the DELETE-queueing framing alone.
+- **BLOCKED — two sacred tests encode the opposite expectation.** See `reviews/002-plan-review.md`
+  Veto 1. `SetItem_ReplaceModifiedWithUnmodified_WhenOnlyModified_ListBecomesUnmodified`
+  (`EntityListBaseTests.cs:1243-1265`) and `LargeList_SetItem_UpdatesCacheCorrectly` (`:1518-1556`)
+  both replace a **persisted** item and assert the list ends up unmodified. Step 1 queues that
+  displaced item into `DeletedList`, so `DeletedList.Any()` stays true and both assertions flip to
+  failing. Their intent — "replacing a modified item with an unmodified one leaves the list clean"
+  — is contradicted, not merely reworded. Escalated to the user per the global test-modification
+  rule; implementation does not start until that is decided.
 - New (never-persisted) displaced items must **not** be queued for deletion; they are discarded,
   matching `RemoveItem`'s `if (!item.IsNew)` rule.
 - `RemoveItem` and `InsertItem` behavior is unchanged.
@@ -90,7 +101,9 @@ Walked 2026-08-21. `EntityListBase.SetItem` (`src/Neatoo/EntityListBase.cs:361-4
   issues the DELETE [integration]
 - Replacing a **new** child discards it without queueing a deletion [unit]
 - The incoming item receives `IsChild` and a `ContainingList` pointing at the list [unit]
-- The displaced item's `ContainingList` no longer points at a list it is not in [unit]
+- The displaced item keeps its `ContainingList` until the save clears it, matching `RemoveItem`
+  parity — it is **not** cleared immediately [unit], and **is** cleared by
+  `FactoryComplete(Update)`'s existing `DeletedList` loop [integration]
 - The guard decision from Step 3 is asserted in the direction chosen, with a stated reason [unit]
 - A replacement that dirties the list announces `IsModified` [unit]
 - The ISNEW-004 `IsNew` marking still holds [unit]

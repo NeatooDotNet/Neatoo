@@ -50,6 +50,17 @@ public class ValidateListBaseTests
 
         public void Resume() => ResumeAllActions();
 
+        /// <summary>
+        /// Test helper: makes the item busy by adding a pending task.
+        /// Call the returned action to release the busy state.
+        /// </summary>
+        public Action MarkBusyForTest()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            RunningTasks.AddTask(tcs.Task);
+            return () => tcs.SetResult(true);
+        }
+
         public void AddValidationError(string message)
         {
             MarkInvalid(message);
@@ -548,11 +559,20 @@ public class ValidateListBaseTests
         //
         // What this adds: EntityListBaseStateTransitionTests already pins the
         // invalid and busy halves, and EntityListBaseTests the modified half - but
-        // all three go through EntityListBase. The broken and fixed code is
-        // ValidateListBase.FactoryComplete, which is also a base class consumers use
-        // directly for read models. This pins it at that tier, so an EntityListBase
-        // override could not mask a ValidateListBase regression. Reverting
-        // FactoryComplete to `IsPaused = false` fails this test. (LIST-001)
+        // all three go through EntityListBase, whose fixtures are EntityListBase
+        // subclasses. ValidateListBase is directly instantiable and is what a
+        // read-only or validation-only model uses with no EntityListBase anywhere in
+        // the chain; before this test that path had no coverage of FactoryComplete's
+        // recalculation at all.
+        //
+        // Note the mechanism precisely: EntityListBase does NOT override the
+        // _cachedIsValid/_cachedIsBusy recalculation - it only adds
+        // _cachedChildrenModified before calling base. So the value here is covering a
+        // directly-used tier, not guarding against an override that could mask a
+        // regression; no such override exists for Valid/Busy. (IsModified is different
+        // - it is EntityListBase-exclusive and absent from IValidateMetaProperties.)
+        //
+        // Reverting FactoryComplete to `IsPaused = false` fails this test. (LIST-001)
         var list = new TestValidateList();
         var item = new TestValidateItem();
         item.Resume();
@@ -567,6 +587,34 @@ public class ValidateListBaseTests
 
         // Assert
         Assert.IsFalse(list.IsValid, "A list holding an invalid child is invalid");
+    }
+
+    [TestMethod]
+    public void FactoryComplete_AfterPausedAddOfBusyItem_ValidateListReportsBusy()
+    {
+        // Arrange - the Busy half, at the ValidateListBase tier.
+        //
+        // Added on the LIST-001 gate's recommendation: _cachedIsBusy is recalculated by
+        // the identical, adjacent, unoverridden line (ValidateListBase.cs:552) as
+        // _cachedIsValid, and InsertItem skips maintaining it while paused by the same
+        // `if (!IsPaused)` (:146). The Invalid half was pinned at this tier and Busy was
+        // not, which left the pair asymmetric for no reason.
+        var list = new TestValidateList();
+        var item = new TestValidateItem();
+        item.Resume();
+        var release = item.MarkBusyForTest();
+        Assert.IsTrue(item.IsBusy, "Precondition: the item is busy before the add");
+
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        list.Add(item);
+        list.FactoryComplete(FactoryOperation.Fetch);
+
+        // Assert
+        Assert.IsTrue(list.IsBusy, "A list holding a busy child is busy");
+
+        release();
     }
 
     [TestMethod]
@@ -587,8 +635,18 @@ public class ValidateListBaseTests
         // (:407) have already maintained the caches and the baseline, so there is
         // nothing for the resume to repair.
         //
-        // Guard the seam in both directions: completion must not manufacture a wrong
-        // value here, and it must not silently "fix" state that was already right.
+        // WHAT THIS TEST DOES NOT DO, stated plainly so nobody trusts it for more than
+        // it is worth: it does NOT pin the guard. Deleting the `if (IsPaused)` entirely
+        // would leave this test green, because the recalculation the guard skips
+        // (_cachedIsValid = !this.Any(c => !c.IsValid)) computes exactly the value the
+        // live path already produced. Guarded and unguarded agree by construction
+        // whenever live maintenance is correct, so no fixture can separate them without
+        // introducing a separate live-maintenance bug.
+        //
+        // It is a documentation anchor for the disposition plus a corruption detector:
+        // it fails if some future code blindly resets the cache. That is the honest
+        // extent of it. (LIST-001, narrowed after the test gate showed the original
+        // "guard the seam in both directions" framing claimed more than it delivers.)
         var list = new TestValidateList();
         var item = new TestValidateItem();
         item.Resume();

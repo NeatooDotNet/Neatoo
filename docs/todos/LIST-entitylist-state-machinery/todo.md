@@ -59,7 +59,7 @@ defect with a green suite.
 | # | File | Title | Status |
 |---|------|-------|--------|
 | 001 | [001-resume-guard-never-paused-list](./plans/001-resume-guard-never-paused-list.md) | `ResumeAllActions` guard makes `FactoryComplete` a no-op on a never-paused list | Done (no library change) |
-| 002 | [002-setitem-replaced-item](./plans/002-setitem-replaced-item.md) | SetItem: identity + replaced-item persistence | Draft (stub) |
+| 002 | [002-setitem-replaced-item](./plans/002-setitem-replaced-item.md) | SetItem: identity + replaced-item persistence | Draft — BLOCKED (plan review Veto 1) |
 | 003 | [003-metastate-baseline-and-notification](./plans/003-metastate-baseline-and-notification.md) | Stale meta-state baseline after a save carrying deletions; `IsModified` notification coverage | Done |
 | 004 | [004-paused-path-guards](./plans/004-paused-path-guards.md) | Paused `Delete()` seam; paused `InsertItem` guard dispositioning | Done |
 | 005 | [005-inherited-test-debt](./plans/005-inherited-test-debt.md) | Test-infrastructure debt inherited from ISNEW | Done |
