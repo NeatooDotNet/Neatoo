@@ -1,8 +1,8 @@
 # SetItem: Identity and Persistence for the Replaced Item
 
-**Plan #:** 009
+**Plan #:** 002
 **Date:** 2026-08-21
-**Related Todo:** [../todo.md](../todo.md)
+**Related Todo:** [../todo.md](../todo.md) (carved from ISNEW-009)
 **Status:** Draft
 **Last Updated:** 2026-08-21
 **Plan-review opt-in:** Yes (changes save-side behavior for existing consumers)
@@ -36,3 +36,11 @@ ISNEW-004 marks a **new** incoming item — that channel was a regression it int
 fixed (see `reviews/004-code-review.md` V2). Everything else about `SetItem` belongs to this
 plan: the displaced item's disposition, the missing guards, and the incoming item's child
 identity (`MarkAsChild`/`SetContainingList`), which is still absent on both branches.
+
+---
+
+## Retirement / Carve-Out Note
+
+Carved out of the ISNEW arc at its close-out (2026-08-21). This plan was written as
+ISNEW-009 and never implemented; its provenance lines still cite ISNEW review records,
+which remain the authoritative source for each finding.

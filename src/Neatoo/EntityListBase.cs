@@ -373,7 +373,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
             // the list before and still does not.
             //
             // SetItem's other defects are NOT addressed here and are tracked as
-            // ISNEW-009: the DISPLACED item is dropped without MarkDeleted and
+            // LIST-002 (carved from ISNEW-009): the DISPLACED item is dropped without MarkDeleted and
             // without entering DeletedList (silently orphaning its row), the
             // incoming item gets no IsChild/ContainingList, and none of Add's
             // guards (duplicate / busy / aggregate boundary) run. Those change

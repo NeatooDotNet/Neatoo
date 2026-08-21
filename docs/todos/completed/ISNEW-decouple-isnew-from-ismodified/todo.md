@@ -2,7 +2,7 @@
 
 **ID:** ISNEW (assigned 2026-08-21, replacing the legacy series ID `H5`; unique across active and completed todos; registered in `docs/todos/_ids.md`. Plans referenced as `ISNEW-NNN`.)
 **Type:** Enhancement
-**Status:** In Progress
+**Status:** Complete
 **Priority:** High
 **Created:** 2026-08-19
 **Last Updated:** 2026-08-21
@@ -74,8 +74,8 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 | 005 | [005-docs-and-release](./plans/005-docs-and-release.md) | Docs, skill, README, release notes, 0.29.0 | Done |
 | 006 | [006-design-tests-tech-debt](./plans/006-design-tests-tech-debt.md) | Design.Tests + harness coverage debt | Done |
 | 007 | [007-entities-demo-lifecycle](./plans/007-entities-demo-lifecycle.md) | Entities demo aggregate (Employee/Address) to canonical | Done |
-| 008 | [008-list-metastate-baseline](./plans/008-list-metastate-baseline.md) | List meta-state baseline + paused delete | Draft (stub) |
-| 009 | [009-setitem-replaced-item](./plans/009-setitem-replaced-item.md) | SetItem: identity + replaced-item persistence | Draft (stub) |
+| 008 | _(carved out)_ | List meta-state baseline + paused delete | Retired — became [LIST-001](../LIST-entitylist-state-machinery/plans/001-metastate-baseline-and-paused-delete.md) |
+| 009 | _(carved out)_ | SetItem: identity + replaced-item persistence | Retired — became [LIST-002](../LIST-entitylist-state-machinery/plans/002-setitem-replaced-item.md) |
 
 ---
 
@@ -250,22 +250,156 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 
 ## Sibling Todos
 
-- None yet.
+- [LIST — EntityListBase State Machinery](../LIST-entitylist-state-machinery/todo.md) — the
+  two plans carved out of this arc at close-out (ISNEW-008/009 → LIST-001/002). Every item
+  was found by an ISNEW gate but does not advance this Goal.
 
 ---
 
 ## Close-Out Audit
 
-_Not yet run._
+### 2026-08-21 — Verdict: CONCERNS → resolved
+
+**Veto-tier findings:** 7, all resolved. No runtime defects — every one was documentation
+still teaching the removed semantics, or container integrity.
+
+- V1 `docs/reference/api.md` stated the pre-flip `IsModified` derivation verbatim — fixed.
+- V2 `docs/release-notes/v0.29.0.md` shipped the justification the ISNEW-004 gate disproved,
+  and listed two of four attach-marking channels — fixed.
+- V3 `docs/guides/entities.md` (+ its sample) taught the removed rule in three places — fixed.
+- V4 Design.Domain contradicted itself: `AllBaseClasses.cs` said "New Entity: IsModified=true"
+  sixteen lines above the opposite, and `OrderItem.cs` still documented the deleted
+  `!item.IsNew` exemption — fixed.
+- V5 `reviews/003-code-review.md` never existed while four documents cited it, and the plan
+  header called it "clean" despite five callouts (two spawning ISNEW-008) — written from the
+  findings preserved downstream, marked as reconstructed.
+- V6 `plans/004` cited a test its own gate had renamed, and the fallback citation asserts only
+  the child — the lazy-load bullet is now an accepted `MISSING`, behavior traced and correct.
+- V7 five gate-recorded deferrals traced to no Plan Index entry — folded into ISNEW-008.
+
+**Callouts:** all seven swept — MudNeatoo skill formula; README's "IsNew cascades" claim;
+unverifiable Test Evidence numbers (ISNEW-003's archived logs predate its fix loop);
+`TBD at draft` gate headers on plans 005/006 plus Skipped Steps entries; `SetItem` added to
+migration point 5; `docs/todos/index.md` now lists this todo and explains the two-registry
+split with `_ids.md`.
+
+**Verified clean by the audit:** Plan Index ↔ `plans/` reconciles (nine files, nine rows,
+monotonic, no Abandoned/Retired); all five Out of Scope items hold; build warnings are
+byte-identical to the pre-arc baseline (the arc introduced none); no sacred test was gutted
+across ~15 changed pre-existing assertions; and both core acceptance tests are strong and
+non-vacuous.
+
+**Full audit:** delivered by the close-out agent; findings and dispositions recorded above and
+in the commit `docs: close all seven close-out audit vetoes (ISNEW)`.
+
+**Process gap noted for next time:** this repo has no `docs/code-review-calibration.md`, so
+each reviewer reasoned from first principles about what "clean" means here.
+
+---
+
+## Deferred Work Carrying Forward
+
+| # | Description | Queued | Cost |
+|---|---|---|---|
+| 1 | Stale meta-state baseline after `FactoryComplete(Update)` swallows the next child-edit notification | ISNEW-008 | Fat-client saves only; aggregate reports not-savable after a save that carried deletions |
+| 2 | `Delete()` inside a paused window silently drops a child | ISNEW-008 | No canonical flow reaches it today |
+| 3 | `HandlePropertyChanged` has no pause guard while the three mutators do | ISNEW-008 | Adding one "for symmetry" would reopen the ISNEW-003 defect with a green suite |
+| 4 | `EntityListBase.IsModified` raises no `PropertyChanged` | ISNEW-008 | Real hole for Blazor bindings |
+| 5 | `ResumeAllActions`' `if (IsPaused)` guard makes `FactoryComplete` a no-op on a never-paused list | ISNEW-008 | Live hole in the ISNEW-003 fix |
+| 6 | Paused `InsertItem` skips duplicate/busy/aggregate-boundary guards | ISNEW-008 | Defensible for trusted input, unasserted |
+| 7 | Repository mocks ignore their parent-id argument | ISNEW-008 | Blocks per-parent child-loading tests |
+| 8 | `SaveFailureReason.NoFactoryMethod` has no assertion anywhere | ISNEW-008 | One save-guard reason uncovered |
+| 9 | `EntityParentChildFetchTests` fixture cleans its own objects before asserting | ISNEW-008 | Cannot distinguish framework-clean from test-cleaned |
+| 10 | Parent-side lazy-load assertion (ISNEW-004's accepted `MISSING`) | ISNEW-008 | Behavior correct and doubly protected, but unasserted |
+| 11 | `SetItem`: displaced item orphaned, no child identity, no guards | ISNEW-009 | Replacing a persisted child silently orphans its row — needs its own release note |
+| 12 | `MapModifiedTo` over an entity-child property | Accepted (`reviews/004-test-review.md`) | Unchanged for scalars, which is every current usage |
+| 13 | Publishing 0.29.0 (tag, push, NuGet) | Out of Scope, per CI standards | User-initiated |
 
 ---
 
 ## Docs & Retro
 
-_Filled at Step 8._
+**Documentation:** doc deltas shipped in the same branch as the behavior change (ISNEW-005),
+then twice more after review: a self-directed repo-wide sweep found eleven stale `IsSavable`
+formulas the per-plan gates could not see, and the close-out audit found four more surfaces.
+No documentation debt remains open; `skills/neatoo/` and `skills/mudneatoo/` are copied to
+`~/.claude/skills/`.
+
+**Retro.** Three things this arc taught about the workflow itself.
+
+*Per-plan gates are scoped to a plan's diff, so a semantics change that ripples across a repo
+needs a deliberate repo-wide sweep on top.* Every stale-doc finding — mine and the audit's —
+sat in a file no individual plan touched. The gates were not failing; they were correctly
+scoped and structurally blind to it. Worth making an explicit step for cross-cutting changes.
+
+*"Verify by reverting the fix" caught false coverage three separate times*, including a case
+where my own regression test passed with the fix removed, and a case where a revert run
+silently used a stale binary because the revert did not compile. It should be the default for
+any test claiming to pin a bug fix, not a spot check.
+
+*The most valuable findings were all "your justification is factually wrong," not "your code
+is wrong."* The plan review found design.md itself mis-describing current behavior; the code
+review found two channels I had excluded with confident, incorrect reasoning. Both times the
+code compiled and every test passed. That is the failure mode reviews exist for, and it argues
+for briefs that ask reviewers to verify *claims* against source rather than review diffs.
+## Results / Conclusions
+
+`IsModified` and `IsNew` now answer their own questions. After `[Create]` an object is
+`IsNew=true, IsModified=false, IsSavable=true` — it needs inserting, but holds no user work,
+so unsaved-changes guards stay quiet on it, including on a freshly re-derived object after a
+save. That was the zTreatment symptom that started this. A `[Create]` whose result *is* the
+user's work opts in with the existing `MarkModified()`; no new API, no configuration knob.
+
+The load-bearing insight, which took three attempts to get right: the removed `IsNew` term was
+doing a second, hidden job — carrying a new child's arrival up the object graph, because
+`IsNew` itself never aggregates. Replacing that job took **four** attach-marking channels, and
+the first implementation shipped two of them. The gates found the other two.
+
+Five defects were fixed along the way, none of them on the original list: fetched children
+loaded with `Create()+LoadValue` (so the next save re-inserted them), a list reporting the
+state of an empty list after its own factory op, fetched children with no `IsChild` so
+`Delete()` silently did nothing, a list going clean without announcing it (so the parent
+stayed permanently dirty), and a cross-aggregate error message that named both aggregates
+identically. Design.Domain — the documented source of truth — was teaching a child-persistence
+cascade the framework does not implement.
+
+### Plan Sequence
+
+```
+Plans for this todo (`docs/todos/completed/ISNEW-decouple-isnew-from-ismodified/todo.md`):
+- [x] 001-design-domain-lifecycle    — Done
+- [x] 002-e2e-save-coverage          — Done
+- [x] 003-list-cache-audit           — Done
+- [x] 004-decouple-flip              — Done
+- [x] 005-docs-and-release           — Done
+- [x] 006-design-tests-tech-debt     — Done (two passes, straddling 004)
+- [x] 007-entities-demo-lifecycle    — Done
+- [ ] 008-list-metastate-baseline    — Draft (carved out; carries 10 deferrals)
+- [ ] 009-setitem-replaced-item      — Draft (carved out)
+
+Discovery Log: 11 entries.
+Gates: 4 test reviews, 4 code reviews, 1 plan review, 1 close-out audit.
+Close-Out Audit: CONCERNS (7 veto) → all resolved.
+Tests: 2144 → 2178 (solution), 110 → 129 (Design.Tests). Zero failures, 2 pre-existing skips.
+Version: 0.28.1 → 0.29.0 (breaking).
+```
+
+ISNEW-008 and ISNEW-009 remain open as Draft stubs and do not block this todo's Goal. They
+carry thirteen deferred items between them (see the table above), each traceable to a gate
+finding rather than to prose.
 
 ---
 
-## Results / Conclusions
+## ID Redirect Note
 
-_Filled at Step 8._
+`ISNEW-008` and `ISNEW-009` were carved out to the sibling todo **LIST** at close-out and
+renumbered. References to them anywhere in this container — plans, reviews, Discovery Log —
+resolve as:
+
+- **ISNEW-008** → [LIST-001](../../LIST-entitylist-state-machinery/plans/001-metastate-baseline-and-paused-delete.md)
+  (meta-state baseline, paused delete, notification holes, inherited test debt)
+- **ISNEW-009** → [LIST-002](../../LIST-entitylist-state-machinery/plans/002-setitem-replaced-item.md)
+  (SetItem identity + replaced-item persistence)
+
+The in-place citations were left as written rather than rewritten, so the records read as they
+did when each decision was made; this note is the mapping.

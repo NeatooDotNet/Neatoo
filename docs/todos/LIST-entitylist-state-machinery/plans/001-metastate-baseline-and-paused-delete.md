@@ -1,8 +1,8 @@
 # List Meta-State Baseline and Paused Delete
 
-**Plan #:** 008
+**Plan #:** 001
 **Date:** 2026-08-21
-**Related Todo:** [../todo.md](../todo.md)
+**Related Todo:** [../todo.md](../todo.md) (carved from ISNEW-008)
 **Status:** Draft
 **Last Updated:** 2026-08-21
 **Plan-review opt-in:** TBD at draft
@@ -75,3 +75,11 @@ suites it will touch:
    parent" bullet is an accepted `MISSING`: the behavior is correct and doubly protected, but
    the only candidate test (`LazyLoadStatePropagationTests.LazyLoadChild_InitialState_ParentNotModified`)
    asserts `child.IsModified` and never touches the parent, despite its name.
+
+---
+
+## Retirement / Carve-Out Note
+
+Carved out of the ISNEW arc at its close-out (2026-08-21). This plan was written as
+ISNEW-008 and never implemented; its provenance lines still cite ISNEW review records,
+which remain the authoritative source for each finding.

@@ -7,4 +7,5 @@ stay reserved for their files but new todos use this registry.
 
 | ID | Todo | Status | Location |
 |----|------|--------|----------|
-| ISNEW | Decouple IsNew from IsModified — Create Means Savable, Not Modified | In Progress | [ISNEW-decouple-isnew-from-ismodified](./ISNEW-decouple-isnew-from-ismodified/todo.md) |
+| ISNEW | Decouple IsNew from IsModified — Create Means Savable, Not Modified | Complete | [completed/ISNEW-decouple-isnew-from-ismodified](./completed/ISNEW-decouple-isnew-from-ismodified/todo.md) |
+| LIST | EntityListBase state machinery — notification, replacement, paused-path defects | Not Started | [LIST-entitylist-state-machinery](./LIST-entitylist-state-machinery/todo.md) |

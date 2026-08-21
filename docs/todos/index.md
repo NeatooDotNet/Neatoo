@@ -14,7 +14,7 @@
 
 | Todo | Priority | Effort | Status |
 |------|----------|--------|--------|
-| [ISNEW - Decouple IsNew from IsModified](ISNEW-decouple-isnew-from-ismodified/todo.md) *(folder form)* | High | Large | In Progress — 7 plans Done, 2 queued |
+| [LIST - EntityListBase State Machinery](LIST-entitylist-state-machinery/todo.md) *(folder form)* | Medium | Medium | Not Started |
 | [C1 - Domain Events Support](C1-domain-events-support.md) | Critical | Low | Not Started |
 | [M2 - Value Object Base Type](M2-value-object-base.md) | Medium | Medium | Not Started |
 | [Entity Dictionary Base](entity-dictionary-base.md) | Medium | Medium | Pending |
@@ -83,6 +83,7 @@ See `completed/` directory. Key completions include:
 - **Collapse Base Layer v10.4.0** - Simplified class hierarchy
 - **Multi-Target .NET 8/9/10** - Framework multi-targeting
 - **Neatoo Skill** - Created and refined with MarkdownSnippets samples
+- **ISNEW - Decouple IsNew from IsModified** (0.29.0, breaking) - Create means savable, not modified; attach-marking replaces the weld's child-dirt channel; five bundled defect fixes (ISNEW-decouple-isnew-from-ismodified, folder form)
 
 ## Stale Todos
 
