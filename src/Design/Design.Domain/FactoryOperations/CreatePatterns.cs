@@ -28,7 +28,8 @@ namespace Design.Domain.FactoryOperations;
 // - Server-side creation when called from other server methods
 //
 // After [Create] completes, FactoryComplete(FactoryOperation.Create) is called:
-// - For EntityBase: MarkNew() sets IsNew=true
+// - For EntityBase: MarkNew() sets IsNew=true. That is ALL it does - IsNew is
+//   routing state (Insert vs Update) and does not make the object modified.
 // - For ValidateBase: No special state changes
 //
 // GENERATOR BEHAVIOR: For each [Create] method, RemoteFactory generates:
@@ -69,7 +70,15 @@ internal partial class CreateDemo : EntityBase<CreateDemo>, ICreateDemo
     // Pattern 1: Parameterless Create
     // =========================================================================
     // The simplest create - just construct with defaults.
-    // After this runs, IsNew=true, IsModified=true (new objects are modified).
+    //
+    // After this runs: IsNew=true, IsModified=FALSE, IsSavable=true.
+    // A created object needs inserting, but holds no user work - so an
+    // unsaved-changes guard bound to IsModified stays quiet on it, while
+    // IsSavable admits IsNew so the Insert can still happen.
+    //
+    // If a create IS the user's work (a "New" button rather than a derived
+    // default), say so by calling MarkModified() in the body. Do NOT call it to
+    // make the object savable - it already is.
     // =========================================================================
     [Create]
     public void Create()

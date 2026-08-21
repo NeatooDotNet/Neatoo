@@ -495,7 +495,7 @@ public void ModificationTracking_DetectsChanges()
 public virtual bool IsSavable { get; }
 ```
 
-Entity can be saved when: `IsModified && IsValid && !IsBusy && !IsChild`
+Entity can be saved when: `(IsModified || IsNew) && IsValid && !IsBusy && !IsChild`
 
 `IsSavable` exists on the concrete `EntityBase<T>` class, but is only exposed through the `IEntityRoot` interface -- not through `IEntityBase`. This means child entities (whose interfaces extend `IEntityBase`) never expose `IsSavable` to consumers. Aggregate root interfaces extend `IEntityRoot`, which adds `IsSavable` and `Save()`.
 

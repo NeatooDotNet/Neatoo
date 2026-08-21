@@ -24,8 +24,9 @@ namespace Design.Domain.PropertySystem;
 // - Parent: Reference to parent in object graph
 //
 // EntityBase<T> adds (inherits all ValidateBase properties):
-// - IsNew: Never been persisted (needs Insert)
-// - IsModified: Any property changed (including children)
+// - IsNew: Never been persisted (needs Insert). Routing state only - it does
+//   not make an object modified, and it never aggregates up a graph.
+// - IsModified: Any property changed (including children), or IsDeleted
 // - IsSelfModified: This object's properties changed (excluding children)
 // - IsDeleted: Marked for deletion
 // - IsSavable: Can call Save() successfully
@@ -148,8 +149,11 @@ internal partial class ModificationStateDemo : EntityBase<ModificationStateDemo>
     // =========================================================================
     // IsModified: Aggregates modification from entire object graph.
     //   - True if ANY property changed (this or children)
-    //   - Also true if IsDeleted or IsNew
-    //   - Used for: IsSavable check, UI "unsaved changes" indicator
+    //   - Also true if IsDeleted (deleting is something the user did)
+    //   - NOT true merely because IsNew. A created object needs inserting but
+    //     holds no user work, so discarding it loses nothing. Savability covers
+    //     that case separately via the IsNew term in IsSavable.
+    //   - Used for: UI "unsaved changes" indicator, and one half of IsSavable
     //
     // IsSelfModified: Only this object's direct properties.
     //   - True only if THIS object's properties changed
@@ -236,10 +240,13 @@ internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
     // =========================================================================
     // IsSavable - Can Save() Be Called?
     // =========================================================================
-    // IsSavable = IsModified && IsValid && !IsBusy && !IsChild
+    // IsSavable = (IsModified || IsNew) && IsValid && !IsBusy && !IsChild
     //
-    // All conditions must be true:
-    // - IsModified: Must have changes to persist
+    // A REASON to persist, and nothing blocking it:
+    // - IsModified || IsNew: either it differs from its baseline, or persistence
+    //   does not know it yet. Admitting IsNew is what lets IsModified stay
+    //   honest - a created object is savable because inserting it is meaningful,
+    //   not because it pretends to hold unsaved edits.
     // - IsValid: All validation must pass
     // - !IsBusy: No async operations in progress
     // - !IsChild: Not a child entity (children save through parent)

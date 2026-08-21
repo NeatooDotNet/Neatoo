@@ -145,11 +145,12 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 //
 // DESIGN DECISION: EntityBase<T> extends ValidateBase<T> with persistence tracking.
 // This inheritance means entities get ALL validation capabilities plus:
-// - IsNew: True when object hasn't been persisted yet
-// - IsModified: True when any property changed (including children)
+// - IsNew: True when object hasn't been persisted yet. Routing state only -
+//          it does NOT make the object modified.
+// - IsModified: True when any property changed (including children), or IsDeleted
 // - IsSelfModified: True when THIS object's properties changed (excluding children)
 // - IsDeleted: True when marked for deletion
-// - IsSavable: True when entity can be saved (Modified && Valid && !Busy && !Child)
+// - IsSavable: True when entity can be saved ((Modified || New) && Valid && !Busy && !Child)
 //              Exposed only through IEntityRoot (aggregate root interface)
 // - IsChild: True when part of a parent aggregate (cannot save independently)
 // - Root: Reference to aggregate root
@@ -177,8 +178,14 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 //     -> If IsNew=false: Save() calls [Delete] factory method
 //     -> After success: Object typically discarded
 //
-// Unmodified: IsModified=false
-//     -> IsSavable=false, Save() is no-op
+// Unmodified AND not new: IsModified=false, IsNew=false
+//     -> IsSavable=false, Save() throws SaveOperationException(NotModified)
+//
+// New but untouched: IsNew=true, IsModified=false
+//     -> IsSavable=TRUE. A created object needs inserting even though it holds
+//        no user work; that is why IsSavable admits IsNew and IsModified does
+//        not include it. An unsaved-changes guard bound to IsModified stays
+//        quiet here, which is the point.
 // =============================================================================
 
 /// <summary>
@@ -187,7 +194,7 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 /// Key points:
 /// - Inherits all ValidateBase capabilities (validation, rules, busy tracking)
 /// - Adds IsNew/IsModified/IsDeleted for persistence state
-/// - IsSavable = IsModified &amp;&amp; IsValid &amp;&amp; !IsBusy &amp;&amp; !IsChild
+/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy &amp;&amp; !IsChild
 /// - Save() routes to Insert/Update/Delete based on state
 /// - Child entities (IsChild=true) cannot save independently
 /// </summary>

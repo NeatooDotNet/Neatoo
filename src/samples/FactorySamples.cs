@@ -272,7 +272,7 @@ public partial class SkillFactoryValidatedOrder : EntityBase<SkillFactoryValidat
     [Insert]
     public async Task InsertAsync([Service] ISkillOrderRepository repository)
     {
-        // IsSavable verifies: IsValid && !IsBusy && IsModified && !IsChild
+        // IsSavable verifies: IsValid && !IsBusy && (IsModified || IsNew) && !IsChild
         if (!IsSavable)
         {
             // Validation failed - don't persist
