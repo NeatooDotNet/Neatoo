@@ -78,6 +78,17 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 
 ## Discovery Log
 
+### 2026-08-21 — ISNEW-006 (infrastructure subset pulled forward)
+- **Finding:** Two ISNEW-006 items are verification infrastructure rather than coverage debt —
+  a remote-call counter on the two-container harness (proves a call actually went remote,
+  replacing ISNEW-002's per-test instance-identity proxy) and an explicit parallelization
+  policy for the fixtures that depend on sequential execution. Both strengthen the net
+  ISNEW-004 is verified against, so running them after the flip wastes their value.
+- **Decision:** Re-split — ISNEW-006's infrastructure subset executes before ISNEW-004; its
+  coverage subset stays after (those tests want final semantics).
+- **Index changes:** No plans added or dropped; ISNEW-006 executes in two passes.
+- **Follow-up:** ISNEW-004
+
 ### 2026-08-21 — ISNEW (plan order)
 - **Finding:** ISNEW-006 (test-debt cleanup) queued ahead of ISNEW-004 would produce tests
   written against pre-flip semantics that the flip then invalidates, and several of its items

@@ -55,11 +55,16 @@ public class AggregateSaveLifecycleTests : ClientServerTestBase
         var preSave = invoice;
         var preSaveLine = invoice.Lines[0];
 
+        var remoteCallsBefore = RemoteCallCount;
+
         // Act
         invoice = (IInvoice)await invoice.Save();
 
-        // Assert - the save genuinely crossed the wire: the client is holding
-        // deserialized instances, not the objects it sent
+        // Assert - the save genuinely crossed the wire, proven two ways: the
+        // harness recorded a remote call, and the client is holding deserialized
+        // instances rather than the objects it sent
+        Assert.IsTrue(RemoteCallCount > remoteCallsBefore,
+            "Save must execute remotely - the harness recorded no remote call");
         Assert.AreNotSame(preSave, invoice,
             "Save must round-trip through serialization - the client's post-save root " +
             "should be a different instance than the one it sent");
@@ -123,9 +128,12 @@ public class AggregateSaveLifecycleTests : ClientServerTestBase
         Assert.IsTrue(invoice.IsSavable, "Modified aggregate should be savable");
 
         var preSave = invoice;
+        var remoteCallsBefore = RemoteCallCount;
         invoice = (IInvoice)await invoice.Save();
 
         // Assert - the save crossed the wire
+        Assert.IsTrue(RemoteCallCount > remoteCallsBefore,
+            "Save must execute remotely - the harness recorded no remote call");
         Assert.AreNotSame(preSave, invoice,
             "Save must round-trip through serialization");
 

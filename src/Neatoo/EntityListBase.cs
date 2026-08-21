@@ -218,10 +218,22 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
             // Prevent adding items from a different aggregate
             if (item.Root != null && item.Root != this.Root)
             {
+                // Both aggregates are usually the same TYPE, so naming types alone
+                // produces "belongs to 'Order' but this list belongs to 'Order'",
+                // which reads as a framework bug rather than a boundary violation.
+                var itemRootName = item.Root.GetType().Name;
+                var thisRootName = this.Root?.GetType().Name;
+
+                var boundaryDescription = this.Root == null
+                    ? $"item belongs to a '{itemRootName}' aggregate, but this list is not part of any aggregate yet"
+                    : itemRootName == thisRootName
+                        ? $"item belongs to a different '{itemRootName}' instance than this list"
+                        : $"item belongs to a '{itemRootName}' aggregate, but this list belongs to a '{thisRootName}' aggregate";
+
                 throw new InvalidOperationException(
-                    $"Cannot add {item.GetType().Name} to list: " +
-                    $"item belongs to aggregate '{item.Root.GetType().Name}', " +
-                    $"but this list belongs to aggregate '{this.Root?.GetType().Name ?? "none"}'.");
+                    $"Cannot add {item.GetType().Name} to list: {boundaryDescription}. " +
+                    "Aggregate boundaries cannot be crossed - create a new child in the " +
+                    "target aggregate and remove the original instead.");
             }
 
             // Cast to internal interface for ContainingList access

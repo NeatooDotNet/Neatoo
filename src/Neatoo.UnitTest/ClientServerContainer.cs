@@ -13,6 +13,31 @@ namespace Neatoo.UnitTest
         public IServiceProvider serverProvider { get; set; } = null!;
     }
 
+    /// <summary>
+    /// Counts remote delegate invocations made through the test harness.
+    /// </summary>
+    /// <remarks>
+    /// Two-container tests otherwise have no way to prove a call actually went
+    /// remote: the client and server containers share the process (and, in
+    /// aggregate tests, a static store), so a test would pass identically if
+    /// `[Remote]` were dropped and everything ran in-process. Tests that mean to
+    /// exercise the wire assert against this counter.
+    ///
+    /// Static because the harness resolves a fresh <see cref="MakeRemoteDelegateRequest"/>
+    /// per scope; call <see cref="Reset"/> in TestInitialize.
+    /// </remarks>
+    public static class RemoteCallRecorder
+    {
+        private static int _count;
+
+        /// <summary>Number of remote delegate calls since the last Reset.</summary>
+        public static int Count => _count;
+
+        public static void Reset() => Interlocked.Exchange(ref _count, 0);
+
+        internal static void Record() => Interlocked.Increment(ref _count);
+    }
+
     internal sealed class MakeRemoteDelegateRequest : IMakeRemoteDelegateRequest
     {
         private readonly INeatooJsonSerializer NeatooJsonSerializer;
@@ -27,6 +52,7 @@ namespace Neatoo.UnitTest
         public async Task<T?> ForDelegateNullable<T>(Type delegateType, object?[]? parameters, CancellationToken cancellationToken = default)
         {
             // Mimic all the steps of a Remote call except the actual http call
+            RemoteCallRecorder.Record();
 
             var remoteRequest = NeatooJsonSerializer.ToRemoteDelegateRequest(delegateType, parameters);
 
@@ -59,6 +85,8 @@ namespace Neatoo.UnitTest
         {
             // For events, we simulate the fire-and-forget pattern
             // The server handles in a new scope, but we await acknowledgment
+            RemoteCallRecorder.Record();
+
             var remoteRequest = NeatooJsonSerializer.ToRemoteDelegateRequest(delegateType, parameters);
 
             var json = JsonSerializer.Serialize(remoteRequest);
