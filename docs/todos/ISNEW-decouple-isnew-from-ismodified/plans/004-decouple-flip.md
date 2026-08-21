@@ -3,7 +3,7 @@
 **Plan #:** 004
 **Date:** 2026-08-21
 **Related Todo:** [../todo.md](../todo.md)
-**Status:** In Progress
+**Status:** Done (both gates closed — reviews/004-plan-review.md, 004-test-review.md, 004-code-review.md)
 **Last Updated:** 2026-08-21
 **Plan-review opt-in:** Yes (breaking public-API semantics change at the framework's core; every consumer's save and unsaved-changes logic depends on it)
 **Code-review opt-in:** Yes (library change to the state machinery the whole framework rests on)
@@ -96,29 +96,29 @@ attaching a child must mark it.
 
 ## Acceptance
 
-- [ ] A created object — including one whose factory populated it and its children — reports
+- [x] A created object — including one whose factory populated it and its children — reports
       not-modified while remaining savable, and saving it inserts `[integration]`
-- [ ] A `[Create]` that opts in with `MarkModified()` reports modified, and that survives a
+- [x] A `[Create]` that opts in with `MarkModified()` reports modified, and that survives a
       remote round trip `[integration]`
-- [ ] An unsaved-changes guard bound to modified-state stays quiet on a fresh create and
+- [x] An unsaved-changes guard bound to modified-state stays quiet on a fresh create and
       speaks up after the first real edit `[unit]`
-- [ ] Attaching a new child to a live parent — via a list, via a single-entity child
+- [x] Attaching a new child to a live parent — via a list, via a single-entity child
       property, and via a list-valued child property — makes the parent modified and savable,
       and the child's insert is not skipped by modified-guarded cascades `[integration]`
-- [ ] Attaching a new child and then removing it returns the parent to clean — attach-marking
+- [x] Attaching a new child and then removing it returns the parent to clean — attach-marking
       is reversible, not sticky `[integration]`
-- [ ] Baseline population stays clean: factory-loaded and factory-created children produce a
+- [x] Baseline population stays clean: factory-loaded and factory-created children produce a
       graph that reports not-modified `[integration]`
-- [ ] Lazy-loading a child does not dirty its parent `[integration]`
-- [ ] Post-save the whole graph is clean and a second save is still refused; a created object
+- [x] Lazy-loading a child does not dirty its parent `[integration]`
+- [x] Post-save the whole graph is clean and a second save is still refused; a created object
       that is then deleted still routes correctly `[integration]`
-- [ ] Every test that pinned the welded semantics reports the new semantics, whether or not
+- [x] Every test that pinned the welded semantics reports the new semantics, whether or not
       design.md named it — design.md's list is known incomplete (e.g.
       `Design.Tests/AggregateTests/DeletedListTests.IsModified_TrueWhenNewItemRemoved`, whose
       "New order is always modified" intent the flip deletes outright) `[unit]`
-- [ ] The save guard still reports the *accurate* failure reason for a new-but-busy entity —
+- [x] The save guard still reports the *accurate* failure reason for a new-but-busy entity —
       admitting `IsNew` must not make a busy object report `NotModified` `[unit]`
-- [ ] Build and both suites green `[explicit-skip: meta-bullet, gate run]`
+- [x] Build and both suites green `[explicit-skip: meta-bullet, gate run]`
 
 ---
 
@@ -212,18 +212,39 @@ it passed pre-flip via the weld and passes post-flip via attach-marking).
 | Created object incl. factory-built children: not modified, still savable | `[integration]` | `AggregateSaveLifecycleTests.RichCreate_Untouched_IsSavableFromIsNewAlone_AndSaveInserts`; `Design.Tests EntityBaseTests.Create_SetsIsModifiedFalse_ButStillSavable` | ✓ |
 | `MarkModified()` opt-in create reports modified, survives a round trip | `[integration]` | `DecoupledSemanticsTests.CreateThatIsUserWork_OptsIntoModified_AndItSurvivesTheWire` (asserts `RemoteCallCount` advanced) | ✓ |
 | Unsaved-changes guard quiet on fresh create, speaks after first edit | `[unit]` | `DecoupledSemanticsTests.UnsavedChangesGuard_QuietOnFreshCreate_SpeaksAfterFirstEdit`; `..._QuietImmediatelyAfterSave` (the originating regression) — tier note: written at `[integration]` because the guard's value comes from the real factory/save path, which is stricter than the declared tier | ✓ (stricter) |
-| Attach via list / single-entity property / list-valued property dirties parent; insert not skipped | `[integration]` | `AggregateSaveLifecycleTests.FetchedRoot_AddOneNewChild_IsModifiedAndSavable_AndChildInserts`; `ChildPropertyAttachTests.AssignNewChildToCleanParent_DirtiesParent`; `..._AssignListValuedChildProperty_DirtIsCarriedByItsChildren` | ✓ |
+| Attach via list / single-entity property / list-valued property dirties parent; insert not skipped | `[integration]` | `AggregateSaveLifecycleTests.FetchedRoot_AddOneNewChild_IsModifiedAndSavable_AndChildInserts`; `ChildPropertyAttachTests.AssignNewChildToCleanParent_DirtiesParent`; `..._AssignListValuedChildProperty_DirtIsCarriedByItsChildren` (assign-then-add) and `..._AssignFactoryPopulatedListToLiveParent_DirtiesParent` (populate-then-assign — the case the first implementation regressed; verified failing on revert) | ✓ |
+| Replacing a list element with a new item dirties the list | `[unit]` | `EntityListBaseTests.SetItem_ReplaceWithNewItem_ListBecomesModified` (verified failing on revert) | ✓ |
 | Attach-then-remove returns parent to clean (reversible, not sticky) | `[integration]` | `DecoupledSemanticsTests.AttachThenRemoveNewChild_ReturnsParentToClean`; `Design.Tests DeletedListTests.AddThenRemoveNewItem_LeavesOrderCleanButSavable` | ✓ |
 | Baseline population stays clean | `[integration]` | `ListFactoryStateTests.FetchedGraph_IsCompletelyClean`; `ChildPropertyAttachTests.AssignChildDuringPausedFactoryOperation_LeavesParentClean`; `EntityListBaseTests.Add_WhenPaused_DoesNotMarkModified` | ✓ |
 | Lazy-loading a child does not dirty its parent | `[integration]` | `DecoupledSemanticsTests.LazyLoadingAChild_DoesNotDirtyTheParent`; pre-existing `LazyLoadStatePropagationTests` (green throughout) | ✓ |
-| Post-save clean, second save refused; created-then-deleted routes | `[integration]` | `AggregateSaveLifecycleTests.SavedAggregate_SecondSave_ThrowsNotModified`; `DecoupledSemanticsTests.CreatedThenDeleted_IsStillSavable_AndDeletesNothing` | ✓ |
+| Post-save clean, second save refused; created-then-deleted routes | `[integration]` | `AggregateSaveLifecycleTests.SavedAggregate_SecondSave_ThrowsNotModified`; `DecoupledSemanticsTests.CreatedThenDeleted_IsSavable_AndSaveDeletesNothing` (now actually saves) and `..._FetchedThenDeleted_Save_RoutesToDelete` | ✓ |
 | Every weld-pinned test reports the new semantics | `[unit]` | Updated: `EntityBaseStateTests.IsModified_WhenIsNew_ReturnsFalse`, `.IsSavable_WhenNew_ReturnsTrue`, `.Scenario_NewEntityLifecycle`; `TwoContainerMetaStateTests.Create_TwoContainer_IsModified_ReturnsFalse`, `.Create_ServerSideOnly_IsModified_ReturnsFalse`; `RequiredDuringFactoryTests.RunRules_DuringFactoryInsert_...`; `Design.Tests` `EntityBaseTests` + `DeletedListTests`; samples `ApiReferenceSamples` (×2), `ChangeTrackingSamples` | ✓ |
-| Save guard reports the accurate reason for a new-but-unsavable entity | `[unit]` | `DecoupledSemanticsTests.SaveGuard_ReportsAccurateReason_ForNewButInvalid` | ✓ |
+| Save guard reports the accurate reason for a new-but-**busy** entity | `[unit]` | `EntityBaseStateTests.Save_WhenNewAndBusy_ThrowsIsBusy_NotNotModified` — the only case that makes the guard's `\|\| IsNew` term load-bearing; verified failing on revert. (An earlier evidence row reworded this bullet to "unsavable" and cited a test of *invalidity*, `DecoupledSemanticsTests.SaveGuard_ReportsAccurateReason_ForNewButInvalid`, which never reaches the line. That test is kept — it covers a different, real case.) | ✓ |
 | Build + both suites green | `[explicit-skip]` | `reviews/004-*.log` — solution 2173 passed / 2 pre-existing skips; Design.Tests 116/116 | — |
 
 ---
 
 ## Plan Amendments
+
+### 2026-08-21 — Attach-marking initially covered two of four channels (gate fixes)
+
+- **Section affected:** Step 3, Step 4, Acceptance
+- **Original said:** attach-marking on live list adds and new-child property assignment
+  replaces every channel the removed `IsNew` term provided.
+- **What changed:** two more channels were found regressed by the code-review gate and fixed
+  in the same plan. (a) A **factory-populated list assigned to a live parent** no longer
+  dirtied it — its children were added while paused, so they carry no mark, and post-flip
+  their `IsNew` no longer makes them modified. An assigned list now marks its new children
+  (a list cannot be marked itself). (b) **`SetItem` with a new item** no longer dirtied the
+  list — the cache arithmetic reads `item.IsModified`, which the weld made true for any fresh
+  item — so replacement on a clean root left it unsavable. `SetItem` now marks a new incoming
+  item, reversing the earlier decision to drop it entirely (Amendment 2); everything
+  save-side about `SetItem` remains ISNEW-009's.
+- **Why:** both were regressions this plan introduced, not pre-existing gaps, and the earlier
+  justification for excluding them was factually wrong in both cases. Recorded in
+  `reviews/004-code-review.md` (V1, V2). Both fixes are pinned by tests verified to fail on
+  revert.
+- **Discovery Log link:** 2026-08-21 — ISNEW-004 (gate: two more weld channels)
 
 ### 2026-08-21 — Child-property marking scoped to NEW children (parity, not expansion)
 

@@ -86,16 +86,58 @@ public class ChildPropertyAttachTests
         // not produce dirt. This is the constraint the flip must not violate
         // when it starts marking on assignment.
         var parent = new EntityPerson();
+        var child = CreateNewChild();
         parent.FactoryStart(FactoryOperation.Fetch);
 
-        parent.Child = CreateNewChild();
+        parent.Child = child;
 
         parent.FactoryComplete(FactoryOperation.Fetch);
-        ((IEntityPerson)parent).MarkOld();
-        ((IEntityPerson)parent).MarkUnmodified();
 
+        // Assert BEFORE any Mark* call - otherwise the assertions would be
+        // guaranteed by their own setup rather than by the framework.
+        //
+        // IsModified is the property that matters here: the mark lands on the
+        // CHILD, and a child's dirt reaches the parent only through
+        // EntityProperty.IsModified => IsSelfModified || EntityChild?.IsModified.
+        // It can never surface as parent.IsSelfModified, because the property
+        // deliberately refuses to self-dirty while holding a Neatoo object - so
+        // asserting IsSelfModified alone would pass even if the mark leaked
+        // through the paused guard.
+        Assert.IsFalse(child.IsModified,
+            "A child assigned during a paused factory op must not be marked");
+        Assert.IsFalse(parent.IsModified,
+            "...so the parent stays clean");
         Assert.IsFalse(parent.IsSelfModified,
-            "Factory-op assignment must not self-dirty the parent");
+            "...and the property never self-dirties for a Neatoo child");
+    }
+
+    [TestMethod]
+    public void AssignFactoryPopulatedListToLiveParent_DirtiesParent()
+    {
+        // The channel the first version of the flip missed. A list built by its
+        // own factory operation added its children while PAUSED, so they carry
+        // no attach-mark; post-flip their IsNew no longer makes them modified.
+        // Assigning such a list to a live parent must still dirty it, or the
+        // parent is unsavable and the children's inserts never run - which is
+        // what the weld used to prevent.
+        var parent = CreateFetchedParent();
+        Assert.IsFalse(parent.IsModified, "Precondition: parent starts clean");
+
+        var list = new EntityPersonList();
+        list.FactoryStart(FactoryOperation.Create);
+        list.Add(CreateNewChild());   // paused add - deliberately unmarked
+        list.FactoryComplete(FactoryOperation.Create);
+        Assert.IsFalse(list.IsModified,
+            "Precondition: a factory-populated list is clean on its own");
+
+        // Act - hand the populated list to a live parent
+        parent.ChildList = list;
+
+        // Assert - the new children are marked on attach, so dirt reaches the parent
+        Assert.IsTrue(list.IsModified, "The list's new children are now marked");
+        Assert.IsTrue(parent.IsModified,
+            "Assigning a populated list to a live parent dirties it");
+        Assert.IsTrue(parent.IsSavable, "...and makes it savable");
     }
 
     [TestMethod]

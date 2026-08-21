@@ -70,7 +70,7 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 | 001 | [001-design-domain-lifecycle](./plans/001-design-domain-lifecycle.md) | Design.Domain OrderAggregate to Person-canonical lifecycle | Done |
 | 002 | [002-e2e-save-coverage](./plans/002-e2e-save-coverage.md) | E2E aggregate save lifecycle integration tests | Done |
 | 003 | [003-list-cache-audit](./plans/003-list-cache-audit.md) | List correctness across factory ops (caches + child marking) | Done |
-| 004 | [004-decouple-flip](./plans/004-decouple-flip.md) | The flip: IsModified/IsSavable/attach-marking | In Progress (gates) |
+| 004 | [004-decouple-flip](./plans/004-decouple-flip.md) | The flip: IsModified/IsSavable/attach-marking | Done |
 | 005 | [005-docs-and-release](./plans/005-docs-and-release.md) | Docs, skill, README, release notes, 0.29.0 | Done |
 | 006 | [006-design-tests-tech-debt](./plans/006-design-tests-tech-debt.md) | Design.Tests + harness coverage debt | Done |
 | 007 | [007-entities-demo-lifecycle](./plans/007-entities-demo-lifecycle.md) | Entities demo aggregate (Employee/Address) to canonical | Done |
@@ -80,6 +80,20 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 ---
 
 ## Discovery Log
+
+### 2026-08-21 — ISNEW-004 (gate: two more weld channels)
+- **Finding:** The code-review gate found attach-marking had replaced two of **four** channels
+  the removed `IsNew` term carried. A factory-populated list assigned to a live parent stopped
+  dirtying it (its children were paused-added, so unmarked), and `list[i] = newItem` stopped
+  dirtying the list (the cache reads `item.IsModified`, true via the weld for a fresh item).
+  Both were regressions this plan introduced; the justifications for excluding them were
+  factually wrong. The test gate separately found the guard's `|| IsNew` term unreachable by
+  any test, and two vacuous/mis-scoped assertions in tests I had written.
+- **Decision:** Amend — both channels fixed within this plan and pinned by tests verified
+  failing on revert; `SetItem` partially reversed back in (save-side stays ISNEW-009); the
+  new-but-busy guard test added; vacuous assertions corrected. Records in
+  `reviews/004-code-review.md` and `reviews/004-test-review.md`.
+- **Follow-up:** ISNEW-009
 
 ### 2026-08-21 — ISNEW-004 (RemoveItem notification)
 - **Finding:** The reversibility acceptance bullet exposed a pre-existing bug —

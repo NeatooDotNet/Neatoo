@@ -361,19 +361,27 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
         {
             oldWasModified = this[index].IsModified;
 
-            // SetItem deliberately applies NO attach-marking and NO child identity.
-            // Unlike Add, replacement has never dirtied the graph here, and an
-            // existing test pins that (replacing the only modified item with an
-            // unmodified one leaves the list unmodified) - so marking here would
-            // change a separate, deliberate behavior rather than replace the weld's
-            // job, which is what the IsNew/IsModified split is scoped to.
+            // Mark a NEW incoming item, exactly as InsertItem does. Replacement
+            // DID dirty the graph for new items before the IsNew/IsModified split:
+            // the cache arithmetic below sets _cachedChildrenModified from
+            // item.IsModified, which the weld made true for any fresh item. Without
+            // this, `list[i] = newItem` on a clean fetched root would leave the
+            // aggregate clean and unsavable.
             //
-            // SetItem does have real defects: the DISPLACED item is dropped without
-            // MarkDeleted and without entering DeletedList (silently orphaning its
-            // row), the incoming item gets no IsChild/ContainingList, and none of
-            // Add's guards (duplicate / busy / aggregate boundary) run. All of that
-            // is tracked as ISNEW-009, which changes save-side behavior and needs
-            // its own review and release note.
+            // Scoped to new items for the same reason the child-property mark is:
+            // replacing with an already-persisted, unmodified item did not dirty
+            // the list before and still does not.
+            //
+            // SetItem's other defects are NOT addressed here and are tracked as
+            // ISNEW-009: the DISPLACED item is dropped without MarkDeleted and
+            // without entering DeletedList (silently orphaning its row), the
+            // incoming item gets no IsChild/ContainingList, and none of Add's
+            // guards (duplicate / busy / aggregate boundary) run. Those change
+            // save-side behavior and need their own review and release note.
+            if (item.IsNew)
+            {
+                ((IEntityBaseInternal)item).MarkModified();
+            }
         }
 
         base.SetItem(index, item);

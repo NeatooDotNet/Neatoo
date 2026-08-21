@@ -123,7 +123,10 @@ public class EntityListBaseStateTransitionTests
         // Act
         list.Add(newItem);
 
-        // Assert - adding new item marks list as modified (item.IsNew -> item.IsModified -> list.IsModified)
+        // Assert - adding a new item marks the list modified. The mechanism is
+        // InsertItem -> MarkModified() -> item.IsSelfModified -> list.IsModified.
+        // (It was item.IsNew -> item.IsModified -> list.IsModified before ISNEW-004
+        // removed the IsNew term; the outcome is the same, the chain is not.)
         Assert.IsTrue(newItem.IsNew);
         Assert.IsTrue(list.IsModified);
     }

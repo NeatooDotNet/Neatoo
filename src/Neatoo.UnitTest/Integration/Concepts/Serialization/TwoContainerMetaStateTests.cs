@@ -69,7 +69,7 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
 
     /// <summary>
     /// Verifies that after a Create operation through two containers,
-    /// IsSavable is true (new, modified, valid, not busy, not child).
+    /// IsSavable is true — carried by IsNew, not by modification.
     /// </summary>
     [TestMethod]
     public async Task Create_TwoContainer_IsSavable_ReturnsTrue()
@@ -83,7 +83,10 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
         var entity = factory.Create(id, name);
         await entity.WaitForTasks(); // Ensure validation is complete
 
-        // Assert
+        // Assert - every term of IsSavable, so the test distinguishes the new
+        // formula from the old one rather than passing under both
+        Assert.IsTrue(entity.IsNew, "Entity is new - this is what carries savability");
+        Assert.IsFalse(entity.IsModified, "...and it is NOT modified");
         Assert.IsTrue(entity.IsValid, "Entity should be valid");
         Assert.IsFalse(entity.IsBusy, "Entity should not be busy");
         Assert.IsFalse(entity.IsChild, "Entity should not be a child");

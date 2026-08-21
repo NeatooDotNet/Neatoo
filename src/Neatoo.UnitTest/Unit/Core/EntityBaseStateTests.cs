@@ -41,6 +41,17 @@ public class EntityBaseStateTests
 
         public void Pause() => PauseAllActions();
         public void Resume() => ResumeAllActions();
+
+        /// <summary>
+        /// Makes the entity busy by parking an incomplete task; the returned
+        /// action releases it.
+        /// </summary>
+        public Action MarkBusyForTest()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            RunningTasks.AddTask(tcs.Task);
+            return () => tcs.SetResult(true);
+        }
     }
 
     /// <summary>
@@ -847,6 +858,33 @@ public class EntityBaseStateTests
         // Act & Assert
         var ex = await Assert.ThrowsExactlyAsync<SaveOperationException>(() => entity.Save());
         Assert.AreEqual(SaveFailureReason.NotModified, ex.Reason);
+    }
+
+    [TestMethod]
+    public async Task Save_WhenNewAndBusy_ThrowsIsBusy_NotNotModified()
+    {
+        // This is the ONLY case that makes the `|| IsNew` term in the Save()
+        // guard load-bearing. Reaching that line requires an entity that is
+        // valid, not a child, and unsavable - which means either (a) neither
+        // modified nor new, or (b) busy. Case (a) reports NotModified with or
+        // without the term. Only a NEW, UNMODIFIED, BUSY entity distinguishes
+        // them: without the term it would report NotModified, which is false -
+        // the entity has a reason to persist, it just cannot right now.
+        var entity = CreateEntity();
+        entity.MarkNew();
+        var releaseBusy = entity.MarkBusyForTest();
+
+        Assert.IsTrue(entity.IsNew);
+        Assert.IsFalse(entity.IsModified, "New alone is not modified");
+        Assert.IsTrue(entity.IsBusy);
+        Assert.IsFalse(entity.IsSavable, "Busy blocks saving");
+
+        // Act & Assert
+        var ex = await Assert.ThrowsExactlyAsync<SaveOperationException>(() => entity.Save());
+        Assert.AreEqual(SaveFailureReason.IsBusy, ex.Reason,
+            "A busy new entity is blocked by busyness, not by being unmodified");
+
+        releaseBusy();
     }
 
     [TestMethod]

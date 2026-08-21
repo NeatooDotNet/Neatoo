@@ -21,6 +21,7 @@ public static class SaveLifecycleStore
     // Recorded operations - tests assert which persistence calls actually fired
     public static List<int> InsertedInvoiceIds { get; } = new();
     public static List<int> UpdatedInvoiceIds { get; } = new();
+    public static List<int> DeletedInvoiceIds { get; } = new();
     public static List<int> InsertedLineIds { get; } = new();
     public static List<int> UpdatedLineIds { get; } = new();
     public static List<int> DeletedLineIds { get; } = new();
@@ -36,6 +37,7 @@ public static class SaveLifecycleStore
         InsertedLineIds.Clear();
         UpdatedLineIds.Clear();
         DeletedLineIds.Clear();
+        DeletedInvoiceIds.Clear();
     }
 
     /// <summary>
@@ -89,6 +91,12 @@ public static class SaveLifecycleStore
     {
         Lines.Remove(id);
         DeletedLineIds.Add(id);
+    }
+
+    public static void DeleteInvoice(int id)
+    {
+        Invoices.Remove(id);
+        DeletedInvoiceIds.Add(id);
     }
 
     public static InvoiceRow GetInvoice(int id) => Invoices[id];

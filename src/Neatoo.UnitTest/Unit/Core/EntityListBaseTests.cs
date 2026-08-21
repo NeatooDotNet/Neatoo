@@ -315,6 +315,29 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
+    public void SetItem_ReplaceWithNewItem_ListBecomesModified()
+    {
+        // Replacement dirtied the graph for NEW items before the IsNew/IsModified
+        // split - the cache arithmetic reads item.IsModified, which the weld made
+        // true for any fresh item. Attach-marking has to carry that, or
+        // `list[i] = newItem` on a clean root leaves it unsavable.
+        var list = new TestEntityList();
+        var existing = CreateExistingItem();
+
+        list.IsPaused = true;
+        list.Add(existing);
+        list.ResumeAllActions();
+        existing.MarkUnmodified();
+        Assert.IsFalse(list.IsModified, "Precondition: clean list");
+
+        // Act
+        list[0] = CreateNewItem();
+
+        // Assert
+        Assert.IsTrue(list.IsModified, "Replacing with a new item dirties the list");
+    }
+
+    [TestMethod]
     public void FactoryComplete_AfterPausedAddOfModifiedItem_ListReportsModified()
     {
         // Arrange - the POSITIVE direction of the cached-modified recalculation.

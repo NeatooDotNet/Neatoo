@@ -122,4 +122,20 @@ internal partial class Invoice : EntityBase<Invoice>, IInvoice
 
         lineListFactory.Save(Lines!, Id);
     }
+
+    /// <summary>
+    /// Present so the created-then-deleted path can actually be saved.
+    /// </summary>
+    /// <remarks>
+    /// Without a [Delete] in this signature group the generated routing throws
+    /// NotImplementedException on the IsDeleted branch; with one, it also gains
+    /// the new-and-deleted short-circuit that returns without touching
+    /// persistence. Both behaviors are asserted by DecoupledSemanticsTests.
+    /// </remarks>
+    [Remote]
+    [Delete]
+    internal void Delete()
+    {
+        SaveLifecycleStore.DeleteInvoice(Id);
+    }
 }

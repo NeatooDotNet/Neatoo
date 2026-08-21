@@ -70,20 +70,39 @@ public class EntityProperty<T> : ValidateProperty<T>, IEntityProperty<T>
                 // assignment would change that separate, deliberate behavior; if that
                 // is ever wanted it is its own decision, not a side effect of this one.
                 //
-                // Entity LISTS are excluded and need no mark: a list has no
-                // MarkModified, and does not need one, because its IsModified
-                // aggregates from its children - which are themselves marked as they
-                // are attached (EntityListBase.InsertItem).
+                // A list cannot be marked itself (EntityListBase has no
+                // MarkModified, and IsMarkedModified => false), so an assigned
+                // list is handled by marking its NEW children instead. This is
+                // not redundant with EntityListBase.InsertItem: that only marks
+                // LIVE adds, and a list built by its own factory operation added
+                // its children while paused, so they carry no mark. Without this,
+                // assigning a factory-populated list to a live parent would leave
+                // the parent clean and unsavable and the children's inserts would
+                // never run - which the weld used to prevent.
                 //
                 // Placement matters: this must stay inside the Value branch.
                 // LazyLoadEntityProperty calls base.OnPropertyChanged and then undoes
                 // IsSelfModified; an undo written against IsSelfModified would not
                 // undo a mark on the child. The lazy path is further insulated because
                 // its generated setter assigns via LoadValue, which raises no Value
-                // notification at all.
+                // notification at all, and because EntityLazyLoad implements
+                // IEntityMetaProperties rather than IEntityBaseInternal - so the
+                // pattern matches below simply do not match it.
                 if (this.EntityChild is { IsNew: true } and IEntityBaseInternal childEntity)
                 {
                     childEntity.MarkModified();
+                }
+                else if (this.EntityChild is IEntityListBase childList)
+                {
+                    foreach (var listItem in childList)
+                    {
+                        if (listItem is { } item
+                            && item is IEntityMetaProperties { IsNew: true }
+                            && item is IEntityBaseInternal newChild)
+                        {
+                            newChild.MarkModified();
+                        }
+                    }
                 }
             }
         }

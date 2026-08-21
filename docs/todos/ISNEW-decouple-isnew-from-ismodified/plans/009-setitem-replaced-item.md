@@ -32,6 +32,7 @@ its own plan, its own review, and its own release note rather than riding along 
 semantic flip. The decision should also cover whether `SetItem` picks up the live branch's
 guards (duplicate / busy / aggregate boundary), since a swap currently bypasses all of them.
 
-ISNEW-004 covers only the **incoming** item's attach-mark. Note the incoming item's child
-*identity* (`MarkAsChild`/`SetContainingList`) is arguably ISNEW-003's lane and is still
-missing on both `SetItem` branches — fold that in here.
+ISNEW-004 marks a **new** incoming item — that channel was a regression it introduced and
+fixed (see `reviews/004-code-review.md` V2). Everything else about `SetItem` belongs to this
+plan: the displaced item's disposition, the missing guards, and the incoming item's child
+identity (`MarkAsChild`/`SetContainingList`), which is still absent on both branches.

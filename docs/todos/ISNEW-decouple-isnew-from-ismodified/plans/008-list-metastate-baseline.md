@@ -12,9 +12,9 @@
 
 ## Scope
 
-_Stub — Scope only; flesh out at Step 2. Queued from the ISNEW-003 code review
-(`reviews/003-code-review.md`, callouts 1 and 3), which found both defects pre-existing but
-living in the two methods ISNEW-003 now owns._
+_Stub — Scope only; flesh out at Step 2. Queued from the ISNEW-003 code review, whose
+findings are summarized in `reviews/003-test-review.md` and in the todo Discovery Log. Both
+defects are pre-existing but live in the two methods ISNEW-003 now owns._
 
 Two defects in `EntityListBase`'s factory-completion and removal paths:
 

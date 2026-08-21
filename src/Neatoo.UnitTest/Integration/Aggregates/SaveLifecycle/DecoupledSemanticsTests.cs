@@ -92,6 +92,15 @@ public class DecoupledSemanticsTests : ClientServerTestBase
         Assert.IsTrue(RemoteCallCount > remoteBefore, "Probe crossed the wire");
         Assert.IsTrue(fetched.IsModified,
             "A server-side MarkModified() survives serialization to the client");
+
+        // And the opt-in must CLEAR on save - otherwise every consumer following
+        // this idiom would end up with a permanently dirty aggregate
+        invoice = (IInvoice)await invoice.Save();
+
+        Assert.IsFalse(invoice.IsModified,
+            "The opt-in mark is cleared by MarkUnmodified() at factory completion");
+        Assert.IsFalse(invoice.IsSavable, "Nothing left to save");
+        Assert.AreEqual(1, SaveLifecycleStore.InsertedInvoiceIds.Count);
     }
 
     /// <summary>
@@ -141,13 +150,29 @@ public class DecoupledSemanticsTests : ClientServerTestBase
         Assert.IsFalse(invoice.IsModified,
             "Attach-marking is reversible - the graph is back to its baseline");
         Assert.IsFalse(invoice.IsSavable, "Nothing left to save");
+
+        // Re-attaching dirties it again. This path is newly reachable: dropping
+        // the !IsNew exemption means MarkModified() now runs for new items, and a
+        // removed item keeps its ContainingList, so the upward notification fires
+        // for a state that never triggered it before.
+        invoice.Lines.Add(added);
+        await invoice.WaitForTasks();
+
+        Assert.IsTrue(invoice.IsModified, "Re-attaching dirties the parent again");
+        Assert.IsTrue(invoice.IsSavable);
     }
 
     /// <summary>
-    /// Lazy-loading a child is a load, not user work.
+    /// Reading a fetched graph is not user work.
     /// </summary>
+    /// <remarks>
+    /// Named for what it actually does: <c>Invoice.Lines</c> is a plain property,
+    /// not an <c>EntityLazyLoad</c> wrapper, so this covers graph traversal rather
+    /// than lazy loading. Genuine lazy-load state propagation is covered by the
+    /// pre-existing <c>LazyLoadStatePropagationTests</c>.
+    /// </remarks>
     [TestMethod]
-    public async Task LazyLoadingAChild_DoesNotDirtyTheParent()
+    public async Task ReadingAFetchedGraph_DoesNotDirtyIt()
     {
         var invoiceId = SaveLifecycleStore.SeedInvoice("Lazy Co", ("Consulting", 500.00m));
         var invoice = await _factory.Fetch(invoiceId);
@@ -167,7 +192,7 @@ public class DecoupledSemanticsTests : ClientServerTestBase
     /// factory short-circuits rather than deleting a row that never existed.
     /// </summary>
     [TestMethod]
-    public async Task CreatedThenDeleted_IsStillSavable_AndDeletesNothing()
+    public async Task CreatedThenDeleted_IsSavable_AndSaveDeletesNothing()
     {
         var invoice = _factory.CreateForCustomer("Doomed Co");
         await invoice.WaitForTasks();
@@ -177,8 +202,36 @@ public class DecoupledSemanticsTests : ClientServerTestBase
         Assert.IsTrue(invoice.IsNew, "Never persisted");
         Assert.IsTrue(invoice.IsDeleted);
         Assert.IsTrue(invoice.IsModified, "IsDeleted remains a term in IsModified");
+        Assert.IsTrue(invoice.IsSavable, "...and it is savable - routing decides what happens");
 
-        // Nothing was ever written, so nothing should be deleted
-        Assert.AreEqual(0, SaveLifecycleStore.Invoices.Count);
+        // Act - actually save it. The generated routing checks IsDeleted first,
+        // then short-circuits on IsNew, because deleting a row that was never
+        // written is meaningless. (That short-circuit exists only in a signature
+        // group that HAS a [Delete] - see the ISNEW-007 finding.)
+        await invoice.Save();
+
+        // Assert - the delete was recognised and skipped, not attempted
+        Assert.AreEqual(0, SaveLifecycleStore.DeletedInvoiceIds.Count,
+            "A never-persisted invoice must not be deleted from persistence");
+        Assert.AreEqual(0, SaveLifecycleStore.InsertedInvoiceIds.Count,
+            "...and IsDeleted must win over IsNew, so it is not inserted either");
+    }
+
+    [TestMethod]
+    public async Task FetchedThenDeleted_Save_RoutesToDelete()
+    {
+        // The other half: a persisted root marked for deletion really is deleted
+        var invoiceId = SaveLifecycleStore.SeedInvoice("Real Co", ("Consulting", 500.00m));
+        var invoice = await _factory.Fetch(invoiceId);
+
+        invoice.Delete();
+        Assert.IsTrue(invoice.IsModified, "IsDeleted makes it modified");
+        Assert.IsTrue(invoice.IsSavable);
+
+        await invoice.Save();
+
+        CollectionAssert.AreEqual(new[] { invoiceId }, SaveLifecycleStore.DeletedInvoiceIds);
+        Assert.AreEqual(0, SaveLifecycleStore.UpdatedInvoiceIds.Count,
+            "IsDeleted is checked before IsNew and before Update");
     }
 }
