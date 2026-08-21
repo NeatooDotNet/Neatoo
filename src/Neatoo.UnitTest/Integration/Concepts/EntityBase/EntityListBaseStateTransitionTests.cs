@@ -123,7 +123,10 @@ public class EntityListBaseStateTransitionTests
         // Act
         list.Add(newItem);
 
-        // Assert - adding new item marks list as modified (item.IsNew -> item.IsModified -> list.IsModified)
+        // Assert - adding a new item marks the list modified. The mechanism is
+        // InsertItem -> MarkModified() -> item.IsSelfModified -> list.IsModified.
+        // (It was item.IsNew -> item.IsModified -> list.IsModified before ISNEW-004
+        // removed the IsNew term; the outcome is the same, the chain is not.)
         Assert.IsTrue(newItem.IsNew);
         Assert.IsTrue(list.IsModified);
     }
@@ -355,7 +358,56 @@ public class EntityListBaseStateTransitionTests
     }
 
     [TestMethod]
-    public void Add_Item_WhenPaused_IsChildNotSet()
+    public async Task FactoryComplete_AfterPausedAddOfInvalidItem_ListReportsInvalid()
+    {
+        // Arrange - an item that is ALREADY invalid before it is added. This is
+        // the only window where the cached state can go stale: InsertItem skips
+        // its cache update while paused, and no later PropertyChanged fires to
+        // heal it (HandlePropertyChanged has no pause guard, so an item that
+        // becomes invalid *after* the add updates the cache normally).
+        var list = new EntityPersonList();
+        var invalidItem = new EntityPerson { FirstName = "Error" };
+        await invalidItem.WaitForTasks();
+        Assert.IsFalse(invalidItem.IsValid, "Precondition: item is invalid before the add");
+
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        list.Add(invalidItem);
+        list.FactoryComplete(FactoryOperation.Fetch);
+
+        // Assert - factory completion recalculates cached meta state, so the
+        // list reflects its children. Before ISNEW-003 it resumed without
+        // recalculating and reported the state of an empty list (IsValid=true).
+        Assert.IsFalse(list.IsValid, "A list holding an invalid child is not valid");
+    }
+
+    [TestMethod]
+    public void FactoryComplete_AfterPausedAddOfBusyItem_ListReportsBusy()
+    {
+        // The busy half of the cache fix - mirror of the invalid-item test.
+        // The live add path refuses busy items outright (EntityListBase throws),
+        // which is the framework conceding the scenario is real; the paused path
+        // has no such guard, so a busy item CAN enter a paused list and the
+        // cached IsBusy must reflect it once the operation completes.
+        var list = new EntityPersonList();
+        var busyItem = new EntityPerson();
+        var releaseBusy = ((IEntityPerson)busyItem).MarkBusyForTest();
+        Assert.IsTrue(busyItem.IsBusy, "Precondition: item is busy before the add");
+
+        list.FactoryStart(FactoryOperation.Fetch);
+        list.Add(busyItem);
+        list.FactoryComplete(FactoryOperation.Fetch);
+
+        // Assert - the list reflects its busy child rather than reporting the
+        // state of an empty list
+        Assert.IsTrue(list.IsBusy, "A list holding a busy child is busy");
+
+        releaseBusy();
+    }
+
+    [TestMethod]
+    public void Add_Item_WhenPaused_IsChildIsSet()
     {
         // Arrange
         var aggregateRoot = new EntityPerson { FirstName = "Root" };
@@ -371,8 +423,17 @@ public class EntityListBaseStateTransitionTests
 
         list.FactoryComplete(FactoryOperation.Fetch);
 
-        // Assert - IsChild is NOT set when paused (MarkAsChild is in EntityListBase, skipped when paused)
-        Assert.IsFalse(item.IsChild);
+        // Assert - a child loaded through a factory [Fetch] is a child. Child
+        // identity is baseline-neutral, so it applies on paused adds too; only
+        // the dirt-producing steps are skipped while paused (ISNEW-003;
+        // previously this asserted IsChild stayed false, which meant fetched
+        // children silently bypassed list routing on Delete()).
+        Assert.IsTrue(item.IsChild);
+
+        // Note: this item is dirtied by its own property initializer before the
+        // add, so it cannot show whether the ADD contributed dirt. The paused
+        // add's clean-ness contract is pinned separately, on a clean item, by
+        // EntityListBaseTests.Add_WhenPaused_DoesNotMarkModified.
     }
 
     #endregion

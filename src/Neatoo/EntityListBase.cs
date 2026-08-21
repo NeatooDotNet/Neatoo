@@ -218,10 +218,22 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
             // Prevent adding items from a different aggregate
             if (item.Root != null && item.Root != this.Root)
             {
+                // Both aggregates are usually the same TYPE, so naming types alone
+                // produces "belongs to 'Order' but this list belongs to 'Order'",
+                // which reads as a framework bug rather than a boundary violation.
+                var itemRootName = item.Root.GetType().Name;
+                var thisRootName = this.Root?.GetType().Name;
+
+                var boundaryDescription = this.Root == null
+                    ? $"item belongs to a '{itemRootName}' aggregate, but this list is not part of any aggregate yet"
+                    : itemRootName == thisRootName
+                        ? $"item belongs to a different '{itemRootName}' instance than this list"
+                        : $"item belongs to a '{itemRootName}' aggregate, but this list belongs to a '{thisRootName}' aggregate";
+
                 throw new InvalidOperationException(
-                    $"Cannot add {item.GetType().Name} to list: " +
-                    $"item belongs to aggregate '{item.Root.GetType().Name}', " +
-                    $"but this list belongs to aggregate '{this.Root?.GetType().Name ?? "none"}'.");
+                    $"Cannot add {item.GetType().Name} to list: {boundaryDescription}. " +
+                    "Aggregate boundaries cannot be crossed - create a new child in the " +
+                    "target aggregate and remove the original instead.");
             }
 
             // Cast to internal interface for ContainingList access
@@ -239,10 +251,17 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
                 item.UnDelete();
             }
 
-            if (!item.IsNew)
-            {
-                itemInternal.MarkModified();
-            }
+            // Attaching an item to a LIVE list is a change to this graph, whatever
+            // the item's own persistence state: a new child is work the user will
+            // lose if they walk away, exactly as an existing child moved in is.
+            //
+            // This mark is what carries child state upward now that IsNew is no
+            // longer welded into IsModified. IsNew itself never aggregates - it is
+            // per-object routing state - so without this a user-added new child
+            // would leave its parent clean and unsavable, and modified-guarded save
+            // cascades would skip its insert. Paused adds are baseline population
+            // and are deliberately excluded (see the paused branch below).
+            itemInternal.MarkModified();
 
             itemInternal.MarkAsChild();
 
@@ -257,6 +276,20 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
         }
         else
         {
+            // Paused adds are baseline population: a factory operation loading
+            // its children, or deserialization restoring them. No dirt-producing
+            // step runs here (notably MarkModified), but the child IDENTITY
+            // steps do: being a child of this list is what the object IS, not a
+            // change to it, and both marks are baseline-neutral.
+            //
+            // Without this, children loaded by the canonical list [Fetch] would
+            // have IsChild=false and no ContainingList, so Delete() would
+            // silently bypass list routing. ContainingList also cannot be
+            // serialized, so this is what restores it after deserialization.
+            var pausedItemInternal = (IEntityBaseInternal)item;
+            pausedItemInternal.MarkAsChild();
+            pausedItemInternal.SetContainingList(this);
+
             if (item.IsDeleted)
             {
                 this.DeletedList.Add(item);
@@ -303,6 +336,14 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
         {
             // Removed a modified item, check if any others are still modified
             _cachedChildrenModified = this.Any(c => c.IsModified);
+
+            // Announce it. base.RemoveItem already ran its meta-property check
+            // ABOVE, while this cache was still stale, so without this the list's
+            // IsModified true->false transition is silent - and the parent's own
+            // cached IsModified (refreshed only by a property-changed event) stays
+            // true forever. Symptom: add a child, remove it again, and the
+            // aggregate still claims unsaved changes with nothing to save.
+            this.CheckIfMetaPropertiesChanged();
         }
     }
 
@@ -319,6 +360,28 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
         if (!this.IsPaused)
         {
             oldWasModified = this[index].IsModified;
+
+            // Mark a NEW incoming item, exactly as InsertItem does. Replacement
+            // DID dirty the graph for new items before the IsNew/IsModified split:
+            // the cache arithmetic below sets _cachedChildrenModified from
+            // item.IsModified, which the weld made true for any fresh item. Without
+            // this, `list[i] = newItem` on a clean fetched root would leave the
+            // aggregate clean and unsavable.
+            //
+            // Scoped to new items for the same reason the child-property mark is:
+            // replacing with an already-persisted, unmodified item did not dirty
+            // the list before and still does not.
+            //
+            // SetItem's other defects are NOT addressed here and are tracked as
+            // LIST-002 (carved from ISNEW-009): the DISPLACED item is dropped without MarkDeleted and
+            // without entering DeletedList (silently orphaning its row), the
+            // incoming item gets no IsChild/ContainingList, and none of Add's
+            // guards (duplicate / busy / aggregate boundary) run. Those change
+            // save-side behavior and need their own review and release note.
+            if (item.IsNew)
+            {
+                ((IEntityBaseInternal)item).MarkModified();
+            }
         }
 
         base.SetItem(index, item);

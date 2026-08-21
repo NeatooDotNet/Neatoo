@@ -585,7 +585,7 @@ Meta-property definitions:
 - **IsSelfValid**: True if this object's properties pass validation (ignores children)
 - **IsBusy**: True if any async validation tasks are running
 - **PropertyMessages**: Collection of ALL validation messages (this object + children)
-- **IsSavable**: (`IEntityRoot` only) True if IsModified && IsValid && !IsBusy && !IsChild. Not available on `IEntityBase` (child entity interface) or entity lists
+- **IsSavable**: (`IEntityRoot` only) True if (IsModified || IsNew) && IsValid && !IsBusy && !IsChild — a created entity is savable without being modified. Not available on `IEntityBase` (child entity interface) or entity lists
 
 Meta-properties fire PropertyChanged events when their values change, enabling UI binding for save button enablement and validation indicators.
 
@@ -608,7 +608,7 @@ public async Task ValidateBeforeSave_IsSavableCheck()
     // Set invalid quantity (negative to trigger validation)
     order.Quantity = -5;
 
-    // IsSavable combines IsModified, IsValid, and IsBusy
+    // IsSavable combines a reason to persist (IsModified or IsNew) with IsValid and !IsBusy
     Assert.False(order.IsSavable); // Invalid due to negative quantity
 
     // Fix the value

@@ -49,6 +49,61 @@ public class EntityProperty<T> : ValidateProperty<T>, IEntityProperty<T>
                     OnPropertyChanged(nameof(IsSelfModified));
                     OnPropertyChanged(nameof(IsModified));
                 }
+
+                // Attaching a child ENTITY to a live parent property is a change to
+                // this graph, so mark the child. IsModified for this property is
+                // `IsSelfModified || EntityChild?.IsModified`, and the property never
+                // self-dirties while holding a Neatoo object - so the child's own dirt
+                // is the only channel by which the parent learns anything happened.
+                //
+                // Before the IsNew/IsModified split this worked by accident: a newly
+                // created child reported modified because IsNew was welded into
+                // IsModified. With that term gone, the mark is what preserves the
+                // behavior - otherwise assigning a new child would leave the parent
+                // clean and unsavable.
+                //
+                // Scope: NEW children only, which is exact parity with what the weld
+                // dirtied here. Assigning an already-persisted, unmodified child does
+                // NOT dirty the parent, and did not before - `IsModified` for a
+                // property that HOLDS an unmodified child is false by derivation, an
+                // invariant covered by its own tests. Widening the mark to every
+                // assignment would change that separate, deliberate behavior; if that
+                // is ever wanted it is its own decision, not a side effect of this one.
+                //
+                // A list cannot be marked itself (EntityListBase has no
+                // MarkModified, and IsMarkedModified => false), so an assigned
+                // list is handled by marking its NEW children instead. This is
+                // not redundant with EntityListBase.InsertItem: that only marks
+                // LIVE adds, and a list built by its own factory operation added
+                // its children while paused, so they carry no mark. Without this,
+                // assigning a factory-populated list to a live parent would leave
+                // the parent clean and unsavable and the children's inserts would
+                // never run - which the weld used to prevent.
+                //
+                // Placement matters: this must stay inside the Value branch.
+                // LazyLoadEntityProperty calls base.OnPropertyChanged and then undoes
+                // IsSelfModified; an undo written against IsSelfModified would not
+                // undo a mark on the child. The lazy path is further insulated because
+                // its generated setter assigns via LoadValue, which raises no Value
+                // notification at all, and because EntityLazyLoad implements
+                // IEntityMetaProperties rather than IEntityBaseInternal - so the
+                // pattern matches below simply do not match it.
+                if (this.EntityChild is { IsNew: true } and IEntityBaseInternal childEntity)
+                {
+                    childEntity.MarkModified();
+                }
+                else if (this.EntityChild is IEntityListBase childList)
+                {
+                    foreach (var listItem in childList)
+                    {
+                        if (listItem is { } item
+                            && item is IEntityMetaProperties { IsNew: true }
+                            && item is IEntityBaseInternal newChild)
+                        {
+                            newChild.MarkModified();
+                        }
+                    }
+                }
             }
         }
     }

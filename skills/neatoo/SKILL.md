@@ -240,12 +240,12 @@ The coupling concerns DDD raises are real — they apply to coupling *across* ag
 
 | Property | Type | Meaning |
 |----------|------|---------|
-| `IsModified` | bool | Needs persistence: `PropertyManager.IsModified \|\| IsDeleted \|\| IsNew \|\| IsSelfModified`. True after Create (because IsNew), false after Fetch. |
-| `IsSelfModified` | bool | This object's own properties changed (excludes children, excludes IsNew) |
+| `IsModified` | bool | Differs from the baseline the factory op left — would discarding it lose work? `PropertyManager.IsModified \|\| IsDeleted \|\| IsSelfModified`. **Does NOT include `IsNew`**: false after Create, false after Fetch. |
+| `IsSelfModified` | bool | This object's own properties changed (excludes children) |
 | `IsValid` | bool | This object and all children pass validation |
 | `IsSelfValid` | bool | This object (only) passes validation |
-| `IsSavable` | bool | `IsValid && IsModified && !IsBusy && !IsChild` |
-| `IsNew` | bool | Not yet persisted. Set true by Create, set false by Fetch/Insert. Implies `IsModified`. |
+| `IsSavable` | bool | `(IsModified \|\| IsNew) && IsValid && !IsBusy && !IsChild` |
+| `IsNew` | bool | Not yet persisted. Set true by Create, false by Fetch/Insert. Routing state only — it does **not** imply `IsModified`; a created object is savable but not modified. |
 | `IsDeleted` | bool | Marked for deletion |
 | `RuleManager` | IRuleManager | Access to validation rules |
 
@@ -385,4 +385,26 @@ Detailed documentation for each topic area:
 
 ## Troubleshooting
 
-See `references/pitfalls.md` for common issues. Key quick checks: class and properties must be `partial`, class needs `[Factory]` attribute, and `IsSavable` requires both `IsValid` and `IsModified`.
+See `references/pitfalls.md` for common issues. Key quick checks: class and properties must be `partial`, class needs `[Factory]` attribute, and `IsSavable` requires `IsValid` plus a reason to persist (`IsModified` **or** `IsNew`).
+
+## IsNew vs IsModified
+
+They answer different questions, and Neatoo keeps them separate:
+
+- **`IsModified`** — "would discarding this lose work?" Drives unsaved-changes guards.
+- **`IsNew`** — "does persistence not know this yet?" Drives Insert-vs-Update routing.
+
+A created entity is `IsNew=true, IsModified=false, IsSavable=true`: it needs inserting, but holds no user work, so guards bound to `IsModified` stay quiet on it — including on a freshly re-derived object after a save.
+
+```csharp
+// Guards read naturally
+if (order.IsModified) { /* warn before navigating away */ }
+
+// A [Create] that IS the user's work says so
+[Create]
+public void Create() { MarkModified(); }
+```
+
+**COMMON MISTAKE:** calling `MarkModified()` in a `[Create]` so the entity can be saved. New entities are already savable — `IsSavable` admits `IsNew`. Using it that way re-welds the two meanings and makes guards cry wolf on every new object.
+
+**`IsNew` never aggregates.** It is per-object routing state; lists report `IsNew => false` and a parent's `IsNew` ignores its children. What flows up a graph is modification state — which is why attaching a child to a live parent (list add, or assigning a new child to a property) marks the child modified, so the parent becomes modified and savable.

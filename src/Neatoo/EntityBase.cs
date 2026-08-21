@@ -149,14 +149,36 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     public virtual bool IsMarkedModified { get; protected set; } = false;
 
     /// <summary>
-    /// Gets a value indicating whether this entity or any child entities have been modified.
+    /// Gets a value indicating whether this entity or any child entities differ from the
+    /// baseline the last factory operation left them in.
     /// </summary>
-    /// <value><c>true</c> if any property has changed, the entity is new, deleted, or explicitly marked modified; otherwise, <c>false</c>.</value>
+    /// <value><c>true</c> if any property has changed, the entity is deleted, or it has been explicitly marked modified; otherwise, <c>false</c>.</value>
     /// <remarks>
-    /// LazyLoad child modification is now tracked through PropertyManager via
+    /// <para>
+    /// <b>IsModified answers "would discarding this lose work?"</b> - it drives
+    /// unsaved-changes guards. <see cref="IsNew"/> answers a different question, "does
+    /// persistence not know this object yet?", and drives insert-vs-update routing.
+    /// Savability needs <em>either</em> (see <see cref="IsSavable"/>), which is why IsNew is
+    /// deliberately NOT a term here: an untouched new object is savable (inserting it is
+    /// meaningful) but not modified (walking away loses nothing).
+    /// </para>
+    /// <para>
+    /// A <c>[Create]</c> whose result <em>is</em> the user's work - a "New" button rather
+    /// than a derived default - declares that by calling <see cref="MarkModified"/> in its
+    /// body. Calling it merely to make an object savable is a mistake; new objects are
+    /// already savable.
+    /// </para>
+    /// <para>
+    /// It is dirt, never <see cref="IsNew"/>, that aggregates up an object graph. That is
+    /// why attaching a child to a live parent marks the child modified - see
+    /// EntityListBase.InsertItem and EntityProperty.OnPropertyChanged.
+    /// </para>
+    /// <para>
+    /// LazyLoad child modification is tracked through PropertyManager via
     /// LazyLoadEntityProperty subclasses that look through to the inner entity's IsModified.
+    /// </para>
     /// </remarks>
-    public virtual bool IsModified => this.PropertyManager.IsModified || this.IsDeleted || this.IsNew || this.IsSelfModified;
+    public virtual bool IsModified => this.PropertyManager.IsModified || this.IsDeleted || this.IsSelfModified;
 
     /// <summary>
     /// Gets or sets a value indicating whether this entity's own properties have been modified.
@@ -167,11 +189,21 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// <summary>
     /// Gets a value indicating whether this entity can be saved.
     /// </summary>
-    /// <value><c>true</c> if the entity is modified, valid, not busy, and not a child entity; otherwise, <c>false</c>.</value>
+    /// <value><c>true</c> if the entity is modified <em>or</em> new, and is valid, not busy, and not a child entity; otherwise, <c>false</c>.</value>
     /// <remarks>
-    /// Child entities cannot be saved independently; they must be saved through their parent aggregate root.
+    /// <para>
+    /// Savability needs <b>either</b> reason to persist: the object differs from its baseline
+    /// (<see cref="IsModified"/>), or persistence does not know it yet (<see cref="IsNew"/>).
+    /// Admitting IsNew here is what lets IsModified stay honest - it is the reason the
+    /// framework does not have to claim a freshly created object is "modified" just to keep
+    /// a Save button enabled.
+    /// </para>
+    /// <para>
+    /// Child entities cannot be saved independently; they must be saved through their parent
+    /// aggregate root. This property is exposed only on IEntityRoot.
+    /// </para>
     /// </remarks>
-    public virtual bool IsSavable => this.IsModified && this.IsValid && !this.IsBusy && !this.IsChild;
+    public virtual bool IsSavable => (this.IsModified || this.IsNew) && this.IsValid && !this.IsBusy && !this.IsChild;
 
     /// <summary>
     /// Gets or sets a value indicating whether this is a new entity that has not been persisted.
@@ -326,6 +358,12 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// <remarks>
     /// New entities will trigger an Insert operation when saved.
     /// This is typically called automatically after a Create factory operation.
+    /// <para>
+    /// This is pure routing state - it says nothing about modification. A created object is
+    /// savable because <see cref="IsSavable"/> admits <see cref="IsNew"/>, not because it
+    /// claims to be modified. A <c>[Create]</c> that represents actual user work opts into
+    /// dirt by calling <see cref="MarkModified"/> in its body.
+    /// </para>
     /// </remarks>
     protected virtual void MarkNew()
     {
@@ -447,7 +485,10 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
             {
                 throw new SaveOperationException(SaveFailureReason.IsInvalid);
             }
-            if (!(this.IsModified || this.IsSelfModified))
+            // A new object has a reason to persist even with no modifications,
+            // so NotModified is only accurate when it is neither. (IsSelfModified
+            // is subsumed by IsModified and no longer tested separately.)
+            if (!(this.IsModified || this.IsNew))
             {
                 throw new SaveOperationException(SaveFailureReason.NotModified);
             }

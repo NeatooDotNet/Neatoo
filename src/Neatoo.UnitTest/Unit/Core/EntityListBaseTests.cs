@@ -296,7 +296,7 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
-    public void Add_WhenPaused_DoesNotMarkAsChild()
+    public void Add_WhenPaused_MarksAsChild()
     {
         // Arrange
         var list = new TestEntityList();
@@ -306,8 +306,85 @@ public class EntityListBaseTests
         // Act
         list.Add(item);
 
+        // Assert - child identity is baseline-neutral state, applied on every
+        // add. Paused adds skip the dirt-producing steps (MarkModified), not
+        // the identity ones: a child loaded by a factory [Fetch] is still a
+        // child, and without this Delete() would bypass list routing (ISNEW-003;
+        // previously this asserted IsChild stayed false).
+        Assert.IsTrue(item.IsChild);
+    }
+
+    [TestMethod]
+    public void SetItem_ReplaceWithNewItem_ListBecomesModified()
+    {
+        // Replacement dirtied the graph for NEW items before the IsNew/IsModified
+        // split - the cache arithmetic reads item.IsModified, which the weld made
+        // true for any fresh item. Attach-marking has to carry that, or
+        // `list[i] = newItem` on a clean root leaves it unsavable.
+        var list = new TestEntityList();
+        var existing = CreateExistingItem();
+
+        list.IsPaused = true;
+        list.Add(existing);
+        list.ResumeAllActions();
+        existing.MarkUnmodified();
+        Assert.IsFalse(list.IsModified, "Precondition: clean list");
+
+        // Act
+        list[0] = CreateNewItem();
+
         // Assert
-        Assert.IsFalse(item.IsChild);
+        Assert.IsTrue(list.IsModified, "Replacing with a new item dirties the list");
+    }
+
+    [TestMethod]
+    public void FactoryComplete_AfterPausedAddOfModifiedItem_ListReportsModified()
+    {
+        // Arrange - the POSITIVE direction of the cached-modified recalculation.
+        // InsertItem skips its cache update while paused, so before ISNEW-003
+        // routed FactoryComplete through ResumeAllActions, _cachedChildrenModified
+        // stayed at its initial false for every Fetch and Create - a list holding
+        // a modified child reported IsModified=false.
+        //
+        // This is also the ISNEW-004 baseline: once IsNew is decoupled from
+        // IsModified, a list holding only NEW children reports false again,
+        // while a list holding a genuinely edited child (this test) stays true.
+        var list = new TestEntityList();
+        var item = CreateExistingItem();
+        item.Name = "Edited";
+        Assert.IsTrue(item.IsModified, "Precondition: item is modified before the add");
+
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        list.Add(item);
+        list.FactoryComplete(FactoryOperation.Fetch);
+
+        // Assert
+        Assert.IsTrue(list.IsModified, "A list holding a modified child is modified");
+    }
+
+    [TestMethod]
+    public void Add_WhenPaused_DoesNotMarkModified()
+    {
+        // Arrange - the other half of the paused-add contract: identity yes,
+        // dirt no. An existing item added while paused must stay clean, which
+        // is what keeps a factory [Fetch] baseline-clean.
+        var list = new TestEntityList();
+        list.IsPaused = true;
+        var item = CreateExistingItem();
+
+        // Act
+        list.Add(item);
+
+        // Assert - during the paused window...
+        Assert.IsFalse(item.IsModified, "A paused add must not dirty the item");
+        Assert.IsFalse(list.IsModified, "A paused add must not dirty the list");
+
+        // ...and the resume must not manufacture dirt either
+        list.FactoryComplete(FactoryOperation.Fetch);
+        Assert.IsFalse(item.IsModified, "Factory completion must not dirty the item");
+        Assert.IsFalse(list.IsModified, "Factory completion must not dirty the list");
     }
 
     [TestMethod]

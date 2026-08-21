@@ -41,14 +41,19 @@ public class EntityBaseTests
     }
 
     [TestMethod]
-    public void Create_SetsIsModifiedTrue()
+    public void Create_SetsIsModifiedFalse_ButStillSavable()
     {
         // Arrange & Act
         var entity = _factory.Create();
 
-        // Assert
-        // New entities are considered modified (they need to be inserted)
-        Assert.IsTrue(entity.IsModified, "New entity should have IsModified=true");
+        // Assert - IsNew and IsModified answer different questions. A created
+        // entity needs inserting (IsNew), but holds no user work (not modified),
+        // so unsaved-changes guards stay quiet on it. Savability comes from the
+        // IsNew term. A [Create] that IS the user's work opts in with
+        // MarkModified() in its body.
+        Assert.IsTrue(entity.IsNew, "New entity should have IsNew=true");
+        Assert.IsFalse(entity.IsModified, "New entity holds no user work");
+        Assert.IsTrue(entity.IsSavable, "...but it is savable, so the Insert can happen");
     }
 
     [TestMethod]

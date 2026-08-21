@@ -570,8 +570,14 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// Resumes rule execution after the factory operation finishes.
     /// </summary>
     /// <param name="factoryOperation">The type of factory operation that was performed.</param>
+    /// <remarks>
+    /// Resumes through <see cref="ResumeAllActions"/> rather than clearing
+    /// <see cref="IsPaused"/> directly: items added while paused do not update the cached
+    /// meta state (see InsertItem), so the caches must be recalculated on the way out or a
+    /// list populated by its own factory operation reports the state of an empty list.
+    /// </remarks>
     public virtual void FactoryComplete(FactoryOperation factoryOperation)
     {
-        this.IsPaused = false;
+        this.ResumeAllActions();
     }
 }

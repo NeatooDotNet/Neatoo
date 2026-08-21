@@ -216,9 +216,9 @@ public class ContainingListTests
     }
 
     [TestMethod]
-    public void ContainingList_WhenPaused_NotSet()
+    public void ContainingList_WhenPaused_IsSet()
     {
-        // Arrange - Paused mode (deserialization)
+        // Arrange - Paused mode (factory fetch / deserialization)
         var list = new EntityPersonList();
         list.FactoryStart(FactoryOperation.Fetch);
 
@@ -227,9 +227,13 @@ public class ContainingListTests
         // Act
         list.Add(item);
 
-        // Assert - ContainingList not set when paused
+        // Assert - ContainingList IS set on paused adds. It is baseline-neutral
+        // ownership state, it cannot be serialized (not public, not on the
+        // interface), and Delete() routing depends on it - so the paused add
+        // path is the only place it can be established for fetched and
+        // deserialized children (ISNEW-003; previously asserted null).
         var itemInternal = (IEntityBaseInternal)item;
-        Assert.IsNull(itemInternal.ContainingList);
+        Assert.AreSame(list, itemInternal.ContainingList);
 
         list.FactoryComplete(FactoryOperation.Fetch);
     }

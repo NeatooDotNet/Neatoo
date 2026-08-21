@@ -45,10 +45,11 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
 
     /// <summary>
     /// Verifies that after a Create operation through two containers,
-    /// IsModified is true (new entities are considered modified).
+    /// IsModified is false — a created entity is new, not modified — and that
+    /// this state survives the serialization boundary.
     /// </summary>
     [TestMethod]
-    public void Create_TwoContainer_IsModified_ReturnsTrue()
+    public void Create_TwoContainer_IsModified_ReturnsFalse()
     {
         // Arrange
         var factory = GetClientService<IEntityObjectFactory>();
@@ -58,13 +59,17 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
         // Act
         var entity = factory.Create(id, name);
 
-        // Assert
-        Assert.IsTrue(entity.IsModified, "Entity should be modified after Create operation (new entities are modified)");
+        // Assert - the factory populates this entity, but factory-op writes run
+        // paused, so no user work is recorded. IsNew carries savability instead.
+        // (Before the ISNEW split this asserted true, via the weld.)
+        Assert.IsTrue(entity.IsNew, "Created entity is new");
+        Assert.IsFalse(entity.IsModified,
+            "A created entity is not modified - and that survives the wire");
     }
 
     /// <summary>
     /// Verifies that after a Create operation through two containers,
-    /// IsSavable is true (new, modified, valid, not busy, not child).
+    /// IsSavable is true — carried by IsNew, not by modification.
     /// </summary>
     [TestMethod]
     public async Task Create_TwoContainer_IsSavable_ReturnsTrue()
@@ -78,7 +83,10 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
         var entity = factory.Create(id, name);
         await entity.WaitForTasks(); // Ensure validation is complete
 
-        // Assert
+        // Assert - every term of IsSavable, so the test distinguishes the new
+        // formula from the old one rather than passing under both
+        Assert.IsTrue(entity.IsNew, "Entity is new - this is what carries savability");
+        Assert.IsFalse(entity.IsModified, "...and it is NOT modified");
         Assert.IsTrue(entity.IsValid, "Entity should be valid");
         Assert.IsFalse(entity.IsBusy, "Entity should not be busy");
         Assert.IsFalse(entity.IsChild, "Entity should not be a child");
@@ -261,11 +269,11 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
     }
 
     /// <summary>
-    /// DIAGNOSTIC: Checks if IsModified is already true on the SERVER side
-    /// after Create operation.
+    /// DIAGNOSTIC: Confirms the created state is the same server-side as it is
+    /// after crossing the wire — i.e. the boundary is not what produces it.
     /// </summary>
     [TestMethod]
-    public void Create_ServerSideOnly_IsModified_ReturnsTrue()
+    public void Create_ServerSideOnly_IsModified_ReturnsFalse()
     {
         // Arrange - Use SERVER scope directly
         var factory = GetServerService<IEntityObjectFactory>();
@@ -275,9 +283,10 @@ public class TwoContainerMetaStateTests : ClientServerTestBase
         // Act - Create directly on server
         var entity = factory.Create(id, name);
 
-        // Assert - Create should result in IsNew=true, IsModified=true
+        // Assert - Create yields IsNew=true, IsModified=false on both sides
         Assert.IsTrue(entity.IsNew, "Server-side entity should be new after Create");
-        Assert.IsTrue(entity.IsModified, "Server-side entity should be modified after Create");
+        Assert.IsFalse(entity.IsModified,
+            "Server-side entity is not modified after Create (was true pre-ISNEW, via the weld)");
     }
 
     #endregion

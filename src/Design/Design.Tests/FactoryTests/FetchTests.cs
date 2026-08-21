@@ -73,5 +73,13 @@ public class FetchTests
         // Assert
         Assert.IsNotNull(parent.Items);
         Assert.AreEqual(2, parent.Items.Count, "Should load 2 child items");
+
+        // Children loaded through their own [Fetch] carry correct persistence
+        // state - the Create()+LoadValue shape produced IsNew=true here
+        foreach (var child in parent.Items)
+        {
+            Assert.IsFalse(child.IsNew, $"Fetched child {child.Id} should not be new");
+            Assert.IsFalse(child.IsModified, $"Fetched child {child.Id} should not be modified");
+        }
     }
 }

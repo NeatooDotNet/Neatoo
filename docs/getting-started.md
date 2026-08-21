@@ -186,7 +186,7 @@ Entity state tracking properties:
 - `IsNew` - True for newly created entities that have not been persisted
 - `IsModified` - True if any property has changed since load/save (cascades from children)
 - `IsDeleted` - True if marked for deletion
-- `IsSavable` - Computed property: true if `IsModified && IsValid && !IsBusy && !IsChild`. Only accessible through the `IEntityRoot` interface (aggregate roots), not `IEntityBase` (child entities)
+- `IsSavable` - Computed property: true if `(IsModified || IsNew) && IsValid && !IsBusy && !IsChild` — a created entity is savable without being modified. Only accessible through the `IEntityRoot` interface (aggregate roots), not `IEntityBase` (child entities)
 
 The `[Fetch]` attribute marks a data access method. RemoteFactory generates a factory interface (`IEmployeeEntityFactory`) with a corresponding `FetchAsync(int id)` method that resolves the repository from DI and calls your method. The `[Service]` attribute indicates the parameter should be injected from the service provider.
 

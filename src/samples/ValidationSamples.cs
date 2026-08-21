@@ -836,7 +836,7 @@ public class ValidationSamplesTests : SamplesTestBase
         // Set invalid quantity (negative to trigger validation)
         order.Quantity = -5;
 
-        // IsSavable combines IsModified, IsValid, and IsBusy
+        // IsSavable combines a reason to persist (IsModified or IsNew) with IsValid and !IsBusy
         Assert.False(order.IsSavable); // Invalid due to negative quantity
 
         // Fix the value

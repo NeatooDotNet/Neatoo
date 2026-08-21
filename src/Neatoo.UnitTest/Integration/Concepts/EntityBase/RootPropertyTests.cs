@@ -161,7 +161,10 @@ public class RootPropertyTests
         Assert.AreEqual(aggregate1, item.Root);
         var exception = Assert.ThrowsExactly<InvalidOperationException>(() => list2.Add(item));
         Assert.IsTrue(exception.Message.Contains("Cannot add"));
-        Assert.IsTrue(exception.Message.Contains("belongs to aggregate"));
+        // Both aggregates here are EntityPerson, so the message must distinguish
+        // them by instance rather than by type name (ISNEW-006)
+        Assert.IsTrue(exception.Message.Contains("different"),
+            $"Message should distinguish the two aggregates: {exception.Message}");
     }
 
     [TestMethod]

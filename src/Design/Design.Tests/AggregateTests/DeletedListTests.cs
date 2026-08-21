@@ -4,10 +4,10 @@
 // Tests demonstrating DeletedList behavior in EntityListBase including
 // item removal, new item handling, and modification tracking.
 //
-// NOTE: These tests focus on new item behavior since the Design.Domain
-// Order entity does not expose methods to mark items as Old. For full
-// DeletedList testing with existing items, see Neatoo.UnitTest which uses
-// test entities that expose MarkOld/MarkUnmodified.
+// NOTE: These tests focus on new (created) item behavior. Existing-item
+// flows - fetched children (IsNew=false) removed and persisted - are covered
+// by AggregateLifecycleTests, which fetch through the canonical list/item
+// [Fetch] chain.
 // -----------------------------------------------------------------------------
 
 using Design.Domain.Aggregates.OrderAggregate;
@@ -122,17 +122,27 @@ public class DeletedListTests
     }
 
     [TestMethod]
-    public void IsModified_TrueWhenNewItemRemoved()
+    public void AddThenRemoveNewItem_LeavesOrderCleanButSavable()
     {
         // Arrange
         var order = _orderFactory.Create();
         var item = _itemFactory.Create("Widget", 1, 10.00m);
         order.Items!.Add(item);
+        Assert.IsTrue(order.IsModified, "Attaching a child dirties the aggregate");
 
-        // Act
+        // Act - remove it again. A never-persisted child is discarded, not queued
         order.Items.Remove(item);
 
-        // Assert - Order is still modified (it's new)
-        Assert.IsTrue(order.IsModified, "New order is always modified");
+        // Assert - the add is fully undone: nothing was persisted, nothing is
+        // pending, so there is no user work left to lose. The order is still
+        // NEW, so it remains savable.
+        //
+        // Before the ISNEW split this asserted "New order is always modified",
+        // which was the weld speaking - IsNew was a term in IsModified, so a
+        // created aggregate could never report clean no matter what was undone.
+        Assert.AreEqual(0, order.Items.DeletedCount, "Nothing queued for deletion");
+        Assert.IsFalse(order.IsModified, "The add was undone - no work remains");
+        Assert.IsTrue(order.IsNew, "...but the order itself is still unpersisted");
+        Assert.IsTrue(order.IsSavable, "...and therefore still savable");
     }
 }

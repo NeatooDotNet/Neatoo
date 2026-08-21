@@ -182,7 +182,7 @@ public static class SkillRemoteFactoryStateSamples
     /// </summary>
     public static async Task<bool> CheckSavableBeforeSave(SkillRfIntegrationRoot entity)
     {
-        // IsSavable = IsModified && IsValid && !IsBusy && !IsChild
+        // IsSavable = (IsModified || IsNew) && IsValid && !IsBusy && !IsChild
         if (!entity.IsSavable)
         {
             // Don't persist - one or more conditions failed:

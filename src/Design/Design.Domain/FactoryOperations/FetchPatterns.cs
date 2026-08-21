@@ -66,23 +66,18 @@ internal partial class FetchDemo : EntityBase<FetchDemo>, IFetchDemo
     // =========================================================================
     // The most common pattern - load a single entity by ID.
     //
-    // DESIGN DECISION: Use LoadValue() inside Fetch, not property setters.
-    // LoadValue() sets the value WITHOUT marking the property as modified.
-    // After Fetch, the entity should be IsModified=false (unchanged from DB).
+    // GENERATOR BEHAVIOR: instance factory methods run inside
+    // FactoryStart/FactoryComplete - the object is PAUSED for the duration of
+    // the method body. While paused, plain property setters also load cleanly
+    // (no modification tracking, no rules).
     //
-    // COMMON MISTAKE: Using property setters in Fetch.
-    //
-    // WRONG:
-    //   [Fetch]
-    //   public void Fetch(int id, [Service] IRepo repo) {
-    //       Name = repo.Get(id).Name;  // IsModified becomes true!
-    //   }
-    //
-    // RIGHT:
-    //   [Fetch]
-    //   public void Fetch(int id, [Service] IRepo repo) {
-    //       this["Name"].LoadValue(repo.Get(id).Name);  // IsModified stays false
-    //   }
+    // DESIGN DECISION: Use LoadValue() for loads anyway. LoadValue() is the
+    // explicit load primitive: it never marks the property modified and never
+    // fires rules, REGARDLESS of pause state. That matters for [Create]
+    // CONSTRUCTORS (read-style lifecycle - the constructor body runs before
+    // the factory pause exists) and for any load code that runs outside a
+    // factory operation. Using LoadValue consistently means load code never
+    // depends on knowing whether it happens to be paused.
     // =========================================================================
     [Remote]
     [Fetch]
@@ -117,28 +112,19 @@ internal partial class FetchDemo : EntityBase<FetchDemo>, IFetchDemo
     }
 
     // =========================================================================
-    // Pattern 3: Fetch with PauseAllActions
+    // Pattern 3 (RETIRED): Explicit PauseAllActions inside a factory method
     // =========================================================================
-    // Using PauseAllActions() prevents rules from firing during load.
-    // This is optional but can improve performance for complex objects.
+    // COMMON MISTAKE: Wrapping a factory method body in
+    // `using (PauseAllActions())`. The factory operation already pauses the
+    // object (FactoryStart) and resumes it when the operation completes
+    // (FactoryComplete) - and because PauseAllActions was a no-op on the
+    // already-paused object, disposing the `using` RESUMES the object EARLY,
+    // before the factory operation is finished. Rules and modification
+    // tracking then apply to any code after the using block.
+    //
+    // Reserve PauseAllActions() for non-factory code that needs to load or
+    // rearrange state without firing rules.
     // =========================================================================
-    [Remote]
-    [Fetch]
-    internal void FetchOptimized(int id, [Service] IFetchDemoRepository repository)
-    {
-        using (PauseAllActions())
-        {
-            var data = repository.GetById(id);
-
-            this["Id"].LoadValue(data.Id);
-            this["Name"].LoadValue(data.Name);
-            this["Description"].LoadValue(data.Description);
-
-            // Rules are paused - no validation during load
-        }
-        // ResumeAllActions() called automatically when using block exits
-        // Rules can now run if needed
-    }
 
     // Standard persistence methods
     [Remote]
@@ -188,8 +174,17 @@ internal partial class FetchWithChildrenDemo : EntityBase<FetchWithChildrenDemo>
     }
 
     // =========================================================================
-    // DESIGN DECISION: Fetch children via their factory within parent Fetch.
-    // The parent's Fetch method creates the child list, then populates it.
+    // DESIGN DECISION: Every object in the graph loads through its OWN factory
+    // [Fetch]: the parent delegates to the list factory, the list delegates to
+    // the item factory. Each object gets its own factory lifecycle and lands
+    // with correct persistence state (IsNew=false, IsModified=false). See the
+    // OrderAggregate for the fully documented canonical form.
+    //
+    // COMMON MISTAKE: Loading children with itemFactory.Create() + LoadValue
+    // inside the parent's Fetch. Create marks the item NEW
+    // (FactoryComplete(Create) -> MarkNew()), and nothing ever marks it old -
+    // so the next Save re-INSERTS every fetched child. Children load through
+    // [Fetch], never [Create].
     //
     // DID NOT DO THIS: Lazy load children separately.
     //
@@ -201,44 +196,28 @@ internal partial class FetchWithChildrenDemo : EntityBase<FetchWithChildrenDemo>
     //       }
     //   }
     //
-    // WHY NOT: Lazy loading adds complexity and can cause N+1 query problems.
-    // Explicit fetch keeps the data access visible and predictable.
-    // If you need lazy loading, implement it explicitly with clear naming.
+    // WHY NOT: Hand-rolled lazy loading adds complexity and can cause N+1
+    // query problems. Explicit fetch keeps the data access visible and
+    // predictable. When lazy loading is genuinely needed, use EntityLazyLoad
+    // (see PropertySystem/LazyLoadProperty.cs).
     // =========================================================================
     [Remote]
     [Fetch]
     internal void Fetch(int id,
         [Service] IFetchParentRepository parentRepository,
-        [Service] IFetchChildRepository childRepository,
-        [Service] IFetchDemoItemListFactory itemsFactory,
-        [Service] IFetchDemoItemFactory itemFactory)
+        [Service] IFetchDemoItemListFactory itemsFactory)
     {
-        using (PauseAllActions())
-        {
-            // Load parent data
-            var parentData = parentRepository.GetById(id);
-            this["Id"].LoadValue(parentData.Id);
-            this["Title"].LoadValue(parentData.Title);
+        // Object is paused by its own factory operation - loads are clean
+        var parentData = parentRepository.GetById(id);
+        this["Id"].LoadValue(parentData.Id);
+        this["Title"].LoadValue(parentData.Title);
 
-            // Create the child list
-            Items = itemsFactory.Create();
-
-            // Load child data and create child entities
-            var childDataList = childRepository.GetByParentId(id);
-            foreach (var childData in childDataList)
-            {
-                var item = itemFactory.Create();
-                item["Id"].LoadValue(childData.Id);
-                item["Name"].LoadValue(childData.Name);
-
-                // Add to list - this sets IsChild=true on the item
-                Items.Add(item);
-            }
-        }
+        // Children load through the list factory's [Fetch]
+        Items = itemsFactory.Fetch(id);
 
         // After fetch:
         // - Parent: IsNew=false, IsModified=false
-        // - Each child: IsNew=false, IsModified=false, IsChild=true
+        // - Each child: IsNew=false, IsModified=false
     }
 
     [Remote]
@@ -265,14 +244,22 @@ internal partial class FetchDemoItem : EntityBase<FetchDemoItem>, IFetchDemoItem
     [Create]
     public void Create() { }
 
-    // Child entities don't need [Fetch] - they're populated by parent's Fetch.
-    // They DO need Insert/Update/Delete for the parent's Save to work.
+    // Child entities DO have their own [Fetch] - the list's [Fetch] calls it
+    // per item so every child completes its own factory lifecycle
+    // (IsNew=false, IsModified=false after load).
     //
-    // Child persistence methods are internal: server-only, trimmable on client.
-    // [Remote] is NOT used on internal methods (NF0105 diagnostic error).
-    // The generated factory's LocalInsert/LocalUpdate/LocalDelete get IsServerRuntime guards
-    // from the internal visibility alone.
+    // Child persistence methods are internal and deliberately NOT [Remote]:
+    // they only ever execute inside the aggregate's server-side save flow, so
+    // they need no client-callable endpoint. The generated factory's local
+    // methods get IsServerRuntime guards from the internal visibility alone.
     // [Create] stays public so the factory interface remains public for client-side creation.
+
+    [Fetch]
+    internal void Fetch(int id, string name)
+    {
+        Id = id;      // paused by the factory operation - assignment is clean
+        Name = name;
+    }
 
     [Insert]
     internal void Insert([Service] IFetchChildRepository repository) { }
@@ -290,8 +277,21 @@ internal partial class FetchDemoItemList : EntityListBase<IFetchDemoItem>, IFetc
     [Create]
     public void Create() { }
 
-    // Lists don't have Fetch/Insert/Update/Delete
-    // They coordinate children during parent's Save
+    // The list's own [Fetch] populates it while the list is paused by its own
+    // factory operation - the adds are baseline loads, nothing is marked
+    // modified. Lists also carry [Update] in the canonical persistence flow
+    // (see OrderAggregate/OrderItemList.cs); omitted here to keep this demo
+    // focused on fetch.
+    [Fetch]
+    internal void Fetch(int parentId,
+        [Service] IFetchChildRepository childRepository,
+        [Service] IFetchDemoItemFactory itemFactory)
+    {
+        foreach (var childData in childRepository.GetByParentId(parentId))
+        {
+            Add(itemFactory.Fetch(childData.Id, childData.Name));
+        }
+    }
 }
 
 // =============================================================================

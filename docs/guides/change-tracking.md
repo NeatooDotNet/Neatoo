@@ -34,9 +34,38 @@ public void IsSelfModified_TracksDirectPropertyChanges()
 `IsModified` aggregates modification state from the entity itself, child entities, and child collections. An entity is modified when any of the following are true:
 
 - Child entities or collections are modified (tracked by `PropertyManager.IsModified`)
-- The entity is new (`IsNew`)
 - The entity is deleted (`IsDeleted`)
 - The entity's own properties changed, or it was explicitly marked modified (`IsSelfModified`)
+
+Note what is *not* in that list: `IsNew`. A newly created entity is **not** modified.
+
+### Why IsNew is not part of IsModified
+
+`IsModified` and `IsNew` answer two different questions, and conflating them makes one of the answers wrong:
+
+| Property | Question it answers | What it drives |
+|---|---|---|
+| `IsModified` | Would discarding this lose work? | Unsaved-changes prompts, navigation guards, "you have unsaved changes" |
+| `IsNew` | Does persistence not know this object yet? | Insert-vs-update routing |
+
+For a fetched-then-edited entity the answers coincide. For a **created** entity they diverge: it needs persisting, but holds no user work — navigating away from an untouched new object loses nothing. Because savability admits either reason (see [IsSavable](#issavable-combining-modification-and-validation)), `IsModified` does not have to claim a fresh create is dirty just to keep a Save button enabled.
+
+The practical payoff: a guard written the obvious way stays quiet until the user actually does something.
+
+```csharp
+if (order.IsModified) { /* warn before navigating away */ }
+```
+
+If a `[Create]` genuinely *is* the user's work — a "New Invoice" button rather than a derived default — say so explicitly in the factory method:
+
+```csharp
+[Create]
+public void Create() { MarkModified(); }
+```
+
+> **Common mistake:** calling `MarkModified()` in a `[Create]` "so the entity can be saved". New entities are already savable — `IsSavable` admits `IsNew` on its own. Using `MarkModified()` for that re-welds the two meanings and makes unsaved-changes guards cry wolf on every new object again.
+
+It is modification state — never `IsNew` — that aggregates up an object graph. That is why attaching a child to a live parent marks the child modified: see [Cascade to Parent](#cascade-to-parent).
 
 <!-- snippet: tracking-is-modified -->
 <a id='snippet-tracking-is-modified'></a>
@@ -346,11 +375,13 @@ This distinction is useful when:
 
 The `IsSavable` property determines whether an entity can be persisted. It combines modification state, validation state, and aggregate boundary rules to enforce correct save semantics. `IsSavable` is only exposed through the `IEntityRoot` interface -- child entity interfaces (`IEntityBase`) do not include it, because it would always be false for children and its presence invited misuse (see below).
 
-An entity is savable when all of the following are true:
-- `IsModified` - The entity has changes requiring persistence
+An entity is savable when it has a reason to persist **and** nothing blocks persisting it:
+- `IsModified || IsNew` - either it differs from its baseline, or persistence doesn't know it yet
 - `IsValid` - All validation rules pass
 - `!IsBusy` - No async operations are in progress
 - `!IsChild` - The entity is not a child (child entities save through their parent)
+
+The `|| IsNew` is what lets `IsModified` stay honest. A freshly created entity is savable because inserting it is meaningful — not because it pretends to hold unsaved edits. See [Why IsNew is not part of IsModified](#why-isnew-is-not-part-of-ismodified).
 
 **Why IsSavable is IEntityRoot only:** `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. Developers naturally used `IsSavable` in save cascade logic to check whether children need persisting, but it silently returned false, skipping saves. This caused a real production bug. The fix removes `IsSavable` from the child interface entirely. Aggregate root interfaces extend `IEntityRoot`; child entity interfaces extend `IEntityBase`.
 
@@ -483,14 +514,23 @@ public void IsNew_IndicatesUnpersistedEntity()
     // Factory.Create sets IsNew automatically
     Assert.True(employee.IsNew);
 
-    // New entities are considered modified (need Insert)
-    Assert.True(employee.IsModified);
+    // IsNew and IsModified answer different questions. A created entity is
+    // new (persistence does not know it) but not modified (nothing has been
+    // edited, so discarding it loses nothing) - which is what keeps
+    // unsaved-changes prompts quiet on a freshly created object.
+    Assert.False(employee.IsModified);
+
+    // It is savable anyway: IsSavable admits IsNew, so the Insert can happen.
+    Assert.True(((IEntityRoot)employee).IsSavable);
+
+    // A [Create] whose result IS the user's work opts in by calling
+    // MarkModified() in the factory method body.
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L421-L434' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-new' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L421-L443' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-new' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The `IsNew` flag is automatically set by factory Create methods and cleared after successful Insert. New entities are always considered modified (`IsNew` contributes to `IsModified`).
+The `IsNew` flag is automatically set by factory Create methods and cleared after successful Insert. It is pure routing state: it decides Insert vs Update and contributes to `IsSavable`, but it does **not** make an entity modified. See [Why IsNew is not part of IsModified](#why-isnew-is-not-part-of-ismodified).
 
 `IsDeleted` indicates the entity has been marked for deletion and requires a Delete operation:
 
@@ -520,12 +560,17 @@ public void IsDeleted_MarksEntityForDeletion()
     Assert.False(employee.IsModified);
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L436-L459' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-deleted' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L445-L468' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-deleted' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `IsDeleted` flag is set by calling `Delete()` and can be reversed with `UnDelete()` before saving. Deleted entities contribute to both `IsModified` and `IsSelfModified`, ensuring they are recognized as changed and savable.
 
-**Architecture Note:** Both `IsNew` and `IsDeleted` affect multiple modification properties to ensure proper save behavior. A new entity is always modified (needs Insert), and a deleted entity is always self-modified (needs Delete), regardless of property changes.
+**Architecture Note:** `IsNew` and `IsDeleted` are treated differently on purpose, because they say different things about user work.
+
+- `IsDeleted` **does** contribute to `IsModified` and `IsSelfModified`. Deleting is something the user did; discarding it would lose that decision.
+- `IsNew` contributes to neither. Creating an object is not, by itself, work the user would mourn — so a new entity is savable (via `IsSavable`) without being modified.
+
+A created-then-deleted entity is therefore modified (by `IsDeleted`) and savable, and the generated factory routing short-circuits it rather than deleting a row that was never written.
 
 ---
 

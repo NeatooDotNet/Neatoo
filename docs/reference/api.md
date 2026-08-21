@@ -458,7 +458,7 @@ public virtual bool IsMarkedModified { get; protected set; }
 public virtual IEnumerable<string> ModifiedProperties { get; }
 ```
 
-- **IsModified**: Aggregates modification state: `PropertyManager.IsModified || IsDeleted || IsNew || IsSelfModified`. This means new entities, deleted entities, and entities with property changes all report as modified.
+- **IsModified**: Aggregates modification state: `PropertyManager.IsModified || IsDeleted || IsSelfModified`. Deleted entities and entities with property changes report as modified. New entities do **not** — `IsNew` is deliberately not a term, so a created-but-untouched entity is savable without claiming unsaved work ([why](../guides/change-tracking.md#why-isnew-is-not-part-of-ismodified)).
 - **IsSelfModified**: Tracks whether direct property values have changed on this entity (excludes child modifications)
 - **IsMarkedModified**: Entity explicitly marked modified via `MarkModified()`
 - **ModifiedProperties**: Collection of property names whose values have changed since last mark unmodified
@@ -495,7 +495,7 @@ public void ModificationTracking_DetectsChanges()
 public virtual bool IsSavable { get; }
 ```
 
-Entity can be saved when: `IsModified && IsValid && !IsBusy && !IsChild`
+Entity can be saved when: `(IsModified || IsNew) && IsValid && !IsBusy && !IsChild`
 
 `IsSavable` exists on the concrete `EntityBase<T>` class, but is only exposed through the `IEntityRoot` interface -- not through `IEntityBase`. This means child entities (whose interfaces extend `IEntityBase`) never expose `IsSavable` to consumers. Aggregate root interfaces extend `IEntityRoot`, which adds `IsSavable` and `Save()`.
 
@@ -1150,7 +1150,7 @@ public void IEntityBase_EntityInterface()
     Assert.True(employee.IsNew);  // After Create, IsNew is true
     Assert.False(employee.IsDeleted);
     Assert.False(employee.IsChild);
-    Assert.True(employee.IsModified);  // New entity is considered modified
+    Assert.False(employee.IsModified);  // ...but a new entity is not "modified"
 
     // Delete and UnDelete methods
     employee.Delete();
@@ -1352,7 +1352,7 @@ public void IMetaProperties_ValidationAndEntityState()
     Assert.True(entityMeta.IsNew);  // After Create
     Assert.False(entityMeta.IsDeleted);
     Assert.False(entityMeta.IsChild);
-    Assert.True(entityMeta.IsModified);  // New entity
+    Assert.False(entityMeta.IsModified);  // New, but holds no user work
     Assert.False(entityMeta.IsSelfModified);
     Assert.False(entityMeta.IsMarkedModified);
     // IsSavable is on IEntityRoot, not IEntityMetaProperties

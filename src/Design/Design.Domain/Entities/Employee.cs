@@ -117,68 +117,66 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // [Fetch] - Load Existing Employee
     // =========================================================================
     // Has [Remote] - requires database access.
-    // Loads employee data and all addresses.
+    //
+    // GENERATOR BEHAVIOR: instance factory methods run inside
+    // FactoryStart/FactoryComplete - this object is PAUSED for the duration of
+    // the body. No explicit PauseAllActions() is needed, and wrapping the body
+    // in `using (PauseAllActions())` would actually resume EARLY, when the
+    // using disposes, before the factory operation completes.
+    //
+    // DESIGN DECISION: children load through the LIST factory's [Fetch], which
+    // loads each address through the ADDRESS factory's [Fetch]. Every object in
+    // the graph gets its own factory lifecycle and lands with correct
+    // persistence state.
+    //
+    // LoadValue is shown for the root's own properties - plain property
+    // assignment is equally clean here because the object is paused (Address's
+    // [Fetch] uses assignment for exactly that reason); LoadValue makes the
+    // load explicit and works even when not paused.
     // =========================================================================
     [Remote]
     [Fetch]
     internal void Fetch(int id,
         [Service] IEmployeeRepository repository,
-        [Service] IAddressListFactory addressListFactory,
-        [Service] IAddressFactory addressFactory)
+        [Service] IAddressListFactory addressListFactory)
     {
-        using (PauseAllActions())
-        {
-            var data = repository.GetById(id);
+        var data = repository.GetById(id);
 
-            this["Id"].LoadValue(data.Id);
-            this["FirstName"].LoadValue(data.FirstName);
-            this["LastName"].LoadValue(data.LastName);
-            this["Email"].LoadValue(data.Email);
-            this["HireDate"].LoadValue(data.HireDate);
-            this["Salary"].LoadValue(data.Salary);
-            this["IsActive"].LoadValue(data.IsActive);
+        this["Id"].LoadValue(data.Id);
+        this["FirstName"].LoadValue(data.FirstName);
+        this["LastName"].LoadValue(data.LastName);
+        this["Email"].LoadValue(data.Email);
+        this["HireDate"].LoadValue(data.HireDate);
+        this["Salary"].LoadValue(data.Salary);
+        this["IsActive"].LoadValue(data.IsActive);
 
-            // Create and populate addresses
-            Addresses = addressListFactory.Create();
-            foreach (var addrData in repository.GetAddresses(id))
-            {
-                var address = addressFactory.Create();
-                address["Id"].LoadValue(addrData.Id);
-                address["Street"].LoadValue(addrData.Street);
-                address["City"].LoadValue(addrData.City);
-                address["State"].LoadValue(addrData.State);
-                address["ZipCode"].LoadValue(addrData.ZipCode);
-                address["AddressType"].LoadValue(addrData.AddressType);
+        // Addresses and every address within: IsNew=false, IsModified=false
+        Addresses = addressListFactory.Fetch(id);
 
-                Addresses.Add(address);
-                // Add sets: address.IsChild=true, address.ContainingList=Addresses
-            }
-        }
         // After Fetch: IsNew=false, IsModified=false for Employee and all Addresses
     }
 
     // =========================================================================
     // [Insert] - Persist New Employee
     // =========================================================================
-    // Called by Save() when IsNew=true.
-    // Inserts employee, then inserts all addresses.
+    // Called by Save() when IsNew=true (routing checks IsDeleted first, then
+    // IsNew).
+    //
+    // DESIGN DECISION: Insert and Update delegate child persistence to the SAME
+    // list factory Save. The list is never new or deleted, so the list factory
+    // routes to AddressList.Update, and each address's own IsNew decides insert
+    // vs update - for a brand-new employee, every address is new.
     // =========================================================================
     [Remote]
     [Insert]
-    internal void Insert([Service] IEmployeeRepository repository)
+    internal void Insert([Service] IEmployeeRepository repository,
+        [Service] IAddressListFactory addressListFactory)
     {
-        // Insert employee and get generated ID
-        var generatedId = repository.InsertEmployee(
+        // Insert employee and get generated ID (paused - assignment is clean)
+        Id = repository.InsertEmployee(
             FirstName!, LastName!, Email!, HireDate, Salary, IsActive);
-        this["Id"].LoadValue(generatedId);
 
-        // Insert all addresses (all are new for a new employee)
-        foreach (var address in Addresses!)
-        {
-            var addrId = repository.InsertAddress(
-                Id, address.Street!, address.City!, address.State!, address.ZipCode!, address.AddressType!);
-            address["Id"].LoadValue(addrId);
-        }
+        addressListFactory.Save(Addresses!, Id);
 
         // FactoryComplete(Insert) will call MarkUnmodified() and MarkOld()
     }
@@ -186,12 +184,27 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // =========================================================================
     // [Update] - Persist Changes
     // =========================================================================
-    // Called by Save() when IsNew=false && IsModified=true.
-    // Updates employee, handles address insert/update/delete.
+    // Called by Save() when !IsDeleted && !IsNew.
+    //
+    // The list factory Save runs AddressList.Update inside the LIST's own
+    // factory operation: removed addresses are deleted from persistence, new
+    // and modified ones go through per-address factory saves, and the list's
+    // FactoryComplete(Update) clears the DeletedList. Each saved address's
+    // FactoryComplete marks it unmodified and old. When this Update returns,
+    // the framework calls FactoryComplete(Update) on the EMPLOYEE, and the
+    // whole graph reads IsModified=false.
+    //
+    // COMMON MISTAKE: iterating Addresses here and writing child rows to the
+    // repository directly. The rows get written, but no child factory operation
+    // runs, so nothing marks the children unmodified or old: the aggregate
+    // still reports IsModified=true after Save, new children re-insert on the
+    // next Save, and the DeletedList never clears (FactoryComplete fires per
+    // factory target - never as a cascade from the parent).
     // =========================================================================
     [Remote]
     [Update]
-    internal void Update([Service] IEmployeeRepository repository)
+    internal void Update([Service] IEmployeeRepository repository,
+        [Service] IAddressListFactory addressListFactory)
     {
         // Update employee if self modified
         if (IsSelfModified)
@@ -199,48 +212,22 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
             repository.UpdateEmployee(Id, FirstName!, LastName!, Email!, HireDate, Salary, IsActive);
         }
 
-        // Process addresses
-        foreach (var address in Addresses!)
-        {
-            if (address.IsNew)
-            {
-                var addrId = repository.InsertAddress(
-                    Id, address.Street!, address.City!, address.State!, address.ZipCode!, address.AddressType!);
-                address["Id"].LoadValue(addrId);
-            }
-            else if (address.IsSelfModified)
-            {
-                repository.UpdateAddress(
-                    address.Id, address.Street!, address.City!, address.State!, address.ZipCode!, address.AddressType!);
-            }
-        }
-
-        // Process deleted addresses (those removed from list)
-        // Note: DeletedList is accessed through internal mechanism in real code
-        // This demonstrates the pattern
-        ProcessDeletedAddresses(repository);
-
-        // FactoryComplete(Update) will call MarkUnmodified() and clear DeletedList
-    }
-
-    private void ProcessDeletedAddresses(IEmployeeRepository repository)
-    {
-        // In real implementation, this iterates Addresses.DeletedList
-        // and calls repository.DeleteAddress for each
-        // The framework handles this through FactoryComplete
+        addressListFactory.Save(Addresses!, Id);
     }
 
     // =========================================================================
     // [Delete] - Remove from Persistence
     // =========================================================================
-    // Called by Save() when IsDeleted=true && IsNew=false.
+    // Called by Save() when IsDeleted=true (checked FIRST, before IsNew).
     // Deletes addresses first (FK constraint), then employee.
     // =========================================================================
     [Remote]
     [Delete]
     internal void Delete([Service] IEmployeeRepository repository)
     {
-        // Delete all addresses first (FK constraint)
+        // Delete all addresses first (FK constraint). Direct repository deletes
+        // are INTENTIONAL here - deleted children get no factory operation
+        // (see AddressList.Update), and the whole aggregate is going away.
         foreach (var address in Addresses!)
         {
             if (!address.IsNew)  // Only delete persisted addresses

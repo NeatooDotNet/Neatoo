@@ -6,7 +6,9 @@
 
 ### Creating New Entities
 
-After Create: `IsNew = true` and `IsModified = true` (because `IsModified` includes `IsNew` in its formula — a new object needs to be persisted). After Fetch: `IsNew = false` and `IsModified = false` (the object matches its persisted state).
+After Create: `IsNew = true` and `IsModified = **false**` — the object needs persisting, but holds no user work, so unsaved-changes guards stay quiet on it. It is savable anyway: `IsSavable` admits `IsNew`. After Fetch: `IsNew = false` and `IsModified = false` (the object matches its persisted state).
+
+`IsModified` does **not** include `IsNew`. A `[Create]` whose result *is* the user's work declares that with `MarkModified()` in the factory method body — not to make it savable (it already is), but to say a guard should speak.
 
 <!-- snippet: entities-is-new -->
 <a id='snippet-entities-is-new'></a>

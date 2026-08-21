@@ -257,10 +257,29 @@ public abstract class PropertyChangedTestBase : IntegrationTestBase
 /// Base class for client-server portal integration tests.
 /// Provides separate client and server scopes for testing remote scenarios.
 /// </summary>
+/// <remarks>
+/// NOT SAFE UNDER PARALLEL EXECUTION. The underlying containers are static and
+/// shared (<c>ClientServerContainers</c>), as is <see cref="RemoteCallCount"/>.
+/// MSTest runs this assembly sequentially by default; do not enable assembly-level
+/// parallelization without giving these fixtures per-test isolation.
+/// </remarks>
+[DoNotParallelize]
 public abstract class ClientServerTestBase
 {
     private IServiceScope? _serverScope;
     private IServiceScope? _clientScope;
+
+    /// <summary>
+    /// Number of remote delegate calls made through the harness since
+    /// <see cref="InitializeScopes"/> (which resets the counter).
+    /// </summary>
+    /// <remarks>
+    /// Use this to prove a call genuinely crossed the client/server boundary.
+    /// Without it a two-container test passes identically when everything runs
+    /// in-process — dropping <c>[Remote]</c> would break no assertion, because
+    /// both containers live in one process and share any static test store.
+    /// </remarks>
+    protected static int RemoteCallCount => RemoteCallRecorder.Count;
 
     /// <summary>
     /// Gets the server service scope.
@@ -299,6 +318,7 @@ public abstract class ClientServerTestBase
     /// </summary>
     protected void InitializeScopes()
     {
+        RemoteCallRecorder.Reset();
         var scopes = ClientServerContainers.Scopes();
         _serverScope = scopes.server;
         _clientScope = scopes.client;

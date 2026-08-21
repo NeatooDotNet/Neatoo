@@ -41,6 +41,17 @@ public class EntityBaseStateTests
 
         public void Pause() => PauseAllActions();
         public void Resume() => ResumeAllActions();
+
+        /// <summary>
+        /// Makes the entity busy by parking an incomplete task; the returned
+        /// action releases it.
+        /// </summary>
+        public Action MarkBusyForTest()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            RunningTasks.AddTask(tcs.Task);
+            return () => tcs.SetResult(true);
+        }
     }
 
     /// <summary>
@@ -317,14 +328,18 @@ public class EntityBaseStateTests
     }
 
     [TestMethod]
-    public void IsModified_WhenIsNew_ReturnsTrue()
+    public void IsModified_WhenIsNew_ReturnsFalse()
     {
         // Arrange
         var entity = CreatePausedEntity();
         entity.MarkNew();
 
-        // Assert
-        Assert.IsTrue(entity.IsModified);
+        // Assert - IsNew is NOT a term in IsModified. A new object has nothing to
+        // lose by being discarded, so it is not "modified"; it is savable instead,
+        // because IsSavable admits IsNew (see IsSavable_WhenNew_ReturnsTrue).
+        // Before the ISNEW split this asserted true and the IsNew=true /
+        // IsModified=false state was unreachable.
+        Assert.IsFalse(entity.IsModified);
     }
 
     [TestMethod]
@@ -550,10 +565,12 @@ public class EntityBaseStateTests
         entity.MarkNew();
         entity.Resume();
 
-        // Assert
+        // Assert - savability comes from IsNew ALONE here: the entity carries no
+        // property dirt and reports not-modified, yet must still be savable so the
+        // insert can happen. This is the state the pre-split weld made unreachable.
         Assert.IsTrue(entity.IsNew);
-        Assert.IsTrue(entity.IsModified);
-        Assert.IsTrue(entity.IsSavable);
+        Assert.IsFalse(entity.IsModified, "A new, untouched entity is not modified");
+        Assert.IsTrue(entity.IsSavable, "...but it is savable, via the IsNew term");
     }
 
     [TestMethod]
@@ -844,6 +861,33 @@ public class EntityBaseStateTests
     }
 
     [TestMethod]
+    public async Task Save_WhenNewAndBusy_ThrowsIsBusy_NotNotModified()
+    {
+        // This is the ONLY case that makes the `|| IsNew` term in the Save()
+        // guard load-bearing. Reaching that line requires an entity that is
+        // valid, not a child, and unsavable - which means either (a) neither
+        // modified nor new, or (b) busy. Case (a) reports NotModified with or
+        // without the term. Only a NEW, UNMODIFIED, BUSY entity distinguishes
+        // them: without the term it would report NotModified, which is false -
+        // the entity has a reason to persist, it just cannot right now.
+        var entity = CreateEntity();
+        entity.MarkNew();
+        var releaseBusy = entity.MarkBusyForTest();
+
+        Assert.IsTrue(entity.IsNew);
+        Assert.IsFalse(entity.IsModified, "New alone is not modified");
+        Assert.IsTrue(entity.IsBusy);
+        Assert.IsFalse(entity.IsSavable, "Busy blocks saving");
+
+        // Act & Assert
+        var ex = await Assert.ThrowsExactlyAsync<SaveOperationException>(() => entity.Save());
+        Assert.AreEqual(SaveFailureReason.IsBusy, ex.Reason,
+            "A busy new entity is blocked by busyness, not by being unmodified");
+
+        releaseBusy();
+    }
+
+    [TestMethod]
     public async Task Save_WhenNoFactory_ThrowsSaveOperationException()
     {
         // Arrange
@@ -899,15 +943,16 @@ public class EntityBaseStateTests
         // Simulate typical new entity lifecycle
         var entity = CreatePausedEntity();
 
-        // Factory creates entity
+        // Factory creates entity - new and savable, but with no user work in it
         entity.FactoryComplete(FactoryOperation.Create);
         Assert.IsTrue(entity.IsNew);
-        Assert.IsTrue(entity.IsModified);
-        Assert.IsTrue(entity.IsSavable);
+        Assert.IsFalse(entity.IsModified, "Nothing has been edited yet");
+        Assert.IsTrue(entity.IsSavable, "Savable via IsNew - the insert is meaningful");
 
-        // User modifies entity
+        // User modifies entity - NOW there is work that would be lost
         entity.Name = "New Name";
         Assert.IsTrue(entity.IsModified);
+        Assert.IsTrue(entity.IsSavable);
 
         // Factory saves entity (insert)
         entity.Pause();

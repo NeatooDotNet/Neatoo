@@ -223,16 +223,36 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
 // =============================================================================
 // Entity Duality - Same Class as Root or Child
 // =============================================================================
-// An entity can be an aggregate root in one object graph and a child in another.
-// The same class may have [Remote] methods for root scenarios while those
-// same methods are NOT called when it's a child.
+// An entity class CAN serve as an aggregate root in one graph and a child in
+// another - but the two roles need separate factory operations and separate
+// interfaces, because the framework decides which role a consumer sees from
+// the interface (IEntityRoot vs IEntityBase), and decides what the generated
+// factory exposes from each operation's signature and visibility.
 //
-// Example:
-// - Address as root: Can be fetched/saved independently
-// - Address as child of Employee: Saved through Employee.Save()
+// COMMON MISTAKE: assuming a child's persistence methods are called "by the
+// parent's persistence code, NOT through the factory." Child persistence runs
+// through the CHILD FACTORY's Save, coordinated by the child list's [Update] -
+// that is what marks each child unmodified and old as it saves. A parent that
+// writes child rows to the repository directly leaves every child dirty and
+// new. See Aggregates/OrderAggregate and Entities for the canonical shape.
 //
-// When Address is a child, its [Insert]/[Update]/[Delete] methods are called
-// by the parent's persistence code, NOT through the factory.
+// The role split, concretely:
+//
+// - ROOT role: parent-less operations, [Remote], reached through a public
+//   factory Save(target). Its interface extends IEntityRoot.
+// - CHILD role: operations whose signatures carry the parent's identity,
+//   internal and non-[Remote], reached only through the list's [Update]. Its
+//   interface extends IEntityBase.
+//
+// DESIGN DECISION: do not bolt a root role onto a child-only type. Any
+// parent-less [Remote] operation makes the generator emit a PUBLIC
+// Save(target) that lets consumers persist a child outside its aggregate -
+// see the NO STANDALONE-ROOT OPERATIONS block in Entities/Address.cs for the
+// full reasoning and the rejected pattern.
+//
+// The class below shows the REMOTE/LOCAL half of dual use: [Remote] governs
+// where an operation executes, and it is inert when the operation is already
+// invoked from server-side code (such as a parent's save flow).
 // =============================================================================
 
 /// <summary>
@@ -251,12 +271,18 @@ internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
     public void Create() { }
 
     // =========================================================================
-    // When used as AGGREGATE ROOT:
-    // These [Remote] methods are called through the factory.
+    // These are ROOT-role operations: no parent identity in the signature, so
+    // the generated factory exposes a public Save(target) for them.
     //
-    // When used as CHILD:
-    // These methods are NOT called through factory - parent coordinates.
-    // The [Remote] attribute doesn't matter when called from server code.
+    // The point this class demonstrates is the REMOTE/LOCAL boundary: [Remote]
+    // routes a call from client to server, and it is inert when the operation
+    // is already running on the server (for example, invoked from a parent
+    // aggregate's save flow). It does NOT decide root-vs-child - the
+    // interface and the operation signatures do.
+    //
+    // To ALSO serve as a child, this class would need a second set of
+    // operations taking the parent's id (internal, non-[Remote]) and a
+    // child-shaped interface extending IEntityBase.
     // =========================================================================
 
     [Remote]

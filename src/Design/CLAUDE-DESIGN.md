@@ -310,7 +310,7 @@ When updating Design projects:
 | `IsModified` | EntityBase | Has unsaved changes (includes children) |
 | `IsSelfModified` | EntityBase | This object has changes (excludes children) |
 | `IsDeleted` | EntityBase | Marked for deletion |
-| `IsSavable` | EntityBase (IEntityRoot only) | IsModified && IsValid && !IsBusy && !IsChild. Only on `IEntityRoot` interface -- not on `IEntityBase` or entity lists |
+| `IsSavable` | EntityBase (IEntityRoot only) | (IsModified || IsNew) && IsValid && !IsBusy && !IsChild. Only on `IEntityRoot` interface -- not on `IEntityBase` or entity lists |
 | `IsChild` | EntityBase | Part of parent aggregate |
 | `IsValid` | ValidateBase | All rules pass (includes children) |
 | `IsSelfValid` | ValidateBase | This object's rules pass (excludes children) |

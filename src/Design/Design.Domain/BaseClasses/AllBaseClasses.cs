@@ -145,11 +145,12 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 //
 // DESIGN DECISION: EntityBase<T> extends ValidateBase<T> with persistence tracking.
 // This inheritance means entities get ALL validation capabilities plus:
-// - IsNew: True when object hasn't been persisted yet
-// - IsModified: True when any property changed (including children)
+// - IsNew: True when object hasn't been persisted yet. Routing state only -
+//          it does NOT make the object modified.
+// - IsModified: True when any property changed (including children), or IsDeleted
 // - IsSelfModified: True when THIS object's properties changed (excluding children)
 // - IsDeleted: True when marked for deletion
-// - IsSavable: True when entity can be saved (Modified && Valid && !Busy && !Child)
+// - IsSavable: True when entity can be saved ((Modified || New) && Valid && !Busy && !Child)
 //              Exposed only through IEntityRoot (aggregate root interface)
 // - IsChild: True when part of a parent aggregate (cannot save independently)
 // - Root: Reference to aggregate root
@@ -164,7 +165,7 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 //
 // STATE MACHINE: Entity persistence states
 //
-// New Entity: IsNew=true, IsModified=true
+// New Entity: IsNew=true, IsModified=false (savable via the IsNew term)
 //     -> Save() calls [Insert] factory method
 //     -> After success: MarkOld(), MarkUnmodified()
 //
@@ -177,8 +178,14 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 //     -> If IsNew=false: Save() calls [Delete] factory method
 //     -> After success: Object typically discarded
 //
-// Unmodified: IsModified=false
-//     -> IsSavable=false, Save() is no-op
+// Unmodified AND not new: IsModified=false, IsNew=false
+//     -> IsSavable=false, Save() throws SaveOperationException(NotModified)
+//
+// New but untouched: IsNew=true, IsModified=false
+//     -> IsSavable=TRUE. A created object needs inserting even though it holds
+//        no user work; that is why IsSavable admits IsNew and IsModified does
+//        not include it. An unsaved-changes guard bound to IsModified stays
+//        quiet here, which is the point.
 // =============================================================================
 
 /// <summary>
@@ -187,7 +194,7 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 /// Key points:
 /// - Inherits all ValidateBase capabilities (validation, rules, busy tracking)
 /// - Adds IsNew/IsModified/IsDeleted for persistence state
-/// - IsSavable = IsModified &amp;&amp; IsValid &amp;&amp; !IsBusy &amp;&amp; !IsChild
+/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy &amp;&amp; !IsChild
 /// - Save() routes to Insert/Update/Delete based on state
 /// - Child entities (IsChild=true) cannot save independently
 /// </summary>
@@ -259,7 +266,8 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     {
         // After this method completes, FactoryComplete(FactoryOperation.Create)
         // is called, which calls MarkNew().
-        // Result: IsNew=true, IsModified=true (empty but new = modified)
+        // Result: IsNew=true, IsModified=false - nothing was set, so there is no
+        // user work here. It is still savable: IsSavable admits IsNew.
     }
 
     [Remote]
@@ -295,7 +303,8 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     [Update]
     internal void Update([Service] IDemoRepository repository)
     {
-        // Called by Save() when IsNew=false && IsModified=true && !IsDeleted
+        // Called by Save() when !IsDeleted && !IsNew (routing never consults
+        // IsModified; EntityBase.Save()'s IsSavable gate stops unmodified saves)
         repository.Update(Name!, Value);
 
         // After Update completes:
@@ -306,7 +315,8 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     [Delete]
     internal void Delete([Service] IDemoRepository repository)
     {
-        // Called by Save() when IsDeleted=true && IsNew=false
+        // Called by Save() when IsDeleted=true (checked FIRST — IsDeleted wins
+        // over IsNew in generated routing)
         repository.Delete(Name!);
     }
 }
@@ -409,9 +419,13 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 //        +-- item.ContainingList reference PRESERVED (for save routing)
 //
 // 2. DURING AGGREGATE SAVE (Root.Save()):
-//    |-- For each item in DeletedList:
-//    |   +-- [Delete] factory method called to persist deletion
-//    |-- After successful persistence:
+//    |-- Root's [Update] delegates to the LIST factory's Save, which runs the
+//    |   list's [Update] inside the list's own factory operation
+//    |-- The list's [Update] deletes DeletedList items from persistence and
+//    |   routes surviving items through per-item factory saves
+//    |-- When the list's operation completes (FactoryComplete(Update) on the
+//        LIST - fired because the list is a factory target, never as a
+//        cascade from the parent):
 //        |-- DeletedList.Clear() called
 //        +-- ContainingList references cleared on deleted items
 //
@@ -424,7 +438,9 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 //    +-- Result: Item moves without triggering persistence delete
 //
 // 4. FACTORY COMPLETE CLEANUP:
-//    +-- FactoryComplete(FactoryOperation.Update) triggers DeletedList cleanup
+//    +-- EntityListBase.FactoryComplete(FactoryOperation.Update) performs the
+//        cleanup - it runs when the LIST itself is saved through its factory
+//        (factory lifecycle hooks fire only on the single factory target)
 //
 // DID NOT DO THIS: Keep deleted items in the main list with a flag.
 //

@@ -494,7 +494,9 @@ public class ParentChildSamplesTests : SamplesTestBase
         var exception = Assert.Throws<InvalidOperationException>(
             () => order2.LineItems.Add(item));
 
-        Assert.Contains("belongs to aggregate", exception.Message);
+        // The message names the offending child and explains the boundary
+        Assert.Contains("Cannot add", exception.Message);
+        Assert.Contains("different", exception.Message);
     }
 
     [Fact]

@@ -15,9 +15,11 @@ namespace Design.Domain.Entities;
 /// Demonstrates: Child entity within an aggregate.
 ///
 /// Key points:
-/// - Part of Employee aggregate (IsChild=true when in AddressList)
-/// - Cannot call Save() directly (IsSavable always false when IsChild)
-/// - Insert/Update/Delete called by parent's persistence methods
+/// - Part of Employee aggregate (IsChild=true when added to a live AddressList)
+/// - Cannot be saved by consumers (IAddress has no Save(); child persistence
+///   operations require the parent's identity)
+/// - Loads through its own [Fetch], persists through its own [Insert]/[Update],
+///   both driven by AddressList
 /// - Has own validation rules
 /// </summary>
 [Factory]
@@ -77,76 +79,136 @@ internal partial class Address : EntityBase<Address>, IAddress
     }
 
     // =========================================================================
-    // No [Fetch] - Child Entities
+    // [Fetch] - Called from AddressList.Fetch
     // =========================================================================
-    // Child entities don't have their own Fetch.
-    // They're populated by the parent's Fetch method.
+    // DESIGN DECISION: Child entities DO have their own [Fetch]. The list's
+    // [Fetch] calls it per row, so every child completes its own factory
+    // lifecycle and lands with correct persistence state: IsNew=false
+    // (IsNew defaults to false; only a completed [Create] marks an entity new),
+    // IsModified=false.
     //
-    // DID NOT DO THIS: Give child entities their own Fetch.
+    // Aggregate consistency is preserved by the SIGNATURE and visibility, not
+    // by withholding the operation: this [Fetch] takes already-loaded row data
+    // and is internal and non-[Remote], so no outside consumer can load an
+    // address on its own, and the generated factory surface stays internal.
+    //
+    // COMMON MISTAKE: loading children with addressFactory.Create() + LoadValue
+    // inside the parent's [Fetch]. Create marks the child NEW
+    // (FactoryComplete(Create) -> MarkNew()) and nothing ever marks it old, so
+    // the next Save RE-INSERTS every fetched child.
+    //
+    // GENERATOR BEHAVIOR: the object is paused for the duration of the method
+    // body, so plain property assignment loads cleanly and rules do not fire.
+    // =========================================================================
+    [Fetch]
+    internal void Fetch(int id, string street, string city, string state, string zipCode, string addressType)
+    {
+        Id = id;
+        Street = street;
+        City = city;
+        State = state;
+        ZipCode = zipCode;
+        AddressType = addressType;
+    }
+
+    // =========================================================================
+    // Child Insert/Update - Called (via the generated factory Save) from
+    // AddressList.Update
+    // =========================================================================
+    // These are local (no [Remote]) and internal, and their signatures require
+    // the parent's identity (employeeId) - which only the aggregate's save flow
+    // can supply. That is what keeps child persistence inside the aggregate:
+    // IAddress extends IEntityBase (no Save()), and the child factory's Save
+    // needs a parameter an outside consumer does not have.
+    //
+    // GENERATOR BEHAVIOR: because Insert and Update share a parameter list, the
+    // generated factory exposes a single Save(IAddress target, int employeeId)
+    // that routes on the CHILD's own IsDeleted/IsNew. Each routed call wraps the
+    // method with FactoryStart/FactoryComplete on the child, and
+    // FactoryComplete(Insert/Update) calls MarkUnmodified() + MarkOld(). THAT is
+    // how children come out clean after an aggregate save: per-item factory
+    // saves, not a cascade.
+    // =========================================================================
+    [Insert]
+    internal void Insert(int employeeId, [Service] IEmployeeRepository repository)
+    {
+        // Object is paused (factory operation) - plain assignment stays clean
+        Id = repository.InsertAddress(employeeId, Street!, City!, State!, ZipCode!, AddressType!);
+    }
+
+    [Update]
+    internal void Update(int employeeId, [Service] IEmployeeRepository repository)
+    {
+        // employeeId is unused here - it exists so Insert and Update share a
+        // signature and the generator produces a single Save(target, employeeId)
+        repository.UpdateAddress(Id, Street!, City!, State!, ZipCode!, AddressType!);
+    }
+
+    // =========================================================================
+    // NO STANDALONE-ROOT OPERATIONS - and why that is a hard rule, not a
+    // simplification
+    // =========================================================================
+    // DID NOT DO THIS: give Address a second, parent-less set of [Remote]
+    // persistence operations so it could also be saved as its own aggregate
+    // root ("entity duality").
     //
     // REJECTED PATTERN:
-    //   [Remote]
-    //   [Fetch]
-    //   public void Fetch(int id, [Service] IAddressRepository repo) { ... }
+    //   [Remote] [Insert] internal void Insert([Service] IAddressOnlyRepository repo)
+    //   [Remote] [Delete] internal void Delete([Service] IAddressOnlyRepository repo)
     //
-    // WHY NOT: Child entities are part of an aggregate. Fetching them
-    // independently would break aggregate consistency. The parent's
-    // Fetch loads all children together to ensure consistent state.
-    // =========================================================================
-
-    // =========================================================================
-    // Insert/Update/Delete - Called by Parent
-    // =========================================================================
-    // These methods are NOT called through the factory when Address is a child.
-    // The parent (Employee) calls the repository directly in its Insert/Update/Delete.
+    // WHY NOT - two independent reasons, either one decisive:
     //
-    // These methods exist for when Address is used as an aggregate root
-    // (entity duality - same class, different contexts).
+    // 1. It punches a hole in the aggregate boundary. Operations whose
+    //    signatures carry no parent identity make the generator emit a PUBLIC
+    //    Save(IAddress target) on IAddressFactory. A consumer holding a child
+    //    out of employee.Addresses could then persist or delete it directly,
+    //    bypassing the aggregate's save flow entirely. The parent-scoped
+    //    Save(target, employeeId) above cannot be misused that way: it is
+    //    internal AND it demands an id the consumer has no business supplying.
+    //    Compare the canonical: IOrderItemFactory exposes nothing public.
+    //
+    // 2. The interface already settled the question. IAddress extends
+    //    IEntityBase, which is how a type declares "child, not root" - so no
+    //    consumer can Save() it as a root regardless. A type that genuinely
+    //    plays both roles needs a second interface extending IEntityRoot;
+    //    keeping root-shaped operations behind a child-shaped interface just
+    //    produces runtime NotImplementedExceptions from the generated routing.
+    //
+    // For the remote/local boundary aspects of dual-use types, see
+    // FactoryOperations/RemoteBoundary.cs.
     // =========================================================================
-    [Remote]
-    [Insert]
-    internal void Insert([Service] IAddressOnlyRepository repository)
-    {
-        // Only called if Address is used as aggregate root (rare)
-        var generatedId = repository.Insert(Street!, City!, State!, ZipCode!, AddressType!);
-        this["Id"].LoadValue(generatedId);
-    }
-
-    [Remote]
-    [Update]
-    internal void Update([Service] IAddressOnlyRepository repository)
-    {
-        repository.Update(Id, Street!, City!, State!, ZipCode!, AddressType!);
-    }
-
-    [Remote]
-    [Delete]
-    internal void Delete([Service] IAddressOnlyRepository repository)
-    {
-        repository.Delete(Id);
-    }
 }
 
 // =============================================================================
 // Child Entity Lifecycle
 // =============================================================================
-// When an Address is added to AddressList:
+// When an Address is added to a LIVE AddressList (user flow, list not paused):
 // 1. InsertItem() is called on the list
 // 2. MarkAsChild() sets address.IsChild = true
 // 3. SetContainingList() tracks ownership
 // 4. If address was deleted, UnDelete() is called
+//
+// When addresses are loaded by AddressList.Fetch, the list is paused by its own
+// factory operation. The paused add path skips the DIRT-producing steps but
+// still applies child identity (steps 2-3), so fetched addresses have
+// IsChild=true and a ContainingList - address.Delete() routes through the list
+// exactly as it does for a live add. Parent/Root are established one step
+// later, when the parent assigns Addresses = addressListFactory.Fetch(id).
 //
 // When an Address is removed from AddressList:
 // 1. RemoveItem() is called on the list
 // 2. If address.IsNew = false:
 //    - MarkDeleted() sets address.IsDeleted = true
 //    - Address added to DeletedList
-// 3. ContainingList stays set (for persistence routing)
+// 3. ContainingList stays set if it was set (for persistence routing)
 //
 // When Employee.Save() is called:
-// 1. Employee's Insert/Update/Delete iterates Addresses
-// 2. For deleted addresses, iterates DeletedList
-// 3. After successful save, DeletedList is cleared
+// 1. Employee's Insert/Update delegates to the LIST factory's Save
+// 2. AddressList.Update deletes removed children from persistence and routes
+//    new/modified children through the ADDRESS factory's Save
+// 3. FactoryComplete fires per factory target: each saved address is marked
+//    unmodified+old, the list clears its DeletedList, the employee is marked
+//    unmodified+old. There is no graph-wide cascade.
 // =============================================================================
 
 // =============================================================================
@@ -155,8 +217,8 @@ internal partial class Address : EntityBase<Address>, IAddress
 // WRONG:
 //   var employee = await employeeFactory.Fetch(1);
 //   employee.Addresses[0].City = "Seattle";
-//   await employee.Addresses[0].Save();  // THROWS SaveOperationException!
-//   // SaveFailureReason.IsChildObject
+//   await employee.Addresses[0].Save();
+//   // Does not compile: IAddress (IEntityBase) has no Save()
 //
 // RIGHT:
 //   var employee = await employeeFactory.Fetch(1);
@@ -164,9 +226,6 @@ internal partial class Address : EntityBase<Address>, IAddress
 //   await employee.Save();  // Parent save handles all child changes
 // =============================================================================
 
-public interface IAddressOnlyRepository
-{
-    int Insert(string street, string city, string state, string zipCode, string addressType);
-    void Update(int id, string street, string city, string state, string zipCode, string addressType);
-    void Delete(int id);
-}
+// IAddressOnlyRepository removed with the standalone-root operations it served
+// (see the NO STANDALONE-ROOT OPERATIONS block above). Address is persisted
+// exclusively through the Employee aggregate's save flow.
