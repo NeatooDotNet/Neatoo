@@ -1211,15 +1211,49 @@ public class EntityListBaseTests
         // Act
         item.Delete();
 
-        // Assert - the intent survives
+        // Assert - the intent survives, recorded the same way the live path records it
         Assert.IsTrue(item.IsDeleted, "The deletion must be recorded, not discarded");
-        Assert.IsTrue(
+        Assert.AreEqual(1, list.DeletedList.Count, "...and queued so the save issues the DELETE");
+        Assert.IsFalse(
             list.Contains(item),
-            "Marked in place rather than removed: the canonical list [Update] iterates "
-            + "this.Union(DeletedList) and filters on IsDeleted, so a marked item still in "
-            + "the list is persisted correctly");
+            "...and removed, so FactoryComplete(Update)'s cleanup can drain it. Marking it "
+            + "in place while leaving it a member - this fix's first shape - kept the list "
+            + "IsModified forever, because IsSelfModified includes IsDeleted and the cleanup "
+            + "only iterates DeletedList. See Delete_WhenListPaused_ThenSave_LeavesTheListClean.");
 
         list.FactoryComplete(FactoryOperation.Fetch);
+    }
+
+    [TestMethod]
+    public void Delete_WhenListPaused_ThenSave_LeavesTheListClean()
+    {
+        // Arrange - the ROUND TRIP, which LIST-004's first attempt did not test.
+        //
+        // Recording the deletion is only half the job: the item then has to rejoin the
+        // framework's cleanup contract. FactoryComplete(Update)'s cleanup iterates
+        // DeletedList, and EntityBase.IsSelfModified includes `|| IsDeleted`, so an item
+        // marked deleted but left as a live member of the list is IsModified FOREVER -
+        // ResumeAllActions recalculates _cachedChildrenModified from
+        // this.Any(c => c.IsModified) and keeps finding it. The aggregate would report
+        // unsaved work that isn't there, and the canonical [Update] loop
+        // (this.Union(DeletedList) filtered on IsDeleted) would re-issue the DELETE on
+        // every subsequent save.
+        var keep = CreateExistingItem();
+        var doomed = CreateExistingItem();
+        var list = FetchListWith(keep, doomed);
+        Assert.IsFalse(list.IsModified, "Precondition: a fetched list is clean");
+
+        // Act - delete inside a paused window, the way a factory body would, then
+        // complete the save
+        list.FactoryStart(FactoryOperation.Update);
+        doomed.Delete();
+        Assert.IsTrue(doomed.IsDeleted, "The deletion is recorded");
+        list.FactoryComplete(FactoryOperation.Update);
+
+        // Assert - the save is over; nothing should still be pending
+        Assert.IsFalse(list.Contains(doomed), "The deleted child must not remain a member");
+        Assert.AreEqual(0, list.DeletedList.Count, "The save drained the queue");
+        Assert.IsFalse(list.IsModified, "After the save the list must be clean, not permanently dirty");
     }
 
     [TestMethod]

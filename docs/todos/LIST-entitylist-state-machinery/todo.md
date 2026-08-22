@@ -75,6 +75,36 @@ rather than at a single successor. See the Discovery Log entry below for what mo
 
 ## Discovery Log
 
+### 2026-08-21 — LIST-004 code review (run retroactively): the fix was half a fix
+
+- **Finding (veto-tier, and correct):** LIST-004's "mark in place" solution fixed the silent
+  discard but **never rejoined the framework's cleanup contract**. The child was marked
+  `IsDeleted` and left a live member of the list, never queued in `DeletedList`. But
+  `FactoryComplete(Update)`'s cleanup iterates `DeletedList`, so it never touched the child;
+  `EntityBase.IsSelfModified` includes `|| IsDeleted` (`EntityBase.cs:187`), so the child was
+  `IsModified` **forever**; and `ResumeAllActions` recalculates
+  `_cachedChildrenModified = this.Any(c => c.IsModified)`, which kept finding it. Net: a
+  **freshly fetched aggregate reporting unsaved work that does not exist**, and a canonical
+  `[Update]` loop **re-issuing the DELETE on every subsequent save**.
+- **Why nothing caught it:** no test in the diff called `FactoryComplete(Update)` after a paused
+  delete. The three `Delete_When...` tests exercised `Fetch` or never completed at all. The plan
+  asked "does the DELETE fire?" and never asked "and then what?".
+- **Verified before acting:** the missing test was written first and failed exactly as predicted,
+  on `list.Contains(doomed)`.
+- **Decision — fixed, not accepted.** `IEntityListBaseInternal.IsPaused` is **removed** (it existed
+  only so `Delete()` could peek at pause state) and replaced by `DeleteChild(IEntityBase)`, which
+  puts the decision on the list: mark and queue while paused, defer to `RemoveItem` while live, and
+  **always remove**, so the existing cleanup drains it. `RemoveItem`'s paused branch is still
+  untouched. Reverting the corrected fix fails exactly two tests — the recording test and the new
+  round-trip test — with all controls passing.
+- **Finding (callout, carried):** `SetItem`'s paused branch confers `ContainingList` on the
+  incoming item but never clears it on the **displaced** one, so that item keeps a reference to a
+  list it is not in; a later `Delete()` on it would record a deletion with no persistence
+  consequence. The reviewer confirmed this failure mode already existed identically on the live
+  path before this arc (`Collection<T>.Remove` on an absent item is a no-op), so it is a
+  pre-existing `SetItem` gap. Carried forward, not fixed here.
+- **Follow-up:** the displaced-item `ContainingList` gap — needs an owner if it is ever to be closed
+
 ### 2026-08-21 — Close-out audit: a missed gate, a dangling link, and a second ordering characteristic
 
 - **Finding (process failure, V1):** three plans declared `Code-review opt-in: Yes` — 001, 002 and

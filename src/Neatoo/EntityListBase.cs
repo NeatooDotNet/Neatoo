@@ -135,9 +135,29 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     }
 
     /// <summary>
-    /// Framework-internal view of pause state. See <see cref="IEntityListBaseInternal.IsPaused"/>.
+    /// Deletes a child of this list. See <see cref="IEntityListBaseInternal.DeleteChild"/>.
     /// </summary>
-    bool IEntityListBaseInternal.IsPaused => this.IsPaused;
+    /// <param name="item">The child entity to delete.</param>
+    void IEntityListBaseInternal.DeleteChild(IEntityBase item)
+    {
+        var child = (I)item;
+
+        // While paused, RemoveItem removes without marking or queueing. Do that work here
+        // so an explicit Delete() is not silently discarded - but ONLY while paused, or
+        // RemoveItem's live branch would do it a second time and double-queue the child.
+        if (this.IsPaused && !child.IsNew)
+        {
+            ((IEntityBaseInternal)child).MarkDeleted();
+            this.DeletedList.Add(child);
+        }
+
+        // Remove either way. This is what rejoins the framework's cleanup contract:
+        // FactoryComplete(Update) clears ContainingList and drains DeletedList by
+        // iterating DeletedList, so a child left as a live member of this list would
+        // never be cleaned up - and since IsSelfModified includes IsDeleted, it would
+        // keep the list IsModified forever and re-issue its DELETE on every later save.
+        this.Remove(child);
+    }
 
     /// <summary>
     /// Handles the <see cref="INotifyPropertyChanged.PropertyChanged"/> event from child items.

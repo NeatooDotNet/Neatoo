@@ -106,17 +106,31 @@ Walked 2026-08-21.
 
 ## Plan Amendments
 
-**A1 (Step 2, marked in place rather than throwing).** Both options were live at draft. Marking
-in place won because it preserves the caller's intent and composes with the canonical list
-`[Update]` loop, which iterates `this.Union(DeletedList)` and filters on `IsDeleted` — so a
-marked-deleted item still in the list is persisted correctly without any change to consumer code.
-Throwing would have been safe (nothing calls this today) but would convert a recoverable
-situation into a hard failure for a caller doing something reasonable.
+**A1 (Step 2, marked in place rather than throwing) — SUPERSEDED by A5.** The original reasoning:
+marking in place preserves the caller's intent and composes with the canonical list `[Update]`
+loop. That was true for one save cycle and wrong after it. See A5.
 
-**A2 (Step 1, internal rather than public).** `IsPaused` went on `IEntityListBaseInternal`, not
-`IEntityListBase`. Pause state is a framework implementation detail, and putting it on the public
-interface would invite consumers to branch on it — which is the sort of thing that turns an
-internal lifecycle detail into a compatibility constraint.
+**A2 (Step 1, internal rather than public) — SUPERSEDED by A5.** `IsPaused` went on
+`IEntityListBaseInternal` so `Delete()` could branch on pause state. A5 removes that member
+entirely; the branch belongs on the list, not in the caller.
+
+**A5 (post-implementation, from the retroactive code review — the fix was half a fix).** Marking in
+place fixed the silent discard but left the child outside the framework's cleanup contract:
+`FactoryComplete(Update)` drains `DeletedList`, which the child never entered, while
+`IsSelfModified` includes `|| IsDeleted` — so the child stayed `IsModified` forever, kept the list
+and its root reporting unsaved work that did not exist, and had its DELETE re-issued on every
+later save. Confirmed by writing the missing round-trip test first and watching it fail.
+
+The corrected shape: `IEntityListBaseInternal.IsPaused` is **removed**, replaced by
+`DeleteChild(IEntityBase)`. The list decides — mark and queue while paused (the work `RemoveItem`'s
+paused branch deliberately skips), defer to `RemoveItem` while live so nothing happens twice, and
+**always remove the child**, which is what lets the existing cleanup drain it. `RemoveItem`'s
+paused branch remains untouched, so `list.Remove(item)` during a fetch is still baseline
+construction.
+
+The lesson the plan should have caught itself: its Acceptance asked whether a subsequent save
+issues the DELETE, and stopped there. "Guard the seam" work has to follow the object to a
+coherent resting state, not just to the next correct-looking event.
 
 **A3 (Step 4, both guards asserted, not just one).** The draft acceptance named the duplicate-add
 *and* busy-item skips. The busy case needed a `MarkBusyForTest` helper on the test item
@@ -127,7 +141,8 @@ both are asserted rather than one being quietly dropped.
 
 | Acceptance bullet | Test | Tier | Status |
 |---|---|---|---|
-| `Delete()` on a child of a paused list records the deletion | `EntityListBaseTests.Delete_WhenListPaused_RecordsTheDeletionInsteadOfDiscardingIt` | unit | Pinned — sole failure on revert |
+| `Delete()` on a child of a paused list records the deletion | `EntityListBaseTests.Delete_WhenListPaused_RecordsTheDeletionInsteadOfDiscardingIt` | unit | Pinned |
+| ...and the child rejoins the cleanup contract, so the list is clean after the save | `EntityListBaseTests.Delete_WhenListPaused_ThenSave_LeavesTheListClean` — **the row this plan was missing.** Written after the code review, failed before the corrected fix, passes after | unit | Pinned — one of the two failures on revert |
 | `Delete()` on a child of a live list behaves exactly as before | `EntityListBaseTests.Delete_WhenListIsLive_StillRoutesThroughTheList` | unit | Pinned — passes on revert, confirming the live path is untouched |
 | `Delete()` on a parentless entity still marks it deleted | `EntityListBaseTests.Delete_WhenParentless_MarksDeleted` | unit | Pinned — passes on revert |
 | Paused `InsertItem` duplicate-add skip asserted, with reason | `Add_WhenPaused_AllowsDuplicate_UnlikeTheLivePath`, paired with `Add_WhenLive_RejectsDuplicate` | unit | Pinned |
