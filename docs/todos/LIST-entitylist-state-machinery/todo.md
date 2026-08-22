@@ -75,6 +75,38 @@ rather than at a single successor. See the Discovery Log entry below for what mo
 
 ## Discovery Log
 
+### 2026-08-21 — LIST-002 code review (run retroactively): silent data loss via the missing re-add step
+
+- **Finding (veto-tier, and correct):** `InsertItem`'s live branch has a re-add / intra-aggregate-move
+  step — `RemoveFromDeletedList` on the incoming item's old list, then `UnDelete()` if it was
+  flagged (`EntityListBase.cs:268-277`). **`SetItem`'s live branch had no equivalent.** So
+  `list[i] = item` where `item` was sitting in `this.DeletedList` left it swapped into the live
+  slot, still queued, still `IsDeleted`. The canonical `[Update]` loop filters
+  `this.Union(DeletedList)` on `IsDeleted`, so **the next save would DELETE a row the collection
+  shows as live** — silent data loss.
+- **Why nothing caught it:** none of LIST-002's eight tests, and no Acceptance bullet, covered
+  "replace with an item currently awaiting deletion." It was literally question 5 in the review
+  brief and the plan had never answered it.
+- **Verified before acting:** the new test was written first and failed on `a.IsDeleted`.
+- **Decision — fixed.** `SetItem`'s live branch now mirrors `InsertItem`, placed **before** the
+  displaced item is queued so resurrecting the incoming item and queueing the outgoing one do not
+  interfere. Reverting just that step fails exactly the one new test.
+- **Finding (callout, carried):** because `oldWasModified` is captured *before* `MarkDeleted()`,
+  replacing an unmodified-persisted item with another can leave `_cachedChildrenModified` `true`
+  from the transient flip — contradicting its own doc comment. Not reachable as a wrong *public*
+  `IsModified` today, because `DeletedList.Any()` masks it until `FactoryComplete(Update)`
+  recalculates; the one unruled-out path is moving the item to a different list in the same
+  aggregate while still queued here, since `RemoveFromDeletedList` neither recalculates nor
+  notifies. Carried to whatever eventually reorders `RemoveItem`/`SetItem` together.
+- **Finding (unrelated, worth knowing):** `ValidateBaseAsyncTests.ValidateBaseAsync_Child_IsBusy`
+  is **flaky** — it failed once in a full run, then passed 3/3 in isolation and on a full re-run. It
+  asserts an `IsBusy` `PropertyChanged` arrived, which is a timing race, and it touches no list
+  code. Consistent with the `AsyncTasks` completion race FableFeedback already records
+  (`AsyncTasks.cs:141-159`, `SetResult` outside the lock). Not caused by this arc; recorded so it
+  is not mistaken for a regression later.
+- **Follow-up:** FABLE-001 (the `AsyncTasks` race); the `_cachedChildrenModified` nuance needs an
+  owner alongside the `RemoveItem`/`SetItem` reordering
+
 ### 2026-08-21 — LIST-004 code review (run retroactively): the fix was half a fix
 
 - **Finding (veto-tier, and correct):** LIST-004's "mark in place" solution fixed the silent

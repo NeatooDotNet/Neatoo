@@ -414,6 +414,28 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
                     "target aggregate and remove the original instead.");
             }
 
+            // Re-add / intra-aggregate move for the INCOMING item, mirroring
+            // InsertItem's live branch (:268-277). Without this, putting an item that is
+            // sitting in a DeletedList back into a live slot leaves it BOTH visibly
+            // present in the collection AND still queued with IsDeleted true - and the
+            // canonical [Update] loop, which filters this.Union(DeletedList) on
+            // IsDeleted, would then DELETE a row the user's collection shows as live.
+            //
+            // Runs BEFORE the displaced item is queued below, so that replacing an item
+            // with one already awaiting deletion resurrects the incoming one and queues
+            // the outgoing one, rather than the two interfering. (LIST-002)
+            var incomingInternal = (IEntityBaseInternal)item;
+
+            if (incomingInternal.ContainingList != null)
+            {
+                ((IEntityListBaseInternal)incomingInternal.ContainingList).RemoveFromDeletedList(item);
+            }
+
+            if (item.IsDeleted)
+            {
+                item.UnDelete();
+            }
+
             // The DISPLACED item leaves the list, so give it exactly what RemoveItem
             // gives a removed item: mark deleted and queue for persistence deletion if
             // it was persisted; discard it if it was new.

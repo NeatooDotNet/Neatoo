@@ -140,6 +140,19 @@ behavior break, per the review's callout 3.
 **A4 (self-replacement).** `list[i] = list[i]` is a no-op, not a removal — guarded with
 `ReferenceEquals`, or the still-present item would be marked deleted and queued.
 
+**A5 (post-implementation, from the retroactive code review — the missing re-add step).** The plan's
+Scope noted `SetItem` "does no ... `UnDelete`" and then never turned that into a Step or an
+Acceptance bullet, so it shipped without one. `InsertItem`'s live branch calls
+`RemoveFromDeletedList` on the incoming item's old list and `UnDelete()`s it if flagged; `SetItem`
+did neither. Replacing a slot with an item already sitting in `DeletedList` therefore left it live
+*and* queued *and* `IsDeleted` — and the canonical `[Update]` loop would have deleted a row the
+collection showed as present. **Silent data loss, now fixed** by mirroring `InsertItem`, ordered
+before the displaced item's queueing so the two dispositions do not interfere.
+
+The lesson: the Scope paragraph named the gap ("no `UnDelete`") and the Steps did not carry it
+forward. An observation in Scope that never becomes a Step or an Acceptance bullet is an
+observation that will not be implemented.
+
 ## Test Evidence
 
 | Acceptance bullet | Test | Tier | Status |
@@ -154,6 +167,7 @@ behavior break, per the review's callout 3.
 | Suite green; release note written | `src/Neatoo.sln` 1856 / 0 / 2 skipped; `Design.Tests` 130 / 0; `docs/release-notes/v0.32.0.md` | unit | Pinned |
 | Paused branch queues nothing but still confers identity | `SetItem_WhenPaused_QueuesNothing` | unit | Pinned |
 | Self-replacement is a no-op | `SetItem_ReplacingWithItself_IsANoOp` | unit | Pinned |
+| Replacing with an item awaiting deletion resurrects it rather than leaving it live-and-queued | `SetItem_ReplacingWithAnItemAwaitingDeletion_ResurrectsIt` — **the row this plan was missing.** Written after the code review, failed before the fix, passes after; sole failure when the re-add step is reverted | unit | Pinned |
 
 ## Outcome
 

@@ -1071,6 +1071,42 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
+    public void SetItem_ReplacingWithAnItemAwaitingDeletion_ResurrectsIt()
+    {
+        // Arrange - SILENT DATA LOSS if SetItem does not mirror InsertItem's re-add step.
+        //
+        // InsertItem's live branch calls RemoveFromDeletedList on the item's old list
+        // and UnDelete()s it if it was flagged (EntityListBase.cs:268-277) - that is what
+        // makes re-adding a removed child work. SetItem's live branch had no equivalent.
+        //
+        // Without it, putting an item that is sitting in DeletedList back into a live
+        // slot leaves it BOTH visibly present in the collection AND still queued with
+        // IsDeleted true. The canonical [Update] loop drives off
+        // this.Union(DeletedList) filtered on IsDeleted, so the next save would DELETE a
+        // row the user's own collection shows as live.
+        var a = CreateExistingItem();
+        var b = CreateExistingItem();
+        var list = FetchListWith(a, b);
+
+        // Remove `a`, so it is queued for deletion
+        list.Remove(a);
+        Assert.IsTrue(a.IsDeleted, "Precondition: a is flagged for deletion");
+        Assert.AreEqual(1, list.DeletedList.Count, "Precondition: a is queued");
+
+        // Act - put it back via the indexer, displacing b
+        list[0] = a;
+
+        // Assert - a is alive again, and nothing will delete its row
+        Assert.IsTrue(list.Contains(a), "a is back in the collection...");
+        Assert.IsFalse(a.IsDeleted, "...so its deletion flag must be cleared");
+        CollectionAssert.DoesNotContain(list.DeletedList, a, "...and it must not still be queued");
+
+        // ...and b, which it displaced, took a's place in the queue
+        Assert.IsTrue(b.IsDeleted, "The displaced item is the one being deleted now");
+        CollectionAssert.Contains(list.DeletedList, b);
+    }
+
+    [TestMethod]
     public void SetItem_IncomingItem_ReceivesChildIdentity()
     {
         // Arrange - SetItem was the one channel by which a child joins a list that did
