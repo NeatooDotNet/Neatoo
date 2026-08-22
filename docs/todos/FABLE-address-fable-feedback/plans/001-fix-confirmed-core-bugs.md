@@ -14,6 +14,24 @@
 
 Work through the "Verified" and "High-confidence — core" defects in FableFeedback.md Appendix A: the `IsBusy` operator-precedence bug, post-deserialization double event subscription (entity and list), the list converter's missing `$ref` emission, the `AsyncTasks` completion race and unobservable async-rule exceptions, per-invocation `expression.Compile()` in trigger properties, the shadowed-static `CreateProperty` hazard, the mutable shared `RuleBase.None`, the internal `PropertyReadOnlyException`, and the dead/inert surface (`RunRulesFlag`, no-op generated `GetRuleId`, unreachable generator paths). Each item is re-verified against current code before fixing; each fix gets a regression test. This plan does NOT touch MudNeatoo (plan 004) or RemoteFactory (plan 003), and does not revisit the `NoWarn` policy beyond what individual fixes require.
 
+## Scope added (2026-08-21) — entity-property assignment confers no child identity
+
+Found during LIST-005; recorded here rather than fixed there, because it is entity-property
+behavior rather than list state machinery.
+
+Assigning a child entity to a parent's entity property does **not** set `IsChild` or
+`ContainingList` on that child. `EntityParentChildFetchTests` has to call `child.MarkAsChild()`
+by hand after `parent.Child = child`, and that call is still there for exactly this reason.
+
+This is the one attach channel ISNEW-003 did not unify. ISNEW-003 gave child identity to the list
+channels (`InsertItem`, both branches) and LIST-002 added the last list channel (`SetItem`, both
+branches) — so a child that joins via a *list* is now always a full member, while a child assigned
+to an entity *property* is not. Without identity, save routing and `Delete()` do not work on it.
+
+Whether that asymmetry is a defect or a deliberate boundary is the open question: it may be
+legitimate for a property-held child to derive its identity differently. Decide it explicitly
+rather than leaving it as a hand-written line in a test fixture.
+
 ## Scope added (2026-08-21) — `PauseAllActions()` is not re-entrant
 
 Found and **verified** during LIST-001; recorded here rather than fixed there, because it is

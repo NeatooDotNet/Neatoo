@@ -67,12 +67,47 @@ defect with a green suite.
 | 005 | [005-inherited-test-debt](./plans/005-inherited-test-debt.md) | Test-infrastructure debt inherited from ISNEW | Done |
 
 *Plans 001 and 002 were written as ISNEW-008 and ISNEW-009 and carry their original provenance
-lines; cross-references to those IDs in ISNEW's records point here. Plan 001 was re-split at
-its own Step 2 — see the Discovery Log entry below for what moved where.*
+lines. ISNEW-009 → LIST-002 is a clean one-to-one; **ISNEW-008 is not** — it was re-split at
+LIST-001's own Step 2 into 001, 003, 004 and 005, so ISNEW's tombstone for it points at all four
+rather than at a single successor. See the Discovery Log entry below for what moved where.*
 
 ---
 
 ## Discovery Log
+
+### 2026-08-21 — Close-out audit: a missed gate, a dangling link, and a second ordering characteristic
+
+- **Finding (process failure, V1):** three plans declared `Code-review opt-in: Yes` — 001, 002 and
+  004 — and **only LIST-003's code review actually ran.** No `001/002/004-code-review.md` existed,
+  and no Skipped Steps entry recorded the gap. The gate was declared and then silently skipped,
+  which is precisely the drift these gates exist to catch. The audit's argument for why it matters
+  is concrete: LIST-003's code review earned its keep by hand-tracing a notification re-entrancy
+  path and finding an undocumented ordering dependency, and LIST-002 (breaking, save-side) turned
+  out to have a directly analogous one nobody had recorded.
+- **Decision:** run the two missing reviews that touched save-side library code — LIST-002 and
+  LIST-004 — before merge. **LIST-001's is recorded as an accepted skip:** it changed no production
+  code at all (its own Outcome and the audit both confirm "no-library-change plan"), so a code
+  review of a test-only diff would be ceremony. Recorded here rather than left implicit.
+- **Finding (ordering, C1 — inherited, not new):** in `SetItem`, `MarkDeleted()` on the displaced
+  item fires **before** `base.SetItem`, which is where `ValidateListBase.SetItem` unsubscribes that
+  item's handlers. So the mark can raise a list-level `IsModified` notification mid-mutation —
+  before the slot is swapped and before `DeletedList.Add` runs — during which a synchronous
+  consumer would see the old item still in the collection and `DeletedList` still empty despite
+  `IsDeleted == true`. The audit traced the end state as correct on every branch, and the same
+  `MarkDeleted`-before-`base` shape already exists unremarked in `RemoveItem`, so this is an
+  inherited characteristic rather than a regression LIST-002 introduced.
+- **Decision:** recorded, not changed — the arc's own standard (see the LIST-003 entry below) is to
+  write down ordering dependencies rather than leave them implicit. Changing it would mean
+  reordering `RemoveItem` too, which is out of scope here.
+- **Finding (V2, cross-container):** ISNEW's completed container had a Retired tombstone linking to
+  `plans/001-metastate-baseline-and-paused-delete.md`, the stub this arc deleted during LIST-001's
+  re-split. **Fixed:** the tombstone now points at all four successors, and LIST's own Index note
+  no longer claims a clean one-to-one for ISNEW-008.
+- **Finding (C2):** LIST-005's Outcome flagged that entity-property assignment confers no child
+  identity, but only in prose — no Index row, no Discovery Log entry, no sibling scope. An untraced
+  deferral is work evaporating. **Fixed:** added to FABLE-001's scope alongside the
+  `PauseAllActions` finding it sits next to in spirit.
+- **Follow-up:** FABLE-001
 
 ### 2026-08-21 — LIST-003 gates: an undocumented ordering dependency, traced
 
@@ -183,6 +218,13 @@ its own Step 2 — see the Discovery Log entry below for what moved where.*
 
 - Step 1 reconnaissance — unnecessary; every item arrived with a gate's diagnosis, file
   citation, and reachability analysis attached (see the ISNEW review records).
+- **LIST-001's code review — skipped deliberately, recorded late.** The plan declared
+  `Code-review opt-in: Yes` when it was expected to touch lifecycle machinery on the resume path.
+  It ended up changing **no production code at all** (the guard was dispositioned correct; the diff
+  is two tests plus markdown), so the opt-in no longer had a subject. Recorded here because the
+  close-out audit correctly flagged that it — along with LIST-002's and LIST-004's — had gone
+  missing with no note. Those two were run retroactively before merge; this one was not, on the
+  reasoning above.
 
 ---
 

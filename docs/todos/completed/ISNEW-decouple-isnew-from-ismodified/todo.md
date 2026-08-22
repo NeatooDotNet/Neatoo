@@ -74,7 +74,7 @@ Keith's three-phase framing in design.md maps as: "Plan 1 — verified baseline"
 | 005 | [005-docs-and-release](./plans/005-docs-and-release.md) | Docs, skill, README, release notes, 0.31.0 | Done |
 | 006 | [006-design-tests-tech-debt](./plans/006-design-tests-tech-debt.md) | Design.Tests + harness coverage debt | Done |
 | 007 | [007-entities-demo-lifecycle](./plans/007-entities-demo-lifecycle.md) | Entities demo aggregate (Employee/Address) to canonical | Done |
-| 008 | _(carved out)_ | List meta-state baseline + paused delete | Retired — became [LIST-001](../LIST-entitylist-state-machinery/plans/001-metastate-baseline-and-paused-delete.md) |
+| 008 | _(carved out)_ | List meta-state baseline + paused delete | Retired — carved to LIST, then re-split at LIST-001's own Step 2. Its contents are now [LIST-001](../LIST-entitylist-state-machinery/plans/001-resume-guard-never-paused-list.md) (resume guard), [LIST-003](../LIST-entitylist-state-machinery/plans/003-metastate-baseline-and-notification.md) (meta-state baseline), [LIST-004](../LIST-entitylist-state-machinery/plans/004-paused-path-guards.md) (paused delete) and [LIST-005](../LIST-entitylist-state-machinery/plans/005-inherited-test-debt.md) (test debt) |
 | 009 | _(carved out)_ | SetItem: identity + replaced-item persistence | Retired — became [LIST-002](../LIST-entitylist-state-machinery/plans/002-setitem-replaced-item.md) |
 
 ---
