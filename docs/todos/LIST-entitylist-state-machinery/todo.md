@@ -104,8 +104,10 @@ rather than at a single successor. See the Discovery Log entry below for what mo
   code. Consistent with the `AsyncTasks` completion race FableFeedback already records
   (`AsyncTasks.cs:141-159`, `SetResult` outside the lock). Not caused by this arc; recorded so it
   is not mistaken for a regression later.
-- **Follow-up:** FABLE-001 (the `AsyncTasks` race); the `_cachedChildrenModified` nuance needs an
-  owner alongside the `RemoveItem`/`SetItem` reordering
+- **Follow-up:** FABLE-001 — both the `AsyncTasks` race and, as of 2026-08-22, the
+  `_cachedChildrenModified` nuance, folded into FABLE-001's "`RemoveItem`/`SetItem` ordering
+  characteristics" scope section together with the mid-mutation notification and the stale
+  `ContainingList` gap
 
 ### 2026-08-21 — LIST-004 code review (run retroactively): the fix was half a fix
 
@@ -135,7 +137,8 @@ rather than at a single successor. See the Discovery Log entry below for what mo
   consequence. The reviewer confirmed this failure mode already existed identically on the live
   path before this arc (`Collection<T>.Remove` on an absent item is a no-op), so it is a
   pre-existing `SetItem` gap. Carried forward, not fixed here.
-- **Follow-up:** the displaced-item `ContainingList` gap — needs an owner if it is ever to be closed
+- **Follow-up:** owned as of 2026-08-22 — the displaced-item `ContainingList` gap is item 3 of
+  FABLE-001's "`RemoveItem`/`SetItem` ordering characteristics" scope section
 
 ### 2026-08-21 — Close-out audit: a missed gate, a dangling link, and a second ordering characteristic
 

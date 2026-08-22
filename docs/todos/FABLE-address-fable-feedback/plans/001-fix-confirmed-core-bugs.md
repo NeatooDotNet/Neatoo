@@ -14,6 +14,47 @@
 
 Work through the "Verified" and "High-confidence — core" defects in FableFeedback.md Appendix A: the `IsBusy` operator-precedence bug, post-deserialization double event subscription (entity and list), the list converter's missing `$ref` emission, the `AsyncTasks` completion race and unobservable async-rule exceptions, per-invocation `expression.Compile()` in trigger properties, the shadowed-static `CreateProperty` hazard, the mutable shared `RuleBase.None`, the internal `PropertyReadOnlyException`, and the dead/inert surface (`RunRulesFlag`, no-op generated `GetRuleId`, unreachable generator paths). Each item is re-verified against current code before fixing; each fix gets a regression test. This plan does NOT touch MudNeatoo (plan 004) or RemoteFactory (plan 003), and does not revisit the `NoWarn` policy beyond what individual fixes require.
 
+## Scope added (2026-08-22) — `RemoveItem`/`SetItem` ordering characteristics (reorder together)
+
+Three related items from the LIST arc's code reviews and close-out audit
+(`LIST-entitylist-state-machinery/reviews/002-code-review.md`, `004-code-review.md`,
+`close-out-audit.md` C1). All three were **traced to correct end states** — no data is at risk
+today — and all three live in the same `MarkDeleted`-before-`base` shape that `RemoveItem` and
+`SetItem` share, which is why they are one work item, not three: fixing any of them properly means
+reordering both methods together.
+
+1. **Mid-mutation notification.** In both `RemoveItem` (`EntityListBase.cs`, `MarkDeleted` at the
+   top of the live branch) and `SetItem`, `MarkDeleted()` on the outgoing item fires **before**
+   `base.RemoveItem`/`base.SetItem` — which is where `ValidateListBase` unsubscribes that item's
+   handlers. The mark can therefore raise a list-level `PropertyChanged(IsModified)` mid-mutation:
+   before the slot is swapped/removed, before `DeletedList.Add` runs, and (for `SetItem`) before
+   the incoming item has identity. A synchronous consumer reacting to that notification observes
+   the old item still physically present and `DeletedList` empty despite `IsDeleted == true`. End
+   state verified correct on every branch; the window is the issue.
+
+2. **Transient cache pollution.** In `SetItem`, `oldWasModified` is captured **before**
+   `MarkDeleted()` runs, so replacing an unmodified-persisted item with another
+   unmodified-persisted item skips both branches of the end-of-method recalculation and leaves
+   `_cachedChildrenModified` `true` from the transient `MarkDeleted`-triggered flip — violating
+   that field's own doc comment ("children only, not `DeletedList`"). Not reachable as a wrong
+   *public* `IsModified` today, because `DeletedList.Any()` masks it until `FactoryComplete(Update)`
+   fully recalculates. The one unruled-out path: moving the item to a *different* list in the same
+   aggregate while it still sits in this list's `DeletedList` — `RemoveFromDeletedList` on the old
+   list does no cache recalculation and no notification, so the pollution would persist unmasked
+   once that `DeletedList` empties.
+
+3. **Stale `ContainingList` on the displaced/removed item, paused branch.** Neither `RemoveItem`'s
+   nor `SetItem`'s paused branch touches the outgoing item, so it keeps a `ContainingList` pointing
+   at a list it is no longer in. A later `Delete()` on it routes through `DeleteChild` on that
+   list — recording a deletion with no persistence consequence, silently lost. Confirmed by the
+   LIST-004 review that the same failure mode existed identically on the live path before the LIST
+   arc (`Collection<T>.Remove` on an absent item is a no-op), so this is long-standing, not new.
+
+Constraint to carry into the fix: LIST-003's Discovery Log records that the current notification
+safety during nested saves depends on `EntityBase.FactoryComplete`'s pause → resume →
+`MarkUnmodified` ordering. Any reordering here must re-check that interaction — the trace is in
+`LIST-entitylist-state-machinery/reviews/003-code-review.md` Callout 1.
+
 ## Scope added (2026-08-21) — entity-property assignment confers no child identity
 
 Found during LIST-005; recorded here rather than fixed there, because it is entity-property
