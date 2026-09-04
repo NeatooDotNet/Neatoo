@@ -56,7 +56,7 @@ public class OrderAggregateTests
     }
 
     [TestMethod]
-    public void AddItem_ItemBecomesChild()
+public void AddItem_ItemJoinsAggregate()
     {
         // Arrange
         var order = _orderFactory.Create();
@@ -66,7 +66,7 @@ public class OrderAggregateTests
         order.Items!.Add(item);
 
         // Assert
-        Assert.IsTrue(item.IsChild, "Added item should have IsChild=true");
+        Assert.AreSame<object>(order, item.Root!, "Added item belongs to the aggregate");
         Assert.AreEqual(1, order.Items.Count);
     }
 
@@ -116,7 +116,7 @@ public class OrderAggregateTests
         // This is the interface-first pattern at work: the interface controls access.
         // The concrete OrderItem has IsSavable (inherited from EntityBase), but consumers
         // only see IOrderItem, so IsSavable is invisible.
-        Assert.IsTrue(item.IsChild);
+        Assert.AreSame<object>(order, item.Root!);
         // item.IsSavable — does not compile: IOrderItem (IEntityBase) has no IsSavable
         // item.Save()    — does not compile: IOrderItem (IEntityBase) has no Save()
     }

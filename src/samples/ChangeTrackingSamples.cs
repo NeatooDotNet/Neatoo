@@ -365,11 +365,10 @@ public class ChangeTrackingSamplesTests : SamplesTestBase
         // Modify the entity
         employee.Name = "Bob";
 
-        // Modified, valid, not busy, not child = savable
+        // Modified, valid, not busy = savable
         Assert.True(employee.IsModified);
         Assert.True(employee.IsValid);
         Assert.False(employee.IsBusy);
-        Assert.False(employee.IsChild);
         Assert.True(employee.IsSavable);
     }
     #endregion

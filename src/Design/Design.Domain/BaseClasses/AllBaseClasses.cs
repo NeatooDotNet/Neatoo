@@ -150,9 +150,8 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 // - IsModified: True when any property changed (including children), or IsDeleted
 // - IsSelfModified: True when THIS object's properties changed (excluding children)
 // - IsDeleted: True when marked for deletion
-// - IsSavable: True when entity can be saved ((Modified || New) && Valid && !Busy && !Child)
+// - IsSavable: True when entity can be saved ((Modified || New) && Valid && !Busy)
 //              Exposed only through IEntityRoot (aggregate root interface)
-// - IsChild: True when part of a parent aggregate (cannot save independently)
 // - Root: Reference to aggregate root
 // - ModifiedProperties: List of changed property names
 // - Factory: Reference to IFactorySave<T> for persistence operations
@@ -194,9 +193,9 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 /// Key points:
 /// - Inherits all ValidateBase capabilities (validation, rules, busy tracking)
 /// - Adds IsNew/IsModified/IsDeleted for persistence state
-/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy &amp;&amp; !IsChild
+/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy
 /// - Save() routes to Insert/Update/Delete based on state
-/// - Child entities (IsChild=true) cannot save independently
+/// - Child entities cannot save independently: their interface has no Save()
 /// </summary>
 [Factory]
 internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
@@ -461,7 +460,7 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 /// - Extends ValidateListBase with persistence tracking
 /// - IsModified = any child modified OR DeletedList has items
 /// - DeletedList tracks removed non-new items for persistence deletion
-/// - Adding items: MarkAsChild(), set ContainingList
+/// - Adding items: set ContainingList (routes the child's Delete through the list)
 /// - Removing non-new items: MarkDeleted(), add to DeletedList
 /// - Root property for aggregate boundary enforcement
 /// </summary>
@@ -530,7 +529,7 @@ public interface IDemoRepository
 //
 // INTERFACE HIERARCHY for entities:
 //
-//   IEntityBase              (child entities: IsModified, IsChild, Delete, etc.)
+//   IEntityBase              (child entities: IsModified, IsDeleted, Delete, etc.)
 //        ^
 //        |
 //   IEntityRoot              (aggregate roots: adds IsSavable, Save())
@@ -549,7 +548,7 @@ public interface IDemoRepository
 // WRONG:
 //   var parent = await ParentFactory.Fetch(id);
 //   parent.Children[0].Name = "New Name";
-//   await parent.Children[0].Save();  // THROWS: IsChild=true, IsSavable=false
+//   await parent.Children[0].Save();  // DOES NOT COMPILE: child interface has no Save()
 //
 // RIGHT:
 //   await parent.Save();  // Parent save persists all child changes

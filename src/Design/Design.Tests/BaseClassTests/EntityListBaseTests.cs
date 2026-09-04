@@ -43,7 +43,7 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
-    public void Add_MarksItemAsChild()
+public void Add_AttachesItemToList()
     {
         // Arrange
         var list = _listFactory.Create();
@@ -53,8 +53,11 @@ public class EntityListBaseTests
         // Act
         list.Add(item);
 
-        // Assert
-        Assert.IsTrue(item.IsChild, "Item added to list should have IsChild=true");
+        // Assert - child identity is observable through routing: Delete() on a
+        // child goes through its containing list rather than marking the child
+        // alone. This is what the removed IsChild flag used to stand in for.
+        item.Delete();
+        Assert.AreEqual(0, list.Count, "Deleting a child removes it from its list");
     }
 
     [TestMethod]

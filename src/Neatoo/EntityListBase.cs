@@ -90,12 +90,6 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     public bool IsDeleted => false;
 
     /// <summary>
-    /// Gets a value indicating whether the list is a child of another entity.
-    /// Always returns <c>false</c> as lists manage child relationships through their items.
-    /// </summary>
-    public bool IsChild => false;
-
-    /// <summary>
     /// Gets the aggregate root of the object graph this list belongs to.
     /// </summary>
     /// <value>
@@ -216,7 +210,7 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
     /// <summary>
     /// Inserts an item into the collection at the specified index.
     /// When not paused, handles entity state management including undeleting previously deleted items,
-    /// marking existing items as modified, setting child status, and managing ContainingList.
+    /// marking existing items as modified, and managing ContainingList.
     /// </summary>
     /// <param name="index">The zero-based index at which to insert the item.</param>
     /// <param name="item">The entity item to insert into the collection.</param>
@@ -288,12 +282,10 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
             // and are deliberately excluded (see the paused branch below).
             itemInternal.MarkModified();
 
-            itemInternal.MarkAsChild();
-
             // Set ContainingList to this list
             itemInternal.SetContainingList(this);
 
-            // Update cached modified state - item will be modified after MarkAsChild/MarkModified
+            // Update cached modified state - item will be modified after MarkModified
             if (item.IsModified)
             {
                 _cachedChildrenModified = true;
@@ -304,15 +296,14 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
             // Paused adds are baseline population: a factory operation loading
             // its children, or deserialization restoring them. No dirt-producing
             // step runs here (notably MarkModified), but the child IDENTITY
-            // steps do: being a child of this list is what the object IS, not a
-            // change to it, and both marks are baseline-neutral.
+            // step does: being a child of this list is what the object IS, not a
+            // change to it, and the mark is baseline-neutral.
             //
             // Without this, children loaded by the canonical list [Fetch] would
-            // have IsChild=false and no ContainingList, so Delete() would
-            // silently bypass list routing. ContainingList also cannot be
-            // serialized, so this is what restores it after deserialization.
+            // have no ContainingList, so Delete() would silently bypass list
+            // routing. ContainingList cannot be serialized either, so this is
+            // what restores it after deserialization.
             var pausedItemInternal = (IEntityBaseInternal)item;
-            pausedItemInternal.MarkAsChild();
             pausedItemInternal.SetContainingList(this);
 
             if (item.IsDeleted)
@@ -477,11 +468,9 @@ public abstract class EntityListBase<I> : ValidateListBase<I>, INeatooObject, IE
 
         // Child identity for the incoming item, on BOTH branches - the one channel by
         // which a child joins a list that did not confer it. Without this the new item
-        // has no IsChild and no ContainingList, so save routing and Delete() do not
-        // work on it. InsertItem sets both on both branches; this now matches. (LIST-002)
-        var itemInternal = (IEntityBaseInternal)item;
-        itemInternal.MarkAsChild();
-        itemInternal.SetContainingList(this);
+        // has no ContainingList, so Delete() silently bypasses list routing.
+        // InsertItem confers it on both branches; this now matches. (LIST-002)
+        ((IEntityBaseInternal)item).SetContainingList(this);
 
         // Update cached modified state
         if (!this.IsPaused)

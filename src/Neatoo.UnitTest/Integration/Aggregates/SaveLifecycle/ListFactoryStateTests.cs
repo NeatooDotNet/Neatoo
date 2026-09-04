@@ -81,18 +81,20 @@ public class ListFactoryStateTests : ClientServerTestBase
     // =========================================================================
 
     [TestMethod]
-    public async Task FetchedChild_IsMarkedAsChild()
+public async Task FetchedChild_HasChildIdentity()
     {
         var invoiceId = SaveLifecycleStore.SeedInvoice("Initech", ("Consulting", 500.00m));
 
         var invoice = await _factory.Fetch(invoiceId);
 
         Assert.AreEqual(1, invoice.Lines!.Count);
-        Assert.IsTrue(invoice.Lines[0].IsChild,
-            "A child loaded through the canonical fetch path is a child");
+        // AreSame<object>: IEntityListBase<I> does not extend IEntityListBase,
+        // so the two static types have no common base beyond object.
+        Assert.AreSame<object>(invoice.Lines, ((IEntityBaseInternal)invoice.Lines[0]).ContainingList!,
+            "A child loaded through the canonical fetch path knows its list");
         // Note: this asserts the end state on the client. The mechanism itself -
         // that the PAUSED add applies child identity - is pinned at unit level by
-        // EntityListBaseTests.Add_WhenPaused_MarksAsChild.
+        // EntityListBaseTests.Add_WhenPaused_EstablishesChildIdentity.
     }
 
     [TestMethod]
@@ -168,9 +170,10 @@ public class ListFactoryStateTests : ClientServerTestBase
     public async Task FetchedChild_CrossesTheBoundary_AndKeepsIdentity()
     {
         // The fetched graph on the CLIENT is a deserialized graph. Assert the
-        // wire was genuinely used, then that child identity survived it:
-        // IsChild rides the wire, ContainingList cannot (not public, not on the
-        // interface), so the paused add path is what re-establishes it.
+        // wire was genuinely used, then that child identity survived it.
+        // Nothing about child identity rides the wire - ContainingList is not
+        // public and not on the interface - so the paused add path during
+        // deserialization is the only thing that re-establishes it.
         var invoiceId = SaveLifecycleStore.SeedInvoice("Initech",
             ("Consulting", 500.00m), ("Support", 250.00m));
 
@@ -184,7 +187,8 @@ public class ListFactoryStateTests : ClientServerTestBase
         Assert.AreEqual(2, invoice.Lines!.Count);
         foreach (var line in invoice.Lines)
         {
-            Assert.IsTrue(line.IsChild, $"Deserialized line {line.Id} is still a child");
+            Assert.AreSame<object>(invoice.Lines, ((IEntityBaseInternal)line).ContainingList!,
+                $"Deserialized line {line.Id} is still a child of its list");
             Assert.IsFalse(line.IsModified, $"Deserialized line {line.Id} is clean");
         }
         Assert.IsFalse(invoice.IsModified);

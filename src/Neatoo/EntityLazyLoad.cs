@@ -105,9 +105,6 @@ public class EntityLazyLoad<T> : Neatoo.RemoteFactory.LazyLoad<T>, IValidateMeta
     #region IEntityMetaProperties
 
     /// <inheritdoc />
-    public bool IsChild => (Value as IEntityMetaProperties)?.IsChild ?? false;
-
-    /// <inheritdoc />
     public bool IsModified => (Value as IEntityMetaProperties)?.IsModified ?? false;
 
     /// <inheritdoc />

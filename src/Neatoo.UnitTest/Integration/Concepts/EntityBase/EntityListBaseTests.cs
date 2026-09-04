@@ -86,14 +86,21 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
-    public void EntityListBaseTest_ModifyChild_IsSavable()
+public void EntityListBaseTest_ModifyChild_IsSavable()
     {
 
         child.FirstName = Guid.NewGuid().ToString();
 
-        // Lists do not expose IsSavable (not on IEntityListBase interface)
-        // Child entities are not savable (IsSavable false because IsChild=true)
-        Assert.IsFalse(child.IsSavable);
+        // Lists do not expose IsSavable (not on IEntityListBase interface).
+        //
+        // A modified, valid child CONCRETE now reports IsSavable == true: with
+        // the IsChild flag gone, IsSavable is (IsModified || IsNew) && IsValid
+        // && !IsBusy and knows nothing about position in an aggregate. This test
+        // type deliberately extends IEntityRoot, so it still sees the property.
+        // The guarantee that consumers cannot save a child is the interface
+        // split - a real child interface extends IEntityBase, which exposes
+        // neither IsSavable nor Save().
+        Assert.IsTrue(child.IsSavable);
     }
 
     [TestMethod]

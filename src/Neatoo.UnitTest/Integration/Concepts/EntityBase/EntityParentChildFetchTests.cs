@@ -39,12 +39,6 @@ public class EntityParentChildFetchTests
         child = factory.FillFromDto(persons.Where(p => p.FatherId == parent.Id).First());
         parent.Child = child;
 
-        // Still explicit: assigning a child to an entity property does not confer child
-        // identity, so IsChild has to be set here for EntityParentChildFetchTest_Fetch_InitialMeta's
-        // IsChild assertions to be about anything. Unlike the marks above, this one is
-        // not redundant - it is the fixture standing in for what a parent's own [Fetch]
-        // would do when it builds its children.
-        child.MarkAsChild();
     }
 
     [TestMethod]
@@ -61,9 +55,6 @@ public class EntityParentChildFetchTests
 
         AssertMeta(parent);
         AssertMeta(child);
-
-        Assert.IsFalse(parent.IsChild);
-        Assert.IsTrue(child.IsChild);
 
     }
 
@@ -98,7 +89,13 @@ public class EntityParentChildFetchTests
         await parent.WaitForTasks();
 
         Assert.IsTrue(parent.IsSavable);
-        Assert.IsFalse(child.IsSavable);
+
+        // The child CONCRETE is savable by the formula now that the IsChild flag
+        // is gone. Note this child is held as a direct property, not in a list -
+        // the framework never marked it as a child even before the removal; the
+        // setup had to call MarkAsChild() by hand. What stops a consumer saving
+        // it is the interface split, not a runtime flag.
+        Assert.IsTrue(child.IsSavable);
 
     }
 

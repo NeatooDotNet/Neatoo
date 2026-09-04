@@ -316,7 +316,7 @@ public class EntityListBaseStateTransitionTests
     }
 
     [TestMethod]
-    public void Add_Item_IsChildSetToTrue()
+public void Add_Item_EstablishesChildIdentity()
     {
         // Arrange
         var aggregateRoot = new EntityPerson { FirstName = "Root" };
@@ -324,13 +324,14 @@ public class EntityListBaseStateTransitionTests
         aggregateRoot.ChildList = list;
 
         var item = new EntityPerson { FirstName = "Child" };
-        Assert.IsFalse(item.IsChild);
+        Assert.IsNull(((IEntityBaseInternal)item).ContainingList);
 
         // Act
         list.Add(item);
 
-        // Assert
-        Assert.IsTrue(item.IsChild);
+        // Assert - ContainingList carries child identity now that the IsChild
+        // flag is gone; it is what routes Delete() through the list.
+        Assert.AreSame(list, ((IEntityBaseInternal)item).ContainingList);
     }
 
     [TestMethod]
@@ -407,7 +408,7 @@ public class EntityListBaseStateTransitionTests
     }
 
     [TestMethod]
-    public void Add_Item_WhenPaused_IsChildIsSet()
+public void Add_Item_WhenPaused_EstablishesChildIdentity()
     {
         // Arrange
         var aggregateRoot = new EntityPerson { FirstName = "Root" };
@@ -428,7 +429,7 @@ public class EntityListBaseStateTransitionTests
         // the dirt-producing steps are skipped while paused (ISNEW-003;
         // previously this asserted IsChild stayed false, which meant fetched
         // children silently bypassed list routing on Delete()).
-        Assert.IsTrue(item.IsChild);
+        Assert.AreSame(list, ((IEntityBaseInternal)item).ContainingList);
 
         // Note: this item is dirtied by its own property initializer before the
         // add, so it cannot show whether the ADD contributed dirt. The paused

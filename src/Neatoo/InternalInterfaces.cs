@@ -71,12 +71,6 @@ internal interface IEntityBaseInternal : IValidateBaseInternal
     void MarkModified();
 
     /// <summary>
-    /// Marks the entity as a child within an aggregate.
-    /// Called by EntityListBase when items are added.
-    /// </summary>
-    void MarkAsChild();
-
-    /// <summary>
     /// Marks the entity for deletion without triggering list removal.
     /// Called by EntityListBase.RemoveItem to avoid recursion with Delete().
     /// </summary>
