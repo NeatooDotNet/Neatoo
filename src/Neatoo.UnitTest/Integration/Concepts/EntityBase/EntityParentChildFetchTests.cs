@@ -30,7 +30,6 @@ public class EntityParentChildFetchTests
 
         child.MarkOld();
         child.MarkUnmodified();
-        child.MarkAsChild();
         parent.MarkOld();
         parent.MarkUnmodified();
 
@@ -51,9 +50,6 @@ public class EntityParentChildFetchTests
 
         AssertMeta(parent);
         AssertMeta(child);
-
-        Assert.IsFalse(parent.IsChild);
-        Assert.IsTrue(child.IsChild);
 
     }
 
@@ -88,7 +84,13 @@ public class EntityParentChildFetchTests
         await parent.WaitForTasks();
 
         Assert.IsTrue(parent.IsSavable);
-        Assert.IsFalse(child.IsSavable);
+
+        // The child CONCRETE is savable by the formula now that the IsChild flag
+        // is gone. Note this child is held as a direct property, not in a list -
+        // the framework never marked it as a child even before the removal; the
+        // setup had to call MarkAsChild() by hand. What stops a consumer saving
+        // it is the interface split, not a runtime flag.
+        Assert.IsTrue(child.IsSavable);
 
     }
 

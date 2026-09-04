@@ -272,7 +272,7 @@ public partial class RfCustomerValidated : EntityBase<RfCustomerValidated>
     public async Task InsertAsync([Service] IRfCustomerRepository repository)
     {
         // Check IsSavable before persisting
-        // IsSavable verifies: IsValid && !IsBusy && (IsModified || IsNew) && !IsChild
+        // IsSavable verifies: IsValid && !IsBusy && (IsModified || IsNew)
         if (!IsSavable)
         {
             // Validation failed - do not persist

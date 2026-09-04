@@ -91,15 +91,6 @@ public interface IValidateMetaProperties
 public interface IEntityMetaProperties : IFactorySaveMeta
 {
     /// <summary>
-    /// Gets a value indicating whether this object is a child within an aggregate.
-    /// </summary>
-    /// <value><c>true</c> if the object is a child entity; otherwise, <c>false</c>.</value>
-    /// <remarks>
-    /// Child entities are saved as part of their parent aggregate and cannot be saved independently.
-    /// </remarks>
-    bool IsChild { get; }
-
-    /// <summary>
     /// Gets a value indicating whether the object or any of its children have been modified.
     /// </summary>
     /// <value><c>true</c> if any modifications exist; otherwise, <c>false</c>.</value>

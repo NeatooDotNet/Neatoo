@@ -54,7 +54,6 @@ public class EntityListBaseTests
         // Expose protected members for testing
         public new void MarkNew() => base.MarkNew();
         public new void MarkOld() => base.MarkOld();
-        public new void MarkAsChild() => base.MarkAsChild();
         public new void MarkModified() => base.MarkModified();
         public new void MarkUnmodified() => base.MarkUnmodified();
     }
@@ -168,16 +167,6 @@ public class EntityListBaseTests
         Assert.IsFalse(list.IsDeleted);
     }
 
-    [TestMethod]
-    public void IsChild_AlwaysFalse()
-    {
-        // Lists manage child relationships through their items
-        var list = new TestEntityList();
-
-        // Assert
-        Assert.IsFalse(list.IsChild);
-    }
-
     #endregion
 
     #region IsModified Tests
@@ -251,18 +240,19 @@ public class EntityListBaseTests
     #region Add Item Tests
 
     [TestMethod]
-    public void Add_NewItem_MarksAsChild()
+public void Add_NewItem_EstablishesChildIdentity()
     {
         // Arrange
         var list = new TestEntityList();
         var item = CreateNewItem();
-        Assert.IsFalse(item.IsChild);
+        Assert.IsNull(((IEntityBaseInternal)item).ContainingList);
 
         // Act
         list.Add(item);
 
-        // Assert
-        Assert.IsTrue(item.IsChild);
+        // Assert - ContainingList is what child identity means now that the
+        // IsChild flag is gone: it is what routes Delete() through the list.
+        Assert.AreSame(list, ((IEntityBaseInternal)item).ContainingList);
     }
 
     [TestMethod]
@@ -296,7 +286,7 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
-    public void Add_WhenPaused_MarksAsChild()
+public void Add_WhenPaused_EstablishesChildIdentity()
     {
         // Arrange
         var list = new TestEntityList();
@@ -310,8 +300,8 @@ public class EntityListBaseTests
         // add. Paused adds skip the dirt-producing steps (MarkModified), not
         // the identity ones: a child loaded by a factory [Fetch] is still a
         // child, and without this Delete() would bypass list routing (ISNEW-003;
-        // previously this asserted IsChild stayed false).
-        Assert.IsTrue(item.IsChild);
+        // previously this asserted IsChild stayed false, then IsChild=true).
+        Assert.AreSame(list, ((IEntityBaseInternal)item).ContainingList);
     }
 
     [TestMethod]

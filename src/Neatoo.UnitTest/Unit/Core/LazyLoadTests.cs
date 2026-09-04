@@ -417,16 +417,6 @@ public class LazyLoadTests
     // IsSavable tests removed — IsSavable moved to IEntityRoot, no longer on IEntityMetaProperties or EntityLazyLoad<T>
 
     [TestMethod]
-    public void IsChild_BeforeLoad_ReturnsFalse()
-    {
-        // Arrange
-        var lazyLoad = new EntityLazyLoad<TestEntityValue>(() => Task.FromResult<TestEntityValue?>(new TestEntityValue()));
-
-        // Assert
-        Assert.IsFalse(((IEntityMetaProperties)lazyLoad).IsChild);
-    }
-
-    [TestMethod]
     public void IsSelfModified_AlwaysReturnsFalse()
     {
         // Arrange - LazyLoad wrapper itself is never modified
@@ -654,7 +644,6 @@ public class TestEntityValue : IEntityMetaProperties, IValidateMetaProperties
     public bool IsDeletedValue { get; set; }
 
     // IEntityMetaProperties
-    public bool IsChild => false;
     public bool IsModified => IsModifiedValue;
     public bool IsSelfModified => IsModifiedValue;
     public bool IsMarkedModified => false;

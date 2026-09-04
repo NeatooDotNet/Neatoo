@@ -15,7 +15,8 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 /// Demonstrates: Child entity within an aggregate.
 ///
 /// Key points:
-/// - IsChild=true when added to a live OrderItemList (cannot save independently)
+/// - Cannot be saved independently: IOrderItem extends IEntityBase, which has
+///   no Save() - the barrier is the interface, not a runtime flag
 /// - ContainingList tracks which list owns this item
 /// - Root property points to Order (aggregate root)
 /// - Delete/UnDelete managed by list operations
@@ -156,16 +157,15 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //      change to this graph whatever the item's own persistence state, and it
 //      is the ONLY channel by which a new child's arrival reaches the parent
 //      (IsNew never aggregates upward)
-//   7. item.MarkAsChild() -> IsChild = true
-//   8. item.SetContainingList(this)
-//   9. Add to collection
+//   7. item.SetContainingList(this)
+//   8. Add to collection
 //
 // FETCHED ITEM (factory flow, paused list):
 //   Items loaded inside OrderItemList.Fetch are added while the list is paused
 //   by its own factory operation. The paused add path skips the DIRT-producing
 //   steps above (notably MarkModified) but still applies child IDENTITY:
-//   fetched items get IsChild=true and ContainingList, so item.Delete() routes
-//   through the list exactly as it does for a live add.
+//   fetched items get a ContainingList, so item.Delete() routes through the
+//   list exactly as it does for a live add.
 //
 //   Parent/Root are established one step later than the adds: during the list's
 //   own [Fetch] the list has no Parent yet, so each add propagates null; when

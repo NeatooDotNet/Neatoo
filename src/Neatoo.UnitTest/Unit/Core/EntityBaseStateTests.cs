@@ -8,8 +8,8 @@ namespace Neatoo.UnitTest.Unit.Core;
 
 /// <summary>
 /// Unit tests for EntityBase{T} entity state flags and transitions.
-/// Tests IsNew, IsChild, IsDeleted, IsModified, IsSelfModified, IsSavable, IsMarkedModified,
-/// and the state transition methods (MarkNew, MarkOld, MarkAsChild, MarkDeleted, etc.).
+/// Tests IsNew, IsDeleted, IsModified, IsSelfModified, IsSavable, IsMarkedModified,
+/// and the state transition methods (MarkNew, MarkOld, MarkDeleted, etc.).
 /// Uses real Neatoo classes instead of mocks.
 /// </summary>
 [TestClass]
@@ -34,7 +34,6 @@ public class EntityBaseStateTests
         // Expose protected members for testing
         public new void MarkNew() => base.MarkNew();
         public new void MarkOld() => base.MarkOld();
-        public new void MarkAsChild() => base.MarkAsChild();
         public new void MarkDeleted() => base.MarkDeleted();
         public new void MarkModified() => base.MarkModified();
         public new void MarkUnmodified() => base.MarkUnmodified();
@@ -159,45 +158,6 @@ public class EntityBaseStateTests
 
         // Assert
         Assert.IsFalse(entity.IsNew);
-    }
-
-    #endregion
-
-    #region IsChild Tests
-
-    [TestMethod]
-    public void IsChild_InitialState_ReturnsFalse()
-    {
-        // Arrange
-        var entity = CreateEntity();
-
-        // Assert
-        Assert.IsFalse(entity.IsChild);
-    }
-
-    [TestMethod]
-    public void IsChild_AfterMarkAsChild_ReturnsTrue()
-    {
-        // Arrange
-        var entity = CreateEntity();
-
-        // Act
-        entity.MarkAsChild();
-
-        // Assert
-        Assert.IsTrue(entity.IsChild);
-    }
-
-    [TestMethod]
-    public void IsChild_CannotBeReversed()
-    {
-        // Once marked as child, entity stays as child
-        // Arrange
-        var entity = CreateEntity();
-        entity.MarkAsChild();
-
-        // Assert - No method to unmark as child
-        Assert.IsTrue(entity.IsChild);
     }
 
     #endregion
@@ -527,7 +487,6 @@ public class EntityBaseStateTests
         Assert.IsTrue(entity.IsModified);
         Assert.IsTrue(entity.IsValid);
         Assert.IsFalse(entity.IsBusy);
-        Assert.IsFalse(entity.IsChild);
         Assert.IsTrue(entity.IsSavable);
     }
 
@@ -540,20 +499,6 @@ public class EntityBaseStateTests
 
         // Assert
         Assert.IsFalse(entity.IsModified);
-        Assert.IsFalse(entity.IsSavable);
-    }
-
-    [TestMethod]
-    public void IsSavable_WhenChild_ReturnsFalse()
-    {
-        // Arrange
-        var entity = CreateEntity();
-        entity.Name = "Test";
-        entity.MarkAsChild();
-
-        // Assert
-        Assert.IsTrue(entity.IsModified);
-        Assert.IsTrue(entity.IsChild);
         Assert.IsFalse(entity.IsSavable);
     }
 
@@ -834,19 +779,6 @@ public class EntityBaseStateTests
     #endregion
 
     #region Save Exception Tests
-
-    [TestMethod]
-    public async Task Save_WhenChild_ThrowsSaveOperationException()
-    {
-        // Arrange
-        var entity = CreateEntity();
-        entity.Name = "Test";
-        entity.MarkAsChild();
-
-        // Act & Assert
-        var ex = await Assert.ThrowsExactlyAsync<SaveOperationException>(() => entity.Save());
-        Assert.AreEqual(SaveFailureReason.IsChildObject, ex.Reason);
-    }
 
     [TestMethod]
     public async Task Save_WhenNotModified_ThrowsSaveOperationException()
