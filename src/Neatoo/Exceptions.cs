@@ -61,8 +61,6 @@ public abstract class ConfigurationException : NeatooException
 /// </summary>
 public enum SaveFailureReason
 {
-	/// <summary>Child objects cannot be saved directly; save the parent instead.</summary>
-	IsChildObject,
 	/// <summary>The object has validation errors and cannot be saved.</summary>
 	IsInvalid,
 	/// <summary>The object has not been modified, so there is nothing to save.</summary>
@@ -108,7 +106,6 @@ public class SaveOperationException : EntityException
 
 	private static string GetMessage(SaveFailureReason reason) => reason switch
 	{
-		SaveFailureReason.IsChildObject => "Child objects cannot be saved directly. Save the parent object instead.",
 		SaveFailureReason.IsInvalid => "Object is not valid and cannot be saved. Check validation errors before saving.",
 		SaveFailureReason.NotModified => "Object has not been modified. There are no changes to save.",
 		SaveFailureReason.IsBusy => "Object is busy with an async operation and cannot be saved. Call 'await entity.WaitForTasks()' before saving.",

@@ -316,7 +316,6 @@ public class TestingPatternsTests : SamplesTestBase
 
         // Real collection behavior
         Assert.Equal(2, order.Items.Count);
-        Assert.True(item1.IsChild);
         Assert.Same(order, item1.Parent);
 
         // Remove item
@@ -375,14 +374,12 @@ public class TestingPatternsTests : SamplesTestBase
 
         // Before adding - no parent
         Assert.Null(member.Parent);
-        Assert.False(member.IsChild);
 
         // Add to collection
         dept.Members.Add(member);
 
         // After adding - parent established
         Assert.Same(dept, member.Parent);
-        Assert.True(member.IsChild);
 
         // Root walks to aggregate root
         Assert.Same(dept, member.Root);

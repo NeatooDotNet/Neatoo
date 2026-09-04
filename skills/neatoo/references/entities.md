@@ -289,18 +289,18 @@ public void IsSavable_CombinesStateChecks()
     Assert.True(order.IsModified);    // Something changed
     Assert.True(order.IsValid);       // Passes validation
     Assert.False(order.IsBusy);       // No async operations
-    Assert.False(order.IsChild);      // Not a child entity
     Assert.True(order.IsSavable);     // Can save!
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L631-L654' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-savable' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L631-L653' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-savable' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `IsSavable` returns `true` when:
 - `IsValid == true` (passes validation)
 - `IsModified == true` (has changes)
 - `IsBusy == false` (no async operations pending)
-- `IsChild == false` (not a child entity -- children are saved through the aggregate root)
+
+It says nothing about aggregate position -- children are saved through the aggregate root, and that is enforced by the interface split, not by `IsSavable`.
 
 ## Child Entity State
 
@@ -323,11 +323,10 @@ public void ChildEntity_CannotSaveDirectly()
     item.Price = 29.99m;
     item.Quantity = 1;
 
-    // Add to collection marks entity as child
+    // Add to collection attaches the entity to the aggregate
     order.Items.Add(item);
 
     // Child entity state
-    Assert.True(item.IsChild);
     Assert.Same(order, item.Root);
 
     // Child interfaces (IEntityBase) don't expose IsSavable or Save().
@@ -335,7 +334,7 @@ public void ChildEntity_CannotSaveDirectly()
     // This is enforced at the type level — no runtime check needed.
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L656-L682' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L655-L680' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-child-state' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Factory Services
@@ -360,7 +359,7 @@ public void Factory_SetThroughDependencyInjection()
     // The factory calls Insert, Update, or Delete based on entity state
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L684-L699' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L682-L697' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-factory-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Save Cancellation
@@ -390,7 +389,7 @@ public async Task Save_SupportsCancellation()
     Assert.True(order.IsModified);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L701-L721' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L699-L719' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-save-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Parent Property
@@ -570,7 +569,7 @@ public async Task CascadeSave_OnlyRootSavedExternally()
     Assert.False(saved.IsNew);
 }
 ```
-<sup><a href='/src/samples/EntitiesSamples.cs#L796-L817' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-cascade-correct-external' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/EntitiesSamples.cs#L791-L812' title='Snippet source file'>snippet source</a> | <a href='#snippet-entities-cascade-correct-external' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Rules

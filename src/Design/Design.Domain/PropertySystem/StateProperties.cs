@@ -30,7 +30,6 @@ namespace Design.Domain.PropertySystem;
 // - IsSelfModified: This object's properties changed (excluding children)
 // - IsDeleted: Marked for deletion
 // - IsSavable: Can call Save() successfully
-// - IsChild: Part of a parent aggregate
 // - Root: Reference to aggregate root
 // - ModifiedProperties: Names of changed properties
 // - IsMarkedModified: Explicitly marked (not from property changes)
@@ -213,7 +212,7 @@ internal partial class ModificationChildDemo : EntityBase<ModificationChildDemo>
 }
 
 /// <summary>
-/// Demonstrates: IsSavable, IsDeleted, IsChild, Root.
+/// Demonstrates: IsSavable, IsDeleted, Root.
 /// </summary>
 [Factory]
 internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
@@ -240,7 +239,7 @@ internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
     // =========================================================================
     // IsSavable - Can Save() Be Called?
     // =========================================================================
-    // IsSavable = (IsModified || IsNew) && IsValid && !IsBusy && !IsChild
+    // IsSavable = (IsModified || IsNew) && IsValid && !IsBusy
     //
     // A REASON to persist, and nothing blocking it:
     // - IsModified || IsNew: either it differs from its baseline, or persistence
@@ -249,7 +248,10 @@ internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
     //   not because it pretends to hold unsaved edits.
     // - IsValid: All validation must pass
     // - !IsBusy: No async operations in progress
-    // - !IsChild: Not a child entity (children save through parent)
+    //
+    // The formula says nothing about position in an aggregate. A modified child
+    // CONCRETE reports IsSavable == true; what stops a consumer saving it is
+    // that the child INTERFACE exposes neither IsSavable nor Save().
     //
     // COMMON MISTAKE: Checking IsSavable without awaiting tasks.
     //
@@ -277,18 +279,32 @@ internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
     // =========================================================================
 
     // =========================================================================
-    // IsChild - Aggregate Membership
+    // Aggregate Membership - Root vs Child
     // =========================================================================
-    // IsChild = true: Entity is part of a parent aggregate.
-    //   - Set when added to an EntityListBase
-    //   - Cannot call Save() directly (throws SaveOperationException)
-    //   - Persisted through parent's Save()
+    // DESIGN DECISION: there is no IsChild flag. Membership in an aggregate is
+    // declared in the TYPE SYSTEM, not carried as runtime state.
+    //
+    // A root entity interface extends IEntityRoot, which exposes IsSavable and
+    // Save(). A child entity interface extends IEntityBase, which exposes
+    // neither. Concrete entity classes are internal, so a consumer only ever
+    // holds the interface - and the child interface simply has no Save() to
+    // call. The barrier is a compile error, not a runtime exception.
+    //
+    // DID NOT DO THIS: an IsChild flag with a !IsChild term in IsSavable and a
+    // guard in Save(). It was only ever set by EntityListBase, so a child held
+    // as a direct property never got it, and the "protection" it advertised was
+    // real for list children and absent everywhere else. Worse, IsSavable
+    // returning false on a child led save-cascade code to skip children that
+    // genuinely needed persisting.
+    //
+    // What DOES track list membership is ContainingList (internal), which is
+    // what routes a child's Delete() through its list.
     //
     // COMMON MISTAKE: Trying to save child entities.
     //
     // WRONG:
     //   parent.Items[0].Name = "Changed";
-    //   await parent.Items[0].Save();  // THROWS! IsChild=true, IsSavable=false
+    //   await parent.Items[0].Save();  // Does not compile: IOrderItem has no Save()
     //
     // RIGHT:
     //   parent.Items[0].Name = "Changed";

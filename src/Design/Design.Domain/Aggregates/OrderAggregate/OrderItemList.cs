@@ -173,7 +173,7 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 //   var order = await orderFactory.Fetch(1);
 //   var newItem = orderItemFactory.Create("New Product", 5, 10.00m);
 //   order.Items.Add(newItem);
-//   // newItem: IsNew=true, IsChild=true, ContainingList=order.Items
+//   // newItem: IsNew=true, ContainingList=order.Items
 //
 // Remove:
 //   order.Items.Remove(newItem);
@@ -203,7 +203,7 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 // Add new:
 //   var newItem = orderItemFactory.Create("New", 1, 5.00m);
 //   order.Items.Add(newItem);
-//   // newItem: IsNew=true, IsChild=true
+//   // newItem: IsNew=true
 //
 // Remove existing:
 //   var removedItem = order.Items[1];
@@ -313,11 +313,11 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 // IMPORTANT: ContainingList stays SET when item is removed.
 // It's only cleared in the list's FactoryComplete after successful persistence.
 //
-// ContainingList and IsChild are child IDENTITY, applied on every add -
-// live or paused. Items loaded by the list's own [Fetch] get them too, which
-// is what makes Delete() routing work for fetched children. (ContainingList
-// cannot be serialized, so the paused add path is also what re-establishes it
-// on the client after a round trip.)
+// ContainingList IS child identity - there is no IsChild flag. It is applied
+// on every add, live or paused. Items loaded by the list's own [Fetch] get it
+// too, which is what makes Delete() routing work for fetched children.
+// (ContainingList cannot be serialized, so the paused add path is also what
+// re-establishes it on the client after a round trip.)
 //
 // Timeline (live add):
 //   Add to list      -> ContainingList = list

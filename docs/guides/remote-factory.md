@@ -80,14 +80,13 @@ Before save executes, check `IsSavable` (available on aggregate roots through `I
 /// </summary>
 public static async Task<bool> CheckSavableBeforeSave(SkillRfIntegrationRoot entity)
 {
-    // IsSavable = (IsModified || IsNew) && IsValid && !IsBusy && !IsChild
+    // IsSavable = (IsModified || IsNew) && IsValid && !IsBusy
     if (!entity.IsSavable)
     {
         // Don't persist - one or more conditions failed:
         // - !IsModified: No changes to save
         // - !IsValid: Validation failed
         // - IsBusy: Async rules still running
-        // - IsChild: Must save through parent aggregate
         return false;
     }
 
@@ -95,7 +94,7 @@ public static async Task<bool> CheckSavableBeforeSave(SkillRfIntegrationRoot ent
     return true;
 }
 ```
-<sup><a href='/src/samples/RemoteFactoryIntegrationSamples.cs#L179-L199' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-issavable-check' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/RemoteFactoryIntegrationSamples.cs#L178-L197' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-issavable-check' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After `[Insert]` or `[Update]` completes:
@@ -112,7 +111,7 @@ Child entities within an aggregate have their state cascade to the parent:
 | `IsValid = false` | Parent `IsValid = false` |
 | `IsBusy = true` | Parent `IsBusy = true` |
 
-Child entities have `IsChild = true` and must save through the aggregate root. Their interfaces extend `IEntityBase` (not `IEntityRoot`), so `IsSavable` and `Save()` are not accessible to consumers.
+Child entities must save through the aggregate root. Their interfaces extend `IEntityBase` (not `IEntityRoot`), so `IsSavable` and `Save()` are not accessible to consumers.
 
 <!-- snippet: remote-factory-child-no-remote -->
 <a id='snippet-remote-factory-child-no-remote'></a>
@@ -121,7 +120,6 @@ Child entities have `IsChild = true` and must save through the aggregate root. T
 [Create]
 public void Create()
 {
-    // IsChild = true (set when added to parent collection)
     // IsSavable/Save() not accessible on IEntityBase (child interface)
 }
 
@@ -142,7 +140,7 @@ public void Update() { /* Persist through aggregate root */ }
 [Delete]
 public void Delete() { /* Persist through aggregate root */ }
 ```
-<sup><a href='/src/samples/RemoteFactoryIntegrationSamples.cs#L131-L156' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-child-no-remote' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/RemoteFactoryIntegrationSamples.cs#L131-L155' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-child-no-remote' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## DeletedList Lifecycle
@@ -183,7 +181,7 @@ public static void DeletedListLifecycle(
     // Step 4: After Save(), DeletedList is cleared
 }
 ```
-<sup><a href='/src/samples/RemoteFactoryIntegrationSamples.cs#L224-L247' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-deletedlist-lifecycle' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/RemoteFactoryIntegrationSamples.cs#L221-L244' title='Snippet source file'>snippet source</a> | <a href='#snippet-remote-factory-deletedlist-lifecycle' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Serialization State Transfer
@@ -196,7 +194,6 @@ When entities cross client-server boundaries:
 | `IsNew` | Yes | Preserved across boundary |
 | `IsDeleted` | Yes | Preserved across boundary |
 | `IsModified` | Yes | Preserved across boundary |
-| `IsChild` | Yes | Preserved across boundary |
 | `DeletedList` items | Yes | For pending deletes |
 | Validation messages | No | Rules re-run after deserialization |
 | `IsBusy` | No | Reset on deserialization |

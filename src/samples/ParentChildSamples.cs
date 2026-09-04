@@ -217,12 +217,6 @@ public class ParentChildSamplesTests : SamplesTestBase
         // Child entity: Parent set, Root points to aggregate root
         Assert.Same(order, lineItem.Parent);
         Assert.Same(order, lineItem.Root);
-
-        // Child is marked as child entity
-        Assert.True(lineItem.IsChild);
-
-        // Aggregate root is not a child
-        Assert.False(order.IsChild);
     }
     #endregion
 
@@ -309,21 +303,17 @@ public class ParentChildSamplesTests : SamplesTestBase
         item.UnitPrice = 99.99m;
         item.Quantity = 1;
 
-        // Before adding: not a child
-        Assert.False(item.IsChild);
+        // Before adding: not attached to an aggregate
         Assert.Null(item.Root);
 
         // Add to collection
         order.LineItems.Add(item);
 
         // After adding:
-        // 1. IsChild is set to true
-        Assert.True(item.IsChild);
-
-        // 2. Root points to aggregate root
+        // 1. Root points to aggregate root
         Assert.Same(order, item.Root);
 
-        // 3. Parent is set
+        // 2. Parent is set
         Assert.Same(order, item.Parent);
 
         // 4. Child interfaces (IEntityBase) don't expose IsSavable or Save().

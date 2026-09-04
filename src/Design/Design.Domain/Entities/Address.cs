@@ -15,7 +15,7 @@ namespace Design.Domain.Entities;
 /// Demonstrates: Child entity within an aggregate.
 ///
 /// Key points:
-/// - Part of Employee aggregate (IsChild=true when added to a live AddressList)
+/// - Part of Employee aggregate (added to an AddressList, which owns it)
 /// - Cannot be saved by consumers (IAddress has no Save(); child persistence
 ///   operations require the parent's identity)
 /// - Loads through its own [Fetch], persists through its own [Insert]/[Update],
@@ -184,15 +184,14 @@ internal partial class Address : EntityBase<Address>, IAddress
 // =============================================================================
 // When an Address is added to a LIVE AddressList (user flow, list not paused):
 // 1. InsertItem() is called on the list
-// 2. MarkAsChild() sets address.IsChild = true
-// 3. SetContainingList() tracks ownership
-// 4. If address was deleted, UnDelete() is called
+// 2. SetContainingList() tracks ownership
+// 3. If address was deleted, UnDelete() is called
 //
 // When addresses are loaded by AddressList.Fetch, the list is paused by its own
 // factory operation. The paused add path skips the DIRT-producing steps but
-// still applies child identity (steps 2-3), so fetched addresses have
-// IsChild=true and a ContainingList - address.Delete() routes through the list
-// exactly as it does for a live add. Parent/Root are established one step
+// still applies child identity (step 2), so fetched addresses have a
+// ContainingList - address.Delete() routes through the list exactly as it
+// does for a live add. Parent/Root are established one step
 // later, when the parent assigns Addresses = addressListFactory.Fetch(id).
 //
 // When an Address is removed from AddressList:

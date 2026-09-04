@@ -156,7 +156,7 @@ When searching for requirements related to a todo:
 4. **Check release notes** — For past breaking changes in the same area
 5. **Search framework source comments** — For hidden constraints (DESIGN DECISION markers)
 
-**Use conceptual synonyms, not just literal terms.** If the todo is about "IsSavable behavior," also search for "IsChild," "!IsChild," "Save()," "aggregate root," "IEntityRoot," and "child entity." Construct multiple searches that approach the concept from different angles.
+**Use conceptual synonyms, not just literal terms.** If the todo is about "IsSavable behavior," also search for "Save()," "aggregate root," "IEntityRoot," "ContainingList," and "child entity." Construct multiple searches that approach the concept from different angles.
 
 ---
 
@@ -199,7 +199,7 @@ The most dangerous contradictions in a framework are implicit. Watch for:
 - **Serialization round-trip** — What survives JSON serialization between client and server. Changes to property storage affect client-server state transfer.
 - **Source generator output** — Changes to base classes affect what BaseGenerator and RemoteFactory generate. A change in ValidateBase may break generated code for every entity.
 - **Rule execution timing** — When rules fire relative to property changes and factory operations. Changes to timing affect validation behavior across all entities.
-- **Parent-child relationships** — IsChild, Root, Parent, ContainingList references. Changes to how these are set affect aggregate boundary enforcement.
+- **Parent-child relationships** — Root, Parent, ContainingList references. Changes to how these are set affect aggregate boundary enforcement.
 
 ### Step 4: Write Findings into Todo
 

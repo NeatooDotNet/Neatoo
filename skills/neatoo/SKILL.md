@@ -244,7 +244,7 @@ The coupling concerns DDD raises are real — they apply to coupling *across* ag
 | `IsSelfModified` | bool | This object's own properties changed (excludes children) |
 | `IsValid` | bool | This object and all children pass validation |
 | `IsSelfValid` | bool | This object (only) passes validation |
-| `IsSavable` | bool | `(IsModified \|\| IsNew) && IsValid && !IsBusy && !IsChild` |
+| `IsSavable` | bool | `(IsModified \|\| IsNew) && IsValid && !IsBusy`. Knows nothing about aggregate position — a modified child concrete reports `true`. Only `IEntityRoot` exposes it. |
 | `IsNew` | bool | Not yet persisted. Set true by Create, false by Fetch/Insert. Routing state only — it does **not** imply `IsModified`; a created object is savable but not modified. |
 | `IsDeleted` | bool | Marked for deletion |
 | `RuleManager` | IRuleManager | Access to validation rules |

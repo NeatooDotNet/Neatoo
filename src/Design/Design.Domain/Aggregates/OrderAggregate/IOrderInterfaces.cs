@@ -30,7 +30,9 @@
 //
 // WRONG:
 //   public interface IOrderItem : IEntityRoot { ... }
-//   // IOrderItem.IsSavable is always false (IsChild=true), confusing
+//   // IOrderItem.IsSavable reports TRUE for a modified child - IsSavable knows
+//   // nothing about aggregate position - inviting a Save() the framework does
+//   // not support
 //
 // RIGHT:
 //   public interface IOrderItem : IEntityBase { ... }

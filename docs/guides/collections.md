@@ -99,8 +99,7 @@ EntityListBase additionally enforces aggregate boundary rules:
 - Prevents adding busy items (with async validation rules running)
 - Prevents cross-aggregate moves (item.Root must match list.Root or be null)
 - Marks existing entities as modified (they're being re-added to the graph)
-- Marks items as child entities (IsChild = true)
-- Sets the item's ContainingList property (tracks which collection owns the entity)
+- Sets the item's ContainingList property (tracks which collection owns the entity, and routes the child's `Delete()` through the list)
 - Handles intra-aggregate moves (removes from old list's DeletedList, undeletes item)
 
 ## Removing Items

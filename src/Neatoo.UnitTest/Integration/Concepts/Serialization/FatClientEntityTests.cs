@@ -184,32 +184,6 @@ public class FatClientEntityTests : IntegrationTestBase
     }
 
     [TestMethod]
-    public void FatClientEntity_IsChild()
-    {
-
-        _target.MarkAsChild();
-
-        var json = Serialize(_target);
-
-        var newTarget = DeserializeEntity(json);
-
-        Assert.IsTrue(newTarget.IsChild);
-
-    }
-
-    [TestMethod]
-    public void FatClientEntity_IsChild_False()
-    {
-
-        var json = Serialize(_target);
-
-        var newTarget = DeserializeEntity(json);
-
-        Assert.IsFalse(newTarget.IsChild);
-
-    }
-
-    [TestMethod]
     public void FatClientEntity_ModifiedProperties()
     {
 

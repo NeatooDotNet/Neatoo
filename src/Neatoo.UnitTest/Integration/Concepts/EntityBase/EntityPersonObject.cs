@@ -5,7 +5,6 @@ using Neatoo.UnitTest.Integration.Aggregates.Person;
 namespace Neatoo.UnitTest.Integration.Concepts.EntityBase;
 public partial interface IEntityPerson : IPersonEntity
 {
-    void MarkAsChild();
     void MarkNew();
     void MarkOld();
     void MarkUnmodified();
@@ -34,11 +33,6 @@ public partial class EntityPerson : PersonEntityBase<EntityPerson>, IEntityPerso
     public partial List<int> InitiallyDefined { get; set; }
     public partial IEntityPerson Child { get; set; }
     public partial IEntityPersonList ChildList { get; set; }
-
-    void IEntityPerson.MarkAsChild()
-    {
-        this.MarkAsChild();
-    }
 
     void IEntityPerson.MarkDeleted()
     {

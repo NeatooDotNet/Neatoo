@@ -4228,9 +4228,6 @@ partial class UniqueNameRuleTests
 			/// <summary>Interceptor for PropertyMessages.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<global::System.Collections.Generic.IReadOnlyCollection<global::Neatoo.IPropertyMessage>> PropertyMessages { get; } = new("PropertyMessages", () => new global::System.Collections.Generic.List<global::Neatoo.IPropertyMessage>());
 
-			/// <summary>Interceptor for IsChild.</summary>
-			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsChild { get; } = new("IsChild");
-
 			/// <summary>Interceptor for IsModified.</summary>
 			public global::KnockOff.Interceptors.PropertyGetInterceptor<bool> IsModified { get; } = new("IsModified");
 
@@ -4440,11 +4437,6 @@ partial class UniqueNameRuleTests
 				get => PropertyMessages.InvokeGet(Strict);
 			}
 
-			bool global::Neatoo.IEntityMetaProperties.IsChild
-			{
-				get => IsChild.InvokeGet(Strict);
-			}
-
 			bool global::Neatoo.IEntityMetaProperties.IsModified
 			{
 				get => IsModified.InvokeGet(Strict);
@@ -4513,7 +4505,6 @@ partial class UniqueNameRuleTests
 				IsValid.SetSourceFallback(source != null ? () => source.IsValid : null);
 				IsSelfValid.SetSourceFallback(source != null ? () => source.IsSelfValid : null);
 				PropertyMessages.SetSourceFallback(source != null ? () => source.PropertyMessages : null);
-				IsChild.SetSourceFallback(source != null ? () => source.IsChild : null);
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
@@ -4550,7 +4541,6 @@ partial class UniqueNameRuleTests
 				IsValid.SetSourceFallback(source != null ? () => source.IsValid : null);
 				IsSelfValid.SetSourceFallback(source != null ? () => source.IsSelfValid : null);
 				PropertyMessages.SetSourceFallback(source != null ? () => source.PropertyMessages : null);
-				IsChild.SetSourceFallback(source != null ? () => source.IsChild : null);
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
@@ -4587,7 +4577,6 @@ partial class UniqueNameRuleTests
 				IsValid.SetSourceFallback(source != null ? () => source.IsValid : null);
 				IsSelfValid.SetSourceFallback(source != null ? () => source.IsSelfValid : null);
 				PropertyMessages.SetSourceFallback(source != null ? () => source.PropertyMessages : null);
-				IsChild.SetSourceFallback(source != null ? () => source.IsChild : null);
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
@@ -4624,7 +4613,6 @@ partial class UniqueNameRuleTests
 				IsValid.SetSourceFallback(source != null ? () => source.IsValid : null);
 				IsSelfValid.SetSourceFallback(source != null ? () => source.IsSelfValid : null);
 				PropertyMessages.SetSourceFallback(source != null ? () => source.PropertyMessages : null);
-				IsChild.SetSourceFallback(null);
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
@@ -4661,7 +4649,6 @@ partial class UniqueNameRuleTests
 				IsValid.SetSourceFallback(null);
 				IsSelfValid.SetSourceFallback(null);
 				PropertyMessages.SetSourceFallback(null);
-				IsChild.SetSourceFallback(null);
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
@@ -4698,7 +4685,6 @@ partial class UniqueNameRuleTests
 				IsValid.SetSourceFallback(null);
 				IsSelfValid.SetSourceFallback(null);
 				PropertyMessages.SetSourceFallback(null);
-				IsChild.SetSourceFallback(null);
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
@@ -4735,7 +4721,6 @@ partial class UniqueNameRuleTests
 				IsValid.SetSourceFallback(null);
 				IsSelfValid.SetSourceFallback(null);
 				PropertyMessages.SetSourceFallback(null);
-				IsChild.SetSourceFallback(null);
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
@@ -4772,7 +4757,6 @@ partial class UniqueNameRuleTests
 				IsValid.SetSourceFallback(source != null ? () => source.IsValid : null);
 				IsSelfValid.SetSourceFallback(source != null ? () => source.IsSelfValid : null);
 				PropertyMessages.SetSourceFallback(source != null ? () => source.PropertyMessages : null);
-				IsChild.SetSourceFallback(null);
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
@@ -4809,7 +4793,6 @@ partial class UniqueNameRuleTests
 				IsValid.SetSourceFallback(null);
 				IsSelfValid.SetSourceFallback(null);
 				PropertyMessages.SetSourceFallback(null);
-				IsChild.SetSourceFallback(source != null ? () => source.IsChild : null);
 				IsModified.SetSourceFallback(source != null ? () => source.IsModified : null);
 				IsSelfModified.SetSourceFallback(source != null ? () => source.IsSelfModified : null);
 				IsMarkedModified.SetSourceFallback(source != null ? () => source.IsMarkedModified : null);
@@ -4846,7 +4829,6 @@ partial class UniqueNameRuleTests
 				IsValid.SetSourceFallback(null);
 				IsSelfValid.SetSourceFallback(null);
 				PropertyMessages.SetSourceFallback(null);
-				IsChild.SetSourceFallback(null);
 				IsModified.SetSourceFallback(null);
 				IsSelfModified.SetSourceFallback(null);
 				IsMarkedModified.SetSourceFallback(null);
@@ -4885,7 +4867,6 @@ partial class UniqueNameRuleTests
 				if (IsValid.CheckVerification() is { } isvalidFailure) failures.Add(isvalidFailure);
 				if (IsSelfValid.CheckVerification() is { } isselfvalidFailure) failures.Add(isselfvalidFailure);
 				if (PropertyMessages.CheckVerification() is { } propertymessagesFailure) failures.Add(propertymessagesFailure);
-				if (IsChild.CheckVerification() is { } ischildFailure) failures.Add(ischildFailure);
 				if (IsModified.CheckVerification() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerification() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerification() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);
@@ -4929,7 +4910,6 @@ partial class UniqueNameRuleTests
 				if (IsValid.CheckVerificationAll() is { } isvalidFailure) failures.Add(isvalidFailure);
 				if (IsSelfValid.CheckVerificationAll() is { } isselfvalidFailure) failures.Add(isselfvalidFailure);
 				if (PropertyMessages.CheckVerificationAll() is { } propertymessagesFailure) failures.Add(propertymessagesFailure);
-				if (IsChild.CheckVerificationAll() is { } ischildFailure) failures.Add(ischildFailure);
 				if (IsModified.CheckVerificationAll() is { } ismodifiedFailure) failures.Add(ismodifiedFailure);
 				if (IsSelfModified.CheckVerificationAll() is { } isselfmodifiedFailure) failures.Add(isselfmodifiedFailure);
 				if (IsMarkedModified.CheckVerificationAll() is { } ismarkedmodifiedFailure) failures.Add(ismarkedmodifiedFailure);

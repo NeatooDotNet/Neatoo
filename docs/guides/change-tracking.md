@@ -379,11 +379,12 @@ An entity is savable when it has a reason to persist **and** nothing blocks pers
 - `IsModified || IsNew` - either it differs from its baseline, or persistence doesn't know it yet
 - `IsValid` - All validation rules pass
 - `!IsBusy` - No async operations are in progress
-- `!IsChild` - The entity is not a child (child entities save through their parent)
+
+`IsSavable` says nothing about position in an aggregate: a modified child *concrete* reports `true`. What keeps consumers from saving a child is that the child interface has no `IsSavable` and no `Save()`.
 
 The `|| IsNew` is what lets `IsModified` stay honest. A freshly created entity is savable because inserting it is meaningful — not because it pretends to hold unsaved edits. See [Why IsNew is not part of IsModified](#why-isnew-is-not-part-of-ismodified).
 
-**Why IsSavable is IEntityRoot only:** `IsSavable` on `EntityBase` includes a `!IsChild` check, making it always false for child entities. Developers naturally used `IsSavable` in save cascade logic to check whether children need persisting, but it silently returned false, skipping saves. This caused a real production bug. The fix removes `IsSavable` from the child interface entirely. Aggregate root interfaces extend `IEntityRoot`; child entity interfaces extend `IEntityBase`.
+**Why IsSavable is IEntityRoot only:** `EntityBase` defines `IsSavable` and `Save()` as concrete members that know nothing about aggregate position, so a modified child concrete looks savable — yet children are persisted by their aggregate root, never on their own. Developers used `IsSavable` in save cascade logic to decide whether children needed persisting, and reached for `Save()` on a child, which the framework does not support. This caused a real production bug. The fix removes `IsSavable` and `Save()` from the child interface entirely, so the mistake is a compile error. Aggregate root interfaces extend `IEntityRoot`; child entity interfaces extend `IEntityBase`.
 
 This architecture ensures child entities within an aggregate cannot be saved independently, maintaining aggregate consistency:
 
@@ -403,15 +404,14 @@ public void IsSavable_CombinesModificationAndValidation()
     // Modify the entity
     employee.Name = "Bob";
 
-    // Modified, valid, not busy, not child = savable
+    // Modified, valid, not busy = savable
     Assert.True(employee.IsModified);
     Assert.True(employee.IsValid);
     Assert.False(employee.IsBusy);
-    Assert.False(employee.IsChild);
     Assert.True(employee.IsSavable);
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L354-L375' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-savable' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L354-L374' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-savable' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `Save()` method checks `IsSavable` and throws `SaveOperationException` with a specific reason code if the preconditions are not met:
@@ -436,11 +436,10 @@ public async Task Save_ThrowsWithSpecificReason()
     Assert.Equal(SaveFailureReason.NotModified, exception.Reason);
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L377-L394' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-save-checks' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L376-L393' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-save-checks' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Common `SaveFailureReason` values:
-- `IsChildObject` - Entity is a child and must be saved through its parent
 - `IsInvalid` - Validation rules have failed
 - `NotModified` - No changes detected (nothing to persist)
 - `IsBusy` - Async operations still in progress
@@ -478,7 +477,7 @@ public void PauseAllActions_PreventsModificationTracking()
     Assert.Empty(employee.ModifiedProperties);
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L396-L419' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-pause-actions' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L395-L418' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-pause-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 While paused, property setters still execute but tracking mechanisms are disabled:
@@ -527,7 +526,7 @@ public void IsNew_IndicatesUnpersistedEntity()
     // MarkModified() in the factory method body.
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L421-L443' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-new' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L420-L442' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-new' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `IsNew` flag is automatically set by factory Create methods and cleared after successful Insert. It is pure routing state: it decides Insert vs Update and contributes to `IsSavable`, but it does **not** make an entity modified. See [Why IsNew is not part of IsModified](#why-isnew-is-not-part-of-ismodified).
@@ -560,7 +559,7 @@ public void IsDeleted_MarksEntityForDeletion()
     Assert.False(employee.IsModified);
 }
 ```
-<sup><a href='/src/samples/ChangeTrackingSamples.cs#L445-L468' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-deleted' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/samples/ChangeTrackingSamples.cs#L444-L467' title='Snippet source file'>snippet source</a> | <a href='#snippet-tracking-is-deleted' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `IsDeleted` flag is set by calling `Delete()` and can be reversed with `UnDelete()` before saving. Deleted entities contribute to both `IsModified` and `IsSelfModified`, ensuring they are recognized as changed and savable.
