@@ -388,10 +388,32 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// </remarks>
     public void Delete()
     {
-        if (this.ContainingList != null)
+        // Route through the list, which owns what leaving it means.
+        //
+        // NOT a plain Remove(): RemoveItem does its mark-deleted-and-queue work inside
+        // `if (!IsPaused)`, so a Delete() issued inside a factory operation would remove
+        // the child and record nothing - no MarkDeleted, no DeletedList entry, no DELETE
+        // at save time. The row would be silently orphaned.
+        //
+        // That paused branch is correct for its own purpose: during a fetch or
+        // deserialization a removal is baseline construction, not a user deletion, and
+        // queueing those would manufacture phantom DELETEs. Delete() is different in kind -
+        // it states intent - so it goes through DeleteChild, which records the deletion
+        // whatever window it happens in and still removes the child so the normal
+        // FactoryComplete(Update) cleanup can drain it.
+        //
+        // Marking in place and leaving the child in the list is NOT sufficient, and was
+        // this fix's first shape: IsSelfModified includes IsDeleted, so such a child keeps
+        // the list IsModified forever and the canonical [Update] loop re-issues its DELETE
+        // on every subsequent save.
+        //
+        // Reachable only because ISNEW-003 began setting ContainingList on children added
+        // during a paused window; no canonical flow calls Delete() inside a factory body
+        // today, and the framework itself routes through MarkDeleted rather than Delete()
+        // precisely to avoid this path. (LIST-004)
+        if (this.ContainingList is IEntityListBaseInternal listInternal)
         {
-            // Delegate to the list's Remove method for consistency
-            this.ContainingList.Remove(this);
+            listInternal.DeleteChild(this);
             return;
         }
 

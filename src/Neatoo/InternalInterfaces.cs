@@ -156,6 +156,21 @@ internal interface IEntityListBaseInternal
     /// </summary>
     /// <param name="item">The entity to remove from the deleted list.</param>
     void RemoveFromDeletedList(IEntityBase item);
+
+    /// <summary>
+    /// Deletes a child of this list: marks it deleted, queues it for persistence deletion if it
+    /// was persisted, and removes it from the collection.
+    /// </summary>
+    /// <param name="item">The child entity to delete.</param>
+    /// <remarks>
+    /// Exists because <c>RemoveItem</c>'s paused branch deliberately does none of the marking or
+    /// queueing — during a fetch or deserialization a removal is baseline construction, not a user
+    /// deletion. <c>EntityBase.Delete()</c> is an explicit statement of intent and must record the
+    /// deletion whatever window it happens in, so it routes here instead of straight to
+    /// <c>Remove</c>. Correct on both branches: when the list is live, the marking and queueing are
+    /// left to <c>RemoveItem</c> so nothing is done twice.
+    /// </remarks>
+    void DeleteChild(IEntityBase item);
 }
 
 /// <summary>

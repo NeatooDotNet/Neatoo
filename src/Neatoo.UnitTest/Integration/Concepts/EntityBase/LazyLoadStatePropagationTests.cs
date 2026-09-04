@@ -34,8 +34,16 @@ public class LazyLoadStatePropagationTests : IntegrationTestBase
     public void LazyLoadChild_InitialState_ParentNotModified()
     {
         // After Fetch, the partial properties are not modified.
-        // Verify child is not modified.
         Assert.IsFalse(child.IsModified, "Child should not be modified after Fetch");
+
+        // The parent assertion the test is NAMED for. It used to assert only the child,
+        // so "ParentNotModified" was covered by nothing: attaching a lazy-loaded child
+        // could have dirtied the parent and this test would still have passed. The
+        // companion test LazyLoadChild_ModifyChild_ParentIsModified proves the parent
+        // does react to a child edit, so this pair now distinguishes "attaching does not
+        // dirty" from "the parent never notices anything". (LIST-005)
+        Assert.IsFalse(parent.IsModified, "Attaching a lazy-loaded child must not dirty the parent");
+        Assert.IsFalse(parent.IsSelfModified, "...and must not dirty the parent's own properties");
     }
 
     [TestMethod]

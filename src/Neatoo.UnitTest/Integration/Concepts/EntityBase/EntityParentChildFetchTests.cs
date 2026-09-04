@@ -18,21 +18,26 @@ public class EntityParentChildFetchTests
     {
         scope = UnitTestServices.GetLifetimeScope();
         var persons = scope.GetRequiredService<IReadOnlyList<PersonDto>>();
+        var factory = scope.GetRequiredService<IEntityPersonFactory>();
 
+        // Built through the real [Fetch] factory rather than by newing up objects and
+        // hand-marking them clean.
+        //
+        // This fixture used to call MarkOld() and MarkUnmodified() on both objects
+        // during setup - and then EntityParentChildFetchTest_Fetch_InitialMeta asserted
+        // exactly IsNew == false and IsModified == false. Every one of those assertions
+        // was guaranteed by the setup, so the test could not distinguish "the framework
+        // left a fetched graph clean" from "the test cleaned it". A fetch that dirtied
+        // everything it touched would have passed.
+        //
+        // The marks turn out to have been redundant anyway: IsNew has no initializer and
+        // so defaults to false, and FromDto loads through LoadValue inside a pause, so a
+        // genuine [Fetch] already lands on this state. Now the assertions are the
+        // framework's behavior. (LIST-005)
+        parent = factory.FillFromDto(persons.Where(p => !p.FatherId.HasValue && !p.MotherId.HasValue).First());
 
-
-        parent = scope.GetRequiredService<IEntityPerson>();
-        parent.FromDto(persons.Where(p => !p.FatherId.HasValue && !p.MotherId.HasValue).First());
-
-        child = scope.GetRequiredService<IEntityPerson>();
-        child.FromDto(persons.Where(p => p.FatherId == parent.Id).First());
+        child = factory.FillFromDto(persons.Where(p => p.FatherId == parent.Id).First());
         parent.Child = child;
-
-        child.MarkOld();
-        child.MarkUnmodified();
-        parent.MarkOld();
-        parent.MarkUnmodified();
-
 
     }
 

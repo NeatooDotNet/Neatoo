@@ -51,6 +51,17 @@ public class EntityListBaseTests
 
         public void Resume() => ResumeAllActions();
 
+        /// <summary>
+        /// Test helper: makes the item busy by adding a pending task.
+        /// Call the returned action to release the busy state.
+        /// </summary>
+        public Action MarkBusyForTest()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            RunningTasks.AddTask(tcs.Task);
+            return () => tcs.SetResult(true);
+        }
+
         // Expose protected members for testing
         public new void MarkNew() => base.MarkNew();
         public new void MarkOld() => base.MarkOld();
@@ -807,14 +818,584 @@ public void Add_WhenPaused_EstablishesChildIdentity()
         Assert.IsFalse(list.IsModified, "Final state: Item unmodified - list should not be modified");
     }
 
-    // NOTE: PropertyChanged tests for IsModified are NOT included because
-    // EntityListBase.IsModified is computed (uses Any()) and EntityProperty
-    // does not raise PropertyChanged for IsModified changes. This is existing
-    // behavior - the list correctly computes IsModified but doesn't get
-    // notifications when children's IsModified state changes.
-    //
-    // If we add caching/notification for IsModified in the future, we should
-    // add tests similar to ValidateListBase's IsValid notification tests.
+    // The NOTE that stood here said PropertyChanged tests for IsModified were not
+    // included because "EntityListBase.IsModified is computed (uses Any()) and ...
+    // does not raise PropertyChanged". That predates _cachedChildrenModified and
+    // EntityListBase.CheckIfMetaPropertiesChanged, and LIST-003 disproved it: the
+    // control test below shows a list DOES announce IsModified. The tests the NOTE
+    // deferred are the four that follow.
+
+    /// <summary>
+    /// Captures PropertyChanged names raised by a list. The event is protected on
+    /// ObservableCollection, so it is reachable only through the interface.
+    /// </summary>
+    private static List<string> CaptureNotifications(TestEntityList list)
+    {
+        var raised = new List<string>();
+        ((INotifyPropertyChanged)list).PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName is { } name)
+            {
+                raised.Add(name);
+            }
+        };
+        return raised;
+    }
+
+    /// <summary>
+    /// Fetches a list holding the given persisted, unmodified children, the way a
+    /// factory would - paused, then completed.
+    /// </summary>
+    private static TestEntityList FetchListWith(params TestEntityItem[] items)
+    {
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Fetch);
+        foreach (var item in items)
+        {
+            list.Add(item);
+        }
+        list.FactoryComplete(FactoryOperation.Fetch);
+        return list;
+    }
+
+    [TestMethod]
+    public void SaveCarryingDeletions_ThenChildEdit_AnnouncesIsModified()
+    {
+        // Arrange - THE LIST-003 DEFECT.
+        //
+        // FactoryComplete(Update) resumes first, and the resume snapshots the
+        // meta-state baseline while DeletedList is still populated - so the baseline
+        // records IsModified = true. The Update branch then clears DeletedList, making
+        // the real value false. Before LIST-003 nothing corrected the baseline, so the
+        // list sat at actual-false / baseline-true and the user's NEXT edit compared
+        // true-against-true and announced nothing. The value self-healed (the meta
+        // check at the end of HandlePropertyChanged is unguarded) but no parent or
+        // binding ever heard, so an aggregate holding real unsaved work kept reporting
+        // not-savable.
+        //
+        // Only reachable on a LOCAL save: a [Remote] save deserializes the returned
+        // graph and OnDeserialized rebuilds a correct baseline, which is why every
+        // [Remote] SaveLifecycle fixture missed this.
+        var keep = CreateExistingItem();
+        var drop = CreateExistingItem();
+        var list = FetchListWith(keep, drop);
+        Assert.IsFalse(list.IsModified, "Precondition: a fetched list is clean");
+
+        list.Remove(drop);
+        Assert.IsTrue(list.IsModified, "Precondition: the queued deletion dirties the list");
+        Assert.AreEqual(1, list.DeletedList.Count);
+
+        // Act - a local save, no serialization round trip
+        list.FactoryStart(FactoryOperation.Update);
+        list.FactoryComplete(FactoryOperation.Update);
+        Assert.IsFalse(list.IsModified, "Precondition: the save cleared the deletion");
+
+        var raised = CaptureNotifications(list);
+        keep.Name = "Edited after the save";
+
+        // Assert
+        Assert.IsTrue(list.IsModified, "The edit dirties the list");
+        CollectionAssert.Contains(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            $"The list must announce the edit, not just compute it. Raised: [{string.Join(", ", raised)}]");
+    }
+
+    [TestMethod]
+    public void SaveWithoutDeletions_ThenChildEdit_AnnouncesIsModified()
+    {
+        // Arrange - THE CONTROL for the test above, and the reason that test means
+        // anything. It is the identical sequence minus the deletion. Because this one
+        // announced even before LIST-003, the pair isolates the stale baseline as the
+        // cause rather than "lists never announce IsModified" - which is exactly what
+        // the NOTE removed from this file used to claim.
+        var keep = CreateExistingItem();
+        var list = FetchListWith(keep);
+
+        // Act - a local save that carried no deletions
+        list.FactoryStart(FactoryOperation.Update);
+        list.FactoryComplete(FactoryOperation.Update);
+        Assert.IsFalse(list.IsModified, "Precondition: nothing was pending");
+
+        var raised = CaptureNotifications(list);
+        keep.Name = "Edited after a clean save";
+
+        // Assert
+        Assert.IsTrue(list.IsModified);
+        CollectionAssert.Contains(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            $"Raised: [{string.Join(", ", raised)}]");
+    }
+
+    [TestMethod]
+    public void FactoryComplete_Fetch_AnnouncesNothing()
+    {
+        // Arrange - the silence invariant that bounds the LIST-003 fix.
+        //
+        // Resume is deliberately silent: after a factory operation the post-factory
+        // state IS the new baseline, so ResumeAllActions snapshots without announcing.
+        // A fetch is not news. LIST-003 added a compare-and-announce to the UPDATE
+        // branch only; if that ever migrates out of the Update branch, this fails.
+        var item = CreateExistingItem();
+        item.Name = "Modified before the fetch completes";
+
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Fetch);
+        list.Add(item);
+
+        var raised = CaptureNotifications(list);
+        list.FactoryComplete(FactoryOperation.Fetch);
+
+        // Assert
+        Assert.IsTrue(list.IsModified, "The list does hold a modified child...");
+        CollectionAssert.DoesNotContain(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            $"...but completing a fetch must not announce it. Raised: [{string.Join(", ", raised)}]");
+    }
+
+    [TestMethod]
+    public void FactoryComplete_Create_AnnouncesNothing()
+    {
+        // Arrange - the Create half of the silence invariant.
+        //
+        // Added on the LIST-003 test gate's recommendation. The fix sits inside
+        // `if (factoryOperation == Update)`, so Create is unreachable *by construction*
+        // today - but "structurally unreachable" is a property of the current guard, not
+        // of the design. A future refactor that consolidated the guard the other way
+        // round (say `if (factoryOperation != Fetch)`) would start announcing on Create
+        // and the Fetch test alone would not notice.
+        var item = CreateExistingItem();
+        item.Name = "Modified before the create completes";
+
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Create);
+        list.Add(item);
+
+        var raised = CaptureNotifications(list);
+        list.FactoryComplete(FactoryOperation.Create);
+
+        // Assert
+        Assert.IsTrue(list.IsModified, "The list does hold a modified child...");
+        CollectionAssert.DoesNotContain(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            $"...but completing a create must not announce it. Raised: [{string.Join(", ", raised)}]");
+    }
+
+    [TestMethod]
+    public void HandlePropertyChanged_MetaCheckIsNotPauseGuarded()
+    {
+        // Arrange - pins a deliberate ASYMMETRY that looks like an oversight.
+        //
+        // HandlePropertyChanged guards its cache arithmetic on pause state but ends
+        // with an UNGUARDED CheckIfMetaPropertiesChanged(). Adding an `if (!IsPaused)`
+        // around that call "for symmetry" would reopen the ISNEW-003 defect with a
+        // green suite, because it is what lets a list's meta state converge after
+        // items change during a paused window. This test is the tripwire: it fails if
+        // someone adds that guard.
+        var item = CreateExistingItem();
+        var list = FetchListWith(item);
+        item.MarkUnmodified();
+
+        // Act - mutate a child while the list is paused
+        list.FactoryStart(FactoryOperation.Fetch);
+        var raised = CaptureNotifications(list);
+        item.Name = "Edited during the paused window";
+
+        // Assert - the meta check ran despite the pause
+        CollectionAssert.Contains(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            "The meta check at the end of HandlePropertyChanged is intentionally NOT "
+            + $"pause-guarded. Raised: [{string.Join(", ", raised)}]");
+
+        list.FactoryComplete(FactoryOperation.Fetch);
+    }
+
+    #endregion
+
+    #region SetItem: displaced item and incoming identity (LIST-002)
+
+    [TestMethod]
+    public void SetItem_ReplacingPersistedChild_QueuesItForDeletion()
+    {
+        // Arrange - THE LIST-002 DEFECT. Before this, SetItem dropped the displaced item
+        // with no MarkDeleted and no DeletedList entry, so replacing a persisted child
+        // SILENTLY ORPHANED its row - no DELETE was ever issued for it.
+        var doomed = CreateExistingItem();
+        var list = FetchListWith(doomed);
+
+        // Act
+        var replacement = CreateExistingItem();
+        replacement.MarkUnmodified();
+        list[0] = replacement;
+
+        // Assert
+        Assert.IsTrue(doomed.IsDeleted, "The displaced persisted child is marked deleted");
+        Assert.AreEqual(1, list.DeletedList.Count, "...and queued so the save issues the DELETE");
+        CollectionAssert.Contains(list.DeletedList, doomed);
+        Assert.IsTrue(list.IsModified, "A queued deletion is unsaved work");
+    }
+
+    [TestMethod]
+    public void SetItem_ReplacingNewChild_DiscardsItWithoutQueueingDeletion()
+    {
+        // Arrange - the other half of the RemoveItem parity rule: a never-persisted
+        // child has no row to delete, so it is discarded rather than queued. Mirrors
+        // RemoveItem's `if (!item.IsNew)`.
+        var list = new TestEntityList();
+        var neverSaved = CreateNewItem();
+        list.Add(neverSaved);
+        Assert.IsTrue(neverSaved.IsNew, "Precondition: the displaced child was never persisted");
+
+        // Act
+        var replacement = CreateExistingItem();
+        replacement.MarkUnmodified();
+        list[0] = replacement;
+
+        // Assert
+        Assert.AreEqual(0, list.DeletedList.Count, "Nothing to delete - it was never persisted");
+        Assert.IsFalse(neverSaved.IsDeleted);
+    }
+
+    [TestMethod]
+    public void SetItem_ReplacingWithAnItemAwaitingDeletion_ResurrectsIt()
+    {
+        // Arrange - SILENT DATA LOSS if SetItem does not mirror InsertItem's re-add step.
+        //
+        // InsertItem's live branch calls RemoveFromDeletedList on the item's old list
+        // and UnDelete()s it if it was flagged (EntityListBase.cs:268-277) - that is what
+        // makes re-adding a removed child work. SetItem's live branch had no equivalent.
+        //
+        // Without it, putting an item that is sitting in DeletedList back into a live
+        // slot leaves it BOTH visibly present in the collection AND still queued with
+        // IsDeleted true. The canonical [Update] loop drives off
+        // this.Union(DeletedList) filtered on IsDeleted, so the next save would DELETE a
+        // row the user's own collection shows as live.
+        var a = CreateExistingItem();
+        var b = CreateExistingItem();
+        var list = FetchListWith(a, b);
+
+        // Remove `a`, so it is queued for deletion
+        list.Remove(a);
+        Assert.IsTrue(a.IsDeleted, "Precondition: a is flagged for deletion");
+        Assert.AreEqual(1, list.DeletedList.Count, "Precondition: a is queued");
+
+        // Act - put it back via the indexer, displacing b
+        list[0] = a;
+
+        // Assert - a is alive again, and nothing will delete its row
+        Assert.IsTrue(list.Contains(a), "a is back in the collection...");
+        Assert.IsFalse(a.IsDeleted, "...so its deletion flag must be cleared");
+        CollectionAssert.DoesNotContain(list.DeletedList, a, "...and it must not still be queued");
+
+        // ...and b, which it displaced, took a's place in the queue
+        Assert.IsTrue(b.IsDeleted, "The displaced item is the one being deleted now");
+        CollectionAssert.Contains(list.DeletedList, b);
+    }
+
+    [TestMethod]
+    public void SetItem_IncomingItem_ReceivesChildIdentity()
+    {
+        // Arrange - SetItem was the one channel by which a child joins a list that did
+        // not confer identity. Without ContainingList, Delete() silently bypasses list
+        // routing. InsertItem confers it on both branches.
+        var list = FetchListWith(CreateExistingItem());
+        var replacement = CreateExistingItem();
+        replacement.MarkUnmodified();
+
+        // Act
+        list[0] = replacement;
+
+        // Assert
+        Assert.AreSame(list, ((IEntityBaseInternal)replacement).ContainingList,
+            "The incoming item is a child of this aggregate");
+
+        // ContainingList is what Delete() routes through - prove it works end to end
+        // rather than resting on the reference check alone.
+        replacement.Delete();
+        Assert.IsFalse(list.Contains(replacement), "Delete() routed through the list it was given");
+    }
+
+    [TestMethod]
+    public void SetItem_ReplacingWithItself_IsANoOp()
+    {
+        // Arrange - guards the boundary the deletion rule creates. Replacing an item
+        // with itself is not a removal, and must not queue the live item for deletion -
+        // which would delete a row that is still in the list.
+        var item = CreateExistingItem();
+        var list = FetchListWith(item);
+
+        // Act
+        list[0] = item;
+
+        // Assert
+        Assert.AreEqual(0, list.DeletedList.Count, "Self-replacement queues no deletion");
+        Assert.IsFalse(item.IsDeleted, "...and does not mark the still-present item deleted");
+        Assert.IsTrue(list.Contains(item));
+    }
+
+    [TestMethod]
+    public void SetItem_ReplacingPersistedChild_AnnouncesIsModified()
+    {
+        // Arrange - the same silent-transition shape LIST-003 fixed for FactoryComplete
+        // and RemoveItem already carried. base.SetItem runs its meta check against the
+        // PRE-change state, so without an announce at the end the false->true flip
+        // caused by the queued deletion never reaches a parent or a binding.
+        var list = FetchListWith(CreateExistingItem());
+        Assert.IsFalse(list.IsModified, "Precondition: the fetched list is clean");
+
+        var raised = CaptureNotifications(list);
+
+        // Act
+        var replacement = CreateExistingItem();
+        replacement.MarkUnmodified();
+        list[0] = replacement;
+
+        // Assert
+        CollectionAssert.Contains(
+            raised,
+            nameof(IEntityMetaProperties.IsModified),
+            $"The replacement must be announced, not just computed. Raised: [{string.Join(", ", raised)}]");
+    }
+
+    [TestMethod]
+    public void SetItem_WhenLive_EnforcesTheSameGuardsAsAdd()
+    {
+        // Arrange - Step 3's guard decision, asserted. A replacement is an add in every
+        // sense that matters, so the three things that make an add illegal now make a
+        // replacement illegal too. Previously SetItem bypassed all three.
+        var list = FetchListWith(CreateExistingItem(), CreateExistingItem());
+
+        // Duplicate: the incoming item is already elsewhere in this list
+        var alreadyPresent = list[1];
+        var duplicateEx = Assert.ThrowsExactly<InvalidOperationException>(() => list[0] = alreadyPresent);
+        Assert.IsTrue(duplicateEx.Message.Contains("already in this list"), duplicateEx.Message);
+
+        // Busy
+        var busy = CreateExistingItem();
+        var release = busy.MarkBusyForTest();
+        var busyEx = Assert.ThrowsExactly<InvalidOperationException>(() => list[0] = busy);
+        Assert.IsTrue(busyEx.Message.Contains("busy"), busyEx.Message);
+        release();
+
+        // The third guard - aggregate boundary - needs a list with a Root, which
+        // TestEntityList has no parent to provide. It is asserted at the tier that can
+        // express it: RootPropertyTests.SetItem_ItemFromDifferentAggregate_Throws.
+    }
+
+    [TestMethod]
+    public void SetItem_WhenPaused_QueuesNothing()
+    {
+        // Arrange - the paused branch stays trusted input, consistent with InsertItem
+        // and with LIST-004's disposition. A factory or deserializer replacing an
+        // element is building a baseline, not deleting a row.
+        var original = CreateExistingItem();
+        var list = FetchListWith(original);
+
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        var replacement = CreateExistingItem();
+        list[0] = replacement;
+
+        // Assert
+        Assert.AreEqual(0, list.DeletedList.Count, "A paused replacement queues no deletion");
+        Assert.IsFalse(original.IsDeleted);
+
+        // ...but identity is still conferred on the paused branch, exactly as InsertItem
+        // does after ISNEW-003
+        Assert.AreSame(list, ((IEntityBaseInternal)replacement).ContainingList,
+            "Identity is conferred on both branches");
+
+        list.FactoryComplete(FactoryOperation.Fetch);
+    }
+
+    #endregion
+
+    #region Paused-Path Guards (LIST-004)
+
+    [TestMethod]
+    public void Delete_WhenListPaused_RecordsTheDeletionInsteadOfDiscardingIt()
+    {
+        // Arrange - THE LIST-004 DEFECT.
+        //
+        // Delete() used to delegate unconditionally to ContainingList.Remove(this).
+        // RemoveItem does its mark-deleted-and-queue work inside `if (!IsPaused)`, so
+        // delegating into a paused list removed the child and recorded NOTHING: no
+        // MarkDeleted, no DeletedList entry, and therefore no DELETE at save time. The
+        // row was silently orphaned.
+        //
+        // Reachable only because ISNEW-003 began setting ContainingList on children
+        // added during a paused window.
+        var item = CreateExistingItem();
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Fetch);
+        list.Add(item);
+        Assert.IsTrue(list.IsPaused, "Precondition: the list is inside a paused window");
+
+        // Act
+        item.Delete();
+
+        // Assert - the intent survives, recorded the same way the live path records it
+        Assert.IsTrue(item.IsDeleted, "The deletion must be recorded, not discarded");
+        Assert.AreEqual(1, list.DeletedList.Count, "...and queued so the save issues the DELETE");
+        Assert.IsFalse(
+            list.Contains(item),
+            "...and removed, so FactoryComplete(Update)'s cleanup can drain it. Marking it "
+            + "in place while leaving it a member - this fix's first shape - kept the list "
+            + "IsModified forever, because IsSelfModified includes IsDeleted and the cleanup "
+            + "only iterates DeletedList. See Delete_WhenListPaused_ThenSave_LeavesTheListClean.");
+
+        list.FactoryComplete(FactoryOperation.Fetch);
+    }
+
+    [TestMethod]
+    public void Delete_WhenListPaused_ThenSave_LeavesTheListClean()
+    {
+        // Arrange - the ROUND TRIP, which LIST-004's first attempt did not test.
+        //
+        // Recording the deletion is only half the job: the item then has to rejoin the
+        // framework's cleanup contract. FactoryComplete(Update)'s cleanup iterates
+        // DeletedList, and EntityBase.IsSelfModified includes `|| IsDeleted`, so an item
+        // marked deleted but left as a live member of the list is IsModified FOREVER -
+        // ResumeAllActions recalculates _cachedChildrenModified from
+        // this.Any(c => c.IsModified) and keeps finding it. The aggregate would report
+        // unsaved work that isn't there, and the canonical [Update] loop
+        // (this.Union(DeletedList) filtered on IsDeleted) would re-issue the DELETE on
+        // every subsequent save.
+        var keep = CreateExistingItem();
+        var doomed = CreateExistingItem();
+        var list = FetchListWith(keep, doomed);
+        Assert.IsFalse(list.IsModified, "Precondition: a fetched list is clean");
+
+        // Act - delete inside a paused window, the way a factory body would, then
+        // complete the save
+        list.FactoryStart(FactoryOperation.Update);
+        doomed.Delete();
+        Assert.IsTrue(doomed.IsDeleted, "The deletion is recorded");
+        list.FactoryComplete(FactoryOperation.Update);
+
+        // Assert - the save is over; nothing should still be pending
+        Assert.IsFalse(list.Contains(doomed), "The deleted child must not remain a member");
+        Assert.AreEqual(0, list.DeletedList.Count, "The save drained the queue");
+        Assert.IsFalse(list.IsModified, "After the save the list must be clean, not permanently dirty");
+    }
+
+    [TestMethod]
+    public void Delete_WhenListIsLive_StillRoutesThroughTheList()
+    {
+        // Arrange - the other half of the LIST-004 contract: the live path is UNCHANGED.
+        // Delete() on a child of a live list must still route through Remove, so the item
+        // leaves the list and lands in DeletedList exactly as before.
+        var item = CreateExistingItem();
+        var list = FetchListWith(item);
+        Assert.IsFalse(list.IsPaused, "Precondition: the list is live");
+
+        // Act
+        item.Delete();
+
+        // Assert
+        Assert.IsFalse(list.Contains(item), "A live delete removes the item from the list");
+        Assert.AreEqual(1, list.DeletedList.Count, "...and queues it for persistence deletion");
+        Assert.IsTrue(item.IsDeleted);
+    }
+
+    [TestMethod]
+    public void Delete_WhenParentless_MarksDeleted()
+    {
+        // Arrange - the third routing case, unchanged by LIST-004: an entity with no
+        // containing list marks itself.
+        var item = CreateExistingItem();
+
+        // Act
+        item.Delete();
+
+        // Assert
+        Assert.IsTrue(item.IsDeleted);
+    }
+
+    [TestMethod]
+    public void Add_WhenPaused_AllowsDuplicate_UnlikeTheLivePath()
+    {
+        // Arrange - dispositions one of the guards the paused InsertItem branch skips.
+        //
+        // The live branch rejects a duplicate add outright. The paused branch skips that
+        // check, along with the busy-item and cross-aggregate checks, because factory and
+        // deserialization input is trusted and the checks cost a scan per add on a path
+        // that loads whole graphs.
+        //
+        // Asserted in the direction the code actually behaves so the skip is a recorded
+        // decision rather than an open question. If the paused branch is ever made to
+        // enforce this, this test fails and the decision gets revisited deliberately.
+        var item = CreateExistingItem();
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        list.Add(item);
+        list.Add(item);
+
+        // Assert
+        Assert.AreEqual(2, list.Count, "The paused branch does not screen duplicates");
+
+        list.FactoryComplete(FactoryOperation.Fetch);
+    }
+
+    [TestMethod]
+    public void Add_WhenPaused_AllowsBusyItem_UnlikeTheLivePath()
+    {
+        // Arrange - the busy half of the same disposition. The live branch refuses a
+        // busy item because adding one mid-async-rule would fold an indeterminate
+        // IsValid into the list's cache. The paused branch skips the check: factory
+        // input is trusted, and the resume recalculates the caches wholesale anyway.
+        var item = CreateExistingItem();
+        var release = item.MarkBusyForTest();
+        Assert.IsTrue(item.IsBusy, "Precondition: the item is busy");
+
+        var list = new TestEntityList();
+        list.FactoryStart(FactoryOperation.Fetch);
+
+        // Act
+        list.Add(item);
+
+        // Assert
+        Assert.AreEqual(1, list.Count, "The paused branch does not screen busy items");
+
+        release();
+        list.FactoryComplete(FactoryOperation.Fetch);
+    }
+
+    [TestMethod]
+    public void Add_WhenLive_RejectsBusyItem()
+    {
+        // Arrange - the live-path counterpart of the busy skip.
+        var item = CreateExistingItem();
+        var release = item.MarkBusyForTest();
+        var list = new TestEntityList();
+
+        // Act & Assert
+        var ex = Assert.ThrowsExactly<InvalidOperationException>(() => list.Add(item));
+        Assert.IsTrue(
+            ex.Message.Contains("busy"),
+            $"The refusal should name the reason: {ex.Message}");
+
+        release();
+    }
+
+    [TestMethod]
+    public void Add_WhenLive_RejectsDuplicate()
+    {
+        // Arrange - the live-path counterpart, so the pair shows the asymmetry is real
+        // and deliberate rather than an accident of which branch got the check.
+        var item = CreateExistingItem();
+        var list = FetchListWith(item);
+
+        // Act & Assert
+        Assert.ThrowsExactly<InvalidOperationException>(() => list.Add(item));
+    }
 
     #endregion
 
@@ -902,8 +1483,25 @@ public void Add_WhenPaused_EstablishesChildIdentity()
         newUnmodifiedItem.MarkUnmodified();
         list[0] = newUnmodifiedItem;
 
-        // Assert
-        Assert.IsFalse(list.IsModified);
+        // Assert - the children-modified cache recalculated to false. This is the
+        // behavior the test was written for and it still holds: no surviving child is
+        // modified, so that term of IsModified is false.
+        Assert.IsTrue(
+            list.All(i => !i.IsModified),
+            "The children-modified cache recalculated - no surviving child is modified");
+
+        // UPDATED BY LIST-002. This test used to assert `list.IsModified == false`
+        // outright. That was only true because replacing a PERSISTED child silently
+        // orphaned its row - no MarkDeleted, no DeletedList entry, no DELETE ever
+        // issued. The assertion was characterizing that defect, not a deliberate
+        // contract: with a real pending deletion, a list that reports "not modified"
+        // is lying, and its aggregate would refuse to save work that needs saving.
+        //
+        // The displaced item is now queued, so IsModified stays true through the
+        // DeletedList term until the save drains it. Behavior change recorded in the
+        // 0.32.0 release notes.
+        Assert.AreEqual(1, list.DeletedList.Count, "The displaced persisted item is queued for deletion");
+        Assert.IsTrue(list.IsModified, "A queued deletion is real unsaved work");
     }
 
     [TestMethod]
@@ -1222,8 +1820,21 @@ public void Add_WhenPaused_EstablishesChildIdentity()
         list.ResumeAllActions();
         unmodifiedItem.MarkUnmodified();
 
-        // Assert
-        Assert.IsFalse(list.IsModified);
+        // Assert - the cache recalculated correctly across 500 items, which is what
+        // this test exists to check: no surviving child is modified.
+        Assert.IsTrue(
+            list.All(i => !i.IsModified),
+            "The children-modified cache recalculated correctly across a large list");
+
+        // UPDATED BY LIST-002, same reason as
+        // SetItem_ReplaceModifiedWithUnmodified_WhenOnlyModified_ListBecomesUnmodified.
+        // The FIRST replacement above (list[250] = modifiedItem) ran live and displaced
+        // a persisted item, so that item is now queued for deletion and IsModified stays
+        // true through the DeletedList term. The second replacement runs paused, which
+        // deliberately queues nothing - trusted factory input, consistent with
+        // InsertItem and LIST-004.
+        Assert.AreEqual(1, list.DeletedList.Count, "Only the live replacement queued a deletion");
+        Assert.IsTrue(list.IsModified, "The queued deletion is still pending a save");
     }
 
     [TestMethod]

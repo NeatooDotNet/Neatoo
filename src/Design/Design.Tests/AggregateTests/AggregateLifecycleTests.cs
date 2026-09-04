@@ -62,6 +62,35 @@ public class AggregateLifecycleTests
         Assert.AreEqual(0, order.Items.DeletedCount, "No deletions pending after fetch");
     }
 
+    [TestMethod]
+    public async Task Fetch_LoadsTheChildrenOfTheRequestedOrder_NotSomeOtherOrders()
+    {
+        // Arrange - until LIST-005, MockOrderRepository.GetItems ignored its orderId and
+        // returned the same two rows for every order. That made this assertion
+        // inexpressible: an OrderItemList that fetched the WRONG order's items - or
+        // ignored the id entirely - passed every test in this suite.
+        _repository.ItemsByOrderId[41] = new[] { (410, "Order-41 widget", 1, 5.00m, 5.00m) };
+        _repository.ItemsByOrderId[42] = new[]
+        {
+            (420, "Order-42 gadget", 2, 7.00m, 14.00m),
+            (421, "Order-42 gizmo", 3, 9.00m, 27.00m),
+        };
+
+        // Act
+        var order41 = await _orderFactory.Fetch(41);
+        var order42 = await _orderFactory.Fetch(42);
+
+        // Assert - each order got its own children, keyed by the id it was asked for
+        CollectionAssert.AreEquivalent(
+            new[] { 410 },
+            order41.Items!.Select(i => i.Id).ToArray(),
+            "Order 41 must load only order 41's items");
+        CollectionAssert.AreEquivalent(
+            new[] { 420, 421 },
+            order42.Items!.Select(i => i.Id).ToArray(),
+            "Order 42 must load only order 42's items");
+    }
+
     // =========================================================================
     // Update path: fetch -> modify -> add -> save
     // =========================================================================
