@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.30.2** (2026-05-24)
+**Neatoo 0.34.0** (2026-09-04)
 
 ---
 
@@ -10,8 +10,16 @@
 
 New features, breaking changes, and significant bug fixes.
 
+> **0.32.0 does not exist** and **0.33.0 was never released on its own.** The list-state work was
+> numbered 0.32.0 in development and renumbered to 0.34.0 when 0.33.0 merged ahead of it; 0.33.0 was
+> then never tagged, so both changesets shipped together in 0.34.0. A `—` date means the version has
+> a release note but no package of its own.
+
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.34.0](v0.34.0.md) | 2026-09-04 | **Breaking** | `EntityListBase` state machinery: a save carrying deletions no longer swallows the next edit's notification; `list[i] = x` deletes the displaced row instead of orphaning it |
+| [0.33.0](v0.33.0.md) | — | **Breaking** | `IsChild` flag removed; root-versus-child is declared in the type system alone. Shipped inside 0.34.0 |
+| [0.31.0](v0.31.0.md) | 2026-08-21 | **Breaking** | `IsNew` decoupled from `IsModified` — a created entity is savable but not modified |
 | [0.30.2](v0.30.2.md) | 2026-05-24 | Bug Fix + Dependency | `AreSame<P>` uses value equality for reference types — equal-content string writes no longer flip `IsModified`; RemoteFactory 1.6.1 |
 | [0.30.1](v0.30.1.md) | 2026-04-14 | Bug Fix | MudNeatooTextField no longer forwards `null` `UserAttributes`; fixes MudBlazor `ArgumentNullException` on init |
 | [0.30.0](v0.30.0.md) | 2026-04-13 | Feature | MudNeatooTextField `UserAttributes` escape hatch for native HTML attributes |
@@ -19,7 +27,10 @@ New features, breaking changes, and significant bug fixes.
 | [0.28.1](v0.28.1.md) | 2026-04-12 | Bug Fix | `PropertyInfoWrapper` attribute caches thread-safe; fixes shared-wrapper Dictionary corruption under concurrent load |
 | [0.28.0](v0.28.0.md) | 2026-04-08 | Feature | `Logger` is now `ILogger<T>` for consumer logging |
 | [0.27.0](v0.27.0.md) | 2026-04-06 | Feature | Field-level authorization via `MarkReadOnly()` |
+| [0.26.2](v0.26.2.md) | 2026-04-05 | Patch | `Disabled` parameter on all MudNeatoo input components; previously threw `InvalidOperationException` |
 | [0.26.1](v0.26.1.md) | 2026-04-04 | Bug Fix | Hash-based rule IDs fix inheritance collision |
+| [0.26.0](v0.26.0.md) | 2026-04-04 | Feature | Opt-in trace logging for serialization and factory lifecycle via `[LoggerMessage]` |
+| [0.25.0](v0.25.0.md) | 2026-03-29 | **Breaking** | `LazyLoad<T>` renamed to `EntityLazyLoad<T>`, now inheriting RemoteFactory's `LazyLoad<T>` |
 | [0.24.0](v0.24.0.md) | 2026-03-23 | Feature | Private setter support in source generator; SetPrivateValue on IValidateProperty |
 | [0.23.2](v0.23.2.md) | 2026-03-21 | Patch | Migrate converters to NeatooReferenceResolver.Current API |
 | [0.23.1](v0.23.1.md) | 2026-03-21 | Patch | RemoteFactory 0.23.1; shared reference handling, factory fetch NRE fix |
@@ -41,6 +52,8 @@ New features, breaking changes, and significant bug fixes.
 | [0.12.0](v0.12.0.md) | 2026-02-26 | Bug Fix | Dictionary properties survive JSON bridge round-trip |
 | [0.11.0](v0.11.0.md) | 2026-01-18 | Feature | LazyLoad&lt;T&gt; wrapper type for async lazy loading |
 | [0.10.0](v0.10.0.md) | 2026-01-16 | Feature | Source-generated property backing fields, lazy loading |
+| [0.9.3](v0.9.3.md) | 2026-01-13 | Dependency | RemoteFactory 10.9.0; fixes `Save()` failing in `NeatooFactory.Logical` mode |
+| [0.8.0](v0.8.0.md) | 2026-01-11 | Feature | `Save(CancellationToken)` on `IEntityBase` |
 | [0.7.1](v0.7.1.md) | 2026-01-11 | Patch | List IsValid/IsBusy/IsModified caching optimization |
 | [0.7.0](v0.7.0.md) | 2026-01-11 | Feature | Stable rule identification via source generation |
 | [0.6.3](v0.6.3.md) | 2026-01-10 | Patch | Generator unit test infrastructure |
@@ -59,6 +72,9 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [0.34.0](v0.34.0.md) | 2026-09-04 |
+| [0.33.0](v0.33.0.md) | — |
+| [0.31.0](v0.31.0.md) | 2026-08-21 |
 | [0.30.2](v0.30.2.md) | 2026-05-24 |
 | [0.30.1](v0.30.1.md) | 2026-04-14 |
 | [0.30.0](v0.30.0.md) | 2026-04-13 |
@@ -66,7 +82,10 @@ New features, breaking changes, and significant bug fixes.
 | [0.28.1](v0.28.1.md) | 2026-04-12 |
 | [0.28.0](v0.28.0.md) | 2026-04-08 |
 | [0.27.0](v0.27.0.md) | 2026-04-06 |
+| [0.26.2](v0.26.2.md) | 2026-04-05 |
 | [0.26.1](v0.26.1.md) | 2026-04-04 |
+| [0.26.0](v0.26.0.md) | 2026-04-04 |
+| [0.25.0](v0.25.0.md) | 2026-03-29 |
 | [0.24.0](v0.24.0.md) | 2026-03-23 |
 | [0.23.2](v0.23.2.md) | 2026-03-21 |
 | [0.23.1](v0.23.1.md) | 2026-03-21 |
@@ -88,6 +107,8 @@ New features, breaking changes, and significant bug fixes.
 | [0.12.0](v0.12.0.md) | 2026-02-26 |
 | [0.11.0](v0.11.0.md) | 2026-01-18 |
 | [0.10.0](v0.10.0.md) | 2026-01-16 |
+| [0.9.3](v0.9.3.md) | 2026-01-13 |
+| [0.8.0](v0.8.0.md) | 2026-01-11 |
 | [0.7.1](v0.7.1.md) | 2026-01-11 |
 | [0.7.0](v0.7.0.md) | 2026-01-11 |
 | [0.6.3](v0.6.3.md) | 2026-01-10 |
