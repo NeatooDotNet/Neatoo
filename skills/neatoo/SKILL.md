@@ -85,7 +85,10 @@ Every user interaction in a Neatoo app follows three sequential, non-overlapping
 
 **3. Save.** The caller invokes `Save()` on the root. Factory methods (`[Insert]` / `[Update]` / `[Delete]`, routed by `IsNew` / `IsDeleted`) execute the persistence cascade: `MapTo` the EF entity, call repositories, commit transactions, raise factory events, persist audit records queued in phase 1, invoke `childFactory.Save` (save cascade).
 
-**The phases don't cross.** Business methods never open transactions, call repositories, or raise factory events. Factory methods never call business methods or reach back into phase 1 logic. What factory methods need to read, they read from state that phase 1 set.
+**The phases don't cross.** The line is *ownership*, not what happens downstream of a call.
+
+- A business method never owns persistence — no repositories, no transactions, no factory events, no `[Service]` parameters. It may pass *through* a factory-generated seam (`Save()`, an `[Execute]`, a command delegate) exactly as a ViewModel does: the seam carries the injection, authorization, transaction, and save cascade, and the caller owns none of it. A method that saves and returns its successor, or hands a validated value to a command, is still inside the three phases.
+- A factory method never calls a business method or reaches back into phase 1. What it needs to read, it reads from state that phase 1 set.
 
 ### Factory Method vs. Business Method Boundary
 
@@ -97,7 +100,7 @@ Every user interaction in a Neatoo app follows three sequential, non-overlapping
 | Raise factory events (via `[Service] IFactoryEvents`) | Add items to child collections |
 | Call `childFactory.Save` (save cascade) | Queue records onto state-collection properties |
 | `[Service]` parameter injection | Read `Parent` reference for ambient root state |
-| DB-snapshot-vs-in-memory diffing | (No `[Service]` injection, no repositories, no transactions, no event raises) |
+| DB-snapshot-vs-in-memory diffing | Call `Save()`, an `[Execute]`, or a command delegate — pass-through, not ownership |
 
 ### What the Save Needs Must Be State
 
