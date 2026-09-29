@@ -117,7 +117,17 @@ public class EntityProperty<T> : ValidateProperty<T>, IEntityProperty<T>
     [JsonIgnore]
     public string DisplayName { get; private set; }
 
-    public void ApplyPropertyInfo(IPropertyInfo propertyInfo)
+    /// <summary>
+    /// Restores metadata that is not serialized (DisplayName) from the property's
+    /// <see cref="IPropertyInfo"/>. Called by <see cref="EntityPropertyManager.OnDeserialized"/>.
+    /// </summary>
+    /// <remarks>
+    /// A custom <see cref="EntityProperty{T}"/> subclass overrides this to restore its own
+    /// attribute-derived state after deserialization, and calls the base implementation.
+    /// It is deliberately not called from the constructor; the subclass reads its attributes
+    /// in its own <see cref="IPropertyInfo"/> constructor as well.
+    /// </remarks>
+    public virtual void ApplyPropertyInfo(IPropertyInfo propertyInfo)
     {
         var dnAttribute = propertyInfo.GetCustomAttribute<DisplayNameAttribute>();
         DisplayName = dnAttribute?.DisplayName ?? propertyInfo.Name;

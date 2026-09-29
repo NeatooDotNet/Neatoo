@@ -548,6 +548,76 @@ public void ChangeReasonUserEdit_NormalPropertyAssignment()
 <sup><a href='/src/samples/PropertiesSamples.cs#L364-L391' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+## Custom Property Types
+
+An `EntityProperty<T>` subclass can carry extra per-property metadata (for example a plausible range from an attribute) and expose it beside `IsValid`, `IsBusy`, and `IsReadOnly`, so UI binds it through `entity["Name"]` like any other property metadata. Requires 0.35.0+ (earlier versions dropped `IsSelfModified` for any subclass on deserialization). Authoritative sample: `src/Design/Design.Domain/PropertySystem/CustomPropertyType.cs`.
+
+### Construction: substitute the property factory
+
+The generated `InitializePropertyBackingFields` creates every backing field through `services.PropertyFactory`. For `EntityBase`, `EntityBaseServices<T>` always constructs its own `EntityPropertyFactory<T>` and **never resolves `IPropertyFactory<T>` from DI** -- registering one does nothing. Wrap the injected services instead:
+
+```csharp
+internal sealed class PlausibleEntityServices<T> : IEntityBaseServices<T> where T : EntityBase<T>
+{
+    private readonly IEntityBaseServices<T> _inner;
+
+    public PlausibleEntityServices(IEntityBaseServices<T> inner)
+    {
+        _inner = inner;
+        PropertyFactory = new PlausiblePropertyFactory<T>(inner.PropertyInfoList, inner.PropertyFactory);
+    }
+
+    public IPropertyFactory<T> PropertyFactory { get; }
+    // Every other IEntityBaseServices<T> member delegates to _inner.
+}
+
+internal partial class Measurement : EntityBase<Measurement>, IMeasurement
+{
+    public Measurement(IEntityBaseServices<Measurement> services)
+        : base(new PlausibleEntityServices<Measurement>(services)) { }
+
+    [Plausible(10, 80)]
+    public partial double LengthCm { get; set; }
+}
+```
+
+The custom `IPropertyFactory<T>.Create<TProperty>` returns the subclass for the properties it cares about and defers the rest to the wrapped factory. (`ValidateBaseServices<T>` does resolve `IPropertyFactory<T>` from DI, so a closed registration works for `ValidateBase`.)
+
+### Serialization contract
+
+The converter writes each property's `$type` as its open generic definition and on read calls `MakeGenericType(valueType)`, then `Activator.CreateInstance` with the `[JsonConstructor]` arguments. A custom property type must therefore:
+
+- Be an **open generic with exactly one type parameter** (`PlausibleProperty<T>`, not `PlausibleDoubleProperty`).
+- Declare the **five-argument `[JsonConstructor]`** with exactly this shape:
+  ```csharp
+  [JsonConstructor]
+  public PlausibleProperty(string name, T value, bool isSelfModified, bool isReadOnly, IRuleMessage[] serializedRuleMessages)
+      : base(name, value, isSelfModified, isReadOnly, serializedRuleMessages) { }
+  ```
+- Live in an **assembly passed to `AddNeatooServices`** on both tiers. `$type` is resolved by full name through `IServiceAssemblies.FindType`.
+- On a **trimmed WASM client**, have its `[JsonConstructor]` **rooted** (for example a `[DynamicDependency]` on the constructor from code that is kept, or a linker descriptor). Only `Activator.CreateInstance` reaches it, so the trimmer cannot see it is used.
+
+Only the standard fields are read back: `Name`, `Value`, `IsReadOnly`, `IsSelfModified`, `SerializedRuleMessages`. Any other public member of the subclass is written and then skipped on read, so mark subclass members `[JsonIgnore]` and restore them as below.
+
+### Restoring attribute-derived state: override ApplyPropertyInfo
+
+`EntityPropertyManager.OnDeserialized` calls `ApplyPropertyInfo(IPropertyInfo)` on every property after deserialization -- that is how `DisplayName` comes back. It is `virtual`; override it to re-read your attribute, and call base:
+
+```csharp
+public PlausibleProperty(IPropertyInfo propertyInfo) : base(propertyInfo)
+{
+    Range = propertyInfo.GetCustomAttribute<PlausibleAttribute>();
+}
+
+public override void ApplyPropertyInfo(IPropertyInfo propertyInfo)
+{
+    base.ApplyPropertyInfo(propertyInfo);
+    Range = propertyInfo.GetCustomAttribute<PlausibleAttribute>();
+}
+```
+
+Read the attribute in **both** places. `ApplyPropertyInfo` is not called from the base constructor (a virtual call from a constructor would run before the subclass is initialized), and the `[JsonConstructor]` path has no `IPropertyInfo`.
+
 ## Related
 
 - [Validation](validation.md) - How property changes trigger validation

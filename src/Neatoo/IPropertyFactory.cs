@@ -8,16 +8,26 @@ namespace Neatoo;
 /// <typeparam name="TOwner">The type of the Neatoo object that owns the properties.</typeparam>
 /// <remarks>
 /// <para>
-/// This interface enables generated property backing fields to be created via DI,
-/// allowing per-type customization of property creation behavior. The default implementation
-/// creates standard <see cref="IValidateProperty{T}"/> instances.
+/// The generated <c>InitializePropertyBackingFields</c> creates every backing field through
+/// <see cref="IValidateBaseServices{T}.PropertyFactory"/>, so substituting the factory
+/// substitutes the property type.
 /// </para>
 /// <para>
-/// Register a custom implementation to customize property creation for specific types:
+/// <b>ValidateBase:</b> <c>ValidateBaseServices&lt;T&gt;</c> resolves <c>IPropertyFactory&lt;T&gt;</c>
+/// from DI, so a closed registration applies:
 /// </para>
 /// <code>
-/// services.AddSingleton&lt;IPropertyFactory&lt;Person&gt;, CustomPersonPropertyFactory&gt;();
+/// services.AddTransient&lt;IPropertyFactory&lt;Person&gt;, CustomPersonPropertyFactory&gt;();
 /// </code>
+/// <para>
+/// <b>EntityBase:</b> <c>EntityBaseServices&lt;T&gt;</c> always constructs its own
+/// <c>EntityPropertyFactory&lt;T&gt;</c> and never resolves <c>IPropertyFactory&lt;T&gt;</c> from DI.
+/// Wrap the injected <see cref="IEntityBaseServices{T}"/> in an implementation that delegates every
+/// member except <see cref="IValidateBaseServices{T}.PropertyFactory"/>, and pass the wrapper to the
+/// base constructor. A custom entity property type must derive from <c>EntityProperty&lt;T&gt;</c>
+/// and meet the serialization contract described in the Neatoo properties reference
+/// (Custom property types).
+/// </para>
 /// </remarks>
 public interface IPropertyFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOwner> where TOwner : IValidateBase
 {
