@@ -256,14 +256,18 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
         "Value types are preserved by [DynamicallyAccessedMembers] on entity type parameters. " +
         "IRuleMessage[] is a framework type always preserved.")]
     [UnconditionalSuppressMessage("Trimming", "IL2067",
-        Justification = "Activator.CreateInstance for ValidateProperty<T> and EntityProperty<T>. " +
-        "These are Neatoo framework types with public constructors that are always preserved " +
-        "because they are directly referenced in Neatoo's own code.")]
+        Justification = "Activator.CreateInstance for ValidateProperty<T>, EntityProperty<T>, and " +
+        "application EntityProperty<T> subclasses. The Neatoo framework types are always preserved " +
+        "because they are directly referenced in Neatoo's own code; an application subclass must " +
+        "root its [JsonConstructor] for trimmed clients.")]
     private static IValidateProperty DeserializeValidateProperty(
         ref Utf8JsonReader reader, Type propertyType, JsonSerializerOptions options)
     {
         var valueType = propertyType.GetGenericArguments()[0];
-        var isEntityProperty = propertyType.GetGenericTypeDefinition() == typeof(EntityProperty<>);
+        // Assignability, not an exact EntityProperty<> match: a custom EntityProperty<T>
+        // subclass supplied through IPropertyFactory<T> must take the entity branch too,
+        // or IsSelfModified is dropped on the way in.
+        var isEntityProperty = typeof(IEntityProperty).IsAssignableFrom(propertyType);
 
         string? name = null;
         object? value = null;
