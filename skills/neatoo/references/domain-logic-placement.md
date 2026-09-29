@@ -1,25 +1,40 @@
 # Domain Logic Placement
 
-This reference provides detailed guidance for placing business logic in Neatoo domain models instead of the UI layer. The core principle: **the domain model is the home for all business logic.** The UI is a thin binding layer.
+The domain layer is the home for all business logic. In a Neatoo application that layer has four rungs — entity rules, entity verbs, orchestration seams, and read models — and the ViewModel and Razor above them bind, adapt gestures, and mirror. The ladder, the three ownership questions, the mirror rule, and the gesture test are in the main `/neatoo` skill → "Domain Logic First." This reference is the decision tree that walks the ladder, followed by the wiring patterns for **rung 1, the entity rule** — Patterns 1–9 below all assume the tree has already put you on that rung.
 
 > **Design assumption: open mutation.** Neatoo aggregates are graphs, not façades — any consumer (ViewModel, Razor binding, service) can call business methods on children or bind directly to deep properties. Design rules so that mutating any descendant leaves the root's `IsValid` / `IsModified` correct after all rules settle. See the main `/neatoo` skill → "The Aggregate Is a Graph, Not a Façade" and "Designing Rules for Open Mutation."
 
 ## The Logic Placement Decision Tree
 
-When encountering any business logic during implementation, apply this decision tree:
+Start from who initiates the behavior — not from what the screen shows. Every branch ends at a rung, and only some of them end at a rule.
 
 ```
-Is this logic about WHAT to display or HOW to display it?
-├── HOW to display (CSS class, layout, component choice) → UI layer
-└── WHAT to display (computed values, conditions, derived state) → Domain model
-    ├── Derived from own property values? → AddAction / AddActionAsync
-    ├── Reacts to child property changes? → AddAction with child trigger (t => t.Children![0].Prop)
-    ├── Parent orchestrates between children? → AddAction with child trigger, action pushes to other child
-    ├── Validation / error condition? → AddValidation / AddValidationAsync
-    ├── Reacts to own property changes? → AddAction triggered by that property
-    ├── Cross-property computation? → AddAction with multiple triggers
-    ├── Cross-sibling rules in a list? → Override HandleNeatooPropertyChanged
-    └── Needs external service? → AddActionAsync or class-based AsyncRuleBase<T>
+Who initiates this behavior?
+├── The user, with a gesture (click, pick, keystroke)
+│   ├── It changes one property                  → ViewModel calls the entity setter; rules react (rung 1)
+│   ├── It is an operation on one aggregate      → entity verb (rung 2), CanX by rule; ViewModel calls it
+│   └── It spans aggregates or needs services    → orchestration seam (rung 3); ViewModel invokes it
+├── A property change on an entity
+│   ├── Derived from own properties              → AddAction (rung 1)
+│   ├── Reacts to a child's property             → AddAction with child trigger (rung 1)
+│   ├── Parent pushes to another child           → AddAction with child trigger, action writes the sibling (rung 1)
+│   ├── Cross-sibling consistency in a list      → override HandleNeatooPropertyChanged (rung 1)
+│   ├── Validation                               → AddValidation / RuleBase<T> (rung 1)
+│   └── Needs a service
+│       ├── ...and the work stays in the browser → class-based AsyncRuleBase<T> with DI (rung 1)
+│       └── ...and it would round-trip           → NOT a rule. A seam the ViewModel invokes (rung 3)
+├── A load or fetch — nothing the user did
+│   ├── State the screen shows or gates on       → read model [Fetch] computes it (rung 4)
+│   └── A policy applied on the user's behalf    → the seam that loads the graph applies it to the
+│       (normalize, stage forward, seed)           returned in-memory graph, staged, with an explanation
+│                                                  the UI can show (rung 3). Rules are paused during
+│                                                  [Fetch] — that is why this cannot be a rule, and it
+│                                                  is never the ViewModel's InitializeAsync.
+└── Another aggregate, or a command
+    └──                                          → orchestration seam (rung 3)
+
+No branch ends at a ViewModel writing an entity outside the gesture branch.
+Purely presentational choices — CSS class, layout, which component — are the UI's own and never enter this tree.
 ```
 
 ## Pattern 1: Computed/Derived Properties via AddAction
@@ -172,29 +187,37 @@ public TreatmentPlan(IEntityBaseServices<TreatmentPlan> services) : base(service
 
 The cascade is: `DiagnosisCode` -> `MaxVisits` -> `RemainingVisits` -> `NeedsExtension`. The UI binds to `NeedsExtension` without knowing about the cascade.
 
-## Pattern 4: Async Side-Effects via AddActionAsync
+## Pattern 4: Async Rules — the Client-Resident Case Only
 
-When a property change should fetch external data or perform I/O, use `AddActionAsync`.
+`AddActionAsync` and class-based `AsyncRuleBase<T>` let a rule await. Use them only when the awaited work is **client-resident** — a computation that never leaves the browser: a local engine, a lookup over graph state that is already loaded, a calculation that is merely expensive.
 
 ```csharp
-public Patient(IEntityBaseServices<Patient> services,
-    IInsuranceService insuranceService) : base(services)
-{
-    // When insurance ID changes, look up coverage
-    RuleManager.AddActionAsync(
-        async t =>
-        {
-            if (string.IsNullOrEmpty(t.InsuranceId)) return;
-            var coverage = await insuranceService.GetCoverage(t.InsuranceId);
-            t.CoveragePlan = coverage.PlanName;
-            t.CoverageActive = coverage.IsActive;
-            t.Copay = coverage.CopayAmount;
-        },
-        t => t.InsuranceId);
-}
+// Client-resident: the engine is local, nothing leaves the browser.
+// The header cells recompute as the provider moves the sliders.
+RuleManager.AddAction(
+    t => t.PowerW = t.DSeconds > 0 && t.ATotalCm2 > 0
+        ? t.Fluence * t.ATotalCm2 / t.DSeconds
+        : 0,
+    t => t.Fluence, t => t.ATotalCm2, t => t.DSeconds);
 ```
 
-The UI binds to `CoveragePlan`, `CoverageActive`, `Copay`. When the user types an insurance ID, the domain model reactively fetches and populates. The UI shows a spinner via `IsBusy`.
+**Do not use a rule to fetch.** A rule that calls a remote service fires a server round-trip from inside a property setter: on every keystroke, with no user intent behind it, no cancellation, and nowhere to show what happened. In a client-server application that work belongs on a seam the ViewModel invokes deliberately (rung 3), or on a read model the screen loads once (rung 4).
+
+```csharp
+// WRONG: a fetch disguised as a rule — round-trips on every keystroke
+RuleManager.AddActionAsync(
+    async t =>
+    {
+        var coverage = await insuranceService.GetCoverage(t.InsuranceId);
+        t.Copay = coverage.CopayAmount;
+    },
+    t => t.InsuranceId);
+
+// RIGHT: the ViewModel handles a named gesture ("Look up" clicked, or the field committed)
+// by invoking a seam; the seam owns the lookup and hands back what the screen binds to.
+public async Task LookUpCoverageAsync()
+    => Coverage = await _coverageLookup.Execute(Patient.InsuranceId);
+```
 
 ## Pattern 5: Cross-Property Validation
 
@@ -490,20 +513,35 @@ The parent entity does not need to be the aggregate root — any entity with chi
 
 ## The Refactoring Smell Test
 
-When reviewing .razor files, look for these smells that indicate misplaced logic:
+Two layers, two tests. The Razor test catches leaks into markup. The ViewModel test catches the leak the Razor test cannot see — logic that never reached the markup because the ViewModel absorbed it first. A codebase with thin Razor and a fat ViewModel passes the first test and fails the second.
 
-| Smell in .razor | Move To |
-|----------------|---------|
-| `@(a.X * b.Y)` arithmetic | `AddAction` computed property |
-| `@if (a.Status == "X" && b.Count > 0)` | Domain `bool` property via `AddAction` |
-| `@(list.Where(...).Count())` LINQ | Domain computed property |
-| `@(condition ? "Label A" : "Label B")` ternary | Domain `string` property |
-| `OnClick` handler that sets multiple properties | Domain method |
-| `OnChanged` handler that validates | `AddValidation` or `AddValidationAsync` |
-| `@code` block with > 5 lines of logic | Domain rules or methods |
-| Event handler setting properties on two entities | Domain `AddAction` orchestrator |
+### In `.razor`
 
-**Rule of thumb:** If a `.razor` file has more than 3 conditional/computed expressions, business logic is leaking into the UI.
+| Smell | Move to |
+|---|---|
+| `@(a.X * b.Y)` arithmetic | Entity rule (rung 1) |
+| `@if (a.Status == "X" && b.Count > 0)` | Entity `CanX` by rule (1) or a read-model flag (4); bind to it |
+| `@(list.Where(...).Count())` LINQ | Entity rule with child trigger (1) |
+| `@(condition ? "Label A" : "Label B")` ternary | Domain `string` property (1) |
+| `OnClick` handler that sets several properties | Entity verb (2); the handler calls it |
+| `OnChanged` handler that validates | `AddValidation` (1) |
+| `@code` block with more than 5 lines of logic | A verb (2) or a seam (3); at most a ViewModel gesture handler that calls one |
+| Handler touching two entities | Orchestration seam (3), or a parent-orchestrator rule (1) if both are children of one root |
+
+**Rule of thumb:** more than three conditional or computed expressions in a `.razor` file, and logic has leaked.
+
+### In the ViewModel
+
+| Smell | What it is | Move to |
+|---|---|---|
+| `bool X => A && B` over entity or read-model values | A re-deriving mirror — the rule now has two owners | Entity `CanX` rule (1) or read-model flag (4); the ViewModel reads it |
+| `X => Id != 0 && Id == OtherId` | A domain fact assembled from ids | Read model (4) |
+| A method that writes an entity and handles no named gesture | A policy in the wrong layer | The seam that loads the graph (3), or a rule (1) |
+| A method that reads a registry or service and writes entity defaults | A verb in the wrong layer | Entity verb (2), or the seam (3) |
+| A guard in the ViewModel that duplicates one the seam already enforces | Dead code that will drift | Delete it; read the seam's answer |
+| `InitializeAsync` that does more than fetch, bind, and subscribe | Load-time policy | The seam's `Open` / `[Fetch]` (3) |
+
+**Rule of thumb:** every ViewModel member that writes an entity must name the gesture it handles; every ViewModel bool must be a read, not a composition.
 
 ## Class-Based Rules for Complex Logic
 
