@@ -1,6 +1,6 @@
 ---
 name: Neatoo
-description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, lazy loading, EntityLazyLoad, IEntityLazyLoadFactory, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, AddActionAsync, AddValidationAsync, AddAction, AddValidation, IsBusy, WaitForTasks, IsLoaded, IsLoading, and base class behavior. This skill also provides guidance on where business logic belongs -- computed properties, conditional visibility, reactive behavior, and validation should live in the domain model (not the UI). Consult this skill when writing .razor files that bind to Neatoo entities to ensure logic stays in the domain layer. Neatoo is the domain model framework -- it does NOT include factory generation. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill, which is independent and works with any .NET class.
+description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, lazy loading, EntityLazyLoad, IEntityLazyLoadFactory, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, AddActionAsync, AddValidationAsync, AddAction, AddValidation, IsBusy, WaitForTasks, IsLoaded, IsLoading, and base class behavior. This skill also decides where business logic belongs: the placement ladder (entity rule, entity verb, orchestration seam, read model / Info class) and the ViewModel boundary -- the gesture test, the mirror rule, and why a load-time policy is a seam, never a ViewModel. Consult it before writing any ViewModel member that writes to an entity, any [Execute] or [Fetch] orchestration body, any Info read model, or any .razor file that binds to Neatoo entities. Neatoo is the domain model framework -- it does NOT include factory generation. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill, which is independent and works with any .NET class.
 version: 1.0.0
 ---
 
@@ -32,48 +32,86 @@ public partial class Product : EntityBase<Product>
 
 This generates a factory (`IProductFactory`) with a `Create()` method. Properties auto-track changes, trigger validation, and fire `PropertyChanged`.
 
-## Domain Logic First -- The Core Principle
+## Domain Logic First — The Core Principle
 
-**Business logic belongs in the domain model, not the UI.** Neatoo domain models are not DTOs that shuttle data to a smart UI. They are rich domain objects that encapsulate business rules, computed state, validation, and reactive behavior. The UI is a thin binding layer.
+**Business logic belongs in the domain layer.** In a Neatoo application that layer is more than the entities. It is four things: the entities and their rules; the verbs on those entities; the orchestration seams — `[Execute]` and `[Fetch]` bodies on plain `[Factory]` classes and static commands — that coordinate across aggregates and run at load time; and the read models (`Info` classes) that compute server truth for display and gating. All four are domain. The UI — ViewModel and Razor together — is a binding and gesture-adapting layer over them. It holds view state. It holds no policy.
 
-**When implementing a feature: design domain properties and rules first. Write the UI as a binding layer over those properties. If you find yourself writing business logic in a `.razor` file, stop and move it to the domain model.**
+**Decide ownership before mechanism.** The most common placement failure is finding a mechanism that works and letting it pick the layer. Before writing any behavior, answer three questions about it:
 
-These patterns use `RuleManager.AddAction` and `AddActionAsync`, covered in Core Patterns below and in `references/validation.md`.
+1. **Who initiates it?** A user gesture · a property change · a load or fetch · another aggregate or a command.
+2. **What does it need?** Nothing beyond its own entity · injected services · other aggregates · server-side truth.
+3. **Is it applied or staged?** Takes effect immediately · sits in memory for the user to confirm.
+
+The answers select a rung on the ladder. The rung selects the mechanism. Never the reverse.
+
+### The Placement Ladder
+
+Work down from the top and stop at the first rung that fits. The two rungs below the line are not homes: they bind to, invoke, or mirror the rung above them.
+
+| Rung | Home | Choose it when | Mechanism |
+|---|---|---|---|
+| 1 | **Entity rule** | The behavior reacts to a property change, needs no service a class-based rule can't inject, and stays wherever the entity is — the browser included. | `AddAction` · `AddValidation` · `RuleBase<T>` |
+| 2 | **Entity verb** | A user invokes an operation on one aggregate. The verb sets state, rules validate, the caller saves. | Public method on the entity; `CanX` exposed by a rung-1 rule |
+| 3 | **Orchestration seam** | The behavior crosses aggregates, needs `[Service]`s, or runs at load or fetch — where rules are paused. Load-time policy lives here. | `[Execute]` / `[Fetch]` on a plain `[Factory]` class or a static command |
+| 4 | **Read model** | The screen needs server truth for display or gating: flags, counts, cadence, "is X due." | Plain `[Factory]` `Info` class, `[Fetch]` only |
+| — | | | |
+| 5 | ViewModel | Adapts a gesture into a call on rung 1–3 · binds · **mirrors a gate by reading it** · coordinates save and navigation. | `ObservableObject`; factories and commands by DI |
+| 6 | Razor | Binds. | MudNeatoo components |
+
+**Never fall from "not a rule" to "so, the ViewModel."** When rung 1 doesn't fit — the behavior needs a service, or must run during `[Fetch]` where rules are paused, or must be staged rather than applied — the next rung is 3, not 5. The ViewModel is not exempt from this ladder because it is C#, testable, and has DI.
 
 ### Where Logic Goes
 
-| Logic Type | Neatoo Mechanism | NOT in |
-|-----------|-----------------|--------|
-| Computed/derived values | `AddAction` with trigger properties | `.razor` arithmetic/ternary |
-| Conditional visibility | Domain `bool` property via `AddAction` | `.razor` `@if` chains |
-| Parent reacts to child changes | `AddAction` with child trigger `t => t.Items![0].Prop` | UI event handlers |
-| Cross-property validation (single trigger) | `AddValidation` / `AddValidationAsync` | UI event handlers |
-| Cross-property validation (multiple triggers) | `RuleBase<T>` / `AsyncRuleBase<T>` | UI event handlers |
-| Reactive data fetch | `AddActionAsync` | UI `OnChanged` handlers |
-| Cascading state changes | Chained rules (rule sets property -> triggers next rule) | UI code-behind |
-| Workflow transitions | Domain methods + `AddAction` for `CanX` properties | UI button click handlers |
-| LINQ over children | `AddAction` with child trigger, computed property | `.razor` inline LINQ |
-| Parent orchestrates between children | `AddAction` with child trigger, action updates other child | UI bridging code |
-| Cross-sibling rules in a list | Override `HandleNeatooPropertyChanged` | UI bridging code |
+Indexed by the behavior you are placing, not by the trigger you would wire.
+
+| The behavior | Home | Not in |
+|---|---|---|
+| A value derived from the entity's own properties | Entity rule (1) | ViewModel or Razor arithmetic |
+| A value that needs server truth — a count, a cadence, "is X due" | Read model (4) | ViewModel composing it from ids and flags |
+| Whether a control is enabled | Entity `CanX` by rule (1) or a read-model flag (4); the ViewModel reads it | ViewModel `&&`-ing flags together |
+| A mutation caused by a user gesture | ViewModel calls an entity setter or verb (2) | The ViewModel holding the logic the verb should own |
+| A mutation caused by a property change | Entity rule (1) | A ViewModel `PropertyChanged` handler that writes back |
+| A mutation caused by a load — a policy applied on the user's behalf | Orchestration seam (3): applied to the returned in-memory graph, staged, with an explanation the UI can show | ViewModel `InitializeAsync` |
+| An operation across two aggregates | Orchestration seam (3) | ViewModel bridging two entities |
+| An admission check before a verb runs | The seam refuses (3); the ViewModel mirrors *by reading* the seam's or entity's answer | ViewModel re-deriving the check from atoms |
+| Parent reacts to a child's change | Entity rule with child trigger `t => t.Items![0].Prop` (1) | UI event handler |
+| Cross-property validation | `AddValidation` for one trigger, `RuleBase<T>` for several (1) | UI validation |
+| Cross-sibling consistency in a list | Override `HandleNeatooPropertyChanged` on the parent (1) | UI bridging |
+| A computation that reacts to a property change and needs a service | Rule (1) **only** if it never leaves the browser; otherwise a seam (3) the ViewModel invokes | An `AddActionAsync` that round-trips from inside a setter |
+
+### The Mirror Rule
+
+A ViewModel may pre-disable a control so the user isn't sent on a round-trip the domain would refuse. That mirror **reads** the domain's answer. It never **re-derives** it.
+
+```csharp
+// Reads — cannot drift from the domain
+public bool CanEndEarly => _visit?.Plan.CanEndEarly ?? false;
+
+// Re-derives — the rule now has two owners, and this one silently decides what the UI shows
+public bool CanStartTherapy => IsApproved && IsSymptomsComplete && (IsSignsComplete || !IsSignsDue);
+```
+
+If the domain doesn't expose the answer, that is the missing domain member — a `CanX` rule on the entity or a flag on the read model — not a ViewModel computation.
+
+### The Gesture Test
+
+Before writing any ViewModel member that writes to an entity or calls a mutating verb: **which user gesture is this handling?** A dropdown pick, a button, a keystroke — name it. If the honest answer is "none, it's just what should happen," stop. It is a rule or a seam, and it is in the wrong layer.
 
 ### The Smell Test
 
-When writing or reviewing `.razor` files: if there are more than 3 conditional/computed expressions, business logic is leaking into the UI. Move it to the domain model as rules or computed properties.
+**Razor:** more than three conditional or computed expressions, and logic has leaked. Move it down.
+
+**ViewModel** — the leak the Razor count cannot see, because the ViewModel absorbed the logic before it reached the markup: any member that reads two or more entity or read-model values and yields a bool or a derived value is re-deriving domain logic. Any method that writes to an entity and is not the handler for a named gesture is a rule or a seam in the wrong layer.
 
 ```csharp
-// WRONG: UI computes
-<MudText>@(order.Quantity * order.UnitPrice)</MudText>
-@if (order.Quantity > 0 && order.UnitPrice > 0 && order.Total > 500)
-{ <MudAlert>Discount!</MudAlert> }
+// WRONG: the ViewModel composes a gate from server atoms
+public bool CanStartTherapy => IsApprovedOrMaintenance && IsSymptomsComplete && IsSignsReady;
 
-// RIGHT: Domain computes, UI binds
-// In constructor: RuleManager.AddAction(t => t.Total = t.Quantity * t.UnitPrice, t => t.Quantity, t => t.UnitPrice);
-// In constructor: RuleManager.AddAction(t => t.QualifiesForDiscount = t.Total > 500, t => t.Total);
-<MudText>@order.Total</MudText>
-@if (order.QualifiesForDiscount) { <MudAlert>Discount!</MudAlert> }
+// RIGHT: the read model computes it server-side; the ViewModel reads it
+public bool CanStartTherapy => Info.CanStartTherapy;
 ```
 
-See `references/domain-logic-placement.md` for detailed patterns: computed properties, conditional visibility, cascading state, async side-effects, workflow state machines, child property triggers for parent-child reactivity, class-based rules with DI, and the refactoring smell test table.
+See `references/domain-logic-placement.md` for the decision tree that walks the ladder, and for the rung-1 wiring patterns: computed properties, cascading state, child property triggers, class-based rules with DI.
 
 ## The Three-Phase Pattern
 
@@ -88,11 +126,12 @@ Every user interaction in a Neatoo app follows three sequential, non-overlapping
 **The phases don't cross.** The line is *ownership*, not what happens downstream of a call.
 
 - A business method never owns persistence — no repositories, no transactions, no factory events, no `[Service]` parameters. It may pass *through* a factory-generated seam (`Save()`, an `[Execute]`, a command delegate) exactly as a ViewModel does: the seam carries the injection, authorization, transaction, and save cascade, and the caller owns none of it. A method that saves and returns its successor, or hands a validated value to a command, is still inside the three phases.
-- A factory method never calls a business method or reaches back into phase 1. What it needs to read, it reads from state that phase 1 set.
+- A persisting factory method — `[Insert]`, `[Update]`, `[Delete]` — never calls a business method or reaches back into phase 1. What it needs to read, it reads from state that phase 1 set.
+- An orchestration seam — an `[Execute]`, or a `[Fetch]` that shapes the graph it returns — is not a persisting factory method, and the line above does not bind it. It *is* phases 1 and 2 performed on the caller's behalf, for the mutations no user gesture initiates (ladder rung 3): it may set state and call verbs on the graph it hands back, staged in memory, and it persists nothing except through `Save`.
 
-### Factory Method vs. Business Method Boundary
+### Persisting Factory Method vs. Business Method Boundary
 
-| Factory methods own | Business methods own |
+| Persisting factory methods own | Business methods own |
 |---|---|
 | `MapTo` / `MapFrom` the EF entity | Property setters |
 | Repository calls | Call other business methods on `this` |
@@ -234,8 +273,9 @@ The coupling concerns DDD raises are real — they apply to coupling *across* ag
 | Value Object | `ValidateBase<T>` | Data with validation, no persistence lifecycle |
 | Entity Collection | `EntityListBase<I>` | List of child entities (tracks deletions) |
 | Validate Collection | `ValidateListBase<I>` | List of value objects (no deletion tracking) |
-| Command | Static class with `[Execute]` | Server-side operation returning result |
-| Read Model | `ValidateBase<T>` with `[Fetch]` only | Query result (no Insert/Update/Delete) |
+| Command | Static class with `[Execute]` | Stateless server-side operation |
+| Orchestration context | Plain `[Factory]` class, no Neatoo base, `[Execute]` verbs | Bundles entities and derived state for one screen or flow; runs cross-aggregate and load-time logic (ladder rung 3) |
+| Read Model | Plain `[Factory]` class, `[Fetch]` only, `internal set` properties | Server-computed truth for display and gating — `XxxInfo` (ladder rung 4). No rules, no validation. |
 
 ## Key Properties
 
