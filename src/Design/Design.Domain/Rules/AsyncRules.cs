@@ -52,6 +52,7 @@ internal partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>, IAsyncRulesD
     public partial bool IsUsernameAvailable { get; set; }
     public partial string? ExternalData { get; set; }
 
+    #region skill-rule-injected
     // A rule with a dependency comes from DI through its interface. The
     // dependency must exist on both tiers - here, a command delegate.
     public AsyncRulesDemo(
@@ -63,6 +64,7 @@ internal partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>, IAsyncRulesD
         RuleManager.AddRule(usernameAvailabilityRule);
         RuleManager.AddRule(new FetchExternalDataRule());
     }
+    #endregion
 
     [Create]
     public void Create() { }
@@ -112,6 +114,7 @@ internal partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>, IAsyncRulesD
 // change makes one server call.
 // =============================================================================
 
+#region skill-rule-command
 /// <summary>
 /// Command the rule calls. [Remote]: a client call crosses to the server.
 /// </summary>
@@ -125,7 +128,9 @@ public static partial class UsernameAvailability
         return Task.FromResult(!repository.UsernameExists(username));
     }
 }
+#endregion
 
+#region skill-rule-with-command
 /// <summary>
 /// Rule interface: the entity takes the rule from DI by this interface, and
 /// tests can substitute it.
@@ -139,12 +144,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
 {
     private readonly UsernameAvailability.IsAvailable _isAvailable;
 
-    // =========================================================================
-    // TriggerProperties - Specified via Constructor
-    // =========================================================================
-    // Rules specify trigger properties by passing expressions to the base
-    // constructor. The base class maintains the TriggerProperties list.
-    // =========================================================================
+    // Trigger properties are passed to the base constructor
     public CheckUsernameAvailabilityRule(UsernameAvailability.IsAvailable isAvailable) : base(t => t.Username)
     {
         _isAvailable = isAvailable;
@@ -171,6 +171,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
         return None;
     }
 }
+#endregion
 
 // =============================================================================
 // Synchronous Rule Beside Async Ones - RuleBase<T>
@@ -179,6 +180,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
 // directly. It runs in the same pipeline as the async rules.
 // =============================================================================
 
+#region skill-sync-rule
 /// <summary>
 /// Demonstrates: synchronous validation with RuleBase&lt;T&gt;.
 /// </summary>
@@ -201,6 +203,7 @@ internal class ValidateEmailFormatRule : RuleBase<AsyncRulesDemo>
         return None;
     }
 }
+#endregion
 
 // =============================================================================
 // Async Action Rule - Fetch External Data
@@ -244,6 +247,7 @@ internal class FetchExternalDataRule : AsyncRuleBase<AsyncRulesDemo>
 // - Must call RunRules(RunRulesFlag.All) to re-validate
 // =============================================================================
 
+#region skill-cancellable-rule
 /// <summary>
 /// Demonstrates: Rule with cancellation support.
 /// </summary>
@@ -265,6 +269,7 @@ internal class CancellableRule : AsyncRuleBase<AsyncRulesDemo>
         return None;
     }
 }
+#endregion
 
 // =============================================================================
 // IsBusy and Async Rule Coordination

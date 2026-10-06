@@ -85,4 +85,21 @@ public class FluentRuleTests
         // Assert
         Assert.AreEqual(60, entity.Sum, "Sum should be calculated from A + B + C");
     }
+
+    #region skill-chained-rules
+    [TestMethod]
+    public async Task ChainedRules_ActionOnSumFiresWhenSumIsRecomputed()
+    {
+        var entity = _triggerFactory.Create();
+
+        // A rule that sets Sum triggers the rules whose trigger is Sum
+        entity.A = 60;
+        entity.B = 50;
+        await entity.WaitForTasks();
+
+        Assert.AreEqual(110, entity.Sum);
+        Assert.IsTrue(entity.IsOverLimit, "The second rule ran because the first set Sum");
+        Assert.IsFalse(entity.IsValid, "...and so did the validation on Sum");
+    }
+    #endregion
 }

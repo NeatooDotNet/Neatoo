@@ -49,6 +49,7 @@ public class CommonGotchaTests
         Assert.IsFalse(entity.RuleHasRun, "Rule should NOT have run during Create");
     }
 
+    #region skill-run-rules-forces
     [TestMethod]
     public async Task Gotcha1_RulesFireAfterCreate_WithExplicitRunRules()
     {
@@ -65,6 +66,7 @@ public class CommonGotchaTests
         Assert.AreEqual(50.00m, entity.Total, "Total should be calculated after RunRules");
         Assert.IsTrue(entity.RuleHasRun, "Rule should have run after explicit RunRules call");
     }
+    #endregion
 
     [TestMethod]
     public async Task Gotcha1_RunRulesInsideFactoryMethod_WorksWhilePaused()
@@ -172,6 +174,7 @@ public class CommonGotchaTests
     // GOTCHA 4: PauseAllActions breaks rule calculations
     // =========================================================================
 
+    #region skill-pause-all-actions
     [TestMethod]
     public void Gotcha4_PausedPropertyChanges_DoNotTriggerRules()
     {
@@ -190,6 +193,7 @@ public class CommonGotchaTests
         // Assert - Total is NOT calculated
         Assert.AreEqual(0m, entity.Total, "Total should be 0 - rules did not run while paused");
     }
+    #endregion
 
     [TestMethod]
     public async Task Gotcha4_RunRulesAfterResume_CalculatesCorrectly()
@@ -251,6 +255,7 @@ public class CommonGotchaTests
     // GOTCHA 5: IsModified includes child modifications
     // =========================================================================
 
+    #region skill-child-change-modifies-parent
     [TestMethod]
     public async Task Gotcha5_ChildModification_SetsParentIsModified()
     {
@@ -272,6 +277,7 @@ public class CommonGotchaTests
         Assert.IsFalse(parent.IsSelfModified, "Parent itself is NOT modified - only child changed");
         Assert.IsTrue(parent.IsModified, "Parent.IsModified should be TRUE because child is modified");
     }
+    #endregion
 
     [TestMethod]
     public async Task Gotcha5_ParentModification_SetsParentIsSelfModified()

@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Design.Domain.DI;
 
+#region skill-rules-di-registration
 /// <summary>
 /// Registration for the domain's DI-provided rules. Call on BOTH tiers, after
 /// AddNeatooServices: an entity that takes a rule in its constructor is built
@@ -20,7 +21,11 @@ public static class DomainRegistration
 {
     public static IServiceCollection AddDesignDomainRules(this IServiceCollection services)
     {
+        // Transient: each entity instance gets its own rule instance, because
+        // a rule tracks execution state
         services.AddTransient<ICheckUsernameAvailabilityRule, CheckUsernameAvailabilityRule>();
+        services.AddTransient<IUniqueCodeRule, UniqueCodeRule>();
         return services;
     }
 }
+#endregion

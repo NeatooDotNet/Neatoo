@@ -40,6 +40,7 @@ public class EntityBaseTests
         Assert.IsTrue(entity.IsNew, "New entity should have IsNew=true");
     }
 
+    #region skill-create-is-new-not-modified
     [TestMethod]
     public void Create_SetsIsModifiedFalse_ButStillSavable()
     {
@@ -55,6 +56,7 @@ public class EntityBaseTests
         Assert.IsFalse(entity.IsModified, "New entity holds no user work");
         Assert.IsTrue(entity.IsSavable, "...but it is savable, so the Insert can happen");
     }
+    #endregion
 
     [TestMethod]
     public void Create_IsSavableWhenValid()
@@ -135,4 +137,22 @@ public class EntityBaseTests
         // Assert
         Assert.IsTrue(entity.IsDeleted, "Deleted entity should have IsDeleted=true");
     }
+
+    #region skill-undelete
+    [TestMethod]
+    public async Task UnDelete_ReversesDeleteBeforeSave()
+    {
+        var entity = await _factory.Fetch(1);
+
+        entity.Delete();
+        Assert.IsTrue(entity.IsDeleted);
+        Assert.IsTrue(entity.IsModified, "Deleting is a modification");
+
+        entity.UnDelete();
+
+        Assert.IsFalse(entity.IsDeleted);
+        Assert.IsFalse(entity.IsModified, "Back to the fetched baseline");
+        Assert.IsFalse(entity.IsSavable, "Nothing left to save");
+    }
+    #endregion
 }

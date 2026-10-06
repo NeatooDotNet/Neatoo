@@ -56,12 +56,15 @@ internal partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>, IRuleBasicsD
     public partial decimal Price { get; set; }
     public partial decimal Total { get; set; }
 
+    #region skill-add-rule-inline
     public RuleBasicsDemo(IEntityBaseServices<RuleBasicsDemo> services) : base(services)
     {
-        // Register class-based rules
+        // Rules with no dependencies are constructed here; a rule that needs
+        // a command delegate comes from DI instead (see AsyncRules.cs)
         RuleManager.AddRule(new NameRequiredRule());
         RuleManager.AddRule(new CalculateTotalRule());
     }
+    #endregion
 
     [Create]
     public void Create() { }
@@ -105,6 +108,7 @@ internal partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>, IRuleBasicsD
 // - Return: IRuleMessages with validation errors or empty for success
 // =============================================================================
 
+#region skill-rule-class
 /// <summary>
 /// Demonstrates: Simple validation rule as a class.
 /// </summary>
@@ -139,6 +143,7 @@ internal class NameRequiredRule : RuleBase<RuleBasicsDemo>
         return None;
     }
 }
+#endregion
 
 /// <summary>
 /// Demonstrates: Action rule that computes derived values.
@@ -185,6 +190,7 @@ internal class CalculateTotalRule : RuleBase<RuleBasicsDemo>
 // Exceptions in rules are actual errors (bugs, external failures).
 // =============================================================================
 
+#region skill-multi-message-rule
 /// <summary>
 /// Demonstrates: Rule returning multiple messages.
 /// </summary>
@@ -201,6 +207,7 @@ internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
             .If(target.Quantity > 1000, nameof(RuleBasicsDemo.Quantity), "Quantity exceeds maximum order limit");
     }
 }
+#endregion
 
 // =============================================================================
 // Rule Execution Order

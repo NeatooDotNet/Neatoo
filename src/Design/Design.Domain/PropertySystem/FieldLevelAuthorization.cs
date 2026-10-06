@@ -55,6 +55,7 @@ internal partial class FieldLevelAuthDemo : EntityBase<FieldLevelAuthDemo>, IFie
     [Create]
     public void Create() { }
 
+    #region skill-mark-read-only
     [Remote]
     [Fetch]
     internal void Fetch(int id, [Service] IFieldLevelAuthRepository repository, [Service] ISalaryPermission permission)
@@ -70,6 +71,7 @@ internal partial class FieldLevelAuthDemo : EntityBase<FieldLevelAuthDemo>, IFie
             this["Salary"].MarkReadOnly();
         }
     }
+    #endregion
 
     [Remote]
     [Insert]

@@ -21,6 +21,7 @@ namespace Design.Domain.PropertySystem;
 // DESIGN DECISION: Partial properties are the ONLY supported pattern.
 // The old Getter<T>()/Setter() methods are deprecated.
 //
+#region skill-generated-property-shape
 // For this declaration:
 //   public partial string? Name { get; set; }
 //
@@ -52,6 +53,7 @@ namespace Design.Domain.PropertySystem;
 // On an EntityBase the factory creates an entity property (modification
 // tracking); the accessor is still typed IValidateProperty<T>. The real output
 // is on disk under Generated/Neatoo.BaseGenerator/.
+#endregion
 // =============================================================================
 
 /// <summary>
@@ -70,11 +72,13 @@ internal partial class PropertyBasicsDemo : EntityBase<PropertyBasicsDemo>, IPro
     // - PropertyChanged notifications
     // =========================================================================
 
+    #region skill-partial-properties
     public partial string? Name { get; set; }
 
     public partial int Count { get; set; }
 
     public partial decimal Price { get; set; }
+    #endregion
 
     // =========================================================================
     // Pattern 2: Properties with Validation Attributes
@@ -166,6 +170,7 @@ internal partial class PropertyChildDemo : ValidateBase<PropertyChildDemo>, IPro
 // SetPrivateValue() which bypasses the IsReadOnly check.
 // =============================================================================
 
+#region skill-private-set-property
 /// <summary>
 /// Demonstrates: Private setter properties with computed values via rules.
 /// </summary>
@@ -194,6 +199,7 @@ internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDem
     [Create]
     public void Create() { }
 }
+#endregion
 
 // =============================================================================
 // Assignment and Pause State

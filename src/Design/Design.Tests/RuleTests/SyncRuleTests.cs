@@ -43,6 +43,7 @@ public class SyncRuleTests
         Assert.AreEqual(50.00m, entity.Total, "Total should be calculated by rule");
     }
 
+    #region skill-test-validation
     [TestMethod]
     public async Task ValidationRule_MakesInvalidOnFailure()
     {
@@ -59,6 +60,7 @@ public class SyncRuleTests
         // Assert
         Assert.IsFalse(entity.IsValid, "Entity should be invalid when name is empty");
     }
+    #endregion
 
     [TestMethod]
     public async Task ValidationRule_MakesValidOnPass()

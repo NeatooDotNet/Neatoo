@@ -147,7 +147,7 @@ internal partial class LazyLoadValidateDemo : ValidateBase<LazyLoadValidateDemo>
 }
 
 // =============================================================================
-// LazyLoad with entity child -- state propagation pattern
+// LazyLoad with entity child -- the constructor pattern
 // =============================================================================
 //
 // DESIGN DECISION: When an EntityLazyLoad<T> wraps a child entity (not a string),
@@ -155,9 +155,118 @@ internal partial class LazyLoadValidateDemo : ValidateBase<LazyLoadValidateDemo>
 // state. This is automatic via the look-through property subclass registered
 // with PropertyManager during InitializePropertyBackingFields.
 //
-// LazyLoad properties are partial, just like every other Neatoo property:
+// DESIGN DECISION: The EntityLazyLoad is created in the CONSTRUCTOR, with a
+// loader lambda. The constructor runs on every tier that builds the object -
+// the client included, when the object is deserialized - so the loader is
+// always present. The loader delegate is not serialized; the JSON converter
+// merges the deserialized Value/IsLoaded into the constructor-created instance.
 //
-//   public partial EntityLazyLoad<IChildEntity> LazyChild { get; set; }
+// The lambda captures the child factory from DI and reads this.Id when it
+// RUNS, not when it is created, so it works even though [Fetch] sets Id later.
 //
-// The generated setter uses LoadValue, which handles connecting/disconnecting
-// inner child events whenever the LazyLoad wrapper is reassigned.
+// COMMON MISTAKE: Creating the EntityLazyLoad inside [Fetch]. The loader is
+// not serialized, so the client's copy has none, and LoadAsync() throws.
+//
+// The child's [Fetch] is the one child operation the client calls directly
+// (the loader runs on the client), so it carries [Remote]. It is still
+// internal: only the loader, not application code, calls it.
+// =============================================================================
+
+public interface ILazyLoadChildDemo : IEntityBase
+{
+    Guid ParentId { get; }
+    string? Notes { get; set; }
+}
+
+public interface ILazyLoadParentDemo : IEntityRoot
+{
+    Guid Id { get; }
+    string? Name { get; set; }
+    EntityLazyLoad<ILazyLoadChildDemo> Details { get; }
+}
+
+/// <summary>
+/// Child loaded on demand through the parent's EntityLazyLoad.
+/// </summary>
+[Factory]
+internal partial class LazyLoadChildDemo : EntityBase<LazyLoadChildDemo>, ILazyLoadChildDemo
+{
+    public partial Guid ParentId { get; set; }
+    public partial string? Notes { get; set; }
+
+    public LazyLoadChildDemo(IEntityBaseServices<LazyLoadChildDemo> services) : base(services) { }
+
+    [Create]
+    public void Create(Guid parentId)
+    {
+        ParentId = parentId;
+    }
+
+    // The loader on the client calls this, so it is a client entry point
+    [Remote]
+    [Fetch]
+    internal void Fetch(Guid parentId, [Service] ILazyLoadChildRepository repository)
+    {
+        ParentId = parentId;
+        Notes = repository.GetNotes(parentId);
+    }
+}
+
+#region skill-lazy-load-constructor
+/// <summary>
+/// Demonstrates: EntityLazyLoad created in the constructor with a loader that
+/// reads this.Id at load time.
+/// </summary>
+[Factory]
+internal partial class LazyLoadParentDemo : EntityBase<LazyLoadParentDemo>, ILazyLoadParentDemo
+{
+    public partial Guid Id { get; set; }
+    public partial string? Name { get; set; }
+
+    // Partial, like every other Neatoo property. The generator creates a
+    // look-through backing field, so the child's IsValid/IsModified/IsBusy
+    // flow into this entity's once the child is loaded.
+    public partial EntityLazyLoad<ILazyLoadChildDemo> Details { get; set; }
+
+    public LazyLoadParentDemo(
+        IEntityBaseServices<LazyLoadParentDemo> services,
+        ILazyLoadChildDemoFactory childFactory,
+        IEntityLazyLoadFactory lazyLoadFactory) : base(services)
+    {
+        // Created here, on every tier. this.Id is read when the loader runs.
+        Details = lazyLoadFactory.Create<ILazyLoadChildDemo>(
+            async () => await childFactory.Fetch(this.Id));
+    }
+
+    #region skill-lazy-load-set-value
+    [Create]
+    public void Create([Service] ILazyLoadChildDemoFactory childFactory)
+    {
+        Id = Guid.NewGuid();
+
+        // A new parent's details exist from the start, so there is nothing to
+        // load: SetValue bypasses the loader and marks the EntityLazyLoad loaded.
+        Details.SetValue(childFactory.Create(Id));
+    }
+    #endregion
+
+    [Remote]
+    [Fetch]
+    internal void Fetch(Guid id, [Service] ILazyLoadParentRepository repository)
+    {
+        Id = id;
+        Name = repository.GetName(id);
+        // Details keeps the loader from the constructor; nothing to do here
+    }
+}
+#endregion
+
+public interface ILazyLoadParentRepository
+{
+    string GetName(Guid id);
+}
+
+public interface ILazyLoadChildRepository
+{
+    string GetNotes(Guid parentId);
+}

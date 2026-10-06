@@ -37,6 +37,7 @@ public class DeletedListTests
         _scope.Dispose();
     }
 
+    #region skill-remove-new-item-discarded
     [TestMethod]
     public void RemoveNewItem_NotAddedToDeletedList()
     {
@@ -53,6 +54,7 @@ public class DeletedListTests
         Assert.AreEqual(0, order.Items.Count);
         Assert.AreEqual(0, order.Items.DeletedCount, "New items should not go to DeletedList");
     }
+    #endregion
 
     [TestMethod]
     public void RemoveNewItem_ItemIsDiscarded()
@@ -106,6 +108,7 @@ public class DeletedListTests
         Assert.AreEqual(0, order.Items.DeletedCount, "New items should not go to DeletedList");
     }
 
+    #region skill-add-marks-modified
     [TestMethod]
     public void IsModified_TrueWhenNewItemAdded()
     {
@@ -120,6 +123,7 @@ public class DeletedListTests
         Assert.IsTrue(order.Items.IsModified);
         Assert.IsTrue(order.IsModified);
     }
+    #endregion
 
     [TestMethod]
     public void AddThenRemoveNewItem_LeavesOrderCleanButSavable()

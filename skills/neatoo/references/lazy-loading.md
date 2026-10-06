@@ -13,78 +13,89 @@
 
 ## Creating Instances
 
-Always use `IEntityLazyLoadFactory` (registered in DI via `AddNeatooServices`):
-
-```csharp
-// Deferred loading — value loaded via explicit LoadAsync() call
-var lazy = lazyLoadFactory.Create<IChild>(async () => await childFactory.Fetch(parentId));
-
-// Pre-loaded — IsLoaded is immediately true
-var lazy = lazyLoadFactory.Create<IChild>(existingChild);
-```
+Always use `IEntityLazyLoadFactory` (registered in DI via `AddNeatooServices`). It has two shapes: deferred, `lazyLoadFactory.Create<IChild>(async () => await childFactory.Fetch(this.Id))`, whose value arrives on the first `LoadAsync()`; and pre-loaded, `lazyLoadFactory.Create<IChild>(existingChild)`, whose `IsLoaded` is immediately true. The constructor pattern below uses the first; `SetValue` (further down) is the usual way to get the second.
 
 ## The Correct Pattern: Constructor-Based EntityLazyLoad
 
-**Create `EntityLazyLoad<T>` in the constructor.** The constructor runs on both server and client (during DI-based deserialization), so the loader delegate is always present. The Neatoo JSON converter merges deserialized state (`Value`, `IsLoaded`) into the constructor-created instance, preserving the loader.
+**Create `EntityLazyLoad<T>` in the constructor.** The constructor runs on every tier that builds the object — the client included, when the object is deserialized — so the loader delegate is always present. The loader delegate is not serialized; the Neatoo JSON converter merges deserialized state (`Value`, `IsLoaded`) into the constructor-created instance.
 
-The loader lambda captures factory dependencies from DI and references `this.Id` (or similar state). `this.Id` is resolved at load-time, not capture-time, so it works even though the constructor runs before `[Fetch]` sets the Id.
+The loader lambda captures the child factory from DI and reads `this.Id` when it runs, not when it is created, so it works even though the constructor runs before `[Fetch]` sets the Id. Inside `[Fetch]`, assign the key directly; the object is paused.
 
-<!-- snippet: skill-lazyload-constructor-pattern -->
-<a id='snippet-skill-lazyload-constructor-pattern'></a>
+<!-- snippet: skill-lazy-load-constructor -->
+<a id='snippet-skill-lazy-load-constructor'></a>
 ```cs
+/// <summary>
+/// Demonstrates: EntityLazyLoad created in the constructor with a loader that
+/// reads this.Id at load time.
+/// </summary>
 [Factory]
-public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyParent
+internal partial class LazyLoadParentDemo : EntityBase<LazyLoadParentDemo>, ILazyLoadParentDemo
 {
-    public SkillLazyParent(
-        IEntityBaseServices<SkillLazyParent> services,
-        ISkillLazyChildFactory childFactory,
+    public partial Guid Id { get; set; }
+    public partial string? Name { get; set; }
+
+    // Partial, like every other Neatoo property. The generator creates a
+    // look-through backing field, so the child's IsValid/IsModified/IsBusy
+    // flow into this entity's once the child is loaded.
+    public partial EntityLazyLoad<ILazyLoadChildDemo> Details { get; set; }
+
+    public LazyLoadParentDemo(
+        IEntityBaseServices<LazyLoadParentDemo> services,
+        ILazyLoadChildDemoFactory childFactory,
         IEntityLazyLoadFactory lazyLoadFactory) : base(services)
     {
-        // Create LazyLoad in the constructor.
-        // The loader lambda captures the factory from DI and references this.Id,
-        // which is resolved at load-time (not capture-time).
-        // This instance survives serialization because the converter merges
-        // deserialized state into it instead of replacing it.
-        LazyChild = lazyLoadFactory.Create<ISkillLazyChild>(async () =>
-        {
-            return await childFactory.Fetch(this.Id);
-        });
-
-        // AddActionAsync: when Trigger changes, await the lazy-loaded child
-        RuleManager.AddActionAsync(async parent =>
-        {
-            var child = await parent.LazyChild.LoadAsync();
-            if (child != null)
-            {
-                parent.LoadedData = child.Data;
-            }
-        }, p => p.Trigger);
+        // Created here, on every tier. this.Id is read when the loader runs.
+        Details = lazyLoadFactory.Create<ILazyLoadChildDemo>(
+            async () => await childFactory.Fetch(this.Id));
     }
 
-    public partial string Trigger { get; set; }
-    public partial string LoadedData { get; set; }
-    public partial Guid Id { get; set; }
+    [Create]
+    public void Create([Service] ILazyLoadChildDemoFactory childFactory)
+    {
+        Id = Guid.NewGuid();
 
-    // LazyLoad property -- partial, just like every other Neatoo property.
-    // The generator handles backing field, setter (LoadValue), and registration.
-    // Meta properties (IsValid, IsModified, etc.) propagate from the loaded child.
-    public partial EntityLazyLoad<ISkillLazyChild> LazyChild { get; set; }
+        // A new parent's details exist from the start, so there is nothing to
+        // load: SetValue bypasses the loader and marks the EntityLazyLoad loaded.
+        Details.SetValue(childFactory.Create(Id));
+    }
 
     [Remote]
     [Fetch]
-    internal Task Fetch(Guid id)
+    internal void Fetch(Guid id, [Service] ILazyLoadParentRepository repository)
     {
-        using (PauseAllActions())
-        {
-            this["Id"].LoadValue(id);
-        }
-        // LazyChild already created in the constructor with a loader
-        // that uses this.Id — no need to create it here.
-        return Task.CompletedTask;
+        Id = id;
+        Name = repository.GetName(id);
+        // Details keeps the loader from the constructor; nothing to do here
     }
 }
 ```
-<sup><a href='/src/samples/LazyLoadSamples.cs#L52-L104' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazyload-constructor-pattern' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/LazyLoadProperty.cs#L215-L262' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazy-load-constructor' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The child's `[Fetch]` is the one child operation the client calls directly — the loader runs on the client — so it carries `[Remote]`. It is still `internal`: only the loader calls it, not application code.
+
+<!-- snippet: skill-lazy-load-test -->
+<a id='snippet-skill-lazy-load-test'></a>
+```cs
+[TestMethod]
+public async Task Details_LoadOnFirstLoadAsync_UsingTheParentsId()
+{
+    var id = Guid.NewGuid();
+    var parent = await _factory.Fetch(id);
+
+    // Value is a passive read: nothing is loaded until asked
+    Assert.IsFalse(parent.Details.IsLoaded);
+    Assert.IsNull(parent.Details.Value);
+
+    var details = await parent.Details.LoadAsync();
+
+    Assert.IsNotNull(details);
+    Assert.AreEqual(id, details.ParentId, "The loader read this.Id at load time, not in the constructor");
+    Assert.IsTrue(parent.Details.IsLoaded);
+    Assert.AreSame(details, parent.Details.Value);
+}
+```
+<sup><a href='/src/Design/Design.Tests/PropertyTests/LazyLoadTests.cs#L36-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazy-load-test' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Why This Works with Serialization
@@ -93,48 +104,62 @@ public partial class SkillLazyParent : EntityBase<SkillLazyParent>, ISkillLazyPa
 2. **Serialization**: `EntityLazyLoad` written to JSON (`Value`, `IsLoaded`). Loader delegate is `[JsonIgnore]`.
 3. **Client deserialization**: Constructor runs again via DI → creates **new** `EntityLazyLoad` with loader (factory injected from client DI).
 4. **Converter merges**: `NeatooBaseJsonTypeConverter` finds the existing `EntityLazyLoad` instance and merges deserialized state into it via `ILazyLoadDeserializable.ApplyDeserializedState` — the loader is preserved.
-5. **Usage**: `AddActionAsync` triggers → calls `LazyChild.LoadAsync()` → loader executes with correct `this.Id` → child loaded via `[Remote]` call.
+5. **Usage**: `LoadAsync()` → loader executes with the correct `this.Id` → child loaded through its `[Remote]` `[Fetch]`.
 
 ### EntityLazyLoad Property Declaration
 
-Declare as a `partial` property — just like every other Neatoo property. The source generator handles the backing field, setter (using `LoadValue`), and registration (using `factory.CreateEntityLazyLoad<TInner>()`). Meta properties (`IsValid`, `IsModified`, `IsBusy`, etc.) automatically propagate from the loaded child through look-through property subclasses in PropertyManager.
-
-```csharp
-// That's it. No manual backing field, no SubscribeToLazyLoadProperties().
-public partial EntityLazyLoad<IChild> LazyChild { get; set; }
-```
+Declare it as a `partial` property — `public partial EntityLazyLoad<IChild> LazyChild { get; set; }`, as in the snippet above — just like every other Neatoo property: no manual backing field, no subscription code. The source generator handles the backing field, setter (using `LoadValue`), and registration (using `factory.CreateEntityLazyLoad<TInner>()`). Meta properties (`IsValid`, `IsModified`, `IsBusy`, etc.) propagate from the loaded child through look-through property subclasses in PropertyManager, so editing the loaded child marks the parent modified.
 
 The generator produces a `LazyLoadValidateProperty<IChild>` (or `LazyLoadEntityProperty<IChild>` for EntityBase) backing field that sees through to the inner entity for all framework operations.
 
 ## SetValue — Direct Value Assignment
 
-`EntityLazyLoad<T>.SetValue(T?)` assigns a value directly, bypassing the loader delegate. This marks the instance as loaded, clears any load error, and fires `PropertyChanged`. Use this in `[Create]` methods to pre-load with an empty or default value:
+`EntityLazyLoad<T>.SetValue(T?)` assigns a value directly, bypassing the loader delegate. This marks the instance as loaded, clears any load error, and fires `PropertyChanged`. Use it in `[Create]` to pre-load a new parent's child, which exists from the start and has nothing to load:
 
-```csharp
+<!-- snippet: skill-lazy-load-set-value -->
+<a id='snippet-skill-lazy-load-set-value'></a>
+```cs
 [Create]
-public void Create([Service] IPersonPhoneList emptyPhoneList)
+public void Create([Service] ILazyLoadChildDemoFactory childFactory)
 {
-    // Pre-load with empty list — IsLoaded becomes true immediately
-    PersonPhoneList.SetValue(emptyPhoneList);
+    Id = Guid.NewGuid();
+
+    // A new parent's details exist from the start, so there is nothing to
+    // load: SetValue bypasses the loader and marks the EntityLazyLoad loaded.
+    Details.SetValue(childFactory.Create(Id));
 }
 ```
+<sup><a href='/src/Design/Design.Domain/PropertySystem/LazyLoadProperty.cs#L241-L251' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazy-load-set-value' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-lazy-load-set-value-test -->
+<a id='snippet-skill-lazy-load-set-value-test'></a>
+```cs
+[TestMethod]
+public void Create_PreloadsDetails_SoThereIsNothingToLoad()
+{
+    var parent = _factory.Create();
+
+    Assert.IsTrue(parent.Details.IsLoaded);
+    Assert.IsNotNull(parent.Details.Value);
+    Assert.AreEqual(parent.Id, parent.Details.Value!.ParentId);
+    Assert.AreEqual(0, _childRepository.LoadCount, "SetValue bypassed the loader");
+}
+```
+<sup><a href='/src/Design/Design.Tests/PropertyTests/LazyLoadTests.cs#L56-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazy-load-set-value-test' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 `SetValue` manages child event subscriptions (unsubscribes from old value, subscribes to new). The loaded child integrates into PropertyManager's parent-child tracking automatically.
 
 ## Anti-Patterns
 
-- **Do NOT create `EntityLazyLoad<T>` in `[Fetch]` or `[Create]`** — these only run server-side. The loader delegate is `[JsonIgnore]` and lost during serialization. Always create in the constructor.
+- **Do NOT create `EntityLazyLoad<T>` in `[Fetch]` or `[Create]`.** A factory method body runs on one tier, and the loader delegate is not serialized, so the other tier's copy has no loader and `LoadAsync()` throws. The constructor runs on both tiers; create it there.
 - **Do NOT use `OnDeserialized`/`InitializeLazyLoaders`/`ReinitializeLazyLoaders`** — unnecessary complexity. The converter preserves constructor-created instances. Move EntityLazyLoad creation to the constructor instead.
-- **Do NOT use manual backing fields or `SubscribeToLazyLoadProperties()`** — this is the old pattern. Declare as `partial` and let the generator handle registration and meta property propagation.
+- **Do NOT use manual backing fields** — this is the old pattern. Declare as `partial` and let the generator handle registration and meta property propagation.
 
 ## Loading
 
-```csharp
-// Explicit method call — the only way to trigger a load
-var value = await lazy.LoadAsync();
-```
-
-Loading is idempotent — once loaded, subsequent calls return the cached value without invoking the loader again. Concurrent calls during the first load share the same task.
+`await lazy.LoadAsync()` is the only way to trigger a load; it returns the loaded value (the test under "The Correct Pattern" above shows the sequence). Loading is idempotent — once loaded, subsequent calls return the cached value without invoking the loader again. Concurrent calls during the first load share the same task.
 
 `.Value` is a passive read — it returns the current value (or `null` if not yet loaded) with no side effects. Use `LoadAsync()` in imperative code (domain logic, tests, `OnInitializedAsync`). Use `.Value` for UI binding after the load has been triggered.
 
@@ -142,15 +167,26 @@ Loading is idempotent — once loaded, subsequent calls return the cached value 
 
 `ValidateBase.WaitForTasks()` awaits in-progress LazyLoad children. This means `await entity.WaitForTasks()` before Save ensures any explicitly triggered loads have completed:
 
-```csharp
-// Explicitly trigger the load (fire-and-forget style)
-_ = entity.OrderLines.LoadAsync();
+<!-- snippet: skill-lazy-load-wait-for-tasks -->
+<a id='snippet-skill-lazy-load-wait-for-tasks'></a>
+```cs
+[TestMethod]
+public async Task WaitForTasks_AwaitsAFireAndForgetLoad()
+{
+    var parent = await _factory.Fetch(Guid.NewGuid());
 
-// WaitForTasks awaits the in-progress LazyLoad load
-await entity.WaitForTasks();
+    // Fire-and-forget, as a page does in OnInitializedAsync so rendering is not blocked
+    _ = parent.Details.LoadAsync();
 
-// Now entity.OrderLines.Value is populated
+    // WaitForTasks awaits the in-progress load; it never starts one
+    await parent.WaitForTasks();
+
+    Assert.IsTrue(parent.Details.IsLoaded);
+    Assert.IsNotNull(parent.Details.Value);
+}
 ```
+<sup><a href='/src/Design/Design.Tests/PropertyTests/LazyLoadTests.cs#L69-L84' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazy-load-wait-for-tasks' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 `WaitForTasks()` does NOT trigger loads on LazyLoad children. Only explicit `LoadAsync()` calls trigger loading.
 
@@ -180,38 +216,35 @@ await entity.WaitForTasks();
 
 ## Error Handling
 
-If the loader throws, the exception propagates to the `LoadAsync()` caller. Error state is also captured on the `EntityLazyLoad<T>` instance:
+If the loader throws, the exception propagates to the `LoadAsync()` caller as-is. Error state is also captured on the `EntityLazyLoad<T>` instance (`HasLoadError`, `LoadError`), `IsLoaded` stays false so the load can be retried, and the wrapper reports `IsValid == false` while the error stands:
 
-```csharp
-try
+<!-- snippet: skill-lazy-load-error -->
+<a id='snippet-skill-lazy-load-error'></a>
+```cs
+[TestMethod]
+public async Task LoadAsync_WhenTheLoaderThrows_RecordsTheErrorAndRethrows()
 {
-    var value = await lazy.LoadAsync();
-}
-catch (Exception)
-{
-    // lazy.HasLoadError == true
-    // lazy.LoadError contains the exception message
-    // lazy.IsLoaded == false (can retry)
-    // lazy.IsValid == false (due to error)
+    // The mock child repository has no details for an empty parent id
+    var parent = await _factory.Fetch(Guid.Empty);
+
+    await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => parent.Details.LoadAsync());
+
+    Assert.IsTrue(parent.Details.HasLoadError);
+    Assert.IsNotNull(parent.Details.LoadError);
+    Assert.IsFalse(parent.Details.IsLoaded, "A failed load is not loaded; it can be retried");
+    Assert.IsNull(parent.Details.Value);
 }
 ```
+<sup><a href='/src/Design/Design.Tests/PropertyTests/LazyLoadTests.cs#L86-L100' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazy-load-error' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 If the load was triggered fire-and-forget (`_ = lazy.LoadAsync()`) and the parent calls `WaitForTasks()` while the load is still in progress, a load failure exception propagates through `WaitForTasks()`.
 
 ## UI Binding (Blazor / WPF)
 
-`EntityLazyLoad<T>` implements `INotifyPropertyChanged` and fires change events for `Value`, `IsLoaded`, and `IsLoading` during the load lifecycle. Trigger the load explicitly in `OnInitializedAsync()`, then bind to `.Value` and state properties in Razor markup. Blazor re-renders when `PropertyChanged` fires on load completion.
+`EntityLazyLoad<T>` implements `INotifyPropertyChanged` and fires change events for `Value`, `IsLoaded`, and `IsLoading` during the load lifecycle. Trigger the load explicitly in `OnInitializedAsync()`, then bind to `.Value` and state properties in Razor markup. The component re-renders on load completion because it (or its page) observes the entity's `PropertyChanged`; Blazor does not subscribe on its own.
 
-**Trigger the load in `OnInitializedAsync()`:**
-
-```csharp
-protected override async Task OnInitializedAsync()
-{
-    entity = await entityFactory.Fetch(id);
-    // Explicitly trigger the lazy load — does not block rendering
-    _ = entity.OrderLines.LoadAsync();
-}
-```
+**Trigger the load in `OnInitializedAsync()`:** after `entity = await entityFactory.Fetch(id);`, start the load without awaiting it — `_ = entity.OrderLines.LoadAsync();` — so rendering is not blocked (the `WaitForTasks` test above shows the same fire-and-forget shape).
 
 **Bind to `.Value` and state properties in Razor:**
 
@@ -234,7 +267,7 @@ else
 }
 ```
 
-The 4-branch pattern handles all states: error, loaded with data, loaded with null, and loading. `.Value` is a passive read here — the load was already triggered in `OnInitializedAsync()`.
+The 4-branch pattern handles all states: error, loaded with data, loaded with null, and loading. `.Value` is a passive read here — the load was already triggered in `OnInitializedAsync()`. The `HasLoadError` branch is what surfaces a failed fire-and-forget load; without it the failure is silent.
 
 ## When to Use vs. Eager Loading
 

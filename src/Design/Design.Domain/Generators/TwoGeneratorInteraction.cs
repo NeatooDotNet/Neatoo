@@ -167,3 +167,18 @@ public interface IGeneratorDemoRepository
 {
     (string Name, int Value) GetById(int id);
 }
+
+// =============================================================================
+// [SuppressFactory] - A Neatoo Class With No Generated Factory
+// =============================================================================
+// RemoteFactory generates a factory for every [Factory] class. A class that
+// derives from a Neatoo base but is never created through a factory (a
+// test-only object) carries [SuppressFactory] instead and is constructed
+// directly with its services object.
+//
+// Neatoo.BaseGenerator keys on the same [Factory] attribute (see
+// BaseGenerator.cs: ForAttributeWithMetadataName("Neatoo.RemoteFactory.
+// FactoryAttribute")), so a [SuppressFactory] class gets NO generated partial
+// properties. It must declare ordinary properties. For that reason no
+// compiled example lives here; every Design.Domain class is a [Factory] class.
+// =============================================================================

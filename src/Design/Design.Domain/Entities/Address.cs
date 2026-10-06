@@ -27,6 +27,7 @@ internal partial class Address : EntityBase<Address>, IAddress
 {
     public partial Guid Id { get; set; }
 
+    #region skill-validation-attributes-and-rules
     [Required(ErrorMessage = "Street is required")]
     [StringLength(100)]
     public partial string? Street { get; set; }
@@ -55,6 +56,7 @@ internal partial class Address : EntityBase<Address>, IAddress
                 : string.Empty,
             t => t.AddressType);
     }
+    #endregion
 
     // =========================================================================
     // [Create] - Initialize New Address

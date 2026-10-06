@@ -132,6 +132,10 @@ internal partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>
                 ? "Email must be a valid email address"
                 : string.Empty,
             t => t.Email);
+
+        // The rule below simulates a bug (see RULE EXCEPTION BEHAVIOR); it
+        // throws only for Name == "ThrowException"
+        RuleManager.AddRule(new ExceptionThrowingRule());
     }
 
     [Create]
@@ -201,6 +205,7 @@ internal partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>
 //   }
 // =============================================================================
 
+#region skill-rule-that-throws
 /// <summary>
 /// Demonstrates: What happens when a rule throws an exception.
 /// </summary>
@@ -222,6 +227,7 @@ internal class ExceptionThrowingRule : AsyncRuleBase<ValidationFailureDemo>
         return Task.FromResult<IRuleMessages>(None);
     }
 }
+#endregion
 
 // =============================================================================
 // ERROR BOUNDARY PATTERNS

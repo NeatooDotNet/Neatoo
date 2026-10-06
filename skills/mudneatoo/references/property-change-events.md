@@ -14,7 +14,7 @@ Neatoo raises two distinct property-change events. Choosing the right one depend
 - The entity's own directly-set properties (e.g. `FirstName`)
 - The entity's own meta flags when they flip — including flips caused by descendant changes:
   - `IsValid`, `IsSelfValid`, `IsBusy` (from `ValidateBase`)
-  - `IsModified`, `IsSelfModified` (from `EntityListBase`; `EntityBase` tracks its children the same way)
+  - `IsModified`, `IsSelfModified`, `IsSavable`, `IsDeleted` (from `EntityBase`; `EntityListBase` raises `IsModified`/`IsSelfModified` the same way)
 
 It does **not** raise `PropertyChanged("Total")` when `Child.Total` changes. The child's property name never appears on the parent's `PropertyChanged`.
 

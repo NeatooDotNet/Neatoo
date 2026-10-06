@@ -57,6 +57,7 @@ public class ValidateListBaseTests
         Assert.AreSame(item, list[0]);
     }
 
+    #region skill-list-validity-aggregates
     [TestMethod]
     public async Task Add_InvalidItem_ListBecomesInvalid()
     {
@@ -75,6 +76,22 @@ public class ValidateListBaseTests
         // Assert
         Assert.IsFalse(list.IsValid, "List should be invalid if any child is invalid");
     }
+    #endregion
+
+    #region skill-validate-list-remove
+    [TestMethod]
+    public void Remove_ItemLeavesImmediately()
+    {
+        var list = _listFactory.Create();
+        var item = _itemFactory.Create("Test Item");
+        list.Add(item);
+
+        // No persistence, so no DeletedList: the item is simply gone
+        list.Remove(item);
+
+        Assert.AreEqual(0, list.Count);
+    }
+    #endregion
 
     [TestMethod]
     public void AllValidItems_ListIsValid()

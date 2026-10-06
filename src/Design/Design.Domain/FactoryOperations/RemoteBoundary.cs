@@ -79,6 +79,7 @@ internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRem
     // - In ASP.NET: runs on server
     // - In WPF calling server API: runs on client
     // =========================================================================
+    #region skill-remote-entry-point
     [Create]
     public void Create()
     {
@@ -86,12 +87,8 @@ internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRem
         // Can run on client or server
     }
 
-    // =========================================================================
-    // Remote Operation: Needs [Remote]
-    // =========================================================================
     // The client fetches this root, so it is a client entry point: [Remote]
     // makes the client call cross to the server, where the repository lives.
-    // =========================================================================
     [Remote]
     [Fetch]
     internal void Fetch(int id, [Service] IRemoteDemoRepository repository)
@@ -102,6 +99,7 @@ internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRem
         Id = data.Id;
         Name = data.Name;
     }
+    #endregion
 
     [Remote]
     [Insert]

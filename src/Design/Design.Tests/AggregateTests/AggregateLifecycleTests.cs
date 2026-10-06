@@ -55,6 +55,7 @@ public class AggregateLifecycleTests
     // Fetch lifecycle
     // =========================================================================
 
+    #region skill-fetch-starts-clean
     [TestMethod]
     public async Task Fetch_ItemsAreOldAndClean_AggregateNotModified()
     {
@@ -78,6 +79,7 @@ public class AggregateLifecycleTests
 
         Assert.AreEqual(0, order.Items.DeletedCount, "No deletions pending after fetch");
     }
+    #endregion
 
     [TestMethod]
     public async Task Fetch_UnknownId_ReturnsNull()
@@ -183,6 +185,7 @@ public class AggregateLifecycleTests
     // Insert path: create -> add items -> save
     // =========================================================================
 
+    #region skill-server-gate-refuses
     [TestMethod]
     public async Task InvalidOrder_DirectFactorySave_ServerRulesRefuseBeforeWriting()
     {
@@ -202,6 +205,7 @@ public class AggregateLifecycleTests
         Assert.AreEqual(0, _repository.AddedRows.Count, "No row may be added");
         Assert.AreEqual(0, _repository.SaveChangesCount, "No flush may happen");
     }
+    #endregion
 
     [TestMethod]
     public async Task CreateWithItems_Save_InsertsAllAndGraphIsClean()

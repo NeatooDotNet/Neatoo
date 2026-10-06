@@ -38,6 +38,7 @@ namespace Design.Domain.ReadModels;
 //   ActiveCount) so the UI reads an answer instead of re-deriving it.
 // =============================================================================
 
+#region skill-read-model
 /// <summary>
 /// One row of the employee directory.
 /// </summary>
@@ -109,6 +110,7 @@ internal partial class EmployeeDirectory : IEmployeeDirectory
     //   directory = await directoryFactory.Fetch(criteria);
     // =========================================================================
 }
+#endregion
 
 /// <summary>
 /// Search criteria for the employee directory.

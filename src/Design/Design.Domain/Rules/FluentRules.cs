@@ -189,6 +189,7 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
 // - Refactoring support (rename works automatically)
 // - Clear association between rule and property
 //
+#region skill-cross-property-validation-options
 // COMMON MISTAKE: Using the wrong property expression.
 //
 // WRONG:
@@ -210,8 +211,10 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
 //       protected override IRuleMessages Execute(T t)
 //           => RuleMessages.If(t.A + t.B > 100, nameof(t.A), "Too high");
 //   }
+#endregion
 // =============================================================================
 
+#region skill-cross-property-validation
 /// <summary>
 /// Demonstrates: Different trigger property patterns.
 /// </summary>
@@ -248,6 +251,7 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     [Create]
     public void Create() { }
 }
+#endregion
 
 // =============================================================================
 // Fluent Rule Return Values

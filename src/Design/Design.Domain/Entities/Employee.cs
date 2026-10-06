@@ -67,6 +67,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // =========================================================================
     public partial IAddressList? Addresses { get; set; }
 
+    #region skill-plain-computed-getter
     // =========================================================================
     // Computed Property (not persisted)
     // =========================================================================
@@ -76,6 +77,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // an AddAction rule triggered on both.
     // =========================================================================
     public string FullName => $"{FirstName} {LastName}";
+    #endregion
 
     // =========================================================================
     // Constructor - Service Injection and Rules

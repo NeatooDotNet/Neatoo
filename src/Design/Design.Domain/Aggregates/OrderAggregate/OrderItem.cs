@@ -29,6 +29,7 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 {
     public partial Guid Id { get; set; }
 
+    #region skill-validation-attributes
     [Required(ErrorMessage = "Product name is required")]
     [StringLength(100)]
     public partial string? ProductName { get; set; }
@@ -38,9 +39,11 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 
     [Range(0.01, 1000000, ErrorMessage = "Unit price must be positive")]
     public partial decimal UnitPrice { get; set; }
+    #endregion
 
     public partial decimal LineTotal { get; set; }
 
+    #region skill-add-action-computed
     public OrderItem(IEntityBaseServices<OrderItem> services) : base(services)
     {
         // Action rule to calculate line total
@@ -49,7 +52,9 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
             t => t.Quantity,
             t => t.UnitPrice);
     }
+    #endregion
 
+    #region skill-child-create
     [Create]
     public void Create()
     {
@@ -64,6 +69,7 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
         UnitPrice = unitPrice;
         // LineTotal calculated by rule
     }
+    #endregion
 
     // =========================================================================
     // Child Fetch - Called from OrderItemList.Fetch With This Item's Row
@@ -79,6 +85,7 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
     // DESIGN DECISION: LineTotal is loaded from persistence rather than
     // recalculated - rules do not run while the factory operation is paused.
     // =========================================================================
+    #region skill-child-fetch
     [Fetch]
     internal void Fetch(OrderItemRow row)
     {
@@ -88,6 +95,7 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
         UnitPrice = row.UnitPrice;
         LineTotal = row.LineTotal;
     }
+    #endregion
 
     // =========================================================================
     // Child Insert/Update - Called (via the generated factory Save) from
@@ -130,6 +138,7 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
     // child be persisted outside its aggregate. Child persistence is
     // coordinated by the aggregate root's save.
     // =========================================================================
+    #region skill-child-insert-update
     [Insert]
     internal void Insert(OrderItemRow row)
     {
@@ -152,6 +161,7 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
         row.UnitPrice = UnitPrice;
         row.LineTotal = LineTotal;
     }
+    #endregion
 }
 
 // =============================================================================

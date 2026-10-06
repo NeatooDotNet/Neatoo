@@ -65,6 +65,7 @@ using Neatoo;
 
 namespace Design.Domain.Aggregates.OrderAggregate;
 
+#region skill-aggregate-interfaces
 /// <summary>
 /// Aggregate root interface — extends IEntityRoot.
 /// Exposes IsSavable and Save() for the root entity.
@@ -105,3 +106,4 @@ public interface IOrderItemList : IEntityListBase<IOrderItem>
     /// </summary>
     int DeletedCount { get; }
 }
+#endregion

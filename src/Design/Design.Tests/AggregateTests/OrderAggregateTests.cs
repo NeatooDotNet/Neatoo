@@ -55,8 +55,9 @@ public class OrderAggregateTests
         Assert.AreEqual(DateTime.Today, order.OrderDate);
     }
 
+    #region skill-add-item
     [TestMethod]
-public void AddItem_ItemJoinsAggregate()
+    public void AddItem_ItemJoinsAggregate()
     {
         // Arrange
         var order = _orderFactory.Create();
@@ -69,6 +70,27 @@ public void AddItem_ItemJoinsAggregate()
         Assert.AreSame<object>(order, item.Root!, "Added item belongs to the aggregate");
         Assert.AreEqual(1, order.Items.Count);
     }
+    #endregion
+
+    #region skill-parent-and-root
+    [TestMethod]
+    public void AddItem_SetsParentAndRoot()
+    {
+        var order = _orderFactory.Create();
+        var item = _itemFactory.Create("Widget", 5, 10.00m);
+        Assert.IsNull(item.Parent, "Not attached yet");
+
+        order.Items!.Add(item);
+
+        // Parent is the owning entity (the list is transparent); Root is the aggregate root
+        Assert.AreSame<object>(order, item.Parent!);
+        Assert.AreSame<object>(order, item.Root!);
+
+        // The root itself has neither
+        Assert.IsNull(order.Parent);
+        Assert.IsNull(order.Root);
+    }
+    #endregion
 
     [TestMethod]
     public void Item_CalculatesLineTotal_OnPropertyChange()

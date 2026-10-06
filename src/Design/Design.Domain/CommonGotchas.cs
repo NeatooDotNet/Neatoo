@@ -67,6 +67,7 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
 
     public Gotcha1Demo(IValidateBaseServices<Gotcha1Demo> services) : base(services)
     {
+        #region skill-computed-gap-rule
         // This rule calculates Total when Quantity or Price changes
         RuleManager.AddAction(
             t =>
@@ -76,8 +77,10 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
             },
             t => t.Quantity,
             t => t.Price);
+        #endregion
     }
 
+    #region skill-create-without-run-rules
     /// <summary>
     /// WRONG WAY: Sets properties expecting rule to calculate Total.
     /// After Create() returns, Total is still 0 because rules were paused.
@@ -89,7 +92,9 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
         Price = 5.00m;
         // Total is NOT calculated here - rule is paused!
     }
+    #endregion
 
+    #region skill-create-run-rules
     /// <summary>
     /// RIGHT WAY: Call RunRules at end of factory method.
     /// RunRules works even while paused — no IsPaused guard.
@@ -102,6 +107,7 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
         await RunRules(RunRulesFlag.All);  // Forces all rules to execute
         // Total is now 50.00
     }
+    #endregion
 }
 
 // =============================================================================

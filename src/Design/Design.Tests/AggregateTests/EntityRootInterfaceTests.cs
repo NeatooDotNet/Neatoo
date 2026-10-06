@@ -45,6 +45,7 @@ public class EntityRootInterfaceTests
         Assert.IsTrue(root.IsSavable, "Root entity should be savable when modified and valid");
     }
 
+    #region skill-child-interface-no-save
     [TestMethod]
     public void ChildInterface_DoesNotExposeIsSavable()
     {
@@ -66,6 +67,7 @@ public class EntityRootInterfaceTests
         Assert.AreSame<object>(order, entityBase.Root!, "Child entity belongs to the aggregate");
         Assert.IsTrue(entityBase.IsModified, "Child entity should be modified");
     }
+    #endregion
 
     [TestMethod]
     public void RootInterface_ExposessSave()

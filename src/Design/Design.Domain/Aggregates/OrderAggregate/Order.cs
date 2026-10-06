@@ -95,11 +95,14 @@ internal partial class Order : EntityBase<Order>, IOrder
         //   // event args (ChangeReason, Source) or need to react to ANY
         //   // child change regardless of which property.
         // =====================================================================
+        #region skill-child-property-trigger
         RuleManager.AddAction(
             t => t.TotalAmount = t.Items?.Sum(i => i.LineTotal) ?? 0,
             t => t.Items![0].LineTotal);
+        #endregion
     }
 
+    #region skill-root-create
     [Create]
     public void Create([Service] IOrderItemListFactory itemsFactory)
     {
@@ -108,6 +111,7 @@ internal partial class Order : EntityBase<Order>, IOrder
         Status = "Draft";
         OrderNumber = $"ORD-{DateTime.Now:yyyyMMddHHmmss}";
     }
+    #endregion
 
     // =========================================================================
     // Aggregate Fetch - Load Root Row, Hand Child Rows to the List Factory
@@ -132,6 +136,7 @@ internal partial class Order : EntityBase<Order>, IOrder
     // object was found. Returning false makes the generated factory return
     // null - "no such order" is an answer, not an exception.
     // =========================================================================
+    #region skill-root-fetch
     [Remote]
     [Fetch]
     internal bool Fetch(Guid id,
@@ -157,6 +162,7 @@ internal partial class Order : EntityBase<Order>, IOrder
         // After Fetch completes: Order.IsNew=false, Order.IsModified=false
         return true;
     }
+    #endregion
 
     // =========================================================================
     // Aggregate Insert - Make the Row, Hand Its Item Collection to the List
@@ -177,6 +183,7 @@ internal partial class Order : EntityBase<Order>, IOrder
     // pass down: an item row belongs to the order because it sits in the
     // order row's Items collection.
     // =========================================================================
+    #region skill-root-insert
     [Remote]
     [Insert]
     internal async Task Insert([Service] IOrderRepository repository,
@@ -203,6 +210,7 @@ internal partial class Order : EntityBase<Order>, IOrder
 
         repository.SaveChanges();
     }
+    #endregion
 
     // =========================================================================
     // Aggregate Update - Get the Row, Hand Its Item Collection to the List
@@ -229,6 +237,7 @@ internal partial class Order : EntityBase<Order>, IOrder
     // DeletedList never clears (FactoryComplete fires per factory target —
     // never as a cascade from the parent). Each item maps itself.
     // =========================================================================
+    #region skill-root-update
     [Remote]
     [Update]
     internal async Task Update([Service] IOrderRepository repository,
@@ -257,6 +266,7 @@ internal partial class Order : EntityBase<Order>, IOrder
 
         repository.SaveChanges();
     }
+    #endregion
 
     // =========================================================================
     // Aggregate Delete - Remove the Row, Its Item Rows Go With It
@@ -265,6 +275,7 @@ internal partial class Order : EntityBase<Order>, IOrder
     // rows, as a database cascade delete would. The order does not loop its
     // items: no child [Delete] exists, and the whole aggregate is going away.
     // =========================================================================
+    #region skill-root-delete
     [Remote]
     [Delete]
     internal void Delete([Service] IOrderRepository repository)
@@ -276,6 +287,7 @@ internal partial class Order : EntityBase<Order>, IOrder
 
         repository.SaveChanges();
     }
+    #endregion
 
     private void MapTo(OrderRow row)
     {

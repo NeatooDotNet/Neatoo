@@ -42,6 +42,7 @@ public class PropertyBasicsTests
         Assert.AreEqual("Test", entity.Name);
     }
 
+    #region skill-property-changed
     [TestMethod]
     public void Property_SetTriggersPropertyChanged()
     {
@@ -56,6 +57,71 @@ public class PropertyBasicsTests
         // Assert
         Assert.IsTrue(changedProperties.Contains("Name"));
     }
+    #endregion
+
+    #region skill-neatoo-property-changed
+    [TestMethod]
+    public async Task NeatooPropertyChanged_CarriesFullNameAndReason()
+    {
+        var entity = _factory.Create();
+        var received = new List<Neatoo.NeatooPropertyChangedEventArgs>();
+        entity.NeatooPropertyChanged += args =>
+        {
+            received.Add(args);
+            return Task.CompletedTask;
+        };
+
+        entity.Name = "Test";
+        await entity.WaitForTasks();
+
+        var nameEvent = received.Single(e => e.PropertyName == "Name");
+        Assert.AreEqual("Name", nameEvent.FullPropertyName, "A dotted path for descendants; the bare name here");
+        Assert.AreEqual(Neatoo.ChangeReason.UserEdit, nameEvent.Reason, "A setter outside a factory operation is a user edit");
+    }
+    #endregion
+
+    #region skill-property-metadata
+    [TestMethod]
+    public void Indexer_ExposesPropertyMetadata()
+    {
+        var entity = _factory.Create();
+
+        // Each partial property is backed by its own property object
+        var nameProperty = entity["Name"];
+
+        entity.Name = "";  // Name is required
+        Assert.IsFalse(nameProperty.IsValid);
+        Assert.IsTrue(nameProperty.PropertyMessages.Count > 0);
+        Assert.IsFalse(nameProperty.IsBusy);
+        Assert.IsFalse(nameProperty.IsReadOnly);
+
+        // The object aggregates every property's messages
+        Assert.IsTrue(entity.PropertyMessages.Any(m => m.Property.Name == "Name"));
+
+        entity.Name = "Set";
+        Assert.IsTrue(nameProperty.IsValid);
+        Assert.AreEqual(0, nameProperty.PropertyMessages.Count);
+
+        // Strongly typed access by casting
+        var typed = (Neatoo.IValidateProperty<string?>)nameProperty;
+        Assert.AreEqual("Set", typed.Value);
+    }
+    #endregion
+
+    #region skill-set-value
+    [TestMethod]
+    public async Task SetValue_IsTheAwaitablePath()
+    {
+        var entity = _factory.Create();
+
+        // The property setter runs the same rules but returns no Task.
+        // A component that needs to await the rules calls SetValue.
+        await entity["Name"].SetValue("Manual Value");
+
+        Assert.AreEqual("Manual Value", entity.Name);
+        Assert.IsTrue(entity["Name"].IsValid);
+    }
+    #endregion
 
     [TestMethod]
     public void Property_Indexer_ReturnsPropertyInterface()

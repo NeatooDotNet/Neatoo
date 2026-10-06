@@ -13,6 +13,7 @@ using AddressRow = Design.Domain.Entities.AddressRow;
 using EmployeeRow = Design.Domain.Entities.EmployeeRow;
 using OrderItemRow = Design.Domain.Aggregates.OrderAggregate.OrderItemRow;
 using OrderRow = Design.Domain.Aggregates.OrderAggregate.OrderRow;
+using ProductRow = Design.Domain.Entities.ProductRow;
 using SaveAggregateDemoRow = Design.Domain.FactoryOperations.SaveAggregateDemoRow;
 using SaveDemoItemRow = Design.Domain.FactoryOperations.SaveDemoItemRow;
 
@@ -31,6 +32,7 @@ public static class DesignTestServices
     /// Gets a service scope for test execution.
     /// The scope ensures proper service lifetime management.
     /// </summary>
+    #region skill-test-services
     public static IServiceScope GetScope()
     {
         lock (_lock)
@@ -39,50 +41,65 @@ public static class DesignTestServices
             {
                 var services = new ServiceCollection();
 
-                // Add Neatoo services with Design.Domain assembly
+                // Real Neatoo services and the generated factories for the
+                // domain assembly. Server mode: every operation runs in-process.
                 services.AddNeatooServices(
                     NeatooFactory.Server,
                     typeof(Design.Domain.BaseClasses.IDemoValueObject).Assembly);
 
-                // Register mock repositories for tests
-                services.AddTransient<Design.Domain.BaseClasses.IDemoRepository, MockDemoRepository>();
-                // Scoped (not transient): aggregate lifecycle tests seed the store
-                // and assert on the rows the factories wrote, so the test scope and
-                // the factory operations must observe the same instance.
-                services.AddScoped<Design.Domain.Aggregates.OrderAggregate.IOrderRepository, MockOrderRepository>();
-                services.AddTransient<Design.Domain.FactoryOperations.ICreateDemoRepository, MockCreateDemoRepository>();
-                services.AddTransient<Design.Domain.FactoryOperations.ICreateDefaults, MockCreateDefaults>();
-                services.AddTransient<Design.Domain.FactoryOperations.IFetchDemoRepository, MockFetchDemoRepository>();
-                services.AddTransient<Design.Domain.FactoryOperations.IFetchParentRepository, MockFetchParentRepository>();
-                services.AddTransient<Design.Domain.FactoryOperations.IFetchChildRepository, MockFetchChildRepository>();
-                services.AddScoped<Design.Domain.FactoryOperations.ISaveDemoRepository, MockSaveDemoRepository>();
-                // Scoped in-memory store, same rationale as MockOrderRepository above
-                services.AddScoped<Design.Domain.FactoryOperations.ISaveAggregateRepository, MockSaveAggregateRepository>();
-                services.AddTransient<Design.Domain.PropertySystem.IPropertyDemoRepository, MockPropertyDemoRepository>();
-                services.AddTransient<Design.Domain.PropertySystem.IFieldLevelAuthRepository, MockFieldLevelAuthRepository>();
-                services.AddScoped<Design.Domain.PropertySystem.ISalaryPermission, MockSalaryPermission>();
-                services.AddTransient<Design.Domain.Rules.IRulesDemoRepository, MockRulesDemoRepository>();
-                services.AddTransient<Design.Domain.Rules.IFluentRulesRepository, MockFluentRulesRepository>();
-                services.AddTransient<Design.Domain.Rules.IAsyncRulesRepository, MockAsyncRulesRepository>();
-                services.AddTransient<Design.Domain.Rules.IUsernameRepository, MockUsernameRepository>();
+                // The domain's DI-provided rules, as both tiers would register them
                 services.AddDesignDomainRules();
 
-                // Entities demo aggregate (Employee/Address) — scoped in-memory store
-                services.AddScoped<Design.Domain.Entities.IEmployeeRepository, MockEmployeeRepository>();
-                services.AddTransient<Design.Domain.ReadModels.IEmployeeDirectoryRepository, MockEmployeeDirectoryRepository>();
-
-                // Commands
-                services.AddScoped<Design.Domain.Commands.IApproveEmployeeRepository, MockApproveEmployeeRepository>();
-
-                // Gotcha demo repositories
-                services.AddTransient<Design.Domain.IGotcha2Repository, MockGotcha2Repository>();
-                services.AddTransient<Design.Domain.IServerOnlyService, MockServerOnlyService>();
-                services.AddTransient<Design.Domain.IGotcha5Repository, MockGotcha5Repository>();
+                // Mocks for the external dependencies only - never for Neatoo types
+                RegisterMockRepositories(services);
 
                 _serviceProvider = services.BuildServiceProvider();
             }
             return _serviceProvider.CreateScope();
         }
+    }
+    #endregion
+
+    private static void RegisterMockRepositories(IServiceCollection services)
+    {
+        services.AddTransient<Design.Domain.BaseClasses.IDemoRepository, MockDemoRepository>();
+        // Scoped (not transient): aggregate lifecycle tests seed the store
+        // and assert on the rows the factories wrote, so the test scope and
+        // the factory operations must observe the same instance.
+        services.AddScoped<Design.Domain.Aggregates.OrderAggregate.IOrderRepository, MockOrderRepository>();
+        services.AddScoped<Design.Domain.Aggregates.WorkOrderAggregate.IWorkOrderRepository, MockWorkOrderRepository>();
+        services.AddTransient<Design.Domain.FactoryOperations.ICreateDemoRepository, MockCreateDemoRepository>();
+        services.AddTransient<Design.Domain.FactoryOperations.ICreateDefaults, MockCreateDefaults>();
+        services.AddTransient<Design.Domain.FactoryOperations.IFetchDemoRepository, MockFetchDemoRepository>();
+        services.AddTransient<Design.Domain.FactoryOperations.IFetchParentRepository, MockFetchParentRepository>();
+        services.AddTransient<Design.Domain.FactoryOperations.IFetchChildRepository, MockFetchChildRepository>();
+        services.AddScoped<Design.Domain.FactoryOperations.ISaveDemoRepository, MockSaveDemoRepository>();
+        // Scoped in-memory store, same rationale as MockOrderRepository above
+        services.AddScoped<Design.Domain.FactoryOperations.ISaveAggregateRepository, MockSaveAggregateRepository>();
+        services.AddTransient<Design.Domain.PropertySystem.IPropertyDemoRepository, MockPropertyDemoRepository>();
+        services.AddTransient<Design.Domain.PropertySystem.IFieldLevelAuthRepository, MockFieldLevelAuthRepository>();
+        services.AddScoped<Design.Domain.PropertySystem.ISalaryPermission, MockSalaryPermission>();
+        services.AddTransient<Design.Domain.PropertySystem.ILazyLoadParentRepository, MockLazyLoadParentRepository>();
+        // Scoped: LazyLoadTests count the loader's calls on the same instance
+        services.AddScoped<Design.Domain.PropertySystem.ILazyLoadChildRepository, MockLazyLoadChildRepository>();
+        services.AddTransient<Design.Domain.Rules.IRulesDemoRepository, MockRulesDemoRepository>();
+        services.AddTransient<Design.Domain.Rules.IFluentRulesRepository, MockFluentRulesRepository>();
+        services.AddTransient<Design.Domain.Rules.IAsyncRulesRepository, MockAsyncRulesRepository>();
+        services.AddTransient<Design.Domain.Rules.IUsernameRepository, MockUsernameRepository>();
+        services.AddTransient<Design.Domain.Rules.ICodeRepository, MockCodeRepository>();
+
+        // Entities demo aggregates (Employee/Address, Product) — scoped in-memory stores
+        services.AddScoped<Design.Domain.Entities.IEmployeeRepository, MockEmployeeRepository>();
+        services.AddScoped<Design.Domain.Entities.IProductRepository, MockProductRepository>();
+        services.AddTransient<Design.Domain.ReadModels.IEmployeeDirectoryRepository, MockEmployeeDirectoryRepository>();
+
+        // Commands
+        services.AddScoped<Design.Domain.Commands.IApproveEmployeeRepository, MockApproveEmployeeRepository>();
+
+        // Gotcha demo repositories
+        services.AddTransient<Design.Domain.IGotcha2Repository, MockGotcha2Repository>();
+        services.AddTransient<Design.Domain.IServerOnlyService, MockServerOnlyService>();
+        services.AddTransient<Design.Domain.IGotcha5Repository, MockGotcha5Repository>();
     }
 
     /// <summary>
@@ -380,9 +397,116 @@ internal class MockEmployeeRepository : Design.Domain.Entities.IEmployeeReposito
     }
 }
 
+internal class MockProductRepository : Design.Domain.Entities.IProductRepository
+{
+    private readonly List<ProductRow> _pendingAdds = new();
+    private readonly List<ProductRow> _pendingRemoves = new();
+
+    /// <summary>Flushed product rows, keyed by id.</summary>
+    public Dictionary<Guid, ProductRow> Store { get; } = new();
+
+    public int SaveChangesCount { get; private set; }
+
+    public ProductRow SeedProduct()
+    {
+        var row = new ProductRow { Id = Guid.NewGuid(), Name = "Widget", Price = 9.99m };
+        Store[row.Id] = row;
+        return row;
+    }
+
+    public ProductRow? Get(Guid id) => Store.GetValueOrDefault(id);
+
+    public void Add(ProductRow row) => _pendingAdds.Add(row);
+
+    public void Remove(ProductRow row) => _pendingRemoves.Add(row);
+
+    public void SaveChanges()
+    {
+        foreach (var row in _pendingAdds) { Store[row.Id] = row; }
+        foreach (var row in _pendingRemoves) { Store.Remove(row.Id); }
+        _pendingAdds.Clear();
+        _pendingRemoves.Clear();
+        SaveChangesCount++;
+    }
+}
+
+internal class MockWorkOrderRepository : Design.Domain.Aggregates.WorkOrderAggregate.IWorkOrderRepository
+{
+    private readonly List<Design.Domain.Aggregates.WorkOrderAggregate.WorkOrderRow> _pendingAdds = new();
+    private readonly List<Design.Domain.Aggregates.WorkOrderAggregate.WorkOrderRow> _pendingRemoves = new();
+
+    /// <summary>Flushed work order rows (with their task rows), keyed by id.</summary>
+    public Dictionary<Guid, Design.Domain.Aggregates.WorkOrderAggregate.WorkOrderRow> Store { get; } = new();
+
+    public int SaveChangesCount { get; private set; }
+
+    /// <summary>Seeds a pending work order with exactly the given task rows.</summary>
+    public Design.Domain.Aggregates.WorkOrderAggregate.WorkOrderRow SeedWorkOrder(
+        params Design.Domain.Aggregates.WorkOrderAggregate.WorkOrderTaskRow[] tasks)
+    {
+        var row = new Design.Domain.Aggregates.WorkOrderAggregate.WorkOrderRow
+        {
+            Id = Guid.NewGuid(),
+            Status = "Pending",
+            Budget = 1000m,
+        };
+        row.Tasks.AddRange(tasks);
+        Store[row.Id] = row;
+        return row;
+    }
+
+    public static Design.Domain.Aggregates.WorkOrderAggregate.WorkOrderTaskRow Task(string name, int sequence, decimal hours, decimal rate)
+        => new()
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            Sequence = sequence,
+            Hours = hours,
+            Rate = rate,
+            Cost = hours * rate,
+            IsSchedulable = hours > 0,
+            WorkOrderStatus = "Pending",
+        };
+
+    public Design.Domain.Aggregates.WorkOrderAggregate.WorkOrderRow? Get(Guid id) => Store.GetValueOrDefault(id);
+
+    public void Add(Design.Domain.Aggregates.WorkOrderAggregate.WorkOrderRow row) => _pendingAdds.Add(row);
+
+    public void Remove(Design.Domain.Aggregates.WorkOrderAggregate.WorkOrderRow row) => _pendingRemoves.Add(row);
+
+    public void SaveChanges()
+    {
+        foreach (var row in _pendingAdds) { Store[row.Id] = row; }
+        foreach (var row in _pendingRemoves) { Store.Remove(row.Id); }
+        _pendingAdds.Clear();
+        _pendingRemoves.Clear();
+        SaveChangesCount++;
+    }
+}
+
 internal class MockPropertyDemoRepository : Design.Domain.PropertySystem.IPropertyDemoRepository
 {
     public (string Name, int Value) GetById(int id) => ($"Property-{id}", id * 2);
+}
+
+internal class MockLazyLoadParentRepository : Design.Domain.PropertySystem.ILazyLoadParentRepository
+{
+    public string GetName(Guid id) => $"Parent {id:N}";
+}
+
+internal class MockLazyLoadChildRepository : Design.Domain.PropertySystem.ILazyLoadChildRepository
+{
+    public int LoadCount { get; private set; }
+
+    public string GetNotes(Guid parentId)
+    {
+        LoadCount++;
+        if (parentId == Guid.Empty)
+        {
+            throw new InvalidOperationException("No details for an empty parent id");
+        }
+        return $"Notes for {parentId:N}";
+    }
 }
 
 internal class MockFieldLevelAuthRepository : Design.Domain.PropertySystem.IFieldLevelAuthRepository
@@ -420,6 +544,11 @@ internal class MockAsyncRulesRepository : Design.Domain.Rules.IAsyncRulesReposit
 internal class MockUsernameRepository : Design.Domain.Rules.IUsernameRepository
 {
     public bool UsernameExists(string username) => username == "taken";
+}
+
+internal class MockCodeRepository : Design.Domain.Rules.ICodeRepository
+{
+    public bool CodeExists(Guid excludeId, string code) => code == "TAKEN";
 }
 
 internal class MockGotcha2Repository : Design.Domain.IGotcha2Repository

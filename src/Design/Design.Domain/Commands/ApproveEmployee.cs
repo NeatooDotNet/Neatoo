@@ -174,6 +174,7 @@ public class EmployeeReportResult
 /// A missing employee is an application failure: the caller passed an id it
 /// got from the server, so the command throws instead of returning false.
 /// </remarks>
+#region skill-command
 [Factory]
 public static partial class SendWelcomeEmail
 {
@@ -191,6 +192,7 @@ public static partial class SendWelcomeEmail
         return Task.FromResult(true);
     }
 }
+#endregion
 
 /// <summary>
 /// Async command over several employees.

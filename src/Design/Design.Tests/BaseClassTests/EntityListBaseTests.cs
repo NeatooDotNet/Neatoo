@@ -105,6 +105,7 @@ public class EntityListBaseTests
         Assert.IsTrue(list.IsModified, "List should be modified when child is modified");
     }
 
+    #region skill-remove-fetched-item
     [TestMethod]
     public async Task Remove_FetchedItem_AddedToDeletedList()
     {
@@ -121,4 +122,22 @@ public class EntityListBaseTests
         Assert.AreEqual(2, list.Count);
         Assert.AreEqual(1, list.DeletedCount, "Removed fetched item should be in DeletedList");
     }
+    #endregion
+
+    #region skill-deleted-list-marks-modified
+    [TestMethod]
+    public async Task Remove_FetchedItem_MarksItemDeletedAndListModified()
+    {
+        var parent = await _parentFactory.Fetch();
+        var list = parent.Children!;
+        var item = list[0];
+        Assert.IsFalse(list.IsModified, "A fetched list is clean");
+
+        list.Remove(item);
+
+        Assert.IsTrue(item.IsDeleted, "The removed item is marked for deletion");
+        Assert.IsTrue(list.IsModified, "A pending deletion makes the list modified");
+        Assert.IsTrue(parent.IsModified, "...and the parent with it");
+    }
+    #endregion
 }

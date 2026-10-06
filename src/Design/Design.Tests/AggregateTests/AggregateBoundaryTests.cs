@@ -42,6 +42,7 @@ public class AggregateBoundaryTests
         return (order1, order2);
     }
 
+    #region skill-cross-aggregate-add-throws
     [TestMethod]
     public async Task AddItemFromAnotherAggregate_Throws_WithDistinguishingMessage()
     {
@@ -66,6 +67,7 @@ public class AggregateBoundaryTests
             ex.Message.Contains("belongs to aggregate 'Order', but this list belongs to aggregate 'Order'"),
             "The message must not render both aggregates identically");
     }
+    #endregion
 
     [TestMethod]
     public void AddItemWithNoAggregate_Succeeds()
@@ -81,6 +83,7 @@ public class AggregateBoundaryTests
         Assert.AreSame(order, item.Root, "Adding establishes the aggregate");
     }
 
+    #region skill-cross-aggregate-copy
     [TestMethod]
     public async Task CopyAndRemove_IsTheSupportedWayToMoveBetweenAggregates()
     {
@@ -98,4 +101,5 @@ public class AggregateBoundaryTests
         Assert.IsTrue(order1.IsModified);
         Assert.IsTrue(order2.IsModified);
     }
+    #endregion
 }

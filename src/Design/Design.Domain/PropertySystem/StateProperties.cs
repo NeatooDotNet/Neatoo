@@ -93,6 +93,7 @@ internal partial class ValidationStateDemo : ValidateBase<ValidationStateDemo>, 
     // =========================================================================
 }
 
+#region skill-partial-property-class
 [Factory]
 internal partial class ValidationChildDemo : ValidateBase<ValidationChildDemo>, IValidationChildDemo
 {
@@ -108,6 +109,7 @@ internal partial class ValidationChildDemo : ValidateBase<ValidationChildDemo>, 
     [Create]
     public void Create() { }
 }
+#endregion
 
 /// <summary>
 /// Demonstrates: Modification state properties (IsModified, IsSelfModified, IsNew).
@@ -351,6 +353,7 @@ internal partial class BusyStateDemo : ValidateBase<BusyStateDemo>, IBusyStateDe
     public partial string? Name { get; set; }
     public partial string? ComputedValue { get; set; }
 
+    #region skill-async-action
     public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(services)
     {
         // Add an async rule - IsBusy becomes true while it runs
@@ -363,6 +366,7 @@ internal partial class BusyStateDemo : ValidateBase<BusyStateDemo>, IBusyStateDe
             },
             t => t.Name);
     }
+    #endregion
 
     [Create]
     public void Create() { }

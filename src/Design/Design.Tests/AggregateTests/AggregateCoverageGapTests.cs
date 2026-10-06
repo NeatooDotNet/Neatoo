@@ -174,6 +174,7 @@ public class AggregateCoverageGapTests
         Assert.IsFalse(order.IsSavable, "...and is therefore not savable");
     }
 
+    #region skill-test-real-objects
     [TestMethod]
     public async Task Employee_NegativeSalary_IsInvalid()
     {
@@ -187,6 +188,7 @@ public class AggregateCoverageGapTests
         Assert.IsFalse(employee.IsValid, "Salary cannot be negative");
         Assert.IsFalse(employee.IsSavable);
     }
+    #endregion
 
     [TestMethod]
     public async Task Employee_FutureHireDate_IsInvalid()
@@ -201,6 +203,7 @@ public class AggregateCoverageGapTests
         Assert.IsFalse(employee.IsValid, "Hire date cannot be in the future");
     }
 
+    #region skill-run-rules-after-create
     [TestMethod]
     public async Task Address_InvalidAddressType_IsInvalid()
     {
@@ -223,11 +226,13 @@ public class AggregateCoverageGapTests
         await address.WaitForTasks();
         Assert.IsTrue(address.IsValid);
     }
+    #endregion
 
     // =========================================================================
     // Child added to a fetched aggregate then saved twice
     // =========================================================================
 
+    #region skill-save-root-only
     [TestMethod]
     public async Task AddChildToFetchedOrder_SaveTwice_InsertsOnce()
     {
@@ -251,4 +256,5 @@ public class AggregateCoverageGapTests
         Assert.AreEqual(1, stored.Items.Count(r => r.Id == added.Id),
             "The added child has exactly one row");
     }
+    #endregion
 }

@@ -58,6 +58,7 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
     //   // On the next Save, Update routing sees IsNew=true and gives every
     //   // fetched item a SECOND row. Children must be loaded via [Fetch].
     // =========================================================================
+    #region skill-list-fetch
     [Fetch]
     internal void Fetch(IEnumerable<OrderItemRow> rows,
                         [Service] IOrderItemFactory itemFactory)
@@ -67,6 +68,7 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
             Add(itemFactory.Fetch(row));
         }
     }
+    #endregion
 
     // =========================================================================
     // Canonical Child Persistence - Bring the Row Collection in Line
@@ -97,6 +99,7 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
     // modified state. The cleanup happens because the list is saved through
     // its OWN factory operation - there is no graph-wide cascade.
     // =========================================================================
+    #region skill-list-update
     [Update]
     internal void Update(ICollection<OrderItemRow> rows,
                          [Service] IOrderItemFactory itemFactory)
@@ -125,6 +128,7 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
             }
         }
     }
+    #endregion
 }
 
 // =============================================================================

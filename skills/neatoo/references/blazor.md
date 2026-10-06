@@ -2,7 +2,7 @@
 
 > **Required package:** Install `Neatoo.Blazor.MudNeatoo` to use the MudNeatoo components shown below.
 
-Neatoo provides Blazor-specific components and patterns for building forms with automatic validation display, change tracking, and two-way binding. Property binding basics are covered in [properties.md](properties.md) -- this page covers Blazor-specific patterns.
+Neatoo provides Blazor-specific components and patterns for building forms with validation display, change tracking, and two-way binding. Property binding basics are covered in [properties.md](properties.md) -- this page covers Blazor-specific patterns.
 
 ## The Thin Binding Layer Principle
 
@@ -11,18 +11,18 @@ The Blazor UI should be a **thin binding layer** over the domain model. It binds
 **When implementing a feature: design domain properties and rules first. Write the UI as a binding layer over those properties. If you find yourself writing business logic in a `.razor` file, stop and move it to the domain model.**
 
 **What belongs in .razor files:**
-- Property binding (`@bind-Value`, `Value="@entity.Name"`)
+- Property binding (`EntityProperty="@entity[nameof(IOrder.Name)]"`, `@entity.Total`)
 - Layout and styling (CSS classes, MudBlazor components, grid structure)
 - Component selection (which MudBlazor component to use)
 - Navigation and routing
 - Calling domain methods on button click (`OnClick="@(() => entity.Approve())"`)
 
 **What does NOT belong in .razor files:**
-- Arithmetic (`@(a * b)`) -- use `AddAction` computed property
-- Conditional business logic (`@if (status == "X" && count > 0)`) -- use domain `bool` property
-- LINQ expressions (`@items.Where(...).Count()`) -- use domain computed property
-- Multi-property validation in event handlers -- use `AddValidation`
-- Setting multiple properties in response to an event -- use domain method or `AddAction`
+- Arithmetic (`@(a * b)`) -- use an `AddAction` computed property
+- Conditional business logic (`@if (status == "X" && count > 0)`) -- use a domain `bool` property
+- LINQ expressions (`@items.Where(...).Count()`) -- use a domain computed property
+- Multi-property validation in event handlers -- use a rule
+- Setting multiple properties in response to an event -- use a domain method or `AddAction`
 
 ### Anti-Pattern: Logic-Heavy Razor Files
 
@@ -45,27 +45,26 @@ A `.razor` file with 20+ conditional/LINQ expressions indicates business logic h
 @if (visit.ShowExtensionWarning) { <ExtensionWarning /> }
 ```
 
-The domain model computes `ShowTreatmentPanel`, `ShowReviewAlert`, `ShowExtensionWarning` via `AddAction` rules. See `domain-logic-placement.md` for the full pattern.
+The domain model computes `ShowTreatmentPanel`, `ShowReviewAlert`, `ShowExtensionWarning` via `AddAction` rules into `private set` partial properties. See `domain-logic-placement.md` for the full pattern.
 
 ## Two Binding Modes
 
-Neatoo entities support two distinct binding modes in Blazor. Understanding both is essential for building responsive UIs.
+Neatoo entities support two distinct binding modes in Blazor.
 
 ### Mode 1: Display Value Binding
 
-Bind directly to entity properties to display values. The entity implements `INotifyPropertyChanged`, so Blazor re-renders automatically when properties change — including cascading rule updates:
+Bind directly to entity properties to display values:
 
 ```razor
 <MudText>@order.Total</MudText>
 <MudText>@order.Status</MudText>
-<MudText>@(order.IsModified ? "Unsaved changes" : "Saved")</MudText>
 ```
 
-When a rule updates `Total` in response to `Quantity` changing, the UI re-renders `Total` automatically. No event handler code needed.
+The entity implements `INotifyPropertyChanged`, but **Blazor does not subscribe on its own**. The page subscribes to the entity's `PropertyChanged` (the mudneatoo skill's Page Structure Pattern does this for `IsSavable`) and calls `StateHasChanged`; display bindings re-render on that cycle. When a rule updates `Total` in response to `Quantity`, the entity raises `PropertyChanged("Total")`, the page's handler re-renders, and the binding shows the new value. A view-only page with no form must subscribe itself.
 
 ### Mode 2: Property Metadata Binding
 
-Each partial property is backed by its own `IValidateProperty` object (see [properties.md](properties.md) — Object-Per-Property Architecture). Access it via the indexer `entity["PropertyName"]`. Each property object fires its own `PropertyChanged` for metadata like `IsValid`, `PropertyMessages`, `IsBusy`, and `IsReadOnly`:
+Each partial property is backed by its own property object (see [properties.md](properties.md) — Object-Per-Property Architecture), reached through the indexer `entity["PropertyName"]`. Each property object fires its own `PropertyChanged` for `IsValid`, `PropertyMessages`, `IsBusy`, and `IsReadOnly`:
 
 ```razor
 @{ var emailProp = employee["Email"]; }
@@ -78,7 +77,9 @@ Each partial property is backed by its own `IValidateProperty` object (see [prop
 @if (emailProp.IsBusy) { <MudProgressCircular Size="Size.Small" /> }
 ```
 
-MudNeatoo components (`MudNeatooTextField`, etc.) handle Mode 2 internally — they bind to both the value and the property metadata automatically.
+MudNeatoo components (`MudNeatooTextField`, etc.) handle Mode 2 internally — they bind to both the value and the property metadata.
+
+**MudNeatoo components bind `EntityBase` properties only.** Every component's `EntityProperty` parameter is typed `IEntityProperty`. A `ValidateBase` object's properties are `IValidateProperty` and not `IEntityProperty`, so a `ValidateBase` (a value object, or form data without a persistence lifecycle) cannot be bound through MudNeatoo components. Bind it with the manual metadata pattern above (`Value`, `SetValue`, `IsValid`, `PropertyMessages`, `IsBusy`, `IsReadOnly` are all on `IValidateProperty`).
 
 ### When to Use Each Mode
 
@@ -92,154 +93,142 @@ MudNeatoo components (`MudNeatooTextField`, etc.) handle Mode 2 internally — t
 
 ### Anti-Pattern: Manual PropertyChanged Handlers for Computed Values
 
-Do NOT subscribe to `PropertyChanged` in Blazor code to recompute derived values. Use `AddAction` rules in the domain model instead — they fire `PropertyChanged` automatically, and Blazor picks up the change.
+Do NOT subscribe to `PropertyChanged` in Blazor code to recompute derived values (a handler that sets `totalPay = employee.Hours * employee.Rate` when `Hours` or `Rate` changes is domain logic in the UI). Use an `AddAction` rule in the domain model instead — it sets a `private set` partial property, which raises `PropertyChanged`, and the page re-renders. Blazor just binds `@task.Cost`:
 
-```csharp
-// WRONG: event handler in .razor code-behind
-employee.PropertyChanged += (s, e) => {
-    if (e.PropertyName == "Hours" || e.PropertyName == "Rate")
-        totalPay = employee.Hours * employee.Rate;  // logic in UI
-};
-
-// RIGHT: AddAction in domain constructor
-RuleManager.AddAction(t => t.TotalPay = t.Hours * t.Rate, t => t.Hours, t => t.Rate);
-// Blazor just binds: @employee.TotalPay
+<!-- snippet: skill-computed-properties -->
+<a id='snippet-skill-computed-properties'></a>
+```cs
+// A derived value is a private-set partial property written by a rule.
+// It notifies, it serializes, and the UI sees it read-only.
+RuleManager.AddAction(
+    t => t.Cost = t.Hours * t.Rate * (1 - t.Discount),
+    t => t.Hours,
+    t => t.Rate,
+    t => t.Discount);
 ```
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L37-L45' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-computed-properties' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Validation Display
 
-<!-- snippet: blazor-validation-inline -->
-<a id='snippet-blazor-validation-inline'></a>
+A field's validation state is the property object's `IsValid` and `PropertyMessages`; the entity's `PropertyMessages` aggregates every property's messages for a summary. This is what MudNeatoo components and `NeatooValidationSummary` bind:
+
+<!-- snippet: skill-property-metadata -->
+<a id='snippet-skill-property-metadata'></a>
 ```cs
-[Fact]
-public void ValidationDisplaysInlineErrors()
+[TestMethod]
+public void Indexer_ExposesPropertyMetadata()
 {
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
+    var entity = _factory.Create();
 
-    // Invalid email format triggers validation error
-    employee.Email = "not-an-email";
+    // Each partial property is backed by its own property object
+    var nameProperty = entity["Name"];
 
-    var emailProperty = employee["Email"];
-    Assert.False(emailProperty.IsValid);
-    Assert.NotEmpty(emailProperty.PropertyMessages);
+    entity.Name = "";  // Name is required
+    Assert.IsFalse(nameProperty.IsValid);
+    Assert.IsTrue(nameProperty.PropertyMessages.Count > 0);
+    Assert.IsFalse(nameProperty.IsBusy);
+    Assert.IsFalse(nameProperty.IsReadOnly);
+
+    // The object aggregates every property's messages
+    Assert.IsTrue(entity.PropertyMessages.Any(m => m.Property.Name == "Name"));
+
+    entity.Name = "Set";
+    Assert.IsTrue(nameProperty.IsValid);
+    Assert.AreEqual(0, nameProperty.PropertyMessages.Count);
+
+    // Strongly typed access by casting
+    var typed = (Neatoo.IValidateProperty<string?>)nameProperty;
+    Assert.AreEqual("Set", typed.Value);
 }
 ```
-<sup><a href='/src/samples/BlazorSamples.cs#L135-L149' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-validation-inline' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-<!-- snippet: blazor-validation-summary -->
-<a id='snippet-blazor-validation-summary'></a>
-```cs
-[Fact]
-public void ValidationSummaryShowsAllErrors()
-{
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-
-    // Create multiple validation errors
-    employee.Name = "";
-    employee.Email = "invalid";
-    employee.Salary = -1000;
-
-    // Entity aggregates all property messages
-    Assert.False(employee.IsValid);
-    Assert.True(employee.PropertyMessages.Count >= 2);
-}
-```
-<sup><a href='/src/samples/BlazorSamples.cs#L151-L167' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-validation-summary' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L83-L109' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-property-metadata' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Form Submission
 
-<!-- snippet: blazor-form-submit -->
-<a id='snippet-blazor-form-submit'></a>
+A `[Create]` runs paused, so a freshly created entity reports `IsValid == true` until a rule runs — a Save button bound to `IsSavable` is enabled on an empty form. A `[Create]` that must not hand back an unvalidated object calls `RunRules()` at the end; otherwise the page calls it once after `Create`. After that, each committed field runs its own rules, and the Save handler calls `WaitForTasks()` and checks `IsSavable` before saving:
+
+<!-- snippet: skill-run-rules-after-create -->
+<a id='snippet-skill-run-rules-after-create'></a>
 ```cs
-[Fact]
-public async Task FormValidationPreventsInvalidSubmit()
+[TestMethod]
+public async Task Address_InvalidAddressType_IsInvalid()
 {
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
+    // Address.Create(street, city, state, zip, type) - the overload
+    // AddressList documents as the RIGHT way to copy across aggregates,
+    // which nothing called.
+    var address = _addressFactory.Create("1 Main St", "Springfield", "IL", "62701", "Vacation");
+    await address.WaitForTasks();
 
-    // Run validation to trigger required field checks
-    await employee.RunRules();
+    // Factory operations run paused, so no rule has evaluated this data yet -
+    // the object reports valid until something asks. This is why a factory
+    // method that must not produce invalid objects calls RunRules() itself.
+    Assert.IsTrue(address.IsValid, "Rules have not run yet - the factory op was paused");
 
-    // Empty form is invalid due to required Name field
-    Assert.False(employee.IsValid);
+    await address.RunRules();
+    Assert.IsFalse(address.IsValid, "Address type must be Home, Work, or Other");
 
-    // Fill required fields
-    employee.Name = "Bob Smith";
-    employee.Email = "bob@company.com";
-    employee.Salary = 50000;
-
-    // Wait for async validation to complete
-    await employee.WaitForTasks();
-
-    // Now valid for submission
-    Assert.True(employee.IsValid);
+    // A live edit runs rules automatically
+    address.AddressType = "Work";
+    await address.WaitForTasks();
+    Assert.IsTrue(address.IsValid);
 }
 ```
-<sup><a href='/src/samples/BlazorSamples.cs#L169-L193' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-form-submit' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateCoverageGapTests.cs#L206-L229' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-run-rules-after-create' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Busy State
 
-Disable buttons and show loading indicators while async validation runs:
+While an async rule runs, the property's and the entity's `IsBusy` are true and `IsSavable` is false. MudNeatoo components disable their input while `IsBusy`; a Save button bound to `IsSavable` disables itself:
 
-<!-- snippet: blazor-busy-state -->
-<a id='snippet-blazor-busy-state'></a>
+<!-- snippet: skill-is-busy -->
+<a id='snippet-skill-is-busy'></a>
 ```cs
-[Fact]
-public async Task BusyStateDisablesComponent()
+[TestMethod]
+public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 {
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
+    var entity = _scope.GetRequiredService<IBusyStateDemoFactory>().Create();
 
-    // Wait for any initial async operations to complete
-    await employee.WaitForTasks();
+    entity.Name = "Test";  // triggers the async action rule
 
-    var emailProperty = employee["Email"];
-    Assert.False(emailProperty.IsBusy);
+    Assert.IsTrue(entity.IsBusy, "The async rule is still running");
 
-    // Set email to trigger async validation
-    employee.Email = "test@example.com";
+    await entity.WaitForTasks();
 
-    // Wait for async rules to complete
-    await employee.WaitForTasks();
-
-    // Property is no longer busy after rules complete
-    Assert.False(emailProperty.IsBusy);
+    Assert.IsFalse(entity.IsBusy);
+    Assert.AreEqual("Processed: Test", entity.ComputedValue);
 }
 ```
-<sup><a href='/src/samples/BlazorSamples.cs#L195-L217' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-busy-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/ValidationStateTests.cs#L52-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-busy' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Manual Binding
 
-For custom controls without MudNeatoo components, use `SetValue` for async property assignment:
+For a control without a MudNeatoo wrapper, call `SetValue` from the control's `ValueChanged`. It runs the same rules as the property setter but returns a `Task` the component can await:
 
-<!-- snippet: blazor-manual-binding -->
-<a id='snippet-blazor-manual-binding'></a>
+<!-- snippet: skill-set-value -->
+<a id='snippet-skill-set-value'></a>
 ```cs
-[Fact]
-public async Task ManualBindingUsesSetValueAsync()
+[TestMethod]
+public async Task SetValue_IsTheAwaitablePath()
 {
-    var factory = GetRequiredService<IBlazorEmployeeFactory>();
-    var employee = factory.Create();
-    var nameProperty = employee["Name"];
+    var entity = _factory.Create();
 
-    // Manual binding pattern: use SetValue for async
-    await nameProperty.SetValue("Manual Value");
+    // The property setter runs the same rules but returns no Task.
+    // A component that needs to await the rules calls SetValue.
+    await entity["Name"].SetValue("Manual Value");
 
-    Assert.Equal("Manual Value", employee.Name);
+    Assert.AreEqual("Manual Value", entity.Name);
+    Assert.IsTrue(entity["Name"].IsValid);
 }
 ```
-<sup><a href='/src/samples/BlazorSamples.cs#L393-L406' title='Snippet source file'>snippet source</a> | <a href='#snippet-blazor-manual-binding' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L111-L124' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-set-value' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Component Reference
 
-Bind components to domain-computed properties. Ensure the values you bind to are domain properties, not UI-computed expressions.
+Bind components to domain properties. Ensure the values you bind to are domain properties, not UI-computed expressions.
 
 | Component | Purpose |
 |-----------|---------|
@@ -256,60 +245,45 @@ Bind components to domain-computed properties. Ensure the values you bind to are
 | `MudNeatooSlider<T>` | Slider input |
 | `NeatooValidationSummary` | All validation errors for an entity |
 
-All components take an `EntityProperty` parameter (the `IEntityProperty` from the entity's indexer). Common MudBlazor parameters (Variant, Margin, HelperText, Adornment, Class, etc.) are exposed as pass-through parameters on each component.
+All components take an `EntityProperty` parameter: the `IEntityProperty` from an `EntityBase` entity's indexer. A curated set of the wrapped MudBlazor component's parameters (Variant, Margin, HelperText, Adornment, Class, and others) is forwarded; a parameter that is not forwarded means manual metadata binding for that field.
 
 ## Standard Practices
 
-1. **Use Neatoo components** -- They handle validation display and change tracking automatically
+1. **Use Neatoo components** -- They handle validation display and change tracking
 2. **Handle IsBusy** -- Disable buttons and show loading during async operations
-3. **Show validation early** -- Display errors as user types, not just on submit
+3. **Show validation on commit** -- `MudNeatooTextField` and `MudNeatooNumericField` set the property when the field loses focus (`Immediate="false"`), so rules run and errors display once per committed value, not per keystroke. A control that sets the property continuously runs the rules on every change.
 
 ## Blazor WASM Project Structure
 
-Isolate EF Core in a separate infrastructure project and use `PrivateAssets="all"` on the project reference. See the Person example (`src/Examples/Person/`):
+Keep EF Core out of the client by splitting data access into two projects: a **Dal** project with the repository interfaces and row types (no EF Core packages), and an **Ef** project that implements them with EF Core. The domain project references Dal only. The server references the domain, Ef, and the client; the client references the domain and MudNeatoo. Nothing in the client's reference graph reaches Ef.
 
 ```xml
-<!-- Infrastructure.csproj - contains EF Core -->
+<!-- Domain.csproj — repository interfaces only -->
 <ItemGroup>
-  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="..." />
-  <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="..." />
+  <ProjectReference Include="..\Dal\Dal.csproj" />
 </ItemGroup>
-```
 
-The **Domain project** references Infrastructure privately:
-
-```xml
-<!-- Domain.csproj -->
+<!-- Ef.csproj — EF Core and the implementations -->
 <ItemGroup>
-  <!-- PrivateAssets="all" prevents Infrastructure from flowing to consumers -->
-  <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" PrivateAssets="all" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  <ProjectReference Include="..\Dal\Dal.csproj" />
 </ItemGroup>
-```
 
-The **Server project** explicitly references both:
-
-```xml
 <!-- Server.csproj -->
 <ItemGroup>
+  <ProjectReference Include="..\Client\Client.csproj" />
   <ProjectReference Include="..\Domain\Domain.csproj" />
-  <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+  <ProjectReference Include="..\Ef\Ef.csproj" />
 </ItemGroup>
-```
 
-The **Client project** only references Domain (Infrastructure never flows through):
-
-```xml
 <!-- Client.csproj -->
 <ItemGroup>
   <ProjectReference Include="..\Domain\Domain.csproj" />
 </ItemGroup>
 ```
 
-This ensures:
-- The client cannot accidentally call server-only methods (DI resolution fails)
-- Smaller WASM bundle (no EF Core, database drivers)
-- Clear architectural boundary between client and server code
-- Domain project can still compile and use EF Core types
+The server registers the Ef implementations against the Dal interfaces; the client registers none, so a `[Service]` repository parameter resolves only on the server. The domain's `[Remote]` operations and `[Remote, Execute]` commands are the only paths from the client to that code.
 
 ## Related
 
