@@ -212,8 +212,8 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
 //   var emp2 = await employeeFactory.Fetch(emp2Id);
 //   var address = emp1.Addresses[0];
 //   emp2.Addresses.Add(address);  // THROWS!
-//   // "Cannot add Address to list: item belongs to aggregate 'Employee',
-//   //  but this list belongs to aggregate 'Employee'."
+//   // "Cannot add Address to list: item belongs to a different 'Employee'
+//   //  instance than this list. ..."
 //
 // WHY: Different aggregate roots. Moving items between aggregates would
 // create inconsistent state - the address would be in two places.

@@ -17,12 +17,14 @@ public class FieldLevelAuthorizationTests
 {
     private IServiceScope _scope = null!;
     private IFieldLevelAuthDemoFactory _factory = null!;
+    private MockSalaryPermission _permission = null!;
 
     [TestInitialize]
     public void TestInitialize()
     {
         _scope = DesignTestServices.GetScope();
         _factory = _scope.GetRequiredService<IFieldLevelAuthDemoFactory>();
+        _permission = (MockSalaryPermission)_scope.GetRequiredService<ISalaryPermission>();
     }
 
     [TestCleanup]
@@ -35,11 +37,12 @@ public class FieldLevelAuthorizationTests
     public async Task MarkReadOnly_DuringFetch_SetsSalaryReadOnly()
     {
         // Scenario 7/9: MarkReadOnly called during Fetch, entity arrives with IsReadOnly=true
-        // WHEN Fetch is called with canEditSalary=false,
+        // WHEN the server says the user cannot edit salary,
         // THEN the Salary property has IsReadOnly=true
 
         // Arrange & Act
-        var entity = await _factory.Fetch(1, canEditSalary: false);
+        _permission.CanEditSalary = false;
+        var entity = await _factory.Fetch(1);
 
         // Assert
         Assert.IsTrue(entity["Salary"].IsReadOnly,
@@ -50,11 +53,12 @@ public class FieldLevelAuthorizationTests
     public async Task MarkReadOnly_DuringFetch_NameRemainsWritable()
     {
         // Negative case: MarkReadOnly only affects the targeted property
-        // WHEN Fetch is called with canEditSalary=false,
+        // WHEN the server says the user cannot edit salary,
         // THEN the Name property remains writable
 
         // Arrange & Act
-        var entity = await _factory.Fetch(1, canEditSalary: false);
+        _permission.CanEditSalary = false;
+        var entity = await _factory.Fetch(1);
 
         // Assert
         Assert.IsFalse(entity["Name"].IsReadOnly,
@@ -65,11 +69,12 @@ public class FieldLevelAuthorizationTests
     public async Task MarkReadOnly_WhenCanEdit_SalaryRemainsWritable()
     {
         // Positive case: When user has permission, property stays writable
-        // WHEN Fetch is called with canEditSalary=true,
+        // WHEN the server says the user can edit salary,
         // THEN the Salary property remains writable
 
         // Arrange & Act
-        var entity = await _factory.Fetch(1, canEditSalary: true);
+        _permission.CanEditSalary = true;
+        var entity = await _factory.Fetch(1);
 
         // Assert
         Assert.IsFalse(entity["Salary"].IsReadOnly,
@@ -84,7 +89,8 @@ public class FieldLevelAuthorizationTests
         // THEN PropertyException is thrown
 
         // Arrange
-        var entity = await _factory.Fetch(1, canEditSalary: false);
+        _permission.CanEditSalary = false;
+        var entity = await _factory.Fetch(1);
 
         // Act & Assert
         try
@@ -107,7 +113,8 @@ public class FieldLevelAuthorizationTests
         // THEN value is set without exception
 
         // Arrange
-        var entity = await _factory.Fetch(1, canEditSalary: false);
+        _permission.CanEditSalary = false;
+        var entity = await _factory.Fetch(1);
 
         // Act
         entity["Salary"].LoadValue(90000m);

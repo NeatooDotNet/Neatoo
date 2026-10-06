@@ -12,13 +12,14 @@ using Neatoo.RemoteFactory;
 namespace Design.Domain.BaseClasses;
 
 // =============================================================================
-// BASE CLASS 1: ValidateBase<T> - Value Objects, Read Models, Validation-Only
+// BASE CLASS 1: ValidateBase<T> - Objects That Need Rules, Not Persistence
 // =============================================================================
-// Use ValidateBase<T> when:
-// - You need validation and rules but NOT persistence tracking
-// - Building value objects (immutable or semi-immutable domain concepts)
-// - Building DTOs/read models that need validation
-// - Building forms/wizards that validate but don't directly persist
+// Use ValidateBase<T> only when the object needs rules:
+// - Value objects a person edits (an address on a form)
+// - Criteria, filters and wizard steps that validate but don't persist
+//
+// A read model is NOT a ValidateBase: it is a plain [Factory] class with
+// [Fetch] only (see ReadModels/EmployeeDirectory.cs).
 //
 // DESIGN DECISION: ValidateBase<T> is the foundation for ALL Neatoo objects.
 // EntityBase<T> extends ValidateBase<T>, so all entity capabilities build on
@@ -49,7 +50,7 @@ namespace Design.Domain.BaseClasses;
 //       public bool IsModified { get; } // NO - modification tracking is EntityBase concern
 //   }
 //
-// WHY NOT: Separation of concerns. Value objects and DTOs don't need IsNew/IsModified.
+// WHY NOT: Separation of concerns. Value objects and criteria don't need IsNew/IsModified.
 // Tracking modification state adds memory overhead for objects that will never be persisted.
 // =============================================================================
 
@@ -102,7 +103,7 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
     //
     // RIGHT:
     //   Use the factory to create instances - factory handles DI automatically.
-    //   var obj = await DemoValueObjectFactory.Create();
+    //   var obj = demoValueObjectFactory.Create();  // injected IDemoValueObjectFactory
     // =========================================================================
     public DemoValueObject(IValidateBaseServices<DemoValueObject> services) : base(services)
     {
@@ -132,6 +133,14 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
     {
         Name = name;
     }
+
+    // Loaded by the list's [Fetch]: existing data comes through [Fetch],
+    // never [Create]. Internal - only server-side code calls it.
+    [Fetch]
+    internal void Fetch(string name)
+    {
+        Name = name;
+    }
 }
 
 // =============================================================================
@@ -157,8 +166,8 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 // - Factory: Reference to IFactorySave<T> for persistence operations
 //
 // PERFORMANCE: IsModified aggregates from entire object graph.
-// - Checking IsModified walks all children recursively
-// - For deep graphs (>100 items), consider caching if called frequently
+// - Children's modified state is cached and updated as children change,
+//   so reading IsModified does not walk the graph
 // - IsSelfModified is O(1) - only checks this object's properties
 // - ModifiedProperties is a HashSet for O(1) contains checks
 //
@@ -240,7 +249,8 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     //
     // DESIGN DECISION: Each operation has a specific attribute:
     // - [Create]: Initialize new object (typically local, no [Remote])
-    // - [Fetch]: Load existing from persistence (needs [Remote])
+    // - [Fetch]: Load existing from persistence ([Remote] on a root the
+    //   client fetches; child and list [Fetch] never carry it)
     // - [Insert]: Persist new object (called by Save())
     // - [Update]: Persist changes (called by Save())
     // - [Delete]: Remove from persistence (called by Save())
@@ -251,11 +261,11 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     // COMMON MISTAKE: Calling Insert/Update/Delete directly.
     //
     // WRONG:
-    //   var entity = await factory.Create();
+    //   var entity = factory.Create();
     //   await factory.Insert(entity);  // NO! Use Save()
     //
     // RIGHT:
-    //   var entity = await factory.Create();
+    //   var entity = factory.Create();
     //   entity.Name = "Test";
     //   await entity.Save();  // Routes to Insert because IsNew=true
     // =========================================================================
@@ -319,12 +329,14 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
 }
 
 // =============================================================================
-// BASE CLASS 3: ValidateListBase<I> - Collections of Read Models/Value Objects
+// BASE CLASS 3: ValidateListBase<I> - Collections of ValidateBase Items
 // =============================================================================
 // Use ValidateListBase<I> when:
-// - You need a collection of ValidateBase items
-// - Building lists of DTOs or value objects
+// - You need a collection of ValidateBase items (objects that need rules)
 // - The list items don't need persistence tracking
+//
+// A list of read-only rows is not a ValidateListBase: it is a property of a
+// plain [Factory] read model (see ReadModels/EmployeeDirectory.cs).
 //
 // DESIGN DECISION: ValidateListBase extends ObservableCollection<I>.
 // This provides standard collection behaviors plus:
@@ -341,12 +353,12 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
 //       public bool IsModified { get; }  // NO - that's EntityListBase
 //   }
 //
-// WHY NOT: ValidateListBase is for read models and value objects that don't
-// need persistence. Adding IsModified would add overhead and confusion.
+// WHY NOT: ValidateListBase is for validated items that don't need
+// persistence. Adding IsModified would add overhead and confusion.
 // =============================================================================
 
 /// <summary>
-/// Demonstrates: ValidateListBase&lt;I&gt; for collections of value objects/read models.
+/// Demonstrates: ValidateListBase&lt;I&gt; for collections of ValidateBase items.
 ///
 /// Key points:
 /// - Extends ObservableCollection&lt;I&gt; with validation aggregation
@@ -370,15 +382,11 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
     [Fetch]
     internal void Fetch([Service] IDemoRepository repository, [Service] IDemoValueObjectFactory valueObjectFactory)
     {
-        // Fetch returns a list of value objects
-        var items = repository.GetAllNames();
-
-        // Note: List bases don't have PauseAllActions - items are added directly
-        // Rules on individual items run as they are added
-        foreach (var name in items)
+        // The list is paused by its own factory operation (FactoryStart),
+        // like any factory target. Each item is loaded by its own [Fetch].
+        foreach (var name in repository.GetAllNames())
         {
-            var item = valueObjectFactory.Create(name);
-            Add(item);
+            Add(valueObjectFactory.Fetch(name));
         }
     }
 }
@@ -468,9 +476,11 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 /// - Adding items: set ContainingList (routes the child's Delete through the list)
 /// - Removing non-new items: MarkDeleted(), add to DeletedList
 /// - Root property for aggregate boundary enforcement
+/// - Parameterized on a CHILD interface (IDemoChild : IEntityBase), never on
+///   a root interface
 /// </summary>
 [Factory]
-internal partial class DemoEntityList : EntityListBase<IDemoEntity>, IDemoEntityList
+internal partial class DemoEntityList : EntityListBase<IDemoChild>, IDemoEntityList
 {
     // DESIGN DECISION: EntityListBase doesn't define IsSavable or Save().
     // Lists are ALWAYS saved through their parent aggregate root: the root's
@@ -488,6 +498,69 @@ internal partial class DemoEntityList : EntityListBase<IDemoEntity>, IDemoEntity
     public void Create()
     {
         // Empty list
+    }
+
+    // Child list operations are internal and never [Remote]: the root's
+    // [Fetch] calls this on the server.
+    [Fetch]
+    internal void Fetch(IEnumerable<string> names, [Service] IDemoChildFactory childFactory)
+    {
+        foreach (var name in names)
+        {
+            Add(childFactory.Fetch(name));
+        }
+    }
+}
+
+/// <summary>
+/// Child entity held by DemoEntityList. Its interface extends IEntityBase, so
+/// it exposes no IsSavable and no Save().
+/// </summary>
+[Factory]
+internal partial class DemoChild : EntityBase<DemoChild>, IDemoChild
+{
+    public partial string? Name { get; set; }
+
+    public DemoChild(IEntityBaseServices<DemoChild> services) : base(services) { }
+
+    // Client code creates a child with parameters, then adds it to the list:
+    //   var child = childFactory.Create("Widget");
+    //   root.Children.Add(child);
+    [Create]
+    public void Create(string name)
+    {
+        Name = name;
+    }
+
+    [Fetch]
+    internal void Fetch(string name)
+    {
+        Name = name;
+    }
+}
+
+/// <summary>
+/// Root that owns DemoEntityList, so the list demo has fetched (not new)
+/// children. Persistence is shown in Aggregates/OrderAggregate.
+/// </summary>
+[Factory]
+internal partial class DemoParent : EntityBase<DemoParent>, IDemoParent
+{
+    public partial IDemoEntityList? Children { get; set; }
+
+    public DemoParent(IEntityBaseServices<DemoParent> services) : base(services) { }
+
+    [Create]
+    public void Create([Service] IDemoEntityListFactory listFactory)
+    {
+        Children = listFactory.Create();
+    }
+
+    [Remote]
+    [Fetch]
+    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoEntityListFactory listFactory)
+    {
+        Children = listFactory.Fetch(repository.GetAllNames());
     }
 }
 
@@ -518,10 +591,13 @@ public interface IDemoRepository
 // | Need              | Single Object    | Collection       |
 // +-------------------+------------------+------------------+------------------+
 // | Validation only   | ValidateBase<T>  | ValidateListBase<I> |
-// | (DTOs, VOs)       |                  |                  |
+// | (needs rules)     |                  |                  |
 // +-------------------+------------------+------------------+------------------+
 // | Full persistence  | EntityBase<T>    | EntityListBase<I>   |
 // | (Aggregates)      |                  |                  |
+// +-------------------+------------------+------------------+------------------+
+// | Read only         | Plain [Factory] class, [Fetch] only (ReadModels/)     |
+// | (Read models)     | Rows are immutable records on a property              |
 // +-------------------+------------------+------------------+------------------+
 //
 // DESIGN DECISION: The class hierarchy is intentional:

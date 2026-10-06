@@ -89,8 +89,8 @@ internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRem
     // =========================================================================
     // Remote Operation: Needs [Remote]
     // =========================================================================
-    // [Fetch] requires database access - must run on server.
-    // The [Remote] attribute tells RemoteFactory to generate HTTP proxy.
+    // The client fetches this root, so it is a client entry point: [Remote]
+    // makes the client call cross to the server, where the repository lives.
     // =========================================================================
     [Remote]
     [Fetch]
@@ -260,7 +260,7 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
 // =============================================================================
 
 /// <summary>
-/// Demonstrates: Entity that can be root or child.
+/// Demonstrates: an entity in the ROOT role only.
 /// </summary>
 [Factory]
 internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity

@@ -36,12 +36,12 @@ namespace Design.Domain.FactoryOperations;
 // COMMON MISTAKE: Calling Insert/Update/Delete directly.
 //
 // WRONG:
-//   var entity = await factory.Create();
+//   var entity = factory.Create();
 //   entity.Name = "Test";
 //   await factory.Insert(entity);  // NO! Don't do this.
 //
 // RIGHT:
-//   var entity = await factory.Create();
+//   var entity = factory.Create();
 //   entity.Name = "Test";
 //   await entity.Save();  // This calls Insert because IsNew=true
 //

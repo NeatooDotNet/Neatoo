@@ -11,7 +11,7 @@ public static partial class UniqueName
     // Without [Remote], RemoteFactory 1.9+ runs an [Execute] on the calling tier, where IPersonDbContext does not exist.
     [Remote]
     [Execute]
-    internal static async Task<bool> _IsUniqueName(Guid? id, string firstName, string lastName, [Service] IPersonDbContext personContext)
+    private static async Task<bool> _IsUniqueName(Guid? id, string firstName, string lastName, [Service] IPersonDbContext personContext)
     {
         if (await personContext.PersonNameExists(id, firstName, lastName))
         {

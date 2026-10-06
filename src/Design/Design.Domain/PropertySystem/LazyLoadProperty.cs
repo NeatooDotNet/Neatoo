@@ -75,12 +75,18 @@ namespace Design.Domain.PropertySystem;
 // LazyLoad on EntityBase
 // =============================================================================
 
+public interface ILazyLoadEntityDemo : IEntityRoot
+{
+    string? Name { get; set; }
+    EntityLazyLoad<string> LazyDescription { get; }
+}
+
 /// <summary>
 /// Demonstrates: LazyLoad property on an EntityBase entity.
 /// The LazyLoad property holds a string value for simplicity.
 /// </summary>
 [Factory]
-public partial class LazyLoadEntityDemo : EntityBase<LazyLoadEntityDemo>
+internal partial class LazyLoadEntityDemo : EntityBase<LazyLoadEntityDemo>, ILazyLoadEntityDemo
 {
     public partial string? Name { get; set; }
 
@@ -98,8 +104,9 @@ public partial class LazyLoadEntityDemo : EntityBase<LazyLoadEntityDemo>
         LazyDescription = lazyLoadFactory.Create<string>("Default description");
     }
 
+    [Remote]
     [Fetch]
-    public void Fetch(int id, [Service] IEntityLazyLoadFactory lazyLoadFactory)
+    internal void Fetch(int id, [Service] IEntityLazyLoadFactory lazyLoadFactory)
     {
         Name = $"Entity-{id}";
         LazyDescription = lazyLoadFactory.Create<string>($"Description for {id}");
@@ -110,12 +117,18 @@ public partial class LazyLoadEntityDemo : EntityBase<LazyLoadEntityDemo>
 // LazyLoad on ValidateBase
 // =============================================================================
 
+public interface ILazyLoadValidateDemo : IValidateBase
+{
+    string? Label { get; set; }
+    EntityLazyLoad<string> LazyContent { get; }
+}
+
 /// <summary>
 /// Demonstrates: LazyLoad property on a ValidateBase entity.
 /// Verifies that LazyLoad serialization works for both base class hierarchies.
 /// </summary>
 [Factory]
-public partial class LazyLoadValidateDemo : ValidateBase<LazyLoadValidateDemo>
+internal partial class LazyLoadValidateDemo : ValidateBase<LazyLoadValidateDemo>, ILazyLoadValidateDemo
 {
     public partial string? Label { get; set; }
 

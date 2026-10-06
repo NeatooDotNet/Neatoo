@@ -149,7 +149,7 @@ public class CommonGotchaTests
     }
 
     // =========================================================================
-    // GOTCHA 3: Method-injected [Service] needs [Remote]
+    // GOTCHA 3: A server-only [Service] goes on a [Remote] entry point
     // =========================================================================
     // This gotcha is demonstrated through documentation rather than a runtime test,
     // because we can't easily simulate client-side DI container behavior in this test.

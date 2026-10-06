@@ -16,11 +16,11 @@ namespace Design.Domain.Commands;
 // - Perform business logic across multiple entities
 // - Don't fit the entity CRUD pattern
 // - Need to be invokable as discrete operations
-// - Return results (success/failure, generated data)
+// - Return data the caller needs (generated values, computed results)
 //
-// DESIGN DECISION: Commands are static partial classes with [Factory] and [Execute].
-// They're not entities - they don't inherit from ValidateBase/EntityBase.
-// The factory pattern still applies for DI and remote execution.
+// DESIGN DECISION: A command is a static partial class with [Factory]. Each
+// operation is [Remote, Execute] private static _Name when it needs the server.
+// Commands are not entities - they don't inherit from ValidateBase/EntityBase.
 //
 // DID NOT DO THIS: Make commands inherit from ValidateBase.
 //
@@ -38,15 +38,16 @@ namespace Design.Domain.Commands;
 //   [Factory]
 //   public static partial class ApproveEmployee
 //   {
+//       [Remote]
 //       [Execute]
-//       public static Task<ApproveEmployeeResult> _Approve(int employeeId, [Service] IRepo repo) { ... }
+//       private static Task<ApprovalReceipt> _Approve(int employeeId, [Service] IRepo repo) { ... }
 //   }
 //
 // WHY NOT: Commands are operations, not domain objects. They don't need
 // property tracking, validation rules, or persistence state. A simple
 // static class with parameters is cleaner and more explicit.
 //
-// GENERATOR BEHAVIOR: [Execute] methods MUST return Task or Task<T>.
+// GENERATOR BEHAVIOR: [Execute] methods MUST return Task<T>.
 // Static command classes MUST be marked 'partial' for code generation.
 // Method name convention: Use _MethodName - the leading underscore is stripped
 // to create the delegate name (e.g., _Approve -> Approve delegate).
@@ -57,89 +58,72 @@ namespace Design.Domain.Commands;
 ///
 /// Key points:
 /// - Static partial class with [Factory] attribute
-/// - [Execute] method performs the operation
+/// - [Remote, Execute] private static _Name performs the operation on the server
 /// - Parameters define inputs
 /// - Return type must be Task or Task&lt;T&gt;
-/// - [Remote] if server execution required
 /// </summary>
 [Factory]
 public static partial class ApproveEmployee
 {
     // =========================================================================
-    // [Execute] - The Command Operation
+    // [Remote, Execute] - The Command Operation
     // =========================================================================
-    // [Execute] marks this method as a command operation.
-    // The factory generates:
-    //   interface IApproveEmployeeFactory {
-    //       Task<ApproveEmployeeResult> Execute(int employeeId, string? approverName);
-    //   }
+    // With [Remote], a client call crosses to the server (RemoteFactory 1.9+).
+    // Without [Remote], the command runs on the calling tier, so a server-only
+    // [Service] such as this repository would not resolve on the client.
     //
-    // With [Remote], the client factory makes an HTTP call.
-    // Without [Remote], it's local execution.
+    // private static: the generated delegate is the public API; the method
+    // itself is never called directly. With [Remote], the body and its server
+    // dependencies are trimmed from a WASM client.
     //
-    // GENERATOR BEHAVIOR: [Execute] methods must return Task or Task<T>.
-    // This enables consistent async patterns across all factory operations.
-    // =========================================================================
-    // =========================================================================
-    // Delegate Naming Convention
-    // =========================================================================
     // GENERATOR BEHAVIOR: The delegate name is derived from the method name.
-    // A leading underscore is stripped: _Approve -> Approve delegate.
+    // A leading underscore is stripped: _Approve -> ApproveEmployee.Approve.
+    //   var receipt = await approve(employeeId, approverName);
+    // =========================================================================
     //
-    // This creates a clean public API:
-    //   factory.Approve(employeeId, approverName)
-    // While the internal method is _Approve.
+    // DESIGN DECISION: The command does not check data and return a failure.
+    // =========================================================================
+    // Whether an employee can be approved is decided before the command is
+    // called: the screen offers Approve only when server truth says so (a
+    // read model's CanApprove flag, or a rule on the Employee aggregate). If
+    // the command is reached with an employee that cannot be approved, the
+    // client and server disagree - an application failure, so it throws.
+    //
+    // DID NOT DO THIS: Return ApproveEmployeeResult.Failed("Employee is already
+    // approved") and have the UI show the message.
+    //
+    // WHY NOT: That makes the result object a third validation channel beside
+    // rules and exceptions, and the user learns the action was invalid only
+    // after a round trip. Validation is a rule; an exception is an application
+    // failure and is never caught to produce a validation message.
     // =========================================================================
     [Remote]
     [Execute]
-    public static Task<ApproveEmployeeResult> _Approve(
+    private static Task<ApprovalReceipt> _Approve(
         int employeeId,
         string? approverName,
         [Service] IApproveEmployeeRepository repository)
     {
-        // Load the employee
-        var employee = repository.GetEmployee(employeeId);
-        if (employee == null)
+        var employee = repository.GetEmployee(employeeId)
+            ?? throw new InvalidOperationException($"Employee {employeeId} not found");
+
+        if (employee.IsApproved || !employee.IsActive)
         {
-            return Task.FromResult(ApproveEmployeeResult.Failed($"Employee {employeeId} not found"));
+            throw new InvalidOperationException(
+                $"Employee {employeeId} cannot be approved (approved: {employee.IsApproved}, active: {employee.IsActive})");
         }
 
-        // Business logic: Check if employee can be approved
-        if (employee.Value.IsApproved)
-        {
-            return Task.FromResult(ApproveEmployeeResult.Failed("Employee is already approved"));
-        }
+        var approvedOn = DateTime.UtcNow;
+        repository.ApproveEmployee(employeeId, approverName, approvedOn);
 
-        if (!employee.Value.IsActive)
-        {
-            return Task.FromResult(ApproveEmployeeResult.Failed("Cannot approve inactive employee"));
-        }
-
-        // Perform the approval
-        repository.ApproveEmployee(employeeId, approverName, DateTime.UtcNow);
-
-        return Task.FromResult(ApproveEmployeeResult.Succeeded($"Employee {employee.Value.FullName} approved by {approverName}"));
+        return Task.FromResult(new ApprovalReceipt(employee.FullName, approverName, approvedOn));
     }
 }
 
-// =============================================================================
-// Command Result Pattern
-// =============================================================================
-// Commands return result objects that indicate success/failure and provide data.
-// This is cleaner than throwing exceptions for expected failures.
-// =============================================================================
-
-public class ApproveEmployeeResult
-{
-    public bool Success { get; private set; }
-    public string Message { get; private set; } = string.Empty;
-
-    public static ApproveEmployeeResult Succeeded(string message)
-        => new() { Success = true, Message = message };
-
-    public static ApproveEmployeeResult Failed(string message)
-        => new() { Success = false, Message = message };
-}
+/// <summary>
+/// What the approval produced. Returned data, not a success/failure flag.
+/// </summary>
+public sealed record ApprovalReceipt(string FullName, string? ApproverName, DateTime ApprovedOn);
 
 // =============================================================================
 // Additional Command Examples
@@ -153,7 +137,7 @@ public static partial class GenerateEmployeeReport
 {
     [Remote]
     [Execute]
-    public static Task<EmployeeReportResult> _Generate(
+    private static Task<EmployeeReportResult> _Generate(
         int departmentId,
         DateTime startDate,
         DateTime endDate,
@@ -180,86 +164,80 @@ public class EmployeeReportResult
 }
 
 /// <summary>
-/// Command that sends an email.
+/// Command that performs a side effect.
 /// </summary>
 /// <remarks>
-/// DESIGN DECISION: [Execute] methods should return Task&lt;T&gt; rather than Task.
-/// This allows the caller to receive a result indicating success/failure.
-/// If no data is needed, return a simple boolean or result object.
+/// GENERATOR BEHAVIOR: [Execute] must return Task&lt;T&gt;, not Task. A plain
+/// Task generates a delegate returning Task&lt;Task&gt; that does not compile
+/// (RemoteFactory 1.9). A side-effect command returns a confirmation.
+///
+/// A missing employee is an application failure: the caller passed an id it
+/// got from the server, so the command throws instead of returning false.
 /// </remarks>
 [Factory]
 public static partial class SendWelcomeEmail
 {
     [Remote]
     [Execute]
-    public static Task<bool> _Send(
+    private static Task<bool> _Send(
         int employeeId,
         [Service] IEmailService emailService,
         [Service] IEmployeeQueryRepository repository)
     {
-        var employee = repository.GetEmailInfo(employeeId);
-        if (employee != null)
-        {
-            emailService.SendWelcome(employee.Value.Email, employee.Value.FullName);
-            return Task.FromResult(true);
-        }
-        return Task.FromResult(false);
+        var employee = repository.GetEmailInfo(employeeId)
+            ?? throw new InvalidOperationException($"Employee {employeeId} not found");
+
+        emailService.SendWelcome(employee.Email, employee.FullName);
+        return Task.FromResult(true);
     }
 }
 
 /// <summary>
-/// Async command (returns Task).
+/// Async command over several employees.
 /// </summary>
+/// <remarks>
+/// Approving an employee who is already approved is a no-op, so a batch can
+/// be re-run. The result reports what happened; it is not a validation channel.
+/// </remarks>
 [Factory]
 public static partial class ProcessBatchApproval
 {
     [Remote]
     [Execute]
-    public static async Task<BatchApprovalResult> _Process(
+    private static async Task<BatchApprovalResult> _Process(
         int[] employeeIds,
         string? approverName,
         [Service] IApproveEmployeeRepository repository)
     {
-        var results = new List<(int Id, bool Success, string Message)>();
+        var approved = 0;
+        var alreadyApproved = 0;
 
         foreach (var id in employeeIds)
         {
-            var employee = repository.GetEmployee(id);
-            if (employee == null)
-            {
-                results.Add((id, false, "Not found"));
-                continue;
-            }
+            var employee = repository.GetEmployee(id)
+                ?? throw new InvalidOperationException($"Employee {id} not found");
 
-            if (employee.Value.IsApproved)
+            if (employee.IsApproved)
             {
-                results.Add((id, false, "Already approved"));
+                alreadyApproved++;
                 continue;
             }
 
             repository.ApproveEmployee(id, approverName, DateTime.UtcNow);
-            results.Add((id, true, "Approved"));
+            approved++;
 
             // Simulate async work
             await Task.Delay(10);
         }
 
-        return new BatchApprovalResult
-        {
-            TotalProcessed = results.Count,
-            SuccessCount = results.Count(r => r.Success),
-            FailedCount = results.Count(r => !r.Success),
-            Details = results
-        };
+        return new BatchApprovalResult { ApprovedCount = approved, AlreadyApprovedCount = alreadyApproved };
     }
 }
 
 public class BatchApprovalResult
 {
-    public int TotalProcessed { get; set; }
-    public int SuccessCount { get; set; }
-    public int FailedCount { get; set; }
-    public List<(int Id, bool Success, string Message)> Details { get; set; } = new();
+    public int ApprovedCount { get; set; }
+    public int AlreadyApprovedCount { get; set; }
 }
 
 // =============================================================================
@@ -268,7 +246,7 @@ public class BatchApprovalResult
 
 public interface IApproveEmployeeRepository
 {
-    (int Id, string FullName, bool IsActive, bool IsApproved)? GetEmployee(int id);
+    ApprovalCandidate? GetEmployee(int id);
     void ApproveEmployee(int id, string? approverName, DateTime approvedDate);
 }
 
@@ -285,5 +263,9 @@ public interface IEmailService
 
 public interface IEmployeeQueryRepository
 {
-    (string? Email, string? FullName)? GetEmailInfo(int employeeId);
+    EmailRecipient? GetEmailInfo(int employeeId);
 }
+
+public sealed record ApprovalCandidate(int Id, string FullName, bool IsActive, bool IsApproved);
+
+public sealed record EmailRecipient(string? Email, string? FullName);

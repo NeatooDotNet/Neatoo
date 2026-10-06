@@ -26,8 +26,8 @@ namespace Design.Domain.Rules;
 // 4. IsValid/IsSelfValid updated based on rule result
 //
 // DESIGN DECISION: Async rules run immediately, not debounced.
-// Each property change triggers rules. For expensive operations,
-// consider implementing debouncing in the rule logic itself.
+// Each property change triggers rules. For a rule that calls the server,
+// bind the property so it is set on field commit, not per keystroke.
 //
 // COMMON MISTAKE: Not waiting for async rules before checking validity.
 //
@@ -52,11 +52,15 @@ internal partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>, IAsyncRulesD
     public partial bool IsUsernameAvailable { get; set; }
     public partial string? ExternalData { get; set; }
 
-    public AsyncRulesDemo(IEntityBaseServices<AsyncRulesDemo> services) : base(services)
+    // A rule with a dependency comes from DI through its interface. The
+    // dependency must exist on both tiers - here, a command delegate.
+    public AsyncRulesDemo(
+        IEntityBaseServices<AsyncRulesDemo> services,
+        ICheckUsernameAvailabilityRule usernameAvailabilityRule) : base(services)
     {
         // Register async rules
         RuleManager.AddRule(new ValidateEmailFormatRule());
-        RuleManager.AddRule(new CheckUsernameAvailabilityRule());
+        RuleManager.AddRule(usernameAvailabilityRule);
         RuleManager.AddRule(new FetchExternalDataRule());
     }
 
@@ -86,32 +90,54 @@ internal partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>, IAsyncRulesD
 }
 
 // =============================================================================
-// Async Validation Rule - Database Lookup
+// Async Validation Rule That Calls the Server - Rule Plus Command
 // =============================================================================
-// This pattern is common: check if a value is unique in the database.
-// The rule must be async because it queries external data.
+// Checking a value against the database (is this username taken?) belongs in
+// a rule, so the user sees the message on the client as they edit. The rule
+// runs on the client, so it cannot take a server-only service. It takes the
+// delegate of a [Remote, Execute] command instead; calling the delegate
+// crosses to the server, where the command resolves the repository.
+//
+// DESIGN DECISION: The rule depends on a command delegate, never on a
+// server-only service.
+//
+// DID NOT DO THIS:
+//   public CheckUsernameAvailabilityRule(IUsernameRepository repository)
+//
+// WHY NOT: Rules are constructed by DI with their entity on each tier. A
+// server-only service makes the entity impossible to build on the client,
+// and the failure appears only in a client build.
+//
+// Bind the property so it is set on field commit, not per keystroke: each
+// change makes one server call.
 // =============================================================================
 
 /// <summary>
-/// Demonstrates: Async uniqueness validation via database lookup.
+/// Command the rule calls. [Remote]: a client call crosses to the server.
 /// </summary>
-internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>
+[Factory]
+public static partial class UsernameAvailability
 {
-    // =========================================================================
-    // Service Injection in Rules
-    // =========================================================================
-    // Rules can have services injected via constructor.
-    // Register the rule with DI, or pass the service when creating the rule.
-    //
-    // DESIGN DECISION: Rules are typically registered in entity constructor.
-    // If the rule needs services, pass them via constructor:
-    //   RuleManager.AddRule(new CheckUsernameRule(usernameService));
-    //
-    // Or register the rule in DI and inject it:
-    //   public MyEntity(IEntityBaseServices services, CheckUsernameRule rule)
-    //   { RuleManager.AddRule(rule); }
-    // =========================================================================
-    private readonly IUsernameService? _usernameService;
+    [Remote]
+    [Execute]
+    private static Task<bool> _IsAvailable(string username, [Service] IUsernameRepository repository)
+    {
+        return Task.FromResult(!repository.UsernameExists(username));
+    }
+}
+
+/// <summary>
+/// Rule interface: the entity takes the rule from DI by this interface, and
+/// tests can substitute it.
+/// </summary>
+internal interface ICheckUsernameAvailabilityRule : IRule<AsyncRulesDemo> { }
+
+/// <summary>
+/// Demonstrates: async uniqueness validation through a [Remote, Execute] command.
+/// </summary>
+internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, ICheckUsernameAvailabilityRule
+{
+    private readonly UsernameAvailability.IsAvailable _isAvailable;
 
     // =========================================================================
     // TriggerProperties - Specified via Constructor
@@ -119,11 +145,9 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>
     // Rules specify trigger properties by passing expressions to the base
     // constructor. The base class maintains the TriggerProperties list.
     // =========================================================================
-    public CheckUsernameAvailabilityRule() : base(t => t.Username) { }
-
-    public CheckUsernameAvailabilityRule(IUsernameService usernameService) : base(t => t.Username)
+    public CheckUsernameAvailabilityRule(UsernameAvailability.IsAvailable isAvailable) : base(t => t.Username)
     {
-        _usernameService = usernameService;
+        _isAvailable = isAvailable;
     }
 
     protected override async Task<IRuleMessages> Execute(AsyncRulesDemo target, CancellationToken? token = null)
@@ -134,10 +158,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>
             return None;  // Don't check empty usernames - None is inherited from AsyncRuleBase
         }
 
-        // Simulate async database lookup
-        // In real code: var available = await _usernameService.IsAvailable(target.Username);
-        await Task.Delay(100);  // Simulated I/O
-        var available = target.Username != "taken";
+        var available = await _isAvailable(target.Username);
 
         target.IsUsernameAvailable = available;
 
@@ -152,35 +173,32 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>
 }
 
 // =============================================================================
-// Sync Rule That Returns Task - Still Async-Capable
+// Synchronous Rule Beside Async Ones - RuleBase<T>
 // =============================================================================
-// Even synchronous rules use the async signature.
-// Return Task.FromResult<IRuleMessages>() for sync operations.
+// A rule with no I/O derives from RuleBase<T> and returns IRuleMessages
+// directly. It runs in the same pipeline as the async rules.
 // =============================================================================
 
 /// <summary>
-/// Demonstrates: Sync validation that uses async signature.
+/// Demonstrates: synchronous validation with RuleBase&lt;T&gt;.
 /// </summary>
-internal class ValidateEmailFormatRule : AsyncRuleBase<AsyncRulesDemo>
+internal class ValidateEmailFormatRule : RuleBase<AsyncRulesDemo>
 {
     public ValidateEmailFormatRule() : base(t => t.Email) { }
 
-    protected override Task<IRuleMessages> Execute(AsyncRulesDemo target, CancellationToken? token = null)
+    protected override IRuleMessages Execute(AsyncRulesDemo target)
     {
-        // This is a sync operation - just string validation
         if (string.IsNullOrWhiteSpace(target.Email))
         {
-            return Task.FromResult<IRuleMessages>(
-                (nameof(AsyncRulesDemo.Email), "Email is required").AsRuleMessages());
+            return (nameof(AsyncRulesDemo.Email), "Email is required").AsRuleMessages();
         }
 
         if (!target.Email.Contains('@'))
         {
-            return Task.FromResult<IRuleMessages>(
-                (nameof(AsyncRulesDemo.Email), "Email must contain @").AsRuleMessages());
+            return (nameof(AsyncRulesDemo.Email), "Email must contain @").AsRuleMessages();
         }
 
-        return Task.FromResult<IRuleMessages>(None);
+        return None;
     }
 }
 
@@ -188,7 +206,7 @@ internal class ValidateEmailFormatRule : AsyncRuleBase<AsyncRulesDemo>
 // Async Action Rule - Fetch External Data
 // =============================================================================
 // Action rules perform side effects (compute values, fetch data).
-// They typically return Empty since they're not validation.
+// They typically return None since they're not validation.
 // =============================================================================
 
 /// <summary>
@@ -256,8 +274,10 @@ internal class CancellableRule : AsyncRuleBase<AsyncRulesDemo>
 // - WaitForTasks() awaits ALL pending operations
 // - IsValid reflects combined result of all completed rules
 //
-// DESIGN DECISION: Rules can run in parallel.
-// If rules must run sequentially, combine them into one rule.
+// DESIGN DECISION: Rules triggered by one property change run one after
+// another, each awaited, in RuleOrder. Rules triggered by different property
+// changes can overlap: setting Email and then Username starts the Username
+// rules while the Email rules may still be running.
 // =============================================================================
 
 // =============================================================================
@@ -269,7 +289,7 @@ public interface IAsyncRulesRepository
     (string Email, string Username) GetById(int id);
 }
 
-public interface IUsernameService
+public interface IUsernameRepository
 {
-    Task<bool> IsAvailable(string username);
+    bool UsernameExists(string username);
 }

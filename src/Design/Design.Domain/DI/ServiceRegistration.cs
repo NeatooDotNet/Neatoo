@@ -146,7 +146,7 @@ public static class ServiceRegistrationDemo
 // =============================================================================
 // DEPENDENCY INJECTION FLOW
 // =============================================================================
-// When you call var employee = await employeeFactory.Create():
+// When you call var employee = employeeFactory.Create():
 //
 // 1. Factory resolved from DI:
 //    IEmployeeFactory factory = serviceProvider.GetRequiredService<IEmployeeFactory>();
@@ -318,7 +318,8 @@ public static class ServiceRegistrationDemo
 //               : (nameof(IEmployee.Name), "Name already exists").AsRuleMessages();
 //   }
 //
-//   // Registration, on BOTH tiers:
+//   // Registration, on BOTH tiers. The rule types are internal, so the
+//   // domain assembly registers them (see DI/DomainRegistration.cs):
 //   services.AddTransient<IUniqueNameRule, UniqueNameRule>();
 //
 //   // Usage in constructor:
@@ -328,8 +329,8 @@ public static class ServiceRegistrationDemo
 //       RuleManager.AddRule(uniqueNameRule);
 //   }
 //
-// See src/Examples/Person/Person.DomainModel/UniqueNameRule.cs and
-// UniqueName.cs for a compiled example.
+// Compiled examples: Rules/AsyncRules.cs (UsernameAvailability and
+// CheckUsernameAvailabilityRule) and the Person example's UniqueNameRule.cs.
 //
 // DESIGN DECISION: Rules are NOT auto-registered.
 // Rules are typically stateless and created inline. Auto-registration

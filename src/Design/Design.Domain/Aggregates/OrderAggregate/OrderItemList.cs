@@ -288,8 +288,8 @@ internal partial class OrderItemList : EntityListBase<IOrderItem>, IOrderItemLis
 //   // item in order1.Items.DeletedList
 //
 //   order2.Items.Add(item);  // THROWS InvalidOperationException!
-//   // "Cannot add OrderItem to list: item belongs to aggregate 'Order',
-//   //  but this list belongs to aggregate 'Order'."
+//   // "Cannot add OrderItem to list: item belongs to a different 'Order'
+//   //  instance than this list. ..."
 //
 // Why Blocked:
 //   - item.Root = order1

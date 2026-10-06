@@ -16,14 +16,16 @@ public class EntityListBaseTests
 {
     private IServiceScope _scope = null!;
     private IDemoEntityListFactory _listFactory = null!;
-    private IDemoEntityFactory _itemFactory = null!;
+    private IDemoChildFactory _itemFactory = null!;
+    private IDemoParentFactory _parentFactory = null!;
 
     [TestInitialize]
     public void TestInitialize()
     {
         _scope = DesignTestServices.GetScope();
         _listFactory = _scope.GetRequiredService<IDemoEntityListFactory>();
-        _itemFactory = _scope.GetRequiredService<IDemoEntityFactory>();
+        _itemFactory = _scope.GetRequiredService<IDemoChildFactory>();
+        _parentFactory = _scope.GetRequiredService<IDemoParentFactory>();
     }
 
     [TestCleanup]
@@ -43,12 +45,11 @@ public class EntityListBaseTests
     }
 
     [TestMethod]
-public void Add_AttachesItemToList()
+    public void Add_AttachesItemToList()
     {
         // Arrange
         var list = _listFactory.Create();
-        var item = _itemFactory.Create();
-        item.Name = "Test";
+        var item = _itemFactory.Create("Test");
 
         // Act
         list.Add(item);
@@ -65,8 +66,7 @@ public void Add_AttachesItemToList()
     {
         // Arrange
         var list = _listFactory.Create();
-        var item = _itemFactory.Create();
-        item.Name = "Test";
+        var item = _itemFactory.Create("Test");
 
         // Act
         list.Add(item);
@@ -80,8 +80,7 @@ public void Add_AttachesItemToList()
     {
         // Arrange
         var list = _listFactory.Create();
-        var item = _itemFactory.Create();
-        item.Name = "Test";
+        var item = _itemFactory.Create("Test");
         list.Add(item);
         // Item is still IsNew=true
 
@@ -98,10 +97,9 @@ public void Add_AttachesItemToList()
     {
         // Arrange
         var list = _listFactory.Create();
-        var item = _itemFactory.Create();
-        item.Name = "Test";
+        var item = _itemFactory.Create("Test");
         list.Add(item);
-        // Note: New items start as modified, so the list is already modified
+        item.Name = "Changed";
 
         // Assert
         Assert.IsTrue(list.IsModified, "List should be modified when child is modified");
@@ -110,17 +108,17 @@ public void Add_AttachesItemToList()
     [TestMethod]
     public async Task Remove_FetchedItem_AddedToDeletedList()
     {
-        // Arrange - Use Fetch to get an existing (non-new) entity
-        var list = _listFactory.Create();
-        var item = await _itemFactory.Fetch(1);
-        list.Add(item);
-        // item.IsNew = false after Fetch
+        // Arrange - Fetch the root so its list holds existing (non-new) children
+        var parent = await _parentFactory.Fetch();
+        var list = parent.Children!;
+        var item = list[0];
+        Assert.IsFalse(item.IsNew, "A fetched child is not new");
 
         // Act
         list.Remove(item);
 
         // Assert
-        Assert.AreEqual(0, list.Count);
+        Assert.AreEqual(2, list.Count);
         Assert.AreEqual(1, list.DeletedCount, "Removed fetched item should be in DeletedList");
     }
 }

@@ -70,8 +70,10 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // =========================================================================
     // Computed Property (not persisted)
     // =========================================================================
-    // This is a regular property, not partial - not tracked by Neatoo.
-    // Use for UI display or computed values.
+    // This is a regular property, not partial - not tracked by Neatoo and it
+    // raises no PropertyChanged. A bound UI does not refresh it when
+    // FirstName or LastName changes; for that, use a partial property set by
+    // an AddAction rule triggered on both.
     // =========================================================================
     public string FullName => $"{FirstName} {LastName}";
 
@@ -88,17 +90,6 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
         RuleManager.AddValidation(
             t => t.HireDate > DateTime.Today ? "Hire date cannot be in the future" : string.Empty,
             t => t.HireDate);
-
-        // Action rule to set default values
-        RuleManager.AddAction(
-            t =>
-            {
-                if (t.HireDate == null && t.IsNew)
-                {
-                    t.HireDate = DateTime.Today;
-                }
-            },
-            t => t.IsActive);
     }
 
     // =========================================================================
@@ -111,13 +102,18 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     public void Create([Service] IAddressListFactory addressListFactory)
     {
         Addresses = addressListFactory.Create();
-        IsActive = true;  // Default new employees to active
+
+        // Defaults are assigned here, not by a rule: the object is paused
+        // during [Create], so a rule triggered by these assignments would
+        // not run.
+        IsActive = true;
+        HireDate = DateTime.Today;
     }
 
     // =========================================================================
     // [Fetch] - Load Existing Employee
     // =========================================================================
-    // Has [Remote] - requires database access.
+    // [Remote]: the client fetches this root, so the call crosses to the server.
     //
     // GENERATOR BEHAVIOR: instance factory methods run inside
     // FactoryStart/FactoryComplete - this object is PAUSED for the duration of

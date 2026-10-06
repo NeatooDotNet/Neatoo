@@ -5,6 +5,7 @@
 // Design.Tests test classes.
 // -----------------------------------------------------------------------------
 
+using Design.Domain.DI;
 using Microsoft.Extensions.DependencyInjection;
 using Neatoo;
 using Neatoo.RemoteFactory;
@@ -59,12 +60,19 @@ public static class DesignTestServices
                 services.AddScoped<Design.Domain.FactoryOperations.ISaveAggregateRepository, MockSaveAggregateRepository>();
                 services.AddTransient<Design.Domain.PropertySystem.IPropertyDemoRepository, MockPropertyDemoRepository>();
                 services.AddTransient<Design.Domain.PropertySystem.IFieldLevelAuthRepository, MockFieldLevelAuthRepository>();
+                services.AddScoped<Design.Domain.PropertySystem.ISalaryPermission, MockSalaryPermission>();
                 services.AddTransient<Design.Domain.Rules.IRulesDemoRepository, MockRulesDemoRepository>();
                 services.AddTransient<Design.Domain.Rules.IFluentRulesRepository, MockFluentRulesRepository>();
+                services.AddTransient<Design.Domain.Rules.IAsyncRulesRepository, MockAsyncRulesRepository>();
+                services.AddTransient<Design.Domain.Rules.IUsernameRepository, MockUsernameRepository>();
+                services.AddDesignDomainRules();
 
                 // Entities demo aggregate (Employee/Address) — scoped in-memory store
                 services.AddScoped<Design.Domain.Entities.IEmployeeRepository, MockEmployeeRepository>();
                 services.AddTransient<Design.Domain.ReadModels.IEmployeeDirectoryRepository, MockEmployeeDirectoryRepository>();
+
+                // Commands
+                services.AddScoped<Design.Domain.Commands.IApproveEmployeeRepository, MockApproveEmployeeRepository>();
 
                 // Gotcha demo repositories
                 services.AddTransient<Design.Domain.IGotcha2Repository, MockGotcha2Repository>();
@@ -383,6 +391,11 @@ internal class MockFieldLevelAuthRepository : Design.Domain.PropertySystem.IFiel
         => ($"Employee-{id}", 75000m, "Engineering");
 }
 
+internal class MockSalaryPermission : Design.Domain.PropertySystem.ISalaryPermission
+{
+    public bool CanEditSalary { get; set; }
+}
+
 internal class MockRulesDemoRepository : Design.Domain.Rules.IRulesDemoRepository
 {
     public (string Name, int Quantity, decimal Price, decimal Total) GetById(int id)
@@ -398,6 +411,16 @@ internal class MockFluentRulesRepository : Design.Domain.Rules.IFluentRulesRepos
 // =============================================================================
 // Mock Repositories for Gotcha Tests
 // =============================================================================
+
+internal class MockAsyncRulesRepository : Design.Domain.Rules.IAsyncRulesRepository
+{
+    public (string Email, string Username) GetById(int id) => ($"user{id}@example.com", $"user{id}");
+}
+
+internal class MockUsernameRepository : Design.Domain.Rules.IUsernameRepository
+{
+    public bool UsernameExists(string username) => username == "taken";
+}
 
 internal class MockGotcha2Repository : Design.Domain.IGotcha2Repository
 {
@@ -434,4 +457,20 @@ internal class MockEmployeeDirectoryRepository : Design.Domain.ReadModels.IEmplo
         => Rows.Where(r => (searchTerm == null || r.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
                         && (department == null || r.Department == department)
                         && (!activeOnly || r.IsActive));
+}
+
+internal class MockApproveEmployeeRepository : Design.Domain.Commands.IApproveEmployeeRepository
+{
+    public Dictionary<int, Design.Domain.Commands.ApprovalCandidate> Employees { get; } = new()
+    {
+        [1] = new(1, "Ada Lovelace", IsActive: true, IsApproved: false),
+        [2] = new(2, "Grace Hopper", IsActive: true, IsApproved: true),
+        [3] = new(3, "Alan Turing", IsActive: false, IsApproved: false),
+    };
+
+    public Design.Domain.Commands.ApprovalCandidate? GetEmployee(int id)
+        => Employees.TryGetValue(id, out var e) ? e : null;
+
+    public void ApproveEmployee(int id, string? approverName, DateTime approvedDate)
+        => Employees[id] = Employees[id] with { IsApproved = true };
 }

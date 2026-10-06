@@ -437,7 +437,7 @@ Neatoo uses custom JSON converters for client-server state transfer:
 | `IsDeleted` | Yes | Via `IEntityMetaProperties` |
 | `IsModified` | Yes | Via `IEntityMetaProperties` |
 | `DeletedList` items | Yes | Serialized as part of list |
-| Validation messages | No | Rules re-run on deserialization |
+| Validation messages | Yes | Each property's rule messages travel with it (`SerializedRuleMessages`). Rules are NOT re-run on arrival, so `IsValid` is what the sending tier computed. |
 | `IsBusy` | No | Reset on deserialization |
 | `IsPaused` | No | Paused during deserialization, resumed after |
 | Rule state (executed flags) | No | Rules start fresh |
@@ -509,26 +509,28 @@ CLIENT                                SERVER
 
 ### Serialization Pitfalls
 
-**Pitfall 1: Rules not re-running after deserialization**
+**Pitfall 1: Trusting the client's `IsValid` on the server**
+
+Rule messages travel with the object and rules are not re-run on arrival, so on the server `IsValid` is whatever the client sent. A direct `factory.Save` from any caller arrives unchecked. Re-run the rules at the top of the root's `[Insert]` and `[Update]` (see "Save() Routing Based on Entity State" above):
+
 ```csharp
-// After deserialization, rules have not run yet
-// IsValid reflects the serialized state, not validated state
-var employee = await factory.Fetch(1);  // Deserialized on client
-await employee.RunRules(RunRulesFlag.All);  // Explicitly run all rules
-// Now IsValid is accurate
+await RunRules(RunRulesFlag.All);
+if (!IsValid) throw new SaveOperationException(SaveFailureReason.IsInvalid);
 ```
 
-**Pitfall 2: Transient services in rules**
-```csharp
-// WRONG: Rule captures transient service during construction
-public MyRule(ITransientService svc) : base(t => t.Name)
-{
-    _svc = svc;  // Captured on server, not available after deserialize!
-}
+**Pitfall 2: A server-only service in a rule**
 
-// RIGHT: Inject service per execution (not currently supported)
-// Or: Use method-injected services in factory methods, not rules
+A rule is constructed by DI with its entity on each tier, client included. Nothing is captured on the server and carried across. A rule that takes a server-only service (DbContext, repository) breaks construction on the client.
+
+```csharp
+// WRONG: the client cannot construct this rule
+public UniqueEmailRule(IEmployeeRepository repository) : base(t => t.Email) { ... }
+
+// RIGHT: take the delegate of a [Remote, Execute] command; the call crosses to the server
+public UniqueEmailRule(UniqueEmail.IsUnique isUnique) : base(t => t.Email) { ... }
 ```
+
+Bind the property so it is set on field commit, not per keystroke, so the rule calls the server once per edit.
 
 **Pitfall 3: Non-serializable property types**
 ```csharp

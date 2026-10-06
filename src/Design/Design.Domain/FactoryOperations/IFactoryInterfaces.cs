@@ -151,8 +151,9 @@ public interface IServiceInjectionDemo : IEntityRoot
 // =============================================================================
 
 /// <summary>
-/// Root interface for dual-use entity demo.
-/// Can serve as aggregate root or as child within another aggregate.
+/// Root interface for the DualUseEntity demo. A root only: serving as a child
+/// would need a separate class with internal child operations and a child
+/// interface (see RemoteBoundary.cs).
 /// </summary>
 public interface IDualUseEntity : IEntityRoot
 {
