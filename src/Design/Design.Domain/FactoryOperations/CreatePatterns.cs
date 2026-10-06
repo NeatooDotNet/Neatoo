@@ -107,6 +107,17 @@ internal partial class CreateDemo : EntityBase<CreateDemo>, ICreateDemo
         Priority = priority;
     }
 
+    #region docs-create-marks-modified
+    // A [Create] whose result IS the user's work (a "New" button, not a derived
+    // default) says so: an unsaved-changes guard bound to IsModified should speak.
+    // Not needed to make the object savable - IsSavable already admits IsNew.
+    [Create]
+    public void CreateAsUserWork()
+    {
+        MarkModified();
+    }
+    #endregion
+
     // =========================================================================
     // Pattern 3: Create with Service
     // =========================================================================

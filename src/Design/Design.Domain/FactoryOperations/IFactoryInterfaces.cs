@@ -21,6 +21,12 @@ public interface ISaveDemo : IEntityRoot
     int Id { get; }
     string? Name { get; set; }
     decimal Amount { get; set; }
+
+    /// <summary>
+    /// Exposes PauseAllActions (not on IValidateBase / IEntityRoot) so the
+    /// paused-edit hazard can be demonstrated through the interface.
+    /// </summary>
+    IDisposable PauseAllActions();
 }
 
 /// <summary>

@@ -18,3 +18,14 @@ public interface IValidationFailureDemo : IEntityRoot
     int Quantity { get; set; }
     string? Email { get; set; }
 }
+
+/// <summary>
+/// Form object whose validity can be revoked by a result from outside the object.
+/// </summary>
+public interface IPaymentDemo : IValidateBase
+{
+    string? Reference { get; set; }
+    decimal Amount { get; set; }
+    string? ObjectInvalid { get; }
+    void RecordGatewayRejection(string reason);
+}

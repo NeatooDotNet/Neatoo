@@ -17,77 +17,52 @@ The domain model you bind to your Blazor form is the same object that validates 
 ## Key Features
 
 - **One model, front to back** — Your domain model binds to the Blazor UI, validates input, tracks changes, and persists to the database. No DTOs, no mapping layers, no translation.
-- **Transparent client-server transfer** — RemoteFactory moves domain object state across the wire through a single controller endpoint. Mark a method `[Remote]` and it runs on the server. No controller-per-operation, no routing boilerplate.
+- **Transparent client-server transfer** — RemoteFactory moves domain object state across the wire through a single controller endpoint. `[Remote]` marks a client entry point: the call crosses to the server, where the repositories live. No controller-per-operation, no routing boilerplate.
 - **Source-generated properties** — Partial properties generate backing fields, `PropertyChanged` events, validation triggers, and change tracking at compile time. Zero reflection.
-- **Validation and business rules** — Attribute validation (`[Required]`, `[Range]`), inline rules, async rules that call external services, and automatic error aggregation across the entire object graph.
+- **Validation and business rules** — Attribute validation (`[Required]`, `[Range]`), inline rules, class-based rules, async rules that reach the server through a command, and error aggregation across the entire object graph.
 - **Change tracking** — `IsModified`, `IsSelfModified`, and `IsDeleted` cascade through parent-child graphs to the aggregate root (`IsNew` is per-object routing state and deliberately does not). `ModifiedProperties` tells you exactly what changed. `IsModified` and `IsNew` answer different questions on purpose: a freshly created entity is savable but *not* modified, so unsaved-changes guards stay quiet until the user actually edits something ([why](docs/guides/change-tracking.md#why-isnew-is-not-part-of-ismodified)).
-- **DDD aggregate support** — `EntityBase` for persistent entities, `ValidateBase` for value objects, `EntityListBase` for child collections. Interface-first design enforces aggregate boundaries at compile time.
+- **DDD aggregate support** — `EntityBase` for persistent entities, `ValidateBase` for value objects, `EntityListBase` for child collections. Interface-first design enforces aggregate boundaries at compile time: roots expose `Save()`, children do not.
 - **Blazor integration** — MudNeatoo components bind directly to domain model properties with two-way binding, validation display, and form integration out of the box.
 
 ## Example
 
-For a complete working application with domain model, validation rules, authorization, persistence, unit tests, and a Blazor Server UI, see the [Person Example](src/Examples/Person/).
+For a complete working application with domain model, validation rules, authorization, persistence, unit tests, and a Blazor UI, see the [Person Example](src/Examples/Person/).
 
-Declare partial properties. Add validation attributes and business rules. Source generators handle the rest — backing fields, `PropertyChanged` events, change tracking, factory methods, and client-server state transfer are all produced at compile time. No reflection, no runtime magic.
+Declare partial properties. Add validation attributes and business rules in the constructor. Source generators handle the rest — backing fields, `PropertyChanged` events, change tracking, factory methods, and client-server state transfer are all produced at compile time. No reflection, no runtime magic.
 
-<!-- snippet: readme-teaser -->
-<a id='snippet-readme-teaser'></a>
+<!-- snippet: skill-validation-attributes-and-rules -->
+<a id='snippet-skill-validation-attributes-and-rules'></a>
 ```cs
-// Define an Employee aggregate root with validation and business rules
-[Factory]
-public partial class Employee : EntityBase<Employee>
+[Required(ErrorMessage = "Street is required")]
+[StringLength(100)]
+public partial string? Street { get; set; }
+
+[Required(ErrorMessage = "City is required")]
+[StringLength(50)]
+public partial string? City { get; set; }
+
+[Required(ErrorMessage = "State is required")]
+[StringLength(2, MinimumLength = 2, ErrorMessage = "State must be 2 characters")]
+public partial string? State { get; set; }
+
+[Required(ErrorMessage = "Zip code is required")]
+[RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid zip code format")]
+public partial string? ZipCode { get; set; }
+
+[Required(ErrorMessage = "Address type is required")]
+public partial string? AddressType { get; set; } // "Home", "Work", "Other"
+
+public Address(IEntityBaseServices<Address> services) : base(services)
 {
-    public Employee(IEntityBaseServices<Employee> services) : base(services)
-    {
-        // Business rule: Full name is computed from first and last name
-        RuleManager.AddAction(
-            e => { e.FullName = $"{e.FirstName} {e.LastName}"; },
-            e => e.FirstName, e => e.LastName);
-
-        // Validation rule: Salary must be positive
-        RuleManager.AddValidation(
-            e => e.Salary > 0 ? "" : "Salary must be positive",
-            e => e.Salary);
-    }
-
-    [Required]
-    public partial string FirstName { get; set; }
-
-    [Required]
-    public partial string LastName { get; set; }
-
-    public partial string FullName { get; set; }
-
-    public partial decimal Salary { get; set; }
-
-    // Child collection with automatic parent tracking
-    public partial IAddressList Addresses { get; set; }
-
-    [Create]
-    public void Create() { }
+    // Validation rules
+    RuleManager.AddValidation(
+        t => !new[] { "Home", "Work", "Other" }.Contains(t.AddressType)
+            ? "Address type must be Home, Work, or Other"
+            : string.Empty,
+        t => t.AddressType);
 }
-
-public interface IAddress : IEntityBase { }
-
-[Factory]
-public partial class Address : EntityBase<Address>, IAddress
-{
-    public Address(IEntityBaseServices<Address> services) : base(services) { }
-
-    [Required]
-    public partial string Street { get; set; }
-
-    public partial string City { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-
-public interface IAddressList : IEntityListBase<IAddress> { }
-
-public class AddressList : EntityListBase<IAddress>, IAddressList { }
 ```
-<sup><a href='/src/samples/ReadmeSamples.cs#L10-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-readme-teaser' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Entities/Address.cs#L30-L59' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation-attributes-and-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## What a DDD Framework Gives You
@@ -102,13 +77,13 @@ With Neatoo, the full aggregate comes back to the server with its state intact. 
 
 In most applications, business logic drifts. Critical rules get duplicated between the UI and server, lighter rules live only in the UI, and the two definitions slowly diverge until they contradict each other.
 
-Neatoo puts validation and business rules in the domain model — one definition, compiled into both client and server. Rules are engineered to work with data-binding: when a property changes, dependent validation and action rules fire immediately, updating the UI in real time. The same rules execute again on the server during persistence. They can't diverge because they're the same code.
+Neatoo puts validation and business rules in the domain model — one definition, compiled into both client and server. Rules are engineered to work with data-binding: when a property changes, dependent validation and action rules fire immediately, updating the UI in real time. The same rules execute again on the server before persistence. They can't diverge because they're the same code.
 
 ### Authorization Defined Once, Enforced Everywhere
 
 Authorization follows the same pattern. Client-side checks control what the UI shows — can this user create an order? Edit this field? Delete this record? Server-side checks guard the actual operations. In most applications these are separate implementations that fall out of sync.
 
-Neatoo's `[AuthorizeFactory]` attributes define authorization on the factory operation itself. RemoteFactory always enforces these on the server, regardless of what the client sends. The same definitions also power `CanCreate`, `CanFetch`, `CanUpdate`, and `CanDelete` methods that the UI consumes to show or hide actions, disable buttons, and control navigation. One definition drives both enforcement and UI behavior.
+RemoteFactory's `[AuthorizeFactory]` attributes define authorization on the factory operation itself. RemoteFactory always enforces these on the server, regardless of what the client sends. The same definitions also power `CanCreate`, `CanFetch`, `CanUpdate`, and `CanDelete` methods that the UI consumes to show or hide actions, disable buttons, and control navigation. One definition drives both enforcement and UI behavior.
 
 ### Field-Level Validation Without the Plumbing
 
@@ -134,91 +109,187 @@ Neatoo targets .NET 9.0 and 10.0.
 
 ## Quick Start
 
-Create a domain object by inheriting from ValidateBase or EntityBase and declaring partial properties. Source generators handle the rest.
+Every entity gets a public interface; the concrete class is `internal`. A root's interface extends `IEntityRoot`, which exposes `IsSavable` and `Save()`:
 
-<!-- snippet: readme-quick-start -->
-<a id='snippet-readme-quick-start'></a>
+<!-- snippet: skill-quick-start-interface -->
+<a id='snippet-skill-quick-start-interface'></a>
 ```cs
-// 1. ValidateBase: For objects that need validation without persistence
-[Factory]
-public partial class CustomerSearch : ValidateBase<CustomerSearch>
+/// <summary>
+/// Aggregate root interface. Extends IEntityRoot: exposes IsSavable and Save().
+/// </summary>
+public interface IProduct : IEntityRoot
 {
-    public CustomerSearch(IValidateBaseServices<CustomerSearch> services) : base(services)
-    {
-        // Inline validation rule
-        RuleManager.AddValidation(
-            c => !string.IsNullOrEmpty(c.SearchTerm) ? "" : "Search term is required",
-            c => c.SearchTerm);
-    }
+    Guid Id { get; }
+    string? Name { get; set; }
+    decimal Price { get; set; }
+}
+```
+<sup><a href='/src/Design/Design.Domain/Entities/Product.cs#L16-L26' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quick-start-interface' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-    public partial string SearchTerm { get; set; }
+The entity declares partial properties with validation attributes and the factory operations. `[Create]` is local; `[Fetch]`, `[Insert]`, `[Update]` and `[Delete]` are `[Remote]`, so the client's call crosses to the server where the repository is. `[Insert]` and `[Update]` re-run the rules on the server and refuse an invalid entity:
 
-    [Range(1, 100)]
-    public partial int MaxResults { get; set; }
+<!-- snippet: skill-quick-start -->
+<a id='snippet-skill-quick-start'></a>
+```cs
+/// <summary>
+/// Demonstrates: the minimal aggregate root. Concrete is internal; consumers
+/// hold IProduct.
+/// </summary>
+[Factory]
+internal partial class Product : EntityBase<Product>, IProduct
+{
+    public partial Guid Id { get; set; }
 
+    [Required(ErrorMessage = "Name is required")]
+    public partial string? Name { get; set; }
+
+    [Range(0, 1000000, ErrorMessage = "Price cannot be negative")]
+    public partial decimal Price { get; set; }
+
+    public Product(IEntityBaseServices<Product> services) : base(services) { }
+
+    // Local: creating a product needs nothing from the server
     [Create]
     public void Create() { }
-}
 
-// 2. EntityBase: For domain entities with full lifecycle support
-[Factory]
-public partial class Customer : EntityBase<Customer>
-{
-    public Customer(IEntityBaseServices<Customer> services) : base(services) { }
+    // [Remote]: the client fetches this root, so the call crosses to the
+    // server, where the repository resolves. Returning false makes the
+    // generated factory return null: "no such product" is an answer.
+    [Remote]
+    [Fetch]
+    internal bool Fetch(Guid id, [Service] IProductRepository repository)
+    {
+        var row = repository.Get(id);
+        if (row == null)
+        {
+            return false;
+        }
 
-    [Required(ErrorMessage = "Customer name is required")]
-    public partial string Name { get; set; }
+        // Paused for the length of the body: assignment is a clean baseline load
+        Id = row.Id;
+        Name = row.Name;
+        Price = row.Price;
+        return true;
+    }
 
-    [EmailAddress]
-    public partial string Email { get; set; }
-
-    // Child entity with automatic parent cascade
-    public partial IOrderList Orders { get; set; }
-
-    // RemoteFactory method: Runs on server, result transferred to client
     [Remote]
     [Insert]
-    internal Task Insert([Service] ICustomerRepository repo)
+    internal async Task Insert([Service] IProductRepository repository)
     {
-        // Persistence logic here
-        return Task.CompletedTask;
+        // Re-run the rules on the server and refuse an invalid aggregate.
+        // Throw, never return: after [Insert] returns, the framework marks
+        // the entity saved whether or not anything was written.
+        await RunRules(RunRulesFlag.All);
+        if (!IsValid)
+        {
+            throw new SaveOperationException(SaveFailureReason.IsInvalid);
+        }
+
+        Id = Guid.NewGuid();  // the entity sets its own key
+
+        var row = new ProductRow();
+        MapTo(row);
+        repository.Add(row);
+        repository.SaveChanges();
     }
 
-    [Create]
-    public void Create() { }
+    [Remote]
+    [Update]
+    internal async Task Update([Service] IProductRepository repository)
+    {
+        await RunRules(RunRulesFlag.All);
+        if (!IsValid)
+        {
+            throw new SaveOperationException(SaveFailureReason.IsInvalid);
+        }
+
+        var row = repository.Get(Id)
+            ?? throw new KeyNotFoundException($"Product {Id} not found");
+
+        MapTo(row);
+        repository.SaveChanges();
+    }
+
+    [Remote]
+    [Delete]
+    internal void Delete([Service] IProductRepository repository)
+    {
+        var row = repository.Get(Id)
+            ?? throw new KeyNotFoundException($"Product {Id} not found");
+
+        repository.Remove(row);
+        repository.SaveChanges();
+    }
+
+    private void MapTo(ProductRow row)
+    {
+        row.Id = Id;
+        row.Name = Name!;
+        row.Price = Price;
+    }
 }
-
-public interface IOrder : IEntityBase { }
-
-[Factory]
-public partial class Order : EntityBase<Order>, IOrder
-{
-    public Order(IEntityBaseServices<Order> services) : base(services) { }
-
-    public partial decimal Amount { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-
-public interface IOrderList : IEntityListBase<IOrder> { }
-
-public class OrderList : EntityListBase<IOrder>, IOrderList { }
-
-// Mock repository interface for the sample
-public interface ICustomerRepository { }
 ```
-<sup><a href='/src/samples/ReadmeSamples.cs#L66-L135' title='Snippet source file'>snippet source</a> | <a href='#snippet-readme-quick-start' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Entities/Product.cs#L28-L126' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quick-start' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Using it: a created object is new and not modified; an edit makes it savable once its rules pass:
+
+<!-- snippet: skill-quick-start-create -->
+<a id='snippet-skill-quick-start-create'></a>
+```cs
+[TestMethod]
+public async Task Create_ThenEdit_IsSavable()
+{
+    var product = _factory.Create();
+    Assert.IsTrue(product.IsNew);
+    Assert.IsFalse(product.IsModified, "A created object holds no user work");
+
+    product.Name = "Widget";
+    product.Price = 9.99m;
+    await product.WaitForTasks();
+
+    Assert.IsTrue(product.IsValid);
+    Assert.IsTrue(product.IsSavable);
+}
+```
+<sup><a href='/src/Design/Design.Tests/EntityTests/ProductTests.cs#L35-L50' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quick-start-create' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+`Save()` routes to `Insert` or `Update` on `IsNew` and returns the saved instance; a `Fetch` is a clean baseline:
+
+<!-- snippet: skill-quick-start-save -->
+<a id='snippet-skill-quick-start-save'></a>
+```cs
+[TestMethod]
+public async Task Save_ThenFetch_RoundTrips()
+{
+    var product = _factory.Create();
+    product.Name = "Widget";
+    product.Price = 9.99m;
+    await product.WaitForTasks();
+
+    // Save returns the saved instance; keep that one
+    product = (IProduct)await product.Save();
+    Assert.IsFalse(product.IsNew);
+    Assert.IsFalse(product.IsModified);
+
+    var fetched = await _factory.Fetch(product.Id);
+    Assert.IsNotNull(fetched);
+    Assert.AreEqual("Widget", fetched.Name);
+    Assert.IsFalse(fetched.IsModified, "A fetched object is a clean baseline");
+}
+```
+<sup><a href='/src/Design/Design.Tests/EntityTests/ProductTests.cs#L52-L71' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quick-start-save' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 This example shows:
-- ValidateBase inheritance for validation, business rules, change tracking, and property metadata
-- EntityBase inheritance adds persistence lifecycle state (IsNew, IsDeleted, IsModified)
+- Interface-first design: a public `IProduct : IEntityRoot` and an `internal` concrete
 - Partial property declarations with source-generated backing fields and change tracking
-- Attribute-based validation (Required, EmailAddress, Range)
-- Custom business rules (inline validation rules in constructor)
-- RemoteFactory methods for client-server persistence operations
-- Parent-child relationships with automatic parent tracking and cascade validation
+- Attribute-based validation (`Required`, `Range`)
+- Persistence state (`IsNew`, `IsModified`, `IsSavable`) and `Save()` routing
+- `[Remote]` factory operations whose `[Service]` repository resolves on the server
+- The server gate: rules re-run before the write, and `SaveOperationException` refuses an invalid entity
 
 ## Documentation
 
@@ -249,4 +320,4 @@ Copyright (c) 2025 NeatooDotNet
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-10-06

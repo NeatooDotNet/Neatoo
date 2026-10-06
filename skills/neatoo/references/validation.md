@@ -103,7 +103,7 @@ internal class NameRequiredRule : RuleBase<RuleBasicsDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L111-L146' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-class' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L119-L154' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-class' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Several messages from one rule, with the `RuleMessages.If` builder — every failing check is reported at once, not just the first:
@@ -128,7 +128,7 @@ internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L193-L210' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L201-L218' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A rule with no dependencies is constructed in the entity's constructor:
@@ -136,15 +136,12 @@ A rule with no dependencies is constructed in the entity's constructor:
 <!-- snippet: skill-add-rule-inline -->
 <a id='snippet-skill-add-rule-inline'></a>
 ```cs
-public RuleBasicsDemo(IEntityBaseServices<RuleBasicsDemo> services) : base(services)
-{
-    // Rules with no dependencies are constructed here; a rule that needs
-    // a command delegate comes from DI instead (see AsyncRules.cs)
-    RuleManager.AddRule(new NameRequiredRule());
-    RuleManager.AddRule(new CalculateTotalRule());
-}
+// Rules with no dependencies are constructed here; a rule that needs
+// a command delegate comes from DI instead (see AsyncRules.cs)
+RuleManager.AddRule(new NameRequiredRule());
+RuleManager.AddRule(new CalculateTotalRule());
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L59-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-add-rule-inline' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L64-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-add-rule-inline' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Cross-Property Validation
@@ -609,7 +606,7 @@ RuleManager.AddAction(
 
 ### Cancellation
 
-A class-based rule receives an optional `CancellationToken`; `AddActionAsync` has an overload whose lambda receives one. A cancelled rule throws `OperationCanceledException`, the object is marked invalid with "Validation cancelled", and `RunRules(RunRulesFlag.All)` re-validates:
+A class-based rule receives an optional `CancellationToken`; `AddActionAsync` has an overload whose lambda receives one. The token reaches a rule only from an explicit `RunRules(flag, token)` or `Save(token)`; a property setter passes none. A cancelled `RunRules` throws `OperationCanceledException` and marks the object invalid with "Validation cancelled" through `MarkInvalid`; `RunRules(RunRulesFlag.All)` does not clear that (the built-in rule re-reports `ObjectInvalid`, despite the framework's XML doc), so cancellation is for abandoning the object, not recovering it:
 
 <!-- snippet: skill-cancellable-rule -->
 <a id='snippet-skill-cancellable-rule'></a>

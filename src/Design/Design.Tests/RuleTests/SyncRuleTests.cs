@@ -100,4 +100,33 @@ public class SyncRuleTests
         entity.Quantity = 20;
         Assert.AreEqual(100.00m, entity.Total);
     }
+
+    #region docs-rule-order-test
+    [TestMethod]
+    public async Task RuleOrder_LowerValuesRunFirst_RegardlessOfRegistrationOrder()
+    {
+        var entity = _factory.Create();
+
+        entity.Name = "Ada";   // both trace rules trigger on Name
+        await entity.WaitForTasks();
+
+        Assert.AreEqual("early;late;", entity.RuleTrace,
+            "RuleOrder -10 ran before the default (1), although it was registered second");
+    }
+    #endregion
+
+    #region docs-load-property-test
+    [TestMethod]
+    public async Task LoadProperty_WritesTheValue_WithoutRunningTheRulesOnThatProperty()
+    {
+        var entity = _scope.GetRequiredService<ILoadPropertyDemoFactory>().Create();
+
+        entity.Quantity = 3;
+        entity.UnitPrice = 2.50m;
+        await entity.WaitForTasks();
+
+        Assert.AreEqual(7.50m, entity.Total, "The rule computed Total");
+        Assert.IsFalse(entity.TotalRuleRan, "...but the rule registered on Total did not run: LoadProperty fires no triggers");
+    }
+    #endregion
 }

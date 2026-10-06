@@ -4,858 +4,608 @@
 
 Plain C# auto-properties don't fire change notifications, track validation state, execute business rules, or cascade dirty state to a parent aggregate. A data-binding UI needs all of these. Neatoo's property system wraps each property with a managed layer that intercepts gets and sets — giving the framework a single point to handle change tracking, rule execution, async task management, and parent notification. You declare `partial` properties; the source generator fills in the implementation.
 
+> The code samples are MSTest tests and domain classes from the Neatoo Design projects. Tests resolve factories from a DI scope (`DesignTestServices.GetScope()`); in an application you inject the factory interface into the component that needs it.
+
 ## Partial Property Declaration
 
-Properties in ValidateBase and EntityBase are declared as partial properties. The source generator completes the implementation by creating backing field properties that access strongly-typed property wrappers from PropertyManager.
+Properties in ValidateBase and EntityBase are declared as partial properties. The source generator completes the implementation by creating backing property accessors that retrieve strongly-typed property objects from PropertyManager. Every class gets a matched public interface; the concrete is `internal`:
 
-Declare a partial property:
-
-<!-- snippet: properties-partial-declaration -->
-<a id='snippet-properties-partial-declaration'></a>
+<!-- snippet: skill-partial-property-class -->
+<a id='snippet-skill-partial-property-class'></a>
 ```cs
 [Factory]
-public partial class PropEmployee : ValidateBase<PropEmployee>
+internal partial class ValidationChildDemo : ValidateBase<ValidationChildDemo>, IValidationChildDemo
 {
-    public PropEmployee(IValidateBaseServices<PropEmployee> services) : base(services) { }
+    public partial string? RequiredField { get; set; }
 
-    // Partial property - source generator completes the implementation
-    public partial string Name { get; set; }
-
-    public partial string Email { get; set; }
-
-    public partial DateTime HireDate { get; set; }
+    public ValidationChildDemo(IValidateBaseServices<ValidationChildDemo> services) : base(services)
+    {
+        RuleManager.AddValidation(
+            t => string.IsNullOrWhiteSpace(t.RequiredField) ? "Child field is required" : string.Empty,
+            t => t.RequiredField);
+    }
 
     [Create]
     public void Create() { }
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L16-L32' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-partial-declaration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/StateProperties.cs#L96-L112' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-partial-property-class' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The source generator creates:
-- A protected `NameProperty` property that retrieves `IValidateProperty<string>` from PropertyManager
+- A protected `NameProperty` accessor that retrieves `IValidateProperty<string>` from PropertyManager
 - Full getter/setter implementation for the partial property
-- Automatic property change notifications
-- Task tracking for async operations
-- Parent cascade for child tasks
+- Property change notifications
+- Task tracking for async rules, propagated to the parent
 
-Partial properties must be public and non-static. The generator analyzes the class during compilation and generates the implementation in a separate file.
-
-The source generator also creates an override of `InitializePropertyBackingFields` that registers each property with the PropertyManager during construction.
+The generator implements every `partial` property on a `[Factory]` class and preserves the accessibility you declare. It also creates an override of `InitializePropertyBackingFields` that registers each property with the PropertyManager during construction.
 
 ## Source-Generated Implementation
 
-The BaseGenerator creates the property implementation with backing field properties that retrieve strongly-typed wrappers from PropertyManager. PropertyManager stores all IValidateProperty instances and handles registration, lookup, and lifecycle management.
+For each partial property the generator emits a protected accessor over the property object, a getter and setter over its `Value`, and the registration in `InitializePropertyBackingFields`. The shape is the same for ValidateBase and EntityBase; on an EntityBase the property factory creates an entity property, which adds modification tracking:
 
-Generated property implementation:
-
-<!-- snippet: properties-generated-implementation -->
-<a id='snippet-properties-generated-implementation'></a>
+<!-- snippet: skill-generated-property-shape -->
+<a id='snippet-skill-generated-property-shape'></a>
 ```cs
-[Fact]
-public void GeneratedImplementation_PropertyBackingField()
-{
-    var factory = GetRequiredService<IPropEmployeeFactory>();
-    var employee = factory.Create();
-
-    // The source generator creates:
-    // - NameProperty backing field of type IValidateProperty<string>
-    // - Getter that returns NameProperty.Value
-    // - Setter that sets NameProperty.Value and tracks tasks
-    employee.Name = "Bob Smith";
-
-    // Verify property value is accessible
-    Assert.Equal("Bob Smith", employee.Name);
-
-    // Access generated backing field via indexer
-    var nameProperty = employee["Name"];
-    Assert.Equal("Bob Smith", nameProperty.Value);
-}
+// For this declaration:
+//   public partial string? Name { get; set; }
+//
+// GENERATOR BEHAVIOR: Neatoo.BaseGenerator produces the same shape for
+// ValidateBase and EntityBase (from DemoEntity.g.cs):
+//
+//   protected IValidateProperty<string?> NameProperty
+//       => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+//
+//   public partial string? Name
+//   {
+//       get => NameProperty.Value;
+//       set
+//       {
+//           NameProperty.Value = value;
+//           if (!NameProperty.Task.IsCompleted)
+//           {
+//               Parent?.AddChildTask(NameProperty.Task);
+//               RunningTasks.AddTask(NameProperty.Task);
+//           }
+//       }
+//   }
+//
+//   protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
+//   {
+//       PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
+//   }
+//
+// On an EntityBase the factory creates an entity property (modification
+// tracking); the accessor is still typed IValidateProperty<T>. The real output
+// is on disk under Generated/Neatoo.BaseGenerator/.
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L264-L284' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-generated-implementation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L24-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-generated-property-shape' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
-
-The generated code creates:
-- A strongly-typed `NameProperty` backing field property that retrieves from PropertyManager
-- Getter implementation that returns `NameProperty.Value`
-- Setter implementation that sets `NameProperty.Value` and tracks tasks
-- Task propagation up to Parent for aggregate-level coordination
-- Type safety through generic IValidateProperty<T>
 
 The PropertyManager stores the actual property instances and handles validation, events, and state management behind the scenes.
 
-## Property Backing Fields
+## Property Objects and Meta-Properties
 
-Each partial property gets a generated backing field property that retrieves the underlying IValidateProperty instance from PropertyManager. The PropertyManager stores all property instances; the generated backing field properties provide strongly-typed access.
+Each partial property is backed by its own property object, reached through the indexer `entity["Name"]`. It is not just a backing field: it owns the value, `IsValid`, `IsSelfValid`, `PropertyMessages`, `IsBusy`, `IsReadOnly`, and (on an entity) `IsModified`. This is what makes per-field UI feedback possible — an error icon next to the field that is broken, a spinner on just the field running an async lookup. The entity's `IsValid` and `IsBusy` are aggregations of its properties and children, so per-property tracking is the source of truth.
 
-Access the property wrapper:
-
-<!-- snippet: properties-backing-field-access -->
-<a id='snippet-properties-backing-field-access'></a>
+<!-- snippet: skill-property-metadata -->
+<a id='snippet-skill-property-metadata'></a>
 ```cs
-[Fact]
-public void BackingFieldAccess_PropertyWrapper()
+[TestMethod]
+public void Indexer_ExposesPropertyMetadata()
 {
-    var factory = GetRequiredService<IPropEmployeeFactory>();
-    var employee = factory.Create();
-    employee.Name = "Carol Davis";
+    var entity = _factory.Create();
 
-    // Access property wrapper via indexer
-    var nameProperty = employee["Name"];
+    // Each partial property is backed by its own property object
+    var nameProperty = entity["Name"];
 
-    // Property wrapper provides:
-    Assert.Equal("Carol Davis", nameProperty.Value);        // Value access
-    Assert.False(nameProperty.IsBusy);                      // Async status
-    Assert.True(nameProperty.IsValid);                      // Validation status
-    Assert.Empty(nameProperty.PropertyMessages);            // Error messages
-    Assert.False(nameProperty.IsReadOnly);                  // Mutability
+    entity.Name = "";  // Name is required
+    Assert.IsFalse(nameProperty.IsValid);
+    Assert.IsTrue(nameProperty.PropertyMessages.Count > 0);
+    Assert.IsFalse(nameProperty.IsBusy);
+    Assert.IsFalse(nameProperty.IsReadOnly);
 
-    // Strongly-typed access by casting
-    var typedProperty = (IValidateProperty<string>)nameProperty;
-    Assert.Equal("Carol Davis", typedProperty.Value);
+    // The object aggregates every property's messages
+    Assert.IsTrue(entity.PropertyMessages.Any(m => m.Property.Name == "Name"));
+
+    entity.Name = "Set";
+    Assert.IsTrue(nameProperty.IsValid);
+    Assert.AreEqual(0, nameProperty.PropertyMessages.Count);
+
+    // Strongly typed access by casting
+    var typed = (Neatoo.IValidateProperty<string?>)nameProperty;
+    Assert.AreEqual("Set", typed.Value);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L286-L308' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-backing-field-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L83-L109' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-property-metadata' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Property wrappers provide:
-- **Value**: Get or set the property value
-- **Task**: Access the pending async task (if any)
-- **IsBusy**: Check if async operations are running
-- **IsValid**: Check if the property passes validation
-- **PropertyMessages**: Access validation error messages
-- **RunRules**: Manually trigger validation rules
+Property objects provide:
+- **Value**: Get or set the property value (cast to `IValidateProperty<T>` for the typed value)
+- **IsValid / IsSelfValid**: Validation state of the property (and of a child object it holds)
+- **PropertyMessages**: Validation messages for this property
+- **IsBusy**: True while an async rule is running for this property
+- **Task**: The pending rule task (`Task.CompletedTask` when not busy)
+- **IsReadOnly**: True for a `private set` property or after `MarkReadOnly()`
+- **RunRules**: Runs the rules of a child object held by the property (a no-op for a scalar)
 
-The backing field property is strongly typed (`IValidateProperty<string>`) for compile-time safety. The PropertyManager stores the actual IValidateProperty instances and manages their lifecycle.
+`SetValue` is the awaitable way to set a property. The generated setter runs the same rules but returns no `Task`; a component that must wait for the rules calls `SetValue`:
+
+<!-- snippet: skill-set-value -->
+<a id='snippet-skill-set-value'></a>
+```cs
+[TestMethod]
+public async Task SetValue_IsTheAwaitablePath()
+{
+    var entity = _factory.Create();
+
+    // The property setter runs the same rules but returns no Task.
+    // A component that needs to await the rules calls SetValue.
+    await entity["Name"].SetValue("Manual Value");
+
+    Assert.AreEqual("Manual Value", entity.Name);
+    Assert.IsTrue(entity["Name"].IsValid);
+}
+```
+<sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L111-L124' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-set-value' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Indexer patterns:
+- Returns `IValidateProperty` (non-generic); cast to `IValidateProperty<T>` for strongly-typed access
+- Throws `PropertyNotFoundException` if the property does not exist; use `TryGetProperty` for safe access
+- Enables generic validation display and rule engines without reflection
 
 ## PropertyChanged Events
 
-Properties raise two types of change events: standard INotifyPropertyChanged for UI binding and NeatooPropertyChanged for framework-internal coordination.
+Properties raise two change events: standard `INotifyPropertyChanged` for UI binding and `NeatooPropertyChanged` for framework coordination.
 
 ### INotifyPropertyChanged
 
-The standard PropertyChanged event fires when property values change. This event is consumed by UI frameworks like WPF and Blazor for two-way binding.
+The standard `PropertyChanged` event fires when property values change:
 
-Subscribe to PropertyChanged:
-
-<!-- snippet: properties-property-changed -->
-<a id='snippet-properties-property-changed'></a>
+<!-- snippet: skill-property-changed -->
+<a id='snippet-skill-property-changed'></a>
 ```cs
-[Fact]
-public void PropertyChanged_StandardNotification()
+[TestMethod]
+public void Property_SetTriggersPropertyChanged()
 {
-    var factory = GetRequiredService<IPropEmployeeFactory>();
-    var employee = factory.Create();
+    // Arrange
+    var entity = _factory.Create();
     var changedProperties = new List<string>();
+    entity.PropertyChanged += (s, e) => changedProperties.Add(e.PropertyName!);
 
-    // Subscribe to PropertyChanged
-    employee.PropertyChanged += (sender, args) =>
-    {
-        changedProperties.Add(args.PropertyName!);
-    };
+    // Act
+    entity.Name = "Test";
 
-    // Set properties
-    employee.Name = "Dave Wilson";
-    employee.Email = "dave@example.com";
-
-    // PropertyChanged fires for each property
-    Assert.Contains("Name", changedProperties);
-    Assert.Contains("Email", changedProperties);
+    // Assert
+    Assert.IsTrue(changedProperties.Contains("Name"));
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L310-L332' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-property-changed' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L45-L60' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-property-changed' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 PropertyChanged behavior:
 - Fires after value changes via normal property setters
-- Includes property name in event args
-- Does NOT fire during LoadValue operations (LoadValue only fires NeatooPropertyChanged)
+- Includes the property name in the event args
+- Is not raised by the property object on `LoadValue`; the owning object still raises its own `PropertyChanged(name)` when it is not paused
 - Does not include old/new value comparison
-- Fires for meta-properties (IsValid, IsSelfValid, IsBusy, and on EntityBase: IsModified, IsSelfModified, IsSavable, IsDeleted)
+- Fires for meta-properties (`IsValid`, `IsSelfValid`, `IsBusy`, and on EntityBase: `IsModified`, `IsSelfModified`, `IsSavable`, `IsDeleted`)
 
-UI binding relies on this event to update when properties change.
+Blazor does not subscribe to `INotifyPropertyChanged` on its own: the page subscribes and calls `StateHasChanged`, and display bindings re-render on that cycle.
 
 ### NeatooPropertyChanged
 
-`INotifyPropertyChanged` is synchronous and carries only a property name — that's fine for UI binding but not enough for Neatoo's internals. `NeatooPropertyChanged` is async (needed for async rule execution and cascading) and carries richer metadata: `ChangeReason`, `FullPropertyName` breadcrumbs through the aggregate graph, and the `Source` object that originated the change.
+`INotifyPropertyChanged` is synchronous and carries only a property name — fine for UI binding but not enough for Neatoo's internals. `NeatooPropertyChanged` is async (needed for async rule execution and cascading) and carries richer metadata: the `ChangeReason`, a dotted `FullPropertyName` for changes that bubble up from descendants, and the `Source` object that originated the change:
 
-Subscribe to NeatooPropertyChanged:
-
-<!-- snippet: properties-neatoo-property-changed -->
-<a id='snippet-properties-neatoo-property-changed'></a>
+<!-- snippet: skill-neatoo-property-changed -->
+<a id='snippet-skill-neatoo-property-changed'></a>
 ```cs
-[Fact]
-public async Task NeatooPropertyChanged_ExtendedNotification()
+[TestMethod]
+public async Task NeatooPropertyChanged_CarriesFullNameAndReason()
 {
-    var factory = GetRequiredService<IPropOrderFactory>();
-    var order = factory.Create();
-    var receivedEvents = new List<NeatooPropertyChangedEventArgs>();
-
-    // Subscribe to NeatooPropertyChanged
-    order.NeatooPropertyChanged += (args) =>
+    var entity = _factory.Create();
+    var received = new List<Neatoo.NeatooPropertyChangedEventArgs>();
+    entity.NeatooPropertyChanged += args =>
     {
-        receivedEvents.Add(args);
+        received.Add(args);
         return Task.CompletedTask;
     };
 
-    // Set property
-    order.OrderNumber = "ORD-001";
+    entity.Name = "Test";
+    await entity.WaitForTasks();
 
-    // Wait for async event handling
-    await order.WaitForTasks();
-
-    // Event provides extended information
-    var orderNumberEvent = receivedEvents.FirstOrDefault(e => e.PropertyName == "OrderNumber");
-    Assert.NotNull(orderNumberEvent);
-    Assert.Equal("OrderNumber", orderNumberEvent.PropertyName);
-    Assert.Equal("OrderNumber", orderNumberEvent.FullPropertyName);
-    Assert.Equal(ChangeReason.UserEdit, orderNumberEvent.Reason);
+    var nameEvent = received.Single(e => e.PropertyName == "Name");
+    Assert.AreEqual("Name", nameEvent.FullPropertyName, "A dotted path for descendants; the bare name here");
+    Assert.AreEqual(Neatoo.ChangeReason.UserEdit, nameEvent.Reason, "A setter outside a factory operation is a user edit");
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L334-L362' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L62-L81' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 NeatooPropertyChanged provides:
 - **PropertyName**: Name of the changed property
-- **FullPropertyName**: Breadcrumb path through nested objects (e.g., "Order.Customer.Name")
+- **FullPropertyName**: Dotted path through nested objects (e.g., `"Items.LineTotal"`)
 - **Source**: The object that raised the event
-- **Reason**: ChangeReason enum (UserEdit or Load)
-- **Property**: The IValidateProperty instance
-- **OriginalEventArgs**: The root event that started the cascade
+- **Reason**: `ChangeReason` (`UserEdit` or `Load`)
+- **Property**: The `IValidateProperty` instance
+- **OriginalEventArgs**: The root event that started the cascade; `InnerEventArgs` is the wrapped child event
 
-The Reason distinguishes user edits (which trigger rules) from data loading (which only establishes structure).
+The Reason distinguishes user edits (which trigger rules) from loads (which only establish structure).
 
 ## ChangeReason: UserEdit vs Load
 
-During Fetch, you might set 20 properties from the database. Without a way to distinguish loading from editing, each set would fire validation rules and mark the entity as modified — the entity would appear dirty before the user has touched anything. `ChangeReason` solves this: `UserEdit` triggers the full pipeline (rules, dirty state, parent cascade), while `Load` sets the value quietly.
+Application code sets a value one way: the property setter. What it does depends on whether the object is paused.
 
-### ChangeReason.UserEdit
+- Inside a factory operation (`[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]`) the object is paused, so plain assignment is a clean baseline load: nothing is marked modified, no rules run, no `PropertyChanged`. Do not use `LoadValue`, `PauseAllActions` or `MarkUnmodified` there.
+- After the operation returns, a setter is a user edit (`ChangeReason.UserEdit`): the property and the entity are marked modified, rules run, `PropertyChanged` fires. The `NeatooPropertyChanged` test above shows the reason on a setter.
 
-UserEdit indicates a normal property setter assignment. This is the default for all property assignments.
+`LoadValue()` on the property object is a load (`ChangeReason.Load`) regardless of pause state. The framework uses it — deserialization, the generated `EntityLazyLoad` setter. It is not needed inside a factory operation:
 
-UserEdit behavior:
-- Validation rules execute
-- Dirty state cascades to parent
-- NeatooPropertyChanged fires and bubbles up
-- Parent-child relationships are established
-- IsModified becomes true (for EntityBase)
-
-Standard property assignment uses UserEdit:
-
-<!-- snippet: properties-change-reason-useredit -->
-<a id='snippet-properties-change-reason-useredit'></a>
+<!-- snippet: skill-load-value-outside-operation -->
+<a id='snippet-skill-load-value-outside-operation'></a>
 ```cs
-[Fact]
-public void ChangeReasonUserEdit_NormalPropertyAssignment()
+[TestMethod]
+public void LoadValue_DoesNotMarkPropertyModified()
 {
-    var factory = GetRequiredService<IPropInvoiceFactory>();
-    var invoice = factory.Create();
-    ChangeReason capturedReason = ChangeReason.Load; // Initialize to opposite
+    // Arrange
+    var entity = _factory.Create();
 
-    invoice.NeatooPropertyChanged += (args) =>
-    {
-        if (args.PropertyName == "Amount")
-        {
-            capturedReason = args.Reason;
-        }
-        return Task.CompletedTask;
-    };
+    // Act
+    entity["Name"].LoadValue("Loaded");
 
-    // Standard assignment uses UserEdit
-    invoice.Amount = 100.00m;
-
-    // Reason is UserEdit for normal setter assignment
-    Assert.Equal(ChangeReason.UserEdit, capturedReason);
-
-    // Amount property's validation rule executes with UserEdit
-    // (Amount > 0 passes, so Amount property is valid)
-    Assert.True(invoice["Amount"].IsValid);
+    // Assert
+    Assert.IsFalse(entity["Name"].IsModified, "Property should not be marked modified via LoadValue");
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L364-L391' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-reason-useredit' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-### ChangeReason.Load
-
-Load indicates data loading from persistence or deserialization. LoadValue sets properties without triggering validation or modification tracking.
-
-Use LoadValue during data loading:
-
-<!-- snippet: properties-load-value -->
-<a id='snippet-properties-load-value'></a>
-```cs
-[Fact]
-public void LoadValue_DataLoadingWithoutRules()
-{
-    var factory = GetRequiredService<IPropInvoiceFactory>();
-    var invoice = factory.Create();
-
-    // Use LoadValue during data loading (e.g., in Fetch factory method)
-    // LoadValue:
-    // - Does NOT trigger validation rules
-    // - Does NOT mark entity as modified
-    // - Does NOT fire PropertyChanged (suppressed during load)
-    // - DOES fire NeatooPropertyChanged with ChangeReason.Load
-    // - DOES establish parent-child relationships
-    invoice["CustomerName"].LoadValue("Acme Corp");
-    invoice["Amount"].LoadValue(500.00m);
-
-    // Property values are set
-    Assert.Equal("Acme Corp", invoice.CustomerName);
-    Assert.Equal(500.00m, invoice.Amount);
-}
-```
-<sup><a href='/src/samples/PropertiesSamples.cs#L393-L414' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-load-value' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/StatePropertyTests.cs#L46-L59' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-load-value-outside-operation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 LoadValue behavior:
 - Validation rules do NOT execute
-- Dirty state does NOT cascade to parent
-- PropertyChanged does NOT fire (intentionally suppressed to avoid UI updates during data loading)
-- NeatooPropertyChanged fires with Reason = Load
-- Parent-child relationships ARE established (SetParent called on child objects)
-- IsModified remains false
+- The property is not marked modified
+- The property object raises no `PropertyChanged`; the owning object raises `PropertyChanged(name)` when it is not paused
+- `NeatooPropertyChanged` fires with `Reason = Load`
+- Parent-child relationships ARE established (SetParent is called on a child object)
 
-LoadValue is essential during factory Fetch operations to load data without marking the entity as modified. It still establishes parent-child structure for validation cascade.
+## Computed Properties: `private set` Plus a Rule
 
-## Meta-Properties
+A derived value is a partial property with a `private set`, computed by an `AddAction` rule. The generator emits `private set` on the implementation and `get;` only on the interface, so consumers read it and cannot write it; the rule sets it through the private setter, which routes through `SetPrivateValue()`. `IsReadOnly` is `true`, so MudNeatoo renders it read-only without configuration. (A rule may also write a value with `LoadProperty`, which sets it without running the rules registered on that property.)
 
-Each property tracks its own `IsValid`, `IsBusy`, and validation messages — not just the entity as a whole. This enables per-field UI feedback: a validation error icon next to the specific field that's broken, or a spinner on just the field running an async lookup. The entity's `IsValid` and `IsBusy` are simply aggregations of its properties (and child entities), so per-property tracking is the source of truth.
-
-Access property metadata:
-
-<!-- snippet: properties-meta-properties -->
-<a id='snippet-properties-meta-properties'></a>
+<!-- snippet: skill-private-set-property -->
+<a id='snippet-skill-private-set-property'></a>
 ```cs
-[Fact]
-public async Task MetaProperties_QueryPropertyState()
-{
-    var factory = GetRequiredService<IPropInvoiceFactory>();
-    var invoice = factory.Create();
-
-    // Set valid data
-    invoice.CustomerName = "Beta Inc";
-    invoice.Amount = 250.00m;
-
-    await invoice.WaitForTasks();
-
-    // Access meta-properties on property wrapper
-    var amountProperty = invoice["Amount"];
-
-    // Available meta-properties:
-    Assert.False(amountProperty.IsBusy);           // No async operations pending
-    Assert.True(amountProperty.IsValid);           // Property passes validation
-    Assert.True(amountProperty.IsSelfValid);       // Property itself is valid
-    Assert.Empty(amountProperty.PropertyMessages); // No validation errors
-    Assert.False(amountProperty.IsReadOnly);       // Can be modified
-
-    // Set invalid data
-    invoice.Amount = -100.00m;
-    await invoice.WaitForTasks();
-
-    // Meta-properties update
-    Assert.False(invoice["Amount"].IsValid);
-    Assert.True(invoice["Amount"].PropertyMessages.Any());
-}
-```
-<sup><a href='/src/samples/PropertiesSamples.cs#L416-L447' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-meta-properties' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Available meta-properties:
-- **IsBusy**: True if async operations are pending on this property
-- **IsValid**: True if the property and all child objects are valid
-- **IsSelfValid**: True if the property itself is valid (ignores child validation)
-- **PropertyMessages**: Collection of validation messages
-- **Task**: The pending async task (completed task if not busy)
-- **IsReadOnly**: True if the property cannot be modified
-
-Meta-properties enable conditional UI rendering, save-enablement logic, and validation feedback.
-
-## Computed Properties
-
-Standard C# properties can compute values from partial properties. These are regular properties, not partial, and provide derived read-only values.
-
-Implement a computed property:
-
-<!-- snippet: properties-custom-getter -->
-<a id='snippet-properties-custom-getter'></a>
-```cs
-// Computed property with custom getter logic
-public string DisplayName
-{
-    get
-    {
-        // Compute value from other properties
-        if (string.IsNullOrEmpty(FirstName) && string.IsNullOrEmpty(LastName))
-        {
-            return "(Unknown)";
-        }
-        return $"{LastName}, {FirstName}".Trim(',', ' ');
-    }
-}
-```
-<sup><a href='/src/samples/PropertiesSamples.cs#L75-L89' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-custom-getter' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Computed property patterns:
-- Derive values from other properties using standard C# getters
-- No setter means the property is read-only
-- PropertyChanged does not fire for computed properties (bind to source properties instead)
-- Computed properties do not use partial declarations
-
-Computed properties are useful for display values derived from multiple source properties.
-
-## Read-Only Properties
-
-A computed property like `public string FullName => $"{FirstName} {LastName}"` doesn't raise `PropertyChanged` when `FirstName` or `LastName` change — the UI won't update. A partial read-only property solved by a rule does: when FirstName or LastName triggers the rule, the rule sets FullName via `LoadProperty`, and `PropertyChanged` fires automatically. You can also manually raise `PropertyChanged` for computed properties, but the rule approach handles it for you.
-
-Declare a read-only property:
-
-<!-- snippet: properties-read-only -->
-<a id='snippet-properties-read-only'></a>
-```cs
+/// <summary>
+/// Demonstrates: Private setter properties with computed values via rules.
+/// </summary>
 [Factory]
-public partial class PropContact : ValidateBase<PropContact>
+internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDemo>, IPrivateSetPropertyDemo
 {
-    public PropContact(IValidateBaseServices<PropContact> services) : base(services) { }
+    // Writable properties - external consumers can set these
+    public partial int Quantity { get; set; }
+    public partial decimal UnitPrice { get; set; }
 
-    public partial string FirstName { get; set; }
+    // Private-set property - only settable from within the entity
+    // The interface exposes only `get;` - consumers see this as read-only
+    // MudNeatoo components automatically bind ReadOnly="true"
+    public partial decimal ComputedTotal { get; private set; }
 
-    public partial string LastName { get; set; }
-
-    // Read-only property - only getter implementation generated
-    public partial string FullName { get; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/src/samples/PropertiesSamples.cs#L37-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-read-only' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Read-only properties:
-- Do not have setter implementation in the partial property
-- Can still be set via LoadValue during deserialization or data loading
-- Throw PropertyReadOnlyException if Value setter is called on the IValidateProperty wrapper
-- May be computed from other properties or set only during initialization
-- Have IsReadOnly == true
-
-Read-only properties are common for identity fields and computed values.
-
-## Private Setter Properties
-
-Use `private set` on partial properties to create properties that are writable from within the entity but read-only to external consumers. This is the pattern for computed/derived properties that are set by rules.
-
-The source generator respects `private set`:
-- Emits `private set` on the property implementation
-- Emits `get;` only on the generated interface (no setter exposed)
-- Uses `SetPrivateValue()` in the setter body, bypassing the `IsReadOnly` check
-- Sets `IsReadOnly = true` at runtime, so MudNeatoo components automatically render read-only
-
-Declare a private-set property with an `AddAction` rule:
-
-<!-- snippet: properties-private-setter-declaration -->
-<a id='snippet-properties-private-setter-declaration'></a>
-```cs
-[Factory]
-public partial class PropPrivateSetterDemo : ValidateBase<PropPrivateSetterDemo>
-{
-    public PropPrivateSetterDemo(IValidateBaseServices<PropPrivateSetterDemo> services) : base(services)
+    public PrivateSetPropertyDemo(IEntityBaseServices<PrivateSetPropertyDemo> services) : base(services)
     {
-        // Rule: when Quantity or UnitPrice changes, recompute ComputedTotal
-        // The lambda calls the C# private setter, which routes through SetPrivateValue
+        // Rule: when Quantity or UnitPrice changes, recompute Total
+        // The lambda sets the private setter, which calls SetPrivateValue internally
         RuleManager.AddAction(
             t => t.ComputedTotal = t.Quantity * t.UnitPrice,
             t => t.Quantity,
             t => t.UnitPrice);
     }
 
-    // Writable properties - external consumers can set these
-    public partial int Quantity { get; set; }
-    public partial decimal UnitPrice { get; set; }
-
-    // Private-set property - writable from within the entity, read-only externally
-    // Generated interface exposes get-only; IsReadOnly = true at runtime
-    public partial decimal ComputedTotal { get; private set; }
-
     [Create]
     public void Create() { }
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L212-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-private-setter-declaration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L173-L202' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-private-set-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The rule's lambda calls the C# private setter, which routes through `SetPrivateValue()`. Change tracking, PropertyChanged, and downstream rules fire normally.
+The rule recomputes the value whenever an input changes, and `PropertyChanged` fires for the computed property, so a bound UI refreshes:
 
-Use the entity and verify private-set behavior:
-
-<!-- snippet: properties-private-setter-usage -->
-<a id='snippet-properties-private-setter-usage'></a>
+<!-- snippet: docs-private-set-rule-computes -->
+<a id='snippet-docs-private-set-rule-computes'></a>
 ```cs
-[Fact]
-public void PrivateSetter_RuleRecomputesValue()
+[TestMethod]
+public void PrivateSet_RuleComputesValue()
 {
-    var factory = GetRequiredService<IPropPrivateSetterDemoFactory>();
-    var entity = factory.Create();
+    // Scenario 8: Private-set property set internally via rule
+    // WHEN Quantity and UnitPrice are set, THEN ComputedTotal is updated by AddAction rule
 
-    // Set writable properties - rule recomputes ComputedTotal
+    // Arrange
+    var entity = _factory.Create();
+
+    // Act
     entity.Quantity = 5;
-    entity.UnitPrice = 12.50m;
+    entity.UnitPrice = 10.00m;
 
-    Assert.Equal(62.50m, entity.ComputedTotal);
-
-    // Change one input - rule fires again
-    entity.Quantity = 10;
-    Assert.Equal(125.00m, entity.ComputedTotal);
+    // Assert
+    Assert.AreEqual(50.00m, entity.ComputedTotal);
 }
+```
+<sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L179-L196' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-private-set-rule-computes' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-[Fact]
-public void PrivateSetter_IsReadOnly()
+<!-- snippet: docs-private-set-read-only -->
+<a id='snippet-docs-private-set-read-only'></a>
+```cs
+[TestMethod]
+public void PrivateSet_IsReadOnlyTrue()
 {
-    var factory = GetRequiredService<IPropPrivateSetterDemoFactory>();
-    var entity = factory.Create();
+    // Scenario 8/11: Private-set property has IsReadOnly=true
+    // WHEN a property has private set, THEN its IsReadOnly is true
 
-    // Private-set property has IsReadOnly = true
-    Assert.True(entity["ComputedTotal"].IsReadOnly);
+    // Arrange
+    var entity = _factory.Create();
 
-    // Writable properties have IsReadOnly = false
-    Assert.False(entity["Quantity"].IsReadOnly);
-    Assert.False(entity["UnitPrice"].IsReadOnly);
+    // Act
+    var totalProperty = entity["ComputedTotal"];
+
+    // Assert
+    Assert.IsTrue(totalProperty.IsReadOnly,
+        "Private-set property should have IsReadOnly=true");
 }
+```
+<sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L218-L235' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-private-set-read-only' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-[Fact]
-public async Task PrivateSetter_SetValueThrows()
+<!-- snippet: docs-private-set-set-value-throws -->
+<a id='snippet-docs-private-set-set-value-throws'></a>
+```cs
+[TestMethod]
+public void PrivateSet_SetValueThrows()
 {
-    var factory = GetRequiredService<IPropPrivateSetterDemoFactory>();
-    var entity = factory.Create();
+    // Scenario 9: SetValue on private-set property throws
+    // WHEN entity["ComputedTotal"].SetValue(x) is called, THEN a PropertyException is thrown
+    // (PropertyReadOnlyException is internal; verify via the public base class)
 
-    // SetValue on a private-set property throws PropertyException
-    // (PropertyReadOnlyException is internal; catch the public base class)
+    // Arrange
+    var entity = _factory.Create();
+
+    // Act & Assert
     try
     {
-        await entity["ComputedTotal"].SetValue(99.99m);
+        entity["ComputedTotal"].SetValue(99.99m);
         Assert.Fail("Expected PropertyException to be thrown for read-only property");
     }
-    catch (PropertyException)
+    catch (Exception ex) when (ex is Neatoo.PropertyException)
     {
-        // Expected: read-only property rejects SetValue
+        // Expected: PropertyReadOnlyException (derives from PropertyException)
+        StringAssert.Contains(ex.Message, "read-only");
     }
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L767-L817' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-private-setter-usage' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L253-L276' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-private-set-set-value-throws' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+### Generated Behavior
+
+For `public partial decimal ComputedTotal { get; private set; }`, the generator emits:
+- **Property implementation:** `private set` accessor calling `SetPrivateValue(value)` (bypasses the `IsReadOnly` check)
+- **Interface declaration:** `decimal ComputedTotal { get; }` (no setter exposed)
+- **Backing field:** `IsReadOnly = true`
 
 ### Indexer Behavior
 
 Accessing a private-set property through the indexer:
-- `entity["Total"].SetValue(x)` throws `PropertyException` (read-only)
-- `entity["Total"].LoadValue(x)` sets the value (Fetch escape hatch)
-- `entity["Total"].SetPrivateValue(x)` sets the value, bypassing `IsReadOnly`
+- `entity["Total"].SetValue(x)` throws `PropertyException` (`PropertyReadOnlyException` is internal; catch the public base class)
+- `entity["Total"].LoadValue(x)` sets the value (framework and deserialization use)
+- `entity["Total"].SetPrivateValue(x)` sets the value, bypassing `IsReadOnly`; rules and `PropertyChanged` run normally
 
 ### Protected and Internal Setters
 
-`protected set` and `internal set` preserve their accessor visibility but do NOT set `IsReadOnly = true`. Only `private set` maps to read-only. Protected and internal setters use the standard `.Value = value` path.
+`protected set` and `internal set` preserve their accessor visibility but do NOT set `IsReadOnly = true`. The runtime reports read-only for a get-only property or a private setter. Protected and internal setters use the standard `.Value = value` path.
+
+### A Plain Getter Is Not a Neatoo Property
+
+A regular (non-partial) computed getter is allowed but is not tracked: it raises no `PropertyChanged`, so a bound UI does not refresh it when its inputs change, and it is not serialized. Use it only for a value nothing binds to:
+
+<!-- snippet: skill-plain-computed-getter -->
+<a id='snippet-skill-plain-computed-getter'></a>
+```cs
+// =========================================================================
+// Computed Property (not persisted)
+// =========================================================================
+// This is a regular property, not partial - not tracked by Neatoo and it
+// raises no PropertyChanged. A bound UI does not refresh it when
+// FirstName or LastName changes; for that, use a partial property set by
+// an AddAction rule triggered on both.
+// =========================================================================
+public string FullName => $"{FirstName} {LastName}";
+```
+<sup><a href='/src/Design/Design.Domain/Entities/Employee.cs#L70-L80' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-plain-computed-getter' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+## Marking a Property Read-Only at Runtime
+
+`private set` makes a property read-only on every instance. `IValidateProperty.MarkReadOnly()` makes it read-only on one instance, permanently — decided during `[Fetch]` from a server-side permission service, so a field is editable for one user and locked for another. The permission is never a parameter the client passes:
+
+<!-- snippet: skill-mark-read-only -->
+<a id='snippet-skill-mark-read-only'></a>
+```cs
+[Remote]
+[Fetch]
+internal void Fetch(int id, [Service] IFieldLevelAuthRepository repository, [Service] ISalaryPermission permission)
+{
+    var data = repository.GetById(id);
+    Name = data.Name;
+    Salary = data.Salary;
+    Department = data.Department;
+
+    // Field-level authorization: lock down Salary if user lacks permission
+    if (!permission.CanEditSalary)
+    {
+        this["Salary"].MarkReadOnly();
+    }
+}
+```
+<sup><a href='/src/Design/Design.Domain/PropertySystem/FieldLevelAuthorization.cs#L58-L74' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mark-read-only' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+After `MarkReadOnly()`, `SetValue` and the property setter throw `PropertyException`; `SetPrivateValue` and `LoadValue` still succeed, so rules and deserialization are unaffected. The flag travels to the client with the entity; the server's `[Update]` enforces the permission again before writing the field.
 
 ## Suppressing Property Events
 
-Sometimes you need to set multiple properties without the framework reacting to each one individually. During initialization from a DTO, you don't want intermediate validation states. During a batch edit (swapping two field values), you want the rules to see the final state, not an in-between state. And when setting many properties at once, you don't want N separate rule executions when one pass at the end will do.
+`PauseAllActions()` pauses an object outside a factory operation. While paused, setters run no rules and raise no `PropertyChanged`; `ResumeAllActions` recalculates cached validity but does not run the skipped rules:
 
-Pause property events during batch updates:
-
-<!-- snippet: properties-suppress-events -->
-<a id='snippet-properties-suppress-events'></a>
+<!-- snippet: skill-pause-all-actions -->
+<a id='snippet-skill-pause-all-actions'></a>
 ```cs
-[Fact]
-public void SuppressEvents_PauseAllActions()
+[TestMethod]
+public void Gotcha4_PausedPropertyChanges_DoNotTriggerRules()
 {
-    var factory = GetRequiredService<IPropInvoiceFactory>();
-    var invoice = factory.Create();
-    var changeCount = 0;
+    // Arrange
+    var factory = _scope.GetRequiredService<IGotcha4DemoFactory>();
+    var entity = factory.Create();
 
-    invoice.PropertyChanged += (_, _) => changeCount++;
-
-    // Pause property events during batch updates
-    using (invoice.PauseAllActions())
+    // Act - Modify properties while paused
+    using (entity.PauseAllActions())
     {
-        invoice.CustomerName = "Gamma LLC";
-        invoice.Amount = 750.00m;
-        invoice.InvoiceDate = DateTime.Today;
-
-        // Events are suppressed during pause
-        // (changeCount may have some events from internal operations,
-        // but rule execution is deferred)
+        entity.Quantity = 10;
+        entity.Price = 5.00m;
     }
+    // ResumeAllActions() is called, but rules don't automatically run
 
-    // After Resume (automatic when using statement ends):
-    // - All deferred events fire
-    // - Validation rules execute
-    // - Dirty state recalculates
-
-    // Verify properties are set
-    Assert.Equal("Gamma LLC", invoice.CustomerName);
-    Assert.Equal(750.00m, invoice.Amount);
+    // Assert - Total is NOT calculated
+    Assert.AreEqual(0m, entity.Total, "Total should be 0 - rules did not run while paused");
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L484-L515' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-suppress-events' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L177-L196' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-pause-all-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 PauseAllActions behavior:
-- PropertyChanged events are suppressed (not raised while paused)
-- NeatooPropertyChanged propagation to parent is suppressed
+- `PropertyChanged` and `NeatooPropertyChanged` are not raised while paused
 - Validation rules do NOT execute
-- Dirty state tracking is suppressed
+- On an entity, a property set while paused is not marked modified
 - Parent cascade is suppressed
 
 After Resume:
-- PropertyChanged and NeatooPropertyChanged resume firing for new changes
-- Validation rules execute normally for new property changes
-- Dirty state tracking resumes
-- Parent cascade resumes
-- No catch-up events fire for changes made during pause
+- Events and rules resume for new property changes
+- No catch-up events fire and no rules run for changes made during the pause
+- Edits made under `PauseAllActions()` on a fetched entity leave `IsModified` false and are not saved
 
-Use PauseAllActions when setting multiple properties during initialization, deserialization, or bulk updates.
-
-## Property Access via Indexer
-
-Properties can be accessed dynamically by name using the indexer syntax.
-
-Access properties by name:
-
-<!-- snippet: properties-indexer-access -->
-<a id='snippet-properties-indexer-access'></a>
-```cs
-[Fact]
-public void IndexerAccess_DynamicPropertyAccess()
-{
-    var factory = GetRequiredService<IPropEmployeeFactory>();
-    var employee = factory.Create();
-    employee.Name = "Eva Martinez";
-
-    // Access property by name using indexer
-    var property = employee["Name"];
-    Assert.Equal("Eva Martinez", property.Value);
-
-    // Cast to strongly-typed for type-safe access
-    var typedProperty = (IValidateProperty<string>)property;
-    typedProperty.Value = "Eva M. Martinez";
-
-    // Use TryGetProperty for safe access
-    if (employee.TryGetProperty("Email", out var emailProperty))
-    {
-        emailProperty.Value = "eva@example.com";
-    }
-
-    Assert.Equal("Eva M. Martinez", employee.Name);
-    Assert.Equal("eva@example.com", employee.Email);
-}
-```
-<sup><a href='/src/samples/PropertiesSamples.cs#L517-L542' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-indexer-access' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Indexer patterns:
-- Returns IValidateProperty (non-generic)
-- Cast to IValidateProperty<T> for strongly-typed access
-- Throws PropertyMissingException if property doesn't exist
-- Use TryGetProperty for safe access
-- Useful for generic validation code and reflection-free property access
-
-The indexer enables scenarios like generic validation messages, rule engines, and dynamic property access without reflection.
+Never use it inside a factory operation: the operation is already paused, and disposing the `using` resumes the object early. Deserialization pauses the object on its own.
 
 ## Task Tracking and IsBusy
 
-Async tasks are tracked per-property, not per-entity. When a ZipCode field triggers an async tax-rate lookup, only that field shows a busy indicator — the rest of the form remains editable. If tasks were only tracked at the entity level, any async rule would lock the entire form.
+Async rule tasks are tracked per property, not per entity. When one field triggers an async lookup, only that field is busy — the rest of the form remains editable. The entity's `IsBusy` aggregates its properties, and `WaitForTasks()` awaits them:
 
-Wait for property tasks to complete:
-
-<!-- snippet: properties-task-tracking -->
-<a id='snippet-properties-task-tracking'></a>
+<!-- snippet: skill-is-busy -->
+<a id='snippet-skill-is-busy'></a>
 ```cs
-[Fact]
-public async Task TaskTracking_AsyncOperations()
+[TestMethod]
+public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 {
-    var factory = GetRequiredService<IPropAsyncProductFactory>();
-    var product = factory.Create();
+    var entity = _scope.GetRequiredService<IBusyStateDemoFactory>().Create();
 
-    product.Name = "Widget";
+    entity.Name = "Test";  // triggers the async action rule
 
-    // Setting ZipCode triggers async rule
-    product.ZipCode = "90210";
+    Assert.IsTrue(entity.IsBusy, "The async rule is still running");
 
-    // IsBusy is true while async operations run
-    // (may be false if rule completes very fast)
+    await entity.WaitForTasks();
 
-    // Wait for all property tasks to complete
-    await product.WaitForTasks();
-
-    // After tasks complete:
-    Assert.False(product.IsBusy);
-    Assert.Equal(0.0825m, product.TaxRate);
-
-    // Access property-level task
-    var zipProperty = product["ZipCode"];
-    Assert.True(zipProperty.Task.IsCompleted);
+    Assert.IsFalse(entity.IsBusy);
+    Assert.AreEqual("Processed: Test", entity.ComputedValue);
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L544-L570' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-task-tracking' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/ValidationStateTests.cs#L52-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-busy' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Task tracking behavior:
 - Property setters that trigger async rules return immediately but track the task
-- IsBusy is true while tasks are pending
-- Task property contains the pending task (or CompletedTask if not busy)
-- Tasks propagate to Parent.RunningTasks for aggregate-level coordination
-- WaitForTasks() awaits all property tasks
-
-UI can bind to IsBusy to show loading indicators during async validation or save operations.
+- `IsBusy` is true while tasks are pending
+- `Task` on the property object holds the pending task (or `Task.CompletedTask` when not busy)
+- Tasks propagate to the parent for aggregate-level coordination
+- `WaitForTasks()` awaits all property tasks; await it before reading `IsValid` or saving
 
 ## Property Validation Integration
 
-Properties integrate with the validation system. Validation rules execute when properties change, and errors are stored in PropertyMessages.
+Rules run when a property is set, messages land on the property, the property's `IsValid` follows its messages, and the object's `IsValid` aggregates its properties and children — while `IsSelfValid` ignores children:
 
-Property validation coordination:
-
-<!-- snippet: properties-validation-integration -->
-<a id='snippet-properties-validation-integration'></a>
+<!-- snippet: skill-is-valid-vs-self-valid -->
+<a id='snippet-skill-is-valid-vs-self-valid'></a>
 ```cs
-[Fact]
-public async Task ValidationIntegration_PropertyValidation()
+[TestMethod]
+public async Task InvalidChild_MakesParentInvalid_ButNotSelfInvalid()
 {
-    var factory = GetRequiredService<IPropInvoiceFactory>();
-    var invoice = factory.Create();
+    var parent = _scope.GetRequiredService<IValidationStateDemoFactory>().Create();
+    parent.RequiredField = "set";
+    parent.Child!.RequiredField = "set";
+    await parent.WaitForTasks();
+    Assert.IsTrue(parent.IsValid);
 
-    // Set invalid value
-    invoice.Amount = -50.00m;
+    // Break the child only
+    parent.Child.RequiredField = "";
+    await parent.WaitForTasks();
 
-    // Property-level validation state
-    var amountProperty = invoice["Amount"];
-    Assert.False(amountProperty.IsValid);
-    Assert.True(amountProperty.PropertyMessages.Any());
-
-    // Object-level validation reflects property state
-    Assert.False(invoice.IsValid);
-
-    // Fix the value
-    invoice.Amount = 100.00m;
-    await invoice.WaitForTasks();
-
-    // Validation passes
-    Assert.True(invoice["Amount"].IsValid);
-    Assert.Empty(invoice["Amount"].PropertyMessages);
-
-    // Set required field to trigger full validity
-    invoice.CustomerName = "Test Customer";
-    await invoice.WaitForTasks();
-
-    Assert.True(invoice.IsValid);
+    Assert.IsTrue(parent.IsSelfValid, "The parent's own rules pass");
+    Assert.IsFalse(parent.IsValid, "IsValid aggregates the child");
+    Assert.IsFalse(parent.Child.IsValid);
+    Assert.IsTrue(parent.PropertyMessages.Count > 0, "The child's message reaches the parent");
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L572-L604' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-validation-integration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/ValidationStateTests.cs#L31-L50' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-valid-vs-self-valid' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Validation flow:
 1. Property value changes
-2. Validation rules execute (if not paused and Reason == UserEdit)
-3. PropertyMessages updated with any errors
-4. IsValid recalculates based on PropertyMessages
-5. Parent's IsValid recalculates (cascade)
+2. Validation rules execute (if not paused and `Reason == UserEdit`)
+3. `PropertyMessages` updated with any errors
+4. `IsValid` recalculates based on `PropertyMessages`
+5. Parent's `IsValid` recalculates (cascade)
 
 See [Validation](validation.md) for details on rule execution and [Business Rules](business-rules.md) for custom validation logic.
 
 ## Property Change Propagation
 
-UI data-binding works at the property level — the UI binds directly to each property via the entity's indexer, and `INotifyPropertyChanged` fires on the property itself. But the *aggregate root* needs to know when children change so it can run aggregate-level business rules — for example, "all line item percentages must sum to 100%" or notifying a sibling child that something changed. `NeatooPropertyChanged` propagation bubbles child changes up to the root for this purpose.
+UI data-binding works at the property level — the UI binds to each property via the entity's indexer. But the *aggregate root* needs to know when children change so it can run aggregate-level rules — "all line item percentages must sum to 100%" — or notify a sibling. `NeatooPropertyChanged` bubbles child changes up to the root with a dotted path:
 
-Property change cascade:
-
-<!-- snippet: properties-change-propagation -->
-<a id='snippet-properties-change-propagation'></a>
+<!-- snippet: docs-change-propagation -->
+<a id='snippet-docs-change-propagation'></a>
 ```cs
-[Fact]
-public async Task ChangePropagation_ChildToParent()
+[TestMethod]
+public async Task ChildPropertyChange_BubblesToTheRoot_WithADottedPath()
 {
-    var orderFactory = GetRequiredService<IPropOrderFactory>();
-    var order = orderFactory.Create();
-    order.OrderNumber = "ORD-001";
+    var order = _orderFactory.Create();
+    var item = _itemFactory.Create("Widget", 1, 5.00m);
+    order.Items!.Add(item);
 
-    var receivedEvents = new List<NeatooPropertyChangedEventArgs>();
-
-    order.NeatooPropertyChanged += (args) =>
+    var paths = new List<string>();
+    order.NeatooPropertyChanged += args =>
     {
-        receivedEvents.Add(args);
+        paths.Add(args.FullPropertyName);
         return Task.CompletedTask;
     };
 
-    // Add child item
-    var itemFactory = GetRequiredService<IPropOrderItemFactory>();
-    var item = itemFactory.Create();
-    item.ProductName = "Widget";
-    item.UnitPrice = 25.00m;
-    item.Quantity = 2;
-
-    order.LineItems.Add(item);
-
-    // Change child property
-    item.UnitPrice = 30.00m;
-
+    item.UnitPrice = 7.00m;
     await order.WaitForTasks();
 
-    // Parent receives notification with full breadcrumb path
-    var propagatedEvent = receivedEvents
-        .FirstOrDefault(e => e.FullPropertyName.Contains("UnitPrice"));
-
-    // FullPropertyName builds breadcrumb: "LineItems.UnitPrice"
-    Assert.NotNull(propagatedEvent);
+    // The root sees the child's change under the child collection's path
+    Assert.IsTrue(paths.Contains("Items.UnitPrice"), string.Join(", ", paths));
 }
 ```
-<sup><a href='/src/samples/PropertiesSamples.cs#L606-L643' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-change-propagation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/OrderAggregateTests.cs#L194-L215' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-change-propagation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade behavior:
-- Child property changes fire NeatooPropertyChanged
-- Parent subscribes to child's NeatooPropertyChanged
-- Parent re-fires the event with updated breadcrumb (FullPropertyName)
-- Event bubbles to aggregate root
-- Root can react to any property change in the entire graph
+- Child property changes fire `NeatooPropertyChanged`
+- The parent re-raises the event wrapped with its own property name, building `FullPropertyName`
+- The event bubbles to the aggregate root
+- A root rule with a child property trigger (`t => t.Items![0].LineTotal`) matches the same dotted path — see [Business Rules](business-rules.md)
 
-The FullPropertyName property builds the breadcrumb path by concatenating property names with dots (e.g., "LineItems.UnitPrice"). Collection indexes are not included in the breadcrumb.
+`FullPropertyName` concatenates property names with dots (e.g., `"Items.UnitPrice"`). Collection indexes are not included.
 
 ## Constructor Property Assignment
 
-Properties set in constructors outside of factory methods are tracked as modifications because constructors run before the factory pause mechanism activates.
-
-Avoid constructor property assignment:
-
-<!-- snippet: properties-constructor-assignment -->
-<a id='snippet-properties-constructor-assignment'></a>
-```cs
-[Fact]
-public void ConstructorAssignment_UseLoadValueInstead()
-{
-    // Avoid setting properties directly in constructors
-    // outside of factory methods, as they will be tracked
-    // as modifications.
-
-    // Instead, use LoadValue for initial values:
-    var factory = GetRequiredService<IPropEmployeeFactory>();
-    var employee = factory.Create();
-
-    // LoadValue sets value without triggering modification tracking
-    employee["Name"].LoadValue("Default Employee");
-    employee["Email"].LoadValue("default@example.com");
-
-    // Properties are set but not marked as modified
-    // (In a full EntityBase scenario with MarkUnmodified)
-    Assert.Equal("Default Employee", employee.Name);
-    Assert.Equal("default@example.com", employee.Email);
-}
-```
-<sup><a href='/src/samples/PropertiesSamples.cs#L645-L666' title='Snippet source file'>snippet source</a> | <a href='#snippet-properties-constructor-assignment' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-The analyzer warns about constructor assignments and offers a code fix to convert to LoadValue. This ensures new entities start in an unmodified state.
+A constructor runs before any factory operation pauses the object, so a property set in a constructor is tracked as a modification. Default values belong in `[Create]`, where the object is paused and the assignment is a clean baseline. The analyzer (NEATOO010) warns about constructor assignments and offers a code fix to convert to `LoadValue`.
 
 Use LoadValue in constructors when initial values must be set outside of factory Create methods.
 
 ---
 
-**UPDATED:** 2026-02-28
+**UPDATED:** 2026-10-06

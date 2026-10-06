@@ -59,7 +59,7 @@ public async Task Save_WhenNewAndUntouched_StillInserts()
     Assert.IsFalse(entity.IsNew);
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L166-L184' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-new-untouched-still-inserts' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L167-L185' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-new-untouched-still-inserts' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Fetching Existing Entities
@@ -160,7 +160,7 @@ public async Task Save_WhenNew_RoutesToInsert_AndMarksOld()
     Assert.IsFalse(entity.IsSavable, "Nothing left to save");
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L104-L127' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-routes-to-insert' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L105-L128' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-routes-to-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Save Routing:**
@@ -196,7 +196,7 @@ public async Task Save_WhenDeleted_RoutesToDelete()
     Assert.AreEqual(0, _repository.UpdatedIds.Count);
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L145-L164' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-delete-routes-to-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L146-L165' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-delete-routes-to-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Undeleting Entities
@@ -222,7 +222,7 @@ public async Task UnDelete_ReversesDeleteBeforeSave()
     Assert.IsFalse(entity.IsSavable, "Nothing left to save");
 }
 ```
-<sup><a href='/src/Design/Design.Tests/BaseClassTests/EntityBaseTests.cs#L141-L157' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-undelete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/BaseClassTests/EntityBaseTests.cs#L143-L159' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-undelete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## FactoryComplete Lifecycle Hook
@@ -326,7 +326,7 @@ public async Task FetchedEntity_IsSavableWhenModified()
     Assert.IsTrue(entity.IsSavable, "Modified valid entity should be savable");
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L68-L96' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-savable' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L69-L97' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-savable' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 An invalid entity is not savable:
@@ -352,7 +352,7 @@ public async Task NewEntity_NotSavableWhenInvalid()
     Assert.IsFalse(entity.IsSavable, "Invalid entity should not be savable");
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L48-L66' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-invalid-not-savable' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L49-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-invalid-not-savable' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `IsSavable` says nothing about aggregate position -- children are saved through the aggregate root, and that is enforced by the interface split, not by `IsSavable`. Only `IEntityRoot` exposes it.
@@ -413,7 +413,7 @@ public async Task Save_WithCancelledToken_ThrowsAndLeavesStateUnchanged()
     Assert.IsTrue(entity.IsModified);
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L186-L203' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-cancellation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L187-L204' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Parent and Root

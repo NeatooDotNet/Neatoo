@@ -18,6 +18,18 @@ public interface IRuleBasicsDemo : IEntityRoot
     int Quantity { get; set; }
     decimal Price { get; set; }
     decimal Total { get; set; }
+    string? RuleTrace { get; }
+}
+
+/// <summary>
+/// Demo for LoadProperty: a rule-written derived value that triggers no rules.
+/// </summary>
+public interface ILoadPropertyDemo : IValidateBase
+{
+    int Quantity { get; set; }
+    decimal UnitPrice { get; set; }
+    decimal Total { get; }
+    bool TotalRuleRan { get; }
 }
 
 /// <summary>

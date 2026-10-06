@@ -56,15 +56,23 @@ internal partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>, IRuleBasicsD
     public partial decimal Price { get; set; }
     public partial decimal Total { get; set; }
 
-    #region skill-add-rule-inline
+    /// <summary>Written by the two trace rules below, in execution order.</summary>
+    public partial string? RuleTrace { get; set; }
+
     public RuleBasicsDemo(IEntityBaseServices<RuleBasicsDemo> services) : base(services)
     {
+        #region skill-add-rule-inline
         // Rules with no dependencies are constructed here; a rule that needs
         // a command delegate comes from DI instead (see AsyncRules.cs)
         RuleManager.AddRule(new NameRequiredRule());
         RuleManager.AddRule(new CalculateTotalRule());
+        #endregion
+
+        // Registration order deliberately reversed: RuleOrder decides, not
+        // registration (see the Rule Execution Order section below)
+        RuleManager.AddRule(new LateTraceRule());
+        RuleManager.AddRule(new EarlyTraceRule());
     }
-    #endregion
 
     [Create]
     public void Create() { }
@@ -234,24 +242,36 @@ internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
 // - WaitForTasks(): Awaits all pending async rules before proceeding
 // =============================================================================
 
-/// <summary>
-/// Demonstrates: Rule ordering.
-/// </summary>
-internal class EarlyValidationRule : RuleBase<RuleBasicsDemo>
+#region docs-rule-order
+/// <summary>Runs before rules with the default RuleOrder (1).</summary>
+internal class EarlyTraceRule : RuleBase<RuleBasicsDemo>
 {
-    public EarlyValidationRule() : base(t => t.Name)
+    public EarlyTraceRule() : base(t => t.Name)
     {
-        // This rule runs before rules with default RuleOrder (1)
-        // Lower values execute first
-        RuleOrder = -10;
+        RuleOrder = -10;   // lower runs first; the default is 1
     }
 
     protected override IRuleMessages Execute(RuleBasicsDemo target)
     {
-        // Early validation - check preconditions
+        target.RuleTrace += "early;";
         return None;
     }
 }
+
+/// <summary>
+/// Default RuleOrder: runs after EarlyTraceRule although it is registered first.
+/// </summary>
+internal class LateTraceRule : RuleBase<RuleBasicsDemo>
+{
+    public LateTraceRule() : base(t => t.Name) { }
+
+    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    {
+        target.RuleTrace += "late;";
+        return None;
+    }
+}
+#endregion
 
 // =============================================================================
 // Running Rules Manually
@@ -411,6 +431,55 @@ internal class EarlyValidationRule : RuleBase<RuleBasicsDemo>
 //   public PrerequisiteRule() : base(...) { RuleOrder = -100; }
 //   public DependentRule() : base(...) { RuleOrder = 0; }  // Runs after
 // =============================================================================
+
+// =============================================================================
+// LoadProperty - Writing a Property From a Rule Without Triggering Its Rules
+// =============================================================================
+// A rule normally writes a derived value through the property setter, which
+// runs the rules registered on that property (the chained-rules pattern).
+// LoadProperty writes through the property's LoadValue instead: no rules on
+// that property run, and on an entity the property is not marked modified.
+// Whether a rule should write with LoadProperty or the setter is not settled;
+// the default shown everywhere else in Design.Domain is the setter.
+// =============================================================================
+
+#region docs-load-property
+/// <summary>
+/// Demonstrates: LoadProperty writes a property through its wrapper's
+/// LoadValue - no rules registered on that property run.
+/// </summary>
+[Factory]
+internal partial class LoadPropertyDemo : ValidateBase<LoadPropertyDemo>, ILoadPropertyDemo
+{
+    public partial int Quantity { get; set; }
+    public partial decimal UnitPrice { get; set; }
+    public partial decimal Total { get; private set; }
+    public partial bool TotalRuleRan { get; private set; }
+
+    public LoadPropertyDemo(IValidateBaseServices<LoadPropertyDemo> services) : base(services)
+    {
+        RuleManager.AddRule(new LoadPropertyTotalRule());
+
+        // A rule on Total: it does NOT run when Total is written by LoadProperty
+        RuleManager.AddAction(t => t.TotalRuleRan = true, t => t.Total);
+    }
+
+    [Create]
+    public void Create() { }
+}
+
+internal class LoadPropertyTotalRule : RuleBase<LoadPropertyDemo>
+{
+    public LoadPropertyTotalRule() : base(t => t.Quantity, t => t.UnitPrice) { }
+
+    protected override IRuleMessages Execute(LoadPropertyDemo target)
+    {
+        // Written without triggering the rules registered on Total
+        LoadProperty(target, t => t.Total, target.Quantity * target.UnitPrice);
+        return None;
+    }
+}
+#endregion
 
 // =============================================================================
 // Support Interfaces

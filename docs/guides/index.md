@@ -25,10 +25,10 @@ EntityBase vs ValidateBase, aggregate root pattern, identity and IsNew, entity l
 Parent property behavior, child entity lifecycle, cascade validation, cascade dirty state, aggregate boundaries, and ContainingList property.
 
 ### [Properties](properties.md)
-Getter/Setter pattern, source-generated backing fields, PropertyChanged events, NeatooPropertyChanged vs INotifyPropertyChanged, LoadValue vs direct assignment, and meta-properties.
+Partial properties, source-generated backing fields, PropertyChanged events, NeatooPropertyChanged vs INotifyPropertyChanged, assignment inside and outside a factory operation, and meta-properties.
 
 ### [Validation](validation.md)
-ValidateBase inheritance, property declarations with Getter/Setter, built-in validation attributes, custom validation rules, RunRulesAsync, error messages, and PauseAllActions for batching.
+ValidateBase inheritance, partial property declarations, built-in validation attributes, custom validation rules, WaitForTasks and RunRules, error messages, and PauseAllActions.
 
 ## Integration
 
@@ -36,8 +36,8 @@ ValidateBase inheritance, property declarations with Getter/Setter, built-in val
 MudNeatoo Blazor integration, component integration, property binding, validation display, form integration, and change tracking UI.
 
 ### [Remote Factory](remote-factory.md)
-RemoteFactory overview, factory method generation, client-server serialization, Fetch/Save patterns, DTOs vs domain models, and dependency injection integration.
+Save routing on entity state, entity state during factory operations, child state cascade, DeletedList, and what is serialized across the client-server boundary.
 
 ---
 
-**UPDATED:** 2026-01-24
+**UPDATED:** 2026-10-06

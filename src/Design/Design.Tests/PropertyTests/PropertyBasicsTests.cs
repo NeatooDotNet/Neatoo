@@ -176,6 +176,7 @@ public class PrivateSetPropertyTests
         _scope.Dispose();
     }
 
+    #region docs-private-set-rule-computes
     [TestMethod]
     public void PrivateSet_RuleComputesValue()
     {
@@ -192,6 +193,7 @@ public class PrivateSetPropertyTests
         // Assert
         Assert.AreEqual(50.00m, entity.ComputedTotal);
     }
+    #endregion
 
     [TestMethod]
     public void PrivateSet_TriggersPropertyChanged()
@@ -213,6 +215,7 @@ public class PrivateSetPropertyTests
             "PropertyChanged should fire for private-set property when set by a rule");
     }
 
+    #region docs-private-set-read-only
     [TestMethod]
     public void PrivateSet_IsReadOnlyTrue()
     {
@@ -229,6 +232,7 @@ public class PrivateSetPropertyTests
         Assert.IsTrue(totalProperty.IsReadOnly,
             "Private-set property should have IsReadOnly=true");
     }
+    #endregion
 
     [TestMethod]
     public void PrivateSet_PublicPropertyIsReadOnlyFalse()
@@ -246,6 +250,7 @@ public class PrivateSetPropertyTests
             "Public-set property should have IsReadOnly=false");
     }
 
+    #region docs-private-set-set-value-throws
     [TestMethod]
     public void PrivateSet_SetValueThrows()
     {
@@ -268,6 +273,7 @@ public class PrivateSetPropertyTests
             StringAssert.Contains(ex.Message, "read-only");
         }
     }
+    #endregion
 
     [TestMethod]
     public void PrivateSet_LoadValueSucceeds()

@@ -69,7 +69,7 @@ internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L193-L210' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L201-L218' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Better yet** — if the validations are independent per-property checks, use separate rules or validation attributes instead of one combined rule. A class-based rule that spans multiple properties is for *cross-property* validation ("end date must be after start date"). For independent per-property checks, prefer `AddValidation` or `[Required]`.

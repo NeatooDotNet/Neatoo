@@ -91,6 +91,7 @@ public class EntityBaseTests
         Assert.IsFalse(entity.IsSavable, "Invalid entity should not be savable");
     }
 
+    #region docs-modified-properties
     [TestMethod]
     public void PropertyChange_MarksPropertyModified()
     {
@@ -104,6 +105,7 @@ public class EntityBaseTests
         Assert.IsTrue(entity.IsSelfModified);
         Assert.IsTrue(entity.ModifiedProperties.Contains("Name"));
     }
+    #endregion
 
     [TestMethod]
     public async Task Fetch_SetsIsNewFalse()

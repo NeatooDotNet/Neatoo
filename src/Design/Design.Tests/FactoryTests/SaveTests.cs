@@ -7,6 +7,7 @@
 using Design.Domain.FactoryOperations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neatoo;
 
 namespace Design.Tests.FactoryTests;
 
@@ -199,6 +200,39 @@ public class SaveTests
         Assert.AreEqual(0, _repository.InsertedIds.Count, "Nothing was written");
         Assert.IsTrue(entity.IsNew, "State is unchanged");
         Assert.IsTrue(entity.IsModified);
+    }
+    #endregion
+
+    #region docs-save-not-savable-throws
+    [TestMethod]
+    public async Task Save_WhenNotSavable_ThrowsWithTheReason()
+    {
+        // A fetched, untouched entity: neither modified nor new
+        var entity = await _factory.Fetch(1);
+        Assert.IsFalse(entity.IsSavable);
+
+        // Reaching this is a programming error: the UI binds Save to IsSavable
+        var exception = await Assert.ThrowsExactlyAsync<SaveOperationException>(() => entity.Save());
+
+        Assert.AreEqual(SaveFailureReason.NotModified, exception.Reason);
+    }
+    #endregion
+
+    #region docs-paused-edit-not-modified
+    [TestMethod]
+    public async Task PausedEdit_IsNotTrackedAsModified()
+    {
+        var entity = await _factory.Fetch(1);
+
+        using (entity.PauseAllActions())
+        {
+            entity.Name = "Edited while paused";
+        }
+
+        // The value is set, but nothing caught up when the pause ended
+        Assert.AreEqual("Edited while paused", entity.Name);
+        Assert.IsFalse(entity.IsModified, "A paused assignment is a baseline load, not an edit");
+        Assert.IsFalse(entity.IsSavable, "...so there is nothing to save");
     }
     #endregion
 }

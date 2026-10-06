@@ -190,4 +190,27 @@ public class OrderAggregateTests
         Assert.AreEqual(50.00m, item.LineTotal, "Child LineTotal should be 50");
         Assert.AreEqual(50.00m, order.TotalAmount, "Order TotalAmount should recalculate when child LineTotal changes");
     }
+
+    #region docs-change-propagation
+    [TestMethod]
+    public async Task ChildPropertyChange_BubblesToTheRoot_WithADottedPath()
+    {
+        var order = _orderFactory.Create();
+        var item = _itemFactory.Create("Widget", 1, 5.00m);
+        order.Items!.Add(item);
+
+        var paths = new List<string>();
+        order.NeatooPropertyChanged += args =>
+        {
+            paths.Add(args.FullPropertyName);
+            return Task.CompletedTask;
+        };
+
+        item.UnitPrice = 7.00m;
+        await order.WaitForTasks();
+
+        // The root sees the child's change under the child collection's path
+        Assert.IsTrue(paths.Contains("Items.UnitPrice"), string.Join(", ", paths));
+    }
+    #endregion
 }

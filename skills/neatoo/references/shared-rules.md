@@ -211,15 +211,12 @@ A rule specific to one entity type with no dependencies is constructed in the en
 <!-- snippet: skill-add-rule-inline -->
 <a id='snippet-skill-add-rule-inline'></a>
 ```cs
-public RuleBasicsDemo(IEntityBaseServices<RuleBasicsDemo> services) : base(services)
-{
-    // Rules with no dependencies are constructed here; a rule that needs
-    // a command delegate comes from DI instead (see AsyncRules.cs)
-    RuleManager.AddRule(new NameRequiredRule());
-    RuleManager.AddRule(new CalculateTotalRule());
-}
+// Rules with no dependencies are constructed here; a rule that needs
+// a command delegate comes from DI instead (see AsyncRules.cs)
+RuleManager.AddRule(new NameRequiredRule());
+RuleManager.AddRule(new CalculateTotalRule());
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L59-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-add-rule-inline' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L64-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-add-rule-inline' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 An entity-specific rule that needs a command delegate still comes from DI through its own interface (see `validation.md` → "Async Rules That Call the Server"). The shared-rule pattern adds the shared interface so one rule and one registration serve several entity types.

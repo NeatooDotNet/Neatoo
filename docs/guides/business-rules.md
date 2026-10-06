@@ -2,797 +2,855 @@
 
 [← Blazor](blazor.md) | [↑ Guides](index.md) | [Change Tracking →](change-tracking.md)
 
-Neatoo rules exist to support data-binding UIs. In Blazor, WPF, or any data-bound client, when a user types into a field, the binding updates the property — and rules fire automatically. Validation errors appear instantly, computed fields update in real time, and the UI stays in sync without the developer writing orchestration code. Rules are registered in the entity constructor via `RuleManager` fluent API or by adding custom rule class instances.
+Neatoo rules exist to support data-binding UIs. In Blazor, WPF, or any data-bound client, when a user commits a field, the binding sets the property — and the rules on that property run. Validation messages appear on the field, computed properties update, and the UI stays in sync without orchestration code. Rules are registered in the entity constructor, either through the `RuleManager` fluent API or by adding rule class instances.
+
+The compiled examples on this page come from the Design.Domain reference set: the `Order`/`OrderItem` and `WorkOrder`/`WorkOrderTask` aggregates, `RuleBasicsDemo`, `AsyncRulesDemo`, and `TriggerPatternsDemo`. The tests are MSTest and resolve factories from a DI scope (`DesignTestServices.GetScope()`); in an application the factory interface is injected.
 
 ## Fluent Action Rules
 
-Neatoo separates rules into two types that mirror C#'s `Action` vs `Func` distinction. Action rules perform side effects — computing a derived value, updating a related property — without returning anything. They don't produce validation messages or affect `IsValid`.
+Neatoo separates rules into two types that mirror C#'s `Action` vs `Func` distinction. Action rules perform side effects — computing a derived value, updating a related property — without returning anything. They produce no validation messages and do not affect `IsValid`.
 
-Register synchronous actions with `AddAction`:
+A derived value is a `private set` partial property written by an `AddAction` rule; the rule's trigger list names every input:
 
-<!-- snippet: rules-add-action -->
-<a id='snippet-rules-add-action'></a>
+<!-- snippet: skill-computed-properties -->
+<a id='snippet-skill-computed-properties'></a>
 ```cs
-public RulesContact(IValidateBaseServices<RulesContact> services) : base(services)
-{
-    // Register action that computes FullName from FirstName and LastName
-    RuleManager.AddAction(
-        contact => contact.FullName = $"{contact.FirstName} {contact.LastName}",
-        c => c.FirstName, c => c.LastName);
-}
+// A derived value is a private-set partial property written by a rule.
+// It notifies, it serializes, and the UI sees it read-only.
+RuleManager.AddAction(
+    t => t.Cost = t.Hours * t.Rate * (1 - t.Discount),
+    t => t.Hours,
+    t => t.Rate,
+    t => t.Discount);
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L50-L58' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-add-action' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L37-L45' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-computed-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The action executes whenever `FirstName` or `LastName` changes.
+The action executes whenever `Hours`, `Rate` or `Discount` changes. `AddAction` creates an `ActionFluentRule<T>` that executes the lambda when a trigger property changes; the lambda may write other properties on the entity without creating validation messages.
 
-For async actions that call external services:
+Async actions use `AddActionAsync`. While the action runs, the trigger property and the entity report `IsBusy`:
 
-<!-- snippet: rules-add-action-async -->
-<a id='snippet-rules-add-action-async'></a>
+<!-- snippet: skill-async-action -->
+<a id='snippet-skill-async-action'></a>
 ```cs
-public RulesProduct(
-    IValidateBaseServices<RulesProduct> services,
-    IPricingService pricingService) : base(services)
+public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(services)
 {
-    // Register async action that fetches tax rate from external service
+    // Add an async rule - IsBusy becomes true while it runs
     RuleManager.AddActionAsync(
-        async product =>
+        async t =>
         {
-            product.TaxRate = await pricingService.GetTaxRateAsync(product.ZipCode);
+            // Simulate async work
+            await Task.Delay(100);
+            t.ComputedValue = $"Processed: {t.Name}";
         },
-        p => p.ZipCode);
+        t => t.Name);
 }
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L76-L89' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-add-action-async' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/StateProperties.cs#L356-L369' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-async-action' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The `RuleManager.AddAction` method creates an `ActionFluentRule<T>` internally that executes the lambda when trigger properties change. The lambda can modify other properties on the entity without creating validation messages.
+An async action that needs the server does not take a repository or any other server-only service — it calls an injected `[Remote, Execute]` command delegate, exactly as the async validation rule under "Custom Rule Classes" does. Rule code runs on the client too.
 
 ## Fluent Validation Rules
 
-Validation rules are the `Func` counterpart — they return a string. An empty or null return means validation passed; anything else becomes an error message associated with the trigger property, which drives the entity's `IsValid` state and displays in the UI.
+Validation rules are the `Func` counterpart — they return a string. An empty or null return means validation passed; anything else becomes a message on the trigger property, which drives `IsValid` and shows in the UI.
 
-Register synchronous validation with `AddValidation`:
+`AddValidation` takes exactly one trigger property, because the message attaches to that property. Attribute validation and `AddValidation` rules sit side by side:
 
-<!-- snippet: rules-add-validation -->
-<a id='snippet-rules-add-validation'></a>
+<!-- snippet: skill-validation-attributes-and-rules -->
+<a id='snippet-skill-validation-attributes-and-rules'></a>
 ```cs
-public RulesInvoice(IValidateBaseServices<RulesInvoice> services) : base(services)
+[Required(ErrorMessage = "Street is required")]
+[StringLength(100)]
+public partial string? Street { get; set; }
+
+[Required(ErrorMessage = "City is required")]
+[StringLength(50)]
+public partial string? City { get; set; }
+
+[Required(ErrorMessage = "State is required")]
+[StringLength(2, MinimumLength = 2, ErrorMessage = "State must be 2 characters")]
+public partial string? State { get; set; }
+
+[Required(ErrorMessage = "Zip code is required")]
+[RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid zip code format")]
+public partial string? ZipCode { get; set; }
+
+[Required(ErrorMessage = "Address type is required")]
+public partial string? AddressType { get; set; } // "Home", "Work", "Other"
+
+public Address(IEntityBaseServices<Address> services) : base(services)
 {
-    // Register validation that checks Amount is positive
+    // Validation rules
     RuleManager.AddValidation(
-        invoice => invoice.Amount > 0 ? "" : "Amount must be greater than zero",
-        i => i.Amount);
+        t => !new[] { "Home", "Work", "Other" }.Contains(t.AddressType)
+            ? "Address type must be Home, Work, or Other"
+            : string.Empty,
+        t => t.AddressType);
 }
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L105-L113' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-add-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Entities/Address.cs#L30-L59' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation-attributes-and-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The `RuleManager.AddValidation` method creates a `ValidationFluentRule<T>` internally that executes the lambda when trigger properties change. Return an empty or null string to indicate validation passed. Any other value becomes the error message associated with the trigger property.
-
-For async validation:
-
-<!-- snippet: rules-add-validation-async -->
-<a id='snippet-rules-add-validation-async'></a>
-```cs
-public RulesOrder(
-    IValidateBaseServices<RulesOrder> services,
-    IInventoryService inventoryService) : base(services)
-{
-    // Register async validation that checks inventory
-    RuleManager.AddValidationAsync(
-        async order =>
-        {
-            var inStock = await inventoryService.IsInStockAsync(order.ProductCode);
-            return inStock ? "" : "Product is out of stock";
-        },
-        o => o.ProductCode);
-}
-```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L127-L141' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-add-validation-async' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Async validation with cancellation token support:
-
-<!-- snippet: rules-add-validation-async-token -->
-<a id='snippet-rules-add-validation-async-token'></a>
-```cs
-public RulesBooking(
-    IValidateBaseServices<RulesBooking> services,
-    IInventoryService inventoryService) : base(services)
-{
-    // Register async validation with cancellation token support
-    RuleManager.AddValidationAsync(
-        async (booking, token) =>
-        {
-            var available = await inventoryService.IsInStockAsync(booking.ResourceId, token);
-            return available ? "" : "Resource is not available";
-        },
-        b => b.ResourceId);
-}
-```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L155-L169' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-add-validation-async-token' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+`AddValidationAsync` is the async form. Its dependency rule is the same as for every rule: a server lookup goes through a `[Remote, Execute]` command delegate injected into the entity's constructor, never through a server-only service.
 
 ## Cross-Property Validation
 
-"End date must be after start date" — but which property change should trigger that check? Both. By listing multiple trigger properties on a single rule, the constraint re-evaluates automatically when *either* property changes. The developer doesn't have to remember to validate the relationship from both sides.
+"End date must be after start date" — but which property change should trigger that check? Both. `AddValidation` takes one trigger, so a constraint over several properties takes one of two shapes: validate a computed property that an `AddAction` recomputes from every input, or write a `RuleBase<T>` with several triggers so the message lands where it belongs:
 
-<!-- snippet: rules-cross-property -->
-<a id='snippet-rules-cross-property'></a>
+<!-- snippet: skill-cross-property-validation-options -->
+<a id='snippet-skill-cross-property-validation-options'></a>
 ```cs
-public RulesEvent(IValidateBaseServices<RulesEvent> services) : base(services)
-{
-    // Use a custom rule class for cross-property validation
-    // that triggers on both StartDate and EndDate
-    RuleManager.AddRule(new DateRangeValidationRule());
-}
+// COMMON MISTAKE: Using the wrong property expression.
+//
+// WRONG:
+//   RuleManager.AddValidation(
+//       t => t.A + t.B > 100 ? "Too high" : "",
+//       t => t.A);  // Only triggers on A, not B!
+//
+// AddValidation takes exactly one trigger. For a validation over several
+// properties, either:
+//
+// RIGHT (validate a computed property - the shape used below):
+//   RuleManager.AddAction(t => t.Sum = t.A + t.B, t => t.A, t => t.B);
+//   RuleManager.AddValidation(t => t.Sum > 100 ? "Too high" : "", t => t.Sum);
+//
+// RIGHT (a rule class, which takes any number of triggers):
+//   internal class SumLimitRule : RuleBase<T>
+//   {
+//       public SumLimitRule() : base(t => t.A, t => t.B) { }
+//       protected override IRuleMessages Execute(T t)
+//           => RuleMessages.If(t.A + t.B > 100, nameof(t.A), "Too high");
+//   }
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L183-L190' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-cross-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L192-L214' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation-options' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The rule executes when either `StartDate` or `EndDate` changes and validates their relationship. See the Custom Rule Classes section below for implementation details.
-
-## Custom Rule Classes
-
-Fluent lambdas work for one-liners and simple checks. When the logic grows complex enough to warrant its own class — or when you need to share a rule across multiple entity types — inherit from `RuleBase<T>` or `AsyncRuleBase<T>`. Custom rule classes also integrate cleanly with dependency injection for rules that need external services.
-
-Synchronous custom rule:
-
-<!-- snippet: rules-custom-class -->
-<a id='snippet-rules-custom-class'></a>
+<!-- snippet: skill-cross-property-validation -->
+<a id='snippet-skill-cross-property-validation'></a>
 ```cs
 /// <summary>
-/// Custom synchronous rule that validates salary is within range.
+/// Demonstrates: Different trigger property patterns.
 /// </summary>
-public class SalaryRangeRule : RuleBase<RulesEmployee>
-{
-    private readonly decimal _minSalary;
-    private readonly decimal _maxSalary;
-
-    public SalaryRangeRule(decimal minSalary, decimal maxSalary)
-        : base(e => e.Salary)
-    {
-        _minSalary = minSalary;
-        _maxSalary = maxSalary;
-    }
-
-    protected override IRuleMessages Execute(RulesEmployee target)
-    {
-        if (target.Salary < _minSalary)
-        {
-            return (nameof(RulesEmployee.Salary), $"Salary must be at least {_minSalary:C}").AsRuleMessages();
-        }
-
-        if (target.Salary > _maxSalary)
-        {
-            return (nameof(RulesEmployee.Salary), $"Salary cannot exceed {_maxSalary:C}").AsRuleMessages();
-        }
-
-        return None;
-    }
-}
-```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L221-L252' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-custom-class' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Return `None` when validation passes. Create rule messages with the `AsRuleMessages()` extension.
-
-Async custom rule with external dependencies:
-
-<!-- snippet: rules-async-custom-class -->
-<a id='snippet-rules-async-custom-class'></a>
-```cs
-/// <summary>
-/// Custom async rule that validates product availability.
-/// </summary>
-public class ProductAvailabilityRule : AsyncRuleBase<RulesOrderItem>
-{
-    private readonly IInventoryService _inventoryService;
-
-    public ProductAvailabilityRule(IInventoryService inventoryService)
-        : base(o => o.ProductCode)
-    {
-        _inventoryService = inventoryService;
-    }
-
-    protected override async Task<IRuleMessages> Execute(
-        RulesOrderItem target,
-        CancellationToken? token = null)
-    {
-        var isAvailable = await _inventoryService.IsInStockAsync(
-            target.ProductCode,
-            token ?? CancellationToken.None);
-
-        if (!isAvailable)
-        {
-            return (nameof(RulesOrderItem.ProductCode), "Product is not available").AsRuleMessages();
-        }
-
-        return None;
-    }
-}
-```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L254-L284' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-async-custom-class' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Custom rules support dependency injection through constructor parameters.
-
-## Business Rule Attributes
-
-Neatoo converts DataAnnotations attributes into business rules so they go through the same execution pipeline as hand-written rules. This means `[Required]` and `[Range]` fire reactively on property change — showing errors immediately as the user edits — rather than requiring a separate validation pass.
-
-Standard validation attributes work without explicit registration:
-
-<!-- snippet: rules-attribute-standard -->
-<a id='snippet-rules-attribute-standard'></a>
-```cs
 [Factory]
-public partial class RulesAttributeEntity : ValidateBase<RulesAttributeEntity>
+internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, ITriggerPatternsDemo
 {
-    public RulesAttributeEntity(IValidateBaseServices<RulesAttributeEntity> services) : base(services) { }
+    public partial int A { get; set; }
+    public partial int B { get; set; }
+    public partial int C { get; set; }
+    public partial int Sum { get; set; }
+    public partial bool IsOverLimit { get; set; }
 
-    [Required]
-    public partial string Name { get; set; }
+    public TriggerPatternsDemo(IValidateBaseServices<TriggerPatternsDemo> services) : base(services)
+    {
+        // Rule that depends on multiple properties
+        RuleManager.AddAction(
+            t => t.Sum = t.A + t.B + t.C,
+            t => t.A,
+            t => t.B,
+            t => t.C);
 
-    [StringLength(100, MinimumLength = 2)]
-    public partial string Description { get; set; }
+        // Cross-property constraint, validated on the computed Sum: the action
+        // above recomputes Sum whenever A, B or C changes, which triggers this.
+        RuleManager.AddValidation(
+            t => t.Sum > 100 ? "Sum cannot exceed 100" : string.Empty,
+            t => t.Sum);
 
-    [EmailAddress]
-    public partial string Email { get; set; }
-
-    [Range(0, 150)]
-    public partial int Age { get; set; }
-
-    [RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid ZIP code format")]
-    public partial string ZipCode { get; set; }
+        // Action triggered by computed property
+        RuleManager.AddAction(
+            t => t.IsOverLimit = t.Sum > 100,
+            t => t.Sum);
+    }
 
     [Create]
     public void Create() { }
 }
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L902-L926' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-attribute-standard' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L217-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Supported attributes include `[Required]`, `[StringLength]`, `[MinLength]`, `[MaxLength]`, `[RegularExpression]`, `[Range]`, and `[EmailAddress]`.
+## Custom Rule Classes
+
+Fluent lambdas work for one-liners. When the logic grows enough to warrant its own class, when a rule is shared across entity types, or when a rule needs a dependency, inherit from `RuleBase<T>` (synchronous) or `AsyncRuleBase<T>`. Rule classes are `internal`, like the entities they target.
+
+A synchronous rule: trigger properties go to the base constructor, `Execute` returns `IRuleMessages`, `None` means the rule passed:
+
+<!-- snippet: skill-rule-class -->
+<a id='snippet-skill-rule-class'></a>
+```cs
+/// <summary>
+/// Demonstrates: Simple validation rule as a class.
+/// </summary>
+internal class NameRequiredRule : RuleBase<RuleBasicsDemo>
+{
+    // =========================================================================
+    // TriggerProperties - When Does This Rule Run?
+    // =========================================================================
+    // Rules run when ANY trigger property changes.
+    // Specify trigger properties via the base constructor using expressions.
+    // =========================================================================
+    public NameRequiredRule() : base(t => t.Name) { }
+
+    // =========================================================================
+    // Execute - Rule Logic
+    // =========================================================================
+    // Return IRuleMessages:
+    // - (propertyName, message).AsRuleMessages(): Validation failed
+    // - None (inherited from AsyncRuleBase): Validation passed (no messages)
+    //
+    // The messages are associated with the specified property.
+    // =========================================================================
+    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    {
+        if (string.IsNullOrWhiteSpace(target.Name))
+        {
+            // Return error - this makes IsValid=false
+            return (nameof(RuleBasicsDemo.Name), "Name is required").AsRuleMessages();
+        }
+
+        // Return None - validation passed (None is inherited from AsyncRuleBase)
+        return None;
+    }
+}
+```
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L119-L154' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-class' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+A rule with no dependencies is constructed in the entity's constructor:
+
+<!-- snippet: skill-add-rule-inline -->
+<a id='snippet-skill-add-rule-inline'></a>
+```cs
+// Rules with no dependencies are constructed here; a rule that needs
+// a command delegate comes from DI instead (see AsyncRules.cs)
+RuleManager.AddRule(new NameRequiredRule());
+RuleManager.AddRule(new CalculateTotalRule());
+```
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L64-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-add-rule-inline' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+### A rule that calls the server
+
+A uniqueness check needs the database, and it belongs in a rule so the user sees the answer on the field while editing. Rule code and entity constructors run in the browser, so the rule cannot take a repository. It takes the delegate of a `[Remote, Execute]` command: in the browser the delegate crosses to the server, on the server it calls the method directly, and the repository stays on the server.
+
+The command:
+
+<!-- snippet: skill-rule-command -->
+<a id='snippet-skill-rule-command'></a>
+```cs
+/// <summary>
+/// Command the rule calls. [Remote]: a client call crosses to the server.
+/// </summary>
+[Factory]
+public static partial class UsernameAvailability
+{
+    [Remote]
+    [Execute]
+    private static Task<bool> _IsAvailable(string username, [Service] IUsernameRepository repository)
+    {
+        return Task.FromResult(!repository.UsernameExists(username));
+    }
+}
+```
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L117-L131' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The rule. It never sees the repository, and it has a DI interface so the entity can take it from DI and tests can substitute it. The empty-value early return is the usual way to skip an expensive check:
+
+<!-- snippet: skill-rule-with-command -->
+<a id='snippet-skill-rule-with-command'></a>
+```cs
+/// <summary>
+/// Rule interface: the entity takes the rule from DI by this interface, and
+/// tests can substitute it.
+/// </summary>
+internal interface ICheckUsernameAvailabilityRule : IRule<AsyncRulesDemo> { }
+
+/// <summary>
+/// Demonstrates: async uniqueness validation through a [Remote, Execute] command.
+/// </summary>
+internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, ICheckUsernameAvailabilityRule
+{
+    private readonly UsernameAvailability.IsAvailable _isAvailable;
+
+    // Trigger properties are passed to the base constructor
+    public CheckUsernameAvailabilityRule(UsernameAvailability.IsAvailable isAvailable) : base(t => t.Username)
+    {
+        _isAvailable = isAvailable;
+    }
+
+    protected override async Task<IRuleMessages> Execute(AsyncRulesDemo target, CancellationToken? token = null)
+    {
+        if (string.IsNullOrWhiteSpace(target.Username))
+        {
+            target.IsUsernameAvailable = false;
+            return None;  // Don't check empty usernames - None is inherited from AsyncRuleBase
+        }
+
+        var available = await _isAvailable(target.Username);
+
+        target.IsUsernameAvailable = available;
+
+        if (!available)
+        {
+            // Create error message: (propertyName, message).AsRuleMessages()
+            return (nameof(AsyncRulesDemo.Username), $"Username '{target.Username}' is already taken").AsRuleMessages();
+        }
+
+        return None;
+    }
+}
+```
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L133-L174' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The entity receives the rule by constructor injection:
+
+<!-- snippet: skill-rule-injected -->
+<a id='snippet-skill-rule-injected'></a>
+```cs
+// A rule with a dependency comes from DI through its interface. The
+// dependency must exist on both tiers - here, a command delegate.
+public AsyncRulesDemo(
+    IEntityBaseServices<AsyncRulesDemo> services,
+    ICheckUsernameAvailabilityRule usernameAvailabilityRule) : base(services)
+{
+    // Register async rules
+    RuleManager.AddRule(new ValidateEmailFormatRule());
+    RuleManager.AddRule(usernameAvailabilityRule);
+    RuleManager.AddRule(new FetchExternalDataRule());
+}
+```
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L55-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-injected' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+A rule's dependencies must resolve on both tiers, because the entity is constructed on both. Rule types are `internal`, so the domain assembly registers them; call this after `AddNeatooServices` on client and server:
+
+<!-- snippet: skill-rules-di-registration -->
+<a id='snippet-skill-rules-di-registration'></a>
+```cs
+/// <summary>
+/// Registration for the domain's DI-provided rules. Call on BOTH tiers, after
+/// AddNeatooServices: an entity that takes a rule in its constructor is built
+/// on the client too.
+/// </summary>
+public static class DomainRegistration
+{
+    public static IServiceCollection AddDesignDomainRules(this IServiceCollection services)
+    {
+        // Transient: each entity instance gets its own rule instance, because
+        // a rule tracks execution state
+        services.AddTransient<ICheckUsernameAvailabilityRule, CheckUsernameAvailabilityRule>();
+        services.AddTransient<IUniqueCodeRule, UniqueCodeRule>();
+        return services;
+    }
+}
+```
+<sup><a href='/src/Design/Design.Domain/DI/DomainRegistration.cs#L14-L31' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rules-di-registration' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+A rule runs every time its trigger property is set, and rules contain no debouncing. Bind the property so it is set on field commit: `MudNeatooTextField` and `MudNeatooNumericField` commit when the field loses focus, so a server-calling rule behind them makes one call per committed value.
+
+## Business Rule Attributes
+
+Neatoo converts DataAnnotations attributes into rules so they go through the same pipeline as hand-written rules. `[Required]` and `[Range]` fire when the property is set, showing errors as the user edits, rather than in a separate validation pass:
+
+<!-- snippet: skill-validation-attributes -->
+<a id='snippet-skill-validation-attributes'></a>
+```cs
+[Required(ErrorMessage = "Product name is required")]
+[StringLength(100)]
+public partial string? ProductName { get; set; }
+
+[Range(1, 10000, ErrorMessage = "Quantity must be between 1 and 10000")]
+public partial int Quantity { get; set; }
+
+[Range(0.01, 1000000, ErrorMessage = "Unit price must be positive")]
+public partial decimal UnitPrice { get; set; }
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/OrderItem.cs#L32-L42' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation-attributes' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Supported attributes: `[Required]`, `[StringLength]`, `[MinLength]`, `[MaxLength]`, `[RegularExpression]`, `[Range]`, and `[EmailAddress]`. Other DataAnnotations attributes are ignored.
 
 ## Aggregate-Level Rules
 
-Some business invariants can't be checked by a single entity. "Order total must not exceed credit limit" requires summing all line items and comparing against the order's budget — that's a rule on the aggregate root that navigates its children. Rules execute on an entity instance and can access the entire aggregate graph via navigation properties.
+Some invariants cannot be checked by a single entity. "Total cost must not exceed the budget" sums the children and compares against the root — a rule on the aggregate root that reads its children. The trigger must be the child property path (`t => t.Tasks![0].Cost`): a trigger on the collection reference fires only when the collection is reassigned, never when a child changes. The `[0]` indexer is a syntactic placeholder for "any child".
 
-<!-- snippet: rules-aggregate-level -->
-<a id='snippet-rules-aggregate-level'></a>
+<!-- snippet: skill-child-aggregation -->
+<a id='snippet-skill-child-aggregation'></a>
 ```cs
-/// <summary>
-/// Rule that validates across the entire aggregate.
-/// </summary>
-public class AggregateValidationRule : RuleBase<RulesAggregateRoot>
-{
-    public AggregateValidationRule() : base(r => r.TotalBudget) { }
-
-    protected override IRuleMessages Execute(RulesAggregateRoot target)
-    {
-        // Sum all line item amounts in the aggregate
-        var totalAmount = target.LineItems?.Sum(item => item.Amount) ?? 0;
-
-        if (totalAmount > target.TotalBudget)
-        {
-            return (nameof(target.TotalBudget),
-                $"Total line items ({totalAmount:C}) exceed budget ({target.TotalBudget:C})").AsRuleMessages();
-        }
-
-        return None;
-    }
-}
+// Aggregation over the children, recomputed when any task's Cost changes
+RuleManager.AddAction(
+    t => t.TotalCost = t.Tasks?.Sum(task => task.Cost) ?? 0,
+    t => t.Tasks![0].Cost);
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L606-L628' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-aggregate-level' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L70-L75' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-aggregation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The `Execute` method receives the target entity instance. Use navigation properties to traverse child entities and collections within the aggregate.
+The aggregation writes `TotalCost`, which triggers the budget rule — a chain, with no handler code:
+
+<!-- snippet: skill-chained-rule -->
+<a id='snippet-skill-chained-rule'></a>
+```cs
+// Chained: the rule above sets TotalCost, which triggers this one.
+// Hours -> Cost (on the task) -> TotalCost -> IsOverBudget, no handler code.
+RuleManager.AddAction(
+    t => t.IsOverBudget = t.TotalCost > t.Budget,
+    t => t.TotalCost,
+    t => t.Budget);
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L77-L84' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-chained-rule' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-aggregation-test -->
+<a id='snippet-skill-aggregation-test'></a>
+```cs
+[TestMethod]
+public async Task TaskCosts_RollUpToTheRoot_AndChainIntoIsOverBudget()
+{
+    var (order, design, build) = await CreateWithTwoTasks();
+    order.Budget = 100m;
+
+    design.Hours = 2m;
+    design.Rate = 30m;   // Cost 60
+    build.Hours = 1m;
+    build.Rate = 50m;    // Cost 50
+    await order.WaitForTasks();
+
+    Assert.AreEqual(60m, design.Cost, "The task's own rule computed Cost");
+    Assert.AreEqual(110m, order.TotalCost, "The root's child-trigger rule summed the tasks");
+    Assert.IsTrue(order.IsOverBudget, "Setting TotalCost triggered the chained rule");
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/WorkOrderAggregateTests.cs#L66-L83' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregation-test' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Four or more triggers take an explicit `Expression<Func<T, object?>>[]` (the overloads are not `params`, because the rule's id comes from `CallerArgumentExpression`):
+
+<!-- snippet: skill-four-trigger-array -->
+<a id='snippet-skill-four-trigger-array'></a>
+```cs
+// Four or more triggers take an explicit array: params is incompatible
+// with the CallerArgumentExpression that gives the rule its id.
+RuleManager.AddAction(
+    t => t.Summary = $"{t.Status}; on hold: {t.IsOnHold}; budget {t.Budget}; discount {t.Discount}",
+    new Expression<Func<WorkOrder, object?>>[]
+    {
+        t => t.Status, t => t.IsOnHold, t => t.Budget, t => t.Discount
+    });
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L112-L121' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-four-trigger-array' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Rule Execution Order
 
-Rules execute sequentially, not in parallel. This is necessary because rules often depend on each other — an action rule that computes a tax rate must finish before a validation rule that checks the tax rate. Sequential execution also gives developers a predictable mental model: you can reason about rule order without worrying about concurrency.
+Rules triggered by one property change execute one after another, each awaited, not in parallel. An action rule that computes a value must finish before a validation rule that reads it, and sequential execution gives a predictable model: you can reason about rule order without reasoning about concurrency. Rules triggered by *different* property changes can overlap.
 
-When a property changes, the framework identifies all rules with that property as a trigger, sorts them by `RuleOrder` (ascending), then executes them sequentially. Lower `RuleOrder` values execute first. Default is 1.
+When a property changes, the framework identifies the rules with that property as a trigger, sorts them by `RuleOrder` (ascending; lower first; default 1), and executes them in that order. Within the same `RuleOrder`, registration order applies. Set `RuleOrder` in a rule class constructor:
 
-<!-- snippet: rules-execution-order -->
-<a id='snippet-rules-execution-order'></a>
+<!-- snippet: docs-rule-order -->
+<a id='snippet-docs-rule-order'></a>
 ```cs
-/// <summary>
-/// Rule with explicit order that executes first (order = 0).
-/// </summary>
-public class FirstExecutionRule : RuleBase<RulesOrderedEntity>
+/// <summary>Runs before rules with the default RuleOrder (1).</summary>
+internal class EarlyTraceRule : RuleBase<RuleBasicsDemo>
 {
-    public FirstExecutionRule() : base(e => e.Value)
+    public EarlyTraceRule() : base(t => t.Name)
     {
-        // Lower RuleOrder executes first
-        RuleOrder = 0;
+        RuleOrder = -10;   // lower runs first; the default is 1
     }
 
-    protected override IRuleMessages Execute(RulesOrderedEntity target)
+    protected override IRuleMessages Execute(RuleBasicsDemo target)
     {
-        target.ExecutionLog.Add("First");
+        target.RuleTrace += "early;";
         return None;
     }
 }
 
 /// <summary>
-/// Rule with default order that executes second (order = 1).
+/// Default RuleOrder: runs after EarlyTraceRule although it is registered first.
 /// </summary>
-public class SecondExecutionRule : RuleBase<RulesOrderedEntity>
+internal class LateTraceRule : RuleBase<RuleBasicsDemo>
 {
-    public SecondExecutionRule() : base(e => e.Value)
-    {
-        // Default RuleOrder is 1
-    }
+    public LateTraceRule() : base(t => t.Name) { }
 
-    protected override IRuleMessages Execute(RulesOrderedEntity target)
+    protected override IRuleMessages Execute(RuleBasicsDemo target)
     {
-        target.ExecutionLog.Add("Second");
-        return None;
-    }
-}
-
-/// <summary>
-/// Rule with higher order that executes last (order = 2).
-/// </summary>
-public class ThirdExecutionRule : RuleBase<RulesOrderedEntity>
-{
-    public ThirdExecutionRule() : base(e => e.Value)
-    {
-        RuleOrder = 2;
-    }
-
-    protected override IRuleMessages Execute(RulesOrderedEntity target)
-    {
-        target.ExecutionLog.Add("Third");
+        target.RuleTrace += "late;";
         return None;
     }
 }
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L290-L342' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-execution-order' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L245-L274' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-rule-order' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Set `RuleOrder` in the rule constructor to control execution sequence. This ensures rules with dependencies execute in the correct order. Within the same `RuleOrder` value, rules execute in registration order.
+<!-- snippet: docs-rule-order-test -->
+<a id='snippet-docs-rule-order-test'></a>
+```cs
+[TestMethod]
+public async Task RuleOrder_LowerValuesRunFirst_RegardlessOfRegistrationOrder()
+{
+    var entity = _factory.Create();
 
-Async rules also execute sequentially. Each async rule completes before the next rule begins, even if they have the same `RuleOrder`.
+    entity.Name = "Ada";   // both trace rules trigger on Name
+    await entity.WaitForTasks();
+
+    Assert.AreEqual("early;late;", entity.RuleTrace,
+        "RuleOrder -10 ran before the default (1), although it was registered second");
+}
+```
+<sup><a href='/src/Design/Design.Tests/RuleTests/SyncRuleTests.cs#L104-L116' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-rule-order-test' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Rules do not run during a factory operation (`[Create]`, `[Fetch]`, ...): the object is paused. A factory method that sets inputs of a computed property ends with `await RunRules(RunRulesFlag.All)`:
+
+<!-- snippet: skill-create-run-rules -->
+<a id='snippet-skill-create-run-rules'></a>
+```cs
+/// <summary>
+/// RIGHT WAY: Call RunRules at end of factory method.
+/// RunRules works even while paused — no IsPaused guard.
+/// </summary>
+[Create]
+public async Task CreateWithRunRules()
+{
+    Quantity = 10;
+    Price = 5.00m;
+    await RunRules(RunRulesFlag.All);  // Forces all rules to execute
+    // Total is now 50.00
+}
+```
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L97-L110' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-run-rules' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Conditional Rules
 
-Rules always execute when their trigger properties change, but can use conditional logic to skip validation based on entity state. Return `None` from the `Execute` method to indicate no validation errors.
+A rule always runs when a trigger property changes; it decides for itself whether there is anything to say. Returning `None` early — for an empty value, or when the entity is in a state where the check does not apply — is also how a rule avoids an expensive call it does not need. `CheckUsernameAvailabilityRule` above returns `None` for an empty username before it calls the command.
 
-<!-- snippet: rules-conditional -->
-<a id='snippet-rules-conditional'></a>
+A root's state can also be read by a child's rule through `Parent`. `Parent` is null until the child is attached, so pattern-match rather than cast:
+
+<!-- snippet: skill-parent-in-child-rule -->
+<a id='snippet-skill-parent-in-child-rule'></a>
 ```cs
-/// <summary>
-/// Rule that only validates when entity is active.
-/// </summary>
-public class ConditionalValidationRule : RuleBase<RulesConditionalEntity>
-{
-    public ConditionalValidationRule() : base(e => e.Value, e => e.IsActive) { }
-
-    protected override IRuleMessages Execute(RulesConditionalEntity target)
-    {
-        // Skip validation when not active
-        if (!target.IsActive)
-        {
-            return None;
-        }
-
-        if (string.IsNullOrEmpty(target.Value))
-        {
-            return (nameof(RulesConditionalEntity.Value), "Value is required when active").AsRuleMessages();
-        }
-
-        return None;
-    }
-}
+// A child rule reads ambient root state through Parent. Parent is null
+// until the task is attached, so pattern-match instead of casting.
+RuleManager.AddAction(
+    t => t.IsSchedulable = t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold,
+    t => t.Hours);
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L348-L372' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-conditional' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-The rule executes but produces no messages when returning `None`. This pattern is useful for state-dependent validation.
-
-For more complex scenarios, check conditions before executing expensive operations:
-
-<!-- snippet: rules-conditional-early-exit -->
-<a id='snippet-rules-conditional-early-exit'></a>
-```cs
-/// <summary>
-/// Rule with early exit for performance optimization.
-/// </summary>
-public class EarlyExitRule : AsyncRuleBase<RulesConditionalEntity>
-{
-    private readonly IInventoryService _inventoryService;
-
-    public EarlyExitRule(IInventoryService inventoryService)
-        : base(e => e.ProductCode)
-    {
-        _inventoryService = inventoryService;
-    }
-
-    protected override async Task<IRuleMessages> Execute(
-        RulesConditionalEntity target,
-        CancellationToken? token = null)
-    {
-        // Early exit: skip expensive check if product code is empty
-        if (string.IsNullOrEmpty(target.ProductCode))
-        {
-            return None;
-        }
-
-        // Only call external service when necessary
-        var isAvailable = await _inventoryService.IsInStockAsync(
-            target.ProductCode,
-            token ?? CancellationToken.None);
-
-        return isAvailable ? None : (nameof(target.ProductCode), "Product unavailable").AsRuleMessages();
-    }
-}
-```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L374-L406' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-conditional-early-exit' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L47-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Async Business Rules
 
-Async rules support cancellation tokens and long-running operations.
+An async rule receives an optional `CancellationToken`. The token arrives only from an explicit `RunRules(..., token)`; a setter-triggered run passes none. A cancelled `RunRules` marks the object invalid with "Validation cancelled", and `RunRules(RunRulesFlag.All)` re-validates:
 
-<!-- snippet: rules-async-cancellation -->
-<a id='snippet-rules-async-cancellation'></a>
+<!-- snippet: skill-cancellable-rule -->
+<a id='snippet-skill-cancellable-rule'></a>
 ```cs
 /// <summary>
-/// Async rule with proper cancellation token handling.
+/// Demonstrates: Rule with cancellation support.
 /// </summary>
-public class CancellableValidationRule : AsyncRuleBase<RulesCancellableEntity>
+internal class CancellableRule : AsyncRuleBase<AsyncRulesDemo>
 {
-    private readonly IPricingService _pricingService;
+    public CancellableRule() : base(t => t.Username) { }
 
-    public CancellableValidationRule(IPricingService pricingService)
-        : base(e => e.ZipCode)
+    protected override async Task<IRuleMessages> Execute(AsyncRulesDemo target, CancellationToken? token = null)
     {
-        _pricingService = pricingService;
-    }
-
-    protected override async Task<IRuleMessages> Execute(
-        RulesCancellableEntity target,
-        CancellationToken? token = null)
-    {
-        var ct = token ?? CancellationToken.None;
-
         // Check cancellation before expensive operation
-        ct.ThrowIfCancellationRequested();
+        token?.ThrowIfCancellationRequested();
 
-        // Pass token to async calls
-        var taxRate = await _pricingService.GetTaxRateAsync(target.ZipCode, ct);
-        target.ComputedTaxRate = taxRate;
+        // Simulate expensive async operation
+        await Task.Delay(1000);
+
+        // Check cancellation again for very long operations
+        token?.ThrowIfCancellationRequested();
 
         return None;
     }
 }
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L412-L442' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-async-cancellation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L250-L272' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cancellable-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The framework passes cancellation tokens through the entire rule execution chain, allowing rules to cooperate with cancellation.
+Async rules track busy state: the trigger property and the entity report `IsBusy` from the moment the rule starts until it completes, so a bound UI can disable a Save button or show a spinner. Always `await WaitForTasks()` before reading `IsValid` or saving when async rules may be in flight:
 
-Async rules automatically track busy state. The framework marks trigger properties as busy before execution and clears the busy state after completion. This provides automatic visual feedback in UI scenarios through the `IsBusy` property.
+<!-- snippet: skill-is-busy -->
+<a id='snippet-skill-is-busy'></a>
+```cs
+[TestMethod]
+public async Task AsyncRule_SetsIsBusyUntilItCompletes()
+{
+    var entity = _scope.GetRequiredService<IBusyStateDemoFactory>().Create();
 
-## LoadProperty - Preventing Rule Recursion
+    entity.Name = "Test";  // triggers the async action rule
 
-Rules trigger when properties change — but what if a rule *itself* changes a property? If Rule A triggers on `Quantity` and sets `Total`, and Rule B triggers on `Total` and sets `Quantity`, you get an infinite loop. `LoadProperty` breaks the cycle by writing to the property's backing field without firing triggers.
+    Assert.IsTrue(entity.IsBusy, "The async rule is still running");
 
-<!-- snippet: rules-load-property -->
-<a id='snippet-rules-load-property'></a>
+    await entity.WaitForTasks();
+
+    Assert.IsFalse(entity.IsBusy);
+    Assert.AreEqual("Processed: Test", entity.ComputedValue);
+}
+```
+<sup><a href='/src/Design/Design.Tests/PropertyTests/ValidationStateTests.cs#L52-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-busy' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+## LoadProperty - Writing a Property Without Triggering Rules
+
+Rules trigger when properties change — but what if a rule *itself* changes a property? If Rule A triggers on `Quantity` and sets `Total`, and Rule B triggers on `Total` and sets `Quantity`, you get an infinite loop. `LoadProperty` breaks the cycle by writing to the property through its wrapper's `LoadValue`, without firing triggers.
+
+<!-- snippet: docs-load-property -->
+<a id='snippet-docs-load-property'></a>
 ```cs
 /// <summary>
-/// Rule that uses LoadProperty to set values without triggering other rules.
+/// Demonstrates: LoadProperty writes a property through its wrapper's
+/// LoadValue - no rules registered on that property run.
 /// </summary>
-public class ComputedTotalRule : RuleBase<RulesOrderWithTotal>
+[Factory]
+internal partial class LoadPropertyDemo : ValidateBase<LoadPropertyDemo>, ILoadPropertyDemo
 {
-    public ComputedTotalRule() : base(e => e.Quantity, e => e.UnitPrice) { }
+    public partial int Quantity { get; set; }
+    public partial decimal UnitPrice { get; set; }
+    public partial decimal Total { get; private set; }
+    public partial bool TotalRuleRan { get; private set; }
 
-    protected override IRuleMessages Execute(RulesOrderWithTotal target)
+    public LoadPropertyDemo(IValidateBaseServices<LoadPropertyDemo> services) : base(services)
     {
-        var total = target.Quantity * target.UnitPrice;
+        RuleManager.AddRule(new LoadPropertyTotalRule());
 
-        // LoadProperty sets the value without triggering rules on Total
-        LoadProperty(target, t => t.Total, total);
+        // A rule on Total: it does NOT run when Total is written by LoadProperty
+        RuleManager.AddAction(t => t.TotalRuleRan = true, t => t.Total);
+    }
 
+    [Create]
+    public void Create() { }
+}
+
+internal class LoadPropertyTotalRule : RuleBase<LoadPropertyDemo>
+{
+    public LoadPropertyTotalRule() : base(t => t.Quantity, t => t.UnitPrice) { }
+
+    protected override IRuleMessages Execute(LoadPropertyDemo target)
+    {
+        // Written without triggering the rules registered on Total
+        LoadProperty(target, t => t.Total, target.Quantity * target.UnitPrice);
         return None;
     }
 }
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L448-L466' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-load-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L446-L482' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-load-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-`LoadProperty` is a protected method on `RuleBase<T>` that bypasses the normal property setter. It writes directly to the backing field via the property wrapper, preventing cascading rule execution and infinite loops. Use this when a rule needs to update a property without triggering rules registered on that property.
+<!-- snippet: docs-load-property-test -->
+<a id='snippet-docs-load-property-test'></a>
+```cs
+[TestMethod]
+public async Task LoadProperty_WritesTheValue_WithoutRunningTheRulesOnThatProperty()
+{
+    var entity = _scope.GetRequiredService<ILoadPropertyDemoFactory>().Create();
+
+    entity.Quantity = 3;
+    entity.UnitPrice = 2.50m;
+    await entity.WaitForTasks();
+
+    Assert.AreEqual(7.50m, entity.Total, "The rule computed Total");
+    Assert.IsFalse(entity.TotalRuleRan, "...but the rule registered on Total did not run: LoadProperty fires no triggers");
+}
+```
+<sup><a href='/src/Design/Design.Tests/RuleTests/SyncRuleTests.cs#L118-L131' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-load-property-test' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+`LoadProperty` is a protected method on `RuleBase<T>`/`AsyncRuleBase<T>`. It calls the property wrapper's `LoadValue`, so no rules registered on that property run. On an entity, a value written this way is also not marked modified. Use it when a rule must update a property without triggering the rules registered on that property; the default for a computed property is the setter of a `private set` partial, as in the first section.
 
 ## Rule Registration Patterns
 
 Rules are registered in the target class constructor.
 
-Fluent rules for simple scenarios:
+Fluent rules for simple, entity-specific logic — the `WorkOrder` root registers an admission rule and two visibility flags this way:
 
-<!-- snippet: rules-registration-fluent -->
-<a id='snippet-rules-registration-fluent'></a>
+<!-- snippet: skill-can-x-rule -->
+<a id='snippet-skill-can-x-rule'></a>
 ```cs
-public RulesFluentEntity(IValidateBaseServices<RulesFluentEntity> services) : base(services)
-{
-    // Action rule: compute derived value
-    RuleManager.AddAction(
-        e => e.FullName = $"{e.FirstName} {e.LastName}",
-        e => e.FirstName, e => e.LastName);
-
-    // Validation rule: check business constraint
-    RuleManager.AddValidation(
-        e => e.Age >= 18 ? "" : "Must be 18 or older",
-        e => e.Age);
-
-    // Async action with external service call
-    RuleManager.AddActionAsync(
-        async e =>
-        {
-            await Task.Delay(1); // Simulate async operation
-            e.Processed = true;
-        },
-        e => e.FirstName);
-}
+// Admission for the Approve verb. The UI binds the button to it; the
+// verb itself does not check and throw.
+RuleManager.AddAction(
+    t => t.CanApprove = t.Status == "Pending",
+    t => t.Status);
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L955-L977' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-registration-fluent' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-can-x-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Custom rule classes for complex logic with dependencies:
-
-<!-- snippet: rules-registration-custom -->
-<a id='snippet-rules-registration-custom'></a>
+<!-- snippet: skill-visibility-rules -->
+<a id='snippet-skill-visibility-rules'></a>
 ```cs
-public RulesCustomEntity(
-    IValidateBaseServices<RulesCustomEntity> services,
-    CustomBusinessRule businessRule) : base(services)
-{
-    // Register injected custom rule class
-    RuleManager.AddRule(businessRule);
-}
+// A show/hide decision is domain state. The UI binds @if (ShowHoldBanner).
+RuleManager.AddAction(
+    t => t.ShowHoldBanner = t.IsOnHold && t.Status != "Closed",
+    t => t.IsOnHold,
+    t => t.Status);
+
+// A flag derived from a child property. The trigger is the child's
+// property path, so any task's IsSchedulable change recomputes it.
+RuleManager.AddAction(
+    t => t.HasUnschedulableTasks = t.Tasks?.Any(task => !task.IsSchedulable) ?? false,
+    t => t.Tasks![0].IsSchedulable);
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L999-L1007' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-registration-custom' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L56-L68' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-visibility-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Custom rules injected via constructor support dependency injection and can be shared across multiple targets.
+Rule classes with no dependencies are constructed inline (`RuleManager.AddRule(new NameRequiredRule())`, shown under "Custom Rule Classes"). A rule class with a dependency comes from DI through its interface and is registered on both tiers (`skill-rule-injected` and the registration above). A rule shared by several entity types operates on a shared interface — see the `IHasUniqueCode` example in the Neatoo skill's shared-rules reference.
 
 ## Trigger Properties
 
-Rules declare which properties trigger their execution. When any trigger property changes, the rule executes. Trigger properties are specified in the rule constructor via lambda expressions.
+Rules declare which properties trigger their execution. When any trigger property changes, the rule executes. Triggers are lambda expressions passed to the rule's base constructor: a single trigger (`: base(t => t.Name)`, as in `NameRequiredRule`) or several (`: base(t => t.Quantity, t => t.Price)`, as in `MultiMessageRule` below). A rule can also add triggers after construction with `AddTriggerProperties(t => t.FirstName)`. A child property path (`t => t.Items![0].LineTotal`) triggers on any child's change:
 
-Single trigger property:
-
-<!-- snippet: rules-trigger-single -->
-<a id='snippet-rules-trigger-single'></a>
+<!-- snippet: skill-child-property-trigger -->
+<a id='snippet-skill-child-property-trigger'></a>
 ```cs
-/// <summary>
-/// Rule triggered by a single property.
-/// </summary>
-public class SingleTriggerRule : RuleBase<RulesTriggerEntity>
-{
-    public SingleTriggerRule() : base(e => e.Email) { }
-
-    protected override IRuleMessages Execute(RulesTriggerEntity target)
-    {
-        target.EmailLower = target.Email?.ToLowerInvariant();
-        return None;
-    }
-}
+RuleManager.AddAction(
+    t => t.TotalAmount = t.Items?.Sum(i => i.LineTotal) ?? 0,
+    t => t.Items![0].LineTotal);
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L472-L486' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-trigger-single' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L98-L102' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-property-trigger' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Multiple trigger properties:
-
-<!-- snippet: rules-trigger-multiple -->
-<a id='snippet-rules-trigger-multiple'></a>
-```cs
-/// <summary>
-/// Rule triggered by multiple properties.
-/// </summary>
-public class MultipleTriggerRule : RuleBase<RulesTriggerEntity>
-{
-    public MultipleTriggerRule() : base(e => e.City, e => e.State, e => e.ZipCode) { }
-
-    protected override IRuleMessages Execute(RulesTriggerEntity target)
-    {
-        target.FullAddress = $"{target.City}, {target.State} {target.ZipCode}";
-        return None;
-    }
-}
-```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L488-L502' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-trigger-multiple' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Add triggers after construction:
-
-<!-- snippet: rules-trigger-add-later -->
-<a id='snippet-rules-trigger-add-later'></a>
-```cs
-/// <summary>
-/// Rule with triggers added after construction.
-/// </summary>
-public class DynamicTriggerRule : RuleBase<RulesTriggerEntity>
-{
-    public DynamicTriggerRule()
-    {
-        // Add trigger properties after construction
-        AddTriggerProperties(e => e.FirstName);
-        AddTriggerProperties(e => e.LastName);
-    }
-
-    protected override IRuleMessages Execute(RulesTriggerEntity target)
-    {
-        target.DisplayName = $"{target.LastName}, {target.FirstName}";
-        return None;
-    }
-}
-```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L504-L523' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-trigger-add-later' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+Trigger on every input the rule reads. A rule that computes `Total` from `Quantity` and `Price` but triggers only on `Quantity` leaves `Total` stale when `Price` changes.
 
 ## Rule Messages
 
-Rules return `IRuleMessages` containing zero or more validation messages.
+Rules return `IRuleMessages` containing zero or more validation messages. `None` (inherited from `AsyncRuleBase<T>`) means the rule passed; `(propertyName, message).AsRuleMessages()` returns a single message attached to a property — both shown in `NameRequiredRule` above.
 
-Return no messages when validation passes:
+Return every failing check at once with the `RuleMessages.If` builder, so all invalid fields show their messages at the same time instead of one at a time:
 
-<!-- snippet: rules-messages-none -->
-<a id='snippet-rules-messages-none'></a>
+<!-- snippet: skill-multi-message-rule -->
+<a id='snippet-skill-multi-message-rule'></a>
 ```cs
 /// <summary>
-/// Rule that returns no messages when validation passes.
+/// Demonstrates: Rule returning multiple messages.
 /// </summary>
-public class PassingValidationRule : RuleBase<RulesMessageEntity>
+internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
 {
-    public PassingValidationRule() : base(e => e.Status) { }
+    public MultiMessageRule() : base(t => t.Quantity, t => t.Price) { }
 
-    protected override IRuleMessages Execute(RulesMessageEntity target)
+    protected override IRuleMessages Execute(RuleBasicsDemo target)
     {
-        // Validation passes - return None
-        if (target.Status == "Active" || target.Status == "Pending")
-        {
-            return None;
-        }
-
-        return (nameof(target.Status), "Invalid status").AsRuleMessages();
+        // Use fluent API to build multiple conditional messages
+        return new RuleMessages()
+            .If(target.Quantity < 0, nameof(RuleBasicsDemo.Quantity), "Quantity cannot be negative")
+            .If(target.Price < 0, nameof(RuleBasicsDemo.Price), "Price cannot be negative")
+            .If(target.Quantity > 1000, nameof(RuleBasicsDemo.Quantity), "Quantity exceeds maximum order limit");
     }
 }
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L529-L548' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-messages-none' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L201-L218' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Return a single message:
-
-<!-- snippet: rules-messages-single -->
-<a id='snippet-rules-messages-single'></a>
-```cs
-/// <summary>
-/// Rule that returns a single validation message.
-/// </summary>
-public class SingleMessageRule : RuleBase<RulesMessageEntity>
-{
-    public SingleMessageRule() : base(e => e.Age) { }
-
-    protected override IRuleMessages Execute(RulesMessageEntity target)
-    {
-        if (target.Age < 0)
-        {
-            return (nameof(target.Age), "Age cannot be negative").AsRuleMessages();
-        }
-
-        return None;
-    }
-}
-```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L550-L568' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-messages-single' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Return multiple messages for different properties:
-
-<!-- snippet: rules-messages-multiple -->
-<a id='snippet-rules-messages-multiple'></a>
-```cs
-/// <summary>
-/// Rule that returns multiple validation messages for different properties.
-/// </summary>
-public class MultipleMessagesRule : RuleBase<RulesMessageEntity>
-{
-    public MultipleMessagesRule() : base(e => e.StartDate, e => e.EndDate) { }
-
-    protected override IRuleMessages Execute(RulesMessageEntity target)
-    {
-        var messages = new List<(string, string)>();
-
-        if (target.StartDate == default)
-        {
-            messages.Add((nameof(target.StartDate), "Start date is required"));
-        }
-
-        if (target.EndDate == default)
-        {
-            messages.Add((nameof(target.EndDate), "End date is required"));
-        }
-
-        if (messages.Count > 0)
-        {
-            return messages.ToArray().AsRuleMessages();
-        }
-
-        return None;
-    }
-}
-```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L570-L600' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-messages-multiple' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Messages are automatically associated with properties and displayed through the validation UI.
+Messages attach to the named property and display through the validation UI; the entity's `PropertyMessages` aggregates them across the graph.
 
 ## Manual Rule Execution
 
-Rules fire automatically on property change, but several scenarios require running them by hand:
-- **Server-side re-validation**: Inside Insert/Update/Delete, you may not trust client-side validation and need to re-run rules server-side before persisting.
-- **Testing**: Triggering rules explicitly in test scenarios rather than setting properties one by one.
-- **After pausing or batch updates**: When rules have been paused for a batch of property changes, you need to run them afterward to catch up.
+Rules fire when a property is set outside a factory operation, so the routine step before reading `IsValid` is `await WaitForTasks()`, not `RunRules`. `RunRules` forces a re-run. It is needed in two places:
 
-Run all rules:
+- **At the end of a factory method** that set inputs of computed properties — the object was paused, so nothing ran (`skill-create-run-rules` above).
+- **On the server, before a write.** The root's `[Insert]`/`[Update]` re-run every rule and refuse an invalid aggregate; this is the one validation gate in a factory method:
 
-<!-- snippet: rules-run-all -->
-<a id='snippet-rules-run-all'></a>
+<!-- snippet: skill-root-insert -->
+<a id='snippet-skill-root-insert'></a>
 ```cs
-// Run all registered rules regardless of which properties changed
-await entity.RunRules(RunRulesFlag.All);
+[Remote]
+[Insert]
+internal async Task Insert([Service] IOrderRepository repository,
+    [Service] IOrderItemListFactory itemsFactory)
+{
+    // Re-run every rule on the server and refuse an invalid aggregate.
+    // Recommended - the framework does not do this for you. Throw, never
+    // return: after [Insert]/[Update] returns, the framework marks the
+    // entity saved whether or not anything was written.
+    await RunRules(RunRulesFlag.All);
+    if (!IsValid)
+    {
+        throw new SaveOperationException(SaveFailureReason.IsInvalid);
+    }
+
+    // Object is paused — assignment is clean
+    Id = Guid.NewGuid();
+
+    var row = new OrderRow();
+    MapTo(row);
+    repository.Add(row);
+
+    itemsFactory.Save(Items!, row.Items);
+
+    repository.SaveChanges();
+}
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L1365-L1368' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-run-all' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L186-L213' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The `RunRulesFlag` enum supports different execution modes:
-- `All`: Clear all messages and run all rules (this object and children)
-- `Self`: Run all rules on this object only (skip child property rules)
-- `NotExecuted`: Run only rules that haven't executed yet
+Forcing a run after `Create`:
+
+<!-- snippet: skill-run-rules-forces -->
+<a id='snippet-skill-run-rules-forces'></a>
+```cs
+[TestMethod]
+public async Task Gotcha1_RulesFireAfterCreate_WithExplicitRunRules()
+{
+    // Arrange
+    var factory = _scope.GetRequiredService<IGotcha1DemoFactory>();
+
+    // Act
+    var entity = factory.Create();
+
+    // RunRules works even after factory (IsPaused is now false)
+    await entity.RunRules(RunRulesFlag.All);
+
+    // Assert - Now the rule has run
+    Assert.AreEqual(50.00m, entity.Total, "Total should be calculated after RunRules");
+    Assert.IsTrue(entity.RuleHasRun, "Rule should have run after explicit RunRules call");
+}
+```
+<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L52-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-run-rules-forces' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The `RunRulesFlag` enum selects which rules run:
+- `All`: Clear all messages and run all rules
+- `Self`: Run this object's rules only (skip child property rules)
+- `NotExecuted`: Run only rules that have not executed yet (does not clear messages)
 - `Executed`: Run only rules that have already executed
-- `None`: No-op (run nothing)
+- `None`: No-op
 - `NoMessages` / `Messages`: **Known bug** -- `NoMessages` always matches and `Messages` never matches because the per-rule `Messages` collection is never populated. Avoid these flags until fixed.
 
-Flags are combinable (e.g., `NotExecuted | Executed` runs all rules). `All` is the most common choice; `Self` is useful when you want to skip child cascade.
+Flags combine (`NotExecuted | Executed` runs all rules). `RunRules("PropertyName")` runs only the rules that have that property as a trigger — the task list in the WorkOrder aggregate uses it to re-run a sibling's `Sequence` rule when another task's `Sequence` changes:
 
-Run rules for a specific property:
-
-<!-- snippet: rules-run-property -->
-<a id='snippet-rules-run-property'></a>
+<!-- snippet: skill-cross-sibling-rules -->
+<a id='snippet-skill-cross-sibling-rules'></a>
 ```cs
-// Run rules only for the specified property
-await entity.RunRules(nameof(entity.Value));
+// Cross-sibling consistency lives on the LIST: an entity cannot override
+// HandleNeatooPropertyChanged, and only the list sees every sibling. When a
+// task's Sequence changes, re-run the siblings' rules so their uniqueness
+// messages update too.
+protected override async Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
+{
+    await base.HandleNeatooPropertyChanged(eventArgs);
+
+    if (eventArgs.PropertyName == nameof(IWorkOrderTask.Sequence)
+        && eventArgs.Source is IWorkOrderTask changed)
+    {
+        await Task.WhenAll(this.Except([changed])
+            .Select(sibling => sibling.RunRules(nameof(IWorkOrderTask.Sequence))));
+    }
+}
 ```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L1381-L1384' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-run-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTaskList.cs#L26-L42' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-sibling-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
-
-This executes only rules that have the specified property as a trigger. The framework looks up all rules registered with that property name as a trigger, sorts by `RuleOrder`, and executes them sequentially.
-
-Run a specific rule type:
-
-<!-- snippet: rules-run-specific -->
-<a id='snippet-rules-run-specific'></a>
-```cs
-// Run rules of a specific type (custom method on entity)
-await employee.RunSalaryRangeRules();
-```
-<sup><a href='/src/samples/BusinessRulesSamples.cs#L1397-L1400' title='Snippet source file'>snippet source</a> | <a href='#snippet-rules-run-specific' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-For targeted rule type execution, expose a custom method on the entity that calls `RuleManager.RunRule<TRule>()` to execute a specific rule class by type.
 
 ## Advanced: Stable Rule IDs
 
 In RemoteFactory scenarios, the domain model graph crosses the client-server boundary. If a rule fails server-side, that broken state travels back to the client with the graph. When the user fixes the data, the client needs to know exactly which rule to re-run and clear. This only works if the same rule has the same ID on both sides.
 
-Neatoo assigns deterministic rule IDs based on the source expression used to register rules. The `RuleManager` uses `CallerArgumentExpression` to capture the exact lambda expression text when calling `AddAction`, `AddValidation`, or `AddRule`. For custom rule classes, the rule ID is based on the rule's type name. For fluent rules, the ID is an FNV-1a hash of the source expression text. Hash-based IDs ensure no collisions across inheritance hierarchies — a derived class's rule expressions produce different hashes from its base class, regardless of hierarchy depth.
+Neatoo assigns deterministic rule IDs from the source text of the argument passed to `AddAction`, `AddValidation`, or `AddRule`, captured with `CallerArgumentExpression` and hashed (FNV-1a) into a generated `GetRuleId` override on the entity. Both tiers compile the same source, so they compute the same ids.
 
 ---
 
-**UPDATED:** 2026-02-27
+**UPDATED:** 2026-10-06

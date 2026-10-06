@@ -2,527 +2,442 @@
 
 [← Entities](entities.md) | [↑ Guides](index.md) | [Properties →](properties.md)
 
-Neatoo implements parent-child relationships through the Parent property on ValidateBase, enabling aggregate graphs where validation, modification state, and lifecycle events cascade from children to their owning parents. This creates a tree structure where the aggregate root coordinates state across all child entities and value objects.
+Neatoo implements parent-child relationships through the `Parent` property on `ValidateBase`, enabling aggregate graphs where validation and modification state cascade from children to their owning parents. The aggregate root coordinates state across every child entity and value object in the graph.
+
+The examples on this page come from two compiled aggregates: `Order` with its `OrderItem` children, and `WorkOrder` with its `WorkOrderTask` children. The tests resolve factories from a DI scope (`DesignTestServices.GetScope()`); in an application the factory interface is injected.
 
 ## Parent Property Behavior
 
-The Parent property establishes a reference from a child object to its owning parent. This property is set automatically by collections when adding items, or manually when creating standalone child objects.
+`Parent` is a reference from a child object to its owning entity. The property system sets it at runtime — when a child is added to a collection, or when a child is assigned to a parent's partial property. Application code never sets it. A collection is transparent: an item's `Parent` is the entity that owns the list, not the list.
 
-Set the parent property during child creation:
-
-<!-- snippet: parent-child-setup -->
-<a id='snippet-parent-child-setup'></a>
+<!-- snippet: skill-parent-and-root -->
+<a id='snippet-skill-parent-and-root'></a>
 ```cs
-[Fact]
-public void Parent_SetDuringChildCreation()
+[TestMethod]
+public void AddItem_SetsParentAndRoot()
 {
-    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
-    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+    var order = _orderFactory.Create();
+    var item = _itemFactory.Create("Widget", 5, 10.00m);
+    Assert.IsNull(item.Parent, "Not attached yet");
 
-    // Create aggregate root (order)
-    var order = orderFactory.Create();
-    order.CustomerName = "Acme Corp";
+    order.Items!.Add(item);
 
-    // Create child entity (line item)
-    var lineItem = itemFactory.Create();
-    lineItem.ProductName = "Widget Pro";
-    lineItem.UnitPrice = 49.99m;
-    lineItem.Quantity = 5;
+    // Parent is the owning entity (the list is transparent); Root is the aggregate root
+    Assert.AreSame<object>(order, item.Parent!);
+    Assert.AreSame<object>(order, item.Root!);
 
-    // Add child to collection - Parent is set automatically
-    order.LineItems.Add(lineItem);
-
-    // Parent now references the aggregate root
-    Assert.Same(order, lineItem.Parent);
+    // The root itself has neither
+    Assert.IsNull(order.Parent);
+    Assert.IsNull(order.Root);
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L130-L153' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-setup' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/OrderAggregateTests.cs#L75-L93' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-and-root' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Parent is of type `IValidateBase?` and can reference:
-- Another ValidateBase or EntityBase instance (the owning entity)
-- An aggregate root (when this is a direct child)
-- Null for aggregate roots themselves
+`Parent` is typed `IValidateBase?` and references:
+- The owning entity (a `ValidateBase` or `EntityBase` instance)
+- The aggregate root, when this is a direct child
+- `null` for the aggregate root itself
 
-The framework uses Parent to navigate the aggregate tree and cascade state changes upward.
+The framework uses `Parent` to navigate the aggregate tree and cascade state upward.
 
 ## Navigation Properties
 
-Parent enables navigation from child to parent, while the Root property navigates to the aggregate root.
+`Parent` navigates one level up; `Root` navigates to the aggregate root. Both are set the moment a child joins the aggregate:
 
-Navigate the aggregate graph:
-
-<!-- snippet: parent-child-navigation -->
-<a id='snippet-parent-child-navigation'></a>
+<!-- snippet: skill-add-item -->
+<a id='snippet-skill-add-item'></a>
 ```cs
-[Fact]
-public void Navigation_FromChildToRoot()
+[TestMethod]
+public void AddItem_ItemJoinsAggregate()
 {
-    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
-    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+    // Arrange
+    var order = _orderFactory.Create();
+    var item = _itemFactory.Create("Widget", 5, 10.00m);
 
-    var order = orderFactory.Create();
-    order.CustomerName = "Beta Inc";
+    // Act
+    order.Items!.Add(item);
 
-    // Add multiple children
-    var item1 = itemFactory.Create();
-    item1.ProductName = "Gadget A";
-    item1.UnitPrice = 25.00m;
-    item1.Quantity = 2;
-
-    var item2 = itemFactory.Create();
-    item2.ProductName = "Gadget B";
-    item2.UnitPrice = 35.00m;
-    item2.Quantity = 1;
-
-    order.LineItems.Add(item1);
-    order.LineItems.Add(item2);
-
-    // Navigate from child to parent
-    Assert.Same(order, item1.Parent);
-    Assert.Same(order, item2.Parent);
-
-    // Navigate from child to aggregate root
-    Assert.Same(order, item1.Root);
-    Assert.Same(order, item2.Root);
-
-    // Aggregate root has null Parent and Root
-    Assert.Null(order.Parent);
-    Assert.Null(order.Root);
+    // Assert
+    Assert.AreSame<object>(order, item.Root!, "Added item belongs to the aggregate");
+    Assert.AreEqual(1, order.Items.Count);
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L155-L191' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-navigation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/OrderAggregateTests.cs#L58-L73' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-add-item' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Root calculation:
-- If Parent is null, Root returns null (this object is the aggregate root)
-- If Parent implements IEntityBase, Root recursively calls Parent.Root
-- Otherwise, Parent is the root (direct child of aggregate root)
-
-Root is computed on each access by walking the Parent chain until reaching the aggregate root. This recursive traversal ensures Root always reflects the current aggregate structure, even as entities move between collections within the aggregate.
+Root calculation: if `Parent` is `null`, `Root` is `null` (this object is the aggregate root); otherwise, if `Parent` has a `Root`, that is returned; otherwise `Parent` itself is the root. `Root` is computed on each access by walking the `Parent` chain, so it always reflects the current aggregate structure, even as entities move between collections within the aggregate.
 
 ## Aggregate Boundaries
 
-The Parent property defines aggregate boundaries. An aggregate root has Parent == null, while all objects within the aggregate have Parent set to the owning entity or collection's parent.
+The `Parent` property defines aggregate boundaries. An aggregate root has `Parent == null`; every object within the aggregate has `Parent` set. A child belongs to exactly one aggregate, and the list enforces that on `Add`: an item whose `Root` is a different aggregate is rejected with `InvalidOperationException`, and the message names the two aggregates so two roots of the same type are distinguishable:
 
-Define an aggregate with children:
-
-<!-- snippet: parent-child-aggregate-boundary -->
-<a id='snippet-parent-child-aggregate-boundary'></a>
+<!-- snippet: skill-cross-aggregate-add-throws -->
+<a id='snippet-skill-cross-aggregate-add-throws'></a>
 ```cs
-[Fact]
-public void AggregateBoundary_EnforcedByParentProperty()
+[TestMethod]
+public async Task AddItemFromAnotherAggregate_Throws_WithDistinguishingMessage()
 {
-    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
-    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+    // Arrange - two separate Order aggregates, each with fetched children
+    var (order1, order2) = await FetchTwoOrders();
+    var itemFromOrder1 = order1.Items![0];
 
-    // Order aggregate root
-    var order = orderFactory.Create();
-    order.CustomerName = "Gamma LLC";
+    Assert.AreNotSame(order1, order2);
+    Assert.AreSame(order1, itemFromOrder1.Root, "Item's Root is its own aggregate");
 
-    // Child entity in the aggregate
-    var lineItem = itemFactory.Create();
-    lineItem.ProductName = "Component X";
-    lineItem.UnitPrice = 100.00m;
-    lineItem.Quantity = 3;
+    // Act & Assert - the boundary is enforced
+    var ex = Assert.ThrowsExactly<InvalidOperationException>(
+        () => order2.Items!.Add(itemFromOrder1));
 
-    // Add to aggregate
-    order.LineItems.Add(lineItem);
-
-    // Aggregate root: Parent == null, Root == null
-    Assert.Null(order.Parent);
-    Assert.Null(order.Root);
-
-    // Child entity: Parent set, Root points to aggregate root
-    Assert.Same(order, lineItem.Parent);
-    Assert.Same(order, lineItem.Root);
+    // The message must distinguish the two aggregates. Both are Orders, so
+    // naming types alone would say "'Order' ... 'Order'" and read as a bug.
+    // "Order" as a literal: the concrete type is internal (interface-first),
+    // so the test cannot reference it - which is itself the pattern working
+    StringAssert.Contains(ex.Message, "different");
+    StringAssert.Contains(ex.Message, "Order");
+    Assert.IsFalse(
+        ex.Message.Contains("belongs to aggregate 'Order', but this list belongs to aggregate 'Order'"),
+        "The message must not render both aggregates identically");
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L193-L221' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-aggregate-boundary' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateBoundaryTests.cs#L45-L70' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-aggregate-add-throws' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Aggregate boundary rules:
-- Aggregate roots have Parent == null and Root == null
-- Child entities have Parent set and Root pointing to the aggregate root
-- Child entities cannot be saved independently — their interface exposes no `Save()`
-- Crossing aggregate boundaries requires explicit relationship management
-- Parent changes are restricted to prevent cross-aggregate contamination
-
-Attempting to add a child with a different Root to a collection throws InvalidOperationException. This enforces aggregate boundaries at runtime.
+- Aggregate roots have `Parent == null` and `Root == null`
+- Child entities have `Parent` set and `Root` pointing to the aggregate root
+- Child entities cannot be saved independently — their interface extends `IEntityBase`, which exposes no `Save()`
+- Crossing an aggregate boundary is a copy into the target and a removal from the source, never a move (see [Aggregate Boundary Enforcement](#aggregate-boundary-enforcement))
 
 ## Cascade Validation
 
-Validation state cascades from children to parents through property change events. When a child's validation state changes, the parent is notified and updates its own validation state.
+Validation state cascades from children to parents through property change events. When a child's validation state changes, the parent recalculates its own: `IsValid` aggregates the object and every descendant, while `IsSelfValid` is the object alone. The child's messages reach the parent's `PropertyMessages`. Where async rules may be in flight, `await WaitForTasks()` before reading validity — rules run on assignment; `RunRules` only forces a re-run.
 
-Child validation cascades to parent:
-
-<!-- snippet: parent-child-cascade-validation -->
-<a id='snippet-parent-child-cascade-validation'></a>
+<!-- snippet: skill-is-valid-vs-self-valid -->
+<a id='snippet-skill-is-valid-vs-self-valid'></a>
 ```cs
-[Fact]
-public async Task CascadeValidation_ChildInvalidMakesParentInvalid()
+[TestMethod]
+public async Task InvalidChild_MakesParentInvalid_ButNotSelfInvalid()
 {
-    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
-    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+    var parent = _scope.GetRequiredService<IValidationStateDemoFactory>().Create();
+    parent.RequiredField = "set";
+    parent.Child!.RequiredField = "set";
+    await parent.WaitForTasks();
+    Assert.IsTrue(parent.IsValid);
 
-    var order = orderFactory.Create();
-    order.CustomerName = "Delta Corp";
-    await order.RunRules();
+    // Break the child only
+    parent.Child.RequiredField = "";
+    await parent.WaitForTasks();
 
-    // Order starts valid
-    Assert.True(order.IsValid);
-
-    // Create child with invalid state (empty ProductName)
-    var invalidItem = itemFactory.Create();
-    invalidItem.ProductName = ""; // Invalid - empty
-    invalidItem.UnitPrice = 50.00m;
-    invalidItem.Quantity = 1;
-    await invalidItem.RunRules();
-
-    // Child is invalid
-    Assert.False(invalidItem.IsValid);
-
-    // Add invalid child to order
-    order.LineItems.Add(invalidItem);
-
-    // Parent's IsValid reflects child's invalid state
-    Assert.False(order.IsValid);
-
-    // Fix the child
-    invalidItem.ProductName = "Valid Product";
-    await invalidItem.RunRules();
-
-    // Parent becomes valid again
-    Assert.True(order.IsValid);
+    Assert.IsTrue(parent.IsSelfValid, "The parent's own rules pass");
+    Assert.IsFalse(parent.IsValid, "IsValid aggregates the child");
+    Assert.IsFalse(parent.Child.IsValid);
+    Assert.IsTrue(parent.PropertyMessages.Count > 0, "The child's message reaches the parent");
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L223-L260' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/ValidationStateTests.cs#L31-L50' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-valid-vs-self-valid' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cascade behavior:
-- When a child becomes invalid, parent's IsValid becomes false immediately
-- When a child becomes valid, parent recalculates IsValid from all children
-- IsBusy cascades the same way (any busy child makes parent busy)
-- PropertyMessages from children are included in parent's PropertyMessages
-- Cascade continues up the Parent chain to the aggregate root
+- When a child becomes invalid, the parent's `IsValid` becomes false; `IsSelfValid` is unaffected
+- When a child becomes valid again, the parent recalculates `IsValid` from all children
+- `IsBusy` cascades the same way (any busy child makes the parent busy)
+- `PropertyMessages` from children are included in the parent's `PropertyMessages`
+- The cascade continues up the `Parent` chain to the aggregate root
 
-This ensures the aggregate root's validation state reflects all validation errors across the entire aggregate graph.
+The aggregate root's validation state therefore reflects every validation error across the whole graph.
 
 ## Cascade Modification State
 
-Modification state cascades from children to parents. When a child becomes modified, the parent's IsModified becomes true. This enables tracking modifications anywhere in the aggregate.
+Modification state cascades from children to parents. When a child becomes modified, the parent's `IsModified` becomes true while its `IsSelfModified` stays false — `IsSelfModified` is the entity's own properties, `IsModified` includes its children:
 
-Child modifications cascade to parent:
-
-<!-- snippet: parent-child-cascade-dirty -->
-<a id='snippet-parent-child-cascade-dirty'></a>
+<!-- snippet: skill-child-change-modifies-parent -->
+<a id='snippet-skill-child-change-modifies-parent'></a>
 ```cs
-[Fact]
-public void CascadeDirty_ChildModificationCascadesToParent()
+[TestMethod]
+public async Task Gotcha5_ChildModification_SetsParentIsModified()
 {
-    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
-    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+    // Arrange
+    var factory = _scope.GetRequiredService<IGotcha5ParentFactory>();
 
-    // Fetch existing order (starts clean)
-    var order = orderFactory.Fetch(1, "Order 1", DateTime.Today);
-    Assert.False(order.IsModified);
+    // Fetch parent (starts as unmodified)
+    var parent = await factory.Fetch(1);
+    Assert.IsFalse(parent.IsModified, "Freshly fetched parent should not be modified");
+    Assert.IsFalse(parent.IsSelfModified, "Freshly fetched parent should not be self-modified");
 
-    // Add a new child item
-    var item = itemFactory.Create();
-    item.ProductName = "New Product";
-    item.UnitPrice = 75.00m;
-    item.Quantity = 2;
-    order.LineItems.Add(item);
+    // Act - Modify only the CHILD
+    parent.Child!.Value = "Changed Value";
+    await parent.WaitForTasks();
 
-    // Order is modified because child was added
-    Assert.True(order.IsModified);
-
-    // Parent itself not modified (IsSelfModified is false)
-    Assert.False(order.IsSelfModified);
-
-    // The item's modification also contributes
-    Assert.True(item.IsModified);
+    // Assert
+    Assert.IsTrue(parent.Child.IsSelfModified, "Child should be self-modified");
+    Assert.IsTrue(parent.Child.IsModified, "Child should be modified");
+    Assert.IsFalse(parent.IsSelfModified, "Parent itself is NOT modified - only child changed");
+    Assert.IsTrue(parent.IsModified, "Parent.IsModified should be TRUE because child is modified");
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L262-L289' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-cascade-dirty' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L258-L280' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-change-modifies-parent' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Cascade rules for IsModified:
-- When a child's IsModified changes to true, parent's IsModified becomes true
-- When a child's IsModified changes to false, parent recalculates IsModified from all children
-- Collections aggregate IsModified from all items
-- EntityBase distinguishes IsSelfModified (entity's own properties) from IsModified (includes children)
-- Adding a new child to a collection marks the parent as modified (IsModified becomes true)
-- Removing an existing child marks the parent as modified
+Attaching a child to a live parent is itself a change to the graph. `Add` marks the added item modified — new or existing — because modification state (never `IsNew`) is what aggregates upward, and that is the only channel by which a new child's arrival reaches the parent:
 
-After a successful save operation, the factory completion flow clears the modified state for the entity and all children in the aggregate.
+<!-- snippet: skill-add-marks-modified -->
+<a id='snippet-skill-add-marks-modified'></a>
+```cs
+[TestMethod]
+public void IsModified_TrueWhenNewItemAdded()
+{
+    // Arrange
+    var order = _orderFactory.Create();
+
+    // Act
+    var item = _itemFactory.Create("Widget", 1, 10.00m);
+    order.Items!.Add(item);
+
+    // Assert - New order with new items is modified
+    Assert.IsTrue(order.Items.IsModified);
+    Assert.IsTrue(order.IsModified);
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/DeletedListTests.cs#L111-L126' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-add-marks-modified' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Cascade rules for `IsModified`:
+- When a child's `IsModified` becomes true, the parent's `IsModified` becomes true
+- When a child's `IsModified` becomes false, the parent recalculates from all children
+- Collections aggregate `IsModified` from their items and from pending deletions (`DeletedList`)
+- `IsSelfModified` is the entity's own properties; `IsModified` includes children
+- Adding an item to a live list marks the item modified, so the parent becomes modified
+- Removing a fetched item puts it in the list's `DeletedList`, which makes the list and the parent modified
+
+After a save, each saved object's own factory completion clears its own modified state: the root's `FactoryComplete(Update)` clears the root, each child saved through the list's `[Update]` is cleared by its own factory completion, and the list's `FactoryComplete(Update)` clears its `DeletedList`. There is no graph-wide cascade — an object that was not saved through its own factory operation is not cleared.
 
 ## Child Entity Lifecycle
 
-Child entities are marked as children when added to EntityListBase. This affects their lifecycle and persistence behavior.
+Adding a child to an `EntityListBase` sets its `Parent`, its `Root`, and its `ContainingList`. The type system does the rest: a child entity's interface extends `IEntityBase`, so `IsSavable` and `Save()` do not exist on it — the mistake of saving a child on its own is a compile error, not a runtime check:
 
-Child entity lifecycle tracking:
-
-<!-- snippet: parent-child-lifecycle -->
-<a id='snippet-parent-child-lifecycle'></a>
+<!-- snippet: skill-child-interface-no-save -->
+<a id='snippet-skill-child-interface-no-save'></a>
 ```cs
-[Fact]
-public void ChildLifecycle_MarkedWhenAddedToCollection()
+[TestMethod]
+public void ChildInterface_DoesNotExposeIsSavable()
 {
-    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
-    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+    // Arrange — IOrderItem extends IEntityBase, not IEntityRoot
+    var order = _orderFactory.Create();
+    var item = _itemFactory.Create("Widget", 5, 10.00m);
+    order.Items!.Add(item);
 
-    var order = orderFactory.Create();
+    // Act — Cast to IEntityBase (which IOrderItem extends)
+    // Intentionally using interface type to demonstrate the pattern
+#pragma warning disable CA1859
+    IEntityBase entityBase = item;
+#pragma warning restore CA1859
 
-    // Create child entity
-    var item = itemFactory.Create();
-    item.ProductName = "New Product";
-    item.UnitPrice = 99.99m;
-    item.Quantity = 1;
-
-    // Before adding: not attached to an aggregate
-    Assert.Null(item.Root);
-
-    // Add to collection
-    order.LineItems.Add(item);
-
-    // After adding:
-    // 1. Root points to aggregate root
-    Assert.Same(order, item.Root);
-
-    // 2. Parent is set
-    Assert.Same(order, item.Parent);
-
-    // 4. Child interfaces (IEntityBase) don't expose IsSavable or Save().
-    //    Only IEntityRoot exposes those members.
-    //    This is enforced at the type level — no runtime check needed.
+    // Assert — IEntityBase does NOT have IsSavable
+    // This is verified by the fact that the following would NOT compile:
+    //   entityBase.IsSavable  // CS1061: IEntityBase does not contain IsSavable
+    //   entityBase.Save()     // CS1061: IEntityBase does not contain Save
+    Assert.AreSame<object>(order, entityBase.Root!, "Child entity belongs to the aggregate");
+    Assert.IsTrue(entityBase.IsModified, "Child entity should be modified");
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L291-L323' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-lifecycle' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/EntityRootInterfaceTests.cs#L48-L70' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-interface-no-save' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Child entity restrictions:
-- `IEntityBase` (the child entity interface) does not expose `IsSavable` or `Save()` -- these are on `IEntityRoot` only
+- `IEntityBase` (the child entity interface) does not expose `IsSavable` or `Save()` — these are on `IEntityRoot` only
 - Must be saved through the aggregate root
 - Given a `ContainingList` when added to a collection, which routes `Delete()` through the list
 - Cannot be added to a different aggregate while already belonging to one
 
-This restriction is enforced at the type level. Child entity interfaces extend `IEntityBase`, so `IsSavable` and `Save()` simply do not exist on the interface. No runtime check needed for well-typed code.
-
 When a child entity is added to a collection:
-1. Parent is set to the collection's Parent (the owning entity)
-2. Root is recalculated from Parent (recursively to aggregate root)
-3. ContainingList is set to the collection
-4. Validation and modification state cascade to parent
-5. Cross-aggregate validation ensures Root compatibility
+1. `Parent` is set to the collection's `Parent` (the owning entity)
+2. `Root` follows from `Parent` (recursively to the aggregate root)
+3. `ContainingList` is set to the collection
+4. The item is marked modified, so validation and modification state cascade to the parent
+5. The list checks `Root` compatibility and rejects an item from another aggregate
 
 ## Collection Navigation
 
-Child entities navigate to sibling entities through their parent's collection property. The internal ContainingList property (protected, framework use only) tracks the owning collection for delete consistency and intra-aggregate moves, but application code accesses siblings by casting Parent to the entity type and accessing its collection property.
+A child reaches its siblings through its parent's collection property, by casting `Parent` to the parent's **interface** — never to the concrete class, which is `internal`. `ContainingList` is protected, framework-only state (delete routing, intra-aggregate moves, `DeletedList` cleanup); it is not the navigation path. The sibling-uniqueness rule on `WorkOrderTask` is the shape:
 
-Navigate to sibling entities through the parent collection:
-
-<!-- snippet: parent-child-containing-list -->
-<a id='snippet-parent-child-containing-list'></a>
+<!-- snippet: skill-sibling-validation -->
+<a id='snippet-skill-sibling-validation'></a>
 ```cs
-[Fact]
-public void CollectionNavigation_AccessSiblingsThroughParent()
+// Sibling consistency: the message lands on this task. When a Sequence
+// changes, the list re-runs the siblings' rules (see WorkOrderTaskList).
+RuleManager.AddValidation(
+    t => t.Parent is IWorkOrder root
+         && root.Tasks!.Any(other => !ReferenceEquals(other, t) && other.Sequence == t.Sequence)
+        ? "Sequence must be unique within the work order"
+        : string.Empty,
+    t => t.Sequence);
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L55-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-sibling-validation' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+A rule like this runs when its own property changes. When a sibling's `Sequence` changes, the other tasks' rules must be re-run too, and only the list sees every sibling — so cross-sibling re-evaluation lives on the list:
+
+<!-- snippet: skill-cross-sibling-rules -->
+<a id='snippet-skill-cross-sibling-rules'></a>
+```cs
+// Cross-sibling consistency lives on the LIST: an entity cannot override
+// HandleNeatooPropertyChanged, and only the list sees every sibling. When a
+// task's Sequence changes, re-run the siblings' rules so their uniqueness
+// messages update too.
+protected override async Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
 {
-    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
-    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
+    await base.HandleNeatooPropertyChanged(eventArgs);
 
-    var order = orderFactory.Create();
-
-    // Add items
-    var item1 = itemFactory.Create();
-    item1.ProductName = "Product 1";
-    item1.UnitPrice = 10.00m;
-    item1.Quantity = 1;
-
-    var item2 = itemFactory.Create();
-    item2.ProductName = "Product 2";
-    item2.UnitPrice = 20.00m;
-    item2.Quantity = 2;
-
-    order.LineItems.Add(item1);
-    order.LineItems.Add(item2);
-
-    // Access sibling through parent
-    var sibling = order.LineItems[1];
-    Assert.Same(item2, sibling);
-
-    // Navigate from entity to collection to count siblings
-    var siblingCount = order.LineItems.Count;
-    Assert.Equal(2, siblingCount);
-
-    // Calculate total through collection
-    decimal total = 0;
-    foreach (var item in order.LineItems)
+    if (eventArgs.PropertyName == nameof(IWorkOrderTask.Sequence)
+        && eventArgs.Source is IWorkOrderTask changed)
     {
-        total += item.UnitPrice * item.Quantity;
+        await Task.WhenAll(this.Except([changed])
+            .Select(sibling => sibling.RunRules(nameof(IWorkOrderTask.Sequence))));
     }
-    Assert.Equal(50.00m, total); // (10*1) + (20*2)
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L325-L364' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-containing-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTaskList.cs#L26-L42' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-sibling-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Navigation patterns:
-- Access siblings via `((ParentChildOrder)item.Parent).LineItems[index]`
-- Count siblings via `((ParentChildOrder)item.Parent).LineItems.Count`
-- Iterate siblings via `foreach (var sibling in ((ParentChildOrder)item.Parent).LineItems)`
-- Cast Parent to the specific parent entity type to access collection properties
-
-The internal ContainingList property (protected, not directly accessible in application code) tracks ownership for:
-- Delete consistency (calling Delete() on a child delegates to the owning collection's Remove())
-- Intra-aggregate moves between collections (framework validates Root compatibility)
-- Cleanup after save operations (clearing deleted items from DeletedList)
+- Access siblings via `((IWorkOrder)task.Parent!).Tasks`
+- In a rule, pattern-match instead of casting: `t.Parent is IWorkOrder root && ...` — a rule can run before the child is attached, when `Parent` is still `null`
+- Cross-sibling consistency is re-evaluated by the list's `HandleNeatooPropertyChanged` override
 
 ## Root Access from Children
 
-The Root property provides direct access to the aggregate root from any child entity or value object in the graph.
+`Parent` (and `Root`) give a child ambient access to root state. Cast to the root's interface; the concrete type is `internal`. In a rule, pattern-match, because a rule can run before attachment:
 
-Access the aggregate root from a child:
-
-<!-- snippet: parent-child-root-access -->
-<a id='snippet-parent-child-root-access'></a>
+<!-- snippet: skill-parent-in-child-rule -->
+<a id='snippet-skill-parent-in-child-rule'></a>
 ```cs
-[Fact]
-public void RootAccess_FromChildEntity()
+// A child rule reads ambient root state through Parent. Parent is null
+// until the task is attached, so pattern-match instead of casting.
+RuleManager.AddAction(
+    t => t.IsSchedulable = t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold,
+    t => t.Hours);
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L47-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-rule' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+In a business method the child is always attached, so a cast is safe:
+
+<!-- snippet: skill-parent-in-child-method -->
+<a id='snippet-skill-parent-in-child-method'></a>
+```cs
+/// <summary>
+/// Child business method reading root state through Parent. Called by the
+/// root's orchestrator rule whenever the discount changes.
+/// </summary>
+public void ApplyParentDiscount()
 {
-    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
-    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
-
-    var order = orderFactory.Create();
-    order.CustomerName = "Epsilon Ltd";
-    order.OrderDate = new DateTime(2024, 6, 15);
-
-    var item = itemFactory.Create();
-    item.ProductName = "Enterprise Widget";
-    item.UnitPrice = 500.00m;
-    item.Quantity = 10;
-
-    order.LineItems.Add(item);
-
-    // Access aggregate root from child
-    var root = item.Root;
-    Assert.NotNull(root);
-
-    // Cast to specific aggregate type when needed
-    var orderRoot = root as ParentChildOrder;
-    Assert.NotNull(orderRoot);
-
-    // Access aggregate-level properties from child context
-    Assert.Equal("Epsilon Ltd", orderRoot!.CustomerName);
-    Assert.Equal(new DateTime(2024, 6, 15), orderRoot.OrderDate);
+    Discount = ((IWorkOrder)this.Parent!).Discount;
 }
 ```
-<sup><a href='/src/samples/ParentChildSamples.cs#L366-L396' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-root-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L74-L83' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-method' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+A child rule that reads root state has no trigger for the root's property. The root re-runs the children's rules when that state changes (see the orchestrator rule in the main skill), and the child's derived flag bubbles back into the root:
+
+<!-- snippet: skill-parent-read-test -->
+<a id='snippet-skill-parent-read-test'></a>
+```cs
+[TestMethod]
+public async Task ChildRule_ReadsRootStateThroughParent_AndTheRootRerunsItWhenThatStateChanges()
+{
+    var (order, design, build) = await CreateWithTwoTasks();
+    design.Hours = 2m;
+    build.Hours = 1m;
+    await order.WaitForTasks();
+
+    Assert.IsTrue(design.IsSchedulable, "Hours > 0 and the parent is not on hold");
+    Assert.IsFalse(order.HasUnschedulableTasks);
+    Assert.IsFalse(order.ShowHoldBanner);
+
+    order.IsOnHold = true;
+    await order.WaitForTasks();
+
+    Assert.IsFalse(design.IsSchedulable, "The root re-ran the tasks' rules; the child rule read Parent.IsOnHold");
+    Assert.IsTrue(order.HasUnschedulableTasks, "...and the child's change bubbled into the root's flag");
+    Assert.IsTrue(order.ShowHoldBanner);
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/WorkOrderAggregateTests.cs#L108-L128' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-read-test' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Root access patterns:
-- Cast Root to the specific aggregate root type for property access
+- Cast `Root`/`Parent` to the aggregate root's interface for property access
 - Access aggregate-level properties from child business rules
 - Coordinate cross-entity validation at the root level
 - Implement aggregate-level invariants in child validation rules
 
-Root is computed on each access by recursively walking the Parent chain to the aggregate root, so it always reflects the current aggregate structure even as entities are reparented within the aggregate.
+`Root` is computed on each access by walking the `Parent` chain, so it reflects the current aggregate structure even as entities are reparented within the aggregate.
 
 ## Aggregate Boundary Enforcement
 
-The framework enforces aggregate boundaries when adding entities to collections. Parent is managed internally and cannot be set directly by application code.
+The framework enforces aggregate boundaries when adding entities to collections. `Parent` is managed internally and cannot be set by application code.
 
 Allowed operations:
-- Adding an entity with Root == null (not yet in any aggregate)
-- Adding an entity from the same aggregate (same Root reference)
+- Adding an entity with `Root == null` (not yet in any aggregate)
+- Adding an entity from the same aggregate (same `Root` reference)
 - Moving an entity between collections within the same aggregate
 - Removing an entity from a collection
 
 Prohibited operations:
-- Adding an entity from a different aggregate (throws InvalidOperationException with message "belongs to aggregate")
-- Adding an entity while it is busy (IsBusy == true)
-- Setting Parent directly (Parent is managed internally by the framework)
+- Adding an entity from a different aggregate — throws `InvalidOperationException`; the message names both aggregates and ends "Aggregate boundaries cannot be crossed"
+- Adding an entity while it is busy (`IsBusy == true`)
+- Setting `Parent` directly
 
-To move an entity across aggregates:
-1. Remove from the source collection (entity goes to DeletedList if persisted)
-2. After save completes, the entity is no longer in any aggregate
-3. Create a new entity instance or re-fetch from persistence
-4. Add to the destination aggregate
+To move data across aggregates, create a new child in the target aggregate and remove the original from the source — the framework's own exception message says exactly this. The original goes to the source list's `DeletedList`; each root is then saved on its own:
 
-The cross-aggregate restriction enforces the DDD principle that aggregate boundaries are consistency boundaries. An entity cannot belong to multiple aggregates simultaneously, as this would create ambiguous ownership and state coordination.
+<!-- snippet: skill-cross-aggregate-copy -->
+<a id='snippet-skill-cross-aggregate-copy'></a>
+```cs
+[TestMethod]
+public async Task CopyAndRemove_IsTheSupportedWayToMoveBetweenAggregates()
+{
+    // The pattern OrderItemList.cs documents as RIGHT: copy the data into a
+    // new child of the target aggregate, remove the original from the source
+    var (order1, order2) = await FetchTwoOrders();
+    var original = order1.Items![0];
+
+    var copy = _itemFactory.Create(original.ProductName!, original.Quantity, original.UnitPrice);
+    order2.Items!.Add(copy);
+    order1.Items.Remove(original);
+
+    Assert.AreSame(order2, copy.Root);
+    Assert.AreEqual(1, order1.Items.DeletedCount, "The original is queued for deletion");
+    Assert.IsTrue(order1.IsModified);
+    Assert.IsTrue(order2.IsModified);
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateBoundaryTests.cs#L86-L104' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-aggregate-copy' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Aggregate boundaries are consistency boundaries. An entity cannot belong to two aggregates at once; that would create ambiguous ownership and state coordination.
 
 ## Parent in Collections
 
-Collections set Parent on items automatically during Add operations. When a collection's own Parent changes, it propagates to all items.
-
-Collections manage parent references:
-
-<!-- snippet: parent-child-collection-parent -->
-<a id='snippet-parent-child-collection-parent'></a>
-```cs
-[Fact]
-public void CollectionParent_AutomaticManagement()
-{
-    var orderFactory = GetRequiredService<IParentChildOrderFactory>();
-    var itemFactory = GetRequiredService<IParentChildLineItemFactory>();
-
-    var order = orderFactory.Create();
-
-    // Add items to collection
-    var item1 = itemFactory.Create();
-    item1.ProductName = "Item A";
-    item1.UnitPrice = 15.00m;
-    item1.Quantity = 3;
-
-    var item2 = itemFactory.Create();
-    item2.ProductName = "Item B";
-    item2.UnitPrice = 25.00m;
-    item2.Quantity = 2;
-
-    // When items are added, Parent is set automatically
-    order.LineItems.Add(item1);
-    order.LineItems.Add(item2);
-
-    Assert.Same(order, item1.Parent);
-    Assert.Same(order, item2.Parent);
-
-    // Collection's Root returns the aggregate root (cast to IEntityListBase for Root access)
-    Assert.Same(order, ((IEntityListBase)order.LineItems).Root);
-
-    // All items share the same Root
-    Assert.Same(order, item1.Root);
-    Assert.Same(order, item2.Root);
-}
-```
-<sup><a href='/src/samples/ParentChildSamples.cs#L398-L432' title='Snippet source file'>snippet source</a> | <a href='#snippet-parent-child-collection-parent' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+Collections set `Parent` on items during `Add`. When a collection's own `Parent` changes — the parent assigns `Items = itemsFactory.Fetch(row.Items)` inside its `[Fetch]`, after the list has already been populated — the new parent propagates to every item. The snippet under [Parent Property Behavior](#parent-property-behavior) shows the result: the item's `Parent` and `Root` are the owning entity, and the root itself has neither.
 
 Collection parent propagation:
-- When an item is added to a collection, item.Parent is set to collection.Parent (the owning entity)
-- When collection.Parent changes, all items in the collection receive the new parent reference
-- Removed items that were persisted retain Parent and move to DeletedList until save completes
-- New items (IsNew == true) are removed entirely without going to DeletedList
-- Collections themselves have a Parent property to participate in the aggregate graph hierarchy
-
-This automatic parent management eliminates the need for manual parent tracking while maintaining aggregate consistency.
+- When an item is added to a collection, `item.Parent` is set to `collection.Parent` (the owning entity)
+- When `collection.Parent` changes, all items receive the new parent reference
+- Removed items that were persisted keep their `Parent` and `ContainingList` and sit in `DeletedList` until the save completes
+- New items (`IsNew == true`) are removed entirely without going to `DeletedList`
+- Collections themselves have a `Parent` and a `Root`, so they participate in the aggregate graph
 
 ## Paused Parent Cascade
 
-During deserialization and factory operations, the framework pauses parent cascade to avoid performance issues and state corruption during batch operations.
+During factory operations and deserialization the object is paused. While paused:
+- Property setters do not run rules
+- Validation and modification state changes do not propagate
+- Property change events are not raised, and are not replayed later
+- On an entity, a property set while paused is not marked modified
 
-While paused:
-- Parent changes don't trigger cascade
-- Validation state changes don't propagate
-- Modification state changes don't propagate
-- Property change events are deferred
-
-After resuming:
-- Cached validation state is recalculated from all children
-- Cached modification state is recalculated from all children
-- Property change events fire for any accumulated changes
-
-This ensures efficient bulk operations while maintaining eventual consistency of aggregate state.
+When the pause ends, cached validity and modification state are recalculated from the current children; no rules run and no catch-up events fire. Inside a factory operation this is exactly what makes plain assignment a clean baseline load. `Parent` and `ContainingList` are still applied to items added while paused — a list's `[Fetch]` adds its children paused, and they still get child identity.
 
 ---
 
-**UPDATED:** 2026-03-19
+**UPDATED:** 2026-10-06
