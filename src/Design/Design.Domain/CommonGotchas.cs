@@ -134,7 +134,8 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
 //   var item = parent.Items[0];           // IsNew=false
 //   parent.Items.Remove(item);
 //   // Item IS in DeletedList
-//   // Save() will call [Delete] on this item
+//   // The root's Save() runs the list's [Update], which removes this
+//   // item's row - no child [Delete] runs (children have none)
 // =============================================================================
 
 /// <summary>
@@ -158,11 +159,8 @@ internal partial class Gotcha2Parent : EntityBase<Gotcha2Parent>, IGotcha2Parent
     [Fetch]
     internal void Fetch(int id, [Service] IGotcha2ItemListFactory itemListFactory)
     {
-        using (PauseAllActions())
-        {
-            this["Name"].LoadValue($"Parent-{id}");
-            Items = itemListFactory.FetchForParent(id);
-        }
+        Name = $"Parent-{id}";
+        Items = itemListFactory.FetchForParent(id);
     }
 
     [Remote]
@@ -198,8 +196,8 @@ internal partial class Gotcha2Item : EntityBase<Gotcha2Item>, IGotcha2Item
     [Fetch]
     internal void Fetch(int id)
     {
-        this["Id"].LoadValue(id);
-        this["Name"].LoadValue($"Item-{id}");
+        Id = id;
+        Name = $"Item-{id}";
     }
 
     [Insert]
@@ -299,7 +297,7 @@ internal partial class Gotcha3Demo : EntityBase<Gotcha3Demo>, IGotcha3Demo
     [Fetch]
     internal void Fetch(int id, [Service] IServerOnlyService svc)
     {
-        this["Name"].LoadValue(svc.GetDataById(id));
+        Name = svc.GetDataById(id);
     }
 
     [Remote]
@@ -380,28 +378,28 @@ internal partial class Gotcha4Demo : ValidateBase<Gotcha4Demo>, IGotcha4Demo
 // IsModified returns true if THIS object OR ANY CHILD is modified.
 // Use IsSelfModified to check only the current object.
 //
-// COMMON MISTAKE: Checking IsModified to determine if the current object
-// needs an [Update] call, when actually a child was modified.
+// COMMON MISTAKE: Checking IsModified inside a root's [Update] to decide
+// whether to write the root's own row, when actually a child was modified.
 //
-// WRONG assumption:
-//   if (parent.IsModified) {
-//       // Parent itself might not be modified - could be a child
-//       await parent.Update(...);  // Might update unchanged data
+// WRONG (inside the root's [Update]):
+//   var row = repository.Get(Id);
+//   if (IsModified) {
+//       // The root itself might not be modified - could be a child
+//       MapTo(row);  // Rewrites unchanged root columns
 //   }
 //
-// RIGHT (for persistence logic):
-//   if (parent.IsSelfModified) {
-//       // Only update if THIS object changed
-//       await parent.Update(...);
+// RIGHT (inside the root's [Update]):
+//   var row = repository.Get(Id);
+//   if (IsSelfModified) {
+//       MapTo(row);  // Only when THIS object's own properties changed
 //   }
-//   foreach (var child in parent.Items) {
-//       if (child.IsSelfModified) {
-//           // Handle child updates
-//       }
-//   }
+//   itemsFactory.Save(Items, row.Items);  // the list's [Update] decides per
+//                                          // child: new, modified, removed
+//   repository.SaveChanges();
 //
-// NOTE: You typically don't write this persistence logic manually.
-// The framework's Save() method handles it correctly.
+// NOTE: The root never inspects children's state itself. The list's [Update]
+// writes only new and modified children (each through the child factory's
+// Save), removes the rows of removed children, and skips the rest.
 // This gotcha is about understanding what IsModified means.
 // =============================================================================
 
@@ -426,11 +424,8 @@ internal partial class Gotcha5Parent : EntityBase<Gotcha5Parent>, IGotcha5Parent
     [Fetch]
     internal void Fetch(int id, [Service] IGotcha5ChildFactory childFactory)
     {
-        using (PauseAllActions())
-        {
-            this["Name"].LoadValue($"Parent-{id}");
-            Child = childFactory.Fetch(id * 10);
-        }
+        Name = $"Parent-{id}";
+        Child = childFactory.Fetch(id * 10);
     }
 
     [Remote]
@@ -462,7 +457,7 @@ internal partial class Gotcha5Child : EntityBase<Gotcha5Child>, IGotcha5Child
     [Fetch]
     internal void Fetch(int id)
     {
-        this["Value"].LoadValue($"Child-{id}");
+        Value = $"Child-{id}";
     }
 
     [Insert]

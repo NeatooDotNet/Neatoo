@@ -140,9 +140,9 @@ internal partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>
     internal void Fetch(int id, [Service] IErrorDemoRepository repository)
     {
         var data = repository.GetById(id);
-        this["Name"].LoadValue(data.Name);
-        this["Quantity"].LoadValue(data.Quantity);
-        this["Email"].LoadValue(data.Email);
+        Name = data.Name;
+        Quantity = data.Quantity;
+        Email = data.Email;
     }
 
     [Remote]

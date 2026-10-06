@@ -16,9 +16,10 @@ namespace Design.Domain.FactoryOperations;
 // These attributes mark methods that Save() will route to based on entity state.
 //
 // GENERATOR BEHAVIOR: the generated LocalSave routes on IsDeleted, then IsNew —
-// nothing else (verbatim from the emitted factory code):
+// nothing else (see Generated/Neatoo.Generator/Neatoo.Factory/*SaveDemoFactory.g.cs):
 //
-//   if (target.IsDeleted)      { return LocalDelete(target, ...); }  // throws NotImplementedException if no [Delete]
+//   if (target.IsDeleted)      { if (target.IsNew) return null;      // never existed: no-op
+//                                return LocalDelete(target, ...); }  // throws NotImplementedException if no [Delete]
 //   else if (target.IsNew)     { return LocalInsert(target, ...); }
 //   else                       { return LocalUpdate(target, ...); }
 //
@@ -26,9 +27,9 @@ namespace Design.Domain.FactoryOperations;
 // - IsModified is NEVER consulted by routing. An unmodified existing entity
 //   still routes to [Update] if Save is invoked (EntityBase.Save() won't
 //   invoke it — IsSavable gates that — but a direct factory.Save(target) will).
-// - IsDeleted wins over IsNew: a created-then-deleted entity routes to
-//   [Delete], not to a silent no-op.
-// - There is no "nothing to do" short-circuit in the factory.
+// - A created-then-deleted entity is a no-op: it never existed, so nothing
+//   is deleted and the factory returns null.
+// - Apart from that case there is no "nothing to do" short-circuit.
 //
 // DESIGN DECISION: You NEVER call these directly. Save() handles routing.
 //
@@ -52,9 +53,10 @@ namespace Design.Domain.FactoryOperations;
 // - No state changes; the object is typically discarded.
 // - Nothing happens to any parent list — lifecycle hooks fire only on the
 //   single factory target. (In the canonical aggregate pattern, deleted
-//   CHILDREN never get a [Delete] factory call at all: the list's [Update]
-//   removes them from persistence directly, and the LIST's own
-//   FactoryComplete(Update) clears its DeletedList.)
+//   CHILDREN never get a [Delete] factory call at all - children have no
+//   [Delete]: the list's [Update] removes their rows from the parent row's
+//   child collection, and the LIST's own FactoryComplete(Update) clears its
+//   DeletedList.)
 // =============================================================================
 
 /// <summary>
@@ -85,9 +87,9 @@ internal partial class SaveDemo : EntityBase<SaveDemo>, ISaveDemo
     internal void Fetch(int id, [Service] ISaveDemoRepository repository)
     {
         var data = repository.GetById(id);
-        this["Id"].LoadValue(data.Id);
-        this["Name"].LoadValue(data.Name);
-        this["Amount"].LoadValue(data.Amount);
+        Id = data.Id;
+        Name = data.Name;
+        Amount = data.Amount;
     }
 
     // =========================================================================
@@ -107,8 +109,8 @@ internal partial class SaveDemo : EntityBase<SaveDemo>, ISaveDemo
         // Database assigns the Id - we get it back and store it
         var generatedId = repository.Insert(Name!, Amount);
 
-        // Use LoadValue to set Id without marking as modified
-        this["Id"].LoadValue(generatedId);
+        // Paused by the Insert operation - assignment does not mark Id modified
+        Id = generatedId;
 
         // After Insert completes, FactoryComplete(Insert) is called:
         // - MarkUnmodified() clears modification state
@@ -144,11 +146,11 @@ internal partial class SaveDemo : EntityBase<SaveDemo>, ISaveDemo
     // Called by Save() when: IsDeleted=true — checked FIRST, before IsNew
     // (see the routing block at the top of this file).
     //
-    // COMMON GOTCHA: a created-then-deleted ROOT still routes here (IsDeleted
-    // wins over IsNew), so a [Delete] body should tolerate an entity that was
-    // never persisted. Deleted CHILDREN in the canonical aggregate pattern
+    // A created-then-deleted ROOT never reaches this method: the factory
+    // treats it as a no-op (see the routing block at the top). Deleted CHILDREN in the canonical aggregate pattern
     // never reach a [Delete] at all — new removed items are discarded by the
-    // list, and persisted removed items are deleted by the list's [Update].
+    // list, and persisted removed items have their rows removed by the list's
+    // [Update].
     // =========================================================================
     [Remote]
     [Delete]
@@ -165,12 +167,17 @@ internal partial class SaveDemo : EntityBase<SaveDemo>, ISaveDemo
 // Aggregate Save - Root Delegates, Every Object Gets Its Own Factory Lifecycle
 // =============================================================================
 // When saving an aggregate:
-// 1. The root's Insert/Update persists the root, then delegates child
-//    persistence to the LIST factory's Save.
-// 2. The list's [Update] routes each child through the ITEM factory's Save
-//    (the child's own IsNew decides insert vs update) and deletes removed
-//    children from persistence.
-// 3. FactoryComplete fires per factory target as each save completes: items
+// 1. The root's Insert makes its row (Update gets it from the repository),
+//    maps itself into it, then hands the row's CHILD COLLECTION to the LIST
+//    factory's Save.
+// 2. The list's [Update] brings that collection in line with the list:
+//    removed (persisted) children have their rows removed - children have no
+//    [Delete]; new children get a new row and go through the ITEM factory's
+//    Save (-> [Insert]); modified children go through it with their existing
+//    row (-> [Update]); unmodified children are skipped. Each child maps
+//    itself into its row.
+// 3. The root flushes ONCE (SaveChanges).
+// 4. FactoryComplete fires per factory target as each save completes: items
 //    are marked unmodified+old, the list clears its DeletedList, the root is
 //    marked unmodified+old. There is NO graph-wide cascade.
 // See the OrderAggregate for the fully documented canonical form.
@@ -182,7 +189,7 @@ internal partial class SaveDemo : EntityBase<SaveDemo>, ISaveDemo
 [Factory]
 internal partial class SaveAggregateDemo : EntityBase<SaveAggregateDemo>, ISaveAggregateDemo
 {
-    public partial int Id { get; set; }
+    public partial Guid Id { get; set; }
     public partial string? Title { get; set; }
     public partial ISaveDemoItemList? Items { get; set; }
 
@@ -196,26 +203,34 @@ internal partial class SaveAggregateDemo : EntityBase<SaveAggregateDemo>, ISaveA
 
     [Remote]
     [Fetch]
-    internal void Fetch(int id,
+    internal bool Fetch(Guid id,
         [Service] ISaveAggregateRepository repository,
         [Service] ISaveDemoItemListFactory itemsFactory)
     {
         // Paused by its own factory operation - no explicit PauseAllActions
-        var data = repository.GetParentById(id);
-        this["Id"].LoadValue(data.Id);
-        this["Title"].LoadValue(data.Title);
+        var row = repository.Get(id);
+        if (row == null)
+        {
+            return false;  // the generated factory returns null
+        }
 
-        // Children load through the list factory's [Fetch] - each child
-        // completes its own factory lifecycle (IsNew=false, IsModified=false)
-        Items = itemsFactory.Fetch(id);
+        Id = row.Id;
+        Title = row.Title;
+
+        // Children load through the list factory's [Fetch] from the child
+        // rows - each child completes its own factory lifecycle
+        // (IsNew=false, IsModified=false)
+        Items = itemsFactory.Fetch(row.Items);
+        return true;
     }
 
     // =========================================================================
-    // Aggregate Insert - Save Root, Delegate Children to the List Factory
+    // Aggregate Insert - Make the Row, Hand Its Child Collection to the List
     // =========================================================================
-    // 1. Insert the parent first (to get the ID for FK relationships)
-    // 2. Delegate to the list factory - every item is new, so each routes to
-    //    the item factory's Insert
+    // 1. Set its own key, make its row, map itself into it, add it
+    // 2. Hand row.Items to the list factory - every item is new, so each gets
+    //    a new row and routes to the item factory's Insert
+    // 3. Flush once
     //
     // DESIGN DECISION: The root's Insert and Update delegate to the SAME list
     // factory Save. This keeps the aggregate boundary clear and gives every
@@ -223,66 +238,102 @@ internal partial class SaveAggregateDemo : EntityBase<SaveAggregateDemo>, ISaveA
     // =========================================================================
     [Remote]
     [Insert]
-    internal void Insert(
+    internal async Task Insert(
         [Service] ISaveAggregateRepository repository,
         [Service] ISaveDemoItemListFactory itemsFactory)
     {
-        // Insert parent first - get generated ID (paused - assignment is clean)
-        Id = repository.InsertParent(Title!);
+        // Re-run every rule on the server and refuse an invalid aggregate.
+        // Recommended - the framework does not do this for you. Throw, never
+        // return: after [Insert]/[Update] returns, the framework marks the
+        // entity saved whether or not anything was written.
+        await RunRules(RunRulesFlag.All);
+        if (!IsValid)
+        {
+            throw new SaveOperationException(SaveFailureReason.IsInvalid);
+        }
 
-        itemsFactory.Save(Items!, Id);
+        // The entity sets its own key (paused - assignment is clean)
+        Id = Guid.NewGuid();
+
+        var row = new SaveAggregateDemoRow();
+        MapTo(row);
+        repository.Add(row);
+
+        itemsFactory.Save(Items!, row.Items);
+
+        repository.SaveChanges();
     }
 
     // =========================================================================
-    // Aggregate Update - Delegate Child Persistence to the List Factory
+    // Aggregate Update - Get the Row, Hand Its Child Collection to the List
     // =========================================================================
-    // COMMON MISTAKE: Iterating Items here and writing child rows to the
-    // repository directly. The rows get written, but no child factory
-    // operation runs, so nothing marks the children unmodified or old:
-    // the aggregate still reports IsModified=true after Save, new children
-    // re-insert on the next Save, and the DeletedList never clears.
-    // FactoryComplete fires per factory target - never as a cascade from the
-    // parent - so each child must be saved through its own factory.
+    // COMMON MISTAKE: Iterating Items here and writing the child rows
+    // directly. The rows get written, but no child factory operation runs, so
+    // nothing marks the children unmodified or old: the aggregate still
+    // reports IsModified=true after Save, new children get another row on the
+    // next Save, and the DeletedList never clears. FactoryComplete fires per
+    // factory target - never as a cascade from the parent - so each child must
+    // be saved through its own factory.
     // =========================================================================
     [Remote]
     [Update]
-    internal void Update(
+    internal async Task Update(
         [Service] ISaveAggregateRepository repository,
         [Service] ISaveDemoItemListFactory itemsFactory)
     {
-        // Update parent if it has changes
-        if (IsSelfModified)
+        // Re-run every rule on the server and refuse an invalid aggregate.
+        // Recommended - the framework does not do this for you. Throw, never
+        // return: after [Insert]/[Update] returns, the framework marks the
+        // entity saved whether or not anything was written.
+        await RunRules(RunRulesFlag.All);
+        if (!IsValid)
         {
-            repository.UpdateParent(Id, Title!);
+            throw new SaveOperationException(SaveFailureReason.IsInvalid);
         }
 
-        // Deleted items removed from persistence, new/modified items routed
-        // through the item factory, DeletedList cleared by the list's
+        var row = repository.Get(Id)
+            ?? throw new KeyNotFoundException($"SaveAggregateDemo {Id} not found");
+
+        // Write the root's own columns only if they changed
+        if (IsSelfModified)
+        {
+            MapTo(row);
+        }
+
+        // Removed items' rows removed, new/modified items routed through the
+        // item factory with their row, DeletedList cleared by the list's
         // FactoryComplete(Update)
-        itemsFactory.Save(Items!, Id);
+        itemsFactory.Save(Items!, row.Items);
+
+        repository.SaveChanges();
     }
 
     [Remote]
     [Delete]
     internal void Delete([Service] ISaveAggregateRepository repository)
     {
-        // Delete children first (FK constraint). Direct repository deletes are
-        // intentional - deleted children get no factory operation, and the
-        // whole aggregate is going away.
-        foreach (var item in Items!)
-        {
-            repository.DeleteChild(item.Id);
-        }
+        var row = repository.Get(Id)
+            ?? throw new KeyNotFoundException($"SaveAggregateDemo {Id} not found");
 
-        // Then delete parent
-        repository.DeleteParent(Id);
+        // Removes the root row together with its child rows, as a database
+        // cascade delete would. No loop over the children - they have no
+        // [Delete], and the whole aggregate is going away.
+        repository.Remove(row);
+
+        repository.SaveChanges();
+    }
+
+    private void MapTo(SaveAggregateDemoRow row)
+    {
+        row.Id = Id;
+        row.Title = Title!;
     }
 }
 
 [Factory]
 internal partial class SaveDemoItem : EntityBase<SaveDemoItem>, ISaveDemoItem
 {
-    public partial int Id { get; set; }
+    public partial Guid Id { get; set; }
     public partial string? Name { get; set; }
     public partial int Quantity { get; set; }
 
@@ -293,12 +344,14 @@ internal partial class SaveDemoItem : EntityBase<SaveDemoItem>, ISaveDemoItem
 
     // =========================================================================
     // Child entities carry local (non-[Remote]) [Fetch]/[Insert]/[Update]
-    // operations, reachable only through the aggregate's factory flow: the
-    // signatures require the parent's identity, and the interfaces expose no
-    // Save(). Insert and Update share a parameter list, so the generated
-    // factory produces a single Save(item, parentId) routed on the ITEM's own
-    // IsNew - and each routed call marks the item unmodified+old as it
-    // completes.
+    // operations that take the child's own row - reachable only through the
+    // aggregate's factory flow, because only the list's operations hold the
+    // rows, and the interfaces expose no Save(). The child maps itself; no
+    // repository is involved. Insert and Update share a parameter list, so
+    // the generated factory produces a single Save(item, row) routed on the
+    // ITEM's own IsNew - and each routed call marks the item unmodified+old as
+    // it completes. No [Delete]: the list's [Update] removes a removed
+    // child's row.
     //
     // DID NOT DO THIS: Have child entities save themselves.
     //
@@ -314,25 +367,31 @@ internal partial class SaveDemoItem : EntityBase<SaveDemoItem>, ISaveDemoItem
     // =========================================================================
 
     [Fetch]
-    internal void Fetch(int id, string name, int quantity)
+    internal void Fetch(SaveDemoItemRow row)
     {
-        Id = id;      // paused by the factory operation - assignment is clean
-        Name = name;
-        Quantity = quantity;
+        Id = row.Id;      // paused by the factory operation - assignment is clean
+        Name = row.Name;
+        Quantity = row.Quantity;
     }
 
     [Insert]
-    internal void Insert(int parentId, [Service] ISaveAggregateRepository repository)
+    internal void Insert(SaveDemoItemRow row)
     {
-        Id = repository.InsertChild(parentId, Name!, Quantity);
+        Id = Guid.NewGuid();  // the entity sets its own key
+        MapTo(row);
     }
 
     [Update]
-    internal void Update(int parentId, [Service] ISaveAggregateRepository repository)
+    internal void Update(SaveDemoItemRow row)
     {
-        // parentId unused - exists so Insert/Update share a signature and the
-        // generator produces a single Save(item, parentId)
-        repository.UpdateChild(Id, Name!, Quantity);
+        MapTo(row);
+    }
+
+    private void MapTo(SaveDemoItemRow row)
+    {
+        row.Id = Id;
+        row.Name = Name!;
+        row.Quantity = Quantity;
     }
 }
 
@@ -343,22 +402,20 @@ internal partial class SaveDemoItemList : EntityListBase<ISaveDemoItem>, ISaveDe
     public void Create() { }
 
     [Fetch]
-    internal void Fetch(int parentId,
-        [Service] ISaveAggregateRepository repository,
+    internal void Fetch(IEnumerable<SaveDemoItemRow> rows,
         [Service] ISaveDemoItemFactory itemFactory)
     {
-        foreach (var d in repository.GetChildrenByParentId(parentId))
+        foreach (var row in rows)
         {
-            Add(itemFactory.Fetch(d.Id, d.Name, d.Quantity));
+            Add(itemFactory.Fetch(row));
         }
     }
 
     [Update]
-    internal void Update(int parentId,
-        [Service] ISaveAggregateRepository repository,
+    internal void Update(ICollection<SaveDemoItemRow> rows,
         [Service] ISaveDemoItemFactory itemFactory)
     {
-        foreach (var item in this.Union(DeletedList).ToList())
+        foreach (var item in this.Union(DeletedList))
         {
             if (item.IsDeleted)
             {
@@ -366,12 +423,18 @@ internal partial class SaveDemoItemList : EntityListBase<ISaveDemoItem>, ISaveDe
                 // never queued for deletion
                 if (!item.IsNew)
                 {
-                    repository.DeleteChild(item.Id);
+                    rows.Remove(rows.Single(r => r.Id == item.Id));
                 }
             }
-            else if (item.IsNew || item.IsModified)
+            else if (item.IsNew)
             {
-                itemFactory.Save(item, parentId);
+                var row = new SaveDemoItemRow();
+                rows.Add(row);
+                itemFactory.Save(item, row);
+            }
+            else if (item.IsModified)
+            {
+                itemFactory.Save(item, rows.Single(r => r.Id == item.Id));
             }
         }
     }
@@ -389,14 +452,33 @@ public interface ISaveDemoRepository
     void Delete(int id);
 }
 
+// Aggregate persistence, modeled on an EF Core unit of work: the row classes
+// stand in for EF entities, Get returns the root row with its child rows, and
+// SaveChanges flushes everything added, changed or removed.
+
+public class SaveAggregateDemoRow
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = "";
+    public List<SaveDemoItemRow> Items { get; } = new();
+}
+
+public class SaveDemoItemRow
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = "";
+    public int Quantity { get; set; }
+}
+
 public interface ISaveAggregateRepository
 {
-    (int Id, string Title) GetParentById(int id);
-    IEnumerable<(int Id, string Name, int Quantity)> GetChildrenByParentId(int parentId);
-    int InsertParent(string title);
-    void UpdateParent(int id, string title);
-    void DeleteParent(int id);
-    int InsertChild(int parentId, string name, int quantity);
-    void UpdateChild(int id, string name, int quantity);
-    void DeleteChild(int id);
+    /// <summary>The root row with its child rows, or null if there is none.</summary>
+    SaveAggregateDemoRow? Get(Guid id);
+
+    void Add(SaveAggregateDemoRow row);
+
+    /// <summary>Removes the root row and its child rows.</summary>
+    void Remove(SaveAggregateDemoRow row);
+
+    void SaveChanges();
 }

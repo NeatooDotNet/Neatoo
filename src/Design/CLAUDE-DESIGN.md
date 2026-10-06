@@ -92,7 +92,7 @@ See `Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs` for the author
 
 This distinction affects Neatoo entity behavior. See the `/RemoteFactory` skill for full details.
 
-**Key point for Neatoo:** Constructor-injected services survive serialization round-trips (available on client and server). Method-injected services are server-only and not serialized.
+**Key point for Neatoo:** Services are never serialized; each tier resolves them from its own container. A constructor-injected service is resolved on both tiers, so it must be registered on both, and an entity or rule constructor never takes a server-only service. A method `[Service]` parameter is resolved on the tier where the operation runs: on the server for a `[Remote]` root operation and for an `internal` child operation, on whichever tier calls a local `[Create]`.
 
 ### 3. DeletedList Lifecycle
 
@@ -107,40 +107,53 @@ Item removed from list:
       └── ContainingList reference preserved
 
 During aggregate Save():
-  ├── Each DeletedList item: [Delete] called
-  └── FactoryComplete(Update):
+  ├── Root [Insert]/[Update]: map itself into its row, hand the row's
+  │   child collection to the list factory's Save, then SaveChanges() once
+  ├── List [Update], over this.Union(DeletedList):
+  │   ├── Deleted, not new: its row is removed from the collection
+  │   │   (no child [Delete] runs — children have none)
+  │   ├── New: a new row is added, then childFactory.Save(child, row)
+  │   ├── Modified existing: childFactory.Save(child, itsRow)
+  │   └── Unmodified existing: skipped
+  └── List FactoryComplete(Update):
       ├── DeletedList.Clear()
       └── ContainingList references cleared
+
+Root deleted (root [Delete]):
+  └── repository.Remove(row) removes the root row with its child rows
+      (as a database cascade would), then SaveChanges(); no child loop
 
 Intra-aggregate move (item from ListA to ListB):
   ├── ListA.Remove(item) → goes to ListA.DeletedList
   ├── ListB.Add(item) → removed from DeletedList, UnDeleted
-  └── Result: No persistence delete needed
+  └── Result: its row is not removed
 ```
 
-### 4. Factory Operations and PauseAllActions
+The full shape is in `Design.Domain/Aggregates/OrderAggregate/` (`Order.cs`, `OrderItemList.cs`, `OrderItem.cs`).
 
-During factory operations, rules are paused:
+### 4. Factory Operations Are Already Paused
+
+Every factory operation runs inside `FactoryStart`/`FactoryComplete`, so the object is paused for the length of the body. Assign properties directly: assignment marks nothing modified and runs no rules.
 
 ```csharp
 [Create]
 public void Create()
 {
-    // Rules don't fire during Create - IsPaused=true
-    Name = "Default";  // No rule triggered
+    Name = "Default";  // Paused: not modified, no rule triggered
 }
-// After Create: IsPaused=false, rules eligible
 
-// To load data without triggering rules or modification:
+[Remote]
 [Fetch]
-public void Fetch(int id, [Service] IRepository repo)
+internal void Fetch(int id, [Service] IRepository repo)
 {
-    using (PauseAllActions())  // For EntityBase - already paused during Fetch
-    {
-        this["Name"].LoadValue(repo.Get(id).Name);  // No IsModified=true
-    }
+    Name = repo.Get(id).Name;  // Paused: a clean baseline load
 }
+// After the operation returns: IsPaused=false, IsModified=false
 ```
+
+Do not use `LoadValue`, `PauseAllActions` or `MarkUnmodified` inside a factory operation. Wrapping the body in `using (PauseAllActions())` resumes the object early, when the `using` disposes, before the operation completes.
+
+Rules do not run while paused. A factory method that sets properties feeding a computed value calls `await RunRules(RunRulesFlag.All)` at the end of its body.
 
 ### 5. Two-Generator Interaction
 
@@ -157,7 +170,7 @@ Neatoo uses two source generators:
 - Detects [Create], [Fetch], etc. methods
 - Generates factory interfaces (IEmployeeFactory)
 - Generates factory implementations
-- For [Remote] methods: generates HTTP client proxies
+- For [Remote] methods: generates a client path that sends the call to the single `/api/neatoo` endpoint, and a server path that runs it
 
 Both generators run independently during compilation.
 
@@ -169,31 +182,45 @@ For RemoteFactory-specific documentation (factory attributes, service injection,
 
 ### Save() Routing Based on Entity State
 
-The `Save()` method routes based on Neatoo entity state:
-- `IsDeleted && !IsNew` → `[Delete]` method
-- `IsNew` → `[Insert]` method
-- `IsModified` → `[Update]` method
+The generated factory's `Save()` routes on Neatoo entity state:
+- `IsDeleted`: `[Delete]`, or nothing at all when the object is also `IsNew` (it never existed)
+- `IsNew`: `[Insert]`
+- otherwise: `[Update]`
 
-This routing is determined by Neatoo's state properties, not RemoteFactory.
+`IsModified` is not consulted by routing. `entity.Save()` refuses to call the factory unless `IsSavable` is true; a direct `factory.Save(target)` does not check.
+
+Before the write, the root's `[Insert]` and `[Update]` should re-run the rules on the server and refuse an invalid aggregate. The framework does not do this for you; it is the recommended form:
+
+```csharp
+await RunRules(RunRulesFlag.All);
+if (!IsValid)
+    throw new SaveOperationException(SaveFailureReason.IsInvalid);
+```
+
+Never `return` instead of throwing: after `[Insert]` or `[Update]` returns, the framework marks the entity saved even though nothing was written.
 
 ## Common Implementation Tasks
 
 ### Adding a New Entity
 
-1. Create class inheriting from `EntityBase<T>`
-2. Add `[Factory]` attribute
-3. Add partial properties for data
-4. Add constructor with `IEntityBaseServices<T>` parameter
-5. Add validation rules in constructor
-6. Add factory methods: `[Create]`, `[Remote][Fetch]`, `[Remote][Insert]`, `[Remote][Update]`, `[Remote][Delete]`
+1. Declare a public interface extending `IEntityRoot` (a root) or `IEntityBase` (a child)
+2. Create an `internal partial` class inheriting from `EntityBase<T>` and implementing the interface
+3. Add `[Factory]` attribute
+4. Add partial properties for data; type every entity, list and child reference on its interface
+5. Add constructor with `IEntityBaseServices<T>` parameter
+6. Add validation rules in constructor
+7. Add factory methods. A root: `[Create]`, and `[Remote]` `internal` `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]`
 
 ### Adding a Child Entity
 
 Same as above, but:
 - The entity gets a `ContainingList` when added to an EntityListBase, which routes its `Delete()` through the list
-- Do NOT add `[Remote]` to Insert/Update/Delete - parent handles persistence
 - The child entity interface extends `IEntityBase` (NOT `IEntityRoot`) -- consumers cannot access `IsSavable` or `Save()` on child entities
-- Child `[Insert]`/`[Update]` methods often require the parent entity or parent ID as parameters, which outside consumers cannot fulfill
+- The child maps itself to its own row: `[Fetch](ChildRow row)` reads from it, `[Insert](ChildRow row)` sets its own key (`Id = Guid.NewGuid();`) and writes to it, `[Update](ChildRow row)` writes to it. All three are `internal`, never `[Remote]`, and take no `[Service]` repository. Outside consumers cannot supply the row
+- No child `[Delete]`: the list's `[Update]` removes a removed child's row
+- `[Create]` overloads stay `public` -- the client creates a child and `Add`s it to the list
+- The list gets `[Fetch](IEnumerable<ChildRow> rows, [Service] IChildFactory childFactory)`, building each child with `childFactory.Fetch(row)` (never `Create`), and `[Update](ICollection<ChildRow> rows, [Service] IChildFactory childFactory)`, which walks `this.Union(DeletedList)` as in DeletedList Lifecycle above
+- The root's `[Fetch]` passes its row's child rows to the list factory's `Fetch`; its `[Insert]`/`[Update]` pass its row's child collection to the list factory's `Save`, then flush once
 
 ### Adding Validation Rules
 
@@ -365,16 +392,16 @@ entity.Name = "Test";
 Assert.IsTrue(entity.IsValid);  // May be stale - rule still running!
 ```
 
-### LoadValue vs SetValue Thread Safety
+### Setting Values and Thread Safety
 
-Both `LoadValue()` and `SetValue()` should be called from the owning thread:
+Set values from the owning thread. Whether the property setter tracks the change depends on pause state:
 
-| Method | Triggers Rules | Sets IsModified | Safe During Pause |
-|--------|---------------|-----------------|-------------------|
-| `SetValue()` | Yes (if not paused) | Yes | Only if paused |
-| `LoadValue()` | No | No | Yes |
+| Where | Triggers Rules | Sets IsModified |
+|-------|----------------|-----------------|
+| Inside a factory operation, or during deserialization (paused) | No | No |
+| Anywhere else | Yes | Yes |
 
-**Key Point:** During `[Fetch]` operations, the factory pauses the object, so `LoadValue()` calls are safe and don't trigger rule cascades.
+`IValidateProperty.LoadValue()` sets a value without tracking regardless of pause state. The framework uses it; a factory operation assigns the property instead.
 
 ### Factory Operation Threading
 

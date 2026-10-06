@@ -119,7 +119,7 @@ internal partial class SharedRuleEmployee : EntityBase<SharedRuleEmployee>, ISha
 ## When to Use
 
 - A rule applies to 2+ entity types that share common properties
-- The rule needs injected services (repository, external service, etc.)
+- The rule needs an injected `[Execute]` command, or a service registered on both tiers (never a repository or other server-only service)
 - Entity constructors are accumulating service parameters only to forward them to rules
 
 ## Contrast with Entity-Specific Rules

@@ -273,17 +273,15 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     [Fetch]
     internal void Fetch(int id, [Service] IDemoRepository repository)
     {
-        // Method [Service] injection - repository only available on server.
+        // Method [Service] injection - this operation is [Remote], so it runs on
+        // the server and the repository resolves there.
         // After Fetch completes, entity is: IsNew=false, IsModified=false
 
-        // Use LoadValue to set properties without triggering modification tracking.
-        // See PropertySystem/PropertyBasics.cs for LoadValue vs SetValue.
-        using (PauseAllActions())
-        {
-            var data = repository.GetById(id);
-            this["Name"].LoadValue(data.Name);
-            this["Value"].LoadValue(data.Value);
-        }
+        // The object is paused by its own factory operation, so plain
+        // assignment is a clean baseline load.
+        var data = repository.GetById(id);
+        Name = data.Name;
+        Value = data.Value;
     }
 
     [Remote]
@@ -418,10 +416,16 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 //        +-- item.ContainingList reference PRESERVED (for save routing)
 //
 // 2. DURING AGGREGATE SAVE (Root.Save()):
-//    |-- Root's [Update] delegates to the LIST factory's Save, which runs the
+//    |-- Root's [Insert]/[Update] maps itself into its row, then hands the
+//    |   row's child collection to the LIST factory's Save, which runs the
 //    |   list's [Update] inside the list's own factory operation
-//    |-- The list's [Update] deletes DeletedList items from persistence and
-//    |   routes surviving items through per-item factory saves
+//    |-- The list's [Update] loops this.Union(DeletedList):
+//    |   |-- Deleted, not new: its row is REMOVED from the collection. No
+//    |   |   child [Delete] runs - children have none.
+//    |   |-- New: a new row is added, then the child factory's Save(child, row)
+//    |   |-- Modified existing: child factory's Save(child, itsRow)
+//    |   +-- Unmodified existing: skipped
+//    |-- The root flushes once (SaveChanges)
 //    |-- When the list's operation completes (FactoryComplete(Update) on the
 //        LIST - fired because the list is a factory target, never as a
 //        cascade from the parent):
@@ -450,7 +454,8 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 //   }
 //
 // WHY NOT: Separate DeletedList means iteration only sees active items.
-// Persistence code iterates DeletedList for deletes, main list for others.
+// The list's [Update] reaches the removed items through this.Union(DeletedList)
+// and removes their rows; everywhere else sees only the active items.
 // =============================================================================
 
 /// <summary>
@@ -468,8 +473,10 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 internal partial class DemoEntityList : EntityListBase<IDemoEntity>, IDemoEntityList
 {
     // DESIGN DECISION: EntityListBase doesn't define IsSavable or Save().
-    // Lists are ALWAYS saved through their parent aggregate root.
-    // The parent's Save() method iterates the list and calls Insert/Update/Delete.
+    // Lists are ALWAYS saved through their parent aggregate root: the root's
+    // [Insert]/[Update] hands its row's child collection to the list
+    // factory's Save, and the list's own [Update] brings that collection in
+    // line (see Aggregates/OrderAggregate/OrderItemList.cs).
 
     /// <summary>
     /// Test helper: Exposes the count of items in DeletedList.
@@ -553,18 +560,20 @@ public interface IDemoRepository
 // RIGHT:
 //   await parent.Save();  // Parent save persists all child changes
 //
-// COMMON MISTAKE: Using SetValue instead of LoadValue during Fetch.
+// COMMON MISTAKE: Using LoadValue, PauseAllActions or MarkUnmodified inside a
+// factory operation. The operation already pauses the object, so plain
+// assignment is the load.
 //
 // WRONG:
-//   [Fetch]
-//   public void Fetch(int id, [Service] IRepo repo) {
-//       Name = repo.Get(id).Name;  // Sets IsModified=true!
+//   [Remote, Fetch]
+//   internal void Fetch(int id, [Service] IRepo repo) {
+//       this["Name"].LoadValue(repo.Get(id).Name);  // Noise - the object is already paused
 //   }
 //
 // RIGHT:
-//   [Fetch]
-//   public void Fetch(int id, [Service] IRepo repo) {
-//       this["Name"].LoadValue(repo.Get(id).Name);  // IsModified stays false
+//   [Remote, Fetch]
+//   internal void Fetch(int id, [Service] IRepo repo) {
+//       Name = repo.Get(id).Name;  // Paused: IsModified stays false, no rules run
 //   }
 //
 // COMMON MISTAKE: Expecting removed items to persist without aggregate Save().
@@ -575,7 +584,8 @@ public interface IDemoRepository
 //
 // RIGHT:
 //   parent.Children.Remove(child);  // Child in DeletedList
-//   await parent.Save();  // NOW child [Delete] method called
+//   await parent.Save();  // NOW the list's [Update] removes the child's row
+//                         // (children have no [Delete])
 //
 // COMMON MISTAKE: Not waiting for async operations.
 //

@@ -78,17 +78,20 @@ public static class ServiceRegistrationDemo
     // =========================================================================
     // Server vs Client Registration
     // =========================================================================
-    // Server and client register the same types, but get different implementations
-    // based on [FactoryMode] assembly attribute.
+    // Server and client load the SAME domain assembly and the same generated
+    // factories. The mode passed to AddNeatooServices picks the path at runtime.
     //
-    // Server (FactoryMode.Full):
-    //   - Factories resolve all [Service] dependencies
-    //   - Methods execute locally with full access
+    // Server (NeatooFactory.Server):
+    //   - Factories resolve [Service] parameters from the server's container
+    //   - Every operation executes locally
     //
-    // Client (FactoryMode.RemoteOnly):
-    //   - Factories for [Remote] methods make HTTP calls
-    //   - Non-[Remote] methods execute locally
-    //   - [Service] parameters throw "not registered" on client
+    // Client (NeatooFactory.Remote):
+    //   - [Remote] operations are sent to the server's single POST /api/neatoo
+    //     endpoint
+    //   - Local operations (a [Create] with no [Remote]) execute on the client,
+    //     resolving their [Service] parameters from the client's container
+    //   - internal operations are server-only: calling one throws
+    //     "Server-only method called in non-server runtime."
     // =========================================================================
     public static void RegisterServerServices(IServiceCollection services)
     {
@@ -108,9 +111,10 @@ public static class ServiceRegistrationDemo
         // Client registration - NeatooFactory.Remote for HTTP proxy factories
         services.AddNeatooServices(NeatooFactory.Remote, typeof(ServiceRegistrationDemo).Assembly);
 
-        // Client also needs:
-        // - HttpClient for remote factory calls
-        // services.AddHttpClient<INeatooHttpClient, NeatooHttpClient>();
+        // Client also needs an HttpClient registered under RemoteFactory's key,
+        // pointed at the server (see src/Examples/Person/Person.App/Program.cs):
+        // services.AddKeyedScoped(RemoteFactoryServices.HttpClientKey,
+        //     (sp, key) => new HttpClient { BaseAddress = new Uri(serverUrl) });
     }
 }
 
@@ -119,21 +123,12 @@ public static class ServiceRegistrationDemo
 // =============================================================================
 // AddNeatooServices registers these service patterns:
 //
-// FOR EACH ValidateBase<T>:
-//   services.AddTransient<T>();
-//   services.AddTransient<IValidateBaseServices<T>, ValidateBaseServices<T>>();
-//   services.AddTransient<ITFactory, TFactory>();  // Generated
-//
-// FOR EACH EntityBase<T>:
-//   services.AddTransient<T>();
-//   services.AddTransient<IEntityBaseServices<T>, EntityBaseServices<T>>();
-//   services.AddTransient<IFactorySave<T>, TFactory>();  // Generated
-//   services.AddTransient<ITFactory, TFactory>();  // Generated
-//
-// SUPPORTING SERVICES:
-//   services.AddTransient(typeof(IPropertyFactory<>), typeof(PropertyFactory<>));
-//   services.AddTransient(typeof(IPropertyInfoList<>), typeof(PropertyInfoList<>));
-//   services.AddTransient(typeof(IRuleManager<>), typeof(RuleManager<>));
+// - Neatoo's core services for ValidateBase<T> and EntityBase<T> (the
+//   services objects, the property factory, the rule manager). See
+//   src/Neatoo/AddNeatooServices.cs for the exact registrations and lifetimes.
+// - The generated factories, registered by a generated registrar
+//   ([assembly: NeatooFactoryRegistrar]); factories are scoped.
+// - Domain types themselves, so DI can construct them.
 //
 // DESIGN DECISION: Transient lifetime for domain objects.
 // Each factory call creates a new instance. Domain objects don't share state.
@@ -187,7 +182,7 @@ public static class ServiceRegistrationDemo
 //
 // ERROR: "Unable to resolve service for type 'IEmployeeFactory'"
 //
-// FIX: Add services.AddNeatooServices(typeof(Employee).Assembly);
+// FIX: Add services.AddNeatooServices(NeatooFactory.Server, typeof(Employee).Assembly);
 //
 // COMMON MISTAKE: Registering domain objects manually.
 //
@@ -201,11 +196,11 @@ public static class ServiceRegistrationDemo
 // COMMON MISTAKE: Wrong assembly reference.
 //
 // WRONG:
-//   services.AddNeatooServices(typeof(SomeController).Assembly);
+//   services.AddNeatooServices(NeatooFactory.Server, typeof(SomeController).Assembly);
 //   // Controllers assembly doesn't contain domain types!
 //
 // FIX: Use a type from the domain assembly:
-//   services.AddNeatooServices(typeof(Employee).Assembly);
+//   services.AddNeatooServices(NeatooFactory.Server, typeof(Employee).Assembly);
 // =============================================================================
 
 // =============================================================================
@@ -232,8 +227,9 @@ public static class ServiceRegistrationDemo
 //    - Methods resolve domain object and call factory methods
 //    - [Service] parameters resolved from DI at execution time
 //
-// 5. GENERATES registration extension
-//    - AddNeatooRemoteFactory extension method
+// 5. GENERATES a registrar
+//    - A static FactoryServiceRegistrar, found through
+//      [assembly: NeatooFactoryRegistrar] when AddNeatooServices runs
 //    - Registers all factory interfaces and implementations
 //
 // GENERATOR OUTPUT LOCATION:
@@ -290,35 +286,50 @@ public static class ServiceRegistrationDemo
 //       RuleManager.AddRule(new NameRequiredRule());
 //   }
 //
-// PATTERN 2: Rules with dependencies (less common)
+// PATTERN 2: Rules with dependencies
 //
-//   public class UniqueNameRule : AsyncRuleBase<Employee>
+// A rule is built on every tier that builds the entity, the browser included,
+// so it never takes a server-only service (a repository, a DbContext). A rule
+// that needs the server takes an [Execute] command delegate instead; in the
+// browser the delegate crosses to the server, on the server it calls the
+// method directly.
+//
+//   [Factory]
+//   public static partial class UniqueName
 //   {
-//       private readonly IEmployeeRepository _repo;
-//
-//       public UniqueNameRule(IEmployeeRepository repo) : base(t => t.Name)
-//       {
-//           _repo = repo;
-//       }
-//
-//       protected override async Task<IRuleMessages> Execute(...)
-//       {
-//           if (await _repo.NameExists(target.Name))
-//               return (nameof(Employee.Name), "Name already exists").AsRuleMessages();
-//           return None;
-//       }
+//       [Remote, Execute]
+//       private static Task<bool> _IsUnique(Guid? id, string name,
+//           [Service] IEmployeeRepository repository)
+//           => repository.IsNameUnique(id, name);
 //   }
 //
-//   // Registration:
-//   services.AddTransient<UniqueNameRule>();
+//   internal class UniqueNameRule : AsyncRuleBase<IEmployee>, IUniqueNameRule
+//   {
+//       private readonly UniqueName.IsUnique _isUnique;
+//
+//       public UniqueNameRule(UniqueName.IsUnique isUnique) : base(t => t.Name)
+//       {
+//           _isUnique = isUnique;
+//       }
+//
+//       protected override async Task<IRuleMessages> Execute(IEmployee target, CancellationToken? token = null)
+//           => await _isUnique(target.Id, target.Name)
+//               ? None
+//               : (nameof(IEmployee.Name), "Name already exists").AsRuleMessages();
+//   }
+//
+//   // Registration, on BOTH tiers:
+//   services.AddTransient<IUniqueNameRule, UniqueNameRule>();
 //
 //   // Usage in constructor:
-//   public Employee(IEntityBaseServices<Employee> services,
-//                   [Service] UniqueNameRule uniqueNameRule)
+//   public Employee(IEntityBaseServices<Employee> services, IUniqueNameRule uniqueNameRule)
 //       : base(services)
 //   {
 //       RuleManager.AddRule(uniqueNameRule);
 //   }
+//
+// See src/Examples/Person/Person.DomainModel/UniqueNameRule.cs and
+// UniqueName.cs for a compiled example.
 //
 // DESIGN DECISION: Rules are NOT auto-registered.
 // Rules are typically stateless and created inline. Auto-registration
@@ -371,7 +382,7 @@ public static class ServiceRegistrationDemo
 //
 // "Unable to resolve service for type 'IEmployeeFactory'"
 //   CAUSE: Assembly not registered with AddNeatooServices
-//   FIX: services.AddNeatooServices(typeof(Employee).Assembly);
+//   FIX: services.AddNeatooServices(NeatooFactory.Server, typeof(Employee).Assembly);
 //
 // "Unable to resolve service for type 'IEmployeeRepository'"
 //   CAUSE: Repository not registered

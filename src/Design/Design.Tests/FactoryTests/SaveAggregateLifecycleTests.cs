@@ -15,6 +15,10 @@ namespace Design.Tests.FactoryTests;
 [TestClass]
 public class SaveAggregateLifecycleTests
 {
+    // Written into a stored row after the fetch. A save that writes that row
+    // overwrites it, so finding it afterward proves the row was not written.
+    private const string NotWritten = "(not written by save)";
+
     private IServiceScope _scope = null!;
     private ISaveAggregateDemoFactory _factory = null!;
     private ISaveDemoItemFactory _itemFactory = null!;
@@ -35,6 +39,7 @@ public class SaveAggregateLifecycleTests
         _scope.Dispose();
     }
 
+
     [TestMethod]
     public async Task CreateWithItems_Save_InsertsAllWithIdWriteback_AndGraphIsClean()
     {
@@ -52,17 +57,21 @@ public class SaveAggregateLifecycleTests
         // Act
         demo = (ISaveAggregateDemo)await demo.Save();
 
-        // Assert - routing
-        Assert.AreEqual(1, _repository.InsertedParentIds.Count);
-        Assert.AreEqual(1, _repository.InsertedChildIds.Count);
-        Assert.AreEqual(0, _repository.UpdatedChildIds.Count);
+        // Assert - routing: root row added once, one flush, one child row
+        Assert.AreEqual(1, _repository.AddedRows.Count, "The root row is added exactly once");
+        Assert.AreEqual(1, _repository.SaveChangesCount, "One flush for the whole aggregate");
+        Assert.IsTrue(_repository.Store.TryGetValue(demo.Id, out var stored),
+            "The store holds the root row under the root's key");
+        Assert.AreEqual(1, stored.Items.Count, "The new child gets one new row");
 
-        // Assert - generated-Id writeback (root and child)
-        Assert.AreEqual(_repository.InsertedParentIds[0], demo.Id,
-            "Generated parent Id must land on the root");
+        // Assert - key writeback (root and child): each set its key in its own
+        // [Insert], and entity and row share it
+        Assert.AreNotEqual(Guid.Empty, demo.Id, "The root's key must land on the root");
         Assert.AreEqual(1, demo.Items!.Count);
-        Assert.AreEqual(_repository.InsertedChildIds[0], demo.Items[0].Id,
-            "Generated child Id must land on the child (Update would otherwise target Id 0)");
+        Assert.AreNotEqual(Guid.Empty, demo.Items[0].Id,
+            "The child's key must land on the child (a later Update would otherwise not find its row)");
+        Assert.AreEqual(stored.Items[0].Id, demo.Items[0].Id, "The child and its row must share the key");
+        Assert.AreEqual("Child A", stored.Items[0].Name, "The child maps itself into its row");
 
         // Assert - graph old and clean
         Assert.IsFalse(demo.IsNew);
@@ -75,7 +84,9 @@ public class SaveAggregateLifecycleTests
     public async Task FetchModifyAddRemove_Save_RoutesAllPathsAndGraphIsClean()
     {
         // Arrange - fetched children come via the list/item [Fetch] chain
-        var demo = await _factory.Fetch(1);
+        var seeded = _repository.SeedAggregate();
+        var demo = await _factory.Fetch(seeded.Id);
+        Assert.IsNotNull(demo, "A seeded aggregate should be found");
         Assert.AreEqual(2, demo.Items!.Count, "Precondition: two fetched children");
         foreach (var child in demo.Items)
         {
@@ -83,6 +94,9 @@ public class SaveAggregateLifecycleTests
             Assert.IsFalse(child.IsModified, $"Fetched child {child.Id} should not be modified");
         }
         Assert.IsFalse(demo.IsModified, "Fetched aggregate should not be modified");
+
+        // Mark the root's stored row - writing it would overwrite the mark
+        seeded.Title = NotWritten;
 
         // Modify one child, remove the other, add a new one
         var modified = demo.Items[0];
@@ -100,14 +114,17 @@ public class SaveAggregateLifecycleTests
         demo = (ISaveAggregateDemo)await demo.Save();
 
         // Assert - every path routed exactly once
-        Assert.AreEqual(0, _repository.UpdatedParentIds.Count,
-            "Root header untouched - UpdateParent must be skipped (IsSelfModified guard)");
-        CollectionAssert.AreEqual(new[] { modified.Id }, _repository.UpdatedChildIds,
-            "Only the modified existing child routes to UpdateChild");
-        Assert.AreEqual(1, _repository.InsertedChildIds.Count,
-            "Only the added child routes to InsertChild");
-        CollectionAssert.AreEqual(new[] { removed.Id }, _repository.DeletedChildIds,
-            "Only the removed child routes to DeleteChild");
+        var stored = _repository.Store[seeded.Id];
+        Assert.AreEqual(NotWritten, stored.Title,
+            "Root header untouched - its row must not be written (IsSelfModified guard)");
+        Assert.AreEqual(99, stored.Items.Single(r => r.Id == modified.Id).Quantity,
+            "The modified existing child is written to its row");
+        CollectionAssert.DoesNotContain(stored.Items.Select(r => r.Id).ToList(), removed.Id,
+            "The removed child has its row removed");
+        var addedRows = stored.Items.Where(r => r.Id != modified.Id).ToList();
+        Assert.AreEqual(1, addedRows.Count, "Only the added child gets a new row");
+        Assert.AreEqual(added.Id, addedRows[0].Id, "The added child and its row share the key");
+        Assert.AreEqual(1, _repository.SaveChangesCount, "One flush for the whole aggregate");
 
         // Assert - graph clean after save
         Assert.AreEqual(2, demo.Items!.Count);

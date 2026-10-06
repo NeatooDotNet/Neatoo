@@ -70,10 +70,10 @@ internal partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>, IRuleBasicsD
     internal void Fetch(int id, [Service] IRulesDemoRepository repository)
     {
         var data = repository.GetById(id);
-        this["Name"].LoadValue(data.Name);
-        this["Quantity"].LoadValue(data.Quantity);
-        this["Price"].LoadValue(data.Price);
-        this["Total"].LoadValue(data.Total);
+        Name = data.Name;
+        Quantity = data.Quantity;
+        Price = data.Price;
+        Total = data.Total;
     }
 
     [Remote]

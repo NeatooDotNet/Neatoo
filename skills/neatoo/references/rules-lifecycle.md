@@ -51,13 +51,12 @@ public async Task Create()
     // Total is now calculated
 }
 
-[Fetch]
+[Remote, Fetch]
 internal async Task Fetch(int id, [Service] IRepository repo)
 {
     var data = repo.GetOrder(id);
-    this["Quantity"].LoadValue(data.Quantity);
-    this["UnitPrice"].LoadValue(data.UnitPrice);
-    // LoadValue uses ChangeReason.Load — rules skipped
+    Quantity = data.Quantity;     // Paused: a clean load, rules skipped
+    UnitPrice = data.UnitPrice;
     // Force rules to compute derived values:
     await RunRules(RunRulesFlag.All);
 }
@@ -153,7 +152,9 @@ public enum RunRulesFlag
 
 ## PauseAllActions Usage
 
-`PauseAllActions()` returns `IDisposable`. Use for batch updates where intermediate rule execution is unnecessary:
+`PauseAllActions()` returns `IDisposable`. Never use it inside a factory operation: the operation is already paused, and disposing the `using` resumes the object early.
+
+**Warning:** on an entity, a property set while paused is not marked modified. A batch of edits made inside `PauseAllActions()` on a fetched entity leaves `IsModified` false, so `IsSavable` stays false and the edits are not saved.
 
 ```csharp
 // Batch update — no rules fire between assignments

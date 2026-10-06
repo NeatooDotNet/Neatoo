@@ -20,9 +20,9 @@ Who initiates this behavior?
 │   ├── Parent pushes to another child           → AddAction with child trigger, action writes the sibling (rung 1)
 │   ├── Cross-sibling consistency in a list      → override HandleNeatooPropertyChanged (rung 1)
 │   ├── Validation                               → AddValidation / RuleBase<T> (rung 1)
-│   └── Needs a service
-│       ├── ...and the work stays in the browser → class-based AsyncRuleBase<T> with DI (rung 1)
-│       └── ...and it would round-trip           → NOT a rule. A seam the ViewModel invokes (rung 3)
+│   └── Needs server truth (uniqueness, overlap, a lookup)
+│       ├── One question, one call               → async rule with an injected [Execute] command (rung 1)
+│       └── Work the user starts on purpose      → NOT a rule. A verb or seam the ViewModel invokes (rung 2 or 3)
 ├── A load or fetch — nothing the user did
 │   ├── State the screen shows or gates on       → read model [Fetch] computes it (rung 4)
 │   └── A policy applied on the user's behalf    → the seam that loads the graph applies it to the
@@ -164,7 +164,8 @@ public TreatmentPlan(IEntityBaseServices<TreatmentPlan> services) : base(service
     RuleManager.AddActionAsync(
         async t =>
         {
-            var protocol = await protocolService.GetForDiagnosis(t.DiagnosisCode);
+            // getProtocol is an injected [Execute] command (Pattern 4), not a server-only service
+            var protocol = await getProtocol(t.DiagnosisCode);
             t.ProtocolName = protocol.Name;
             t.MaxVisits = protocol.MaxVisits;
         },
@@ -187,36 +188,78 @@ public TreatmentPlan(IEntityBaseServices<TreatmentPlan> services) : base(service
 
 The cascade is: `DiagnosisCode` -> `MaxVisits` -> `RemainingVisits` -> `NeedsExtension`. The UI binds to `NeedsExtension` without knowing about the cascade.
 
-## Pattern 4: Async Rules — the Client-Resident Case Only
+## Pattern 4: Async Rules That Need the Server
 
-`AddActionAsync` and class-based `AsyncRuleBase<T>` let a rule await. Use them only when the awaited work is **client-resident** — a computation that never leaves the browser: a local engine, a lookup over graph state that is already loaded, a calculation that is merely expensive.
+An async rule may call the server. This is what `AddValidationAsync`, `AddActionAsync` and `AsyncRuleBase<T>` are for: a uniqueness check, an overlap check, a duplicate lookup. Because the rule is on the entity, the user sees the answer on the field while editing instead of after Save.
+
+**Hard rule: a rule takes a command, never a server-only service.** Rule code and entity constructors run in the browser. A rule or an entity constructor that takes an Entity Framework service, a repository, or any other server-only type breaks the client; this has broken release builds. Inject an `[Execute]` command instead. The command encapsulates the server call: in the browser the delegate crosses to the server, and on the server the same delegate calls the method directly.
 
 ```csharp
-// Client-resident: the engine is local, nothing leaves the browser.
-// The header cells recompute as the provider moves the sliders.
-RuleManager.AddAction(
-    t => t.PowerW = t.DSeconds > 0 && t.ATotalCm2 > 0
-        ? t.Fluence * t.ATotalCm2 / t.DSeconds
-        : 0,
-    t => t.Fluence, t => t.ATotalCm2, t => t.DSeconds);
+// The command. [Remote] makes the client cross to the server (RemoteFactory 1.9+:
+// without it, an [Execute] runs on the calling tier). The repository stays server-side.
+[Factory]
+public static partial class UniqueEmail
+{
+    [Remote, Execute]
+    private static async Task<bool> _IsUnique(
+        Guid? contactId, string email, [Service] IContactRepository repository)
+        => !await repository.EmailExistsAsync(contactId, email);
+}
+
+// The rule takes the command delegate. It never sees the repository.
+internal interface IUniqueEmailRule : IRule<IContact> { }
+
+internal class UniqueEmailRule : AsyncRuleBase<IContact>, IUniqueEmailRule
+{
+    private readonly UniqueEmail.IsUnique _isUnique;
+
+    public UniqueEmailRule(UniqueEmail.IsUnique isUnique) : base()
+    {
+        _isUnique = isUnique;
+        AddTriggerProperties(c => c.Email);
+    }
+
+    protected override async Task<IRuleMessages> Execute(IContact target, CancellationToken? token = null)
+    {
+        // Nothing to check until the user has changed the value.
+        if (string.IsNullOrWhiteSpace(target.Email) || !target[nameof(target.Email)].IsModified)
+        {
+            return None;
+        }
+
+        return await _isUnique(target.Id, target.Email)
+            ? None
+            : (nameof(target.Email), "This email is already in use.").AsRuleMessages();
+    }
+}
+
+// The entity receives the rule by constructor injection.
+// Register IUniqueEmailRule in DI on both tiers.
+public Contact(IEntityBaseServices<Contact> services, IUniqueEmailRule uniqueEmailRule) : base(services)
+{
+    RuleManager.AddRule(uniqueEmailRule);
+}
 ```
 
-**Do not use a rule to fetch.** A rule that calls a remote service fires a server round-trip from inside a property setter: on every keystroke, with no user intent behind it, no cancellation, and nowhere to show what happened. In a client-server application that work belongs on a seam the ViewModel invokes deliberately (rung 3), or on a read model the screen loads once (rung 4).
+**Trigger on field commit, not per keystroke.** A rule runs every time its trigger property is set. `MudNeatooTextField` and `MudNeatooNumericField` set the property when the field loses focus, so a rule behind them makes one call per committed value. A control that sets the property continuously (a slider with `Immediate`, a raw `@bind:event="oninput"`) makes one call per change.
+
+**What does not belong in a rule** is work the user should start on purpose: a recalculation that takes several server calls, or a result the user must review before it applies. That is an entity verb or a seam the ViewModel invokes on a named gesture (rung 2 or 3).
 
 ```csharp
-// WRONG: a fetch disguised as a rule — round-trips on every keystroke
-RuleManager.AddActionAsync(
-    async t =>
-    {
-        var coverage = await insuranceService.GetCoverage(t.InsuranceId);
-        t.Copay = coverage.CopayAmount;
-    },
-    t => t.InsuranceId);
+// WRONG: a server-only service inside the rule. It breaks on the client.
+RuleManager.AddValidationAsync(
+    async t => await contactRepository.EmailExistsAsync(t.Id, t.Email) ? "This email is already in use." : "",
+    t => t.Email);
 
-// RIGHT: the ViewModel handles a named gesture ("Look up" clicked, or the field committed)
-// by invoking a seam; the seam owns the lookup and hands back what the screen binds to.
-public async Task LookUpCoverageAsync()
-    => Coverage = await _coverageLookup.Execute(Patient.InsuranceId);
+// WRONG: the same check as a guard in a factory method. The user learns of it
+// only after Save, as an exception.
+[Remote, Insert]
+internal async Task Insert([Service] IContactRepository repository)
+{
+    if (await repository.EmailExistsAsync(Id, Email))
+        throw new InvalidOperationException("This email is already in use.");
+    // ...
+}
 ```
 
 ## Pattern 5: Cross-Property Validation
@@ -550,12 +593,13 @@ When logic exceeds 5 lines or needs dependency injection, use `AsyncRuleBase<T>`
 ```csharp
 internal class CalculateInsuranceEligibility : AsyncRuleBase<Patient>
 {
-    private readonly IEligibilityService _service;
+    // An [Execute] command delegate (Pattern 4), not a server-only service
+    private readonly CheckEligibility.Check _checkEligibility;
 
-    public CalculateInsuranceEligibility(IEligibilityService service)
+    public CalculateInsuranceEligibility(CheckEligibility.Check checkEligibility)
         : base(t => t.InsuranceId, t => t.DateOfBirth)
     {
-        _service = service;
+        _checkEligibility = checkEligibility;
     }
 
     protected override async Task<IRuleMessages> Execute(
@@ -568,7 +612,7 @@ internal class CalculateInsuranceEligibility : AsyncRuleBase<Patient>
             return None;
         }
 
-        var result = await _service.CheckEligibility(
+        var result = await _checkEligibility(
             target.InsuranceId, target.DateOfBirth);
 
         target.IsEligible = result.Eligible;
@@ -582,9 +626,9 @@ internal class CalculateInsuranceEligibility : AsyncRuleBase<Patient>
 }
 ```
 
-Register in the entity constructor:
+The entity receives the rule by constructor injection and registers it:
 ```csharp
-RuleManager.AddRule(new CalculateInsuranceEligibility(eligibilityService));
+RuleManager.AddRule(calculateInsuranceEligibility);
 ```
 
 ## Testing Advantage

@@ -20,13 +20,14 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 /// - ContainingList tracks which list owns this item
 /// - Root property points to Order (aggregate root)
 /// - Delete/UnDelete managed by list operations
-/// - Local (non-[Remote]) Insert/Update ops reachable only through the
-///   aggregate's save flow
+/// - Maps itself: local (non-[Remote]) Fetch/Insert/Update ops take its own
+///   OrderItemRow, which only the list's factory operations can supply
+/// - No [Delete]: a removed item's row is removed by OrderItemList.Update
 /// </summary>
 [Factory]
 internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 {
-    public partial int Id { get; set; }
+    public partial Guid Id { get; set; }
 
     [Required(ErrorMessage = "Product name is required")]
     [StringLength(100)]
@@ -65,7 +66,7 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
     }
 
     // =========================================================================
-    // Child Fetch - Called from OrderItemList.Fetch
+    // Child Fetch - Called from OrderItemList.Fetch With This Item's Row
     // =========================================================================
     // GENERATOR BEHAVIOR: instance [Create]/[Fetch]/[Insert]/[Update] methods
     // run inside FactoryStart/FactoryComplete on THIS object - the object is
@@ -79,29 +80,34 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
     // recalculated - rules do not run while the factory operation is paused.
     // =========================================================================
     [Fetch]
-    internal void Fetch(int id, string productName, int quantity, decimal unitPrice, decimal lineTotal)
+    internal void Fetch(OrderItemRow row)
     {
-        Id = id;
-        ProductName = productName;
-        Quantity = quantity;
-        UnitPrice = unitPrice;
-        LineTotal = lineTotal;
+        Id = row.Id;
+        ProductName = row.ProductName;
+        Quantity = row.Quantity;
+        UnitPrice = row.UnitPrice;
+        LineTotal = row.LineTotal;
     }
 
     // =========================================================================
     // Child Insert/Update - Called (via the generated factory Save) from
-    // OrderItemList.Update
+    // OrderItemList.Update With This Item's Row
     // =========================================================================
-    // DESIGN DECISION: Child entities DO have [Insert]/[Update] factory
-    // operations - they are local (no [Remote]), internal, and their signatures
-    // require the parent's identity (orderId), which only the aggregate's save
-    // flow can supply. Outside consumers cannot persist a child:
-    // IOrderItem extends IEntityBase (no Save()), and the child factory's Save
-    // needs parameters the consumer does not have.
+    // DESIGN DECISION: The child maps itself. OrderItemList.Update finds (or,
+    // for a new item, makes and adds) the item's row in the order row's Items
+    // collection and passes it here; the item writes its own columns into it.
+    // No repository is involved - the order flushes once after the list is
+    // done.
+    //
+    // These operations are local (no [Remote]) and internal, and their
+    // signatures take the item's row, which only the list's [Update] can
+    // supply. Outside consumers cannot persist a child: IOrderItem extends
+    // IEntityBase (no Save()), and the child factory's Save needs a row the
+    // consumer does not have.
     //
     // GENERATOR BEHAVIOR: because Insert and Update share the same parameter
     // list, the generated IOrderItemFactory exposes a single
-    // Save(IOrderItem target, int orderId) that routes on the ITEM's own
+    // Save(IOrderItem target, OrderItemRow row) that routes on the ITEM's own
     // IsDeleted/IsNew. Each routed call wraps the method with
     // FactoryStart/FactoryComplete on the item - and FactoryComplete(Insert)
     // and FactoryComplete(Update) call MarkUnmodified() and MarkOld().
@@ -109,6 +115,9 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
     // per-item factory saves, not a cascade. Lifecycle hooks fire only on the
     // single factory target - there is no FactoryComplete cascade through the
     // object graph.
+    //
+    // DESIGN DECISION: No [Delete]. A removed item is never routed to the item
+    // factory: OrderItemList.Update removes its row from the collection.
     //
     // DID NOT DO THIS: Give child entities [Remote] persistence.
     //
@@ -122,18 +131,26 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
     // coordinated by the aggregate root's save.
     // =========================================================================
     [Insert]
-    internal void Insert(int orderId, [Service] IOrderRepository repository)
+    internal void Insert(OrderItemRow row)
     {
-        // Object is paused (factory operation) - plain assignment stays clean
-        Id = repository.InsertItem(orderId, ProductName!, Quantity, UnitPrice, LineTotal);
+        // The entity sets its own key. Paused - plain assignment stays clean.
+        Id = Guid.NewGuid();
+        MapTo(row);
     }
 
     [Update]
-    internal void Update(int orderId, [Service] IOrderRepository repository)
+    internal void Update(OrderItemRow row)
     {
-        // orderId is unused here - it exists so Insert and Update share a
-        // signature and the generator produces a single Save(target, orderId)
-        repository.UpdateItem(Id, ProductName!, Quantity, UnitPrice, LineTotal);
+        MapTo(row);
+    }
+
+    private void MapTo(OrderItemRow row)
+    {
+        row.Id = Id;
+        row.ProductName = ProductName!;
+        row.Quantity = Quantity;
+        row.UnitPrice = UnitPrice;
+        row.LineTotal = LineTotal;
     }
 }
 
@@ -169,7 +186,7 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //
 //   Parent/Root are established one step later than the adds: during the list's
 //   own [Fetch] the list has no Parent yet, so each add propagates null; when
-//   the parent assigns `Items = itemsFactory.Fetch(id)`, SetParent flows
+//   the parent assigns `Items = itemsFactory.Fetch(row.Items)`, SetParent flows
 //   through the list to every item.
 //
 // REMOVING EXISTING ITEM:
@@ -189,13 +206,17 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //   await order.Save();  // Order.IsModified = true (item removed)
 //
 //   In Order.Update():
-//   1. Update order header if IsSelfModified
-//   2. Delegate child persistence: orderItemListFactory.Save(Items, Id)
+//   1. Get the order row (with its item rows) from the repository
+//   2. Map the order into its row if IsSelfModified
+//   3. Delegate child persistence: orderItemListFactory.Save(Items, row.Items)
+//   4. repository.SaveChanges() - one flush for the whole aggregate
 //
 //   In OrderItemList.Update() (list runs its own factory operation):
-//   - Deleted items (DeletedList or in-list IsDeleted): repository delete
-//   - Other items: orderItemFactory.Save(item, orderId), routed by the
-//     item's own IsNew -> Insert, else Update
+//   - Deleted, not new: its row is removed from row.Items (no child [Delete])
+//   - New: a new OrderItemRow is added to row.Items, then
+//     orderItemFactory.Save(item, newRow) -> routed to Insert
+//   - Modified existing: orderItemFactory.Save(item, itsRow) -> Update
+//   - Unmodified existing: skipped
 //
 //   FactoryComplete runs per factory target as each save completes:
 //   - Each saved item: MarkUnmodified() + MarkOld()
@@ -203,8 +224,8 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //     ContainingList cleared on deleted items, modified-cache recalculated
 //   - The order: MarkUnmodified() + MarkOld()
 //   There is NO graph-wide cascade - each object is cleaned by ITS factory
-//   call. An update flow that writes child data to the repository directly,
-//   without per-item factory saves, leaves child state dirty after save.
+//   call. An update flow that writes the item rows itself, without per-item
+//   factory saves, leaves child state dirty after save.
 //
 // INTRA-AGGREGATE MOVE:
 //   // If Order had two lists (hypothetically)
@@ -243,5 +264,5 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
 //
 // RIGHT - Delete() marks, Save() persists:
 //   order.Items[0].Delete();   // OR order.Items.Remove(order.Items[0])
-//   await order.Save();        // NOW the delete is issued
+//   await order.Save();        // NOW OrderItemList.Update removes its row
 // =============================================================================

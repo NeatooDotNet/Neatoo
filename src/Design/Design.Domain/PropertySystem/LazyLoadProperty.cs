@@ -2,7 +2,6 @@
 // Design.Domain - LazyLoad Property on Entities
 // -----------------------------------------------------------------------------
 // Demonstrates EntityLazyLoad<T> properties on EntityBase and ValidateBase entities.
-// EntityLazyLoad<T> properties are regular C# properties (not partial properties).
 // Their loaded values participate in PropertyManager via look-through property
 // subclasses (LazyLoadValidateProperty<T>, LazyLoadEntityProperty<T>).
 //
@@ -102,10 +101,7 @@ public partial class LazyLoadEntityDemo : EntityBase<LazyLoadEntityDemo>
     [Fetch]
     public void Fetch(int id, [Service] IEntityLazyLoadFactory lazyLoadFactory)
     {
-        using (PauseAllActions())
-        {
-            this["Name"].LoadValue($"Entity-{id}");
-        }
+        Name = $"Entity-{id}";
         LazyDescription = lazyLoadFactory.Create<string>($"Description for {id}");
     }
 }

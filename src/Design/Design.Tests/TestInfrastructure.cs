@@ -8,6 +8,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Neatoo;
 using Neatoo.RemoteFactory;
+using AddressRow = Design.Domain.Entities.AddressRow;
+using EmployeeRow = Design.Domain.Entities.EmployeeRow;
+using OrderItemRow = Design.Domain.Aggregates.OrderAggregate.OrderItemRow;
+using OrderRow = Design.Domain.Aggregates.OrderAggregate.OrderRow;
+using SaveAggregateDemoRow = Design.Domain.FactoryOperations.SaveAggregateDemoRow;
+using SaveDemoItemRow = Design.Domain.FactoryOperations.SaveDemoItemRow;
 
 namespace Design.Tests;
 
@@ -39,9 +45,9 @@ public static class DesignTestServices
 
                 // Register mock repositories for tests
                 services.AddTransient<Design.Domain.BaseClasses.IDemoRepository, MockDemoRepository>();
-                // Scoped (not transient): aggregate lifecycle tests assert on the
-                // repository calls the factories made, so the test scope and the
-                // factory operations must observe the same instance.
+                // Scoped (not transient): aggregate lifecycle tests seed the store
+                // and assert on the rows the factories wrote, so the test scope and
+                // the factory operations must observe the same instance.
                 services.AddScoped<Design.Domain.Aggregates.OrderAggregate.IOrderRepository, MockOrderRepository>();
                 services.AddTransient<Design.Domain.FactoryOperations.ICreateDemoRepository, MockCreateDemoRepository>();
                 services.AddTransient<Design.Domain.FactoryOperations.ICreateDefaults, MockCreateDefaults>();
@@ -49,14 +55,14 @@ public static class DesignTestServices
                 services.AddTransient<Design.Domain.FactoryOperations.IFetchParentRepository, MockFetchParentRepository>();
                 services.AddTransient<Design.Domain.FactoryOperations.IFetchChildRepository, MockFetchChildRepository>();
                 services.AddScoped<Design.Domain.FactoryOperations.ISaveDemoRepository, MockSaveDemoRepository>();
-                // Scoped + recording, same rationale as MockOrderRepository above
+                // Scoped in-memory store, same rationale as MockOrderRepository above
                 services.AddScoped<Design.Domain.FactoryOperations.ISaveAggregateRepository, MockSaveAggregateRepository>();
                 services.AddTransient<Design.Domain.PropertySystem.IPropertyDemoRepository, MockPropertyDemoRepository>();
                 services.AddTransient<Design.Domain.PropertySystem.IFieldLevelAuthRepository, MockFieldLevelAuthRepository>();
                 services.AddTransient<Design.Domain.Rules.IRulesDemoRepository, MockRulesDemoRepository>();
                 services.AddTransient<Design.Domain.Rules.IFluentRulesRepository, MockFluentRulesRepository>();
 
-                // Entities demo aggregate (Employee/Address) — scoped + recording
+                // Entities demo aggregate (Employee/Address) — scoped in-memory store
                 services.AddScoped<Design.Domain.Entities.IEmployeeRepository, MockEmployeeRepository>();
 
                 // Gotcha demo repositories
@@ -92,61 +98,99 @@ internal class MockDemoRepository : Design.Domain.BaseClasses.IDemoRepository
     public IEnumerable<string> GetAllNames() => new[] { "Item1", "Item2", "Item3" };
 }
 
+// =============================================================================
+// Aggregate repositories (Order, SaveAggregateDemo, Employee) - in-memory
+// units of work
+// =============================================================================
+// Each mirrors an EF Core unit of work over plain row classes:
+// - Store holds what has been flushed, keyed by root id. Get hands back the
+//   stored root row itself (child rows attached), as a tracked EF entity
+//   would be - changes the aggregate makes to it are what the store holds.
+// - Add/Remove are pending until SaveChanges flushes them, so a save that
+//   forgets to flush leaves the store without its new row (or still holding
+//   its removed one).
+// - AddedRows/RemovedRows/SaveChangesCount record the calls, for assertions.
+// Registered scoped: the test scope and the factory operations observe the
+// same instance. Tests seed the store with Seed...() before fetching.
+// =============================================================================
+
 internal class MockOrderRepository : Design.Domain.Aggregates.OrderAggregate.IOrderRepository
 {
-    private int _nextOrderId = 100;
-    private int _nextItemId = 1000;
+    private readonly List<OrderRow> _pendingAdds = new();
+    private readonly List<OrderRow> _pendingRemoves = new();
 
-    // Recorded interactions — aggregate lifecycle tests assert against these.
-    public List<int> InsertedOrderIds { get; } = new();
-    public List<int> UpdatedOrderIds { get; } = new();
-    public List<int> InsertedItemIds { get; } = new();
-    public List<int> UpdatedItemIds { get; } = new();
-    public List<int> DeletedItemIds { get; } = new();
+    /// <summary>Flushed order rows (with their item rows), keyed by order id.</summary>
+    public Dictionary<Guid, OrderRow> Store { get; } = new();
 
-    public (int Id, string OrderNumber, string CustomerName, DateTime OrderDate, string Status, decimal TotalAmount) GetById(int id)
-        => (id, $"ORD-{id}", "Test Customer", DateTime.Today, "Draft", 100.00m);
+    public List<OrderRow> AddedRows { get; } = new();
+    public List<OrderRow> RemovedRows { get; } = new();
+    public int SaveChangesCount { get; private set; }
 
     /// <summary>
-    /// Per-order child rows. Seed this to make a test's child-loading order-specific.
+    /// Seeds an order with the two default item rows (Widget, Gadget).
     /// </summary>
-    /// <remarks>
-    /// GetItems used to ignore its orderId and return the same two rows for every order,
-    /// so no per-parent child-loading test was expressible: a fetch that loaded the wrong
-    /// order's items would have passed. Seeding takes precedence when present; unseeded
-    /// orders keep the original two rows so existing tests are unaffected. (LIST-005)
-    /// </remarks>
-    public Dictionary<int, (int Id, string ProductName, int Quantity, decimal UnitPrice, decimal LineTotal)[]> ItemsByOrderId { get; } = new();
+    public OrderRow SeedOrder()
+        => SeedOrder(
+            Item("Widget", 2, 10.00m, 20.00m),
+            Item("Gadget", 1, 50.00m, 50.00m));
 
-    public IEnumerable<(int Id, string ProductName, int Quantity, decimal UnitPrice, decimal LineTotal)> GetItems(int orderId)
-        => ItemsByOrderId.TryGetValue(orderId, out var seeded)
-            ? seeded
-            : new[] { (1, "Widget", 2, 10.00m, 20.00m), (2, "Gadget", 1, 50.00m, 50.00m) };
-
-    public int InsertOrder(string orderNumber, string customerName, DateTime orderDate, string status, decimal totalAmount)
+    /// <summary>
+    /// Seeds an order with exactly the given item rows. Per-order child rows make
+    /// a test's child loading order-specific: a fetch that loaded the wrong
+    /// order's items would fail. (LIST-005)
+    /// </summary>
+    public OrderRow SeedOrder(
+        params OrderItemRow[] items)
     {
-        var id = _nextOrderId++;
-        InsertedOrderIds.Add(id);
-        return id;
+        var row = new OrderRow
+        {
+            Id = Guid.NewGuid(),
+            OrderNumber = "ORD-SEEDED",
+            CustomerName = "Test Customer",
+            OrderDate = DateTime.Today,
+            Status = "Draft",
+            TotalAmount = 100.00m,
+        };
+        row.Items.AddRange(items);
+        Store[row.Id] = row;
+        return row;
     }
 
-    public void UpdateOrder(int id, string orderNumber, string customerName, DateTime orderDate, string status, decimal totalAmount)
-        => UpdatedOrderIds.Add(id);
+    public static OrderItemRow Item(
+        string productName, int quantity, decimal unitPrice, decimal lineTotal)
+        => new()
+        {
+            Id = Guid.NewGuid(),
+            ProductName = productName,
+            Quantity = quantity,
+            UnitPrice = unitPrice,
+            LineTotal = lineTotal,
+        };
 
-    public void DeleteOrder(int id) { }
+    public OrderRow? Get(Guid id)
+        => Store.GetValueOrDefault(id);
 
-    public int InsertItem(int orderId, string productName, int quantity, decimal unitPrice, decimal lineTotal)
+    public void Add(OrderRow row)
     {
-        var id = _nextItemId++;
-        InsertedItemIds.Add(id);
-        return id;
+        AddedRows.Add(row);
+        _pendingAdds.Add(row);
     }
 
-    public void UpdateItem(int id, string productName, int quantity, decimal unitPrice, decimal lineTotal)
-        => UpdatedItemIds.Add(id);
+    public void Remove(OrderRow row)
+    {
+        RemovedRows.Add(row);
+        _pendingRemoves.Add(row);
+    }
 
-    public void DeleteItem(int id)
-        => DeletedItemIds.Add(id);
+    public void SaveChanges()
+    {
+        foreach (var row in _pendingAdds) { Store[row.Id] = row; }
+        // Removing the root row removes its item rows with it (cascade)
+        foreach (var row in _pendingRemoves) { Store.Remove(row.Id); }
+        _pendingAdds.Clear();
+        _pendingRemoves.Clear();
+        SaveChangesCount++;
+    }
 }
 
 internal class MockCreateDemoRepository : Design.Domain.FactoryOperations.ICreateDemoRepository
@@ -213,107 +257,118 @@ internal class MockSaveDemoRepository : Design.Domain.FactoryOperations.ISaveDem
 
 internal class MockSaveAggregateRepository : Design.Domain.FactoryOperations.ISaveAggregateRepository
 {
-    private int _nextParentId = 1;
-    private int _nextChildId = 200;
+    private readonly List<SaveAggregateDemoRow> _pendingAdds = new();
+    private readonly List<SaveAggregateDemoRow> _pendingRemoves = new();
 
-    // Recorded interactions — aggregate lifecycle tests assert against these.
-    public List<int> InsertedParentIds { get; } = new();
-    public List<int> UpdatedParentIds { get; } = new();
-    public List<int> InsertedChildIds { get; } = new();
-    public List<int> UpdatedChildIds { get; } = new();
-    public List<int> DeletedChildIds { get; } = new();
+    /// <summary>Flushed root rows (with their child rows), keyed by root id.</summary>
+    public Dictionary<Guid, SaveAggregateDemoRow> Store { get; } = new();
 
-    public (int Id, string Title) GetParentById(int id) => (id, $"Aggregate-{id}");
+    public List<SaveAggregateDemoRow> AddedRows { get; } = new();
+    public List<SaveAggregateDemoRow> RemovedRows { get; } = new();
+    public int SaveChangesCount { get; private set; }
 
-    public IEnumerable<(int Id, string Name, int Quantity)> GetChildrenByParentId(int parentId)
-        => new[] { (101, "Item-1", 5), (102, "Item-2", 10) };
-
-    public int InsertParent(string title)
+    /// <summary>Seeds a root with two child rows (Item-1 x5, Item-2 x10).</summary>
+    public SaveAggregateDemoRow SeedAggregate()
     {
-        var id = _nextParentId++;
-        InsertedParentIds.Add(id);
-        return id;
+        var row = new SaveAggregateDemoRow { Id = Guid.NewGuid(), Title = "Aggregate" };
+        row.Items.Add(new SaveDemoItemRow { Id = Guid.NewGuid(), Name = "Item-1", Quantity = 5 });
+        row.Items.Add(new SaveDemoItemRow { Id = Guid.NewGuid(), Name = "Item-2", Quantity = 10 });
+        Store[row.Id] = row;
+        return row;
     }
 
-    public void UpdateParent(int id, string title) => UpdatedParentIds.Add(id);
-    public void DeleteParent(int id) { }
+    public SaveAggregateDemoRow? Get(Guid id) => Store.GetValueOrDefault(id);
 
-    public int InsertChild(int parentId, string name, int quantity)
+    public void Add(SaveAggregateDemoRow row)
     {
-        var id = _nextChildId++;
-        InsertedChildIds.Add(id);
-        return id;
+        AddedRows.Add(row);
+        _pendingAdds.Add(row);
     }
 
-    public void UpdateChild(int id, string name, int quantity) => UpdatedChildIds.Add(id);
-    public void DeleteChild(int id) => DeletedChildIds.Add(id);
+    public void Remove(SaveAggregateDemoRow row)
+    {
+        RemovedRows.Add(row);
+        _pendingRemoves.Add(row);
+    }
+
+    public void SaveChanges()
+    {
+        foreach (var row in _pendingAdds) { Store[row.Id] = row; }
+        foreach (var row in _pendingRemoves) { Store.Remove(row.Id); }
+        _pendingAdds.Clear();
+        _pendingRemoves.Clear();
+        SaveChangesCount++;
+    }
 }
 
 internal class MockEmployeeRepository : Design.Domain.Entities.IEmployeeRepository
 {
-    // Seeded well clear of the fetched ids (201/202/203) so an inserted id can
-    // never collide with a fetched one — exact-match routing assertions in the
-    // lifecycle tests would otherwise be able to pass by coincidence.
-    private int _nextEmployeeId = 100;
-    private int _nextAddressId = 300;
+    private readonly List<EmployeeRow> _pendingAdds = new();
+    private readonly List<EmployeeRow> _pendingRemoves = new();
 
-    // Recorded interactions — aggregate lifecycle tests assert against these.
-    public List<int> InsertedEmployeeIds { get; } = new();
-    public List<int> UpdatedEmployeeIds { get; } = new();
-    public List<int> InsertedAddressIds { get; } = new();
-    public List<int> UpdatedAddressIds { get; } = new();
-    public List<int> DeletedAddressIds { get; } = new();
+    /// <summary>Flushed employee rows (with their address rows), keyed by employee id.</summary>
+    public Dictionary<Guid, EmployeeRow> Store { get; } = new();
+
+    public List<EmployeeRow> AddedRows { get; } = new();
+    public List<EmployeeRow> RemovedRows { get; } = new();
+    public int SaveChangesCount { get; private set; }
 
     /// <summary>
-    /// Parent id each InsertAddress call received, in call order. Pins FK
-    /// propagation: the root must write its own generated Id before delegating
-    /// child persistence, or children are written with employeeId = 0.
+    /// Seeds an employee with three address rows (Home, Work, Other).
     /// </summary>
-    public List<int> InsertAddressParentIds { get; } = new();
-
-    public (int Id, string FirstName, string LastName, string Email, DateTime? HireDate, decimal Salary, bool IsActive) GetById(int id)
-        => (id, "Ada", "Lovelace", "ada@example.com", new DateTime(2020, 1, 15), 120000m, true);
-
-    /// <summary>
-    /// Per-employee address rows. Seed this to make a test's child-loading employee-specific.
-    /// See <c>MockOrderRepository.ItemsByOrderId</c> for why. (LIST-005)
-    /// </summary>
-    public Dictionary<int, (int Id, string Street, string City, string State, string ZipCode, string AddressType)[]> AddressesByEmployeeId { get; } = new();
-
-    public IEnumerable<(int Id, string Street, string City, string State, string ZipCode, string AddressType)> GetAddresses(int employeeId)
-        => AddressesByEmployeeId.TryGetValue(employeeId, out var seeded)
-            ? seeded
-            : new[]
+    public EmployeeRow SeedEmployee()
+    {
+        var row = new EmployeeRow
         {
-            (201, "1 Main St", "Springfield", "IL", "62701", "Home"),
-            (202, "2 Work Way", "Springfield", "IL", "62702", "Work"),
-            (203, "3 Quiet Ln", "Springfield", "IL", "62703", "Other"),
+            Id = Guid.NewGuid(),
+            FirstName = "Ada",
+            LastName = "Lovelace",
+            Email = "ada@example.com",
+            HireDate = new DateTime(2020, 1, 15),
+            Salary = 120000m,
+            IsActive = true,
+        };
+        row.Addresses.Add(Address("1 Main St", "62701", "Home"));
+        row.Addresses.Add(Address("2 Work Way", "62702", "Work"));
+        row.Addresses.Add(Address("3 Quiet Ln", "62703", "Other"));
+        Store[row.Id] = row;
+        return row;
+    }
+
+    private static AddressRow Address(string street, string zipCode, string addressType)
+        => new()
+        {
+            Id = Guid.NewGuid(),
+            Street = street,
+            City = "Springfield",
+            State = "IL",
+            ZipCode = zipCode,
+            AddressType = addressType,
         };
 
-    public int InsertEmployee(string firstName, string lastName, string email, DateTime? hireDate, decimal salary, bool isActive)
+    public EmployeeRow? Get(Guid id) => Store.GetValueOrDefault(id);
+
+    public void Add(EmployeeRow row)
     {
-        var id = _nextEmployeeId++;
-        InsertedEmployeeIds.Add(id);
-        return id;
+        AddedRows.Add(row);
+        _pendingAdds.Add(row);
     }
 
-    public void UpdateEmployee(int id, string firstName, string lastName, string email, DateTime? hireDate, decimal salary, bool isActive)
-        => UpdatedEmployeeIds.Add(id);
-
-    public void DeleteEmployee(int id) { }
-
-    public int InsertAddress(int employeeId, string street, string city, string state, string zipCode, string addressType)
+    public void Remove(EmployeeRow row)
     {
-        var id = _nextAddressId++;
-        InsertedAddressIds.Add(id);
-        InsertAddressParentIds.Add(employeeId);
-        return id;
+        RemovedRows.Add(row);
+        _pendingRemoves.Add(row);
     }
 
-    public void UpdateAddress(int id, string street, string city, string state, string zipCode, string addressType)
-        => UpdatedAddressIds.Add(id);
-
-    public void DeleteAddress(int id) => DeletedAddressIds.Add(id);
+    public void SaveChanges()
+    {
+        foreach (var row in _pendingAdds) { Store[row.Id] = row; }
+        // Removing the employee row removes its address rows with it (cascade)
+        foreach (var row in _pendingRemoves) { Store.Remove(row.Id); }
+        _pendingAdds.Clear();
+        _pendingRemoves.Clear();
+        SaveChangesCount++;
+    }
 }
 
 internal class MockPropertyDemoRepository : Design.Domain.PropertySystem.IPropertyDemoRepository

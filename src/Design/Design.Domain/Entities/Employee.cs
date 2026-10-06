@@ -33,7 +33,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // - Registration in InitializePropertyBackingFields
     // =========================================================================
 
-    public partial int Id { get; set; }
+    public partial Guid Id { get; set; }
 
     [Required(ErrorMessage = "First name is required")]
     [StringLength(50, ErrorMessage = "First name cannot exceed 50 characters")]
@@ -56,10 +56,11 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // =========================================================================
     // Child Collection
     // =========================================================================
-    // The Employee owns an AddressList. When Employee saves:
-    // - New addresses are inserted
-    // - Modified addresses are updated
-    // - Removed addresses are deleted (from DeletedList)
+    // The Employee owns an AddressList. When Employee saves, it hands its
+    // row's Addresses collection to the list factory's Save:
+    // - New addresses get a new row, added to the collection
+    // - Modified addresses write themselves to their existing row
+    // - Removed addresses (from DeletedList) have their row removed
     //
     // DESIGN DECISION: Collections are nullable properties, initialized in Create/Fetch.
     // This allows factory methods to create the collection with proper DI.
@@ -124,36 +125,44 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // in `using (PauseAllActions())` would actually resume EARLY, when the
     // using disposes, before the factory operation completes.
     //
-    // DESIGN DECISION: children load through the LIST factory's [Fetch], which
-    // loads each address through the ADDRESS factory's [Fetch]. Every object in
-    // the graph gets its own factory lifecycle and lands with correct
-    // persistence state.
+    // DESIGN DECISION: the repository returns the employee row with its
+    // address rows. The employee assigns its own properties from its row and
+    // hands row.Addresses to the LIST factory's [Fetch], which builds each
+    // address through the ADDRESS factory's [Fetch](row). Every object in the
+    // graph gets its own factory lifecycle and lands with correct persistence
+    // state.
     //
-    // LoadValue is shown for the root's own properties - plain property
-    // assignment is equally clean here because the object is paused (Address's
-    // [Fetch] uses assignment for exactly that reason); LoadValue makes the
-    // load explicit and works even when not paused.
+    // The root's own properties are loaded by plain assignment: the object is
+    // paused, so assignment marks nothing modified and runs no rules.
+    //
+    // Returns false when there is no such employee - the generated factory
+    // then returns null.
     // =========================================================================
     [Remote]
     [Fetch]
-    internal void Fetch(int id,
+    internal bool Fetch(Guid id,
         [Service] IEmployeeRepository repository,
         [Service] IAddressListFactory addressListFactory)
     {
-        var data = repository.GetById(id);
+        var row = repository.Get(id);
+        if (row == null)
+        {
+            return false;
+        }
 
-        this["Id"].LoadValue(data.Id);
-        this["FirstName"].LoadValue(data.FirstName);
-        this["LastName"].LoadValue(data.LastName);
-        this["Email"].LoadValue(data.Email);
-        this["HireDate"].LoadValue(data.HireDate);
-        this["Salary"].LoadValue(data.Salary);
-        this["IsActive"].LoadValue(data.IsActive);
+        Id = row.Id;
+        FirstName = row.FirstName;
+        LastName = row.LastName;
+        Email = row.Email;
+        HireDate = row.HireDate;
+        Salary = row.Salary;
+        IsActive = row.IsActive;
 
         // Addresses and every address within: IsNew=false, IsModified=false
-        Addresses = addressListFactory.Fetch(id);
+        Addresses = addressListFactory.Fetch(row.Addresses);
 
         // After Fetch: IsNew=false, IsModified=false for Employee and all Addresses
+        return true;
     }
 
     // =========================================================================
@@ -162,21 +171,41 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // Called by Save() when IsNew=true (routing checks IsDeleted first, then
     // IsNew).
     //
+    // The employee sets its own key, makes its row, maps itself into it, adds
+    // it to the repository, hands row.Addresses to the list factory's Save,
+    // and flushes once.
+    //
     // DESIGN DECISION: Insert and Update delegate child persistence to the SAME
     // list factory Save. The list is never new or deleted, so the list factory
     // routes to AddressList.Update, and each address's own IsNew decides insert
-    // vs update - for a brand-new employee, every address is new.
+    // vs update - for a brand-new employee, every address is new and gets a
+    // new row in row.Addresses.
     // =========================================================================
     [Remote]
     [Insert]
-    internal void Insert([Service] IEmployeeRepository repository,
+    internal async Task Insert([Service] IEmployeeRepository repository,
         [Service] IAddressListFactory addressListFactory)
     {
-        // Insert employee and get generated ID (paused - assignment is clean)
-        Id = repository.InsertEmployee(
-            FirstName!, LastName!, Email!, HireDate, Salary, IsActive);
+        // Re-run every rule on the server and refuse an invalid aggregate.
+        // Recommended - the framework does not do this for you. Throw, never
+        // return: after [Insert]/[Update] returns, the framework marks the
+        // entity saved whether or not anything was written.
+        await RunRules(RunRulesFlag.All);
+        if (!IsValid)
+        {
+            throw new SaveOperationException(SaveFailureReason.IsInvalid);
+        }
 
-        addressListFactory.Save(Addresses!, Id);
+        // The entity sets its own key (paused - assignment is clean)
+        Id = Guid.NewGuid();
+
+        var row = new EmployeeRow();
+        MapTo(row);
+        repository.Add(row);
+
+        addressListFactory.Save(Addresses!, row.Addresses);
+
+        repository.SaveChanges();
 
         // FactoryComplete(Insert) will call MarkUnmodified() and MarkOld()
     }
@@ -186,75 +215,130 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // =========================================================================
     // Called by Save() when !IsDeleted && !IsNew.
     //
+    // The employee gets its existing row (missing = KeyNotFoundException, an
+    // application failure), maps itself into it only if its OWN properties
+    // changed, hands row.Addresses to the list factory's Save, and flushes
+    // once.
+    //
     // The list factory Save runs AddressList.Update inside the LIST's own
-    // factory operation: removed addresses are deleted from persistence, new
-    // and modified ones go through per-address factory saves, and the list's
+    // factory operation: removed addresses have their rows removed, new and
+    // modified ones go through per-address factory saves, and the list's
     // FactoryComplete(Update) clears the DeletedList. Each saved address's
     // FactoryComplete marks it unmodified and old. When this Update returns,
     // the framework calls FactoryComplete(Update) on the EMPLOYEE, and the
     // whole graph reads IsModified=false.
     //
-    // COMMON MISTAKE: iterating Addresses here and writing child rows to the
-    // repository directly. The rows get written, but no child factory operation
-    // runs, so nothing marks the children unmodified or old: the aggregate
-    // still reports IsModified=true after Save, new children re-insert on the
+    // COMMON MISTAKE: iterating Addresses here and writing the address rows
+    // directly. The rows get written, but no child factory operation runs, so
+    // nothing marks the children unmodified or old: the aggregate still
+    // reports IsModified=true after Save, new children get another row on the
     // next Save, and the DeletedList never clears (FactoryComplete fires per
-    // factory target - never as a cascade from the parent).
+    // factory target - never as a cascade from the parent). Each address maps
+    // itself.
     // =========================================================================
     [Remote]
     [Update]
-    internal void Update([Service] IEmployeeRepository repository,
+    internal async Task Update([Service] IEmployeeRepository repository,
         [Service] IAddressListFactory addressListFactory)
     {
-        // Update employee if self modified
-        if (IsSelfModified)
+        // Re-run every rule on the server and refuse an invalid aggregate.
+        // Recommended - the framework does not do this for you. Throw, never
+        // return: after [Insert]/[Update] returns, the framework marks the
+        // entity saved whether or not anything was written.
+        await RunRules(RunRulesFlag.All);
+        if (!IsValid)
         {
-            repository.UpdateEmployee(Id, FirstName!, LastName!, Email!, HireDate, Salary, IsActive);
+            throw new SaveOperationException(SaveFailureReason.IsInvalid);
         }
 
-        addressListFactory.Save(Addresses!, Id);
+        var row = repository.Get(Id)
+            ?? throw new KeyNotFoundException($"Employee {Id} not found");
+
+        // Write the employee's own columns only if they changed
+        if (IsSelfModified)
+        {
+            MapTo(row);
+        }
+
+        addressListFactory.Save(Addresses!, row.Addresses);
+
+        repository.SaveChanges();
     }
 
     // =========================================================================
     // [Delete] - Remove from Persistence
     // =========================================================================
     // Called by Save() when IsDeleted=true (checked FIRST, before IsNew).
-    // Deletes addresses first (FK constraint), then employee.
+    //
+    // repository.Remove(row) removes the employee row together with its
+    // address rows, as a database cascade delete would. The employee does not
+    // loop its addresses: no child [Delete] exists, and an address that was
+    // never saved has no row to remove.
     // =========================================================================
     [Remote]
     [Delete]
     internal void Delete([Service] IEmployeeRepository repository)
     {
-        // Delete all addresses first (FK constraint). Direct repository deletes
-        // are INTENTIONAL here - deleted children get no factory operation
-        // (see AddressList.Update), and the whole aggregate is going away.
-        foreach (var address in Addresses!)
-        {
-            if (!address.IsNew)  // Only delete persisted addresses
-            {
-                repository.DeleteAddress(address.Id);
-            }
-        }
+        var row = repository.Get(Id)
+            ?? throw new KeyNotFoundException($"Employee {Id} not found");
 
-        // Delete employee
-        repository.DeleteEmployee(Id);
+        repository.Remove(row);
+
+        repository.SaveChanges();
+    }
+
+    private void MapTo(EmployeeRow row)
+    {
+        row.Id = Id;
+        row.FirstName = FirstName!;
+        row.LastName = LastName!;
+        row.Email = Email!;
+        row.HireDate = HireDate;
+        row.Salary = Salary;
+        row.IsActive = IsActive;
     }
 }
 
 // =============================================================================
-// Repository Interface
+// Persistence - Rows and Repository
 // =============================================================================
+// Modeled on an EF Core unit of work: the row classes stand in for EF
+// entities, Get returns the root row with its child rows loaded, and
+// SaveChanges flushes everything added, changed or removed since the last
+// flush.
+// =============================================================================
+
+public class EmployeeRow
+{
+    public Guid Id { get; set; }
+    public string FirstName { get; set; } = "";
+    public string LastName { get; set; } = "";
+    public string Email { get; set; } = "";
+    public DateTime? HireDate { get; set; }
+    public decimal Salary { get; set; }
+    public bool IsActive { get; set; }
+    public List<AddressRow> Addresses { get; } = new();
+}
+
+public class AddressRow
+{
+    public Guid Id { get; set; }
+    public string Street { get; set; } = "";
+    public string City { get; set; } = "";
+    public string State { get; set; } = "";
+    public string ZipCode { get; set; } = "";
+    public string AddressType { get; set; } = "";
+}
 
 public interface IEmployeeRepository
 {
-    (int Id, string FirstName, string LastName, string Email, DateTime? HireDate, decimal Salary, bool IsActive) GetById(int id);
-    IEnumerable<(int Id, string Street, string City, string State, string ZipCode, string AddressType)> GetAddresses(int employeeId);
+    /// <summary>The employee row with its address rows, or null if there is none.</summary>
+    EmployeeRow? Get(Guid id);
 
-    int InsertEmployee(string firstName, string lastName, string email, DateTime? hireDate, decimal salary, bool isActive);
-    void UpdateEmployee(int id, string firstName, string lastName, string email, DateTime? hireDate, decimal salary, bool isActive);
-    void DeleteEmployee(int id);
+    void Add(EmployeeRow row);
 
-    int InsertAddress(int employeeId, string street, string city, string state, string zipCode, string addressType);
-    void UpdateAddress(int id, string street, string city, string state, string zipCode, string addressType);
-    void DeleteAddress(int id);
+    /// <summary>Removes the employee row and its address rows.</summary>
+    void Remove(EmployeeRow row);
+
+    void SaveChanges();
 }

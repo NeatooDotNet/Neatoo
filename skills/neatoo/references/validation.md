@@ -97,7 +97,9 @@ public ValidationDateRange(IValidateBaseServices<ValidationDateRange> services) 
 
 ## Async Validation Rules
 
-For rules that need to call services or databases:
+A rule that needs the server injects an `[Execute]` command and calls that. It never takes a repository or any other server-only service. See `domain-logic-placement.md`, Pattern 4, for the full shape.
+
+The sample below still injects a service interface; it is being replaced. Read `uniquenessService` as the injected command.
 
 <!-- snippet: validation-async-rule -->
 <a id='snippet-validation-async-rule'></a>
@@ -571,7 +573,7 @@ RuleManager.AddActionAsync(
 - `LoadValue` fires `NeatooPropertyChanged` with `ChangeReason.Load`. The framework skips rules for `Load` events — only `SetParent` is called.
 - During factory operations (`[Create]`, `[Fetch]`, etc.) and JSON deserialization, `PauseAllActions()` is called. Rules are suppressed. `ResumeAllActions()` does NOT run rules — it only recalculates cached validity and resets meta state. `PropertyChanged` does NOT fire for changes made while paused.
 
-This means properties populated via `LoadValue` in a `[Fetch]` method will not trigger `AddActionAsync` rules. To run rules after loading, call `await RunRules(RunRulesFlag.All)` at the end of the factory method. `RunRules` has no `IsPaused` guard — it works even while paused. See [rules-lifecycle.md](rules-lifecycle.md).
+This means properties set in a `[Fetch]` method (where the object is paused) will not trigger `AddActionAsync` rules. To run rules after loading, call `await RunRules(RunRulesFlag.All)` at the end of the factory method. `RunRules` has no `IsPaused` guard — it works even while paused. See [rules-lifecycle.md](rules-lifecycle.md).
 
 ### Exception Propagation
 

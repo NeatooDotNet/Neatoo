@@ -50,7 +50,7 @@ Work down from the top and stop at the first rung that fits. The two rungs below
 
 | Rung | Home | Choose it when | Mechanism |
 |---|---|---|---|
-| 1 | **Entity rule** | The behavior reacts to a property change, needs no service a class-based rule can't inject, and stays wherever the entity is — the browser included. | `AddAction` · `AddValidation` · `RuleBase<T>` |
+| 1 | **Entity rule** | The behavior reacts to a property change and runs wherever the entity is — the browser included. What it needs from the server it reaches through an injected `[Execute]` command, never a server-only service. | `AddAction` · `AddValidation` · `RuleBase<T>` · `AsyncRuleBase<T>` |
 | 2 | **Entity verb** | A user invokes an operation on one aggregate. The verb sets state, rules validate, the caller saves. | Public method on the entity; `CanX` exposed by a rung-1 rule |
 | 3 | **Orchestration seam** | The behavior crosses aggregates, needs `[Service]`s, or runs at load or fetch — where rules are paused. Load-time policy lives here. | `[Execute]` / `[Fetch]` on a plain `[Factory]` class or a static command |
 | 4 | **Read model** | The screen needs server truth for display or gating: flags, counts, cadence, "is X due." | Plain `[Factory]` `Info` class, `[Fetch]` only |
@@ -58,7 +58,7 @@ Work down from the top and stop at the first rung that fits. The two rungs below
 | 5 | ViewModel | Adapts a gesture into a call on rung 1–3 · binds · **mirrors a gate by reading it** · coordinates save and navigation. | `ObservableObject`; factories and commands by DI |
 | 6 | Razor | Binds. | MudNeatoo components |
 
-**Never fall from "not a rule" to "so, the ViewModel."** When rung 1 doesn't fit — the behavior needs a service, or must run during `[Fetch]` where rules are paused, or must be staged rather than applied — the next rung is 3, not 5. The ViewModel is not exempt from this ladder because it is C#, testable, and has DI.
+**Never fall from "not a rule" to "so, the ViewModel."** When rung 1 doesn't fit — the work is something the user should start on purpose, or must run during `[Fetch]` where rules are paused, or must be staged rather than applied — the next rung is 3, not 5. The ViewModel is not exempt from this ladder because it is C#, testable, and has DI.
 
 ### Where Logic Goes
 
@@ -77,7 +77,8 @@ Indexed by the behavior you are placing, not by the trigger you would wire.
 | Parent reacts to a child's change | Entity rule with child trigger `t => t.Items![0].Prop` (1) | UI event handler |
 | Cross-property validation | `AddValidation` for one trigger, `RuleBase<T>` for several (1) | UI validation |
 | Cross-sibling consistency in a list | Override `HandleNeatooPropertyChanged` on the parent (1) | UI bridging |
-| A computation that reacts to a property change and needs a service | Rule (1) **only** if it never leaves the browser; otherwise a seam (3) the ViewModel invokes | An `AddActionAsync` that round-trips from inside a setter |
+| A check or lookup that reacts to a property change and needs server truth — uniqueness, overlap, a duplicate | Async rule (1) with an injected `[Execute]` command | A guard in `[Insert]`/`[Update]`; a rule or entity constructor that takes a repository or other server-only service |
+| A recalculation the user should start on purpose, or one that takes several server calls | Entity verb (2) or seam (3), invoked by the ViewModel on a gesture | A rule that fires it every time a field changes |
 
 ### The Mirror Rule
 
@@ -321,6 +322,29 @@ When `Save()` is called, the factory routes based on Neatoo entity state:
 - `IsDeleted == true` → `[Delete]` method
 
 This routing is automatic based on entity state properties.
+
+### Re-run the Rules on the Server Before the Write
+
+Rules run in the browser as the user edits, so the client sees every broken rule before it saves. The server should not trust that. The root's `[Insert]` and `[Update]` re-run every rule and refuse an invalid aggregate before writing anything. The framework does not do this for you; it is the strongly recommended form:
+
+```csharp
+[Remote, Insert]
+internal async Task Insert([Service] IOrderRepository repository, [Service] IOrderItemListFactory itemsFactory)
+{
+    await RunRules(RunRulesFlag.All);
+    if (!IsValid)
+        throw new SaveOperationException(SaveFailureReason.IsInvalid);
+
+    // ... write ...
+}
+```
+
+- `RunRulesFlag.All` checks the root and every child.
+- `SaveOperationException(SaveFailureReason.IsInvalid)` is what `entity.Save()` already throws on the client for the same condition.
+- **Throw, never `return`.** After `[Insert]` or `[Update]` returns, the framework marks the entity saved (not new, not modified) whether or not anything was written. An early `return` reports a save that did not happen.
+- Reaching the throw means the client let an invalid aggregate through. It is an application failure, not validation feedback; the user's feedback is the rule message they saw while editing.
+
+`entity.Save()` refuses to call the factory unless `IsSavable` is true. A direct `factory.Save(target)` does not check, which is one more reason the server-side check belongs in the operation.
 
 ### Aggregate Save Cascading
 

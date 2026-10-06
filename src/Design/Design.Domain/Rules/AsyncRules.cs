@@ -68,8 +68,8 @@ internal partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>, IAsyncRulesD
     internal void Fetch(int id, [Service] IAsyncRulesRepository repository)
     {
         var data = repository.GetById(id);
-        this["Email"].LoadValue(data.Email);
-        this["Username"].LoadValue(data.Username);
+        Email = data.Email;
+        Username = data.Username;
     }
 
     [Remote]

@@ -206,7 +206,7 @@ public class PrivateSetPropertyTests
     [TestMethod]
     public void PrivateSet_LoadValueSucceeds()
     {
-        // Scenario 10: LoadValue on private-set property succeeds (Fetch escape hatch)
+        // Scenario 10: LoadValue on private-set property succeeds
         // WHEN entity["ComputedTotal"].LoadValue(x) is called, THEN value is set
 
         // Arrange

@@ -138,8 +138,12 @@ public void AddItem_ItemJoinsAggregate()
     [TestMethod]
     public async Task Fetch_LoadsOrder()
     {
-        // Arrange & Act
-        var order = await _orderFactory.Fetch(1);
+        // Arrange - an order row with two item rows in the mock store
+        var repository = (MockOrderRepository)_scope.GetRequiredService<IOrderRepository>();
+        var seeded = repository.SeedOrder();
+
+        // Act
+        var order = await _orderFactory.Fetch(seeded.Id);
 
         // Assert
         Assert.IsNotNull(order);

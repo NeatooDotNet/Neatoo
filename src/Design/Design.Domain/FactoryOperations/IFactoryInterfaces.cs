@@ -28,7 +28,7 @@ public interface ISaveDemo : IEntityRoot
 /// </summary>
 public interface ISaveAggregateDemo : IEntityRoot
 {
-    int Id { get; }
+    Guid Id { get; }
     string? Title { get; set; }
     ISaveDemoItemList? Items { get; }
 }
@@ -38,7 +38,7 @@ public interface ISaveAggregateDemo : IEntityRoot
 /// </summary>
 public interface ISaveDemoItem : IEntityBase
 {
-    int Id { get; }
+    Guid Id { get; }
     string? Name { get; set; }
     int Quantity { get; set; }
 }

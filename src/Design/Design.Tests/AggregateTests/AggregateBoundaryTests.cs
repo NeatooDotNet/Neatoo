@@ -32,12 +32,21 @@ public class AggregateBoundaryTests
     [TestCleanup]
     public void TestCleanup() => _scope.Dispose();
 
+    private async Task<(IOrder Order1, IOrder Order2)> FetchTwoOrders()
+    {
+        var repository = (MockOrderRepository)_scope.GetRequiredService<IOrderRepository>();
+        var order1 = await _orderFactory.Fetch(repository.SeedOrder().Id);
+        var order2 = await _orderFactory.Fetch(repository.SeedOrder().Id);
+        Assert.IsNotNull(order1, "A seeded order should be found");
+        Assert.IsNotNull(order2, "A seeded order should be found");
+        return (order1, order2);
+    }
+
     [TestMethod]
     public async Task AddItemFromAnotherAggregate_Throws_WithDistinguishingMessage()
     {
         // Arrange - two separate Order aggregates, each with fetched children
-        var order1 = await _orderFactory.Fetch(1);
-        var order2 = await _orderFactory.Fetch(2);
+        var (order1, order2) = await FetchTwoOrders();
         var itemFromOrder1 = order1.Items![0];
 
         Assert.AreNotSame(order1, order2);
@@ -77,8 +86,7 @@ public class AggregateBoundaryTests
     {
         // The pattern OrderItemList.cs documents as RIGHT: copy the data into a
         // new child of the target aggregate, remove the original from the source
-        var order1 = await _orderFactory.Fetch(1);
-        var order2 = await _orderFactory.Fetch(2);
+        var (order1, order2) = await FetchTwoOrders();
         var original = order1.Items![0];
 
         var copy = _itemFactory.Create(original.ProductName!, original.Quantity, original.UnitPrice);

@@ -72,7 +72,7 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 /// </summary>
 public interface IOrder : IEntityRoot
 {
-    int Id { get; }
+    Guid Id { get; }
     string? OrderNumber { get; set; }
     string? CustomerName { get; set; }
     DateTime OrderDate { get; set; }
@@ -87,7 +87,7 @@ public interface IOrder : IEntityRoot
 /// </summary>
 public interface IOrderItem : IEntityBase
 {
-    int Id { get; }
+    Guid Id { get; }
     string? ProductName { get; set; }
     int Quantity { get; set; }
     decimal UnitPrice { get; set; }

@@ -46,9 +46,9 @@ internal partial class FieldLevelAuthDemo : EntityBase<FieldLevelAuthDemo>, IFie
     internal void Fetch(int id, bool canEditSalary, [Service] IFieldLevelAuthRepository repository)
     {
         var data = repository.GetById(id);
-        this["Name"].LoadValue(data.Name);
-        this["Salary"].LoadValue(data.Salary);
-        this["Department"].LoadValue(data.Department);
+        Name = data.Name;
+        Salary = data.Salary;
+        Department = data.Department;
 
         // Field-level authorization: lock down Salary if user lacks permission
         if (!canEditSalary)

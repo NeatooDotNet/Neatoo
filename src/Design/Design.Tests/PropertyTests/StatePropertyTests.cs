@@ -52,12 +52,12 @@ public class StatePropertyTests
         // Act
         entity["Name"].LoadValue("Loaded");
 
-        // Assert - Note: New entities are already modified, but check the specific property
+        // Assert
         Assert.IsFalse(entity["Name"].IsModified, "Property should not be marked modified via LoadValue");
     }
 
     [TestMethod]
-    public async Task Fetch_UsesLoadValue_NotModified()
+    public async Task Fetch_LoadsCleanBaseline_NotModified()
     {
         // Arrange & Act
         var entity = await _factory.Fetch(1);

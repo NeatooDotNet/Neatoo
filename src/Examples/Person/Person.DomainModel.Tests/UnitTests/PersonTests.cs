@@ -80,6 +80,9 @@ namespace DomainModel.Tests.UnitTests
             personDbContextStub.SaveChangesAsync.Call((token) => 1);
 
             var phoneListStub = new Stubs.IPersonPhoneList();
+            // The person's IsValid includes its phone list's, and the server-side
+            // gate in Insert reads IsValid. A loose stub reports false by default.
+            phoneListStub.IsValid.Get(true);
             testPerson.PersonPhoneList = lazyLoadFactory.Create<IPersonPhoneList>(phoneListStub);
 
             testPerson.FirstName = "John";
@@ -96,16 +99,20 @@ namespace DomainModel.Tests.UnitTests
         }
 
         [Fact]
-        public async Task Insert_ShouldReturnNull_WhenModelIsNotSavable()
+        public async Task Insert_ShouldThrow_WhenModelIsInvalid()
         {
-            // Arrange
-            testPerson.IsSavableOverride = false;
+            // Arrange: a blank required name makes the person invalid
+            testPerson.FirstName = "John";
+            testPerson.FirstName = "";
+            await testPerson.WaitForTasks();
+            Assert.False(testPerson.IsValid);
 
             // Act
-            var result = await testPerson.Insert(personDbContextStub, CancellationToken.None);
+            var ex = await Assert.ThrowsAsync<SaveOperationException>(
+                () => testPerson.Insert(personDbContextStub, CancellationToken.None));
 
-            // Assert
-            Assert.Null(result);
+            // Assert: refused before anything was written
+            Assert.Equal(SaveFailureReason.IsInvalid, ex.Reason);
             personDbContextStub.AddPerson.Verify(Called.Never);
             personDbContextStub.SaveChangesAsync.Verify(Called.Never);
         }

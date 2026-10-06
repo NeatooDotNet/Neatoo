@@ -160,11 +160,11 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
     internal void Fetch(int id, [Service] IFluentRulesRepository repository)
     {
         var data = repository.GetById(id);
-        this["Name"].LoadValue(data.Name);
-        this["Email"].LoadValue(data.Email);
-        this["Quantity"].LoadValue(data.Quantity);
-        this["UnitPrice"].LoadValue(data.UnitPrice);
-        this["Total"].LoadValue(data.Total);
+        Name = data.Name;
+        Email = data.Email;
+        Quantity = data.Quantity;
+        UnitPrice = data.UnitPrice;
+        Total = data.Total;
     }
 
     [Remote]

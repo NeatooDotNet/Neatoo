@@ -166,7 +166,7 @@ internal partial class OrderLine : EntityBase<OrderLine>, IOrderLine
 | Operation | Behavior |
 |-----------|----------|
 | `entity["Prop"].SetValue(x)` | Throws `PropertyReadOnlyException` (IsReadOnly is true) |
-| `entity["Prop"].LoadValue(x)` | Sets value (Fetch escape hatch, bypasses IsReadOnly) |
+| `entity["Prop"].LoadValue(x)` | Sets value, bypasses IsReadOnly (framework and deserialization use; inside a factory operation, assign the property) |
 | `entity["Prop"].SetPrivateValue(x)` | Sets value bypassing IsReadOnly check |
 | `entity["Prop"].IsReadOnly` | Returns `true` |
 
@@ -200,10 +200,11 @@ MudNeatoo components bind `ReadOnly="@EntityProperty.IsReadOnly"`. Private-set p
 internal void Fetch(int id, bool canEditSalary, [Service] IEmployeeRepository repo)
 {
     var data = repo.GetById(id);
-    this["Name"].LoadValue(data.Name);
-    this["Salary"].LoadValue(data.Salary);
+    Name = data.Name;       // Paused by the Fetch operation: a clean load
+    Salary = data.Salary;
 
-    // This instance's Salary is read-only; other FieldLevelAuthDemo instances are unaffected.
+    // Lock it after loading. This instance's Salary is read-only; other
+    // FieldLevelAuthDemo instances are unaffected.
     if (!canEditSalary)
     {
         this["Salary"].MarkReadOnly();
@@ -368,7 +369,9 @@ public async Task NeatooPropertyChanged_ExtendedNotification()
 
 ## Loading Values Without Triggering Rules
 
-Use `LoadValue()` to set values without triggering validation or marking dirty:
+Inside a factory operation (`[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]`) the object is already paused, so plain assignment sets values without triggering rules or marking anything modified. Do not use `LoadValue` there.
+
+`LoadValue()` sets a value without tracking regardless of pause state. The sample below calls it on a created object outside any factory operation. Its comment about using `LoadValue` in a `Fetch` method is outdated; that sample is being replaced.
 
 <!-- snippet: properties-load-value -->
 <a id='snippet-properties-load-value'></a>
