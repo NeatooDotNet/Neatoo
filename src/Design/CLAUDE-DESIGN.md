@@ -36,7 +36,7 @@ When trying to understand a Neatoo concept:
 | DI setup | `DI/*.cs` | N/A |
 | Commands | `Commands/ApproveEmployee.cs` | N/A |
 | Standalone entities | `Entities/*.cs` | N/A |
-| Value objects | `ValueObjects/*.cs` | N/A |
+| Read models | `ReadModels/*.cs` | `ReadModelTests/*` |
 | Error handling | `ErrorHandling/*.cs` | `GotchaTests/*` |
 | Common gotchas | `CommonGotchas.cs` | `GotchaTests/*` |
 

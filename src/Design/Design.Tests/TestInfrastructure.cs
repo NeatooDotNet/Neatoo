@@ -64,6 +64,7 @@ public static class DesignTestServices
 
                 // Entities demo aggregate (Employee/Address) — scoped in-memory store
                 services.AddScoped<Design.Domain.Entities.IEmployeeRepository, MockEmployeeRepository>();
+                services.AddTransient<Design.Domain.ReadModels.IEmployeeDirectoryRepository, MockEmployeeDirectoryRepository>();
 
                 // Gotcha demo repositories
                 services.AddTransient<Design.Domain.IGotcha2Repository, MockGotcha2Repository>();
@@ -416,4 +417,21 @@ internal class MockGotcha5Repository : Design.Domain.IGotcha5Repository
     public void Insert() { }
     public void Update() { }
     public void Delete() { }
+}
+
+internal class MockEmployeeDirectoryRepository : Design.Domain.ReadModels.IEmployeeDirectoryRepository
+{
+    private static readonly Design.Domain.ReadModels.EmployeeSummary[] Rows =
+    [
+        new(1, "Ada Lovelace", "ada@example.com", "Engineering", true),
+        new(2, "Grace Hopper", "grace@example.com", "Engineering", true),
+        new(3, "Alan Turing", "alan@example.com", "Research", false),
+    ];
+
+    public IEnumerable<Design.Domain.ReadModels.EmployeeSummary> GetAll() => Rows;
+
+    public IEnumerable<Design.Domain.ReadModels.EmployeeSummary> Search(string? searchTerm, string? department, bool activeOnly)
+        => Rows.Where(r => (searchTerm == null || r.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                        && (department == null || r.Department == department)
+                        && (!activeOnly || r.IsActive));
 }

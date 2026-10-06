@@ -197,6 +197,6 @@ When learning about Neatoo concepts, **read Design.Domain files first**. They co
 - Error handling: `Design.Domain/ErrorHandling/`
 - Common gotchas: `Design.Domain/CommonGotchas.cs`
 - Entities (standalone): `Design.Domain/Entities/`
-- Value objects: `Design.Domain/ValueObjects/`
+- Read models: `Design.Domain/ReadModels/`
 
 See `src/Design/CLAUDE-DESIGN.md` for detailed Claude Code guidance.
