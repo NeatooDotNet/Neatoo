@@ -73,17 +73,11 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
     // For this declaration:
     //   public partial string? Name { get; set; }
     //
-    // Neatoo.BaseGenerator produces (in DemoValueObject.g.cs):
-    //
-    //   private IValidateProperty<string?> _nameProperty;
-    //   public partial string? Name
-    //   {
-    //       get => _nameProperty.Value;
-    //       set => _nameProperty.SetValue(value);
-    //   }
-    //
-    // The InitializePropertyBackingFields() method is also generated to create
-    // the property instances during construction.
+    // Neatoo.BaseGenerator produces (in DemoValueObject.g.cs) a NameProperty
+    // accessor over PropertyManager, a Name implementation that reads and
+    // writes NameProperty.Value and tracks its Task, and an
+    // InitializePropertyBackingFields override that registers the property.
+    // The full shape is in PropertySystem/PropertyBasics.cs.
     // =========================================================================
     public partial string? Name { get; set; }
 
@@ -214,20 +208,11 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     public partial int Value { get; set; }
 
     // =========================================================================
-    // GENERATOR BEHAVIOR: For EntityBase, properties generate IEntityProperty<T>
-    // instead of IValidateProperty<T>. IEntityProperty adds:
+    // GENERATOR BEHAVIOR: The generated code has the same shape as for
+    // ValidateBase (see PropertySystem/PropertyBasics.cs). On an EntityBase
+    // the property factory creates entity properties, which add:
     // - IsModified tracking per property
-    // - LoadValue() for setting without marking modified
     // - MarkSelfUnmodified() for clearing modification state
-    //
-    // Generated code (in DemoEntity.g.cs):
-    //
-    //   private IEntityProperty<string?> _nameProperty;
-    //   public partial string? Name
-    //   {
-    //       get => _nameProperty.Value;
-    //       set => _nameProperty.SetValue(value);
-    //   }
     // =========================================================================
 
     public DemoEntity(IEntityBaseServices<DemoEntity> services) : base(services)

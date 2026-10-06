@@ -1,4 +1,4 @@
-﻿using Neatoo;
+using Neatoo;
 using Neatoo.RemoteFactory;
 using Person.Dal;
 
@@ -19,6 +19,9 @@ internal class PersonPhoneList : EntityListBase<IPersonPhone>, IPersonPhoneList
     {
         this.personPhoneModelFactory = personPhoneModelFactory;
     }
+
+    [Create]
+    public void Create() { }
 
     public IPersonPhone AddPhoneNumber()
     {

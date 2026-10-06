@@ -57,6 +57,9 @@ namespace Design.Domain.DI;
 //     // Factory for creating property backing fields
 //     IPropertyFactory<T> PropertyFactory { get; }
 //
+//     // Logger for the target type
+//     ILogger<T> Logger { get; }
+//
 //     // Creates a rule manager for the target object
 //     IRuleManager<T> CreateRuleManager(T target);
 // }

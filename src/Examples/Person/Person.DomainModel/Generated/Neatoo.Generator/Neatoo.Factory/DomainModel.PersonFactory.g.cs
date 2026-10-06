@@ -88,7 +88,6 @@ namespace DomainModel
             _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Create, "IPerson");
             var _sw = System.Diagnostics.Stopwatch.StartNew();
             var target = ServiceProvider.GetRequiredService<Person>();
-            var personPhoneModelList = ServiceProvider.GetRequiredService<IPersonPhoneList>();
             try
             {
                 if (target is IFactoryOnStart _factoryOnStart)
@@ -97,7 +96,7 @@ namespace DomainModel
                     _factoryOnStart.FactoryStart(FactoryOperation.Create);
                 }
 
-                target.Create(personPhoneModelList);
+                target.Create();
                 if (target is IFactoryOnComplete _factoryOnComplete)
                 {
                     _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPerson");

@@ -73,9 +73,11 @@ internal partial class Person : EntityBase<Person>, IPerson
     public partial void MapModifiedTo(PersonEntity personEntity);
 
     [Create]
-    public void Create([Service] IPersonPhoneList personPhoneModelList)
+    public void Create()
     {
-        PersonPhoneList = _lazyLoadFactory.Create<IPersonPhoneList>(personPhoneModelList);
+        // A new person's phone list is created through the list factory and
+        // wrapped as already loaded - there is nothing to lazy-load yet.
+        PersonPhoneList = _lazyLoadFactory.Create<IPersonPhoneList>(_personPhoneListFactory.Create());
     }
 
     [Remote]

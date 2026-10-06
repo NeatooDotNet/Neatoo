@@ -196,11 +196,20 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
 //       t => t.A + t.B > 100 ? "Too high" : "",
 //       t => t.A);  // Only triggers on A, not B!
 //
-// RIGHT:
-//   RuleManager.AddAction(
-//       t => { if (t.A + t.B > 100) t.HasWarning = true; },
-//       t => t.A,
-//       t => t.B);  // Triggers on both A and B
+// AddValidation takes exactly one trigger. For a validation over several
+// properties, either:
+//
+// RIGHT (validate a computed property - the shape used below):
+//   RuleManager.AddAction(t => t.Sum = t.A + t.B, t => t.A, t => t.B);
+//   RuleManager.AddValidation(t => t.Sum > 100 ? "Too high" : "", t => t.Sum);
+//
+// RIGHT (a rule class, which takes any number of triggers):
+//   internal class SumLimitRule : RuleBase<T>
+//   {
+//       public SumLimitRule() : base(t => t.A, t => t.B) { }
+//       protected override IRuleMessages Execute(T t)
+//           => RuleMessages.If(t.A + t.B > 100, nameof(t.A), "Too high");
+//   }
 // =============================================================================
 
 /// <summary>
@@ -224,8 +233,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
             t => t.B,
             t => t.C);
 
-        // Validation that checks cross-property constraint
-        // Note: Must list ALL properties involved to trigger correctly
+        // Cross-property constraint, validated on the computed Sum: the action
+        // above recomputes Sum whenever A, B or C changes, which triggers this.
         RuleManager.AddValidation(
             t => t.Sum > 100 ? "Sum cannot exceed 100" : string.Empty,
             t => t.Sum);

@@ -24,31 +24,34 @@ namespace Design.Domain.PropertySystem;
 // For this declaration:
 //   public partial string? Name { get; set; }
 //
-// GENERATOR BEHAVIOR: Neatoo.BaseGenerator produces:
+// GENERATOR BEHAVIOR: Neatoo.BaseGenerator produces the same shape for
+// ValidateBase and EntityBase (from DemoEntity.g.cs):
 //
-// For ValidateBase:
-//   private IValidateProperty<string?> _nameProperty = null!;
+//   protected IValidateProperty<string?> NameProperty
+//       => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+//
 //   public partial string? Name
 //   {
-//       get => _nameProperty.Value;
-//       set => _nameProperty.SetValue(value);
+//       get => NameProperty.Value;
+//       set
+//       {
+//           NameProperty.Value = value;
+//           if (!NameProperty.Task.IsCompleted)
+//           {
+//               Parent?.AddChildTask(NameProperty.Task);
+//               RunningTasks.AddTask(NameProperty.Task);
+//           }
+//       }
 //   }
 //
-// For EntityBase (adds modification tracking):
-//   private IEntityProperty<string?> _nameProperty = null!;
-//   public partial string? Name
-//   {
-//       get => _nameProperty.Value;
-//       set => _nameProperty.SetValue(value);
-//   }
-//
-// The InitializePropertyBackingFields() method creates the property instances:
 //   protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
 //   {
-//       base.InitializePropertyBackingFields(factory);
-//       _nameProperty = factory.CreateProperty<string?>("Name", this);
-//       PropertyManager.Add(_nameProperty);
+//       PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
 //   }
+//
+// On an EntityBase the factory creates an entity property (modification
+// tracking); the accessor is still typed IValidateProperty<T>. The real output
+// is on disk under Generated/Neatoo.BaseGenerator/.
 // =============================================================================
 
 /// <summary>

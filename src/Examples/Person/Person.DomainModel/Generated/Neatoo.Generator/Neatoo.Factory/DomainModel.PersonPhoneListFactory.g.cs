@@ -16,6 +16,7 @@ namespace DomainModel
 {
     public interface IPersonPhoneListFactory
     {
+        IPersonPhoneList Create(CancellationToken cancellationToken = default);
         internal IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default);
         Task<IPersonPhoneList> Fetch(Guid personId, CancellationToken cancellationToken = default);
         internal IPersonPhoneList Save(IPersonPhoneList target, ICollection<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default);
@@ -41,6 +42,51 @@ namespace DomainModel
             this.ServiceProvider = serviceProvider;
             this.MakeRemoteDelegateRequest = remoteMethodDelegate;
             Fetch1Property = RemoteFetch1;
+        }
+
+        public virtual IPersonPhoneList Create(CancellationToken cancellationToken = default)
+        {
+            return LocalCreate(cancellationToken);
+        }
+
+        public IPersonPhoneList LocalCreate(CancellationToken cancellationToken = default)
+        {
+            return global::Neatoo.RemoteFactory.Internal.FactoryEntryCall.Run(ServiceProvider, () => LocalCreateCore(cancellationToken));
+        }
+
+        private IPersonPhoneList LocalCreateCore(CancellationToken cancellationToken = default)
+        {
+            var _logger = ServiceProvider.GetService<ILogger<PersonPhoneListFactory>>();
+            var _correlationContext = ServiceProvider.GetService<ICorrelationContext>();
+            var _correlationId = _correlationContext?.CorrelationId;
+            _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} started for {TypeName}", _correlationId, FactoryOperation.Create, "IPersonPhoneList");
+            var _sw = System.Diagnostics.Stopwatch.StartNew();
+            var target = ServiceProvider.GetRequiredService<PersonPhoneList>();
+            try
+            {
+                if (target is IFactoryOnStart _factoryOnStart)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnStart for {TypeName}", "IPersonPhoneList");
+                    _factoryOnStart.FactoryStart(FactoryOperation.Create);
+                }
+
+                target.Create();
+                if (target is IFactoryOnComplete _factoryOnComplete)
+                {
+                    _logger?.LogDebug("Invoking IFactoryOnComplete for {TypeName}", "IPersonPhoneList");
+                    _factoryOnComplete.FactoryComplete(FactoryOperation.Create);
+                }
+
+                _sw.Stop();
+                _logger?.LogInformation("[{CorrelationId}] Factory operation {Operation} completed for {TypeName} in {ElapsedMs}ms", _correlationId, FactoryOperation.Create, "IPersonPhoneList", _sw.ElapsedMilliseconds);
+                return (IPersonPhoneList)target;
+            }
+            catch (Exception _ex)
+            {
+                _sw.Stop();
+                _logger?.LogError(_ex, "[{CorrelationId}] Factory operation {Operation} failed for {TypeName}: {ErrorMessage}", _correlationId, FactoryOperation.Create, "IPersonPhoneList", _ex.Message);
+                throw;
+            }
         }
 
         public virtual IPersonPhoneList Fetch(IEnumerable<PersonPhoneEntity> personPhoneEntities, CancellationToken cancellationToken = default)
