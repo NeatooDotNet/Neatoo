@@ -9,3 +9,4 @@ stay reserved for their files but new todos use this registry.
 |----|------|--------|----------|
 | ISNEW | Decouple IsNew from IsModified — Create Means Savable, Not Modified | Complete | [completed/ISNEW-decouple-isnew-from-ismodified](./completed/ISNEW-decouple-isnew-from-ismodified/todo.md) |
 | LIST | EntityListBase state machinery — notification, replacement, paused-path defects | Not Started | [LIST-entitylist-state-machinery](./LIST-entitylist-state-machinery/todo.md) |
+| SKR | Rebuild the Neatoo skill around the model and placement decisions | In Progress | [SKR-neatoo-skill-rebuild](./SKR-neatoo-skill-rebuild/todo.md) |
