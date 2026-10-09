@@ -129,3 +129,7 @@ My recommendation:
 - `MarkInvalid` from application code: dropped from all guidance.
 - Housekeeping done: `.claude/rules/design-snippets.md`, `.gitattributes` (markdown LF), `Design.sln` in CI.
 - RemoteFactory repository work: deferred; ask Keith again before starting.
+- Questions R2–R7 and N5–N7 ruled as D11–D18 in `docs/VisionAlignment.md` section 0. Interface-factory examples that expose a repository: filed as NeatooDotNet/RemoteFactory#112 (documentation).
+- RemoteFactory backlog (repo deferred): the RemoteFactory skill's quick-decisions table says `[Remote]` on a child entity "causes N+1 remote calls". Wrong per Keith: on the server `[Remote]` does nothing different.
+- Running rules at the end of a `[Create]` or `[Fetch]` is no longer taught as a step (D18). About 15 sites in the skill, docs and `CommonGotchas.cs` teach it, and `WorkOrder`'s `[Fetch]` does it; all to be rewritten. #98 becomes moot.
+- `Design.App` + `Design.Server` to be created as the compiled source for tier-composition and Blazor snippets.
