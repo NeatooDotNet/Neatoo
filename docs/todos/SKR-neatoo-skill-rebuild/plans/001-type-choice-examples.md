@@ -1,12 +1,12 @@
-# Design.Domain example per type choice
+# Design.Domain example per Neatoo type choice
 
 **Plan #:** 001
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-3
 **Status:** Draft
-**Last Updated:** 2026-10-09
-**Plan-review opt-in:** Yes — these examples become doctrine that `SKILL.md` points at and that gets copied; `plan-reviewer`, Pass A against D1–D19 and the RemoteFactory skill
+**Last Updated:** 2026-10-09 (re-drafted after the owner split; first draft and review in `reviews/001-plan-review.md`)
+**Plan-review opt-in:** Yes — these examples become doctrine that `SKILL.md` points at and that gets copied; `plan-reviewer`, Pass A against D1–D19
 **Code-review opt-in:** Yes — examples are what gets copied, so the shape matters more than in ordinary code
 **Branch:** skr-001-type-choice-examples — cut from the arc at Step 2
 **PR:** —
@@ -15,59 +15,57 @@
 
 ## Scope
 
-Add to Design.Domain the type choices the rebuilt `SKILL.md` will point at and that it does not yet have: a context (a plain `[Factory]` instance a screen binds to, with `[Fetch]` and an `[Execute]` verb, D13), a class-level static `[Execute]` that gets-or-makes an aggregate (D11, D12), an interface factory that is a domain service the client calls (D12; never named or shaped as a repository), and a Neatoo entity reused by a server job with no person involved (D4). Rename `DemoValueObject` and its list to an input model, since `ValidateBase` is not a value object (D17), and make sure no Design.Domain text calls `ValidateBase` a value object. Each new type gets a Design.Tests test and `skill-*` regions. It does not touch the skill files, the user docs, or the aggregates already there beyond adding the one static `[Execute]`.
+Add to Design.Domain the Neatoo-owned type-choice examples the rebuilt `SKILL.md` will point at and that it does not yet have: a Neatoo entity reused by a server job with no person involved (D4, traps T1 and T7), and a rule that takes an interface-factory domain service (D1 as extended on 2026-10-09, trap T12). Give `Order` the verb and the breakable validation rule the job needs. Rename `DemoValueObject` and its list to input-model names and make sure no Design.Domain or Design.Tests text calls `ValidateBase` a value object (D17, T16). Each new shape gets a Design.Tests test and `skill-*` regions. The RemoteFactory-owned shapes (context, class-level `[Execute]`, interface factory as a pattern) are the sibling todo's and are not built here; this plan defines only the small domain-service interface the rule needs to compile. It does not touch the skill files or the user docs; snippets that re-render from the rename are accepted and the two prose lines that name the old type are fixed.
 
 ---
 
 ## Intent
 
-- A reader of the rebuilt `SKILL.md` who is told "that is a context" or "that is a class-level `[Execute]`" can open one compiled, tested file and copy its shape.
-- The four shapes that zTreatment got wrong by habit (an instance where a command belonged, a `[Fetch]` that created, a repository exposed to the client, a job rebuilt as plain EF because "no person edits it") each have one correct example in the canonical set.
-- The example set stops calling `ValidateBase` a value object, so the next session does not re-learn that mapping.
+- A reader told "that is a job over entities" or "that rule needs a server answer" opens one compiled, tested file and copies its shape.
+- The job example is T1's counter-example: after the verb, nothing validates; `WaitForTasks()` then `IsSavable` decides, and `RunRules` appears nowhere. It is also T7's: a background job reuses the entity and its rules instead of writing plain EF.
+- The example set stops calling `ValidateBase` a value object.
 
 ---
 
 ## Framework & Architectural Alignment
 
-- Rulings D3 (Create = new, Fetch = existing), D11 (get-or-make is an `[Execute]`), D12 (static command / class-level `[Execute]` / interface factory split), D13 (context vs command), D14 (local Create by default), D4 (an entity is right with no person involved; list the broken rules rather than throw), D17 (`ValidateBase` is an input model), D19 (interface-first strongly recommended; Design.Domain follows it).
-- RemoteFactory skill: class-level `[Execute]` is `public static` and returns the containing type or its interface (`references/class-factory.md`); an interface factory's implementation carries no `[Factory]` and its methods carry no operation attributes, NF0106 (`references/interface-factory.md`); `[Execute]` returns `Task<T>`; a static command is `[Remote, Execute] private static _Name`.
-- Neatoo doctrine already in Design.Domain: `[Remote]` only on client entry points; child operations `internal`; no `LoadValue` inside an operation; the D6 server gate on root `[Insert]`/`[Update]`; the D10 save cascade.
-- `.claude/rules/design-snippets.md`: regions named `skill-*`, globally unique, tight around the code shown, each pinned by a test.
-- RemoteFactory#112: the new interface factory is the counter-example to the repository-shaped ones; it is named and documented as a domain service.
+- Rulings D1 (a rule may call the server through an injected command; extended 2026-10-09 to an interface-factory domain service, which on the client resolves to the generated proxy and is therefore a wrapped server call, not a server-only service), D2 (no catch-and-report, no drop-out), D4 (an entity is right with no person involved; list the broken rules rather than throw), D6 (the root's `[Insert]`/`[Update]` gate stays as the safety net), D17 (`ValidateBase` is an input model), D18 (loaded data is assumed valid; no `RunRules` after Fetch or before Save), D19 (interface-first strongly recommended; Design.Domain follows it).
+- Model statement 4: a job that takes a server-only `[Service]` is `[Remote, Execute]`, because a static `[Execute]` with no `[Remote]` is a local-only delegate registered unguarded on the client (plan review C1). On the server `[Remote]` does nothing extra.
+- Model statement 7 and the memory note `feedback-no-validate-step`: the job's shape is apply verb, `WaitForTasks()`, `if (IsSavable) Save() else report messages`.
+- RemoteFactory skill: an interface factory's implementation carries no `[Factory]`; in `NeatooFactory.Server` mode the interface resolves to the implementation, so a test observes the rule's behaviour, not the proxy (plan review C4). The implementation registers in `DesignTestServices` only, never in `AddDesignDomainRules`, because a client-side `AddScoped<IService, Impl>` after `AddNeatooServices` would replace the generated proxy (C6).
+- `.claude/rules/design-snippets.md`: regions `skill-*`, unique, tight, each pinned by a test. Region *names* containing `value-object` are kept this plan so existing placeholders keep rendering; plans 004 and 005 rename them when they rewrite the skill, and the docs follow (C5).
 
 ---
 
 ## Constraints & Invariants
 
-- Existing Design.Tests stay green and unchanged except for the `DemoValueObject` rename.
-- No new type exposes a repository, a `DbContext` or any server-only service to the client: server-only services arrive only by `[Service]` on an operation that is `[Remote]` or `internal`.
-- The job example raises no exception for an invalid entity; it reports which entities were skipped and why, and saves the rest.
-- The get-or-make `[Execute]` never leaves an object claiming the wrong persistence state: an existing aggregate comes back `IsNew == false`, a new one `IsNew == true`.
-- The context holds interfaces, never concretes, and has no Neatoo base class.
-- `Design.sln` builds with 0 warnings; `dotnet mdsnippets` reports no duplicate region names.
+- Existing Design.Tests stay green and unchanged except for the rename.
+- The job calls no `RunRules` and catches nothing; an entity the verb leaves unchanged is skipped because it is not savable, never because `Save()` threw `NotModified`.
+- The job reports every skipped entity with its rule messages and returns; the valid ones are saved through the root's own `Save()` and the result is reassigned (T13).
+- The domain-service interface factory is named and documented as a service, never as a repository; it exposes nothing persistence-shaped.
+- `AsyncRules.cs`'s header is rewritten so the two rule examples read as one doctrine: a command delegate for one call, an interface-factory domain service for a service with several related calls (D12); neither is a server-only service.
+- `Design.sln` builds with 0 warnings; `dotnet mdsnippets` reports no duplicate or missing regions.
 
 ---
 
 ## Steps
 
-1. Add a context under a new `Contexts/` folder: a plain `[Factory]` class whose `[Remote, Fetch]` bundles one existing aggregate with one read-model answer for a screen, and whose `[Remote, Execute]` verb acts on the bundle it holds. Its header comment states D13: an instance because the screen binds to it and later verbs act on it; a static command when the call returns and is done.
-2. Add a class-level static `[Remote, Execute]` to an existing aggregate (Order or WorkOrder, chosen at pre-flight) that returns the open one for a key or creates it. Its comment states D11 and D3: neither `[Fetch]` nor `[Create]` can make this claim, so it is an `[Execute]` that calls both.
-3. Add a domain-service interface factory under `Services/`: a `[Factory]` interface the client calls, with a server implementation that has no `[Factory]`, injected into a Neatoo rule or verb so the example shows why the client needs it. Its comment says what an interface factory is for and that a repository is never one (RemoteFactory#112).
-4. Add a job example under `Jobs/`: a static command with no `[Remote]`, run on the server, that fetches a set of an existing aggregate, applies a verb, runs the rules, saves the valid ones through the factory and returns a report naming each skipped entity and its rule messages. Its comment states D4.
-5. Rename `DemoValueObject` / `IDemoValueObject` / `DemoValueObjectList` / `IDemoValueObjectList` to input-model names, re-point every reference including `DesignTestServices` and the `skill-test-services` region, and rewrite the surrounding comments so `ValidateBase` is described as an input model (D17). Grep Design.Domain and Design.Tests for "value object" and fix any remaining use that means `ValidateBase`.
-6. Register the new services (the interface-factory implementation, the mock repository for the context and the job) in `DesignTestServices` and, where both tiers need it, in `AddDesignDomainRules` or a sibling extension that the skill can show.
-7. Write one Design.Tests class per new type, pinning the Acceptance bullets below; wrap each shape in a `skill-*` region sized for the skill.
-8. Build, test, run `dotnet mdsnippets`, confirm no duplicate or missing regions and that existing snippets are unchanged.
+1. Give `Order` a verb a job would call and whose outcome can break Order's existing validation rule, so an invalid-after-verb case exists without inventing a new rule. State in its comment that a verb sets state and never persists.
+2. Add the job under `Jobs/`: a `[Remote, Execute] private static` command that takes a set of order keys, fetches each through the factory, applies the verb, awaits `WaitForTasks()`, saves those that are savable and reports the rest with their messages. Its header states D4, T1 and T7, and says why `[Remote]` is on it.
+3. Add a domain-service interface factory under `Services/`: a small `[Factory]` interface with one or two related calls, a server implementation without `[Factory]`, and a rule on an existing `ValidateBase` or `EntityBase` demo that takes the interface in its constructor and writes a message from its answer. Rewrite the `AsyncRules.cs` header so the command-delegate rule and this one read as one doctrine (D12).
+4. Rename `DemoValueObject` / `IDemoValueObject` / `DemoValueObjectList` / `IDemoValueObjectList` to input-model names; re-point every reference including `DesignTestServices`; rewrite the surrounding comments and `ServiceContracts.cs`'s `MyValueObject` comment so `ValidateBase` is an input model; fix the two doc prose lines that name the old type. Keep the existing region names.
+5. Register the mock repository and the service implementation in `DesignTestServices`.
+6. Write one Design.Tests class per new shape pinning the Acceptance bullets; wrap each shape in a `skill-*` region sized for the skill.
+7. Build, test, run `dotnet mdsnippets`; confirm no duplicate or missing regions; confirm the re-rendered snippets are only those the rename touches.
 
 ---
 
 ## Acceptance
 
-- [ ] A context's `[Fetch]` returns the bundle, and its `[Execute]` verb changes the aggregate it holds `[integration]` · Must
-- [ ] The class-level `[Execute]` returns the existing aggregate with `IsNew == false` when one exists and a new one with `IsNew == true` when none does `[integration]` · Must
-- [ ] A rule or verb reaches the domain service through the generated factory, and the implementation type carries no `[Factory]` `[integration]` · Must
-- [ ] The job saves every valid entity, skips every invalid one, reports each skipped entity with its rule messages, and throws nothing `[integration]` · Must
-- [ ] No type named `*ValueObject*` derives from `ValidateBase`, and no Design.Domain or Design.Tests comment calls `ValidateBase` a value object `[explicit-skip: rename and prose, verified by grep]` · Must
+- [ ] Given one order the verb leaves valid, one it leaves invalid and one it leaves unchanged, the job saves the first, reports the second with its rule messages, skips the third, and throws nothing `[integration]` · Must
+- [ ] The job's source contains no `RunRules` call `[explicit-skip: verified by grep, pinned by review]` · Must
+- [ ] A rule taking the domain service produces the message that reflects the service's answer `[integration]` · Must
+- [ ] No type named `*ValueObject*` derives from `ValidateBase`, and no Design.Domain or Design.Tests comment calls `ValidateBase` a value object `[explicit-skip: rename and prose, verified by grep excluding Generated/]` · Must
 - [ ] Every new shape has a `skill-*` region and `dotnet mdsnippets` reports no duplicate or missing regions `[explicit-skip: tooling]` · Must
 - [ ] `Design.sln` builds with 0 errors and 0 warnings and every Design.Tests test passes `[explicit-skip: meta-bullet]` · Must
 
@@ -81,7 +79,7 @@ Add to Design.Domain the type choices the rebuilt `SKILL.md` will point at and t
 
 ## Punchlist
 
-- (todo-level rows triaged at Step 2: none lie in this plan's path; the `CLAUDE.md` wording, #98 and the audit count stay on the todo)
+- (todo-level rows triaged at Step 2: none lie in this plan's path)
 
 ---
 
@@ -89,10 +87,9 @@ Add to Design.Domain the type choices the rebuilt `SKILL.md` will point at and t
 
 | Acceptance bullet (short) | Priority | Tier declared | Test method | Tier confirmed |
 |---|---|---|---|---|
-| Context fetch and verb | Must | `[integration]` | | |
-| Get-or-make `IsNew` | Must | `[integration]` | | |
-| Domain service via factory | Must | `[integration]` | | |
-| Job saves valid, reports invalid | Must | `[integration]` | | |
+| Job saves valid, reports invalid, skips unchanged | Must | `[integration]` | | |
+| No `RunRules` in the job | Must | `[explicit-skip]` | | |
+| Rule message reflects the service | Must | `[integration]` | | |
 | No `ValidateBase` value object | Must | `[explicit-skip]` | | |
 | Regions and mdsnippets | Must | `[explicit-skip]` | | |
 | Build and tests green | Must | `[explicit-skip]` | | |
@@ -107,11 +104,17 @@ Add to Design.Domain the type choices the rebuilt `SKILL.md` will point at and t
 
 ## Plan Amendments
 
--
+### 2026-10-09 — Re-drafted after the owner split and the first review
+
+- **Section affected:** all
+- **Original said:** four new shapes (context, class-level `[Execute]`, interface factory, job) plus the rename; the job ran `RunRules(All)` before saving (Notes question); the context had an instance `[Execute]` verb.
+- **What changed:** context, class-level `[Execute]` and the interface-factory pattern moved to the RemoteFactory sibling (owner split). The job runs no rules: the verb already triggered them (user, 2026-10-09). The context's verb, where it is built, is a plain instance method calling the held aggregate's verb (user's choice (b) on V1). A rule may take an interface-factory domain service (user's ruling on C6). Review callouts C1–C6 folded into Alignment and Constraints.
+- **Why:** the first review (`reviews/001-plan-review.md`) and the split agreed the same day.
+- **Discovery Log:** 2026-10-09 / SKR-001
 
 ---
 
 ## Notes
 
 - Skills consulted at drafting: the RemoteFactory skill's `class-factory.md`, `interface-factory.md`, `static-factory.md`, `service-injection.md`; `skills/neatoo` read from the repo (not loaded via the Skill tool, per `CLAUDE.md`).
-- Open for the user: should the job example run every rule (`RunRulesFlag.All`) before deciding an entity is invalid, given D18 says loaded data is assumed valid? My reading: yes, because the job's verb changed the entity and the job is the server, so this is the D6 gate applied by a caller that has no `Save()` on a root interface to do it for it. Confirm at review.
+- The first review's theoretical item about a plain `[Factory]` class holding an `IOrder` across the wire no longer applies; no context is built here.
