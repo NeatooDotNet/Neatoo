@@ -21,6 +21,12 @@ public interface ISaveDemo : IEntityRoot
     int Id { get; }
     string? Name { get; set; }
     decimal Amount { get; set; }
+
+    /// <summary>
+    /// Exposes PauseAllActions (not on IValidateBase / IEntityRoot) so the
+    /// paused-edit hazard can be demonstrated through the interface.
+    /// </summary>
+    IDisposable PauseAllActions();
 }
 
 /// <summary>
@@ -28,7 +34,7 @@ public interface ISaveDemo : IEntityRoot
 /// </summary>
 public interface ISaveAggregateDemo : IEntityRoot
 {
-    int Id { get; }
+    Guid Id { get; }
     string? Title { get; set; }
     ISaveDemoItemList? Items { get; }
 }
@@ -38,7 +44,7 @@ public interface ISaveAggregateDemo : IEntityRoot
 /// </summary>
 public interface ISaveDemoItem : IEntityBase
 {
-    int Id { get; }
+    Guid Id { get; }
     string? Name { get; set; }
     int Quantity { get; set; }
 }
@@ -151,8 +157,9 @@ public interface IServiceInjectionDemo : IEntityRoot
 // =============================================================================
 
 /// <summary>
-/// Root interface for dual-use entity demo.
-/// Can serve as aggregate root or as child within another aggregate.
+/// Root interface for the DualUseEntity demo. A root only: serving as a child
+/// would need a separate class with internal child operations and a child
+/// interface (see RemoteBoundary.cs).
 /// </summary>
 public interface IDualUseEntity : IEntityRoot
 {

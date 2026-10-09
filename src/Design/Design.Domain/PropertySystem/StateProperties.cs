@@ -93,6 +93,7 @@ internal partial class ValidationStateDemo : ValidateBase<ValidationStateDemo>, 
     // =========================================================================
 }
 
+#region skill-partial-property-class
 [Factory]
 internal partial class ValidationChildDemo : ValidateBase<ValidationChildDemo>, IValidationChildDemo
 {
@@ -108,6 +109,7 @@ internal partial class ValidationChildDemo : ValidateBase<ValidationChildDemo>, 
     [Create]
     public void Create() { }
 }
+#endregion
 
 /// <summary>
 /// Demonstrates: Modification state properties (IsModified, IsSelfModified, IsNew).
@@ -132,15 +134,13 @@ internal partial class ModificationStateDemo : EntityBase<ModificationStateDemo>
         [Service] IStatePropertiesRepository repository,
         [Service] IModificationChildDemoFactory childFactory)
     {
-        using (PauseAllActions())
-        {
-            var data = repository.GetById(id);
-            this["Name"].LoadValue(data.Name);
+        var data = repository.GetById(id);
+        Name = data.Name;
 
-            Child = childFactory.Create();
-            Child["Value"].LoadValue(data.ChildValue);
-        }
-        // After Fetch: IsNew=false, IsModified=false, IsSelfModified=false
+        // A loaded child is built with its own [Fetch], never [Create] -
+        // Create would mark it new and the next save would insert it again.
+        Child = childFactory.Fetch(data.ChildValue);
+        // After Fetch: IsNew=false, IsModified=false, IsSelfModified=false - for the child too
     }
 
     // =========================================================================
@@ -209,6 +209,12 @@ internal partial class ModificationChildDemo : EntityBase<ModificationChildDemo>
 
     [Create]
     public void Create() { }
+
+    [Fetch]
+    internal void Fetch(string? value)
+    {
+        Value = value;
+    }
 }
 
 /// <summary>
@@ -233,7 +239,7 @@ internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
     [Fetch]
     internal void Fetch(int id, [Service] IStatePropertiesRepository repository)
     {
-        this["Name"].LoadValue(repository.GetById(id).Name);
+        Name = repository.GetById(id).Name;
     }
 
     // =========================================================================
@@ -347,6 +353,7 @@ internal partial class BusyStateDemo : ValidateBase<BusyStateDemo>, IBusyStateDe
     public partial string? Name { get; set; }
     public partial string? ComputedValue { get; set; }
 
+    #region skill-async-action
     public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(services)
     {
         // Add an async rule - IsBusy becomes true while it runs
@@ -359,6 +366,7 @@ internal partial class BusyStateDemo : ValidateBase<BusyStateDemo>, IBusyStateDe
             },
             t => t.Name);
     }
+    #endregion
 
     [Create]
     public void Create() { }
@@ -399,9 +407,9 @@ internal partial class BusyStateDemo : ValidateBase<BusyStateDemo>, IBusyStateDe
     //   }
     //   // ResumeAllActions() called automatically
     //
-    // DESIGN DECISION: LoadValue() works even when paused.
-    // This is critical for Fetch operations which pause, then load values.
-    // SetValue() via property setter is affected by pause state.
+    // DESIGN DECISION: Factory operations are already paused, so a factory
+    // method assigns properties directly and never wraps its body in
+    // PauseAllActions() - disposing that wrapper would resume the object early.
     // =========================================================================
 }
 

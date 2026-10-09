@@ -59,11 +59,13 @@ namespace Design.Domain.ErrorHandling;
 //
 // 2. InvalidOperationException
 //    - When: Operation not valid in current state
-//    - Example: Calling Save() on a child entity (IsSavable=false)
+//    - Example: Adding a child that belongs to another aggregate instance
+//    (Calling Save() on a child does not compile: the child interface has
+//    no Save().)
 //
-// 3. NeatooConfigurationException (and subtypes)
+// 3. ConfigurationException (and subtypes, e.g. TypeNotRegisteredException)
 //    - When: Framework is misconfigured
-//    - Example: [Factory] class missing [Create] method
+//    - Example: A type the framework resolves is not registered
 //
 // 4. DI Resolution Exceptions
 //    - When: Required service not registered
@@ -130,6 +132,10 @@ internal partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>
                 ? "Email must be a valid email address"
                 : string.Empty,
             t => t.Email);
+
+        // The rule below simulates a bug (see RULE EXCEPTION BEHAVIOR); it
+        // throws only for Name == "ThrowException"
+        RuleManager.AddRule(new ExceptionThrowingRule());
     }
 
     [Create]
@@ -140,9 +146,9 @@ internal partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>
     internal void Fetch(int id, [Service] IErrorDemoRepository repository)
     {
         var data = repository.GetById(id);
-        this["Name"].LoadValue(data.Name);
-        this["Quantity"].LoadValue(data.Quantity);
-        this["Email"].LoadValue(data.Email);
+        Name = data.Name;
+        Quantity = data.Quantity;
+        Email = data.Email;
     }
 
     [Remote]
@@ -199,6 +205,7 @@ internal partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>
 //   }
 // =============================================================================
 
+#region skill-rule-that-throws
 /// <summary>
 /// Demonstrates: What happens when a rule throws an exception.
 /// </summary>
@@ -220,6 +227,7 @@ internal class ExceptionThrowingRule : AsyncRuleBase<ValidationFailureDemo>
         return Task.FromResult<IRuleMessages>(None);
     }
 }
+#endregion
 
 // =============================================================================
 // ERROR BOUNDARY PATTERNS
@@ -331,11 +339,10 @@ internal class ExceptionThrowingRule : AsyncRuleBase<ValidationFailureDemo>
 // RuleNotAddedException : RuleException
 //   - Attempted to run a rule not registered with RuleManager
 //
-// SaveOperationException
-//   - Invalid save operation (e.g., Save() on child entity)
-//
-// FactoryException
-//   - General factory operation error
+// SaveOperationException : EntityException
+//   - Save refused; Reason is a SaveFailureReason (IsInvalid, NotModified,
+//     IsBusy, NoFactoryMethod). Also the recommended server-side gate's
+//     exception when the rules fail in [Insert]/[Update].
 // =============================================================================
 
 // =============================================================================

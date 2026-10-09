@@ -43,6 +43,7 @@ public class StatePropertyTests
         Assert.IsTrue(entity["Name"].IsModified, "Property should be marked modified");
     }
 
+    #region skill-load-value-outside-operation
     [TestMethod]
     public void LoadValue_DoesNotMarkPropertyModified()
     {
@@ -52,12 +53,14 @@ public class StatePropertyTests
         // Act
         entity["Name"].LoadValue("Loaded");
 
-        // Assert - Note: New entities are already modified, but check the specific property
+        // Assert
         Assert.IsFalse(entity["Name"].IsModified, "Property should not be marked modified via LoadValue");
     }
+    #endregion
 
+    #region skill-fetch-clean-baseline
     [TestMethod]
-    public async Task Fetch_UsesLoadValue_NotModified()
+    public async Task Fetch_LoadsCleanBaseline_NotModified()
     {
         // Arrange & Act
         var entity = await _factory.Fetch(1);
@@ -66,7 +69,9 @@ public class StatePropertyTests
         Assert.IsFalse(entity.IsModified, "Fetched entity should not be modified");
         Assert.IsFalse(entity.IsSelfModified, "Fetched entity should not be self-modified");
     }
+    #endregion
 
+    #region skill-fetch-then-modify
     [TestMethod]
     public async Task Fetch_ThenModify_IsModified()
     {
@@ -80,4 +85,5 @@ public class StatePropertyTests
         Assert.IsTrue(entity.IsModified, "Entity should be modified after change");
         Assert.IsTrue(entity["Name"].IsModified, "Name property should be modified");
     }
+    #endregion
 }

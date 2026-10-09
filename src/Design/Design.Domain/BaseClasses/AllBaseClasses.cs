@@ -12,13 +12,14 @@ using Neatoo.RemoteFactory;
 namespace Design.Domain.BaseClasses;
 
 // =============================================================================
-// BASE CLASS 1: ValidateBase<T> - Value Objects, Read Models, Validation-Only
+// BASE CLASS 1: ValidateBase<T> - Objects That Need Rules, Not Persistence
 // =============================================================================
-// Use ValidateBase<T> when:
-// - You need validation and rules but NOT persistence tracking
-// - Building value objects (immutable or semi-immutable domain concepts)
-// - Building DTOs/read models that need validation
-// - Building forms/wizards that validate but don't directly persist
+// Use ValidateBase<T> only when the object needs rules:
+// - Value objects a person edits (an address on a form)
+// - Criteria, filters and wizard steps that validate but don't persist
+//
+// A read model is NOT a ValidateBase: it is a plain [Factory] class with
+// [Fetch] only (see ReadModels/EmployeeDirectory.cs).
 //
 // DESIGN DECISION: ValidateBase<T> is the foundation for ALL Neatoo objects.
 // EntityBase<T> extends ValidateBase<T>, so all entity capabilities build on
@@ -49,10 +50,45 @@ namespace Design.Domain.BaseClasses;
 //       public bool IsModified { get; } // NO - modification tracking is EntityBase concern
 //   }
 //
-// WHY NOT: Separation of concerns. Value objects and DTOs don't need IsNew/IsModified.
+// WHY NOT: Separation of concerns. Value objects and criteria don't need IsNew/IsModified.
 // Tracking modification state adds memory overhead for objects that will never be persisted.
 // =============================================================================
 
+// =============================================================================
+// GENERATOR BEHAVIOR: Partial properties trigger source generation.
+//
+// For this declaration:
+//   public partial string? Name { get; set; }
+//
+// Neatoo.BaseGenerator produces (in DemoValueObject.g.cs) a NameProperty
+// accessor over PropertyManager, a Name implementation that reads and
+// writes NameProperty.Value and tracks its Task, and an
+// InitializePropertyBackingFields override that registers the property.
+// The full shape is in PropertySystem/PropertyBasics.cs.
+// =============================================================================
+// Constructor Pattern: Services are injected, not created.
+//
+// DESIGN DECISION: All Neatoo objects receive services through constructor.
+// The IValidateBaseServices<T> wraps multiple services into one parameter
+// to enable future service additions without breaking changes.
+//
+// COMMON MISTAKE: Creating services manually.
+//
+// WRONG:
+//   public DemoValueObject() : base(new ValidateBaseServices<DemoValueObject>()) { }
+//
+// RIGHT:
+//   Use the factory to create instances - factory handles DI automatically.
+//   var obj = demoValueObjectFactory.Create();  // injected IDemoValueObjectFactory
+// =============================================================================
+// Factory Methods: [Create] initializes new objects.
+//
+// DESIGN DECISION: [Create] methods are NOT marked [Remote] by default.
+// Creating an empty object requires no persistence access, so it can run
+// on client or server. Only methods needing server resources get [Remote].
+// =============================================================================
+
+#region skill-value-object
 /// <summary>
 /// Demonstrates: ValidateBase&lt;T&gt; for value objects and validation-only scenarios.
 ///
@@ -66,65 +102,22 @@ namespace Design.Domain.BaseClasses;
 [Factory]
 internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoValueObject
 {
-    // =========================================================================
-    // GENERATOR BEHAVIOR: Partial properties trigger source generation.
-    //
-    // For this declaration:
-    //   public partial string? Name { get; set; }
-    //
-    // Neatoo.BaseGenerator produces (in DemoValueObject.g.cs):
-    //
-    //   private IValidateProperty<string?> _nameProperty;
-    //   public partial string? Name
-    //   {
-    //       get => _nameProperty.Value;
-    //       set => _nameProperty.SetValue(value);
-    //   }
-    //
-    // The InitializePropertyBackingFields() method is also generated to create
-    // the property instances during construction.
-    // =========================================================================
     public partial string? Name { get; set; }
 
     public partial string? Description { get; set; }
 
-    // =========================================================================
-    // Constructor Pattern: Services are injected, not created.
-    //
-    // DESIGN DECISION: All Neatoo objects receive services through constructor.
-    // The IValidateBaseServices<T> wraps multiple services into one parameter
-    // to enable future service additions without breaking changes.
-    //
-    // COMMON MISTAKE: Creating services manually.
-    //
-    // WRONG:
-    //   public DemoValueObject() : base(new ValidateBaseServices<DemoValueObject>()) { }
-    //
-    // RIGHT:
-    //   Use the factory to create instances - factory handles DI automatically.
-    //   var obj = await DemoValueObjectFactory.Create();
-    // =========================================================================
     public DemoValueObject(IValidateBaseServices<DemoValueObject> services) : base(services)
     {
-        // Rules are added in constructor - they execute when trigger properties change.
-        // See Rules/ folder for extensive RuleManager documentation.
+        // Rules are added in the constructor; they run when a trigger property changes
         RuleManager.AddValidation(
             t => string.IsNullOrWhiteSpace(t.Name) ? "Name is required" : string.Empty,
             t => t.Name);
     }
 
-    // =========================================================================
-    // Factory Methods: [Create] initializes new objects.
-    //
-    // DESIGN DECISION: [Create] methods are NOT marked [Remote] by default.
-    // Creating an empty object requires no persistence access, so it can run
-    // on client or server. Only methods needing server resources get [Remote].
-    // =========================================================================
+    // Local: creating an object needs nothing from the server
     [Create]
     public void Create()
     {
-        // Called by factory after construction.
-        // Initialize default values here if needed.
     }
 
     [Create]
@@ -132,7 +125,16 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
     {
         Name = name;
     }
+
+    // Loaded by the list's [Fetch]: existing data comes through [Fetch],
+    // never [Create]. Internal - only server-side code calls it.
+    [Fetch]
+    internal void Fetch(string name)
+    {
+        Name = name;
+    }
 }
+#endregion
 
 // =============================================================================
 // BASE CLASS 2: EntityBase<T> - Persistent Domain Entities
@@ -157,8 +159,8 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 // - Factory: Reference to IFactorySave<T> for persistence operations
 //
 // PERFORMANCE: IsModified aggregates from entire object graph.
-// - Checking IsModified walks all children recursively
-// - For deep graphs (>100 items), consider caching if called frequently
+// - Children's modified state is cached and updated as children change,
+//   so reading IsModified does not walk the graph
 // - IsSelfModified is O(1) - only checks this object's properties
 // - ModifiedProperties is a HashSet for O(1) contains checks
 //
@@ -187,6 +189,39 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
 //        quiet here, which is the point.
 // =============================================================================
 
+// =============================================================================
+// GENERATOR BEHAVIOR: The generated code has the same shape as for
+// ValidateBase (see PropertySystem/PropertyBasics.cs). On an EntityBase
+// the property factory creates entity properties, which add:
+// - IsModified tracking per property
+// - MarkSelfUnmodified() for clearing modification state
+// =============================================================================
+// Factory Methods: CRUD Operations
+//
+// DESIGN DECISION: Each operation has a specific attribute:
+// - [Create]: Initialize new object (typically local, no [Remote])
+// - [Fetch]: Load existing from persistence ([Remote] on a root the
+//   client fetches; child and list [Fetch] never carry it)
+// - [Insert]: Persist new object (called by Save())
+// - [Update]: Persist changes (called by Save())
+// - [Delete]: Remove from persistence (called by Save())
+//
+// Save() automatically routes to Insert/Update/Delete based on state.
+// You NEVER call Insert/Update/Delete directly - Save() does that.
+//
+// COMMON MISTAKE: Calling Insert/Update/Delete directly.
+//
+// WRONG:
+//   var entity = factory.Create();
+//   await factory.Insert(entity);  // NO! Use Save()
+//
+// RIGHT:
+//   var entity = factory.Create();
+//   entity.Name = "Test";
+//   await entity.Save();  // Routes to Insert because IsNew=true
+// =============================================================================
+
+#region skill-entity-crud
 /// <summary>
 /// Demonstrates: EntityBase&lt;T&gt; for persistent domain entities.
 ///
@@ -204,28 +239,8 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
 
     public partial int Value { get; set; }
 
-    // =========================================================================
-    // GENERATOR BEHAVIOR: For EntityBase, properties generate IEntityProperty<T>
-    // instead of IValidateProperty<T>. IEntityProperty adds:
-    // - IsModified tracking per property
-    // - LoadValue() for setting without marking modified
-    // - MarkSelfUnmodified() for clearing modification state
-    //
-    // Generated code (in DemoEntity.g.cs):
-    //
-    //   private IEntityProperty<string?> _nameProperty;
-    //   public partial string? Name
-    //   {
-    //       get => _nameProperty.Value;
-    //       set => _nameProperty.SetValue(value);
-    //   }
-    // =========================================================================
-
     public DemoEntity(IEntityBaseServices<DemoEntity> services) : base(services)
     {
-        // Note: IEntityBaseServices<T> extends IValidateBaseServices<T>
-        // so all validation services are available.
-
         RuleManager.AddValidation(
             t => string.IsNullOrWhiteSpace(t.Name) ? "Name is required" : string.Empty,
             t => t.Name);
@@ -235,98 +250,64 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
             t => t.Value);
     }
 
-    // =========================================================================
-    // Factory Methods: CRUD Operations
-    //
-    // DESIGN DECISION: Each operation has a specific attribute:
-    // - [Create]: Initialize new object (typically local, no [Remote])
-    // - [Fetch]: Load existing from persistence (needs [Remote])
-    // - [Insert]: Persist new object (called by Save())
-    // - [Update]: Persist changes (called by Save())
-    // - [Delete]: Remove from persistence (called by Save())
-    //
-    // Save() automatically routes to Insert/Update/Delete based on state.
-    // You NEVER call Insert/Update/Delete directly - Save() does that.
-    //
-    // COMMON MISTAKE: Calling Insert/Update/Delete directly.
-    //
-    // WRONG:
-    //   var entity = await factory.Create();
-    //   await factory.Insert(entity);  // NO! Use Save()
-    //
-    // RIGHT:
-    //   var entity = await factory.Create();
-    //   entity.Name = "Test";
-    //   await entity.Save();  // Routes to Insert because IsNew=true
-    // =========================================================================
-
     [Create]
     public void Create()
     {
-        // After this method completes, FactoryComplete(FactoryOperation.Create)
-        // is called, which calls MarkNew().
-        // Result: IsNew=true, IsModified=false - nothing was set, so there is no
-        // user work here. It is still savable: IsSavable admits IsNew.
+        // FactoryComplete(Create) calls MarkNew(): IsNew=true, IsModified=false.
+        // Nothing was set, so there is no user work - still savable, because
+        // IsSavable admits IsNew.
     }
 
+    // [Remote]: the client fetches this root, so the call crosses to the
+    // server, where the repository resolves. The object is paused for the
+    // body, so plain assignment is a clean baseline load.
     [Remote]
     [Fetch]
     internal void Fetch(int id, [Service] IDemoRepository repository)
     {
-        // Method [Service] injection - repository only available on server.
-        // After Fetch completes, entity is: IsNew=false, IsModified=false
-
-        // Use LoadValue to set properties without triggering modification tracking.
-        // See PropertySystem/PropertyBasics.cs for LoadValue vs SetValue.
-        using (PauseAllActions())
-        {
-            var data = repository.GetById(id);
-            this["Name"].LoadValue(data.Name);
-            this["Value"].LoadValue(data.Value);
-        }
+        var data = repository.GetById(id);
+        Name = data.Name;
+        Value = data.Value;
+        // After Fetch: IsNew=false, IsModified=false
     }
 
+    // Save() routes here when IsNew. FactoryComplete(Insert) then calls
+    // MarkUnmodified() and MarkOld().
     [Remote]
     [Insert]
     internal void Insert([Service] IDemoRepository repository)
     {
-        // Called by Save() when IsNew=true
         repository.Insert(Name!, Value);
-
-        // After Insert completes, FactoryComplete(FactoryOperation.Insert) is called:
-        // - MarkUnmodified() clears modification state
-        // - MarkOld() sets IsNew=false
     }
 
+    // Save() routes here when !IsDeleted && !IsNew. Routing never consults
+    // IsModified; entity.Save()'s IsSavable gate stops unmodified saves.
     [Remote]
     [Update]
     internal void Update([Service] IDemoRepository repository)
     {
-        // Called by Save() when !IsDeleted && !IsNew (routing never consults
-        // IsModified; EntityBase.Save()'s IsSavable gate stops unmodified saves)
         repository.Update(Name!, Value);
-
-        // After Update completes:
-        // - MarkUnmodified() clears modification state
     }
 
+    // Save() routes here when IsDeleted (checked first - IsDeleted wins over IsNew)
     [Remote]
     [Delete]
     internal void Delete([Service] IDemoRepository repository)
     {
-        // Called by Save() when IsDeleted=true (checked FIRST — IsDeleted wins
-        // over IsNew in generated routing)
         repository.Delete(Name!);
     }
 }
+#endregion
 
 // =============================================================================
-// BASE CLASS 3: ValidateListBase<I> - Collections of Read Models/Value Objects
+// BASE CLASS 3: ValidateListBase<I> - Collections of ValidateBase Items
 // =============================================================================
 // Use ValidateListBase<I> when:
-// - You need a collection of ValidateBase items
-// - Building lists of DTOs or value objects
+// - You need a collection of ValidateBase items (objects that need rules)
 // - The list items don't need persistence tracking
+//
+// A list of read-only rows is not a ValidateListBase: it is a property of a
+// plain [Factory] read model (see ReadModels/EmployeeDirectory.cs).
 //
 // DESIGN DECISION: ValidateListBase extends ObservableCollection<I>.
 // This provides standard collection behaviors plus:
@@ -343,12 +324,13 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
 //       public bool IsModified { get; }  // NO - that's EntityListBase
 //   }
 //
-// WHY NOT: ValidateListBase is for read models and value objects that don't
-// need persistence. Adding IsModified would add overhead and confusion.
+// WHY NOT: ValidateListBase is for validated items that don't need
+// persistence. Adding IsModified would add overhead and confusion.
 // =============================================================================
 
+#region skill-validate-list
 /// <summary>
-/// Demonstrates: ValidateListBase&lt;I&gt; for collections of value objects/read models.
+/// Demonstrates: ValidateListBase&lt;I&gt; for collections of ValidateBase items.
 ///
 /// Key points:
 /// - Extends ObservableCollection&lt;I&gt; with validation aggregation
@@ -361,7 +343,6 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 {
     // ValidateListBase has no required constructor - uses default.
 
-    // Factory methods can populate the list
     [Create]
     public void Create()
     {
@@ -372,18 +353,15 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
     [Fetch]
     internal void Fetch([Service] IDemoRepository repository, [Service] IDemoValueObjectFactory valueObjectFactory)
     {
-        // Fetch returns a list of value objects
-        var items = repository.GetAllNames();
-
-        // Note: List bases don't have PauseAllActions - items are added directly
-        // Rules on individual items run as they are added
-        foreach (var name in items)
+        // The list is paused by its own factory operation (FactoryStart),
+        // like any factory target. Each item is loaded by its own [Fetch].
+        foreach (var name in repository.GetAllNames())
         {
-            var item = valueObjectFactory.Create(name);
-            Add(item);
+            Add(valueObjectFactory.Fetch(name));
         }
     }
 }
+#endregion
 
 // =============================================================================
 // BASE CLASS 4: EntityListBase<I> - Collections of Child Entities
@@ -418,10 +396,16 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 //        +-- item.ContainingList reference PRESERVED (for save routing)
 //
 // 2. DURING AGGREGATE SAVE (Root.Save()):
-//    |-- Root's [Update] delegates to the LIST factory's Save, which runs the
+//    |-- Root's [Insert]/[Update] maps itself into its row, then hands the
+//    |   row's child collection to the LIST factory's Save, which runs the
 //    |   list's [Update] inside the list's own factory operation
-//    |-- The list's [Update] deletes DeletedList items from persistence and
-//    |   routes surviving items through per-item factory saves
+//    |-- The list's [Update] loops this.Union(DeletedList):
+//    |   |-- Deleted, not new: its row is REMOVED from the collection. No
+//    |   |   child [Delete] runs - children have none.
+//    |   |-- New: a new row is added, then the child factory's Save(child, row)
+//    |   |-- Modified existing: child factory's Save(child, itsRow)
+//    |   +-- Unmodified existing: skipped
+//    |-- The root flushes once (SaveChanges)
 //    |-- When the list's operation completes (FactoryComplete(Update) on the
 //        LIST - fired because the list is a factory target, never as a
 //        cascade from the parent):
@@ -450,9 +434,11 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 //   }
 //
 // WHY NOT: Separate DeletedList means iteration only sees active items.
-// Persistence code iterates DeletedList for deletes, main list for others.
+// The list's [Update] reaches the removed items through this.Union(DeletedList)
+// and removes their rows; everywhere else sees only the active items.
 // =============================================================================
 
+#region skill-entity-list
 /// <summary>
 /// Demonstrates: EntityListBase&lt;I&gt; for collections of child entities.
 ///
@@ -463,13 +449,17 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 /// - Adding items: set ContainingList (routes the child's Delete through the list)
 /// - Removing non-new items: MarkDeleted(), add to DeletedList
 /// - Root property for aggregate boundary enforcement
+/// - Parameterized on a CHILD interface (IDemoChild : IEntityBase), never on
+///   a root interface
 /// </summary>
 [Factory]
-internal partial class DemoEntityList : EntityListBase<IDemoEntity>, IDemoEntityList
+internal partial class DemoEntityList : EntityListBase<IDemoChild>, IDemoEntityList
 {
     // DESIGN DECISION: EntityListBase doesn't define IsSavable or Save().
-    // Lists are ALWAYS saved through their parent aggregate root.
-    // The parent's Save() method iterates the list and calls Insert/Update/Delete.
+    // Lists are ALWAYS saved through their parent aggregate root: the root's
+    // [Insert]/[Update] hands its row's child collection to the list
+    // factory's Save, and the list's own [Update] brings that collection in
+    // line (see Aggregates/OrderAggregate/OrderItemList.cs).
 
     /// <summary>
     /// Test helper: Exposes the count of items in DeletedList.
@@ -482,7 +472,76 @@ internal partial class DemoEntityList : EntityListBase<IDemoEntity>, IDemoEntity
     {
         // Empty list
     }
+
+    // Child list operations are internal and never [Remote]: the root's
+    // [Fetch] calls this on the server.
+    [Fetch]
+    internal void Fetch(IEnumerable<string> names, [Service] IDemoChildFactory childFactory)
+    {
+        foreach (var name in names)
+        {
+            Add(childFactory.Fetch(name));
+        }
+    }
 }
+#endregion
+
+#region skill-child-entity-minimal
+/// <summary>
+/// Child entity held by DemoEntityList. Its interface extends IEntityBase, so
+/// it exposes no IsSavable and no Save().
+/// </summary>
+[Factory]
+internal partial class DemoChild : EntityBase<DemoChild>, IDemoChild
+{
+    public partial string? Name { get; set; }
+
+    public DemoChild(IEntityBaseServices<DemoChild> services) : base(services) { }
+
+    // Client code creates a child with parameters, then adds it to the list:
+    //   var child = childFactory.Create("Widget");
+    //   root.Children.Add(child);
+    [Create]
+    public void Create(string name)
+    {
+        Name = name;
+    }
+
+    [Fetch]
+    internal void Fetch(string name)
+    {
+        Name = name;
+    }
+}
+#endregion
+
+#region skill-parent-creates-list
+/// <summary>
+/// Root that owns DemoEntityList, so the list demo has fetched (not new)
+/// children. Persistence is shown in Aggregates/OrderAggregate.
+/// </summary>
+[Factory]
+internal partial class DemoParent : EntityBase<DemoParent>, IDemoParent
+{
+    public partial IDemoEntityList? Children { get; set; }
+
+    public DemoParent(IEntityBaseServices<DemoParent> services) : base(services) { }
+
+    // The list is created through its own factory inside the parent's [Create]
+    [Create]
+    public void Create([Service] IDemoEntityListFactory listFactory)
+    {
+        Children = listFactory.Create();
+    }
+
+    [Remote]
+    [Fetch]
+    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoEntityListFactory listFactory)
+    {
+        Children = listFactory.Fetch(repository.GetAllNames());
+    }
+}
+#endregion
 
 // =============================================================================
 // SERVICE INTERFACE FOR DEMOS
@@ -511,10 +570,13 @@ public interface IDemoRepository
 // | Need              | Single Object    | Collection       |
 // +-------------------+------------------+------------------+------------------+
 // | Validation only   | ValidateBase<T>  | ValidateListBase<I> |
-// | (DTOs, VOs)       |                  |                  |
+// | (needs rules)     |                  |                  |
 // +-------------------+------------------+------------------+------------------+
 // | Full persistence  | EntityBase<T>    | EntityListBase<I>   |
 // | (Aggregates)      |                  |                  |
+// +-------------------+------------------+------------------+------------------+
+// | Read only         | Plain [Factory] class, [Fetch] only (ReadModels/)     |
+// | (Read models)     | Rows are immutable records on a property              |
 // +-------------------+------------------+------------------+------------------+
 //
 // DESIGN DECISION: The class hierarchy is intentional:
@@ -553,18 +615,20 @@ public interface IDemoRepository
 // RIGHT:
 //   await parent.Save();  // Parent save persists all child changes
 //
-// COMMON MISTAKE: Using SetValue instead of LoadValue during Fetch.
+// COMMON MISTAKE: Using LoadValue, PauseAllActions or MarkUnmodified inside a
+// factory operation. The operation already pauses the object, so plain
+// assignment is the load.
 //
 // WRONG:
-//   [Fetch]
-//   public void Fetch(int id, [Service] IRepo repo) {
-//       Name = repo.Get(id).Name;  // Sets IsModified=true!
+//   [Remote, Fetch]
+//   internal void Fetch(int id, [Service] IRepo repo) {
+//       this["Name"].LoadValue(repo.Get(id).Name);  // Noise - the object is already paused
 //   }
 //
 // RIGHT:
-//   [Fetch]
-//   public void Fetch(int id, [Service] IRepo repo) {
-//       this["Name"].LoadValue(repo.Get(id).Name);  // IsModified stays false
+//   [Remote, Fetch]
+//   internal void Fetch(int id, [Service] IRepo repo) {
+//       Name = repo.Get(id).Name;  // Paused: IsModified stays false, no rules run
 //   }
 //
 // COMMON MISTAKE: Expecting removed items to persist without aggregate Save().
@@ -575,7 +639,8 @@ public interface IDemoRepository
 //
 // RIGHT:
 //   parent.Children.Remove(child);  // Child in DeletedList
-//   await parent.Save();  // NOW child [Delete] method called
+//   await parent.Save();  // NOW the list's [Update] removes the child's row
+//                         // (children have no [Delete])
 //
 // COMMON MISTAKE: Not waiting for async operations.
 //

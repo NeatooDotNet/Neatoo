@@ -107,11 +107,24 @@ internal partial class CreateDemo : EntityBase<CreateDemo>, ICreateDemo
         Priority = priority;
     }
 
+    #region docs-create-marks-modified
+    // A [Create] whose result IS the user's work (a "New" button, not a derived
+    // default) says so: an unsaved-changes guard bound to IsModified should speak.
+    // Not needed to make the object savable - IsSavable already admits IsNew.
+    [Create]
+    public void CreateAsUserWork()
+    {
+        MarkModified();
+    }
+    #endregion
+
     // =========================================================================
-    // Pattern 3: Create with Service (rare, but supported)
+    // Pattern 3: Create with Service
     // =========================================================================
-    // Some creates need injected services, but NOT [Remote].
-    // Example: Loading default values from configuration.
+    // A local [Create] may take [Service] parameters. They resolve on the tier
+    // that calls the Create, so they must be registered on both tiers.
+    // Examples: a child list factory (every aggregate root here), default
+    // values from configuration.
     //
     // DID NOT DO THIS: Force [Remote] whenever [Service] is used.
     //
@@ -121,7 +134,8 @@ internal partial class CreateDemo : EntityBase<CreateDemo>, ICreateDemo
     //   public void Create([Service] IConfig config) { }
     //
     // WHY NOT: [Service] might inject client-available services (IConfiguration,
-    // IOptions<T>). Only use [Remote] when the service is server-only.
+    // IOptions<T>, a child factory). Add [Remote] only when the Create needs
+    // something that exists only on the server.
     // =========================================================================
     [Create]
     public void CreateWithDefaults([Service] ICreateDefaults defaults)
@@ -138,12 +152,9 @@ internal partial class CreateDemo : EntityBase<CreateDemo>, ICreateDemo
     [Fetch]
     internal void Fetch(int id, [Service] ICreateDemoRepository repository)
     {
-        using (PauseAllActions())
-        {
-            var data = repository.GetById(id);
-            this["Name"].LoadValue(data.Name);
-            this["Priority"].LoadValue(data.Priority);
-        }
+        var data = repository.GetById(id);
+        Name = data.Name;
+        Priority = data.Priority;
     }
 
     [Remote]

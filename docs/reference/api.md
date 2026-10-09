@@ -2,15 +2,15 @@
 
 # API Reference
 
-Complete reference documentation for Neatoo's core classes, interfaces, attributes, and source-generated members. This reference targets expert .NET developers implementing DDD aggregates with validation and persistence.
+Reference for Neatoo's core classes, interfaces, attributes, and source-generated members. It targets .NET developers implementing DDD aggregates with validation and persistence. Member tables are taken from the framework source; every code example is a compiled example from the Design projects, so it is the shape the framework is designed around: a public interface per entity and list, an `internal` concrete, `[Remote] internal` root operations, `internal` child operations, and plain assignment inside factory operations.
 
 ## Contents
 
 - [ValidateBase\<T\>](#validatebaset)
 - [EntityBase\<T\>](#entitybaset)
-- [ValidateListBase\<T\>](#validatelistbaset)
-- [EntityListBase\<T\>](#entitylistbaset)
-- [Key Interfaces](#key-interfaces) (IValidateBase, IEntityBase, IEntityRoot, IValidateProperty, IEntityProperty, IPropertyInfo, IValidateMetaProperties, IEntityMetaProperties)
+- [ValidateListBase\<I\>](#validatelistbasei)
+- [EntityListBase\<I\>](#entitylistbasei)
+- [Key Interfaces](#key-interfaces) (IValidateBase, IEntityBase, IEntityRoot, IValidateListBase, IEntityListBase, IValidateProperty, IEntityProperty, IPropertyInfo, IValidateMetaProperties, IEntityMetaProperties)
 - [Attributes](#attributes)
 - [Source Generator Output](#source-generator-output)
 
@@ -18,1055 +18,1035 @@ Complete reference documentation for Neatoo's core classes, interfaces, attribut
 
 ## ValidateBase\<T\>
 
-Abstract base class providing property management, validation, business rules, and parent-child relationships.
+Abstract base class providing property management, validation, business rules, and parent-child relationships. Use it for a value object or any object that needs rules but has no persistence lifecycle. A read model needs no base class at all: it is a plain `[Factory]` class with `[Fetch]`.
 
 ### Constructor
 
-```csharp
-protected ValidateBase(IValidateBaseServices<T> services)
-```
-
-The constructor accepts dependency-injected services containing property factory, rule manager factory, and property info list. Use the source-generated factory methods instead of direct construction.
+| Member | Signature | Notes |
+|---|---|---|
+| Constructor | `public ValidateBase(IValidateBaseServices<T> services)` | `T` is the concrete class (CRTP). The services carry the property factory, rule manager factory and property info list. Objects are created through the generated factory, never with `new`. |
 
 ### Property System
 
-#### Getter\<P\> / Setter\<P\>
+Partial properties are the property system. Declare the signature; the generator supplies the backing property object, the accessors, and the registration. (`Getter<P>()`/`Setter<P>()` still exist on the class but are `[Obsolete]`; the generator does not call them.)
 
-**Legacy:** These methods are superseded by partial properties. Use partial properties for all new code.
-
-```csharp
-protected virtual P? Getter<P>([CallerMemberName] string propertyName = "")
-
-protected virtual void Setter<P>(P? value, [CallerMemberName] string propertyName = "")
-```
-
-These methods manually access property backing fields by name. Partial properties are the preferred approach because the source generator creates strongly-typed backing fields and property implementations.
-
-<!-- snippet: api-validatebase-partial-properties -->
-<a id='snippet-api-validatebase-partial-properties'></a>
+<!-- snippet: skill-value-object-interface -->
+<a id='snippet-skill-value-object-interface'></a>
 ```cs
-[Factory]
-public partial class ApiCustomer : ValidateBase<ApiCustomer>
+/// <summary>
+/// Interface for ValidateBase demo — value objects and validation-only scenarios.
+/// </summary>
+public interface IDemoValueObject : IValidateBase
 {
-    public ApiCustomer(IValidateBaseServices<ApiCustomer> services) : base(services) { }
-
-    // Partial properties - source generator creates backing fields and implementation
-    public partial string Name { get; set; }
-
-    public partial string Email { get; set; }
-
-    public partial DateTime BirthDate { get; set; }
-
-    [Create]
-    public void Create() { }
+    string? Name { get; set; }
+    string? Description { get; set; }
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L17-L33' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-partial-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object-interface' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-value-object -->
+<a id='snippet-skill-value-object'></a>
+```cs
+/// <summary>
+/// Demonstrates: ValidateBase&lt;T&gt; for value objects and validation-only scenarios.
+///
+/// Key points:
+/// - Provides validation infrastructure without persistence tracking
+/// - IsValid/IsSelfValid track validation state
+/// - IsBusy tracks async operations
+/// - PauseAllActions()/ResumeAllActions() control event firing
+/// - RuleManager provides fluent API for adding rules
+/// </summary>
+[Factory]
+internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoValueObject
+{
+    public partial string? Name { get; set; }
+
+    public partial string? Description { get; set; }
+
+    public DemoValueObject(IValidateBaseServices<DemoValueObject> services) : base(services)
+    {
+        // Rules are added in the constructor; they run when a trigger property changes
+        RuleManager.AddValidation(
+            t => string.IsNullOrWhiteSpace(t.Name) ? "Name is required" : string.Empty,
+            t => t.Name);
+    }
+
+    // Local: creating an object needs nothing from the server
+    [Create]
+    public void Create()
+    {
+    }
+
+    [Create]
+    public void Create(string name)
+    {
+        Name = name;
+    }
+
+    // Loaded by the list's [Fetch]: existing data comes through [Fetch],
+    // never [Create]. Internal - only server-side code calls it.
+    [Fetch]
+    internal void Fetch(string name)
+    {
+        Name = name;
+    }
+}
+```
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L91-L137' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### Property Access
 
-```csharp
-public IValidateProperty GetProperty(string propertyName)
-public IValidateProperty this[string propertyName] { get; }
-public bool TryGetProperty(string propertyName, out IValidateProperty validateProperty)
-```
+| Member | Signature | Notes |
+|---|---|---|
+| Indexer | `public IValidateProperty this[string propertyName] { get; }` | The property object behind a partial property: `Value`, `IsValid`, `PropertyMessages`, `IsBusy`, `IsReadOnly`. |
+| GetProperty | `public IValidateProperty GetProperty(string propertyName)` | Same as the indexer; throws `PropertyNotFoundException` for an unknown name. |
+| TryGetProperty | `public bool TryGetProperty(string propertyName, out IValidateProperty validateProperty)` | Non-throwing lookup. |
+| PropertyManager | `protected IValidatePropertyManager<IValidateProperty> PropertyManager { get; set; }` | The registry the generated `InitializePropertyBackingFields` fills. Advanced use only. |
 
-Access property metadata and validation state by name.
+Each property object fires its own `PropertyChanged`, and the object's `PropertyMessages` aggregates every property's messages:
 
-<!-- snippet: api-validatebase-property-access -->
-<a id='snippet-api-validatebase-property-access'></a>
+<!-- snippet: skill-property-metadata -->
+<a id='snippet-skill-property-metadata'></a>
 ```cs
-[Fact]
-public void PropertyAccess_ByNameAndIndexer()
+[TestMethod]
+public void Indexer_ExposesPropertyMetadata()
 {
-    var factory = GetRequiredService<IApiCustomerSearchFactory>();
-    var search = factory.Create();
-    search.SearchTerm = "Test";
-    search.Category = "Products";
+    var entity = _factory.Create();
 
-    // Access property by name
-    IValidateProperty searchProperty = search.GetProperty("SearchTerm");
-    Assert.Equal("Test", searchProperty.Value);
+    // Each partial property is backed by its own property object
+    var nameProperty = entity["Name"];
 
-    // Access property via indexer
-    IValidateProperty categoryProperty = search["Category"];
-    Assert.Equal("Products", categoryProperty.Value);
+    entity.Name = "";  // Name is required
+    Assert.IsFalse(nameProperty.IsValid);
+    Assert.IsTrue(nameProperty.PropertyMessages.Count > 0);
+    Assert.IsFalse(nameProperty.IsBusy);
+    Assert.IsFalse(nameProperty.IsReadOnly);
 
-    // TryGetProperty for safe access
-    if (search.TryGetProperty("SearchTerm", out var prop))
-    {
-        Assert.Equal("SearchTerm", prop.Name);
-    }
+    // The object aggregates every property's messages
+    Assert.IsTrue(entity.PropertyMessages.Any(m => m.Property.Name == "Name"));
+
+    entity.Name = "Set";
+    Assert.IsTrue(nameProperty.IsValid);
+    Assert.AreEqual(0, nameProperty.PropertyMessages.Count);
+
+    // Strongly typed access by casting
+    var typed = (Neatoo.IValidateProperty<string?>)nameProperty;
+    Assert.AreEqual("Set", typed.Value);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L722-L745' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-property-access' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L83-L109' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-property-metadata' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Validation and Rules
 
-#### RunRules
+| Member | Signature | Notes |
+|---|---|---|
+| RuleManager | `protected IRuleManager<T> RuleManager { get; }` | Register rules in the constructor: `AddValidation`, `AddValidationAsync`, `AddAction`, `AddActionAsync` (1–3 trigger expressions, or an `Expression<Func<T, object?>>[]`), `AddRule<T>(IRule<T>)` for class-based rules. |
+| RunRules | `public virtual Task RunRules(string propertyName, CancellationToken? token = null)` | Re-runs the rules triggered by one property. |
+| RunRules | `public virtual Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null)` | `All` clears messages and re-runs every rule. Works while paused (no `IsPaused` guard). A cancelled `RunRules` marks the object invalid with "Validation cancelled" until re-run. |
+| ClearAllMessages | `public virtual void ClearAllMessages()` | Clears messages on this object and every descendant. |
+| ClearSelfMessages | `public virtual void ClearSelfMessages()` | Clears this object's own property messages only. |
+| MarkInvalid | `protected virtual void MarkInvalid(string message)` | Framework use: sets `ObjectInvalid` when a `RunRules` call is cancelled. Not an application validation channel; validation is a rule. |
+| ObjectInvalid | `public string? ObjectInvalid { get; protected set; }` | The object-level message, or `null`. A built-in rule reports it as a property message so `IsValid` reflects it. `RunRules(RunRulesFlag.All)` does not clear it ([#96](https://github.com/NeatooDotNet/Neatoo/issues/96)). |
 
-```csharp
-public virtual Task RunRules(string propertyName, CancellationToken? token = null)
-public virtual Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null)
-```
+Rules run when a property is set outside a factory operation; there is nothing to call before reading `IsValid` except `WaitForTasks()` when async rules may be in flight. `RunRules` is for forcing a re-run — most often at the end of a `[Create]` or `[Fetch]` that set inputs while the object was paused, so that computed properties populate:
 
-Executes validation rules for specific properties or the entire object graph. `RunRulesFlag.All` clears all messages before running. Supports cancellation, but cancelled validation marks the object invalid until re-validated.
-
-<!-- snippet: api-validatebase-runrules -->
-<a id='snippet-api-validatebase-runrules'></a>
+<!-- snippet: skill-run-rules-forces -->
+<a id='snippet-skill-run-rules-forces'></a>
 ```cs
-[Fact]
-public async Task RunRules_ExecutesValidation()
+[TestMethod]
+public async Task Gotcha1_RulesFireAfterCreate_WithExplicitRunRules()
 {
-    var factory = GetRequiredService<IApiCustomerValidatorFactory>();
-    var customer = factory.Create();
+    // Arrange
+    var factory = _scope.GetRequiredService<IGotcha1DemoFactory>();
 
-    // Set invalid value
-    customer.Name = "";
+    // Act
+    var entity = factory.Create();
 
-    // Run rules for specific property
-    await customer.RunRules("Name");
-    Assert.False(customer["Name"].IsValid);
+    // RunRules works even after factory (IsPaused is now false)
+    await entity.RunRules(RunRulesFlag.All);
 
-    // Fix value and run all rules
-    customer.Name = "Valid Name";
-    await customer.RunRules(RunRulesFlag.All);
-
-    Assert.True(customer.IsValid);
-    Assert.Equal("Customer: Valid Name", customer.DisplayName);
+    // Assert - Now the rule has run
+    Assert.AreEqual(50.00m, entity.Total, "Total should be calculated after RunRules");
+    Assert.IsTrue(entity.RuleHasRun, "Rule should have run after explicit RunRules call");
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L747-L768' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-runrules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L52-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-run-rules-forces' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-#### RuleManager
+Rules are declared in the constructor through `RuleManager`. Validation attributes become rules on construction; `AddValidation` attaches its message to the single trigger property:
 
-```csharp
-protected IRuleManager<T> RuleManager { get; }
-```
-
-Add validation rules and business rules in the constructor using the RuleManager.
-
-<!-- snippet: api-validatebase-rulemanager -->
-<a id='snippet-api-validatebase-rulemanager'></a>
+<!-- snippet: skill-validation-attributes-and-rules -->
+<a id='snippet-skill-validation-attributes-and-rules'></a>
 ```cs
-[Factory]
-public partial class ApiCustomerValidator : ValidateBase<ApiCustomerValidator>
+[Required(ErrorMessage = "Street is required")]
+[StringLength(100)]
+public partial string? Street { get; set; }
+
+[Required(ErrorMessage = "City is required")]
+[StringLength(50)]
+public partial string? City { get; set; }
+
+[Required(ErrorMessage = "State is required")]
+[StringLength(2, MinimumLength = 2, ErrorMessage = "State must be 2 characters")]
+public partial string? State { get; set; }
+
+[Required(ErrorMessage = "Zip code is required")]
+[RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid zip code format")]
+public partial string? ZipCode { get; set; }
+
+[Required(ErrorMessage = "Address type is required")]
+public partial string? AddressType { get; set; } // "Home", "Work", "Other"
+
+public Address(IEntityBaseServices<Address> services) : base(services)
 {
-    public ApiCustomerValidator(IValidateBaseServices<ApiCustomerValidator> services) : base(services)
-    {
-        // Add validation rule via RuleManager
-        RuleManager.AddValidation(
-            customer => !string.IsNullOrEmpty(customer.Name) ? "" : "Name is required",
-            c => c.Name);
-
-        // Add action rule that computes derived value
-        RuleManager.AddAction(
-            customer => customer.DisplayName = $"Customer: {customer.Name}",
-            c => c.Name);
-    }
-
-    public partial string Name { get; set; }
-
-    public partial string DisplayName { get; set; }
-
-    [Create]
-    public void Create() { }
+    // Validation rules
+    RuleManager.AddValidation(
+        t => !new[] { "Home", "Work", "Other" }.Contains(t.AddressType)
+            ? "Address type must be Home, Work, or Other"
+            : string.Empty,
+        t => t.AddressType);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L54-L78' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-rulemanager' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Entities/Address.cs#L30-L59' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation-attributes-and-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
-
-#### MarkInvalid
-
-```csharp
-protected virtual void MarkInvalid(string message)
-```
-
-Permanently marks the object invalid with an object-level error message. The invalid state persists until `RunRules(RunRulesFlag.All)` is called.
-
-<!-- snippet: api-validatebase-markinvalid -->
-<a id='snippet-api-validatebase-markinvalid'></a>
-```cs
-[Fact]
-public void MarkInvalid_SetsObjectLevelError()
-{
-    var factory = GetRequiredService<IApiTransactionFactory>();
-    var transaction = factory.Create();
-    transaction.TransactionId = "TXN-001";
-    transaction.Amount = 100;
-
-    Assert.True(transaction.IsValid);
-
-    // Mark invalid due to external validation
-    transaction.MarkTransactionInvalid("Payment gateway rejected");
-
-    // Object is now invalid with object-level error
-    Assert.False(transaction.IsValid);
-    Assert.Equal("Payment gateway rejected", transaction.ObjectInvalid);
-
-    // Error message appears in PropertyMessages
-    Assert.Contains(transaction.PropertyMessages,
-        m => m.Message.Contains("Payment gateway rejected"));
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L770-L792' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-markinvalid' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-#### ObjectInvalid
-
-```csharp
-public string? ObjectInvalid { get; protected set; }
-```
-
-Object-level validation error message. Automatically checked by validation rules.
-
-#### ClearAllMessages / ClearSelfMessages
-
-```csharp
-public virtual void ClearAllMessages()
-public virtual void ClearSelfMessages()
-```
-
-Clear validation messages from the object graph. `ClearAllMessages` clears recursively; `ClearSelfMessages` clears only direct properties.
 
 ### Meta Properties
 
-```csharp
-public bool IsValid { get; }          // This object and all children valid
-public bool IsSelfValid { get; }      // This object's properties valid (excluding children)
-public bool IsBusy { get; }           // Async operations in progress
-public IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }
-```
+| Member | Signature | Notes |
+|---|---|---|
+| IsValid | `public bool IsValid { get; }` | This object and every descendant pass their rules. |
+| IsSelfValid | `public bool IsSelfValid { get; }` | This object's own properties pass; children excluded. |
+| IsBusy | `public bool IsBusy { get; }` | An async rule or tracked task is running on this object or a descendant. |
+| PropertyMessages | `public IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }` | Every message in the graph; each carries its `Property` and `Message`. |
 
-Meta properties raise `PropertyChanged` notifications when values change. These properties reflect aggregated state from the object graph.
+Meta properties raise `PropertyChanged` when they flip, including flips caused by a descendant:
 
-<!-- snippet: api-validatebase-metaproperties -->
-<a id='snippet-api-validatebase-metaproperties'></a>
+<!-- snippet: skill-is-valid-vs-self-valid -->
+<a id='snippet-skill-is-valid-vs-self-valid'></a>
 ```cs
-[Fact]
-public void MetaProperties_ReflectValidationState()
+[TestMethod]
+public async Task InvalidChild_MakesParentInvalid_ButNotSelfInvalid()
 {
-    var factory = GetRequiredService<IApiCustomerValidatorFactory>();
-    var customer = factory.Create();
+    var parent = _scope.GetRequiredService<IValidationStateDemoFactory>().Create();
+    parent.RequiredField = "set";
+    parent.Child!.RequiredField = "set";
+    await parent.WaitForTasks();
+    Assert.IsTrue(parent.IsValid);
 
-    // Set invalid value
-    customer.Name = "";
+    // Break the child only
+    parent.Child.RequiredField = "";
+    await parent.WaitForTasks();
 
-    // Check meta-properties
-    Assert.False(customer.IsValid);         // Object invalid
-    Assert.False(customer.IsSelfValid);     // Own properties invalid
-    Assert.False(customer.IsBusy);          // No async operations
-    Assert.NotEmpty(customer.PropertyMessages);  // Has error messages
+    Assert.IsTrue(parent.IsSelfValid, "The parent's own rules pass");
+    Assert.IsFalse(parent.IsValid, "IsValid aggregates the child");
+    Assert.IsFalse(parent.Child.IsValid);
+    Assert.IsTrue(parent.PropertyMessages.Count > 0, "The child's message reaches the parent");
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L794-L810' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-metaproperties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/ValidationStateTests.cs#L31-L50' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-valid-vs-self-valid' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Parent-Child Relationships
 
-```csharp
-public IValidateBase? Parent { get; protected set; }
-protected virtual void SetParent(IValidateBase? parent)
-```
+| Member | Signature | Notes |
+|---|---|---|
+| Parent | `public IValidateBase? Parent { get; protected set; }` | Set by the property system when the object is assigned to a parent's partial property or added to a child list. Cast to the parent's **interface** when reading ambient state: `((IOrder)Parent!).Status`. |
+| SetParent | `protected virtual void SetParent(IValidateBase? parent)` | Framework hook; application code does not call it. |
+| AddChildTask | `public virtual void AddChildTask(Task task)` | Propagates a task up the graph so the root's `WaitForTasks()` awaits it. |
 
-Parent is automatically set when an object is assigned to a property. Parent reference enables rule propagation and task coordination up the object graph.
+A child's `Parent` is the entity it was added to; a root has no parent, and an entity's `Root` walks the chain:
 
-<!-- snippet: api-validatebase-parent -->
-<a id='snippet-api-validatebase-parent'></a>
+<!-- snippet: skill-parent-and-root -->
+<a id='snippet-skill-parent-and-root'></a>
 ```cs
-[Fact]
-public void Parent_EstablishesHierarchy()
+[TestMethod]
+public void AddItem_SetsParentAndRoot()
 {
-    var addressFactory = GetRequiredService<IApiAddressFactory>();
-    var itemFactory = GetRequiredService<IApiValidateItemFactory>();
+    var order = _orderFactory.Create();
+    var item = _itemFactory.Create("Widget", 5, 10.00m);
+    Assert.IsNull(item.Parent, "Not attached yet");
 
-    var address = addressFactory.Create();
+    order.Items!.Add(item);
 
-    // Create child item
-    var item = itemFactory.Create();
-    item.Name = "Test Item";
+    // Parent is the owning entity (the list is transparent); Root is the aggregate root
+    Assert.AreSame<object>(order, item.Parent!);
+    Assert.AreSame<object>(order, item.Root!);
 
-    // Add to collection establishes parent
-    address.Items.Add(item);
-
-    // Item's parent is the address
-    Assert.Same(address, item.Parent);
+    // The root itself has neither
+    Assert.IsNull(order.Parent);
+    Assert.IsNull(order.Root);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L812-L831' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-parent' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/OrderAggregateTests.cs#L75-L93' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-and-root' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Async Task Management
 
-```csharp
-public virtual Task WaitForTasks()
-public virtual Task WaitForTasks(CancellationToken token)
-public virtual void AddChildTask(Task task)
-```
+| Member | Signature | Notes |
+|---|---|---|
+| WaitForTasks | `public virtual Task WaitForTasks()` | Awaits every running rule and child task in the graph. Call it before reading `IsValid` or saving when async rules may be in flight. |
+| WaitForTasks | `public virtual Task WaitForTasks(CancellationToken token)` | Cancelling the token stops the wait only; it does not cancel the rules. |
 
-Wait for all async operations to complete before proceeding. Child tasks propagate up the hierarchy to the root.
+While an async rule runs, `IsBusy` is true and `IsSavable` is false:
 
-<!-- snippet: api-validatebase-tasks -->
-<a id='snippet-api-validatebase-tasks'></a>
+<!-- snippet: skill-is-busy -->
+<a id='snippet-skill-is-busy'></a>
 ```cs
-[Fact]
-public async Task Tasks_WaitForAsyncOperations()
+[TestMethod]
+public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 {
-    var factory = GetRequiredService<IApiAsyncContactFactory>();
-    var contact = factory.Create();
+    var entity = _scope.GetRequiredService<IBusyStateDemoFactory>().Create();
 
-    contact.Name = "Test";
+    entity.Name = "Test";  // triggers the async action rule
 
-    // Setting ZipCode triggers async rule
-    contact.ZipCode = "90210";
+    Assert.IsTrue(entity.IsBusy, "The async rule is still running");
 
-    // Wait for all async operations
-    await contact.WaitForTasks();
+    await entity.WaitForTasks();
 
-    // Async rule completed
-    Assert.Equal(0.0825m, contact.TaxRate);
+    Assert.IsFalse(entity.IsBusy);
+    Assert.AreEqual("Processed: Test", entity.ComputedValue);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L833-L851' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-tasks' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/ValidationStateTests.cs#L52-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-busy' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Pause/Resume
 
-```csharp
-public bool IsPaused { get; }
-public virtual IDisposable PauseAllActions()
-public virtual void ResumeAllActions()
-```
+| Member | Signature | Notes |
+|---|---|---|
+| IsPaused | `public bool IsPaused { get; protected set; }` | True inside a factory operation and inside a `PauseAllActions()` block. |
+| PauseAllActions | `public virtual IDisposable PauseAllActions()` | While paused, setters run no rules, raise no `PropertyChanged`, and (on an entity) mark nothing modified. Disposing resumes. |
+| ResumeAllActions | `public virtual void ResumeAllActions()` | Clears `IsPaused` and recalculates cached validity. Runs no rules and replays no events. |
 
-Pause property change events, rule execution, and notifications during batch updates. The returned `IDisposable` automatically resumes when disposed.
+Every factory operation is already paused by the framework; never pause inside one. Whether application code should pause a live object at all is not settled. If it does: rules do not run on resume, and a paused assignment on an entity is a baseline load, not an edit, so it will not be saved.
 
-<!-- snippet: api-validatebase-pause -->
-<a id='snippet-api-validatebase-pause'></a>
+<!-- snippet: skill-pause-all-actions -->
+<a id='snippet-skill-pause-all-actions'></a>
 ```cs
-[Fact]
-public void Pause_SuppressesEventsAndRules()
+[TestMethod]
+public void Gotcha4_PausedPropertyChanges_DoNotTriggerRules()
 {
-    var factory = GetRequiredService<IApiCustomerValidatorFactory>();
-    var customer = factory.Create();
+    // Arrange
+    var factory = _scope.GetRequiredService<IGotcha4DemoFactory>();
+    var entity = factory.Create();
 
-    // Pause all actions during batch updates
-    using (customer.PauseAllActions())
+    // Act - Modify properties while paused
+    using (entity.PauseAllActions())
     {
-        Assert.True(customer.IsPaused);
-
-        // Assignments do not trigger rules
-        customer.Name = "Batch Update";
+        entity.Quantity = 10;
+        entity.Price = 5.00m;
     }
+    // ResumeAllActions() is called, but rules don't automatically run
 
-    // After resume, IsPaused is false
-    Assert.False(customer.IsPaused);
-    Assert.Equal("Batch Update", customer.Name);
+    // Assert - Total is NOT calculated
+    Assert.AreEqual(0m, entity.Total, "Total should be 0 - rules did not run while paused");
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L853-L873' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatebase-pause' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L177-L196' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-pause-all-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Events
 
-```csharp
-public event PropertyChangedEventHandler? PropertyChanged;
-public event NeatooPropertyChanged? NeatooPropertyChanged;
-```
-
-`PropertyChanged` follows standard `INotifyPropertyChanged` for UI binding. `NeatooPropertyChanged` provides extended information for internal framework operations and supports async handlers.
+| Member | Signature | Notes |
+|---|---|---|
+| PropertyChanged | `public event PropertyChangedEventHandler? PropertyChanged` | Standard `INotifyPropertyChanged`: own properties and meta flags. Blazor does not subscribe on its own; the page does. |
+| NeatooPropertyChanged | `public event NeatooPropertyChanged? NeatooPropertyChanged` | Async (`Task NeatooPropertyChanged(NeatooPropertyChangedEventArgs)`); carries `PropertyName`, `Source`, a dotted `FullPropertyName` for descendant changes, and `Reason` (`UserEdit` or `Load`). |
 
 ### Factory Lifecycle Hooks
 
-```csharp
-public virtual void FactoryStart(FactoryOperation factoryOperation)
-public virtual void FactoryComplete(FactoryOperation factoryOperation)
-public virtual Task PostPortalConstruct()
-```
+| Member | Signature | Notes |
+|---|---|---|
+| FactoryStart | `public virtual void FactoryStart(FactoryOperation factoryOperation)` | Called by the generated factory before your `[Create]`/`[Fetch]`/`[Insert]`/`[Update]`/`[Delete]` body; pauses the object. |
+| FactoryComplete | `public virtual void FactoryComplete(FactoryOperation factoryOperation)` | Called after the body; resumes the object. `EntityBase` adds the state marking (below). Fires only on the factory target — never cascades through the graph. |
+| OnDeserializing / OnDeserialized | `public void OnDeserializing()` / `public virtual void OnDeserialized()` | Pause and resume around JSON deserialization. |
 
-Override these methods to add custom logic during factory operations (Create, Fetch, Insert, Update, Delete).
+Application code does not call these; the generated factory does.
 
 ### Services
 
-```csharp
-protected IValidateBaseServices<T> Services { get; }
-protected IValidatePropertyManager<IValidateProperty> PropertyManager { get; }
-```
-
-Access injected services and the property manager for advanced scenarios.
+| Member | Signature | Notes |
+|---|---|---|
+| Services | `protected IValidateBaseServices<T> Services { get; }` | The injected services object. |
+| Logger | `protected ILogger<T> Logger { get; }` | From the services. |
+| GetRuleId | `protected virtual uint GetRuleId(string sourceExpression)` | Overridden by the generator with compile-time hashes (see [Rule ID Generation](#rule-id-generation)). |
 
 ---
 
 ## EntityBase\<T\>
 
-Extends `ValidateBase<T>` with entity-specific capabilities for persistence, modification tracking, and aggregate patterns.
+Extends `ValidateBase<T>` with persistence state, modification tracking, and the aggregate root's `Save()`.
 
 ### Constructor
 
-```csharp
-protected EntityBase(IEntityBaseServices<T> services)
-```
-
-Accepts entity services containing property manager, rule manager factory, and save factory.
+| Member | Signature | Notes |
+|---|---|---|
+| Constructor | `public EntityBase(IEntityBaseServices<T> services)` | Entity services add the save factory (`IFactorySave<T>`) the generated factory supplies. |
+| Factory | `public IFactorySave<T>? Factory { get; protected set; }` | The generated save factory `Save()` routes through; present only when the entity's `[Insert]`/`[Update]`/`[Delete]` take no non-service parameters. |
 
 ### Persistence State
 
-```csharp
-public virtual bool IsNew { get; protected set; }
-public virtual bool IsDeleted { get; protected set; }
-```
+| Member | Signature | Notes |
+|---|---|---|
+| IsNew | `public virtual bool IsNew { get; protected set; }` | Set by `FactoryComplete(Create)`; cleared by `FactoryComplete(Insert)`. Routing state for `Save()` (Insert vs Update). Never part of `IsModified`. |
+| IsDeleted | `public virtual bool IsDeleted { get; protected set; }` | Set by `Delete()`; routes `Save()` to `[Delete]` unless the entity is also new. |
 
-- **IsNew**: Entity has not been persisted (Insert operation on save)
-- **IsDeleted**: Entity marked for deletion (Delete operation on save)
+A created entity needs inserting but holds no user work:
 
-<!-- snippet: api-entitybase-persistence-state -->
-<a id='snippet-api-entitybase-persistence-state'></a>
+<!-- snippet: skill-create-is-new-not-modified -->
+<a id='snippet-skill-create-is-new-not-modified'></a>
 ```cs
-[Fact]
-public void PersistenceState_TracksEntityLifecycle()
+[TestMethod]
+public void Create_SetsIsModifiedFalse_ButStillSavable()
 {
-    var factory = GetRequiredService<IApiEmployeeFactory>();
+    // Arrange & Act
+    var entity = _factory.Create();
 
-    // Create new entity
-    var newEmployee = factory.Create();
-    Assert.True(newEmployee.IsNew);   // New entity - will Insert on save
-    Assert.False(newEmployee.IsDeleted);
-
-    // Fetch existing entity
-    var existingEmployee = factory.Fetch(1, "Alice", "Engineering");
-    Assert.False(existingEmployee.IsNew);  // Now existing - will Update on save
-
-    // Mark for deletion
-    existingEmployee.Delete();
-    Assert.True(existingEmployee.IsDeleted);  // Will Delete on save
+    // Assert - IsNew and IsModified answer different questions. A created
+    // entity needs inserting (IsNew), but holds no user work (not modified),
+    // so unsaved-changes guards stay quiet on it. Savability comes from the
+    // IsNew term. A [Create] that IS the user's work opts in with
+    // MarkModified() in its body.
+    Assert.IsTrue(entity.IsNew, "New entity should have IsNew=true");
+    Assert.IsFalse(entity.IsModified, "New entity holds no user work");
+    Assert.IsTrue(entity.IsSavable, "...but it is savable, so the Insert can happen");
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L875-L894' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-persistence-state' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/BaseClassTests/EntityBaseTests.cs#L43-L59' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-is-new-not-modified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Modification Tracking
 
-```csharp
-public virtual bool IsModified { get; }
-public virtual bool IsSelfModified { get; protected set; }
-public virtual bool IsMarkedModified { get; protected set; }
-public virtual IEnumerable<string> ModifiedProperties { get; }
-```
+| Member | Signature | Notes |
+|---|---|---|
+| IsModified | `public virtual bool IsModified { get; }` | `PropertyManager.IsModified \|\| IsDeleted \|\| IsSelfModified` — this object, its children, or a deletion. `IsNew` is deliberately not a term ([why](../guides/change-tracking.md#why-isnew-is-not-part-of-ismodified)). |
+| IsSelfModified | `public virtual bool IsSelfModified { get; protected set; }` | Own properties changed, or deleted, or `IsMarkedModified`. Children excluded. |
+| IsMarkedModified | `public virtual bool IsMarkedModified { get; protected set; }` | Set by `MarkModified()`. |
+| ModifiedProperties | `public virtual IEnumerable<string> ModifiedProperties { get; }` | Names of own properties whose values changed since the last factory operation. |
 
-- **IsModified**: Aggregates modification state: `PropertyManager.IsModified || IsDeleted || IsSelfModified`. Deleted entities and entities with property changes report as modified. New entities do **not** — `IsNew` is deliberately not a term, so a created-but-untouched entity is savable without claiming unsaved work ([why](../guides/change-tracking.md#why-isnew-is-not-part-of-ismodified)).
-- **IsSelfModified**: Tracks whether direct property values have changed on this entity (excludes child modifications)
-- **IsMarkedModified**: Entity explicitly marked modified via `MarkModified()`
-- **ModifiedProperties**: Collection of property names whose values have changed since last mark unmodified
+A fetched entity is a clean baseline; the first edit marks the property and the entity:
 
-<!-- snippet: api-entitybase-modification -->
-<a id='snippet-api-entitybase-modification'></a>
+<!-- snippet: skill-fetch-then-modify -->
+<a id='snippet-skill-fetch-then-modify'></a>
 ```cs
-[Fact]
-public void ModificationTracking_DetectsChanges()
+[TestMethod]
+public async Task Fetch_ThenModify_IsModified()
 {
-    var factory = GetRequiredService<IApiEmployeeFactory>();
+    // Arrange
+    var entity = await _factory.Fetch(1);
 
-    // Fetch existing entity
-    var employee = factory.Fetch(1, "Original", "Engineering");
+    // Act
+    entity.Name = "Changed";
 
-    Assert.False(employee.IsModified);
-    Assert.False(employee.IsSelfModified);
-    Assert.Empty(employee.ModifiedProperties);
-
-    // Change property
-    employee.Name = "Modified";
-
-    Assert.True(employee.IsModified);
-    Assert.True(employee.IsSelfModified);
-    Assert.Contains("Name", employee.ModifiedProperties);
+    // Assert
+    Assert.IsTrue(entity.IsModified, "Entity should be modified after change");
+    Assert.IsTrue(entity["Name"].IsModified, "Name property should be modified");
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L896-L916' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-modification' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/StatePropertyTests.cs#L74-L88' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fetch-then-modify' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Savability
 
-```csharp
-public virtual bool IsSavable { get; }
+| Member | Signature | Notes |
+|---|---|---|
+| IsSavable | `public virtual bool IsSavable { get; }` | `(IsModified \|\| IsNew) && IsValid && !IsBusy`. Exposed through `IEntityRoot` only. |
+
+The formula says nothing about position in an aggregate — a modified child *concrete* reports `true`. That is why `IsSavable` and `Save()` live on `IEntityRoot` and not on `IEntityBase`: a child interface never shows them, so the mistake is a compile error.
+
+<!-- snippet: skill-is-savable -->
+<a id='snippet-skill-is-savable'></a>
+```cs
+[TestMethod]
+public async Task FetchedEntity_NotSavableWhenUnmodified()
+{
+    // Arrange
+    var entity = await _factory.Fetch(1);
+
+    // Assert
+    Assert.IsFalse(entity.IsNew);
+    Assert.IsFalse(entity.IsModified);
+    Assert.IsFalse(entity.IsSavable, "Unmodified fetched entity should not be savable");
+}
+
+[TestMethod]
+public async Task FetchedEntity_IsSavableWhenModified()
+{
+    // Arrange
+    var entity = await _factory.Fetch(1);
+
+    // Act
+    entity.Name = "Updated Name";
+
+    // Assert
+    Assert.IsFalse(entity.IsNew);
+    Assert.IsTrue(entity.IsModified);
+    Assert.IsTrue(entity.IsValid);
+    Assert.IsTrue(entity.IsSavable, "Modified valid entity should be savable");
+}
 ```
-
-Entity can be saved when: `(IsModified || IsNew) && IsValid && !IsBusy`
-
-The formula says nothing about position in an aggregate -- a modified child *concrete* reports `true`.
-
-`IsSavable` exists on the concrete `EntityBase<T>` class, but is only exposed through the `IEntityRoot` interface -- not through `IEntityBase`. This means child entities (whose interfaces extend `IEntityBase`) never expose `IsSavable` to consumers. Aggregate root interfaces extend `IEntityRoot`, which adds `IsSavable` and `Save()`.
-
-Note: `IsModified` includes deleted entities, so deleted entities are savable (deletion is a state change requiring persistence).
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L69-L97' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-savable' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ### Aggregate Root
 
-```csharp
-public IValidateBase? Root { get; }
-```
-
-Walks the Parent chain to find the aggregate root. Returns null if this entity is the root or standalone.
-
-<!-- snippet: api-entitybase-root -->
-<a id='snippet-api-entitybase-root'></a>
-```cs
-[Fact]
-public void Root_FindsAggregateRoot()
-{
-    var orderFactory = GetRequiredService<IApiOrderFactory>();
-    var itemFactory = GetRequiredService<IApiOrderItemFactory>();
-
-    var order = orderFactory.Create();
-
-    // Create child item
-    var item = itemFactory.Create();
-    item.ProductCode = "WIDGET-001";
-    item.Price = 29.99m;
-
-    // Add to collection
-    order.Items.Add(item);
-
-    // Root walks Parent chain to find aggregate root
-    Assert.Same(order, item.Root);
-
-    // Aggregate root has no root above it
-    Assert.Null(order.Root);
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L918-L941' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-root' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+| Member | Signature | Notes |
+|---|---|---|
+| Root | `public IValidateBase? Root { get; }` | `Parent == null ? null : ((Parent as IEntityBase)?.Root ?? Parent)` — if the parent has a root, that; otherwise the parent is the root. `null` on the root itself and on a standalone object. |
+| ContainingList | `protected IEntityListBase? ContainingList { get; set; }` | The list this entity was added to; `Delete()` routes through it. Stays set after removal until the list's `FactoryComplete(Update)`. |
 
 ### Save Operations
 
-```csharp
-public virtual Task<IEntityBase> Save()
-public virtual Task<IEntityBase> Save(CancellationToken token)
-```
+| Member | Signature | Notes |
+|---|---|---|
+| Save | `public virtual Task<IEntityBase> Save()` | Throws `SaveOperationException` when `!IsSavable` (reasons: `IsBusy`, `IsInvalid`, `NotModified`, no factory). Routes through the generated save factory: `IsDeleted` first (a deleted **new** entity is discarded without a call), then `IsNew` → `[Insert]`, else `[Update]`. Returns the saved instance — keep that one. |
+| Save | `public virtual Task<IEntityBase> Save(CancellationToken token)` | Awaits `WaitForTasks(token)` first, then saves. |
 
-Persists the entity using the configured factory. Delegates to Insert (if IsNew), Delete (if IsDeleted), or Update based on state. Throws `SaveOperationException` if not savable. Exposed through `IEntityRoot` -- child entity interfaces (`IEntityBase`) do not include `Save()`.
+The generated factory does not check `IsSavable` or wait for rules; the entity's `Save()` does. The UI binds the Save button to `IsSavable`, so reaching the exception is a programming error, not a validation channel. A root with `[Insert]`, `[Update]` and `[Delete]` that take no non-service parameters gets `IFactorySave<T>` and therefore `Save()`:
 
-<!-- snippet: api-entitybase-save -->
-<a id='snippet-api-entitybase-save'></a>
+<!-- snippet: skill-entity-crud-interface -->
+<a id='snippet-skill-entity-crud-interface'></a>
 ```cs
-[Factory]
-public partial class ApiEmployeeEntity : EntityBase<ApiEmployeeEntity>
+/// <summary>
+/// Root interface for EntityBase demo — persistent domain entities.
+/// </summary>
+public interface IDemoEntity : IEntityRoot
 {
-    public ApiEmployeeEntity(IEntityBaseServices<ApiEmployeeEntity> services) : base(services) { }
+    string? Name { get; set; }
+    int Value { get; set; }
+}
+```
+<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L23-L32' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-crud-interface' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-    public partial int Id { get; set; }
+<!-- snippet: skill-entity-crud -->
+<a id='snippet-skill-entity-crud'></a>
+```cs
+/// <summary>
+/// Demonstrates: EntityBase&lt;T&gt; for persistent domain entities.
+///
+/// Key points:
+/// - Inherits all ValidateBase capabilities (validation, rules, busy tracking)
+/// - Adds IsNew/IsModified/IsDeleted for persistence state
+/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy
+/// - Save() routes to Insert/Update/Delete based on state
+/// - Child entities cannot save independently: their interface has no Save()
+/// </summary>
+[Factory]
+internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
+{
+    public partial string? Name { get; set; }
 
-    public partial string Name { get; set; }
+    public partial int Value { get; set; }
 
-    public partial decimal Salary { get; set; }
+    public DemoEntity(IEntityBaseServices<DemoEntity> services) : base(services)
+    {
+        RuleManager.AddValidation(
+            t => string.IsNullOrWhiteSpace(t.Name) ? "Name is required" : string.Empty,
+            t => t.Name);
 
-    // Expose protected methods for testing
-    public void DoMarkNew() => MarkNew();
-    public void DoMarkOld() => MarkOld();
-    public void DoMarkUnmodified() => MarkUnmodified();
+        RuleManager.AddValidation(
+            t => t.Value < 0 ? "Value must be non-negative" : string.Empty,
+            t => t.Value);
+    }
 
     [Create]
     public void Create()
     {
-        Id = 0;
-        Name = "";
-        Salary = 0;
+        // FactoryComplete(Create) calls MarkNew(): IsNew=true, IsModified=false.
+        // Nothing was set, so there is no user work - still savable, because
+        // IsSavable admits IsNew.
     }
 
+    // [Remote]: the client fetches this root, so the call crosses to the
+    // server, where the repository resolves. The object is paused for the
+    // body, so plain assignment is a clean baseline load.
+    [Remote]
     [Fetch]
-    public async Task FetchAsync(int id, [Service] IApiCustomerRepository repository)
+    internal void Fetch(int id, [Service] IDemoRepository repository)
     {
-        var data = await repository.FetchAsync(id);
-        Id = data.Id;
+        var data = repository.GetById(id);
         Name = data.Name;
+        Value = data.Value;
+        // After Fetch: IsNew=false, IsModified=false
     }
 
+    // Save() routes here when IsNew. FactoryComplete(Insert) then calls
+    // MarkUnmodified() and MarkOld().
+    [Remote]
     [Insert]
-    public async Task InsertAsync([Service] IApiCustomerRepository repository)
+    internal void Insert([Service] IDemoRepository repository)
     {
-        await repository.InsertAsync(Id, Name, "");
+        repository.Insert(Name!, Value);
     }
 
+    // Save() routes here when !IsDeleted && !IsNew. Routing never consults
+    // IsModified; entity.Save()'s IsSavable gate stops unmodified saves.
+    [Remote]
     [Update]
-    public async Task UpdateAsync([Service] IApiCustomerRepository repository)
+    internal void Update([Service] IDemoRepository repository)
     {
-        await repository.UpdateAsync(Id, Name, "");
+        repository.Update(Name!, Value);
     }
 
+    // Save() routes here when IsDeleted (checked first - IsDeleted wins over IsNew)
+    [Remote]
     [Delete]
-    public async Task DeleteAsync([Service] IApiCustomerRepository repository)
+    internal void Delete([Service] IDemoRepository repository)
     {
-        await repository.DeleteAsync(Id);
+        repository.Delete(Name!);
     }
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L132-L183' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-save' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L224-L300' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-crud' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-save-routes-to-insert -->
+<a id='snippet-skill-save-routes-to-insert'></a>
+```cs
+[TestMethod]
+public async Task Save_WhenNew_RoutesToInsert_AndMarksOld()
+{
+    // Arrange
+    var entity = _factory.Create();
+    entity.Name = "Inserted";
+    entity.Amount = 42m;
+
+    // Act
+    entity = (ISaveDemo)await entity.Save();
+
+    // Assert - routed to Insert, and the generated Id landed on the entity
+    Assert.AreEqual(1, _repository.InsertedIds.Count, "Should route to Insert");
+    Assert.AreEqual(0, _repository.UpdatedIds.Count);
+    Assert.AreEqual(_repository.InsertedIds[0], entity.Id,
+        "The generated Id must land on the entity");
+
+    // Assert - FactoryComplete(Insert) marked it unmodified and old
+    Assert.IsFalse(entity.IsNew, "Inserted entity is no longer new");
+    Assert.IsFalse(entity.IsModified);
+    Assert.IsFalse(entity.IsSavable, "Nothing left to save");
+}
+```
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L105-L128' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-routes-to-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Delete Operations
 
-```csharp
-public void Delete()
-public void UnDelete()
-```
+| Member | Signature | Notes |
+|---|---|---|
+| Delete | `public void Delete()` | Marks for deletion. When the entity is in a list, it routes through the list's remove path so the collection and `DeletedList` stay consistent. Nothing reaches persistence until the root is saved. |
+| UnDelete | `public void UnDelete()` | Reverses the mark. |
 
-`Delete()` marks the entity for deletion. If the entity has a ContainingList reference, the Delete method delegates to the list's Remove method to maintain consistency between the collection and entity state. `UnDelete()` reverses the deletion mark.
-
-<!-- snippet: api-entitybase-delete -->
-<a id='snippet-api-entitybase-delete'></a>
+<!-- snippet: skill-undelete -->
+<a id='snippet-skill-undelete'></a>
 ```cs
-[Fact]
-public void Delete_MarksForDeletion()
+[TestMethod]
+public async Task UnDelete_ReversesDeleteBeforeSave()
 {
-    var factory = GetRequiredService<IApiEmployeeFactory>();
+    var entity = await _factory.Fetch(1);
 
-    // Fetch existing entity
-    var employee = factory.Fetch(42, "To Delete", "HR");
+    entity.Delete();
+    Assert.IsTrue(entity.IsDeleted);
+    Assert.IsTrue(entity.IsModified, "Deleting is a modification");
 
-    Assert.False(employee.IsDeleted);
+    entity.UnDelete();
 
-    // Mark for deletion
-    employee.Delete();
-    Assert.True(employee.IsDeleted);
-    Assert.True(employee.IsModified);
-
-    // UnDelete reverses the mark
-    employee.UnDelete();
-    Assert.False(employee.IsDeleted);
+    Assert.IsFalse(entity.IsDeleted);
+    Assert.IsFalse(entity.IsModified, "Back to the fetched baseline");
+    Assert.IsFalse(entity.IsSavable, "Nothing left to save");
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L943-L963' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/BaseClassTests/EntityBaseTests.cs#L143-L159' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-undelete' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-delete-routes-to-delete -->
+<a id='snippet-skill-delete-routes-to-delete'></a>
+```cs
+[TestMethod]
+public async Task Save_WhenDeleted_RoutesToDelete()
+{
+    // Arrange - a persisted entity marked for deletion
+    var entity = await _factory.Fetch(9);
+    entity.Delete();
+
+    Assert.IsTrue(entity.IsDeleted);
+    Assert.IsTrue(entity.IsModified, "IsDeleted remains a term in IsModified");
+    Assert.IsTrue(entity.IsSavable);
+
+    // Act
+    await entity.Save();
+
+    // Assert - routed to Delete, not Update
+    CollectionAssert.AreEqual(new[] { 9 }, _repository.DeletedIds, "Should route to Delete");
+    Assert.AreEqual(0, _repository.UpdatedIds.Count);
+}
+```
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L146-L165' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-delete-routes-to-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### State Management Methods
 
-```csharp
-protected virtual void MarkNew()
-protected virtual void MarkOld()
-protected virtual void MarkModified()
-protected virtual void MarkUnmodified()
-protected virtual void MarkDeleted()
-```
+| Member | Signature | Notes |
+|---|---|---|
+| MarkNew / MarkOld | `protected virtual void MarkNew()` / `protected virtual void MarkOld()` | Called by `FactoryComplete(Create)` and `FactoryComplete(Insert/Update)`. |
+| MarkModified | `protected virtual void MarkModified()` | Sets `IsMarkedModified`. The one doctrinal use is a `[Create]` whose result *is* the user's work, so an unsaved-changes guard bound to `IsModified` speaks. Not needed to make a new object savable. |
+| MarkUnmodified | `protected virtual void MarkUnmodified()` | Clears this object's own modification state. Called by `FactoryComplete(Insert/Update)`; children are cleared by their own factory completion, never by the parent's. |
+| MarkDeleted | `protected virtual void MarkDeleted()` | Called by `Delete()`. |
 
-Control entity state programmatically. `MarkUnmodified()` is called automatically after successful Insert/Update operations.
-
-<!-- snippet: api-entitybase-mark-methods -->
-<a id='snippet-api-entitybase-mark-methods'></a>
-```cs
-[Fact]
-public void MarkMethods_ControlEntityState()
-{
-    var factory = GetRequiredService<IApiEmployeeFactory>();
-    var employee = factory.Create();
-
-    // New entity after Create
-    Assert.True(employee.IsNew);
-
-    // FactoryComplete(Insert) marks as old
-    employee.FactoryComplete(FactoryOperation.Insert);
-    Assert.False(employee.IsNew);
-
-    // Mark for deletion
-    employee.Delete();
-    Assert.True(employee.IsDeleted);
-
-    // UnDelete reverses
-    employee.UnDelete();
-    Assert.False(employee.IsDeleted);
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L965-L987' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitybase-mark-methods' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+These are protected for a reason: the generated factory drives entity state. Application and test code never calls `FactoryComplete` or exposes these through public wrappers; a baseline is manufactured by a real `[Fetch]` or `Save()` against a mock repository.
 
 ### Property Access
 
-```csharp
-new protected IEntityProperty GetProperty(string propertyName)
-new public IEntityProperty this[string propertyName] { get; }
-```
-
-Entity properties extend validation properties with modification tracking.
-
-### Factory
-
-```csharp
-public IFactorySave<T>? Factory { get; protected set; }
-```
-
-The save factory used to persist this entity, configured via RemoteFactory source generation.
+| Member | Signature | Notes |
+|---|---|---|
+| Indexer | `new public IEntityProperty this[string propertyName] { get; }` | Entity properties add `IsModified`/`IsSelfModified` and `MarkSelfUnmodified()` to the validate property. |
+| PropertyManager | `protected new IEntityPropertyManager PropertyManager { get; }` | Entity property registry. |
 
 ---
 
-## ValidateListBase\<T\>
+## ValidateListBase\<I\>
 
-Base class for collections of validatable objects. Aggregates validation state and coordinates tasks across all items.
+Base class for collections of `ValidateBase` objects (value objects). Inherits `ObservableCollection<I>` where `I : IValidateBase`; aggregates validation state and coordinates tasks across items.
 
-### Constructor
+| Member | Signature | Notes |
+|---|---|---|
+| Constructor | `public ValidateListBase()` | Lists are created through their generated factory from the parent's `[Create]`/`[Fetch]`, not with `new`. |
+| Parent | `public IValidateBase? Parent { get; protected set; }` | Set when the list is assigned to a parent's property. Items added to the list get the **list's parent** as their `Parent`, not the list. |
+| IsValid / IsSelfValid / IsBusy | `public bool IsValid { get; }` / `public bool IsSelfValid { get; }` / `public bool IsBusy { get; }` | Aggregated from the items with incremental caching. `IsSelfValid` is always `true` (a list has no rules of its own). |
+| PropertyMessages | `public IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }` | Every item's messages. |
+| IsPaused | `public bool IsPaused { get; protected set; }` | Paused inside the list's own factory operation and during deserialization. |
+| RunRules | `public Task RunRules(string propertyName, CancellationToken? token = default)` / `public Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = default)` | Runs the rules of every item. |
+| ClearAllMessages / ClearSelfMessages | `public void ClearAllMessages()` / `public void ClearSelfMessages()` | On every item. |
+| WaitForTasks | `public Task WaitForTasks()` / `public Task WaitForTasks(CancellationToken token)` | Awaits every item. |
+| ResumeAllActions | `public virtual void ResumeAllActions()` | Recalculates cached meta state; runs no rules. |
+| FactoryStart / FactoryComplete | `public virtual void FactoryStart(FactoryOperation)` / `public virtual void FactoryComplete(FactoryOperation)` | The list's own lifecycle hooks, fired by the list factory. |
+| HandleNeatooPropertyChanged | `protected virtual Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)` | Override for cross-sibling consistency (re-run siblings' rules when one item changes). Only a list can override this. |
+| Events | `NeatooPropertyChanged`, plus `PropertyChanged` and `CollectionChanged` from `ObservableCollection<I>` | |
 
-```csharp
-protected ValidateListBase()
-```
+A value-object list is interface-first like everything else:
 
-Inherits from `ObservableCollection<I>` where `I : IValidateBase`.
-
-### Parent Relationship
-
-```csharp
-public IValidateBase? Parent { get; protected set; }
-```
-
-The list's parent is set automatically when the list is assigned to a property on a parent object. When items are added to the list, each item's Parent property is set to the list's parent (not to the list itself). This means items point directly to the containing object, not to the collection.
-
-<!-- snippet: api-validatelistbase-parent -->
-<a id='snippet-api-validatelistbase-parent'></a>
+<!-- snippet: skill-validate-list-interface -->
+<a id='snippet-skill-validate-list-interface'></a>
 ```cs
-[Fact]
-public void ValidateListBase_ParentRelationship()
-{
-    var addressFactory = GetRequiredService<IApiAddressFactory>();
-    var itemFactory = GetRequiredService<IApiValidateItemFactory>();
-
-    var address = addressFactory.Create();
-
-    var item = itemFactory.Create();
-    item.Name = "Test";
-
-    // Add item to collection
-    address.Items.Add(item);
-
-    // Item's parent is the address (not the list)
-    Assert.Same(address, item.Parent);
-
-    // List's parent is also set
-    Assert.Same(address, address.Items.Parent);
-}
+/// <summary>
+/// List interface for ValidateListBase demo — parameterized on child INTERFACE.
+/// </summary>
+public interface IDemoValueObjectList : IValidateListBase<IDemoValueObject> { }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L989-L1010' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-parent' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L53-L58' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-### Aggregated Meta Properties
-
-```csharp
-public bool IsValid { get; }         // All items valid
-public bool IsSelfValid { get; }     // Always true (lists have no own validation)
-public bool IsBusy { get; }          // Any item busy
-public IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }
-```
-
-Meta properties aggregate state from all items in the collection using incremental caching for performance.
-
-<!-- snippet: api-validatelistbase-metaproperties -->
-<a id='snippet-api-validatelistbase-metaproperties'></a>
+<!-- snippet: skill-validate-list -->
+<a id='snippet-skill-validate-list'></a>
 ```cs
-[Fact]
-public async Task ValidateListBase_AggregatesState()
+/// <summary>
+/// Demonstrates: ValidateListBase&lt;I&gt; for collections of ValidateBase items.
+///
+/// Key points:
+/// - Extends ObservableCollection&lt;I&gt; with validation aggregation
+/// - IsValid = all children are valid
+/// - IsBusy = any child is busy
+/// - Parent-child relationships managed automatically
+/// </summary>
+[Factory]
+internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>, IDemoValueObjectList
 {
-    var list = new ApiValidateItemList();
+    // ValidateListBase has no required constructor - uses default.
 
-    var itemFactory = GetRequiredService<IApiValidateItemFactory>();
+    [Create]
+    public void Create()
+    {
+        // Start with empty list
+    }
 
-    var validItem = itemFactory.Create();
-    validItem.Name = "Valid";
-    await validItem.RunRules();
+    [Remote]
+    [Fetch]
+    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoValueObjectFactory valueObjectFactory)
+    {
+        // The list is paused by its own factory operation (FactoryStart),
+        // like any factory target. Each item is loaded by its own [Fetch].
+        foreach (var name in repository.GetAllNames())
+        {
+            Add(valueObjectFactory.Fetch(name));
+        }
+    }
+}
+```
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L331-L364' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-    var invalidItem = itemFactory.Create();
-    // Name is empty - invalid
-    await invalidItem.RunRules();
+Validity aggregates from the items:
 
+<!-- snippet: skill-list-validity-aggregates -->
+<a id='snippet-skill-list-validity-aggregates'></a>
+```cs
+[TestMethod]
+public async Task Add_InvalidItem_ListBecomesInvalid()
+{
+    // Arrange
+    var list = _listFactory.Create();
+    var validItem = _itemFactory.Create("Valid");
     list.Add(validItem);
-    Assert.True(list.IsValid);
+    Assert.IsTrue(list.IsValid);
 
-    list.Add(invalidItem);
-    Assert.False(list.IsValid);    // Aggregates child state
-    Assert.True(list.IsSelfValid); // Lists have no own validation
+    // Act - Add item then make it invalid
+    var itemToInvalidate = _itemFactory.Create("Initially Valid");
+    list.Add(itemToInvalidate);
+    itemToInvalidate.Name = ""; // Make invalid
+    await itemToInvalidate.WaitForTasks();
+
+    // Assert
+    Assert.IsFalse(list.IsValid, "List should be invalid if any child is invalid");
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1012-L1035' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-metaproperties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/BaseClassTests/ValidateListBaseTests.cs#L60-L79' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-list-validity-aggregates' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-### Validation Operations
+Adding and removing are the standard `ObservableCollection<I>` operations (`Add`, `Remove`, `RemoveAt`, `Insert`, `Clear`, indexer). On add the list sets the item's `Parent` and subscribes to its events; on remove it unsubscribes and recalculates:
 
-```csharp
-public async Task RunRules(string propertyName, CancellationToken? token = default)
-public async Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = default)
-public void ClearAllMessages()
-public void ClearSelfMessages()
-```
-
-Run validation rules on all items in the collection.
-
-<!-- snippet: api-validatelistbase-validation -->
-<a id='snippet-api-validatelistbase-validation'></a>
+<!-- snippet: skill-validate-list-remove -->
+<a id='snippet-skill-validate-list-remove'></a>
 ```cs
-[Fact]
-public async Task ValidateListBase_RunRulesOnAll()
+[TestMethod]
+public void Remove_ItemLeavesImmediately()
 {
-    var list = new ApiValidateItemList();
-
-    var itemFactory = GetRequiredService<IApiValidateItemFactory>();
-
-    var item1 = itemFactory.Create();
-    item1.Name = "";  // Invalid
-
-    var item2 = itemFactory.Create();
-    item2.Name = "Valid";
-
-    list.Add(item1);
-    list.Add(item2);
-
-    // Run rules on all items
-    await list.RunRules(RunRulesFlag.All);
-
-    Assert.False(item1.IsValid);
-    Assert.True(item2.IsValid);
-    Assert.False(list.IsValid);
-
-    // Clear messages on all items
-    list.ClearAllMessages();
-    Assert.Empty(item1.PropertyMessages);
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1037-L1065' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-validation' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-### Task Management
-
-```csharp
-public async Task WaitForTasks()
-public async Task WaitForTasks(CancellationToken token)
-```
-
-Wait for all items to complete pending async operations.
-
-### Pause/Resume
-
-```csharp
-public bool IsPaused { get; protected set; }
-public virtual void ResumeAllActions()
-```
-
-Control rule execution and event notifications during batch operations.
-
-### Events
-
-```csharp
-public event NeatooPropertyChanged? NeatooPropertyChanged;
-public event PropertyChangedEventHandler? PropertyChanged;
-public event NotifyCollectionChangedEventHandler? CollectionChanged;
-```
-
-Standard collection and property change notifications plus Neatoo-specific events.
-
-### Collection Operations
-
-Inherits standard `ObservableCollection<I>` methods: `Add`, `Remove`, `RemoveAt`, `Insert`, `Clear`, `this[int index]`.
-
-When items are added/removed, the list automatically:
-- Sets parent references on items
-- Subscribes/unsubscribes to property change events
-- Updates aggregated meta properties
-
-<!-- snippet: api-validatelistbase-collection-ops -->
-<a id='snippet-api-validatelistbase-collection-ops'></a>
-```cs
-[Fact]
-public void ValidateListBase_StandardOperations()
-{
-    var list = new ApiValidateItemList();
-
-    var itemFactory = GetRequiredService<IApiValidateItemFactory>();
-
-    // Add
-    var item = itemFactory.Create();
-    item.Name = "Item 1";
+    var list = _listFactory.Create();
+    var item = _itemFactory.Create("Test Item");
     list.Add(item);
 
-    Assert.Single(list);
-    Assert.Contains(item, list);
-
-    // Indexer
-    Assert.Same(item, list[0]);
-
-    // Count
-    Assert.Equal(1, list.Count);
-
-    // Remove
+    // No persistence, so no DeletedList: the item is simply gone
     list.Remove(item);
-    Assert.Empty(list);
+
+    Assert.AreEqual(0, list.Count);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1067-L1093' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-validatelistbase-collection-ops' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/BaseClassTests/ValidateListBaseTests.cs#L81-L94' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list-remove' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ---
 
-## EntityListBase\<T\>
+## EntityListBase\<I\>
 
-Extends `ValidateListBase<I>` with entity-specific features: deleted item tracking and modification state aggregation. Used for entity collections within aggregates.
+Extends `ValidateListBase<I>` for entity children within an aggregate, `I : IEntityBase`: deleted-item tracking and modification aggregation. A list is never saved on its own; it has no `IsSavable`.
 
-### Constructor
+| Member | Signature | Notes |
+|---|---|---|
+| Constructor | `public EntityListBase()` | Created through the generated list factory. |
+| IsModified | `public bool IsModified { get; }` | Any item modified, or `DeletedList` non-empty. |
+| IsSelfModified / IsMarkedModified / IsNew / IsDeleted | `public bool ... { get; }` | Always `false`: a list has no properties and no persistence identity of its own. |
+| Root | `public IValidateBase? Root { get; }` | `(Parent as IEntityBase)?.Root ?? Parent`. |
+| DeletedList | `protected List<I> DeletedList { get; }` | Items removed after being persisted. Drained by the list's own `[Update]`; cleared by the list's `FactoryComplete(Update)`. |
+| FactoryComplete | `public override void FactoryComplete(FactoryOperation factoryOperation)` | After the list's own `[Update]`: clears `DeletedList`, clears `ContainingList` on the deleted items, recalculates the modified cache. |
 
-```csharp
-protected EntityListBase()
-```
-
-Where `I : IEntityBase`.
-
-### Entity Meta Properties
-
-```csharp
-public bool IsModified { get; }         // Any item modified or deleted items exist
-public bool IsSelfModified { get; }     // Always false (lists have no own properties)
-public bool IsMarkedModified { get; }   // Always false
-public bool IsNew { get; }              // Always false
-public bool IsDeleted { get; }          // Always false
-```
-
-Lists derive their modification state from their items and deleted list. `IsSavable` is not present -- lists are always saved through the aggregate root.
-
-<!-- snippet: api-entitylistbase-metaproperties -->
-<a id='snippet-api-entitylistbase-metaproperties'></a>
+<!-- snippet: skill-entity-list-interface -->
+<a id='snippet-skill-entity-list-interface'></a>
 ```cs
-[Fact]
-public void EntityListBase_ModificationFromItems()
+/// <summary>
+/// List interface for EntityListBase demo — parameterized on child INTERFACE.
+/// </summary>
+public interface IDemoEntityList : IEntityListBase<IDemoChild>
 {
-    var orderFactory = GetRequiredService<IApiOrderFactory>();
-    var itemFactory = GetRequiredService<IApiOrderItemFactory>();
-
-    // Fetch existing order (starts clean)
-    var order = orderFactory.Fetch(1, "ORD-001");
-    Assert.False(order.IsModified);
-
-    // Add a new item to the collection
-    var item = itemFactory.Create();
-    item.ProductCode = "TEST";
-    item.Price = 50.00m;
-    item.Quantity = 1;
-    order.Items.Add(item);
-
-    // Collection is modified because an item was added
-    Assert.True(order.Items.IsModified);
-
-    // Order is modified because collection changed
-    Assert.True(order.IsModified);
-
-    // Lists have no own properties, so IsSelfModified is false
-    Assert.False(order.Items.IsSelfModified);
+    int DeletedCount { get; }
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1095-L1122' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-metaproperties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L60-L68' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-list-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-### Aggregate Root
-
-```csharp
-public IValidateBase? Root { get; }
-```
-
-Walks the Parent chain to find the aggregate root.
-
-### Deleted Items
-
-```csharp
-protected List<I> DeletedList { get; }
-```
-
-Tracks removed items that need deletion during persistence. The deleted list is cleared after Update factory operation completes.
-
-<!-- snippet: api-entitylistbase-deletedlist -->
-<a id='snippet-api-entitylistbase-deletedlist'></a>
+<!-- snippet: skill-entity-list -->
+<a id='snippet-skill-entity-list'></a>
 ```cs
-[Fact]
-public void EntityListBase_TracksDeleted()
+/// <summary>
+/// Demonstrates: EntityListBase&lt;I&gt; for collections of child entities.
+///
+/// Key points:
+/// - Extends ValidateListBase with persistence tracking
+/// - IsModified = any child modified OR DeletedList has items
+/// - DeletedList tracks removed non-new items for persistence deletion
+/// - Adding items: set ContainingList (routes the child's Delete through the list)
+/// - Removing non-new items: MarkDeleted(), add to DeletedList
+/// - Root property for aggregate boundary enforcement
+/// - Parameterized on a CHILD interface (IDemoChild : IEntityBase), never on
+///   a root interface
+/// </summary>
+[Factory]
+internal partial class DemoEntityList : EntityListBase<IDemoChild>, IDemoEntityList
 {
-    var orderFactory = GetRequiredService<IApiOrderFactory>();
-    var itemFactory = GetRequiredService<IApiOrderItemFactory>();
+    // DESIGN DECISION: EntityListBase doesn't define IsSavable or Save().
+    // Lists are ALWAYS saved through their parent aggregate root: the root's
+    // [Insert]/[Update] hands its row's child collection to the list
+    // factory's Save, and the list's own [Update] brings that collection in
+    // line (see Aggregates/OrderAggregate/OrderItemList.cs).
 
-    // Fetch existing order
-    var order = orderFactory.Fetch(1, "ORD-001");
+    /// <summary>
+    /// Test helper: Exposes the count of items in DeletedList.
+    /// The DeletedList is protected, but tests need to verify deletion behavior.
+    /// </summary>
+    public int DeletedCount => DeletedList.Count;
 
-    // Fetch existing item
-    var item = itemFactory.Fetch("DELETE-ME", 30.00m, 1);
+    [Create]
+    public void Create()
+    {
+        // Empty list
+    }
 
-    // Add fetched item to order
-    order.Items.Add(item);
-    order.DoMarkUnmodified();
+    // Child list operations are internal and never [Remote]: the root's
+    // [Fetch] calls this on the server.
+    [Fetch]
+    internal void Fetch(IEnumerable<string> names, [Service] IDemoChildFactory childFactory)
+    {
+        foreach (var name in names)
+        {
+            Add(childFactory.Fetch(name));
+        }
+    }
+}
+```
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L441-L487' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-list' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-    // Remove existing item
+### Adding and Removing
+
+On a live (unpaused) `Add`, the list:
+- rejects an item that belongs to a **different aggregate** (`Root` mismatch); an item that sits in another list of the same aggregate is moved (removed from that list's `DeletedList`, un-deleted);
+- rejects a busy item;
+- sets `Parent` (to the list's parent) and `ContainingList`;
+- **marks the item modified**, new or existing — attaching a child to a live parent is a change to the graph, and it is the only channel by which a new child's arrival reaches the parent (`IsNew` never aggregates upward).
+
+On `Remove`:
+- a new item (`IsNew == true`) is discarded — there is nothing to delete;
+- a persisted item is marked deleted and goes to `DeletedList`; its `ContainingList` stays set until the list's `FactoryComplete(Update)`.
+
+Adds inside the list's own `[Fetch]` are paused: they set identity (`Parent`, `ContainingList`) but mark nothing modified.
+
+<!-- snippet: skill-add-marks-modified -->
+<a id='snippet-skill-add-marks-modified'></a>
+```cs
+[TestMethod]
+public void IsModified_TrueWhenNewItemAdded()
+{
+    // Arrange
+    var order = _orderFactory.Create();
+
+    // Act
+    var item = _itemFactory.Create("Widget", 1, 10.00m);
+    order.Items!.Add(item);
+
+    // Assert - New order with new items is modified
+    Assert.IsTrue(order.Items.IsModified);
+    Assert.IsTrue(order.IsModified);
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/DeletedListTests.cs#L111-L126' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-add-marks-modified' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-remove-new-item-discarded -->
+<a id='snippet-skill-remove-new-item-discarded'></a>
+```cs
+[TestMethod]
+public void RemoveNewItem_NotAddedToDeletedList()
+{
+    // Arrange
+    var order = _orderFactory.Create();
+    var item = _itemFactory.Create("Widget", 1, 10.00m);
+    order.Items!.Add(item);
+    Assert.IsTrue(item.IsNew, "Created item should be new");
+
+    // Act
     order.Items.Remove(item);
 
-    // Item is in DeletedList
-    Assert.True(item.IsDeleted);
-    Assert.Equal(1, order.Items.DeletedCount);
+    // Assert
+    Assert.AreEqual(0, order.Items.Count);
+    Assert.AreEqual(0, order.Items.DeletedCount, "New items should not go to DeletedList");
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1124-L1148' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-deletedlist' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/DeletedListTests.cs#L40-L57' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-remove-new-item-discarded' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-### Collection Operations
-
-When adding items:
-- Undeletes previously deleted items if re-added from the same aggregate
-- Sets Parent reference to the list's parent (not to the list)
-- Sets ContainingList reference to this collection
-- Prevents adding items that are already in a different containing list
-- Prevents adding busy items
-
-When removing items:
-- New items (`IsNew == true`) are simply removed without tracking
-- Existing items (`IsNew == false`) are marked deleted and added to DeletedList for persistence
-- ContainingList reference stays set until FactoryComplete(Update) is called
-
-<!-- snippet: api-entitylistbase-add-remove -->
-<a id='snippet-api-entitylistbase-add-remove'></a>
+<!-- snippet: skill-remove-fetched-item -->
+<a id='snippet-skill-remove-fetched-item'></a>
 ```cs
-[Fact]
-public void EntityListBase_AddRemoveBehavior()
+[TestMethod]
+public async Task Remove_FetchedItem_AddedToDeletedList()
 {
-    var orderFactory = GetRequiredService<IApiOrderFactory>();
-    var itemFactory = GetRequiredService<IApiOrderItemFactory>();
+    // Arrange - Fetch the root so its list holds existing (non-new) children
+    var parent = await _parentFactory.Fetch();
+    var list = parent.Children!;
+    var item = list[0];
+    Assert.IsFalse(item.IsNew, "A fetched child is not new");
 
-    var order = orderFactory.Create();
+    // Act
+    list.Remove(item);
 
-    // Add new item via factory
-    var newItem = itemFactory.Create();
-    newItem.ProductCode = "NEW-001";
-    order.Items.Add(newItem);
-
-    // Item is attached to the aggregate and is new
-    Assert.True(newItem.IsNew);
-    Assert.Same(order, newItem.Parent);
-
-    // Remove new item - not tracked (was never persisted)
-    order.Items.Remove(newItem);
-    Assert.Equal(0, order.Items.DeletedCount);
-
-    // Fetch existing item
-    var existingItem = itemFactory.Fetch("EXIST-001", 25.00m, 1);
-
-    // Add fetched item
-    order.Items.Add(existingItem);
-    order.DoMarkUnmodified();
-
-    // Remove existing item - tracked for deletion
-    order.Items.Remove(existingItem);
-    Assert.Equal(1, order.Items.DeletedCount);
-    Assert.True(existingItem.IsDeleted);
+    // Assert
+    Assert.AreEqual(2, list.Count);
+    Assert.AreEqual(1, list.DeletedCount, "Removed fetched item should be in DeletedList");
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1150-L1184' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-entitylistbase-add-remove' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/BaseClassTests/EntityListBaseTests.cs#L108-L125' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-remove-fetched-item' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-### Factory Lifecycle
+<!-- snippet: skill-deleted-list-marks-modified -->
+<a id='snippet-skill-deleted-list-marks-modified'></a>
+```cs
+[TestMethod]
+public async Task Remove_FetchedItem_MarksItemDeletedAndListModified()
+{
+    var parent = await _parentFactory.Fetch();
+    var list = parent.Children!;
+    var item = list[0];
+    Assert.IsFalse(list.IsModified, "A fetched list is clean");
 
-```csharp
-public override void FactoryComplete(FactoryOperation factoryOperation)
+    list.Remove(item);
+
+    Assert.IsTrue(item.IsDeleted, "The removed item is marked for deletion");
+    Assert.IsTrue(list.IsModified, "A pending deletion makes the list modified");
+    Assert.IsTrue(parent.IsModified, "...and the parent with it");
+}
 ```
+<sup><a href='/src/Design/Design.Tests/BaseClassTests/EntityListBaseTests.cs#L127-L142' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-deleted-list-marks-modified' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-After Update operation completes:
-- Clears the DeletedList (removes references to deleted entities)
-- Clears ContainingList references on items in the deleted list
-- This cleanup happens after persistence so deleted items can still access their containing list during the save operation
+### Persisting the List
+
+The root's `[Insert]`/`[Update]` hands its row's child collection to the list factory's `Save`, which runs the list's own `[Update]` inside the list's factory operation: removed items have their rows removed, new and modified items go through per-item factory saves (each item maps itself into its row), and the list's `FactoryComplete(Update)` clears `DeletedList`. Nothing cascades automatically; the cleanup happens because the list is saved through its own factory operation.
+
+<!-- snippet: skill-list-update -->
+<a id='snippet-skill-list-update'></a>
+```cs
+[Update]
+internal void Update(ICollection<OrderItemRow> rows,
+                     [Service] IOrderItemFactory itemFactory)
+{
+    foreach (var item in this.Union(DeletedList))
+    {
+        if (item.IsDeleted)
+        {
+            // The !IsNew check is defensive: a new item removed from the
+            // list is discarded (never enters DeletedList), so deleted
+            // items reaching here are expected to be persisted ones.
+            if (!item.IsNew)
+            {
+                rows.Remove(rows.Single(r => r.Id == item.Id));
+            }
+        }
+        else if (item.IsNew)
+        {
+            var row = new OrderItemRow();
+            rows.Add(row);
+            itemFactory.Save(item, row);
+        }
+        else if (item.IsModified)
+        {
+            itemFactory.Save(item, rows.Single(r => r.Id == item.Id));
+        }
+    }
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/OrderItemList.cs#L102-L131' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-list-update' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ---
 
@@ -1074,286 +1054,277 @@ After Update operation completes:
 
 ### IValidateBase
 
-Core interface for all Neatoo objects with validation support.
+`public interface IValidateBase : INeatooObject, INotifyPropertyChanged, INotifyNeatooPropertyChanged, IValidateMetaProperties`
 
-```csharp
-public interface IValidateBase : INeatooObject, INotifyPropertyChanged,
-    INotifyNeatooPropertyChanged, IValidateMetaProperties
-{
-    IValidateBase? Parent { get; }
-    bool IsPaused { get; }
-    IValidateProperty GetProperty(string propertyName);
-    IValidateProperty this[string propertyName] { get; }
-    bool TryGetProperty(string propertyName, out IValidateProperty validateProperty);
-    void AddChildTask(Task task);
-}
-```
+| Member | Signature |
+|---|---|
+| Parent | `IValidateBase? Parent { get; }` |
+| IsPaused | `bool IsPaused { get; }` |
+| GetProperty | `IValidateProperty GetProperty(string propertyName)` |
+| Indexer | `IValidateProperty this[string propertyName] { get; }` |
+| TryGetProperty | `bool TryGetProperty(string propertyName, out IValidateProperty validateProperty)` |
+| AddChildTask | `void AddChildTask(Task task)` |
 
-<!-- snippet: api-interfaces-ivalidatebase -->
-<a id='snippet-api-interfaces-ivalidatebase'></a>
-```cs
-[Fact]
-public void IValidateBase_CoreValidationInterface()
-{
-    var factory = GetRequiredService<IApiCustomerFactory>();
-    IValidateBase customer = factory.Create();
-
-    // Core interface members
-    Assert.Null(customer.Parent);
-    Assert.False(customer.IsPaused);
-
-    // Property access
-    IValidateProperty property = customer.GetProperty("Name");
-    Assert.NotNull(property);
-
-    IValidateProperty indexedProperty = customer["Email"];
-    Assert.NotNull(indexedProperty);
-
-    // TryGetProperty
-    Assert.True(customer.TryGetProperty("Name", out var nameProperty));
-    Assert.NotNull(nameProperty);
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1186-L1208' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ivalidatebase' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+Plus everything on [IValidateMetaProperties](#ivalidatemetaproperties). A user-defined value-object interface extends `IValidateBase`.
 
 ### IEntityBase
 
-Base interface for all entity objects -- both aggregate roots and child entities. Provides persistence state, modification tracking, and deletion, but does **not** expose `IsSavable` or `Save()`. Those belong to `IEntityRoot`.
+`public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySaveMeta`
 
-```csharp
-public interface IEntityBase : IValidateBase, IEntityMetaProperties, IFactorySaveMeta
-{
-    IValidateBase? Root { get; }
-    IEnumerable<string> ModifiedProperties { get; }
-    void Delete();
-    void UnDelete();
-    new IEntityProperty this[string propertyName] { get; }
-}
-```
+The interface for **child** entities. It carries persistence state, modification tracking and deletion, and does **not** expose `IsSavable` or `Save()` — those belong to `IEntityRoot`.
 
-<!-- snippet: api-interfaces-ientitybase -->
-<a id='snippet-api-interfaces-ientitybase'></a>
-```cs
-[Fact]
-public void IEntityBase_EntityInterface()
-{
-    var factory = GetRequiredService<IApiEmployeeFactory>();
-    IEntityBase employee = factory.Create();
+| Member | Signature |
+|---|---|
+| Root | `IValidateBase? Root { get; }` |
+| ModifiedProperties | `IEnumerable<string> ModifiedProperties { get; }` |
+| Delete | `void Delete()` |
+| UnDelete | `void UnDelete()` |
+| Indexer | `new IEntityProperty this[string propertyName] { get; }` |
 
-    // IEntityBase adds persistence properties
-    Assert.True(employee.IsNew);  // After Create, IsNew is true
-    Assert.False(employee.IsDeleted);
-    Assert.False(employee.IsModified);  // ...but a new entity is not "modified"
-
-    // Delete and UnDelete methods
-    employee.Delete();
-    Assert.True(employee.IsDeleted);
-
-    employee.UnDelete();
-    Assert.False(employee.IsDeleted);
-
-    // Root property
-    Assert.Null(employee.Root);
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1210-L1232' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ientitybase' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+`IFactorySaveMeta` (RemoteFactory) contributes `IsNew` and `IsDeleted`, which the generated save factory routes on.
 
 ### IEntityRoot
 
-Extends `IEntityBase` with `IsSavable` and `Save()` for aggregate roots. Child entities should use `IEntityBase` -- they cannot save independently, and `IsSavable`/`Save()` should not appear on their interface.
+`public interface IEntityRoot : IEntityBase`
 
-The separation exists because `IsSavable` on `EntityBase` is `(IsModified || IsNew) && IsValid && !IsBusy` -- it knows nothing about aggregate position, so a modified child concrete reports `true` even though children are persisted by their root. Developers used `IsSavable` in save cascade logic to decide whether children needed persisting, and reached for `Save()` on a child, which the framework does not support. Rather than teaching `IsSavable` about children, the right answer is to remove `IsSavable` and `Save()` from the child interface entirely, making the mistake a compile error. Child entity `[Insert]`/`[Update]` methods have signatures that outside consumers cannot fulfill, and entity classes are `internal`, so external callers can never save children at all.
+| Member | Signature |
+|---|---|
+| IsSavable | `bool IsSavable { get; }` |
+| Save | `Task<IEntityBase> Save()` |
+| Save | `Task<IEntityBase> Save(CancellationToken token)` |
 
-```csharp
-public interface IEntityRoot : IEntityBase
+`IsSavable` on `EntityBase` is `(IsModified || IsNew) && IsValid && !IsBusy` — it knows nothing about aggregate position, so a modified child concrete reports `true` even though children are persisted by their root. Developers used it in save-cascade logic and reached for `Save()` on a child, which the framework does not support. The fix is to keep both off the child interface so the mistake is a compile error. `EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`; this does not matter because the concrete is `internal` and consumers see only the interface. The user signals root vs child by choosing which framework interface to extend:
+
+<!-- snippet: skill-aggregate-interfaces -->
+<a id='snippet-skill-aggregate-interfaces'></a>
+```cs
+/// <summary>
+/// Aggregate root interface — extends IEntityRoot.
+/// Exposes IsSavable and Save() for the root entity.
+/// All property types use interfaces, never concretes.
+/// </summary>
+public interface IOrder : IEntityRoot
 {
-    bool IsSavable { get; }
-    Task<IEntityBase> Save();
-    Task<IEntityBase> Save(CancellationToken token);
+    Guid Id { get; }
+    string? OrderNumber { get; set; }
+    string? CustomerName { get; set; }
+    DateTime OrderDate { get; set; }
+    string? Status { get; set; }
+    decimal TotalAmount { get; }
+    IOrderItemList? Items { get; }
+}
+
+/// <summary>
+/// Child entity interface — extends IEntityBase only.
+/// No IsSavable, no Save(). Child entities are saved through the aggregate root.
+/// </summary>
+public interface IOrderItem : IEntityBase
+{
+    Guid Id { get; }
+    string? ProductName { get; set; }
+    int Quantity { get; set; }
+    decimal UnitPrice { get; set; }
+    decimal LineTotal { get; }
+}
+
+/// <summary>
+/// List interface — extends IEntityListBase parameterized on child INTERFACE.
+/// Lists never expose IsSavable — they are always saved through the aggregate root.
+/// </summary>
+public interface IOrderItemList : IEntityListBase<IOrderItem>
+{
+    /// <summary>
+    /// Test helper: Exposes the count of items in DeletedList.
+    /// </summary>
+    int DeletedCount { get; }
 }
 ```
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs#L68-L109' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregate-interfaces' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-User-defined entity interfaces signal root vs child by choosing which framework interface to extend:
+<!-- snippet: skill-child-interface-no-save -->
+<a id='snippet-skill-child-interface-no-save'></a>
+```cs
+[TestMethod]
+public void ChildInterface_DoesNotExposeIsSavable()
+{
+    // Arrange — IOrderItem extends IEntityBase, not IEntityRoot
+    var order = _orderFactory.Create();
+    var item = _itemFactory.Create("Widget", 5, 10.00m);
+    order.Items!.Add(item);
 
-```csharp
-// Aggregate root -- exposes IsSavable and Save()
-public interface IOrder : IEntityRoot { ... }
+    // Act — Cast to IEntityBase (which IOrderItem extends)
+    // Intentionally using interface type to demonstrate the pattern
+#pragma warning disable CA1859
+    IEntityBase entityBase = item;
+#pragma warning restore CA1859
 
-// Child entity -- no IsSavable, no Save()
-public interface IOrderLine : IEntityBase { ... }
+    // Assert — IEntityBase does NOT have IsSavable
+    // This is verified by the fact that the following would NOT compile:
+    //   entityBase.IsSavable  // CS1061: IEntityBase does not contain IsSavable
+    //   entityBase.Save()     // CS1061: IEntityBase does not contain Save
+    Assert.AreSame<object>(order, entityBase.Root!, "Child entity belongs to the aggregate");
+    Assert.IsTrue(entityBase.IsModified, "Child entity should be modified");
+}
 ```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/EntityRootInterfaceTests.cs#L48-L70' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-interface-no-save' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-`EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`, so the concrete class retains `IsSavable` and `Save()` as members. This does not matter because entity classes should be `internal` -- consumers interact through the interface, which controls what is accessible.
+### IValidateListBase\<I\> and IEntityListBase\<I\>
+
+| Interface | Declaration | Adds |
+|---|---|---|
+| IValidateListBase\<I\> | `public interface IValidateListBase<I> : IList<I>, INeatooObject, INotifyCollectionChanged, INotifyPropertyChanged, INotifyNeatooPropertyChanged, IValidateMetaProperties where I : IValidateBase` | `IValidateBase? Parent { get; }` |
+| IEntityListBase\<I\> | `public interface IEntityListBase<I> : IValidateListBase<I>, IEntityMetaProperties where I : IEntityBase` | `new void RemoveAt(int index)` (marks a persisted item deleted) |
+
+User-defined list interfaces are parameterized on the **child interface**: `public interface IOrderItemList : IEntityListBase<IOrderItem> { }`. Neither list interface has `IsSavable`.
 
 ### IValidateProperty
 
-Interface for managed properties supporting validation, change notification, and async operations.
+`public interface IValidateProperty : INotifyPropertyChanged, INotifyNeatooPropertyChanged` — the object behind every partial property. `IValidateProperty<T>` adds a typed `new T? Value { get; set; }`.
 
-```csharp
-public interface IValidateProperty : INotifyPropertyChanged, INotifyNeatooPropertyChanged
-{
-    string Name { get; }
-    object? Value { get; set; }
-    Task SetValue(object? newValue);
-    void LoadValue(object? value);
-    Type Type { get; }
-    bool IsBusy { get; }
-    bool IsReadOnly { get; }
-    bool IsValid { get; }
-    bool IsSelfValid { get; }
-    IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }
-    Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null);
-    Task WaitForTasks();
-}
-```
+| Member | Signature | Notes |
+|---|---|---|
+| Name | `string Name { get; }` | |
+| Type | `Type Type { get; }` | |
+| Value | `object? Value { get; set; }` | The setter runs the rules (what the generated property setter calls) but cannot be awaited. |
+| StringValue | `string? StringValue { get; }` | `Value?.ToString()`. |
+| SetValue | `Task SetValue(object? newValue)` | The awaitable set; throws `PropertyException` (internal `PropertyReadOnlyException`) when `IsReadOnly`. |
+| SetPrivateValue | `Task SetPrivateValue(object? newValue, bool quietly = false)` | What a `private set` partial property's setter calls; bypasses `IsReadOnly`; rules and `PropertyChanged` run normally. |
+| LoadValue | `void LoadValue(object? value)` | Sets without rules or modification tracking regardless of pause state (`ChangeReason.Load`). Framework use (deserialization, `EntityLazyLoad`); not needed inside a factory operation, where plain assignment is already a baseline load. |
+| IsReadOnly | `bool IsReadOnly { get; }` | `true` for a get-only or `private set` property, or after `MarkReadOnly()`. |
+| MarkReadOnly | `void MarkReadOnly()` | Permanent, per instance. Called in `[Fetch]` from a server-side permission service for field-level authorization. |
+| IsValid / IsSelfValid | `bool IsValid { get; }` / `bool IsSelfValid { get; }` | `IsValid` looks through to a child object held by the property. |
+| PropertyMessages | `IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }` | |
+| IsBusy | `bool IsBusy { get; }` | An async rule is running for this property. |
+| Task | `Task Task { get; }` | The running rule task; `GetAwaiter()` makes the property awaitable. |
+| WaitForTasks | `Task WaitForTasks()` | |
+| RunRules | `Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null)` | Forwards to a child object held by the property; a no-op for a scalar. |
+| AddMarkedBusy / RemoveMarkedBusy | `void AddMarkedBusy(long id)` / `void RemoveMarkedBusy(long id)` | Framework use by the rule manager. |
 
-<!-- snippet: api-interfaces-ivalidateproperty -->
-<a id='snippet-api-interfaces-ivalidateproperty'></a>
+`SetValue` is the awaitable way to set a property; a component that must wait for the rules calls it:
+
+<!-- snippet: skill-set-value -->
+<a id='snippet-skill-set-value'></a>
 ```cs
-[Fact]
-public async Task IValidateProperty_PropertyInterface()
+[TestMethod]
+public async Task SetValue_IsTheAwaitablePath()
 {
-    var factory = GetRequiredService<IApiCustomerFactory>();
-    var customer = factory.Create();
-    customer.Name = "Test";
+    var entity = _factory.Create();
 
-    IValidateProperty property = customer["Name"];
+    // The property setter runs the same rules but returns no Task.
+    // A component that needs to await the rules calls SetValue.
+    await entity["Name"].SetValue("Manual Value");
 
-    // Core property members
-    Assert.Equal("Name", property.Name);
-    Assert.Equal("Test", property.Value);
-    Assert.Equal(typeof(string), property.Type);
-
-    // State properties
-    Assert.False(property.IsBusy);
-    Assert.False(property.IsReadOnly);
-    Assert.True(property.IsValid);
-    Assert.True(property.IsSelfValid);
-    Assert.Empty(property.PropertyMessages);
-
-    // SetValue for async assignment
-    await property.SetValue("Updated");
-    Assert.Equal("Updated", property.Value);
-
-    // LoadValue for data loading
-    property.LoadValue("Loaded");
-    Assert.Equal("Loaded", property.Value);
-
-    // RunRules for property
-    await property.RunRules();
-    await property.WaitForTasks();
+    Assert.AreEqual("Manual Value", entity.Name);
+    Assert.IsTrue(entity["Name"].IsValid);
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1234-L1268' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ivalidateproperty' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L111-L124' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-set-value' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+`LoadValue` outside a factory operation sets without tracking:
+
+<!-- snippet: skill-load-value-outside-operation -->
+<a id='snippet-skill-load-value-outside-operation'></a>
+```cs
+[TestMethod]
+public void LoadValue_DoesNotMarkPropertyModified()
+{
+    // Arrange
+    var entity = _factory.Create();
+
+    // Act
+    entity["Name"].LoadValue("Loaded");
+
+    // Assert
+    Assert.IsFalse(entity["Name"].IsModified, "Property should not be marked modified via LoadValue");
+}
+```
+<sup><a href='/src/Design/Design.Tests/PropertyTests/StatePropertyTests.cs#L46-L59' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-load-value-outside-operation' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+`MarkReadOnly` decides per instance, during `[Fetch]`, from a server-side service — never from a parameter the client passes:
+
+<!-- snippet: skill-mark-read-only -->
+<a id='snippet-skill-mark-read-only'></a>
+```cs
+[Remote]
+[Fetch]
+internal void Fetch(int id, [Service] IFieldLevelAuthRepository repository, [Service] ISalaryPermission permission)
+{
+    var data = repository.GetById(id);
+    Name = data.Name;
+    Salary = data.Salary;
+    Department = data.Department;
+
+    // Field-level authorization: lock down Salary if user lacks permission
+    if (!permission.CanEditSalary)
+    {
+        this["Salary"].MarkReadOnly();
+    }
+}
+```
+<sup><a href='/src/Design/Design.Domain/PropertySystem/FieldLevelAuthorization.cs#L58-L74' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mark-read-only' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### IEntityProperty
 
-Extends `IValidateProperty` with modification tracking.
+`public interface IEntityProperty : IValidateProperty`; `IEntityProperty<T> : IEntityProperty, IValidateProperty<T>`. The property type of an `EntityBase` entity and the type MudNeatoo components bind.
 
-```csharp
-public interface IEntityProperty : IValidateProperty, IEntityPropertyModificationTracking
-{
-    bool IsModified { get; }
-}
-```
+| Member | Signature | Notes |
+|---|---|---|
+| IsModified | `bool IsModified { get; }` | This property changed, or the child object it holds is modified. |
+| IsSelfModified | `bool IsSelfModified { get; }` | This property's own value changed. |
+| MarkSelfUnmodified | `void MarkSelfUnmodified()` | Called by the entity's `MarkUnmodified()`. |
+| IsPaused | `bool IsPaused { get; set; }` | Mirrors the owner's pause. |
+| DisplayName | `string DisplayName { get; }` | From `[DisplayName]`, else the property name. |
+| ApplyPropertyInfo | `void ApplyPropertyInfo(IPropertyInfo propertyInfo)` | Called after deserialization to re-read attributes. |
 
 ### IPropertyInfo
 
-Metadata about a property on a Neatoo object.
+Metadata about a declared property, read once per type.
 
-```csharp
-public interface IPropertyInfo
-{
-    PropertyInfo PropertyInfo { get; }
-    string Name { get; }
-    Type Type { get; }
-    string Key { get; }
-    bool IsPrivateSetter { get; }
-    T? GetCustomAttribute<T>() where T : Attribute;
-    IEnumerable<Attribute> GetCustomAttributes();
-}
-```
-
-<!-- snippet: api-interfaces-ipropertyinfo -->
-<a id='snippet-api-interfaces-ipropertyinfo'></a>
-```cs
-[Fact]
-public void IPropertyInfo_PropertyMetadata()
-{
-    var factory = GetRequiredService<IApiCustomerFactory>();
-    var customer = factory.Create();
-
-    // Access property metadata through IValidateProperty
-    var property = customer["Name"];
-
-    // IPropertyInfo provides metadata about the property
-    Assert.Equal("Name", property.Name);
-    Assert.Equal(typeof(string), property.Type);
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1270-L1284' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-ipropertyinfo' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+| Member | Signature |
+|---|---|
+| PropertyInfo | `PropertyInfo PropertyInfo { get; }` |
+| Name | `string Name { get; }` |
+| Type | `Type Type { get; }` |
+| Key | `string Key { get; }` |
+| IsPrivateSetter | `bool IsPrivateSetter { get; }` — `!CanWrite \|\| SetMethod?.IsPrivate == true`; the source of `IsReadOnly` |
+| GetCustomAttribute | `T? GetCustomAttribute<T>() where T : Attribute` |
+| GetCustomAttributes | `IEnumerable<Attribute> GetCustomAttributes()` |
 
 ### IValidateMetaProperties
 
-Meta property interface for validation state.
-
-```csharp
-public interface IValidateMetaProperties
-{
-    bool IsValid { get; }
-    bool IsSelfValid { get; }
-    bool IsBusy { get; }
-    IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }
-}
-```
+| Member | Signature |
+|---|---|
+| IsValid / IsSelfValid / IsBusy | `bool IsValid { get; }` / `bool IsSelfValid { get; }` / `bool IsBusy { get; }` |
+| PropertyMessages | `IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }` |
+| WaitForTasks | `Task WaitForTasks()` / `Task WaitForTasks(CancellationToken token)` |
+| RunRules | `Task RunRules(string propertyName, CancellationToken? token = null)` / `Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null)` |
+| ClearAllMessages / ClearSelfMessages | `void ClearAllMessages()` / `void ClearSelfMessages()` |
 
 ### IEntityMetaProperties
 
-Meta property interface for entity state. Note that `IsSavable` is not part of this interface -- it lives on `IEntityRoot` only. This keeps child entities and entity lists from exposing a property that invites a save they do not support.
+`public interface IEntityMetaProperties : IFactorySaveMeta` — `IsNew` and `IsDeleted` come from `IFactorySaveMeta`.
 
-```csharp
-public interface IEntityMetaProperties : IFactorySaveMeta
-{
-    bool IsModified { get; }
-    bool IsSelfModified { get; }
-    bool IsMarkedModified { get; }
-}
-```
+| Member | Signature |
+|---|---|
+| IsModified / IsSelfModified / IsMarkedModified | `bool IsModified { get; }` / `bool IsSelfModified { get; }` / `bool IsMarkedModified { get; }` |
 
-<!-- snippet: api-interfaces-imetaproperties -->
-<a id='snippet-api-interfaces-imetaproperties'></a>
-```cs
-[Fact]
-public void IMetaProperties_ValidationAndEntityState()
-{
-    var customerFactory = GetRequiredService<IApiCustomerFactory>();
-    var employeeFactory = GetRequiredService<IApiEmployeeFactory>();
+`IsSavable` is not here; it lives on `IEntityRoot` only, so child entities and entity lists never expose a property that invites a save they do not support. Code that casts a child to `IEntityRoot` to read it defeats the split — bind to the root's `IsSavable`.
 
-    // IValidateMetaProperties - validation state
-    IValidateMetaProperties validateMeta = customerFactory.Create();
-    Assert.True(validateMeta.IsValid);
-    Assert.True(validateMeta.IsSelfValid);
-    Assert.False(validateMeta.IsBusy);
-    Assert.Empty(validateMeta.PropertyMessages);
+### Supporting Types
 
-    // IEntityMetaProperties - adds entity state
-    IEntityMetaProperties entityMeta = employeeFactory.Create();
-    Assert.True(entityMeta.IsNew);  // After Create
-    Assert.False(entityMeta.IsDeleted);
-    Assert.False(entityMeta.IsModified);  // New, but holds no user work
-    Assert.False(entityMeta.IsSelfModified);
-    Assert.False(entityMeta.IsMarkedModified);
-    // IsSavable is on IEntityRoot, not IEntityMetaProperties
-    // Cast to IEntityRoot to check savability:
-    Assert.True(((IEntityRoot)entityMeta).IsSavable);  // New entity is savable
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L1286-L1311' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-interfaces-imetaproperties' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+| Type | Members |
+|---|---|
+| `IPropertyMessage` | `IValidateProperty Property { get; set; }`, `string Message { get; set; }` |
+| `NeatooPropertyChangedEventArgs` | `PropertyName`, `Property`, `Source`, `OriginalEventArgs`, `InnerEventArgs`, `FullPropertyName` (dotted path), `Reason` |
+| `ChangeReason` | `UserEdit`, `Load` |
+| `RunRulesFlag` | `None`, `NoMessages`, `Messages`, `NotExecuted`, `Executed`, `Self`, `All` (see [rules-lifecycle](../../skills/neatoo/references/rules-lifecycle.md) for the semantics of each) |
+| `FactoryOperation` (RemoteFactory) | `None`, `Execute`, `Create`, `Fetch`, `Insert`, `Update`, `Delete` |
+| `SaveOperationException` | `Reason`: `SaveFailureReason.IsBusy`, `IsInvalid`, `NotModified`, … |
 
 ---
 
@@ -1361,557 +1332,486 @@ public void IMetaProperties_ValidationAndEntityState()
 
 ### RemoteFactory Attributes
 
-Neatoo uses RemoteFactory attributes for source-generated factory methods.
+Factory operations are declared with RemoteFactory attributes. Every one of them is a method the **generated factory** calls between `FactoryStart` and `FactoryComplete`, so the object is paused for the body: plain assignment is a clean baseline load.
+
+| Attribute | Target | Meaning |
+|---|---|---|
+| `[Factory]` | class or interface | Generate `I{Name}Factory` for this type. Applies to any class: Neatoo entities and lists, plain read-model classes (`[Fetch]` only, no Neatoo base), and static command classes. |
+| `[SuppressFactory]` | class or interface | No factory. For a test-only class derived from a Neatoo base and constructed directly with its services object. Neatoo.BaseGenerator keys on `[Factory]`, so a `[SuppressFactory]` class also gets no generated partial properties. |
+| `[Create]` | method or constructor | `new`: produce an object that does not exist yet. Local; `[Service]` parameters resolve on the calling tier. |
+| `[Fetch]` | method or constructor | Load an object that exists; its parameters identify it (a key). A `bool`/`Task<bool>` return of `false` makes the factory return `null`. |
+| `[Insert]` / `[Update]` / `[Delete]` | method | Persistence operations reached through `Save`. With no non-service parameters they produce `IFactorySave<T>` and `entity.Save()`; with a row parameter (a child) they produce `Save(target, row)` for the list's `[Update]` to call. |
+| `[Execute]` | static method | A command. `[Remote, Execute] private static Task<T> _Name(...)` when it needs the server; a bare `[Execute]` runs on the calling tier (RemoteFactory 1.9+). The generated delegate is what a rule injects to reach the server. |
+| `[Remote]` | method | A **client entry point**: the client's call crosses to the server, where the `[Service]` dependencies live. Requires `internal` (NF0105 rejects it on a public method). Goes on the root's `Fetch`/`Insert`/`Update`/`Delete`, never on child operations, which are `internal` and reached only from the parent's or list's operation. |
+| `[Service]` | parameter | Resolved from the DI container of the tier the operation runs on. Never passed on to another method as an ordinary argument. |
+| `[AuthorizeFactory]` / `[AuthorizeFactory<T>]` | method / class | Factory-operation authorization; see the RemoteFactory documentation. |
 
 #### [Factory]
 
-```csharp
-[AttributeUsage(AttributeTargets.Class)]
-public class FactoryAttribute : Attribute
-```
+A read model is the simplest `[Factory]` class: no Neatoo base, `[Fetch]` only.
 
-Marks a class for factory method generation. Apply to `ValidateBase<T>`, `EntityBase<T>`, or list classes.
-
-<!-- snippet: api-attributes-factory -->
-<a id='snippet-api-attributes-factory'></a>
+<!-- snippet: skill-read-model -->
+<a id='snippet-skill-read-model'></a>
 ```cs
-[Factory]
-public partial class ApiProduct : ValidateBase<ApiProduct>
+/// <summary>
+/// One row of the employee directory.
+/// </summary>
+public sealed record EmployeeSummary(int Id, string FullName, string Email, string Department, bool IsActive);
+
+/// <summary>
+/// Read model for the employee directory screen.
+/// </summary>
+public interface IEmployeeDirectory
 {
-    public ApiProduct(IValidateBaseServices<ApiProduct> services) : base(services) { }
+    IReadOnlyList<EmployeeSummary> Employees { get; }
 
-    public partial string Name { get; set; }
+    /// <summary>
+    /// Server-computed: how many of the returned employees are active.
+    /// </summary>
+    int ActiveCount { get; }
+}
 
-    public partial decimal Price { get; set; }
+/// <summary>
+/// Demonstrates: a read model as a plain [Factory] class with [Fetch] only.
+/// </summary>
+[Factory]
+internal partial class EmployeeDirectory : IEmployeeDirectory
+{
+    public IReadOnlyList<EmployeeSummary> Employees { get; internal set; } = [];
 
-    [Create]
-    public void Create() { }
+    public int ActiveCount { get; internal set; }
+
+    // =========================================================================
+    // [Fetch] - All Employees
+    // =========================================================================
+    [Remote]
+    [Fetch]
+    internal void Fetch([Service] IEmployeeDirectoryRepository repository)
+    {
+        Load(repository.GetAll());
+    }
+
+    // =========================================================================
+    // [Fetch] with Criteria - Filtered Results
+    // =========================================================================
+    // A criteria class keeps the signature short. It is a request parameter,
+    // so on a trimmed client it needs a preserve entry (see the RemoteFactory
+    // skill's trimming reference).
+    // =========================================================================
+    [Remote]
+    [Fetch]
+    internal void Fetch(EmployeeSearchCriteria criteria, [Service] IEmployeeDirectoryRepository repository)
+    {
+        Load(repository.Search(criteria.SearchTerm, criteria.Department, criteria.ActiveOnly));
+    }
+
+    private void Load(IEnumerable<EmployeeSummary> rows)
+    {
+        Employees = rows.ToList();
+        ActiveCount = Employees.Count(e => e.IsActive);
+    }
+
+    // =========================================================================
+    // No [Create], [Insert], [Update] or [Delete]
+    // =========================================================================
+    // A read model is not edited and not saved. To change an employee, fetch
+    // the aggregate, change it, save it, then fetch the read model again:
+    //
+    //   var directory = await directoryFactory.Fetch(criteria);
+    //   var employee = await employeeFactory.Fetch(selectedId);
+    //   employee.Department = "Engineering";
+    //   await employee.Save();
+    //   directory = await directoryFactory.Fetch(criteria);
+    // =========================================================================
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L402-L415' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-factory' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/ReadModels/EmployeeDirectory.cs#L41-L113' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-read-model' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Create]
 
-```csharp
-[AttributeUsage(AttributeTargets.Method)]
-public class CreateAttribute : Attribute
-```
+A root's `[Create]` builds its child list through the injected list factory and sets defaults. It is local — no `[Remote]`.
 
-Marks a method as a Create factory operation. The method becomes a static factory method that returns the object in IsNew state.
-
-<!-- snippet: api-attributes-create -->
-<a id='snippet-api-attributes-create'></a>
+<!-- snippet: skill-root-create -->
+<a id='snippet-skill-root-create'></a>
 ```cs
-[Factory]
-public partial class ApiInvoice : EntityBase<ApiInvoice>
+[Create]
+public void Create([Service] IOrderItemListFactory itemsFactory)
 {
-    public ApiInvoice(IEntityBaseServices<ApiInvoice> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string InvoiceNumber { get; set; }
-
-    public partial decimal Amount { get; set; }
-
-    [Create]
-    public void Create()
-    {
-        Id = 0;
-        InvoiceNumber = $"INV-{DateTime.Now:yyyyMMdd}";
-        Amount = 0;
-    }
+    Items = itemsFactory.Create();
+    OrderDate = DateTime.Today;
+    Status = "Draft";
+    OrderNumber = $"ORD-{DateTime.Now:yyyyMMddHHmmss}";
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L420-L440' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-create' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L105-L114' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-create' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Fetch]
 
-```csharp
-[AttributeUsage(AttributeTargets.Method)]
-public class FetchAttribute : Attribute
-```
+A root's `[Fetch]` is `[Remote] internal`, takes the key and a `[Service]` repository, and hands its row's child rows to the list factory's `Fetch`:
 
-Marks a method as a Fetch factory operation. The method becomes a static factory method that returns an existing object from persistence.
-
-<!-- snippet: api-attributes-fetch -->
-<a id='snippet-api-attributes-fetch'></a>
+<!-- snippet: skill-root-fetch -->
+<a id='snippet-skill-root-fetch'></a>
 ```cs
-[Factory]
-public partial class ApiContact : EntityBase<ApiContact>
+[Remote]
+[Fetch]
+internal bool Fetch(Guid id,
+    [Service] IOrderRepository repository,
+    [Service] IOrderItemListFactory itemsFactory)
 {
-    public ApiContact(IEntityBaseServices<ApiContact> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string Name { get; set; }
-
-    public partial string Email { get; set; }
-
-    [Fetch]
-    public async Task FetchAsync(int id, [Service] IApiCustomerRepository repository)
+    var row = repository.Get(id);
+    if (row == null)
     {
-        var data = await repository.FetchAsync(id);
-        Id = data.Id;
-        Name = data.Name;
-        Email = data.Email;
+        return false;
     }
+
+    Id = row.Id;
+    OrderNumber = row.OrderNumber;
+    CustomerName = row.CustomerName;
+    OrderDate = row.OrderDate;
+    Status = row.Status;
+    TotalAmount = row.TotalAmount;
+
+    // Items and every item within: IsNew=false, IsModified=false
+    Items = itemsFactory.Fetch(row.Items);
+
+    // After Fetch completes: Order.IsNew=false, Order.IsModified=false
+    return true;
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L445-L466' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-fetch' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L139-L165' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-fetch' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+A child's `[Fetch]` is `internal`, never `[Remote]`, and takes its own row from the list's `[Fetch]`:
+
+<!-- snippet: skill-child-fetch -->
+<a id='snippet-skill-child-fetch'></a>
+```cs
+[Fetch]
+internal void Fetch(OrderItemRow row)
+{
+    Id = row.Id;
+    ProductName = row.ProductName;
+    Quantity = row.Quantity;
+    UnitPrice = row.UnitPrice;
+    LineTotal = row.LineTotal;
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/OrderItem.cs#L88-L98' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-fetch' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Insert]
 
-```csharp
-[AttributeUsage(AttributeTargets.Method)]
-public class InsertAttribute : Attribute
-```
+Re-run the rules on the server and refuse an invalid aggregate (the framework does not do this for you); set the key; make the row; hand the row's child collection to the list factory; flush once:
 
-Marks a method as an Insert factory operation. Called by `Save()` when `IsNew` is true.
-
-<!-- snippet: api-attributes-insert -->
-<a id='snippet-api-attributes-insert'></a>
+<!-- snippet: skill-root-insert -->
+<a id='snippet-skill-root-insert'></a>
 ```cs
-[Factory]
-public partial class ApiAccount : EntityBase<ApiAccount>
+[Remote]
+[Insert]
+internal async Task Insert([Service] IOrderRepository repository,
+    [Service] IOrderItemListFactory itemsFactory)
 {
-    public ApiAccount(IEntityBaseServices<ApiAccount> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string AccountName { get; set; }
-
-    [Create]
-    public void Create()
+    // Re-run every rule on the server and refuse an invalid aggregate.
+    // Recommended - the framework does not do this for you. Throw, never
+    // return: after [Insert]/[Update] returns, the framework marks the
+    // entity saved whether or not anything was written.
+    await RunRules(RunRulesFlag.All);
+    if (!IsValid)
     {
-        Id = 0;
-        AccountName = "";
+        throw new SaveOperationException(SaveFailureReason.IsInvalid);
     }
 
-    [Insert]
-    public async Task InsertAsync([Service] IApiCustomerRepository repository)
-    {
-        await repository.InsertAsync(Id, AccountName, "");
-    }
+    // Object is paused — assignment is clean
+    Id = Guid.NewGuid();
+
+    var row = new OrderRow();
+    MapTo(row);
+    repository.Add(row);
+
+    itemsFactory.Save(Items!, row.Items);
+
+    repository.SaveChanges();
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L471-L494' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-insert' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L186-L213' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Update]
 
-```csharp
-[AttributeUsage(AttributeTargets.Method)]
-public class UpdateAttribute : Attribute
-```
-
-Marks a method as an Update factory operation. Called by `Save()` when entity is modified but not new or deleted.
-
-<!-- snippet: api-attributes-update -->
-<a id='snippet-api-attributes-update'></a>
+<!-- snippet: skill-root-update -->
+<a id='snippet-skill-root-update'></a>
 ```cs
-[Factory]
-public partial class ApiLead : EntityBase<ApiLead>
+[Remote]
+[Update]
+internal async Task Update([Service] IOrderRepository repository,
+    [Service] IOrderItemListFactory itemsFactory)
 {
-    public ApiLead(IEntityBaseServices<ApiLead> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string LeadName { get; set; }
-
-    [Create]
-    public void Create() { }
-
-    [Fetch]
-    public void Fetch(int id, string leadName)
+    // Re-run every rule on the server and refuse an invalid aggregate.
+    // Recommended - the framework does not do this for you. Throw, never
+    // return: after [Insert]/[Update] returns, the framework marks the
+    // entity saved whether or not anything was written.
+    await RunRules(RunRulesFlag.All);
+    if (!IsValid)
     {
-        Id = id;
-        LeadName = leadName;
+        throw new SaveOperationException(SaveFailureReason.IsInvalid);
     }
 
-    [Update]
-    public async Task UpdateAsync([Service] IApiCustomerRepository repository)
+    var row = repository.Get(Id)
+        ?? throw new KeyNotFoundException($"Order {Id} not found");
+
+    // Write the order's own columns only if they changed
+    if (IsSelfModified)
     {
-        await repository.UpdateAsync(Id, LeadName, "");
+        MapTo(row);
     }
+
+    itemsFactory.Save(Items!, row.Items);
+
+    repository.SaveChanges();
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L499-L525' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-update' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L240-L269' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-update' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Delete]
 
-```csharp
-[AttributeUsage(AttributeTargets.Method)]
-public class DeleteAttribute : Attribute
-```
+The repository removes the root row with its child rows; the root does not loop its children:
 
-Marks a method as a Delete factory operation. Called by `Save()` when `IsDeleted` is true.
-
-<!-- snippet: api-attributes-delete -->
-<a id='snippet-api-attributes-delete'></a>
+<!-- snippet: skill-root-delete -->
+<a id='snippet-skill-root-delete'></a>
 ```cs
-[Factory]
-public partial class ApiProject : EntityBase<ApiProject>
+[Remote]
+[Delete]
+internal void Delete([Service] IOrderRepository repository)
 {
-    public ApiProject(IEntityBaseServices<ApiProject> services) : base(services) { }
+    var row = repository.Get(Id)
+        ?? throw new KeyNotFoundException($"Order {Id} not found");
 
-    public partial int Id { get; set; }
+    repository.Remove(row);
 
-    public partial string ProjectName { get; set; }
-
-    [Create]
-    public void Create() { }
-
-    [Fetch]
-    public void Fetch(int id, string projectName)
-    {
-        Id = id;
-        ProjectName = projectName;
-    }
-
-    [Delete]
-    public async Task DeleteAsync([Service] IApiCustomerRepository repository)
-    {
-        await repository.DeleteAsync(Id);
-    }
+    repository.SaveChanges();
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L530-L556' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L278-L290' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-#### [Service]
+A child's persistence operations take its row and map it; the generated `Save(target, row)` is what the list's `[Update]` calls:
 
-```csharp
-[AttributeUsage(AttributeTargets.Parameter)]
-public class ServiceAttribute : Attribute
+<!-- snippet: skill-child-insert-update -->
+<a id='snippet-skill-child-insert-update'></a>
+```cs
+[Insert]
+internal void Insert(OrderItemRow row)
+{
+    // The entity sets its own key. Paused - plain assignment stays clean.
+    Id = Guid.NewGuid();
+    MapTo(row);
+}
+
+[Update]
+internal void Update(OrderItemRow row)
+{
+    MapTo(row);
+}
+
+private void MapTo(OrderItemRow row)
+{
+    row.Id = Id;
+    row.ProductName = ProductName!;
+    row.Quantity = Quantity;
+    row.UnitPrice = UnitPrice;
+    row.LineTotal = LineTotal;
+}
 ```
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/OrderItem.cs#L141-L164' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-insert-update' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-Marks a factory method parameter for dependency injection. Services are resolved from the DI container at factory invocation time.
+#### [Remote] and [Service]
 
-<!-- snippet: api-attributes-service -->
-<a id='snippet-api-attributes-service'></a>
+`[Remote]` means "the client calls this", not "this runs on the server". A `[Create]` with no server dependency needs no `[Remote]`; the `[Fetch]` the client calls does, and its `[Service]` repository resolves on the server:
+
+<!-- snippet: skill-remote-entry-point -->
+<a id='snippet-skill-remote-entry-point'></a>
+```cs
+[Create]
+public void Create()
+{
+    // No persistence, no server-only services needed
+    // Can run on client or server
+}
+
+// The client fetches this root, so it is a client entry point: [Remote]
+// makes the client call cross to the server, where the repository lives.
+[Remote]
+[Fetch]
+internal void Fetch(int id, [Service] IRemoteDemoRepository repository)
+{
+    // This method body runs on SERVER only.
+    // repository is resolved from server's DI container.
+    var data = repository.GetById(id);
+    Id = data.Id;
+    Name = data.Name;
+}
+```
+<sup><a href='/src/Design/Design.Domain/FactoryOperations/RemoteBoundary.cs#L82-L102' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-remote-entry-point' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+#### [Execute]
+
+A command is a static `[Factory]` class with a `[Remote, Execute] private static` method. The generated delegate crosses to the server because of `[Remote]`:
+
+<!-- snippet: skill-command -->
+<a id='snippet-skill-command'></a>
 ```cs
 [Factory]
-public partial class ApiReport : EntityBase<ApiReport>
+public static partial class SendWelcomeEmail
 {
-    public ApiReport(IEntityBaseServices<ApiReport> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string ReportName { get; set; }
-
-    // [Service] marks parameters for DI resolution
-    [Fetch]
-    public async Task FetchAsync(int id, [Service] IApiCustomerRepository repository)
+    [Remote]
+    [Execute]
+    private static Task<bool> _Send(
+        int employeeId,
+        [Service] IEmailService emailService,
+        [Service] IEmployeeQueryRepository repository)
     {
-        var data = await repository.FetchAsync(id);
-        Id = data.Id;
-        ReportName = data.Name;
+        var employee = repository.GetEmailInfo(employeeId)
+            ?? throw new InvalidOperationException($"Employee {employeeId} not found");
+
+        emailService.SendWelcome(employee.Email, employee.FullName);
+        return Task.FromResult(true);
     }
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L561-L580' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-service' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-#### [SuppressFactory]
-
-```csharp
-[AttributeUsage(AttributeTargets.Class)]
-public class SuppressFactoryAttribute : Attribute
-```
-
-Suppresses factory method generation for a class. Used for test classes that inherit from Neatoo base classes but don't need factory methods.
-
-<!-- snippet: api-attributes-suppressfactory -->
-<a id='snippet-api-attributes-suppressfactory'></a>
-```cs
-[SuppressFactory]
-public class ApiTestObject : ValidateBase<ApiTestObject>
-{
-    public ApiTestObject(IValidateBaseServices<ApiTestObject> services) : base(services) { }
-
-    public string Name { get => Getter<string>(); set => Setter(value); }
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L585-L593' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-suppressfactory' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Commands/ApproveEmployee.cs#L177-L195' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Validation Attributes
 
-Neatoo supports standard `System.ComponentModel.DataAnnotations` attributes for property validation:
+Neatoo converts these `System.ComponentModel.DataAnnotations` attributes to rules on construction: `[Required]`, `[StringLength]`, `[MinLength]`, `[MaxLength]`, `[RegularExpression]`, `[Range]`, `[EmailAddress]`. Other attributes (`[Phone]`, `[Url]`, …) are not mapped and are silently ignored.
 
-- **[Required]**: Property value is required
-- **[MaxLength(n)]**: String maximum length
-- **[MinLength(n)]**: String minimum length
-- **[StringLength(max, MinimumLength = min)]**: String length range
-- **[Range(min, max)]**: Numeric value range
-- **[EmailAddress]**: Valid email format
-- **[RegularExpression(pattern)]**: Matches regex pattern
-
-<!-- snippet: api-attributes-validation -->
-<a id='snippet-api-attributes-validation'></a>
+<!-- snippet: skill-validation-attributes -->
+<a id='snippet-skill-validation-attributes'></a>
 ```cs
-[Factory]
-public partial class ApiRegistration : ValidateBase<ApiRegistration>
-{
-    public ApiRegistration(IValidateBaseServices<ApiRegistration> services) : base(services) { }
+[Required(ErrorMessage = "Product name is required")]
+[StringLength(100)]
+public partial string? ProductName { get; set; }
 
-    [Required]
-    public partial string Username { get; set; }
+[Range(1, 10000, ErrorMessage = "Quantity must be between 1 and 10000")]
+public partial int Quantity { get; set; }
 
-    [EmailAddress]
-    public partial string Email { get; set; }
-
-    [StringLength(100, MinimumLength = 8)]
-    public partial string Password { get; set; }
-
-    [Range(18, 120)]
-    public partial int Age { get; set; }
-
-    [RegularExpression(@"^\d{5}(-\d{4})?$")]
-    public partial string ZipCode { get; set; }
-
-    [Create]
-    public void Create() { }
-}
+[Range(0.01, 1000000, ErrorMessage = "Unit price must be positive")]
+public partial decimal UnitPrice { get; set; }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L373-L397' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/OrderItem.cs#L32-L42' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation-attributes' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
-
-Validation attributes are automatically converted to validation rules during object construction.
 
 ---
 
 ## Source Generator Output
 
-Neatoo includes two source generators: BaseGenerator (partial properties) and RemoteFactory Generator (factory methods).
+Neatoo has two source generators: Neatoo.BaseGenerator (partial properties, rule ids) and the RemoteFactory generator (factories).
 
 ### Partial Property Generation
 
-When you declare a partial property, the BaseGenerator creates:
+For each partial property on a `[Factory]` class, the BaseGenerator emits a protected accessor over the property object, a getter and setter over its `Value`, and the registration in `InitializePropertyBackingFields`. The accessor is typed `IValidateProperty<T>` on both base classes; on an `EntityBase` the property factory creates an entity property, which adds per-property `IsModified`.
 
-1. **Backing field** of type `IValidateProperty<T>` or `IEntityProperty<T>`
-2. **Property getter** that calls the backing field's Value
-3. **Property setter** that calls the backing field's SetValue
-4. **InitializePropertyBackingFields override** that creates the property instance
-
-<!-- snippet: api-generator-partial-property -->
-<a id='snippet-api-generator-partial-property'></a>
+<!-- snippet: skill-partial-properties -->
+<a id='snippet-skill-partial-properties'></a>
 ```cs
-[Factory]
-public partial class ApiGeneratedCustomer : ValidateBase<ApiGeneratedCustomer>
-{
-    public ApiGeneratedCustomer(IValidateBaseServices<ApiGeneratedCustomer> services) : base(services) { }
+public partial string? Name { get; set; }
 
-    // Source generator creates:
-    // - private IValidateProperty<string> _NameProperty;
-    // - getter: return _NameProperty.Value;
-    // - setter: _NameProperty.SetValue(value);
-    public partial string Name { get; set; }
+public partial int Count { get; set; }
 
-    public partial string Email { get; set; }
-
-    [Create]
-    public void Create() { }
-}
+public partial decimal Price { get; set; }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L598-L615' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-partial-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L75-L81' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-partial-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The source-generated code for a partial property looks like:
-
-```csharp
-private IValidateProperty<string> _NameProperty = null!;
-
-public partial string Name
-{
-    get => _NameProperty.Value;
-    set => _NameProperty.SetValue(value);
-}
-
-protected override void InitializePropertyBackingFields(IPropertyFactory<ApiGeneratedCustomer> factory)
-{
-    base.InitializePropertyBackingFields(factory);
-    _NameProperty = factory.CreateValidateProperty<string>(nameof(Name));
-}
-```
-
-### Factory Method Generation
-
-RemoteFactory generates static factory methods from instance methods marked with factory attributes.
-
-<!-- snippet: api-generator-factory-methods -->
-<a id='snippet-api-generator-factory-methods'></a>
+<!-- snippet: skill-generated-property-shape -->
+<a id='snippet-skill-generated-property-shape'></a>
 ```cs
-[Factory]
-public partial class ApiGeneratedEntity : EntityBase<ApiGeneratedEntity>
-{
-    public ApiGeneratedEntity(IEntityBaseServices<ApiGeneratedEntity> services) : base(services) { }
-
-    public partial int Id { get; set; }
-
-    public partial string Name { get; set; }
-
-    // Source generator creates static factory methods from instance methods
-    [Create]
-    public void Create()
-    {
-        Id = 0;
-        Name = "";
-    }
-
-    [Fetch]
-    public async Task FetchAsync(int id, [Service] IApiCustomerRepository repository)
-    {
-        var data = await repository.FetchAsync(id);
-        Id = data.Id;
-        Name = data.Name;
-    }
-}
+// For this declaration:
+//   public partial string? Name { get; set; }
+//
+// GENERATOR BEHAVIOR: Neatoo.BaseGenerator produces the same shape for
+// ValidateBase and EntityBase (from DemoEntity.g.cs):
+//
+//   protected IValidateProperty<string?> NameProperty
+//       => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+//
+//   public partial string? Name
+//   {
+//       get => NameProperty.Value;
+//       set
+//       {
+//           NameProperty.Value = value;
+//           if (!NameProperty.Task.IsCompleted)
+//           {
+//               Parent?.AddChildTask(NameProperty.Task);
+//               RunningTasks.AddTask(NameProperty.Task);
+//           }
+//       }
+//   }
+//
+//   protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
+//   {
+//       PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
+//   }
+//
+// On an EntityBase the factory creates an entity property (modification
+// tracking); the accessor is still typed IValidateProperty<T>. The real output
+// is on disk under Generated/Neatoo.BaseGenerator/.
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L620-L646' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-factory-methods' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L24-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-generated-property-shape' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-For a Fetch method:
+Setter accessibility is preserved: a `private set` setter calls `SetPrivateValue` and the property's `IsReadOnly` is `true`; the generated interface member for any non-public setter is get-only.
 
-```csharp
-[Fetch]
-public async Task FetchAsync(int id, [Service] IRepository repo)
-{
-    var data = await repo.GetById(id);
-    Name = data.Name;
-}
-```
+### Factory Generation
 
-RemoteFactory generates a static factory method:
+For each `[Factory]` class, RemoteFactory emits an `I{Name}Factory` interface and an `internal` implementation registered in DI by `AddNeatooServices`. Factory members are instance methods: one per `[Create]`/`[Fetch]` overload (service parameters removed; a `bool`-returning `Fetch` becomes `Task<T?>`), and a `Save(target, ...)` when the class has `[Insert]`/`[Update]`/`[Delete]`. A `[Remote]` operation also gets the client-side proxy that routes the call through the single RemoteFactory endpoint.
 
-```csharp
-public static async Task<ApiGeneratedEntity> FetchAsync(int id, IServiceProvider services)
-{
-    var instance = services.GetRequiredService<ApiGeneratedEntity>();
-    instance.FactoryStart(FactoryOperation.Fetch);
-    var repo = services.GetRequiredService<IApiCustomerRepository>();
-    await instance.FetchAsync(id, repo);
-    instance.FactoryComplete(FactoryOperation.Fetch);
-    await instance.PostPortalConstruct();
-    return instance;
-}
-```
+| Step (per call) | What the generated code does |
+|---|---|
+| 1 | Resolves the object from DI (its constructor runs, with its rules). |
+| 2 | Calls `FactoryStart(operation)` — the object is paused. |
+| 3 | Resolves each `[Service]` parameter from the current tier's container. |
+| 4 | Invokes your method. |
+| 5 | Calls `FactoryComplete(operation)` — resumes; `EntityBase` marks `IsNew` after `Create`, unmodified and old after `Insert`/`Update`. |
+| 6 | Returns the object (or `null` for a `Fetch` that returned `false`). |
 
-The factory method handles:
-1. Resolving the entity instance from DI
-2. Calling FactoryStart lifecycle hook
-3. Resolving [Service] parameters from DI
-4. Invoking the instance method
-5. Calling FactoryComplete lifecycle hook
-6. Calling PostPortalConstruct for async initialization
-7. Returning the configured instance
+Consumers inject the factory interface and call it; the generated `Save` routes on `IsDeleted` and `IsNew`:
 
-### Save Factory Generation
-
-For Insert/Update/Delete methods with no non-service parameters, RemoteFactory generates a save factory that `Save()` uses:
-
-<!-- snippet: api-generator-save-factory -->
-<a id='snippet-api-generator-save-factory'></a>
+<!-- snippet: skill-quick-start-save -->
+<a id='snippet-skill-quick-start-save'></a>
 ```cs
-[Factory]
-public partial class ApiGeneratedSaveEntity : EntityBase<ApiGeneratedSaveEntity>
+[TestMethod]
+public async Task Save_ThenFetch_RoundTrips()
 {
-    public ApiGeneratedSaveEntity(IEntityBaseServices<ApiGeneratedSaveEntity> services) : base(services) { }
+    var product = _factory.Create();
+    product.Name = "Widget";
+    product.Price = 9.99m;
+    await product.WaitForTasks();
 
-    public partial int Id { get; set; }
+    // Save returns the saved instance; keep that one
+    product = (IProduct)await product.Save();
+    Assert.IsFalse(product.IsNew);
+    Assert.IsFalse(product.IsModified);
 
-    public partial string Name { get; set; }
-
-    public void DoMarkNew() => MarkNew();
-    public void DoMarkOld() => MarkOld();
-
-    [Create]
-    public void Create()
-    {
-        Id = 0;
-        Name = "";
-    }
-
-    // Insert, Update, Delete with no non-service parameters
-    // generates IFactorySave<T> implementation
-    [Insert]
-    public async Task InsertAsync([Service] IApiCustomerRepository repository)
-    {
-        await repository.InsertAsync(Id, Name, "");
-    }
-
-    [Update]
-    public async Task UpdateAsync([Service] IApiCustomerRepository repository)
-    {
-        await repository.UpdateAsync(Id, Name, "");
-    }
-
-    [Delete]
-    public async Task DeleteAsync([Service] IApiCustomerRepository repository)
-    {
-        await repository.DeleteAsync(Id);
-    }
+    var fetched = await _factory.Fetch(product.Id);
+    Assert.IsNotNull(fetched);
+    Assert.AreEqual("Widget", fetched.Name);
+    Assert.IsFalse(fetched.IsModified, "A fetched object is a clean baseline");
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L651-L691' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-save-factory' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/EntityTests/ProductTests.cs#L52-L71' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quick-start-save' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
-
-```csharp
-[Insert]
-public async Task InsertAsync([Service] IRepository repo)
-{
-    await repo.Insert(this);
-}
-
-[Update]
-public async Task UpdateAsync([Service] IRepository repo)
-{
-    await repo.Update(this);
-}
-
-[Delete]
-public async Task DeleteAsync([Service] IRepository repo)
-{
-    await repo.Delete(this);
-}
-```
-
-RemoteFactory generates an `IFactorySave<T>` implementation that routes to Insert, Update, or Delete based on entity state (`IsNew`, `IsDeleted`, or modified). This save factory is registered in DI and injected into the entity's constructor via `IEntityBaseServices<T>`.
 
 ### Rule ID Generation
 
-For stable rule IDs across compilations, the BaseGenerator creates a `GetRuleId` override with compile-time FNV-1a hash constants for each lambda expression used in RuleManager.AddValidation and RuleManager.AddAction calls. Hash-based IDs ensure no collisions in inheritance hierarchies — each expression produces a unique hash regardless of class hierarchy position.
-
-<!-- snippet: api-generator-ruleid -->
-<a id='snippet-api-generator-ruleid'></a>
-```cs
-[Factory]
-public partial class ApiRuleIdEntity : ValidateBase<ApiRuleIdEntity>
-{
-    public ApiRuleIdEntity(IValidateBaseServices<ApiRuleIdEntity> services) : base(services)
-    {
-        // Lambda expressions in AddRule generate stable RuleId entries
-        // in RuleIdRegistry for consistent rule identification
-        RuleManager.AddValidation(
-            entity => entity.Value > 0 ? "" : "Value must be positive",
-            e => e.Value);
-    }
-
-    public partial int Value { get; set; }
-
-    [Create]
-    public void Create() { }
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L696-L714' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-ruleid' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-The generated `GetRuleId` maps source expressions to FNV-1a hash IDs at compile time, enabling rule suppression and rule-specific behavior. The hash function in the generator matches `ValidateBase.ComputeRuleIdHash` exactly, so the runtime fallback for dynamically registered rules produces consistent IDs.
+Rules are identified by a stable id so that messages survive serialization and the same rule is recognized on both tiers. The BaseGenerator emits a `GetRuleId` override mapping the **source text** of each `AddValidation`/`AddAction`/`AddRule` argument (captured by `CallerArgumentExpression`) to a compile-time FNV-1a hash. The hash matches `ValidateBase.ComputeRuleIdHash`, so a rule registered dynamically gets the same id at runtime. Changing a rule's expression changes its id.
 
 ---
 
-**UPDATED:** 2026-03-02
+**UPDATED:** 2026-10-06

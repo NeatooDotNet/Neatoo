@@ -31,9 +31,8 @@ The Neatoo Solution is at src/Neatoo.sln
 | `Neatoo.Console` | Console app for testing/debugging |
 | `Neatoo.UnitTest` | Main test project (Unit/, Integration/) |
 | `Neatoo.UnitTest.Demo` | Demo tests |
-| `samples` | Code samples for documentation (MarkdownSnippets) |
 | `Design.Domain` | Authoritative API design reference (heavily commented) |
-| `Design.Infrastructure` | Repository interface examples |
+| `Design.Infrastructure` | Empty project; repository interfaces live in Design.Domain beside their aggregates |
 | `Design.Tests` | Tests verifying design patterns |
 | `Examples/Person/*` | Full example application (App, DomainModel, Ef, Server) |
 
@@ -71,10 +70,11 @@ internal class OrderItemList : EntityListBase<IOrderItem>, IOrderItemList { ... 
 
 ### Base Classes
 - `EntityBase<T>` - Persistent entities with full CRUD lifecycle
-- `ValidateBase<T>` - Value objects, read models, validation-only objects
+- `ValidateBase<T>` - Objects that need validation rules but have no persistence lifecycle of their own
 - `EntityListBase<I>` - Collections of child entities within an aggregate
-- `ValidateListBase<I>` - Collections of read models
-- Static classes with `[Factory]` and `[Execute]` - Commands
+- `ValidateListBase<I>` - Collections of `ValidateBase` objects
+- Read models - a plain `[Factory]` class with `[Fetch]` only, no Neatoo base class
+- Static `[Factory]` classes with `[Execute]` - Commands; `[Remote, Execute] private static _Name` when the command needs the server
 
 ### Entity Interfaces: Root vs Child
 - `IEntityRoot : IEntityBase` - Aggregate root interface. Adds `IsSavable` and `Save()`. User-defined root entity interfaces extend this.
@@ -130,25 +130,15 @@ This approach:
 
 ### Example - Using Real Classes
 
-Instead of mocking `IPropertyInfo`:
-```csharp
-// DO: Use real PropertyInfoWrapper
-var propertyInfo = typeof(TestPoco).GetProperty("Name");
-var wrapper = new PropertyInfoWrapper(propertyInfo);
-var property = new Property<string>(wrapper);
-
-// DON'T: Mock Neatoo interfaces
-var mockPropertyInfo = new Mock<IPropertyInfo>();
-mockPropertyInfo.Setup(p => p.Name).Returns("Name");
-```
-
 Instead of mocking `IValidateBase`:
 ```csharp
 // DO: Create a real ValidateBase implementation
 [SuppressFactory]
-public class TestValidateObject : ValidateBase<TestValidateObject>
+public partial class TestValidateObject : ValidateBase<TestValidateObject>
 {
-    public string Name { get => Getter<string>(); set => Setter(value); }
+    public TestValidateObject(IValidateBaseServices<TestValidateObject> services) : base(services) { }
+
+    public partial string? Name { get; set; }
 }
 
 // DON'T: Mock IValidateBase
@@ -171,12 +161,12 @@ Tests are organized into:
 
 ## Dependency Tracking: RemoteFactory
 
-Neatoo depends on **RemoteFactory** (`C:\src\neatoodotnet\RemoteFactory`) for source generation of factory methods. Track analyzed commits to catch breaking changes.
+Neatoo depends on **RemoteFactory** for source generation of factory methods. Neatoo uses the latest RemoteFactory version listed on NuGet.org (pinned in `Directory.Packages.props`). The source is checked out at `C:\Users\KeithVoels\source\repos\neatoodotnet\RemoteFactory`.
 
 ## Documentation and Project Management
 
-- **Framework documentation**: Use `/docs-create`, `/docs-update`, or `/docs-review` commands (powered by `docs-writer` agent) for creating and maintaining user-facing docs with MarkdownSnippets. All code snippets live in `src/samples/`.
-- **Project todos/plans**: Use `/project-todos` skill for tracking work and design documents
+- **Framework documentation**: Use `/docs-create`, `/docs-update`, or `/docs-review` commands (powered by `docs-writer` agent) for creating and maintaining user-facing docs with MarkdownSnippets. Every code snippet comes from `#region` blocks in `src/Design/` (Design.Domain and Design.Tests), the one canonical example set.
+- **Project todos/plans**: Use the `/iterative-todo` skill for tracking work and design documents
 - **DDD terminology**: See global CLAUDE.md for DDD documentation guidelines
 
 ## Design Source of Truth
@@ -184,7 +174,7 @@ Neatoo depends on **RemoteFactory** (`C:\src\neatoodotnet\RemoteFactory`) for so
 The `src/Design/` directory contains the **authoritative reference** for Neatoo's API design:
 
 - **Design.Domain** - Heavily-commented demonstrations of all base classes, factory operations, properties, and rules
-- **Design.Infrastructure** - Repository interface examples
+- **Design.Infrastructure** - Empty project; repository interfaces live in Design.Domain
 - **Design.Tests** - Tests verifying documented patterns
 
 When learning about Neatoo concepts, **read Design.Domain files first**. They contain:
@@ -206,6 +196,6 @@ When learning about Neatoo concepts, **read Design.Domain files first**. They co
 - Error handling: `Design.Domain/ErrorHandling/`
 - Common gotchas: `Design.Domain/CommonGotchas.cs`
 - Entities (standalone): `Design.Domain/Entities/`
-- Value objects: `Design.Domain/ValueObjects/`
+- Read models: `Design.Domain/ReadModels/`
 
 See `src/Design/CLAUDE-DESIGN.md` for detailed Claude Code guidance.

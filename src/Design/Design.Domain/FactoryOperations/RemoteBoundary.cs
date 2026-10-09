@@ -13,13 +13,16 @@ namespace Design.Domain.FactoryOperations;
 // =============================================================================
 // [Remote] - Client-to-Server Boundary Marker
 // =============================================================================
-// [Remote] marks factory methods that MUST execute on the server.
+// [Remote] marks a client entry point: when the client calls the operation,
+// the call crosses to the server. It does not mean "this code runs on the
+// server" - internal, non-[Remote] operations (every child operation) run on
+// the server too, because they are only ever called from code already there.
 // Once execution crosses to the server, subsequent calls stay there.
 //
 // DESIGN DECISION: [Remote] is on methods, not classes.
-// - Entry point marking: Client code knows which operations require server
-// - Granular control: [Create] can be local; [Fetch] needs [Remote]
-// - Clear boundary: Once crossed to server, execution stays there
+// - Entry point marking: the root operations the client calls carry it
+// - Granular control: a [Create] that needs nothing from the server stays local
+// - Clear boundary: once crossed to the server, execution stays there
 //
 // DID NOT DO THIS: Mark entire class as [Remote].
 //
@@ -30,12 +33,12 @@ namespace Design.Domain.FactoryOperations;
 //   }
 //
 // ACTUAL PATTERN:
-//   public class Employee : EntityBase<Employee> {
-//       [Create]           // Local OK - no [Remote]
+//   internal partial class Employee : EntityBase<Employee>, IEmployee {
+//       [Create]           // Local - no [Remote]
 //       public void Create() { }
 //
-//       [Remote][Fetch]    // Server required - has [Remote]
-//       public void Fetch(int id, [Service] IRepo repo) { }
+//       [Remote][Fetch]    // Client entry point - the call crosses to the server
+//       internal void Fetch(int id, [Service] IRepo repo) { }
 //   }
 //
 // WHY NOT: Class-level [Remote] would:
@@ -43,25 +46,18 @@ namespace Design.Domain.FactoryOperations;
 // 2. Require separate client/server class definitions
 // 3. Break the natural pattern where methods declare their own requirements
 //
-// GENERATOR BEHAVIOR: For [Remote] methods, RemoteFactory generates:
+// GENERATOR BEHAVIOR: For a [Remote] operation, the generated factory has two
+// paths and picks one at runtime by how the tier registered Neatoo
+// (NeatooFactory.Remote on the client, NeatooFactory.Server on the server):
 //
-// Client-side (HTTP proxy):
-//   public async Task<Employee> Fetch(int id) {
-//       var request = new { id };
-//       var response = await httpClient.PostAsJsonAsync("/api/Employee/Fetch", request);
-//       response.EnsureSuccessStatusCode();
-//       return await response.Content.ReadFromJsonAsync<Employee>();
-//   }
+// - Client: sends the delegate type and the arguments to the single
+//   POST /api/neatoo endpoint and deserializes the returned object.
+// - Server: resolves the object and the [Service] parameters from DI, calls
+//   FactoryStart, your method, then FactoryComplete, and returns the object.
 //
-// Server-side (actual execution):
-//   public Employee Fetch(int id) {
-//       var obj = serviceProvider.GetRequiredService<Employee>();
-//       var repo = serviceProvider.GetRequiredService<IRepo>();
-//       obj.FactoryStart(FactoryOperation.Fetch);
-//       obj.Fetch(id, repo);  // [Service] parameter resolved from DI
-//       obj.FactoryComplete(FactoryOperation.Fetch);
-//       return obj;
-//   }
+// The method body is internal, so the IL trimmer removes it from the
+// published client. See Generated/Neatoo.Generator/Neatoo.Factory/ for the
+// real output.
 // =============================================================================
 
 /// <summary>
@@ -83,6 +79,7 @@ internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRem
     // - In ASP.NET: runs on server
     // - In WPF calling server API: runs on client
     // =========================================================================
+    #region skill-remote-entry-point
     [Create]
     public void Create()
     {
@@ -90,12 +87,8 @@ internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRem
         // Can run on client or server
     }
 
-    // =========================================================================
-    // Remote Operation: Needs [Remote]
-    // =========================================================================
-    // [Fetch] requires database access - must run on server.
-    // The [Remote] attribute tells RemoteFactory to generate HTTP proxy.
-    // =========================================================================
+    // The client fetches this root, so it is a client entry point: [Remote]
+    // makes the client call cross to the server, where the repository lives.
     [Remote]
     [Fetch]
     internal void Fetch(int id, [Service] IRemoteDemoRepository repository)
@@ -103,16 +96,17 @@ internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRem
         // This method body runs on SERVER only.
         // repository is resolved from server's DI container.
         var data = repository.GetById(id);
-        this["Id"].LoadValue(data.Id);
-        this["Name"].LoadValue(data.Name);
+        Id = data.Id;
+        Name = data.Name;
     }
+    #endregion
 
     [Remote]
     [Insert]
     internal void Insert([Service] IRemoteDemoRepository repository)
     {
         var generatedId = repository.Insert(Name!);
-        this["Id"].LoadValue(generatedId);
+        Id = generatedId;
     }
 
     [Remote]
@@ -135,19 +129,27 @@ internal partial class RemoteBoundaryDemo : EntityBase<RemoteBoundaryDemo>, IRem
 // =============================================================================
 // DESIGN DECISION: Service injection location determines availability.
 //
-// Constructor [Service]: Available on BOTH client AND server.
-//     - Use for: IValidateBaseServices, IEntityBaseServices, shared config
-//     - Resolved when object is created, regardless of location
+// Constructor [Service]: resolved on every tier that builds the object.
+//     - Must be registered on BOTH client and server
+//     - Use for: IValidateBaseServices, IEntityBaseServices, shared config,
+//       rules and [Execute] command delegates
+//     - Never a server-only service (DbContext, repository): the client
+//       builds the object too, and resolution fails there
 //
-// Method [Service]: Available ONLY on server (when method has [Remote]).
-//     - Use for: IDbContext, external APIs, persistence services
-//     - Client assemblies have stubs that throw "not registered"
-//     - Forces correct [Remote] usage
+// Method [Service]: resolved on the tier where the operation runs.
+//     - On the server for a [Remote] root operation and for an internal
+//       child operation (both run only on the server)
+//     - On whichever tier calls a local [Create] - so a local [Create]
+//       takes only services registered on both tiers, such as a child list
+//       factory
+//     - Use server-only services (IDbContext, external APIs) only on
+//       operations that run on the server
 //
-// This is enforced at RUNTIME:
-// - If you call a method with [Service] param without [Remote], and that
-//   service isn't registered on client, you get a DI exception.
-// - This naturally guides developers to add [Remote] where needed.
+// Enforcement:
+// - Internal operations are guarded in the generated factory: calling one on
+//   the client throws "Server-only method called in non-server runtime."
+// - A local operation that asks for a service the client does not register
+//   fails with a DI exception when the client calls it.
 // =============================================================================
 
 /// <summary>
@@ -185,8 +187,8 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
     // =========================================================================
     // Method Injection: Server-Only
     // =========================================================================
-    // IDbContext is registered ONLY on server. If this method didn't have
-    // [Remote] and was called on client, DI would throw "service not registered".
+    // IDbContext is registered only on the server. This operation is [Remote],
+    // so a client call crosses to the server and IDbContext resolves there.
     // =========================================================================
     [Remote]
     [Fetch]
@@ -194,7 +196,7 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
     {
         // dbContext only exists on server
         var data = dbContext.Find<EntityData>(id);
-        this["Name"].LoadValue(data?.Name);
+        Name = data?.Name;
     }
 
     [Remote]
@@ -240,7 +242,7 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
 //
 // - ROOT role: parent-less operations, [Remote], reached through a public
 //   factory Save(target). Its interface extends IEntityRoot.
-// - CHILD role: operations whose signatures carry the parent's identity,
+// - CHILD role: operations that take the child's own row from its list,
 //   internal and non-[Remote], reached only through the list's [Update]. Its
 //   interface extends IEntityBase.
 //
@@ -250,13 +252,13 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
 // see the NO STANDALONE-ROOT OPERATIONS block in Entities/Address.cs for the
 // full reasoning and the rejected pattern.
 //
-// The class below shows the REMOTE/LOCAL half of dual use: [Remote] governs
-// where an operation executes, and it is inert when the operation is already
-// invoked from server-side code (such as a parent's save flow).
+// The class below has only the ROOT role. Its [Remote] operations are client
+// entry points; [Remote] does not decide root versus child - the interface
+// and the operation signatures do.
 // =============================================================================
 
 /// <summary>
-/// Demonstrates: Entity that can be root or child.
+/// Demonstrates: an entity in the ROOT role only.
 /// </summary>
 [Factory]
 internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
@@ -274,15 +276,12 @@ internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
     // These are ROOT-role operations: no parent identity in the signature, so
     // the generated factory exposes a public Save(target) for them.
     //
-    // The point this class demonstrates is the REMOTE/LOCAL boundary: [Remote]
-    // routes a call from client to server, and it is inert when the operation
-    // is already running on the server (for example, invoked from a parent
-    // aggregate's save flow). It does NOT decide root-vs-child - the
-    // interface and the operation signatures do.
+    // [Remote] makes these client entry points. It does NOT decide
+    // root-vs-child - the interface and the operation signatures do.
     //
     // To ALSO serve as a child, this class would need a second set of
-    // operations taking the parent's id (internal, non-[Remote]) and a
-    // child-shaped interface extending IEntityBase.
+    // internal, non-[Remote] operations that take its own row from a list,
+    // and a child-shaped interface extending IEntityBase.
     // =========================================================================
 
     [Remote]
@@ -291,18 +290,18 @@ internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
     {
         // Called via factory when this is an aggregate root
         var data = repository.GetAddressById(id);
-        this["Id"].LoadValue(data.Id);
-        this["Street"].LoadValue(data.Street);
-        this["City"].LoadValue(data.City);
+        Id = data.Id;
+        Street = data.Street;
+        City = data.City;
     }
 
     [Remote]
     [Insert]
     internal void Insert([Service] IDualUseRepository repository)
     {
-        // Called via factory when root, or by parent when child
+        // Reached through the root factory's Save
         var newId = repository.InsertAddress(Street!, City!);
-        this["Id"].LoadValue(newId);
+        Id = newId;
     }
 
     [Remote]

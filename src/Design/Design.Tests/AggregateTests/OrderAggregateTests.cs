@@ -55,8 +55,9 @@ public class OrderAggregateTests
         Assert.AreEqual(DateTime.Today, order.OrderDate);
     }
 
+    #region skill-add-item
     [TestMethod]
-public void AddItem_ItemJoinsAggregate()
+    public void AddItem_ItemJoinsAggregate()
     {
         // Arrange
         var order = _orderFactory.Create();
@@ -69,6 +70,27 @@ public void AddItem_ItemJoinsAggregate()
         Assert.AreSame<object>(order, item.Root!, "Added item belongs to the aggregate");
         Assert.AreEqual(1, order.Items.Count);
     }
+    #endregion
+
+    #region skill-parent-and-root
+    [TestMethod]
+    public void AddItem_SetsParentAndRoot()
+    {
+        var order = _orderFactory.Create();
+        var item = _itemFactory.Create("Widget", 5, 10.00m);
+        Assert.IsNull(item.Parent, "Not attached yet");
+
+        order.Items!.Add(item);
+
+        // Parent is the owning entity (the list is transparent); Root is the aggregate root
+        Assert.AreSame<object>(order, item.Parent!);
+        Assert.AreSame<object>(order, item.Root!);
+
+        // The root itself has neither
+        Assert.IsNull(order.Parent);
+        Assert.IsNull(order.Root);
+    }
+    #endregion
 
     [TestMethod]
     public void Item_CalculatesLineTotal_OnPropertyChange()
@@ -138,8 +160,12 @@ public void AddItem_ItemJoinsAggregate()
     [TestMethod]
     public async Task Fetch_LoadsOrder()
     {
-        // Arrange & Act
-        var order = await _orderFactory.Fetch(1);
+        // Arrange - an order row with two item rows in the mock store
+        var repository = (MockOrderRepository)_scope.GetRequiredService<IOrderRepository>();
+        var seeded = repository.SeedOrder();
+
+        // Act
+        var order = await _orderFactory.Fetch(seeded.Id);
 
         // Assert
         Assert.IsNotNull(order);
@@ -164,4 +190,27 @@ public void AddItem_ItemJoinsAggregate()
         Assert.AreEqual(50.00m, item.LineTotal, "Child LineTotal should be 50");
         Assert.AreEqual(50.00m, order.TotalAmount, "Order TotalAmount should recalculate when child LineTotal changes");
     }
+
+    #region docs-change-propagation
+    [TestMethod]
+    public async Task ChildPropertyChange_BubblesToTheRoot_WithADottedPath()
+    {
+        var order = _orderFactory.Create();
+        var item = _itemFactory.Create("Widget", 1, 5.00m);
+        order.Items!.Add(item);
+
+        var paths = new List<string>();
+        order.NeatooPropertyChanged += args =>
+        {
+            paths.Add(args.FullPropertyName);
+            return Task.CompletedTask;
+        };
+
+        item.UnitPrice = 7.00m;
+        await order.WaitForTasks();
+
+        // The root sees the child's change under the child collection's path
+        Assert.IsTrue(paths.Contains("Items.UnitPrice"), string.Join(", ", paths));
+    }
+    #endregion
 }

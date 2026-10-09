@@ -10,6 +10,20 @@
 // re-enabling and matches the authorization model: the server decides
 // permissions during Fetch, and the client respects them.
 //
+// DESIGN DECISION: The server decides the permission from its own services
+// (the current user), never from a parameter the client sends.
+//
+// DID NOT DO THIS:
+//   [Remote, Fetch]
+//   internal void Fetch(int id, bool canEditSalary, [Service] IRepo repo)
+//
+// WHY NOT: Any caller can pass canEditSalary: true. A parameter of a
+// [Remote] operation is client input.
+//
+// MarkReadOnly is the client's view of the permission. The flag travels to
+// the client, and a modified client can ignore it, so the server's [Update]
+// enforces the permission again before writing the field.
+//
 // GENERATOR BEHAVIOR: No generator changes needed. MarkReadOnly() operates
 // on the IValidateProperty returned by the indexer (this["PropertyName"]).
 //
@@ -41,21 +55,23 @@ internal partial class FieldLevelAuthDemo : EntityBase<FieldLevelAuthDemo>, IFie
     [Create]
     public void Create() { }
 
+    #region skill-mark-read-only
     [Remote]
     [Fetch]
-    internal void Fetch(int id, bool canEditSalary, [Service] IFieldLevelAuthRepository repository)
+    internal void Fetch(int id, [Service] IFieldLevelAuthRepository repository, [Service] ISalaryPermission permission)
     {
         var data = repository.GetById(id);
-        this["Name"].LoadValue(data.Name);
-        this["Salary"].LoadValue(data.Salary);
-        this["Department"].LoadValue(data.Department);
+        Name = data.Name;
+        Salary = data.Salary;
+        Department = data.Department;
 
         // Field-level authorization: lock down Salary if user lacks permission
-        if (!canEditSalary)
+        if (!permission.CanEditSalary)
         {
             this["Salary"].MarkReadOnly();
         }
     }
+    #endregion
 
     [Remote]
     [Insert]
@@ -80,4 +96,12 @@ public interface IFieldLevelAuthDemo : IEntityRoot
 public interface IFieldLevelAuthRepository
 {
     (string Name, decimal Salary, string Department) GetById(int id);
+}
+
+/// <summary>
+/// Server-side: whether the current user may edit salaries.
+/// </summary>
+public interface ISalaryPermission
+{
+    bool CanEditSalary { get; }
 }

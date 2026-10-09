@@ -4,61 +4,164 @@ Neatoo uses Roslyn source generators at compile time. **Understanding source gen
 
 ## What Gets Generated
 
-For each `partial` property, the generator creates a backing field with change tracking, validation triggering, and `PropertyChanged` notifications wired in. The backing field type depends on the base class: `IValidateProperty<T>` for `ValidateBase` subclasses, `IEntityProperty<T>` for `EntityBase` subclasses. `IEntityProperty<T>` adds per-property modification tracking (`IsModified`, `LoadValue()` for setting without marking modified, `MarkSelfUnmodified()`).
+For each `partial` property, Neatoo.BaseGenerator creates an accessor over the property object, a getter and setter, and the registration in `InitializePropertyBackingFields`. The accessor is typed `IValidateProperty<T>` on both `ValidateBase` and `EntityBase`; on an `EntityBase` the property factory creates an entity property, which adds per-property `IsModified` and `MarkSelfUnmodified()`. `LoadValue()` is on `IValidateProperty`.
 
-For each class with `[Factory]`, the generator creates a factory interface (`IMyEntityFactory`) with methods matching the `[Create]`, `[Fetch]`, etc. methods.
+<!-- snippet: skill-generated-property-shape -->
+<a id='snippet-skill-generated-property-shape'></a>
+```cs
+// For this declaration:
+//   public partial string? Name { get; set; }
+//
+// GENERATOR BEHAVIOR: Neatoo.BaseGenerator produces the same shape for
+// ValidateBase and EntityBase (from DemoEntity.g.cs):
+//
+//   protected IValidateProperty<string?> NameProperty
+//       => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+//
+//   public partial string? Name
+//   {
+//       get => NameProperty.Value;
+//       set
+//       {
+//           NameProperty.Value = value;
+//           if (!NameProperty.Task.IsCompleted)
+//           {
+//               Parent?.AddChildTask(NameProperty.Task);
+//               RunningTasks.AddTask(NameProperty.Task);
+//           }
+//       }
+//   }
+//
+//   protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
+//   {
+//       PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
+//   }
+//
+// On an EntityBase the factory creates an entity property (modification
+// tracking); the accessor is still typed IValidateProperty<T>. The real output
+// is on disk under Generated/Neatoo.BaseGenerator/.
+```
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L24-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-generated-property-shape' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+For each class with `[Factory]`, RemoteFactory creates a factory interface (`IMyEntityFactory`) with methods matching the `[Create]`, `[Fetch]`, etc. methods, and a `Save(target, ...)` when the class has `[Insert]`, `[Update]` or `[Delete]`.
 
 ## IFactorySave — How entity.Save() Works
 
-When an entity defines `[Insert]`, `[Update]`, and `[Delete]` methods with **no non-service parameters**, the generator creates an `IFactorySave<T>` implementation. This is automatically injected into the entity's `Factory` property via `IEntityBaseServices<T>`, enabling `entity.Save()` to route to the correct method based on state.
+When an entity's `[Insert]`, `[Update]`, and `[Delete]` methods have **no non-service parameters**, the generator creates an `IFactorySave<T>` implementation. This is injected into the entity's `Factory` property via `IEntityBaseServices<T>`, enabling `entity.Save()` to route to the correct method based on state:
 
-<!-- snippet: api-generator-save-factory -->
-<a id='snippet-api-generator-save-factory'></a>
+<!-- snippet: skill-entity-crud -->
+<a id='snippet-skill-entity-crud'></a>
 ```cs
+/// <summary>
+/// Demonstrates: EntityBase&lt;T&gt; for persistent domain entities.
+///
+/// Key points:
+/// - Inherits all ValidateBase capabilities (validation, rules, busy tracking)
+/// - Adds IsNew/IsModified/IsDeleted for persistence state
+/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy
+/// - Save() routes to Insert/Update/Delete based on state
+/// - Child entities cannot save independently: their interface has no Save()
+/// </summary>
 [Factory]
-public partial class ApiGeneratedSaveEntity : EntityBase<ApiGeneratedSaveEntity>
+internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
 {
-    public ApiGeneratedSaveEntity(IEntityBaseServices<ApiGeneratedSaveEntity> services) : base(services) { }
+    public partial string? Name { get; set; }
 
-    public partial int Id { get; set; }
+    public partial int Value { get; set; }
 
-    public partial string Name { get; set; }
+    public DemoEntity(IEntityBaseServices<DemoEntity> services) : base(services)
+    {
+        RuleManager.AddValidation(
+            t => string.IsNullOrWhiteSpace(t.Name) ? "Name is required" : string.Empty,
+            t => t.Name);
 
-    public void DoMarkNew() => MarkNew();
-    public void DoMarkOld() => MarkOld();
+        RuleManager.AddValidation(
+            t => t.Value < 0 ? "Value must be non-negative" : string.Empty,
+            t => t.Value);
+    }
 
     [Create]
     public void Create()
     {
-        Id = 0;
-        Name = "";
+        // FactoryComplete(Create) calls MarkNew(): IsNew=true, IsModified=false.
+        // Nothing was set, so there is no user work - still savable, because
+        // IsSavable admits IsNew.
     }
 
-    // Insert, Update, Delete with no non-service parameters
-    // generates IFactorySave<T> implementation
+    // [Remote]: the client fetches this root, so the call crosses to the
+    // server, where the repository resolves. The object is paused for the
+    // body, so plain assignment is a clean baseline load.
+    [Remote]
+    [Fetch]
+    internal void Fetch(int id, [Service] IDemoRepository repository)
+    {
+        var data = repository.GetById(id);
+        Name = data.Name;
+        Value = data.Value;
+        // After Fetch: IsNew=false, IsModified=false
+    }
+
+    // Save() routes here when IsNew. FactoryComplete(Insert) then calls
+    // MarkUnmodified() and MarkOld().
+    [Remote]
     [Insert]
-    public async Task InsertAsync([Service] IApiCustomerRepository repository)
+    internal void Insert([Service] IDemoRepository repository)
     {
-        await repository.InsertAsync(Id, Name, "");
+        repository.Insert(Name!, Value);
     }
 
+    // Save() routes here when !IsDeleted && !IsNew. Routing never consults
+    // IsModified; entity.Save()'s IsSavable gate stops unmodified saves.
+    [Remote]
     [Update]
-    public async Task UpdateAsync([Service] IApiCustomerRepository repository)
+    internal void Update([Service] IDemoRepository repository)
     {
-        await repository.UpdateAsync(Id, Name, "");
+        repository.Update(Name!, Value);
     }
 
+    // Save() routes here when IsDeleted (checked first - IsDeleted wins over IsNew)
+    [Remote]
     [Delete]
-    public async Task DeleteAsync([Service] IApiCustomerRepository repository)
+    internal void Delete([Service] IDemoRepository repository)
     {
-        await repository.DeleteAsync(Id);
+        repository.Delete(Name!);
     }
 }
 ```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L651-L691' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-generator-save-factory' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L224-L300' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-crud' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-If `[Insert]`/`[Update]`/`[Delete]` methods have non-service parameters (like a parent ID), `IFactorySave<T>` is not generated. The parent must call `factory.SaveAsync(child, parentId)` explicitly — this is the cascade save pattern described in [entities.md](entities.md).
+When the persistence methods take a non-service parameter — a child's own row — `IFactorySave<T>` is not generated and `entity.Save()` is not available. The generated factory exposes `Save(child, row)` instead, routed on the child's `IsDeleted`/`IsNew`, and the list's `[Update]` calls it. That is the child shape of the save cascade described in [entities.md](entities.md):
+
+<!-- snippet: skill-child-insert-update -->
+<a id='snippet-skill-child-insert-update'></a>
+```cs
+[Insert]
+internal void Insert(OrderItemRow row)
+{
+    // The entity sets its own key. Paused - plain assignment stays clean.
+    Id = Guid.NewGuid();
+    MapTo(row);
+}
+
+[Update]
+internal void Update(OrderItemRow row)
+{
+    MapTo(row);
+}
+
+private void MapTo(OrderItemRow row)
+{
+    row.Id = Id;
+    row.ProductName = ProductName!;
+    row.Quantity = Quantity;
+    row.UnitPrice = UnitPrice;
+    row.LineTotal = LineTotal;
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/OrderItem.cs#L141-L164' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-insert-update' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Setter Accessibility
 
@@ -68,39 +171,27 @@ The generator respects setter accessibility modifiers on partial properties:
 |-------------|-----------------|-------------|----------------------|
 | `public partial string Name { get; set; }` | `set` (public) | `.Value = value` | `string Name { get; set; }` |
 | `public partial decimal Total { get; private set; }` | `private set` | `SetPrivateValue(value)` | `decimal Total { get; }` |
-| `protected partial string Data { get; protected set; }` | `protected set` | `.Value = value` | `string Data { get; set; }` |
+| `public partial string Data { get; protected set; }` | `protected set` | `.Value = value` | `string Data { get; }` |
 | `public partial string Info { get; internal set; }` | `internal set` | `.Value = value` | `string Info { get; }` |
 | `public partial string ReadOnly { get; }` | (none) | N/A | `string ReadOnly { get; }` |
 
 Key behaviors:
 - **`private set`** uses `SetPrivateValue()` which bypasses `IsReadOnly` checks. The property's `IsReadOnly` is `true` at runtime.
 - **`protected set`** and **`internal set`** use `.Value = value` (same as public). `IsReadOnly` is `false` at runtime.
-- Non-public setters generate `get;` only on the interface declaration.
+- Any non-public setter generates `get;` only on the interface declaration.
 - EntityLazyLoad properties with `private set` use `LoadValue(value)` (same as public EntityLazyLoad), since EntityLazyLoad already bypasses `IsReadOnly`.
 
 See [properties.md](properties.md) for runtime behavior of private-set properties.
 
 ## Suppressing Generation
 
-Use `[SuppressFactory]` to prevent factory generation for abstract base classes, test classes, or when manual factory implementation is needed:
+`[SuppressFactory]` on a class prevents RemoteFactory from generating a factory for it. Use it on a test-only class that derives from a Neatoo base and is constructed directly with its services object.
 
-<!-- snippet: api-attributes-suppressfactory -->
-<a id='snippet-api-attributes-suppressfactory'></a>
-```cs
-[SuppressFactory]
-public class ApiTestObject : ValidateBase<ApiTestObject>
-{
-    public ApiTestObject(IValidateBaseServices<ApiTestObject> services) : base(services) { }
-
-    public string Name { get => Getter<string>(); set => Setter(value); }
-}
-```
-<sup><a href='/src/samples/ApiReferenceSamples.cs#L585-L593' title='Snippet source file'>snippet source</a> | <a href='#snippet-api-attributes-suppressfactory' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+Neatoo.BaseGenerator keys on the same `[Factory]` attribute, so a `[SuppressFactory]` class gets **no** generated partial properties; it must declare ordinary properties. Every class in a domain assembly that a factory creates is a `[Factory]` class, and every Neatoo example in this skill is one.
 
 ## Generated/ Folder
 
-Generated code is output to `Generated/Neatoo.BaseGenerator/` within each project. This folder is excluded from git. To inspect generated code, build the project and look there, or use IDE "Go to Definition" on generated members.
+When a project sets `<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>` and `<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>`, the generated code is written to `Generated/Neatoo.BaseGenerator/` and `Generated/Neatoo.Generator/` in the project folder. Exclude that folder from compilation (`<Compile Remove="Generated/**/*.cs" />`) and from source control. Without the opt-in, use the IDE's "Go to Definition" on a generated member.
 
 ## Related
 

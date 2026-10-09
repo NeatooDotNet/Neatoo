@@ -42,6 +42,7 @@ public class PropertyBasicsTests
         Assert.AreEqual("Test", entity.Name);
     }
 
+    #region skill-property-changed
     [TestMethod]
     public void Property_SetTriggersPropertyChanged()
     {
@@ -56,6 +57,71 @@ public class PropertyBasicsTests
         // Assert
         Assert.IsTrue(changedProperties.Contains("Name"));
     }
+    #endregion
+
+    #region skill-neatoo-property-changed
+    [TestMethod]
+    public async Task NeatooPropertyChanged_CarriesFullNameAndReason()
+    {
+        var entity = _factory.Create();
+        var received = new List<Neatoo.NeatooPropertyChangedEventArgs>();
+        entity.NeatooPropertyChanged += args =>
+        {
+            received.Add(args);
+            return Task.CompletedTask;
+        };
+
+        entity.Name = "Test";
+        await entity.WaitForTasks();
+
+        var nameEvent = received.Single(e => e.PropertyName == "Name");
+        Assert.AreEqual("Name", nameEvent.FullPropertyName, "A dotted path for descendants; the bare name here");
+        Assert.AreEqual(Neatoo.ChangeReason.UserEdit, nameEvent.Reason, "A setter outside a factory operation is a user edit");
+    }
+    #endregion
+
+    #region skill-property-metadata
+    [TestMethod]
+    public void Indexer_ExposesPropertyMetadata()
+    {
+        var entity = _factory.Create();
+
+        // Each partial property is backed by its own property object
+        var nameProperty = entity["Name"];
+
+        entity.Name = "";  // Name is required
+        Assert.IsFalse(nameProperty.IsValid);
+        Assert.IsTrue(nameProperty.PropertyMessages.Count > 0);
+        Assert.IsFalse(nameProperty.IsBusy);
+        Assert.IsFalse(nameProperty.IsReadOnly);
+
+        // The object aggregates every property's messages
+        Assert.IsTrue(entity.PropertyMessages.Any(m => m.Property.Name == "Name"));
+
+        entity.Name = "Set";
+        Assert.IsTrue(nameProperty.IsValid);
+        Assert.AreEqual(0, nameProperty.PropertyMessages.Count);
+
+        // Strongly typed access by casting
+        var typed = (Neatoo.IValidateProperty<string?>)nameProperty;
+        Assert.AreEqual("Set", typed.Value);
+    }
+    #endregion
+
+    #region skill-set-value
+    [TestMethod]
+    public async Task SetValue_IsTheAwaitablePath()
+    {
+        var entity = _factory.Create();
+
+        // The property setter runs the same rules but returns no Task.
+        // A component that needs to await the rules calls SetValue.
+        await entity["Name"].SetValue("Manual Value");
+
+        Assert.AreEqual("Manual Value", entity.Name);
+        Assert.IsTrue(entity["Name"].IsValid);
+    }
+    #endregion
 
     [TestMethod]
     public void Property_Indexer_ReturnsPropertyInterface()
@@ -110,6 +176,7 @@ public class PrivateSetPropertyTests
         _scope.Dispose();
     }
 
+    #region docs-private-set-rule-computes
     [TestMethod]
     public void PrivateSet_RuleComputesValue()
     {
@@ -126,6 +193,7 @@ public class PrivateSetPropertyTests
         // Assert
         Assert.AreEqual(50.00m, entity.ComputedTotal);
     }
+    #endregion
 
     [TestMethod]
     public void PrivateSet_TriggersPropertyChanged()
@@ -147,6 +215,7 @@ public class PrivateSetPropertyTests
             "PropertyChanged should fire for private-set property when set by a rule");
     }
 
+    #region docs-private-set-read-only
     [TestMethod]
     public void PrivateSet_IsReadOnlyTrue()
     {
@@ -163,6 +232,7 @@ public class PrivateSetPropertyTests
         Assert.IsTrue(totalProperty.IsReadOnly,
             "Private-set property should have IsReadOnly=true");
     }
+    #endregion
 
     [TestMethod]
     public void PrivateSet_PublicPropertyIsReadOnlyFalse()
@@ -180,6 +250,7 @@ public class PrivateSetPropertyTests
             "Public-set property should have IsReadOnly=false");
     }
 
+    #region docs-private-set-set-value-throws
     [TestMethod]
     public void PrivateSet_SetValueThrows()
     {
@@ -202,11 +273,12 @@ public class PrivateSetPropertyTests
             StringAssert.Contains(ex.Message, "read-only");
         }
     }
+    #endregion
 
     [TestMethod]
     public void PrivateSet_LoadValueSucceeds()
     {
-        // Scenario 10: LoadValue on private-set property succeeds (Fetch escape hatch)
+        // Scenario 10: LoadValue on private-set property succeeds
         // WHEN entity["ComputedTotal"].LoadValue(x) is called, THEN value is set
 
         // Arrange

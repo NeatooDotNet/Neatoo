@@ -67,6 +67,7 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
 
     public Gotcha1Demo(IValidateBaseServices<Gotcha1Demo> services) : base(services)
     {
+        #region skill-computed-gap-rule
         // This rule calculates Total when Quantity or Price changes
         RuleManager.AddAction(
             t =>
@@ -76,8 +77,10 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
             },
             t => t.Quantity,
             t => t.Price);
+        #endregion
     }
 
+    #region skill-create-without-run-rules
     /// <summary>
     /// WRONG WAY: Sets properties expecting rule to calculate Total.
     /// After Create() returns, Total is still 0 because rules were paused.
@@ -89,7 +92,9 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
         Price = 5.00m;
         // Total is NOT calculated here - rule is paused!
     }
+    #endregion
 
+    #region skill-create-run-rules
     /// <summary>
     /// RIGHT WAY: Call RunRules at end of factory method.
     /// RunRules works even while paused — no IsPaused guard.
@@ -102,6 +107,7 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
         await RunRules(RunRulesFlag.All);  // Forces all rules to execute
         // Total is now 50.00
     }
+    #endregion
 }
 
 // =============================================================================
@@ -134,7 +140,8 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
 //   var item = parent.Items[0];           // IsNew=false
 //   parent.Items.Remove(item);
 //   // Item IS in DeletedList
-//   // Save() will call [Delete] on this item
+//   // The root's Save() runs the list's [Update], which removes this
+//   // item's row - no child [Delete] runs (children have none)
 // =============================================================================
 
 /// <summary>
@@ -158,11 +165,8 @@ internal partial class Gotcha2Parent : EntityBase<Gotcha2Parent>, IGotcha2Parent
     [Fetch]
     internal void Fetch(int id, [Service] IGotcha2ItemListFactory itemListFactory)
     {
-        using (PauseAllActions())
-        {
-            this["Name"].LoadValue($"Parent-{id}");
-            Items = itemListFactory.FetchForParent(id);
-        }
+        Name = $"Parent-{id}";
+        Items = itemListFactory.FetchForParent(id);
     }
 
     [Remote]
@@ -198,8 +202,8 @@ internal partial class Gotcha2Item : EntityBase<Gotcha2Item>, IGotcha2Item
     [Fetch]
     internal void Fetch(int id)
     {
-        this["Id"].LoadValue(id);
-        this["Name"].LoadValue($"Item-{id}");
+        Id = id;
+        Name = $"Item-{id}";
     }
 
     [Insert]
@@ -242,31 +246,45 @@ public interface IGotcha2Repository
 }
 
 // =============================================================================
-// GOTCHA 3: Method-injected [Service] unavailable on client
+// GOTCHA 3: A server-only [Service] on an operation that runs on the client
 // =============================================================================
-// [Service] parameters on methods are resolved from the SERVER's DI container.
-// If you call a method with [Service] on the client, you get a DI exception.
+// A [Service] parameter resolves in the DI container of the tier the factory
+// operation runs on. A root operation without [Remote] runs on the caller's
+// tier - on a Blazor WASM client, the client container - so a server-only
+// service there (DbContext, repository) is not registered and DI throws.
 //
-// COMMON MISTAKE: Calling a non-[Remote] method with [Service] on client.
+// COMMON MISTAKE: A client-called root operation with a server-only [Service]
+// and no [Remote].
 //
 // WRONG:
-//   // In Blazor WASM client:
-//   var employee = await employeeFactory.Create();
-//   employee.DoServerThing();  // Has [Service] IDbContext - THROWS!
+//   [Fetch]
+//   internal void Fetch(int id, [Service] IServerOnlyService svc) { ... }
+//   // Client: await factory.Fetch(1) runs locally - IServerOnlyService
+//   // is not registered on the client, DI throws.
 //
 // RIGHT:
-//   // Methods with server-only services need [Remote]
 //   [Remote]
-//   public void DoServerThing([Service] IDbContext db) { ... }
-//   // Now client calls HTTP proxy, server resolves IDbContext
+//   [Fetch]
+//   internal void Fetch(int id, [Service] IServerOnlyService svc) { ... }
+//   // The client call crosses to the server; the server container resolves it.
 //
 // KEY INSIGHT: [Remote] means "this is an entry point from client to server."
-// Once on server, subsequent method calls don't need [Remote] - they're
-// already server-side.
+// Once on the server, child operations reached from it don't need [Remote] -
+// they already run there, so they take server-only services freely.
+//
+// [Service] belongs on factory operations ([Create], [Fetch], [Insert],
+// [Update], [Delete], [Execute]). An ordinary entity method gets no generated
+// proxy, so [Remote] on it does nothing; server work goes through a factory
+// operation or an [Execute] command.
+//
+// DID NOT DO THIS: Move the server-only service to the entity's constructor.
+//
+// WHY NOT: The constructor runs on both tiers, so a server-only service there
+// breaks construction on the client instead of one call.
 // =============================================================================
 
 /// <summary>
-/// Demonstrates Gotcha 3: Server-only services need [Remote].
+/// Demonstrates Gotcha 3: Server-only services go on [Remote] entry points.
 /// </summary>
 [Factory]
 internal partial class Gotcha3Demo : EntityBase<Gotcha3Demo>, IGotcha3Demo
@@ -279,27 +297,15 @@ internal partial class Gotcha3Demo : EntityBase<Gotcha3Demo>, IGotcha3Demo
     public void Create() { }
 
     // =========================================================================
-    // WRONG: This method has [Service] but no [Remote].
-    // On client, IServerOnlyService is not registered - DI throws.
-    // This is commented out as an example; see the RIGHT way below.
-    // =========================================================================
-    // public void DoServerThingWrong([Service] IServerOnlyService svc)
-    // {
-    //     svc.DoWork();
-    // }
-
-    // =========================================================================
-    // RIGHT: [Remote] tells factory to generate HTTP proxy for client.
-    // Server resolves IServerOnlyService from its DI container.
-    // The method uses a factory operation like [Fetch] which supports
-    // method-level [Service] injection.
+    // RIGHT: [Remote] makes the client call cross to the server, where
+    // IServerOnlyService is registered.
     // =========================================================================
 
     [Remote]
     [Fetch]
     internal void Fetch(int id, [Service] IServerOnlyService svc)
     {
-        this["Name"].LoadValue(svc.GetDataById(id));
+        Name = svc.GetDataById(id);
     }
 
     [Remote]
@@ -350,6 +356,11 @@ public interface IServerOnlyService
 //
 // DESIGN DECISION: PauseAllActions is for performance during batch updates.
 // You must explicitly call RunRules() if you need computed values.
+//
+// WARNING: On an entity, a property set while paused is not marked modified.
+// Edits made inside PauseAllActions() on a fetched entity leave IsModified
+// false, so IsSavable stays false and the edits are not saved. Factory
+// operations are already paused; never wrap their bodies in PauseAllActions().
 // =============================================================================
 
 /// <summary>
@@ -380,28 +391,28 @@ internal partial class Gotcha4Demo : ValidateBase<Gotcha4Demo>, IGotcha4Demo
 // IsModified returns true if THIS object OR ANY CHILD is modified.
 // Use IsSelfModified to check only the current object.
 //
-// COMMON MISTAKE: Checking IsModified to determine if the current object
-// needs an [Update] call, when actually a child was modified.
+// COMMON MISTAKE: Checking IsModified inside a root's [Update] to decide
+// whether to write the root's own row, when actually a child was modified.
 //
-// WRONG assumption:
-//   if (parent.IsModified) {
-//       // Parent itself might not be modified - could be a child
-//       await parent.Update(...);  // Might update unchanged data
+// WRONG (inside the root's [Update]):
+//   var row = repository.Get(Id);
+//   if (IsModified) {
+//       // The root itself might not be modified - could be a child
+//       MapTo(row);  // Rewrites unchanged root columns
 //   }
 //
-// RIGHT (for persistence logic):
-//   if (parent.IsSelfModified) {
-//       // Only update if THIS object changed
-//       await parent.Update(...);
+// RIGHT (inside the root's [Update]):
+//   var row = repository.Get(Id);
+//   if (IsSelfModified) {
+//       MapTo(row);  // Only when THIS object's own properties changed
 //   }
-//   foreach (var child in parent.Items) {
-//       if (child.IsSelfModified) {
-//           // Handle child updates
-//       }
-//   }
+//   itemsFactory.Save(Items, row.Items);  // the list's [Update] decides per
+//                                          // child: new, modified, removed
+//   repository.SaveChanges();
 //
-// NOTE: You typically don't write this persistence logic manually.
-// The framework's Save() method handles it correctly.
+// NOTE: The root never inspects children's state itself. The list's [Update]
+// writes only new and modified children (each through the child factory's
+// Save), removes the rows of removed children, and skips the rest.
 // This gotcha is about understanding what IsModified means.
 // =============================================================================
 
@@ -426,11 +437,8 @@ internal partial class Gotcha5Parent : EntityBase<Gotcha5Parent>, IGotcha5Parent
     [Fetch]
     internal void Fetch(int id, [Service] IGotcha5ChildFactory childFactory)
     {
-        using (PauseAllActions())
-        {
-            this["Name"].LoadValue($"Parent-{id}");
-            Child = childFactory.Fetch(id * 10);
-        }
+        Name = $"Parent-{id}";
+        Child = childFactory.Fetch(id * 10);
     }
 
     [Remote]
@@ -462,7 +470,7 @@ internal partial class Gotcha5Child : EntityBase<Gotcha5Child>, IGotcha5Child
     [Fetch]
     internal void Fetch(int id)
     {
-        this["Value"].LoadValue($"Child-{id}");
+        Value = $"Child-{id}";
     }
 
     [Insert]
@@ -495,8 +503,8 @@ public interface IGotcha5Repository
 // | 2   | DeletedList ignores IsNew=true items    | Expected behavior - new     |
 // |     |                                          | items don't need deletion   |
 // +-----+------------------------------------------+-----------------------------+
-// | 3   | [Service] on methods needs [Remote]     | Add [Remote] or use         |
-// |     |                                          | constructor injection       |
+// | 3   | Server-only [Service] on a root         | Add [Remote] to the client  |
+// |     | operation that runs on the client        | entry point                 |
 // +-----+------------------------------------------+-----------------------------+
 // | 4   | PauseAllActions stops rule calculations | Call RunRules() explicitly  |
 // |     |                                          | (works even while paused)   |

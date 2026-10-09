@@ -119,7 +119,7 @@ Using standard MudBlazor components with `ValueChanged` callbacks that manually 
 
 ### Why It's Wrong
 
-- Direct property assignment (`entity.Prop = value`) bypasses async rule pipeline — `SetValue()` is the correct async path
+- Direct property assignment (`entity.Prop = value`) runs the same rules as `SetValue()` but returns no `Task`, so the component cannot await them; `SetValue()` is the awaitable path
 - No validation display — standard MudBlazor doesn't know about `PropertyMessages`
 - No `IsBusy` / `IsReadOnly` binding — manual handlers don't disable during async rules
 - Label is hardcoded instead of using `DisplayName`
@@ -164,7 +164,7 @@ Using Blazor's `@bind-Value` two-way binding directly to entity properties.
 
 ### Why It's Wrong
 
-- `@bind-Value` uses the CLR property setter, which calls `Setter()` synchronously — this works for triggering synchronous rules but skips the component-level validation display pipeline
+- `@bind-Value` uses the CLR property setter, which writes the backing `IValidateProperty<T>.Value` — the rules run, but the component cannot await them, and it has no validation display
 - No validation error display — MudBlazor doesn't know about `PropertyMessages`
 - `Required="true"` and `RequiredError` duplicate Neatoo's `[Required]` validation
 - No `IsBusy` or `IsReadOnly` binding
@@ -210,7 +210,7 @@ Using Blazor's `EditForm` and `DataAnnotationsValidator` instead of `MudForm` wi
 - `ValidationSummary` shows annotation errors, not `PropertyMessages`
 - `OnValidSubmit` uses annotation validity, not `entity.IsValid`
 - The entity might appear "valid" to `EditForm` while failing Neatoo business rules
-- Completely bypasses `IsSavable` (which includes `IsModified && !IsBusy`)
+- Completely bypasses `IsSavable` (`(IsModified || IsNew) && IsValid && !IsBusy`)
 
 ### Correct
 
@@ -499,5 +499,5 @@ When binding a MudBlazor component to a Neatoo entity property:
 
 1. **Is there a MudNeatoo wrapper?** → Use it with `EntityProperty="@entity[nameof(IEntity.Prop)]"`
 2. **No wrapper but parameters pass through?** → Use manual metadata binding (call `SetValue`, bind `IsBusy`/`IsReadOnly`/`DisplayName`)
-3. **Display-only (no editing)?** → Bind directly to `@entity.Prop` (INotifyPropertyChanged handles re-render)
+3. **Display-only (no editing)?** → Bind directly to `@entity.Prop`; the page's `PropertyChanged` subscription re-renders it (Blazor does not subscribe on its own)
 4. **Never:** Create a POCO, use `@bind-Value` to entity, use `EditForm`/`DataAnnotationsValidator`, or write `ValueChanged` handlers that assign to entity properties directly

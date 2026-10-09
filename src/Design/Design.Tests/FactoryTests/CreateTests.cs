@@ -74,4 +74,17 @@ public class CreateTests
         Assert.IsNotNull(parent.Items, "Child collection should be initialized");
         Assert.AreEqual(0, parent.Items.Count, "Child collection should be empty");
     }
+
+    #region docs-create-marks-modified-test
+    [TestMethod]
+    public void CreateAsUserWork_IsNewAndModified()
+    {
+        var entity = _factory.CreateAsUserWork();
+
+        Assert.IsTrue(entity.IsNew);
+        Assert.IsTrue(entity.IsModified, "The [Create] opted in with MarkModified()");
+        Assert.IsTrue(entity.IsSelfModified);
+        Assert.IsTrue(entity.IsSavable);
+    }
+    #endregion
 }

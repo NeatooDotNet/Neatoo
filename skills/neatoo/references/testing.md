@@ -7,37 +7,26 @@ Testing Neatoo domain models requires a specific approach: **never mock Neatoo i
 **DO:** Use real Neatoo classes and factories
 **DON'T:** Mock Neatoo interfaces or implement stubs
 
-<!-- snippet: test-real-vs-mock -->
-<a id='snippet-test-real-vs-mock'></a>
+A test creates the entity through its real factory, sets properties as a user would, awaits `WaitForTasks()` so async rules finish, and reads the real `IsValid`/`IsSavable`:
+
+<!-- snippet: skill-test-real-objects -->
+<a id='snippet-skill-test-real-objects'></a>
 ```cs
-/// <summary>
-/// Use real Neatoo classes - never mock Neatoo interfaces.
-/// </summary>
-[Fact]
-public async Task RealVsMock_UseRealNeatooClasses()
+[TestMethod]
+public async Task Employee_NegativeSalary_IsInvalid()
 {
-    // DO: Use real Neatoo factory to create real Neatoo objects
-    var factory = GetRequiredService<ISkillEmployeeFactory>();
-    var employee = factory.Create();
+    var employee = _employeeFactory.Create();
+    employee.FirstName = "Ada";
+    employee.LastName = "Lovelace";
+    employee.Email = "ada@example.com";
+    employee.Salary = -1m;
+    await employee.WaitForTasks();
 
-    // Real Neatoo objects have real behavior
-    Assert.True(employee.IsNew);
-
-    // Set invalid data and run rules to trigger validation
-    employee.Name = "";
-    await employee.RunRules(RunRulesFlag.All);
-    Assert.False(employee["Name"].IsValid); // Real validation
-
-    // Set valid data
-    employee.Name = "John Doe";
-    await employee.RunRules(RunRulesFlag.All);
-    Assert.True(employee["Name"].IsValid);
-
-    // For external dependencies, use mock implementations:
-    // services.AddScoped<IMyRepository, MockMyRepository>();
+    Assert.IsFalse(employee.IsValid, "Salary cannot be negative");
+    Assert.IsFalse(employee.IsSavable);
 }
 ```
-<sup><a href='/src/samples/TestingPatternsTests.cs#L46-L73' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-real-vs-mock' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateCoverageGapTests.cs#L177-L191' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-test-real-objects' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Why no mocking:**
@@ -45,242 +34,117 @@ public async Task RealVsMock_UseRealNeatooClasses()
 2. Mocks test the mock setup, not actual Neatoo behavior
 3. Real objects reveal integration issues that mocks hide
 
-## Test Base Class Setup
+## Test Services Setup
 
-Register Neatoo services with `NeatooFactory.Logical` (all operations run locally, no HTTP calls) and mock only external dependencies:
+Register Neatoo services for the domain assembly, register the domain's DI-provided rules the way both tiers would, and mock only the external dependencies (repositories, permission services, the repositories behind `[Remote, Execute]` commands). `NeatooFactory.Server` runs every operation in-process; `NeatooFactory.Logical` does the same without a tier:
 
-<!-- snippet: test-base-class -->
-<a id='snippet-test-base-class'></a>
+<!-- snippet: skill-test-services -->
+<a id='snippet-skill-test-services'></a>
 ```cs
-/// <summary>
-/// Base class for Neatoo skill tests.
-/// Configures DI container with real Neatoo services and mock external dependencies.
-/// </summary>
-public abstract class SkillTestBase : IDisposable
+public static IServiceScope GetScope()
 {
-    private static IServiceProvider? _container;
-    private static readonly object _lock = new();
-    private IServiceScope? _scope;
-
-    /// <summary>
-    /// Gets the current service scope.
-    /// </summary>
-    protected IServiceScope Scope
+    lock (_lock)
     {
-        get
+        if (_serviceProvider == null)
         {
-            _scope ??= CreateScope();
-            return _scope;
+            var services = new ServiceCollection();
+
+            // Real Neatoo services and the generated factories for the
+            // domain assembly. Server mode: every operation runs in-process.
+            services.AddNeatooServices(
+                NeatooFactory.Server,
+                typeof(Design.Domain.BaseClasses.IDemoValueObject).Assembly);
+
+            // The domain's DI-provided rules, as both tiers would register them
+            services.AddDesignDomainRules();
+
+            // Mocks for the external dependencies only - never for Neatoo types
+            RegisterMockRepositories(services);
+
+            _serviceProvider = services.BuildServiceProvider();
         }
-    }
-
-    /// <summary>
-    /// Gets the service provider from the current scope.
-    /// </summary>
-    protected IServiceProvider ServiceProvider => Scope.ServiceProvider;
-
-    private static IServiceScope CreateScope()
-    {
-        lock (_lock)
-        {
-            _container ??= CreateContainer();
-            return _container.CreateScope();
-        }
-    }
-
-    private static IServiceProvider CreateContainer()
-    {
-        var services = new ServiceCollection();
-
-        // Register Neatoo services with NeatooFactory.Logical
-        // (all operations run locally, no remote calls)
-        services.AddNeatooServices(NeatooFactory.Logical, typeof(SkillTestBase).Assembly);
-
-        // Register mock services for external dependencies
-        RegisterMockServices(services);
-
-        return services.BuildServiceProvider();
-    }
-
-    private static void RegisterMockServices(IServiceCollection services)
-    {
-        // Repository mocks
-        services.AddScoped<ISkillEmployeeRepository, SkillMockEmployeeRepository>();
-        services.AddScoped<ISkillCustomerRepository, MockCustomerRepository>();
-        services.AddScoped<ISkillProductRepository, MockProductRepository>();
-        services.AddScoped<ISkillOrderRepository, MockOrderRepository>();
-        services.AddScoped<ISkillAccountRepository, MockAccountRepository>();
-        services.AddScoped<ISkillProjectRepository, MockProjectRepository>();
-        services.AddScoped<ISkillReportRepository, MockReportRepository>();
-        services.AddScoped<ISkillReportGenerator, MockReportGenerator>();
-        services.AddScoped<ISkillDataRepository, MockDataRepository>();
-        services.AddScoped<ISkillOrderWithItemsRepository, MockOrderWithItemsRepository>();
-        services.AddScoped<ISkillEntityRepository, MockEntityRepository>();
-        services.AddScoped<ISkillGenRepository, MockGenRepository>();
-        services.AddScoped<ISkillRemoteFactoryRepository, MockRemoteFactoryRepository>();
-
-        // Service mocks
-        services.AddScoped<ISkillEmailService, MockEmailService>();
-        services.AddScoped<ISkillUserValidationService, MockUserValidationService>();
-        services.AddScoped<ISkillAccountValidationService, MockAccountValidationService>();
-        services.AddScoped<ISkillEmailValidationService, SkillMockEmailValidationService>();
-        services.AddScoped<ISkillOrderAccessService, MockOrderAccessService>();
-        services.AddScoped<ISkillProjectMembershipService, MockProjectMembershipService>();
-        services.AddScoped<ISkillFeatureFlagService, MockFeatureFlagService>();
-    }
-
-    /// <summary>
-    /// Gets a required service from the current scope.
-    /// </summary>
-    protected T GetRequiredService<T>() where T : notnull
-    {
-        return Scope.ServiceProvider.GetRequiredService<T>();
-    }
-
-    /// <summary>
-    /// Gets an optional service from the current scope.
-    /// </summary>
-    protected T? GetService<T>() where T : class
-    {
-        return ServiceProvider.GetService<T>();
-    }
-
-    public void Dispose()
-    {
-        _scope?.Dispose();
-        _scope = null;
-        GC.SuppressFinalize(this);
+        return _serviceProvider.CreateScope();
     }
 }
 ```
-<sup><a href='/src/samples/SkillTestBase.cs#L10-L111' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-base-class' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/TestInfrastructure.cs#L35-L61' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-test-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+Mock repositories that a save writes to are registered **scoped**, so the test scope and the factory operations observe the same instance and the test can assert on the rows the aggregate wrote.
 
 ## Testing Validation
 
-<!-- snippet: test-validation -->
-<a id='snippet-test-validation'></a>
+Set the property, await `WaitForTasks()`, read `IsValid`. `RunRules()` is for forcing a re-run (for example after a `[Create]` that set values while paused), not the routine step before reading validity:
+
+<!-- snippet: skill-test-validation -->
+<a id='snippet-skill-test-validation'></a>
 ```cs
-/// <summary>
-/// Test validation rules with real Neatoo validation.
-/// </summary>
-[Fact]
-public async Task Validation_TestsRealRules()
+[TestMethod]
+public async Task ValidationRule_MakesInvalidOnFailure()
 {
-    var factory = GetRequiredService<ISkillValidProductFactory>();
-    var product = factory.Create();
+    // Arrange
+    var entity = _factory.Create();
+    entity.Name = "Valid"; // Start with valid name
+    await entity.WaitForTasks();
+    Assert.IsTrue(entity.IsValid);
 
-    // Test invalid state
-    product.Name = "";
-    product.Price = -10;
+    // Act
+    entity.Name = null; // Triggers NameRequiredRule
+    await entity.WaitForTasks();
 
-    await product.RunRules();
-
-    Assert.False(product.IsValid);
-    Assert.False(product["Name"].IsValid);
-    Assert.False(product["Price"].IsValid);
-
-    // Test valid state
-    product.Name = "Widget";
-    product.Price = 19.99m;
-
-    await product.RunRules();
-
-    Assert.True(product.IsValid);
-    Assert.True(product["Name"].IsValid);
-    Assert.True(product["Price"].IsValid);
-}
-
-/// <summary>
-/// Test DataAnnotation validation attributes.
-/// </summary>
-[Fact]
-public void ValidationAttributes_AutoConverted()
-{
-    var factory = GetRequiredService<ISkillValidRegistrationFactory>();
-    var reg = factory.Create();
-
-    // [Required] - empty fails
-    reg.Username = "";
-    Assert.False(reg["Username"].IsValid);
-
-    reg.Username = "validuser";
-    Assert.True(reg["Username"].IsValid);
-
-    // [EmailAddress] - invalid format fails
-    reg.Email = "not-an-email";
-    Assert.False(reg["Email"].IsValid);
-
-    reg.Email = "valid@example.com";
-    Assert.True(reg["Email"].IsValid);
-
-    // [Range] - out of range fails
-    reg.Age = 10;
-    Assert.False(reg["Age"].IsValid);
-
-    reg.Age = 25;
-    Assert.True(reg["Age"].IsValid);
+    // Assert
+    Assert.IsFalse(entity.IsValid, "Entity should be invalid when name is empty");
 }
 ```
-<sup><a href='/src/samples/TestingPatternsTests.cs#L79-L140' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/RuleTests/SyncRuleTests.cs#L46-L63' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-test-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Testing Change Tracking
 
-<!-- snippet: test-change-tracking -->
-<a id='snippet-test-change-tracking'></a>
+A fetched entity is a clean baseline:
+
+<!-- snippet: skill-fetch-clean-baseline -->
+<a id='snippet-skill-fetch-clean-baseline'></a>
 ```cs
-/// <summary>
-/// Test change tracking with real Neatoo entities.
-/// </summary>
-[Fact]
-public void ChangeTracking_DetectsPropertyChanges()
+[TestMethod]
+public async Task Fetch_LoadsCleanBaseline_NotModified()
 {
-    var factory = GetRequiredService<ISkillEntityEmployeeFactory>();
+    // Arrange & Act
+    var entity = await _factory.Fetch(1);
 
-    // Fetch creates an existing (non-new) entity
-    var employee = factory.Fetch(1, "Alice", "Engineering", 50000);
-
-    // After fetch, entity is clean
-    Assert.False(employee.IsNew);
-    Assert.False(employee.IsModified);
-    Assert.False(employee.IsSelfModified);
-
-    // Change a property
-    employee.Name = "Alice Smith";
-
-    // Now entity tracks the change
-    Assert.True(employee.IsModified);
-    Assert.True(employee.IsSelfModified);
-    Assert.True(employee.ModifiedProperties.Contains("Name"));
-
-    // Other properties not tracked
-    Assert.False(employee.ModifiedProperties.Contains("Department"));
-
-    // Change another property
-    employee.Salary = 55000;
-    Assert.True(employee.ModifiedProperties.Contains("Salary"));
-}
-
-/// <summary>
-/// Test IsNew state after Create and Fetch.
-/// </summary>
-[Fact]
-public void ChangeTracking_IsNewState()
-{
-    var factory = GetRequiredService<ISkillEntityEmployeeFactory>();
-
-    // Create produces new entity
-    var newEmployee = factory.Create();
-    Assert.True(newEmployee.IsNew);
-
-    // Fetch produces existing entity
-    var existingEmployee = factory.Fetch(1, "Bob", "Sales", 60000);
-    Assert.False(existingEmployee.IsNew);
+    // Assert
+    Assert.IsFalse(entity.IsModified, "Fetched entity should not be modified");
+    Assert.IsFalse(entity.IsSelfModified, "Fetched entity should not be self-modified");
 }
 ```
-<sup><a href='/src/samples/TestingPatternsTests.cs#L146-L195' title='Snippet source file'>snippet source</a> | <a href='#snippet-test-change-tracking' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/PropertyTests/StatePropertyTests.cs#L61-L72' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fetch-clean-baseline' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+An edit after the fetch marks the property and the entity modified:
+
+<!-- snippet: skill-fetch-then-modify -->
+<a id='snippet-skill-fetch-then-modify'></a>
+```cs
+[TestMethod]
+public async Task Fetch_ThenModify_IsModified()
+{
+    // Arrange
+    var entity = await _factory.Fetch(1);
+
+    // Act
+    entity.Name = "Changed";
+
+    // Assert
+    Assert.IsTrue(entity.IsModified, "Entity should be modified after change");
+    Assert.IsTrue(entity["Name"].IsModified, "Name property should be modified");
+}
+```
+<sup><a href='/src/Design/Design.Tests/PropertyTests/StatePropertyTests.cs#L74-L88' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fetch-then-modify' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+## Testing a Save
+
+Seed the scoped mock store, fetch through the real factory, edit, save, and assert on the rows and on the graph's state afterward. [entities.md](entities.md) → "Aggregate Save Cascading" has a full example: a fetched order, a child added, `Save()` through the root, the row store asserted.
 
 ## Related
 

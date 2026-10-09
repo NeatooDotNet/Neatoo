@@ -84,6 +84,22 @@ jobs:
             --logger "trx;LogFileName=test-results.trx" \
             --results-directory ./test-results
 
+      # Design.sln is the source of every code snippet in docs/ and skills/
+      - name: Build Design projects
+        run: |
+          dotnet build src/Design/Design.sln \
+            --configuration Release \
+            -p:ContinuousIntegrationBuild=true
+
+      - name: Test Design projects
+        run: |
+          dotnet test src/Design/Design.sln \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=design-test-results.trx" \
+            --results-directory ./test-results
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()

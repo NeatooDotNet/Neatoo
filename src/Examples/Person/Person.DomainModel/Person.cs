@@ -73,9 +73,11 @@ internal partial class Person : EntityBase<Person>, IPerson
     public partial void MapModifiedTo(PersonEntity personEntity);
 
     [Create]
-    public void Create([Service] IPersonPhoneList personPhoneModelList)
+    public void Create()
     {
-        PersonPhoneList = _lazyLoadFactory.Create<IPersonPhoneList>(personPhoneModelList);
+        // A new person's phone list is created through the list factory and
+        // wrapped as already loaded - there is nothing to lazy-load yet.
+        PersonPhoneList = _lazyLoadFactory.Create<IPersonPhoneList>(_personPhoneListFactory.Create());
     }
 
     [Remote]
@@ -98,11 +100,14 @@ internal partial class Person : EntityBase<Person>, IPerson
     internal async Task<PersonEntity?> Insert([Service] IPersonDbContext personContext,
                                     CancellationToken cancellationToken = default)
     {
-        await RunRules(token: cancellationToken);
+        // Re-run every rule on the server and refuse an invalid aggregate.
+        // Throw, never return: after [Insert]/[Update] returns, the framework
+        // marks the entity saved whether or not anything was written.
+        await RunRules(RunRulesFlag.All, cancellationToken);
 
-        if(!this.IsSavable)
+        if (!this.IsValid)
         {
-            return null;
+            throw new SaveOperationException(SaveFailureReason.IsInvalid);
         }
 
         this.Id = Guid.NewGuid();
@@ -126,11 +131,14 @@ internal partial class Person : EntityBase<Person>, IPerson
     internal async Task<PersonEntity?> Update([Service] IPersonDbContext personContext,
                                     CancellationToken cancellationToken = default)
     {
-        await RunRules(token: cancellationToken);
+        // Re-run every rule on the server and refuse an invalid aggregate.
+        // Throw, never return: after [Insert]/[Update] returns, the framework
+        // marks the entity saved whether or not anything was written.
+        await RunRules(RunRulesFlag.All, cancellationToken);
 
-        if (!this.IsSavable)
+        if (!this.IsValid)
         {
-            return null;
+            throw new SaveOperationException(SaveFailureReason.IsInvalid);
         }
 
         var personEntity = await personContext.FindPerson(this.Id, cancellationToken);

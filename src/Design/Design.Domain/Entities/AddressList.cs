@@ -49,10 +49,10 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
     }
 
     // =========================================================================
-    // [Fetch] - The List Loads Its Own Children
+    // [Fetch] - The List Loads Its Own Children From the Employee's Rows
     // =========================================================================
     // DESIGN DECISION: the list has its own [Fetch], and it populates itself
-    // through the ITEM factory's [Fetch]. Two things fall out of this:
+    // through the ITEM factory's [Fetch](row). Two things fall out of this:
     //
     // 1. The list is PAUSED by its own factory operation while items are added,
     //    so the adds are baseline loads - nothing is marked modified.
@@ -60,36 +60,47 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
     //    IsNew=false / IsModified=false - the states Update routing depends on.
     //
     // The aggregate root still controls WHEN children load: it calls this
-    // through the list factory inside its own [Fetch]. The operation is
-    // internal and non-[Remote], so no outside consumer can load the list.
+    // through the list factory inside its own [Fetch], handing over the
+    // employee row's Addresses. The operation is internal and non-[Remote], so
+    // no outside consumer can load the list.
     //
     // COMMON MISTAKE: populating the list from the parent's [Fetch] with
     // itemFactory.Create() + LoadValue. Create marks each child NEW, and
-    // nothing marks it old - so the next Save re-INSERTS every fetched child.
+    // nothing marks it old - so the next Save gives every fetched child a
+    // second row.
     // =========================================================================
     [Fetch]
-    internal void Fetch(int employeeId,
-                        [Service] IEmployeeRepository repository,
+    internal void Fetch(IEnumerable<AddressRow> rows,
                         [Service] IAddressFactory addressFactory)
     {
-        foreach (var d in repository.GetAddresses(employeeId))
+        foreach (var row in rows)
         {
-            Add(addressFactory.Fetch(d.Id, d.Street, d.City, d.State, d.ZipCode, d.AddressType));
+            Add(addressFactory.Fetch(row));
         }
     }
 
     // =========================================================================
-    // [Update] - The List Coordinates Child Persistence
+    // [Update] - The List Brings the Employee's Address Rows in Line
     // =========================================================================
     // Called (via the generated list factory Save) from Employee.Insert and
-    // Employee.Update. The generated Save routes on the LIST's state - lists
-    // are never new or deleted, so it always lands here.
+    // Employee.Update with the employee row's Addresses collection. The
+    // generated Save routes on the LIST's state - lists are never new or
+    // deleted, so it always lands here. The employee flushes once after this
+    // returns.
     //
-    // DESIGN DECISION: every surviving child goes through the ADDRESS factory's
-    // Save, which routes on the child's own IsNew (insert vs update) and wraps
-    // the call with the child's FactoryStart/FactoryComplete - marking it
-    // unmodified and old as its save completes. Removed children are deleted
-    // from persistence directly; they get no factory operation.
+    // For every address in the list and in DeletedList:
+    // - Deleted, not new: find its row and REMOVE it from the collection. No
+    //   child [Delete] exists - removing the row is the delete.
+    // - New: make a new row, add it to the collection, and hand it to the
+    //   ADDRESS factory's Save (routes to the address's [Insert]).
+    // - Modified existing: find its row and hand it to the ADDRESS factory's
+    //   Save (routes to the address's [Update]).
+    // - Unmodified existing: skip - no write, no factory call (already clean).
+    //
+    // DESIGN DECISION: every surviving child that changed goes through the
+    // ADDRESS factory's Save, which wraps the call with the child's
+    // FactoryStart/FactoryComplete - marking it unmodified and old as its save
+    // completes. The address maps itself into the row it is handed.
     //
     // GENERATOR BEHAVIOR: when this [Update] completes, the framework calls
     // FactoryComplete(FactoryOperation.Update) on the LIST, and
@@ -97,16 +108,12 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
     // ContainingList on deleted items, and recalculates the cached modified
     // state. That cleanup happens because the list is saved through its OWN
     // factory operation - there is no graph-wide cascade from the parent.
-    //
-    // Unmodified existing children are skipped: no repository write, no factory
-    // call (they are already clean).
     // =========================================================================
     [Update]
-    internal void Update(int employeeId,
-                         [Service] IEmployeeRepository repository,
+    internal void Update(ICollection<AddressRow> rows,
                          [Service] IAddressFactory addressFactory)
     {
-        foreach (var address in this.Union(DeletedList).ToList())
+        foreach (var address in this.Union(DeletedList))
         {
             if (address.IsDeleted)
             {
@@ -114,12 +121,18 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
                 // never queued for deletion
                 if (!address.IsNew)
                 {
-                    repository.DeleteAddress(address.Id);
+                    rows.Remove(rows.Single(r => r.Id == address.Id));
                 }
             }
-            else if (address.IsNew || address.IsModified)
+            else if (address.IsNew)
             {
-                addressFactory.Save(address, employeeId);
+                var row = new AddressRow();
+                rows.Add(row);
+                addressFactory.Save(address, row);
+            }
+            else if (address.IsModified)
+            {
+                addressFactory.Save(address, rows.Single(r => r.Id == address.Id));
             }
         }
     }
@@ -131,7 +144,7 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
 // The DeletedList is the key to how EntityListBase handles removed items.
 //
 // SCENARIO 1: Remove existing item (was fetched from DB)
-//   var employee = await employeeFactory.Fetch(1);
+//   var employee = await employeeFactory.Fetch(employeeId);
 //   // employee.Addresses[0].IsNew = false (came from DB)
 //
 //   employee.Addresses.RemoveAt(0);
@@ -142,15 +155,17 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
 //   // 4. address removed from main list
 //
 //   await employee.Save();
-//   // In Employee.Update(): delegates to addressListFactory.Save(Addresses, Id)
-//   // In AddressList.Update(): repository.DeleteAddress(address.Id) called
+//   // In Employee.Update(): gets its row, delegates to
+//   //   addressListFactory.Save(Addresses, row.Addresses), then SaveChanges()
+//   // In AddressList.Update(): the address's row is removed from
+//   //   row.Addresses - no child [Delete] runs
 //   // In the LIST's FactoryComplete(Update) - fired because the list is a
 //   // factory target, never as a cascade from the parent:
 //   // - DeletedList.Clear()
 //   // - ContainingList cleared on deleted items
 //
 // SCENARIO 2: Remove new item (never persisted)
-//   var employee = await employeeFactory.Fetch(1);
+//   var employee = await employeeFactory.Fetch(employeeId);
 //   var newAddress = addressFactory.Create();
 //   employee.Addresses.Add(newAddress);
 //   // newAddress.IsNew = true
@@ -161,10 +176,10 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
 //   // 2. newAddress just discarded
 //
 //   await employee.Save();
-//   // Nothing to delete - newAddress was never persisted
+//   // No row to remove - newAddress was never persisted
 //
 // SCENARIO 3: Intra-aggregate move (item moves between lists)
-//   var order = await orderFactory.Fetch(1);
+//   var order = await orderFactory.Fetch(orderId);
 //   var item = order.ActiveItems[0];
 //   // item.IsNew = false
 //
@@ -182,7 +197,7 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
 //   // 6. item added to CompletedItems
 //
 //   await order.Save();
-//   // item moved - no delete, just update location
+//   // item moved - its row is not removed, just updated
 // =============================================================================
 
 // =============================================================================
@@ -193,12 +208,12 @@ internal partial class AddressList : EntityListBase<IAddress>, IAddressList
 // COMMON MISTAKE: Moving items between aggregates.
 //
 // WRONG:
-//   var emp1 = await employeeFactory.Fetch(1);
-//   var emp2 = await employeeFactory.Fetch(2);
+//   var emp1 = await employeeFactory.Fetch(emp1Id);
+//   var emp2 = await employeeFactory.Fetch(emp2Id);
 //   var address = emp1.Addresses[0];
 //   emp2.Addresses.Add(address);  // THROWS!
-//   // "Cannot add Address to list: item belongs to aggregate 'Employee',
-//   //  but this list belongs to aggregate 'Employee'."
+//   // "Cannot add Address to list: item belongs to a different 'Employee'
+//   //  instance than this list. ..."
 //
 // WHY: Different aggregate roots. Moving items between aggregates would
 // create inconsistent state - the address would be in two places.

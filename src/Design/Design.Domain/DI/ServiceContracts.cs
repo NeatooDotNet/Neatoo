@@ -57,6 +57,9 @@ namespace Design.Domain.DI;
 //     // Factory for creating property backing fields
 //     IPropertyFactory<T> PropertyFactory { get; }
 //
+//     // Logger for the target type
+//     ILogger<T> Logger { get; }
+//
 //     // Creates a rule manager for the target object
 //     IRuleManager<T> CreateRuleManager(T target);
 // }
@@ -98,33 +101,20 @@ namespace Design.Domain.DI;
 // =============================================================================
 
 // =============================================================================
-// IPropertyFactory<T> INTERFACE
+// IPropertyFactory<TOwner> INTERFACE
 // =============================================================================
-// Creates property backing fields during object initialization:
+// Creates the property objects a Neatoo object registers at initialization
+// (src/Neatoo/IPropertyFactory.cs):
 //
-// public interface IPropertyFactory<T> where T : class, IValidateBase
+// public interface IPropertyFactory<TOwner> where TOwner : IValidateBase
 // {
-//     // For ValidateBase - creates IValidateProperty<P>
-//     IValidateProperty<P> CreateProperty<P>(string propertyName, T target);
-//
-//     // For EntityBase - creates IEntityProperty<P>
-//     IEntityProperty<P> CreateEntityProperty<P>(string propertyName, T target);
+//     IValidateProperty<TProperty> Create<TProperty>(TOwner owner, string propertyName);
+//     IValidateProperty CreateEntityLazyLoad<TInner>(TOwner owner, string propertyName);
 // }
 //
-// GENERATOR BEHAVIOR: InitializePropertyBackingFields uses this factory:
-//
-// protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
-// {
-//     base.InitializePropertyBackingFields(factory);
-//
-//     // For ValidateBase:
-//     _nameProperty = factory.CreateProperty<string?>("Name", this);
-//
-//     // For EntityBase:
-//     _nameProperty = factory.CreateEntityProperty<string?>("Name", this);
-//
-//     PropertyManager.Add(_nameProperty);
-// }
+// GENERATOR BEHAVIOR: the generated InitializePropertyBackingFields registers
+// each partial property through this factory; see
+// Generated/Neatoo.BaseGenerator/ for the real output.
 //
 // DESIGN DECISION: Factory creates properties, not direct instantiation.
 // This allows:
@@ -136,25 +126,15 @@ namespace Design.Domain.DI;
 // =============================================================================
 // IFactorySave<T> INTERFACE
 // =============================================================================
-// Generated interface for save operations:
+// RemoteFactory's save interface, implemented by every generated factory
+// whose class has [Insert], [Update] or [Delete].
 //
-// public interface IFactorySave<T> where T : IEntityBase
-// {
-//     Task<T> Save(T entity);
-// }
-//
-// Save() implementation routes based on state:
-//
-// public async Task<T> Save(T entity)
-// {
-//     if (entity.IsNew && !entity.IsDeleted)
-//         return await Insert(entity);
-//     if (entity.IsDeleted && !entity.IsNew)
-//         return await Delete(entity);
-//     if (entity.IsModified)
-//         return await Update(entity);
-//     return entity;  // Nothing to save
-// }
+// The generated Save routes on state:
+// - IsDeleted: [Delete], or nothing at all when the object is also IsNew
+// - IsNew: [Insert]
+// - otherwise: [Update]
+// IsModified is not consulted. entity.Save() checks IsSavable before calling
+// the factory; a direct factory.Save(target) does not.
 //
 // DESIGN DECISION: Save is on a separate interface from type-specific factory.
 // This allows:
@@ -204,8 +184,9 @@ namespace Design.Domain.DI;
 // 1. DI resolves EntityBaseServices<Employee>
 // 2. EntityBaseServices constructor receives:
 //    - IPropertyInfoList<Employee>
-//    - IPropertyFactory<Employee>
 //    - IFactorySave<Employee> (the generated factory)
+//    It constructs its own entity property factory; it does not resolve
+//    IPropertyFactory<Employee> from DI (see PropertySystem/CustomPropertyType.cs)
 // 3. EntityBaseServices creates:
 //    - ValidatePropertyManager (for validation tracking)
 //    - EntityPropertyManager (for modification tracking)
@@ -225,7 +206,7 @@ namespace Design.Domain.DI;
 // RECOMMENDED (from CLAUDE.md):
 //   // Use real Neatoo dependencies, don't mock
 //   var services = new ServiceCollection();
-//   services.AddNeatooServices(typeof(Employee).Assembly);
+//   services.AddNeatooServices(NeatooFactory.Logical, typeof(Employee).Assembly);
 //   var provider = services.BuildServiceProvider();
 //   var factory = provider.GetRequiredService<IEmployeeFactory>();
 //   var employee = factory.Create();

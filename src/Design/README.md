@@ -31,19 +31,23 @@ src/Design/
 │   ├── BaseClasses/           # All four base classes side-by-side
 │   ├── Aggregates/            # Complete aggregate root pattern
 │   ├── Entities/              # EntityBase examples
-│   ├── ValueObjects/          # ValidateBase for value objects
+│   ├── ReadModels/            # Plain [Factory] read model, [Fetch] only
 │   ├── Commands/              # Static [Execute] command pattern
 │   ├── FactoryOperations/     # [Create], [Fetch], [Insert], [Update], [Delete]
-│   ├── PropertySystem/        # Partial properties, Getter/Setter, LoadValue
+│   ├── PropertySystem/        # Partial properties, pause state, MarkReadOnly, LazyLoad
 │   ├── Rules/                 # Validation rules and RuleManager
 │   ├── Generators/            # Two-generator interaction documentation
-│   └── DI/                    # Service registration and contracts
-├── Design.Infrastructure/     # Repository interface examples
+│   ├── ErrorHandling/         # Exceptions vs validation
+│   ├── DI/                    # Service registration and contracts
+│   └── CommonGotchas.cs       # Gotchas with tests in Design.Tests/GotchaTests
+├── Design.Infrastructure/     # Empty; repository interfaces live in Design.Domain
 └── Design.Tests/              # Test coverage for all patterns
     ├── BaseClassTests/
     ├── AggregateTests/
     ├── FactoryTests/
+    ├── GotchaTests/
     ├── PropertyTests/
+    ├── ReadModelTests/
     └── RuleTests/
 ```
 
@@ -54,9 +58,11 @@ src/Design/
 | Base Class | Purpose |
 |------------|---------|
 | `EntityBase<T>` | Persistent entities with full CRUD lifecycle (IsNew, IsModified, IsSavable) |
-| `ValidateBase<T>` | Value objects, read models, validation-only objects (IsValid, IsBusy) |
+| `ValidateBase<T>` | Objects that need validation rules but have no persistence lifecycle of their own (IsValid, IsBusy) |
 | `EntityListBase<I>` | Collections of child entities with DeletedList for removal tracking |
-| `ValidateListBase<I>` | Collections of read models/value objects with validation aggregation |
+| `ValidateListBase<I>` | Collections of `ValidateBase` objects with validation aggregation |
+
+A read model is not on this list: it is a plain `[Factory]` class with `[Fetch]` only (`Design.Domain/ReadModels/`).
 
 ### Factory Operations
 
@@ -65,17 +71,18 @@ src/Design/
 | `[Create]` | Initialize new object (typically runs locally) |
 | `[Fetch]` | Load existing data from persistence |
 | `[Insert]` | Persist new object (called by Save when IsNew=true) |
-| `[Update]` | Persist changes (called by Save when IsModified=true) |
-| `[Delete]` | Remove from persistence (called by Save when IsDeleted=true) |
-| `[Execute]` | Run static command operations |
+| `[Update]` | Persist changes (called by Save when the object is neither new nor deleted) |
+| `[Delete]` | Remove from persistence (called by Save when IsDeleted=true and the object is not new) |
+| `[Execute]` | Run static command operations; add `[Remote]` when the command needs the server |
 
 ### The [Remote] Boundary
 
-`[Remote]` marks methods that must execute on the server. Key rules:
+`[Remote]` marks a client entry point: a client call to the operation crosses to the server. Key rules:
 
+- Only the root operations the client calls carry it; child operations are `internal` and never `[Remote]`
 - Once execution crosses to the server, it stays there
-- Constructor `[Service]` injection = available on both client and server
-- Method `[Service]` injection = server-only (common case)
+- Constructor `[Service]` injection = resolved on both tiers, so it must be registered on both
+- Method `[Service]` injection = resolved on the tier where the operation runs (the server, for `[Remote]` and `internal` operations)
 
 ## Comment Standards
 
@@ -110,8 +117,8 @@ Shows what source generators produce:
 Warns about incorrect usage:
 ```csharp
 // COMMON MISTAKE: Calling Save() on child entities
-// WRONG: await employee.Addresses[0].Save();  // Throws
-// RIGHT: await employee.Save();  // Parent saves children
+// WRONG: await employee.Addresses[0].Save();  // Does not compile: the child interface has no Save()
+// RIGHT: await employee.Save();  // The root's save reaches each child's own Insert/Update
 ```
 
 ## Evolution Process

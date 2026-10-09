@@ -24,7 +24,7 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 [Factory]
 internal partial class Order : EntityBase<Order>, IOrder
 {
-    public partial int Id { get; set; }
+    public partial Guid Id { get; set; }
 
     [Required(ErrorMessage = "Order number is required")]
     public partial string? OrderNumber { get; set; }
@@ -42,11 +42,13 @@ internal partial class Order : EntityBase<Order>, IOrder
     // Child Collection - OrderItems
     // =========================================================================
     // The Order aggregate owns the OrderItems collection.
-    // When Order.Save() is called:
-    // - New items are inserted
-    // - Modified items are updated
-    // - Removed items (in DeletedList) are deleted
-    // The mechanics live in OrderItemList.Update - see that file.
+    // When Order.Save() is called, the order hands its row's Items collection
+    // to the list factory's Save, and OrderItemList.Update brings that
+    // collection in line with the list:
+    // - New items get a new row, added to the collection
+    // - Modified items write themselves to their existing row
+    // - Removed items (in DeletedList) have their row removed from the collection
+    // The order then flushes once. See OrderItemList.Update.
     // =========================================================================
     public partial IOrderItemList? Items { get; set; }
 
@@ -93,11 +95,14 @@ internal partial class Order : EntityBase<Order>, IOrder
         //   // event args (ChangeReason, Source) or need to react to ANY
         //   // child change regardless of which property.
         // =====================================================================
+        #region skill-child-property-trigger
         RuleManager.AddAction(
             t => t.TotalAmount = t.Items?.Sum(i => i.LineTotal) ?? 0,
             t => t.Items![0].LineTotal);
+        #endregion
     }
 
+    #region skill-root-create
     [Create]
     public void Create([Service] IOrderItemListFactory itemsFactory)
     {
@@ -106,9 +111,10 @@ internal partial class Order : EntityBase<Order>, IOrder
         Status = "Draft";
         OrderNumber = $"ORD-{DateTime.Now:yyyyMMddHHmmss}";
     }
+    #endregion
 
     // =========================================================================
-    // Aggregate Fetch - Load Root, Delegate Children to the List Factory
+    // Aggregate Fetch - Load Root Row, Hand Child Rows to the List Factory
     // =========================================================================
     // GENERATOR BEHAVIOR: instance factory methods run inside
     // FactoryStart/FactoryComplete on this object — the Order is paused for
@@ -116,62 +122,106 @@ internal partial class Order : EntityBase<Order>, IOrder
     // wrapping the body in `using (PauseAllActions())` would actually resume
     // EARLY, when the using disposes, before the factory operation completes).
     //
-    // DESIGN DECISION: Children load through the LIST factory's [Fetch], which
-    // in turn loads each item through the ITEM factory's [Fetch]. Every object
-    // in the graph gets its own factory lifecycle, so every object lands with
-    // the right persistence state: IsNew=false, IsModified=false throughout.
+    // DESIGN DECISION: The repository returns the order row together with its
+    // item rows. The order assigns its own properties from its row and hands
+    // row.Items to the LIST factory's [Fetch], which builds each item through
+    // the ITEM factory's [Fetch](row). Every object in the graph gets its own
+    // factory lifecycle, so every object lands with the right persistence
+    // state: IsNew=false, IsModified=false throughout.
     //
-    // This[...].LoadValue is shown for the root's own properties — plain
-    // property assignment is equally clean here because the object is paused;
-    // LoadValue makes the load explicit and works even when not paused.
+    // The root's own properties are loaded by plain assignment: the object is
+    // paused, so assignment marks nothing modified and runs no rules.
+    //
+    // GENERATOR BEHAVIOR: a [Fetch] that returns bool reports whether the
+    // object was found. Returning false makes the generated factory return
+    // null - "no such order" is an answer, not an exception.
     // =========================================================================
+    #region skill-root-fetch
     [Remote]
     [Fetch]
-    internal void Fetch(int id,
+    internal bool Fetch(Guid id,
         [Service] IOrderRepository repository,
         [Service] IOrderItemListFactory itemsFactory)
     {
-        var data = repository.GetById(id);
+        var row = repository.Get(id);
+        if (row == null)
+        {
+            return false;
+        }
 
-        this["Id"].LoadValue(data.Id);
-        this["OrderNumber"].LoadValue(data.OrderNumber);
-        this["CustomerName"].LoadValue(data.CustomerName);
-        this["OrderDate"].LoadValue(data.OrderDate);
-        this["Status"].LoadValue(data.Status);
-        this["TotalAmount"].LoadValue(data.TotalAmount);
+        Id = row.Id;
+        OrderNumber = row.OrderNumber;
+        CustomerName = row.CustomerName;
+        OrderDate = row.OrderDate;
+        Status = row.Status;
+        TotalAmount = row.TotalAmount;
 
         // Items and every item within: IsNew=false, IsModified=false
-        Items = itemsFactory.Fetch(id);
+        Items = itemsFactory.Fetch(row.Items);
 
         // After Fetch completes: Order.IsNew=false, Order.IsModified=false
+        return true;
     }
+    #endregion
 
     // =========================================================================
-    // Aggregate Insert - Save Root, Delegate Children to the List Factory
+    // Aggregate Insert - Make the Row, Hand Its Item Collection to the List
     // =========================================================================
+    // The order sets its own key, makes its row, maps itself into it and adds
+    // it to the repository. It then hands row.Items to the list factory's
+    // Save and flushes ONCE - the order row and every item row are written
+    // together.
+    //
     // DESIGN DECISION: Insert and Update delegate child persistence to the
     // SAME list factory Save. The list is never new or deleted, so the list
     // factory routes to OrderItemList.Update, and each item's own IsNew
     // decides insert vs update — for a brand-new order, every item is new and
-    // gets inserted.
+    // gets a new row.
+    //
+    // DESIGN DECISION: The entity sets its own key (Guid.NewGuid()) - no
+    // round trip to the database for a generated id, and no foreign key to
+    // pass down: an item row belongs to the order because it sits in the
+    // order row's Items collection.
     // =========================================================================
+    #region skill-root-insert
     [Remote]
     [Insert]
-    internal void Insert([Service] IOrderRepository repository,
+    internal async Task Insert([Service] IOrderRepository repository,
         [Service] IOrderItemListFactory itemsFactory)
     {
-        // Insert order first to get ID (object is paused — assignment is clean)
-        Id = repository.InsertOrder(
-            OrderNumber!, CustomerName!, OrderDate, Status!, TotalAmount);
+        // Re-run every rule on the server and refuse an invalid aggregate.
+        // Recommended - the framework does not do this for you. Throw, never
+        // return: after [Insert]/[Update] returns, the framework marks the
+        // entity saved whether or not anything was written.
+        await RunRules(RunRulesFlag.All);
+        if (!IsValid)
+        {
+            throw new SaveOperationException(SaveFailureReason.IsInvalid);
+        }
 
-        itemsFactory.Save(Items!, Id);
+        // Object is paused — assignment is clean
+        Id = Guid.NewGuid();
+
+        var row = new OrderRow();
+        MapTo(row);
+        repository.Add(row);
+
+        itemsFactory.Save(Items!, row.Items);
+
+        repository.SaveChanges();
     }
+    #endregion
 
     // =========================================================================
-    // Aggregate Update - Delegate Child Persistence to the List Factory
+    // Aggregate Update - Get the Row, Hand Its Item Collection to the List
     // =========================================================================
+    // The order gets its existing row (a missing row is an application
+    // failure: KeyNotFoundException), maps itself into it only if its OWN
+    // properties changed, hands row.Items to the list factory's Save, and
+    // flushes once.
+    //
     // The list factory Save runs OrderItemList.Update inside the LIST's own
-    // factory operation: deleted items are removed from persistence, new and
+    // factory operation: removed items have their rows removed, new and
     // modified items go through per-item factory saves, and the list's
     // FactoryComplete(Update) clears the DeletedList and recalculates its
     // modified cache. Each saved item's FactoryComplete marks it unmodified
@@ -179,59 +229,115 @@ internal partial class Order : EntityBase<Order>, IOrder
     // FactoryComplete(Update) on the ORDER — MarkUnmodified() + MarkOld() —
     // and the whole graph reads IsModified=false.
     //
-    // COMMON MISTAKE: Writing child rows to the repository directly here
-    // (foreach item -> repository.UpdateItem(...)). The rows get written, but
-    // no child factory operation runs, so no child is ever marked unmodified
-    // or old: the aggregate still reports IsModified=true after Save, new
-    // children keep IsNew=true and re-insert on the next Save, and the
+    // COMMON MISTAKE: Writing the item rows here (foreach item -> find its
+    // row, copy the values across). The rows get written, but no child
+    // factory operation runs, so no child is ever marked unmodified or old:
+    // the aggregate still reports IsModified=true after Save, new children
+    // keep IsNew=true and get another row on the next Save, and the
     // DeletedList never clears (FactoryComplete fires per factory target —
-    // never as a cascade from the parent).
+    // never as a cascade from the parent). Each item maps itself.
     // =========================================================================
+    #region skill-root-update
     [Remote]
     [Update]
-    internal void Update([Service] IOrderRepository repository,
+    internal async Task Update([Service] IOrderRepository repository,
         [Service] IOrderItemListFactory itemsFactory)
     {
-        // Update order header if changed
-        if (IsSelfModified)
+        // Re-run every rule on the server and refuse an invalid aggregate.
+        // Recommended - the framework does not do this for you. Throw, never
+        // return: after [Insert]/[Update] returns, the framework marks the
+        // entity saved whether or not anything was written.
+        await RunRules(RunRulesFlag.All);
+        if (!IsValid)
         {
-            repository.UpdateOrder(Id, OrderNumber!, CustomerName!, OrderDate, Status!, TotalAmount);
+            throw new SaveOperationException(SaveFailureReason.IsInvalid);
         }
 
-        itemsFactory.Save(Items!, Id);
-    }
+        var row = repository.Get(Id)
+            ?? throw new KeyNotFoundException($"Order {Id} not found");
 
+        // Write the order's own columns only if they changed
+        if (IsSelfModified)
+        {
+            MapTo(row);
+        }
+
+        itemsFactory.Save(Items!, row.Items);
+
+        repository.SaveChanges();
+    }
+    #endregion
+
+    // =========================================================================
+    // Aggregate Delete - Remove the Row, Its Item Rows Go With It
+    // =========================================================================
+    // repository.Remove(row) removes the order row together with its item
+    // rows, as a database cascade delete would. The order does not loop its
+    // items: no child [Delete] exists, and the whole aggregate is going away.
+    // =========================================================================
+    #region skill-root-delete
     [Remote]
     [Delete]
     internal void Delete([Service] IOrderRepository repository)
     {
-        // Delete items first (FK constraint). Direct repository deletes are
-        // INTENTIONAL here - deleted children get no factory operation
-        // (see OrderItemList.Update), and the whole aggregate is going away.
-        foreach (var item in Items!)
-        {
-            repository.DeleteItem(item.Id);
-        }
+        var row = repository.Get(Id)
+            ?? throw new KeyNotFoundException($"Order {Id} not found");
 
-        // Delete order
-        repository.DeleteOrder(Id);
+        repository.Remove(row);
+
+        repository.SaveChanges();
+    }
+    #endregion
+
+    private void MapTo(OrderRow row)
+    {
+        row.Id = Id;
+        row.OrderNumber = OrderNumber!;
+        row.CustomerName = CustomerName!;
+        row.OrderDate = OrderDate;
+        row.Status = Status!;
+        row.TotalAmount = TotalAmount;
     }
 }
 
 // =============================================================================
-// Repository Interface
+// Persistence - Rows and Repository
 // =============================================================================
+// Modeled on an EF Core unit of work: the row classes stand in for EF
+// entities, Get returns the root row with its child rows loaded, and
+// SaveChanges flushes everything added, changed or removed since the last
+// flush. The aggregate persists through ONE repository - its root's.
+// =============================================================================
+
+public class OrderRow
+{
+    public Guid Id { get; set; }
+    public string OrderNumber { get; set; } = "";
+    public string CustomerName { get; set; } = "";
+    public DateTime OrderDate { get; set; }
+    public string Status { get; set; } = "";
+    public decimal TotalAmount { get; set; }
+    public List<OrderItemRow> Items { get; } = new();
+}
+
+public class OrderItemRow
+{
+    public Guid Id { get; set; }
+    public string ProductName { get; set; } = "";
+    public int Quantity { get; set; }
+    public decimal UnitPrice { get; set; }
+    public decimal LineTotal { get; set; }
+}
 
 public interface IOrderRepository
 {
-    (int Id, string OrderNumber, string CustomerName, DateTime OrderDate, string Status, decimal TotalAmount) GetById(int id);
-    IEnumerable<(int Id, string ProductName, int Quantity, decimal UnitPrice, decimal LineTotal)> GetItems(int orderId);
+    /// <summary>The order row with its item rows, or null if there is none.</summary>
+    OrderRow? Get(Guid id);
 
-    int InsertOrder(string orderNumber, string customerName, DateTime orderDate, string status, decimal totalAmount);
-    void UpdateOrder(int id, string orderNumber, string customerName, DateTime orderDate, string status, decimal totalAmount);
-    void DeleteOrder(int id);
+    void Add(OrderRow row);
 
-    int InsertItem(int orderId, string productName, int quantity, decimal unitPrice, decimal lineTotal);
-    void UpdateItem(int id, string productName, int quantity, decimal unitPrice, decimal lineTotal);
-    void DeleteItem(int id);
+    /// <summary>Removes the order row and its item rows.</summary>
+    void Remove(OrderRow row);
+
+    void SaveChanges();
 }

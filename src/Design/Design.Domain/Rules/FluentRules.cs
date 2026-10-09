@@ -160,11 +160,11 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
     internal void Fetch(int id, [Service] IFluentRulesRepository repository)
     {
         var data = repository.GetById(id);
-        this["Name"].LoadValue(data.Name);
-        this["Email"].LoadValue(data.Email);
-        this["Quantity"].LoadValue(data.Quantity);
-        this["UnitPrice"].LoadValue(data.UnitPrice);
-        this["Total"].LoadValue(data.Total);
+        Name = data.Name;
+        Email = data.Email;
+        Quantity = data.Quantity;
+        UnitPrice = data.UnitPrice;
+        Total = data.Total;
     }
 
     [Remote]
@@ -189,6 +189,7 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
 // - Refactoring support (rename works automatically)
 // - Clear association between rule and property
 //
+#region skill-cross-property-validation-options
 // COMMON MISTAKE: Using the wrong property expression.
 //
 // WRONG:
@@ -196,13 +197,24 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
 //       t => t.A + t.B > 100 ? "Too high" : "",
 //       t => t.A);  // Only triggers on A, not B!
 //
-// RIGHT:
-//   RuleManager.AddAction(
-//       t => { if (t.A + t.B > 100) t.HasWarning = true; },
-//       t => t.A,
-//       t => t.B);  // Triggers on both A and B
+// AddValidation takes exactly one trigger. For a validation over several
+// properties, either:
+//
+// RIGHT (validate a computed property - the shape used below):
+//   RuleManager.AddAction(t => t.Sum = t.A + t.B, t => t.A, t => t.B);
+//   RuleManager.AddValidation(t => t.Sum > 100 ? "Too high" : "", t => t.Sum);
+//
+// RIGHT (a rule class, which takes any number of triggers):
+//   internal class SumLimitRule : RuleBase<T>
+//   {
+//       public SumLimitRule() : base(t => t.A, t => t.B) { }
+//       protected override IRuleMessages Execute(T t)
+//           => RuleMessages.If(t.A + t.B > 100, nameof(t.A), "Too high");
+//   }
+#endregion
 // =============================================================================
 
+#region skill-cross-property-validation
 /// <summary>
 /// Demonstrates: Different trigger property patterns.
 /// </summary>
@@ -224,8 +236,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
             t => t.B,
             t => t.C);
 
-        // Validation that checks cross-property constraint
-        // Note: Must list ALL properties involved to trigger correctly
+        // Cross-property constraint, validated on the computed Sum: the action
+        // above recomputes Sum whenever A, B or C changes, which triggers this.
         RuleManager.AddValidation(
             t => t.Sum > 100 ? "Sum cannot exceed 100" : string.Empty,
             t => t.Sum);
@@ -239,6 +251,7 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     [Create]
     public void Create() { }
 }
+#endregion
 
 // =============================================================================
 // Fluent Rule Return Values

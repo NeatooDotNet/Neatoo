@@ -23,8 +23,8 @@ namespace Design.Domain.Generators;
 // 2. RemoteFactory (from Neatoo.RemoteFactory package)
 //    - Generates factory interfaces (IXxxFactory)
 //    - Generates factory implementations
-//    - Handles [Remote] method proxying
-//    - Generates HTTP endpoints for server
+//    - Handles [Remote] calls: the client path sends them to the single
+//      POST /api/neatoo endpoint; the server path runs them
 //
 // EXECUTION ORDER: Both generators run during compilation (independently).
 // There's no strict ordering between them - they operate on different code.
@@ -58,8 +58,8 @@ internal partial class GeneratorDemo : EntityBase<GeneratorDemo>, IGeneratorDemo
     internal void Fetch(int id, [Service] IGeneratorDemoRepository repository)
     {
         var data = repository.GetById(id);
-        this["Name"].LoadValue(data.Name);
-        this["Value"].LoadValue(data.Value);
+        Name = data.Name;
+        Value = data.Value;
     }
 
     [Remote]
@@ -76,158 +76,38 @@ internal partial class GeneratorDemo : EntityBase<GeneratorDemo>, IGeneratorDemo
 }
 
 // =============================================================================
-// NEATOO.BASEGENERATOR OUTPUT
+// WHAT THE GENERATORS PRODUCE
 // =============================================================================
-// For the class above, Neatoo.BaseGenerator produces (GeneratorDemo.g.cs):
+// Read the real output instead of a description of it. Design.Domain sets
+// CompilerGeneratedFilesOutputPath=Generated, so it is on disk:
+//   Generated/Neatoo.BaseGenerator/...      - property implementations
+//   Generated/Neatoo.Generator/Neatoo.Factory/  - factories
 //
-// GENERATOR BEHAVIOR: Property backing field generation
+// GENERATOR BEHAVIOR (Neatoo.BaseGenerator), in outline:
+// - Each partial property gets a protected accessor (NameProperty) that reads
+//   the property object from PropertyManager, and getter/setter
+//   implementations over it.
+// - InitializePropertyBackingFields registers each property object through
+//   the property factory.
+// - Whether the setter tracks a change depends on pause state: inside a
+//   factory operation the object is paused and nothing is tracked.
 //
-// public partial class GeneratorDemo
-// {
-//     private IEntityProperty<string?> _nameProperty = null!;
-//     private IEntityProperty<int> _valueProperty = null!;
+// GENERATOR BEHAVIOR (RemoteFactory), in outline:
+// - IGeneratorDemoFactory: Create, Fetch and Save(target). The methods return
+//   the entity's interface and take a CancellationToken.
+// - The factory class carries BOTH a local path and a remote path for each
+//   [Remote] operation. Which one runs is decided when the tier registers
+//   Neatoo: AddNeatooServices(NeatooFactory.Server | Remote | Logical, assembly).
+// - Save(target) routes on state: IsDeleted -> [Delete] (nothing at all when
+//   the object is also IsNew); IsNew -> [Insert]; otherwise [Update].
+//   IsModified is not consulted.
+// - internal operations are guarded by NeatooRuntime.IsServerRuntime, so the
+//   IL trimmer removes their bodies from a published client.
+// - Factories are registered by a generated registrar, not by hand.
 //
-//     public partial string? Name
-//     {
-//         get => _nameProperty.Value;
-//         set => _nameProperty.SetValue(value);
-//     }
-//
-//     public partial int Value
-//     {
-//         get => _valueProperty.Value;
-//         set => _valueProperty.SetValue(value);
-//     }
-//
-//     protected override void InitializePropertyBackingFields(IPropertyFactory<GeneratorDemo> factory)
-//     {
-//         base.InitializePropertyBackingFields(factory);
-//
-//         _nameProperty = factory.CreateProperty<string?>("Name", this);
-//         PropertyManager.Add(_nameProperty);
-//
-//         _valueProperty = factory.CreateProperty<int>("Value", this);
-//         PropertyManager.Add(_valueProperty);
-//     }
-// }
-//
-// KEY POINTS:
-// - Each partial property gets a backing field of IEntityProperty<T>
-// - Getter returns property.Value
-// - Setter calls property.SetValue(value) which triggers modification tracking
-// - InitializePropertyBackingFields creates properties via factory
-// =============================================================================
-
-// =============================================================================
-// REMOTEFACTORY OUTPUT
-// =============================================================================
-// For the class above, RemoteFactory produces multiple files:
-//
-// GENERATOR BEHAVIOR: Factory interface generation
-//
-// File: IGeneratorDemoFactory.g.cs
-// --------------------------------
-// public interface IGeneratorDemoFactory : IFactorySave<GeneratorDemo>
-// {
-//     GeneratorDemo Create();
-//     Task<GeneratorDemo> Fetch(int id);
-//     // Insert, Update, Delete are on IFactorySave<T>
-// }
-//
-// GENERATOR BEHAVIOR: Factory implementation (Full mode - server)
-//
-// File: GeneratorDemoFactory.g.cs
-// -------------------------------
-// public class GeneratorDemoFactory : IGeneratorDemoFactory
-// {
-//     private readonly IServiceProvider _serviceProvider;
-//
-//     public GeneratorDemoFactory(IServiceProvider serviceProvider)
-//     {
-//         _serviceProvider = serviceProvider;
-//     }
-//
-//     public GeneratorDemo Create()
-//     {
-//         var obj = _serviceProvider.GetRequiredService<GeneratorDemo>();
-//         obj.FactoryStart(FactoryOperation.Create);
-//         obj.Create();  // Calls your [Create] method
-//         obj.FactoryComplete(FactoryOperation.Create);
-//         return obj;
-//     }
-//
-//     public async Task<GeneratorDemo> Fetch(int id)
-//     {
-//         var obj = _serviceProvider.GetRequiredService<GeneratorDemo>();
-//         var repository = _serviceProvider.GetRequiredService<IGeneratorDemoRepository>();
-//         obj.FactoryStart(FactoryOperation.Fetch);
-//         obj.Fetch(id, repository);  // [Service] resolved from DI
-//         obj.FactoryComplete(FactoryOperation.Fetch);
-//         return obj;
-//     }
-//
-//     public async Task<GeneratorDemo> Save(GeneratorDemo obj)
-//     {
-//         if (obj.IsNew && !obj.IsDeleted) return await Insert(obj);
-//         if (obj.IsDeleted && !obj.IsNew) return await Delete(obj);
-//         if (obj.IsModified) return await Update(obj);
-//         return obj;
-//     }
-//
-//     // Insert, Update, Delete implementations similar to Fetch
-// }
-//
-// GENERATOR BEHAVIOR: Remote proxy (RemoteOnly mode - client)
-//
-// File: GeneratorDemoFactoryRemote.g.cs (for client assemblies)
-// -------------------------------------------------------------
-// public class GeneratorDemoFactory : IGeneratorDemoFactory
-// {
-//     private readonly HttpClient _httpClient;
-//
-//     public GeneratorDemo Create()
-//     {
-//         // [Create] without [Remote] - local execution
-//         var obj = _serviceProvider.GetRequiredService<GeneratorDemo>();
-//         obj.Create();
-//         return obj;
-//     }
-//
-//     public async Task<GeneratorDemo> Fetch(int id)
-//     {
-//         // [Fetch] with [Remote] - HTTP call to server
-//         var request = new { id };
-//         var response = await _httpClient.PostAsJsonAsync(
-//             "/api/GeneratorDemo/Fetch", request);
-//         return await response.Content.ReadFromJsonAsync<GeneratorDemo>();
-//     }
-// }
-// =============================================================================
-
-// =============================================================================
-// [FactoryMode] ASSEMBLY ATTRIBUTE
-// =============================================================================
-// RemoteFactory behavior is controlled by assembly-level attribute:
-//
-// [assembly: FactoryMode(FactoryMode.Full)]      // Server - full implementation
-// [assembly: FactoryMode(FactoryMode.RemoteOnly)] // Client - HTTP proxies
-//
-// DESIGN DECISION: FactoryMode determines which code is generated.
-// - Full: Generates actual implementations that resolve services and call methods
-// - RemoteOnly: Generates HTTP proxies for [Remote] methods
-//
-// DID NOT DO THIS: Generate both modes and select at runtime.
-//
-// REJECTED PATTERN:
-//   if (isServer) { useFullImplementation(); }
-//   else { useRemoteProxy(); }
-//
-// WHY NOT:
-// 1. Code size - client doesn't need server implementation code
-// 2. Dependencies - client shouldn't reference server-only assemblies (EF Core)
-// 3. Security - server code shouldn't be in client assembly
-//
-// The PrivateAssets pattern keeps server dependencies out of client builds.
+// DESIGN DECISION: One domain assembly ships to both tiers. Both paths are
+// generated and the tier is chosen at registration; trimming keeps server
+// bodies, and the services they reach, out of the published client.
 // =============================================================================
 
 // =============================================================================
@@ -237,7 +117,8 @@ internal partial class GeneratorDemo : EntityBase<GeneratorDemo>, IGeneratorDemo
 //
 // 1. PROPERTY INFRASTRUCTURE
 //    - BaseGenerator creates property backing fields
-//    - Factory methods use property indexer: this["Name"].LoadValue(value)
+//    - Factory methods assign the generated properties directly; the object is
+//      paused during the operation, so assignment is a clean load
 //
 // 2. FACTORY LIFECYCLE METHODS
 //    - Generated factory calls FactoryStart/FactoryComplete
@@ -262,12 +143,13 @@ internal partial class GeneratorDemo : EntityBase<GeneratorDemo>, IGeneratorDemo
 // FIX: Ensure both class and property have 'partial' keyword
 //
 // ISSUE: Factory not generating
-// CHECK: Does class have [Factory] attribute? (EntityBase/ValidateBase have it)
-// FIX: Ensure class inherits from EntityBase<T> or ValidateBase<T>
+// CHECK: Does the class have the [Factory] attribute, and is it partial?
+// FIX: Add [Factory]. A plain class with no Neatoo base gets a factory too.
 //
-// ISSUE: [Remote] not working
-// CHECK: Is FactoryMode set correctly for the assembly?
-// FIX: Add [assembly: FactoryMode(FactoryMode.Full)] or RemoteOnly
+// ISSUE: [Remote] call fails on the client
+// CHECK: Does each tier register Neatoo with the right mode -
+//        NeatooFactory.Remote on the client, NeatooFactory.Server on the server?
+// FIX: AddNeatooServices(NeatooFactory.Remote, ...) in the client's Program.cs
 //
 // ISSUE: Service not resolving
 // CHECK: Is the service registered in DI? Is [Service] attribute present?
@@ -277,11 +159,26 @@ internal partial class GeneratorDemo : EntityBase<GeneratorDemo>, IGeneratorDemo
 // CHECK: Did build complete? Any generator errors in Error List?
 // FIX: Rebuild solution, check for generator diagnostic errors
 //
-// DEBUG TIP: Generated files are in obj/Debug/{tfm}/Generated/ folders
-// You can examine them to understand what generators produced.
+// DEBUG TIP: With CompilerGeneratedFilesOutputPath=Generated (as in this
+// project), generated files are in the project's Generated/ folder.
 // =============================================================================
 
 public interface IGeneratorDemoRepository
 {
     (string Name, int Value) GetById(int id);
 }
+
+// =============================================================================
+// [SuppressFactory] - A Neatoo Class With No Generated Factory
+// =============================================================================
+// RemoteFactory generates a factory for every [Factory] class. A class that
+// derives from a Neatoo base but is never created through a factory (a
+// test-only object) carries [SuppressFactory] instead and is constructed
+// directly with its services object.
+//
+// Neatoo.BaseGenerator keys on the same [Factory] attribute (see
+// BaseGenerator.cs: ForAttributeWithMetadataName("Neatoo.RemoteFactory.
+// FactoryAttribute")), so a [SuppressFactory] class gets NO generated partial
+// properties. It must declare ordinary properties. For that reason no
+// compiled example lives here; every Design.Domain class is a [Factory] class.
+// =============================================================================

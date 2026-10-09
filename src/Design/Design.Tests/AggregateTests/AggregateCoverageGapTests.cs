@@ -39,38 +39,56 @@ public class AggregateCoverageGapTests
     [TestCleanup]
     public void TestCleanup() => _scope.Dispose();
 
+    private async Task<IOrder> FetchOrder(Guid id)
+    {
+        var order = await _orderFactory.Fetch(id);
+        Assert.IsNotNull(order, "A seeded order should be found");
+        return order;
+    }
+
+    private async Task<IEmployee> FetchEmployee(Guid id)
+    {
+        var employee = await _employeeFactory.Fetch(id);
+        Assert.IsNotNull(employee, "A seeded employee should be found");
+        return employee;
+    }
+
     // =========================================================================
     // The IsSelfModified header guard — positive direction
     // =========================================================================
     // Both Order.Update and Employee.Update write the root row only when the
     // root's OWN properties changed. The skip direction was pinned for free by
     // the lifecycle tests; nothing asserted the write actually happens, so
-    // deleting the repository call kept the suite green.
+    // deleting the mapping call kept the suite green.
 
     [TestMethod]
     public async Task OrderUpdate_WhenRootPropertyChanged_WritesHeader()
     {
-        var order = await _orderFactory.Fetch(1);
+        var seeded = _orderRepo.SeedOrder();
+        var order = await FetchOrder(seeded.Id);
         order.CustomerName = "Renamed Customer";
         await order.WaitForTasks();
 
         await order.Save();
 
-        CollectionAssert.AreEqual(new[] { 1 }, _orderRepo.UpdatedOrderIds,
+        Assert.AreEqual("Renamed Customer", _orderRepo.Store[seeded.Id].CustomerName,
             "A changed root property must write the order header");
+        Assert.AreEqual(1, _orderRepo.SaveChangesCount, "...and flush it");
     }
 
     [TestMethod]
     public async Task EmployeeUpdate_WhenRootPropertyChanged_WritesHeader()
     {
-        var employee = await _employeeFactory.Fetch(1);
+        var seeded = _employeeRepo.SeedEmployee();
+        var employee = await FetchEmployee(seeded.Id);
         employee.Email = "renamed@example.com";
         await employee.WaitForTasks();
 
         await employee.Save();
 
-        CollectionAssert.AreEqual(new[] { 1 }, _employeeRepo.UpdatedEmployeeIds,
+        Assert.AreEqual("renamed@example.com", _employeeRepo.Store[seeded.Id].Email,
             "A changed root property must write the employee header");
+        Assert.AreEqual(1, _employeeRepo.SaveChangesCount, "...and flush it");
     }
 
     // =========================================================================
@@ -78,9 +96,10 @@ public class AggregateCoverageGapTests
     // =========================================================================
 
     [TestMethod]
-    public async Task OrderDelete_DeletesChildrenThenRoot()
+    public async Task OrderDelete_RemovesTheOrderRowWithItsItemRows()
     {
-        var order = await _orderFactory.Fetch(1);
+        var seeded = _orderRepo.SeedOrder();
+        var order = await FetchOrder(seeded.Id);
         var itemIds = order.Items!.Select(i => i.Id).ToList();
 
         order.Delete();
@@ -89,14 +108,23 @@ public class AggregateCoverageGapTests
 
         await order.Save();
 
-        CollectionAssert.AreEquivalent(itemIds, _orderRepo.DeletedItemIds,
-            "Children are deleted first (FK constraint)");
+        // The order removes its own row; its item rows go with it, as a
+        // database cascade delete would
+        Assert.AreEqual(1, _orderRepo.RemovedRows.Count, "The order row is removed once");
+        var removedRow = _orderRepo.RemovedRows[0];
+        Assert.AreEqual(seeded.Id, removedRow.Id, "The removed row is this order's row");
+        CollectionAssert.AreEquivalent(itemIds, removedRow.Items.Select(r => r.Id).ToList(),
+            "Every item row goes with the order");
+        Assert.IsFalse(_orderRepo.Store.ContainsKey(seeded.Id),
+            "After the flush the store holds neither the order nor its items");
+        Assert.AreEqual(1, _orderRepo.SaveChangesCount);
     }
 
     [TestMethod]
     public async Task EmployeeDelete_DeletesPersistedAddressesOnly()
     {
-        var employee = await _employeeFactory.Fetch(1);
+        var seeded = _employeeRepo.SeedEmployee();
+        var employee = await FetchEmployee(seeded.Id);
         var persistedIds = employee.Addresses!.Select(a => a.Id).ToList();
 
         // A never-persisted address should not produce a delete
@@ -112,8 +140,16 @@ public class AggregateCoverageGapTests
         employee.Delete();
         await employee.Save();
 
-        CollectionAssert.AreEquivalent(persistedIds, _employeeRepo.DeletedAddressIds,
+        // The employee row is removed with its address rows - exactly the
+        // persisted addresses. The new address was never written, so it has
+        // no row and nothing is deleted on its behalf.
+        Assert.AreEqual(1, _employeeRepo.RemovedRows.Count, "The employee row is removed once");
+        var removedRow = _employeeRepo.RemovedRows[0];
+        Assert.AreEqual(seeded.Id, removedRow.Id, "The removed row is this employee's row");
+        CollectionAssert.AreEquivalent(persistedIds, removedRow.Addresses.Select(a => a.Id).ToList(),
             "Only persisted addresses are deleted - the new one was never written");
+        Assert.IsFalse(_employeeRepo.Store.ContainsKey(seeded.Id),
+            "After the flush the store holds neither the employee nor its addresses");
     }
 
     // =========================================================================
@@ -138,6 +174,7 @@ public class AggregateCoverageGapTests
         Assert.IsFalse(order.IsSavable, "...and is therefore not savable");
     }
 
+    #region skill-test-real-objects
     [TestMethod]
     public async Task Employee_NegativeSalary_IsInvalid()
     {
@@ -151,6 +188,7 @@ public class AggregateCoverageGapTests
         Assert.IsFalse(employee.IsValid, "Salary cannot be negative");
         Assert.IsFalse(employee.IsSavable);
     }
+    #endregion
 
     [TestMethod]
     public async Task Employee_FutureHireDate_IsInvalid()
@@ -165,6 +203,7 @@ public class AggregateCoverageGapTests
         Assert.IsFalse(employee.IsValid, "Hire date cannot be in the future");
     }
 
+    #region skill-run-rules-after-create
     [TestMethod]
     public async Task Address_InvalidAddressType_IsInvalid()
     {
@@ -187,28 +226,35 @@ public class AggregateCoverageGapTests
         await address.WaitForTasks();
         Assert.IsTrue(address.IsValid);
     }
+    #endregion
 
     // =========================================================================
     // Child added to a fetched aggregate then saved twice
     // =========================================================================
 
+    #region skill-save-root-only
     [TestMethod]
     public async Task AddChildToFetchedOrder_SaveTwice_InsertsOnce()
     {
-        var order = await _orderFactory.Fetch(1);
+        var seeded = _orderRepo.SeedOrder();  // two item rows
+        var order = await FetchOrder(seeded.Id);
         var added = _itemFactory.Create("Added", 1, 5.00m);
         order.Items!.Add(added);
         await order.WaitForTasks();
 
         order = (IOrder)await order.Save();
-        Assert.AreEqual(1, _orderRepo.InsertedItemIds.Count);
+        var stored = _orderRepo.Store[seeded.Id];
+        Assert.AreEqual(3, stored.Items.Count, "The added child gets one new row");
 
         // A second save must not re-insert - the child was marked old
         order.CustomerName = "Touched again";
         await order.WaitForTasks();
         await order.Save();
 
-        Assert.AreEqual(1, _orderRepo.InsertedItemIds.Count,
+        Assert.AreEqual(3, stored.Items.Count,
             "The child must not be inserted a second time");
+        Assert.AreEqual(1, stored.Items.Count(r => r.Id == added.Id),
+            "The added child has exactly one row");
     }
+    #endregion
 }

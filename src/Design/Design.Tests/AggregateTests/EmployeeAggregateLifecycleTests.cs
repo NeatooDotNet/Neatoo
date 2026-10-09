@@ -5,6 +5,9 @@
 // aggregate had no test coverage at all, which is why its lifecycle stayed
 // wrong: fetched children came back IsNew=true, child rows were written
 // directly with no factory saves, and removed children were never deleted.
+//
+// Assertions read the rows the aggregate left in MockEmployeeRepository's
+// in-memory store (see TestInfrastructure.cs).
 // -----------------------------------------------------------------------------
 
 using Design.Domain.Entities;
@@ -16,6 +19,10 @@ namespace Design.Tests.AggregateTests;
 [TestClass]
 public class EmployeeAggregateLifecycleTests
 {
+    // Written into a stored row after the fetch. A save that writes that row
+    // overwrites it, so finding it afterward proves the row was not written.
+    private const string NotWritten = "(not written by save)";
+
     private IServiceScope _scope = null!;
     private IEmployeeFactory _employeeFactory = null!;
     private IAddressFactory _addressFactory = null!;
@@ -47,11 +54,22 @@ public class EmployeeAggregateLifecycleTests
         return address;
     }
 
+
+    private async Task<IEmployee> FetchEmployee(Guid id)
+    {
+        var employee = await _employeeFactory.Fetch(id);
+        Assert.IsNotNull(employee, "A seeded employee should be found");
+        return employee;
+    }
+
     [TestMethod]
     public async Task Fetch_AddressesAreOldAndClean_AggregateNotModified()
     {
+        // Arrange
+        var seeded = _repository.SeedEmployee();
+
         // Act
-        var employee = await _employeeFactory.Fetch(1);
+        var employee = await FetchEmployee(seeded.Id);
 
         // Assert - root state
         Assert.IsFalse(employee.IsNew, "Fetched employee should not be new");
@@ -71,10 +89,16 @@ public class EmployeeAggregateLifecycleTests
     {
         // Arrange - three fetched addresses: one modified, one removed, one
         // deliberately left untouched so the clean-child skip is pinned
-        var employee = await _employeeFactory.Fetch(1);
+        var seeded = _repository.SeedEmployee();
+        var employee = await FetchEmployee(seeded.Id);
         var modified = employee.Addresses![0];
         var removed = employee.Addresses[1];
         var untouched = employee.Addresses[2];
+
+        // Mark the stored rows this save must leave alone - writing a row
+        // overwrites its mark
+        seeded.FirstName = NotWritten;
+        seeded.Addresses.Single(r => r.Id == untouched.Id).Street = NotWritten;
 
         modified.City = "Shelbyville";
         employee.Addresses.Remove(removed);
@@ -87,25 +111,31 @@ public class EmployeeAggregateLifecycleTests
         // Act
         employee = (IEmployee)await employee.Save();
 
-        // Assert - each route fires exactly once, and the untouched child
-        // routes nowhere
-        Assert.AreEqual(0, _repository.UpdatedEmployeeIds.Count,
-            "Employee header untouched - UpdateEmployee must be skipped (IsSelfModified guard)");
-        CollectionAssert.AreEqual(new[] { modified.Id }, _repository.UpdatedAddressIds,
-            "Only the modified existing address routes to UpdateAddress - the untouched one is skipped");
-        Assert.AreEqual(1, _repository.InsertedAddressIds.Count,
-            "Only the added address routes to InsertAddress");
-        CollectionAssert.AreEqual(new[] { removed.Id }, _repository.DeletedAddressIds,
-            "Only the removed address routes to DeleteAddress");
-        CollectionAssert.DoesNotContain(_repository.UpdatedAddressIds, untouched.Id,
+        // Assert - each path fires exactly once, and the untouched child
+        // routes nowhere. The row read is the one stored under the employee's
+        // own key, so finding the added child in it also pins that the child
+        // was written against the right parent.
+        var stored = _repository.Store[employee.Id];
+        Assert.AreEqual(NotWritten, stored.FirstName,
+            "Employee header untouched - its row must not be written (IsSelfModified guard)");
+        Assert.AreEqual("Shelbyville", stored.Addresses.Single(r => r.Id == modified.Id).City,
+            "The modified existing address is written to its row");
+        Assert.AreEqual(NotWritten, stored.Addresses.Single(r => r.Id == untouched.Id).Street,
             "An unmodified existing child must not be written");
+        CollectionAssert.DoesNotContain(stored.Addresses.Select(r => r.Id).ToList(), removed.Id,
+            "Only the removed address has its row removed");
+        var addedRows = stored.Addresses
+            .Where(r => r.Id != modified.Id && r.Id != untouched.Id)
+            .ToList();
+        Assert.AreEqual(1, addedRows.Count, "Only the added address gets a new row");
+        Assert.AreEqual(1, _repository.SaveChangesCount, "One flush for the whole aggregate");
 
-        // Assert - generated Id landed on the newly inserted child, and the
-        // child was written against the right parent (FK propagation)
-        Assert.AreEqual(_repository.InsertedAddressIds[0], added.Id,
-            "Generated address Id must land on the entity");
-        CollectionAssert.AreEqual(new[] { employee.Id }, _repository.InsertAddressParentIds,
-            "The added child must be inserted against the employee's id");
+        // Assert - the key the new child set in its [Insert] landed on the
+        // entity and on its row, in this employee's row
+        Assert.AreNotEqual(Guid.Empty, added.Id, "The address's key must land on the entity");
+        Assert.AreEqual(added.Id, addedRows[0].Id, "The entity and its row must share the key");
+        Assert.AreEqual("4 New Ave", addedRows[0].Street,
+            "The added child must be written into the employee's own row");
 
         // Assert - whole graph clean after save
         Assert.AreEqual(3, employee.Addresses!.Count);
@@ -137,23 +167,29 @@ public class EmployeeAggregateLifecycleTests
         employee = (IEmployee)await employee.Save();
 
         // Assert - routing
-        Assert.AreEqual(1, _repository.InsertedEmployeeIds.Count);
-        Assert.AreEqual(2, _repository.InsertedAddressIds.Count,
-            "Every address of a new aggregate routes to InsertAddress");
-        Assert.AreEqual(0, _repository.UpdatedAddressIds.Count);
+        Assert.AreEqual(1, _repository.AddedRows.Count, "The employee row is added exactly once");
+        Assert.AreEqual(1, _repository.SaveChangesCount, "One flush for the whole aggregate");
 
-        // Assert - generated Ids landed on root and children
-        Assert.AreEqual(_repository.InsertedEmployeeIds[0], employee.Id,
-            "Generated employee Id must land on the root");
+        // Assert - keys landed on root and children
+        Assert.AreNotEqual(Guid.Empty, employee.Id, "The employee's key must land on the root");
+        Assert.IsTrue(_repository.Store.TryGetValue(employee.Id, out var stored),
+            "The store holds the employee row under the root's key");
         Assert.AreEqual(2, employee.Addresses!.Count);
-        CollectionAssert.AreEquivalent(_repository.InsertedAddressIds,
+        Assert.AreEqual(2, stored.Addresses.Count,
+            "Every address of a new aggregate gets a new row");
+        var rowIds = stored.Addresses.Select(r => r.Id).ToList();
+        CollectionAssert.DoesNotContain(rowIds, Guid.Empty,
+            "Every address set its key in [Insert] - none was routed to Update");
+        CollectionAssert.AllItemsAreUnique(rowIds);
+        CollectionAssert.AreEquivalent(rowIds,
             employee.Addresses.Select(a => a.Id).ToList(),
-            "Generated address Ids must land on the entities");
+            "The addresses' keys must land on the entities");
 
-        // Assert - FK propagation: the root must write its own generated Id
-        // BEFORE delegating child persistence, or children are orphaned at 0
-        CollectionAssert.AreEqual(new[] { employee.Id, employee.Id }, _repository.InsertAddressParentIds,
-            "Every child must be inserted against the employee's generated id");
+        // Assert - parent link: the root keys its own row BEFORE delegating
+        // child persistence, and every child is written into that row
+        CollectionAssert.AreEquivalent(new[] { "1 First St", "2 Second St" },
+            stored.Addresses.Select(r => r.Street).ToList(),
+            "Every child must be written into the employee's own row");
 
         // Assert - graph old and clean
         Assert.IsFalse(employee.IsNew, "Employee should be old after insert");

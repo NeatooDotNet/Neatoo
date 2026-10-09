@@ -18,3 +18,4 @@ public interface IValidationFailureDemo : IEntityRoot
     int Quantity { get; set; }
     string? Email { get; set; }
 }
+

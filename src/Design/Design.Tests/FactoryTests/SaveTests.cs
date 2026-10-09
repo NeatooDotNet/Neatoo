@@ -7,6 +7,7 @@
 using Design.Domain.FactoryOperations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neatoo;
 
 namespace Design.Tests.FactoryTests;
 
@@ -45,6 +46,7 @@ public class SaveTests
         Assert.IsTrue(entity.IsSavable, "Valid new entity should be savable");
     }
 
+    #region skill-invalid-not-savable
     [TestMethod]
     public async Task NewEntity_NotSavableWhenInvalid()
     {
@@ -62,7 +64,9 @@ public class SaveTests
         Assert.IsFalse(entity.IsValid);
         Assert.IsFalse(entity.IsSavable, "Invalid entity should not be savable");
     }
+    #endregion
 
+    #region skill-is-savable
     [TestMethod]
     public async Task FetchedEntity_NotSavableWhenUnmodified()
     {
@@ -90,6 +94,7 @@ public class SaveTests
         Assert.IsTrue(entity.IsValid);
         Assert.IsTrue(entity.IsSavable, "Modified valid entity should be savable");
     }
+    #endregion
 
     // =========================================================================
     // Save() routing — this file is named for Save but never called it
@@ -97,6 +102,7 @@ public class SaveTests
     // SaveDemo's [Insert]/[Update]/[Delete] bodies were never executed.
     // =========================================================================
 
+    #region skill-save-routes-to-insert
     [TestMethod]
     public async Task Save_WhenNew_RoutesToInsert_AndMarksOld()
     {
@@ -119,6 +125,7 @@ public class SaveTests
         Assert.IsFalse(entity.IsModified);
         Assert.IsFalse(entity.IsSavable, "Nothing left to save");
     }
+    #endregion
 
     [TestMethod]
     public async Task Save_WhenModifiedExisting_RoutesToUpdate()
@@ -136,6 +143,7 @@ public class SaveTests
         Assert.IsFalse(entity.IsModified, "Clean after save");
     }
 
+    #region skill-delete-routes-to-delete
     [TestMethod]
     public async Task Save_WhenDeleted_RoutesToDelete()
     {
@@ -154,7 +162,9 @@ public class SaveTests
         CollectionAssert.AreEqual(new[] { 9 }, _repository.DeletedIds, "Should route to Delete");
         Assert.AreEqual(0, _repository.UpdatedIds.Count);
     }
+    #endregion
 
+    #region skill-new-untouched-still-inserts
     [TestMethod]
     public async Task Save_WhenNewAndUntouched_StillInserts()
     {
@@ -172,4 +182,57 @@ public class SaveTests
         Assert.AreEqual(1, _repository.InsertedIds.Count);
         Assert.IsFalse(entity.IsNew);
     }
+    #endregion
+
+    #region skill-save-cancellation
+    [TestMethod]
+    public async Task Save_WithCancelledToken_ThrowsAndLeavesStateUnchanged()
+    {
+        var entity = _factory.Create();
+        entity.Name = "Pending";
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        // Save checks the token before any persistence
+        await Assert.ThrowsAsync<OperationCanceledException>(() => entity.Save(cts.Token));
+
+        Assert.AreEqual(0, _repository.InsertedIds.Count, "Nothing was written");
+        Assert.IsTrue(entity.IsNew, "State is unchanged");
+        Assert.IsTrue(entity.IsModified);
+    }
+    #endregion
+
+    #region docs-save-not-savable-throws
+    [TestMethod]
+    public async Task Save_WhenNotSavable_ThrowsWithTheReason()
+    {
+        // A fetched, untouched entity: neither modified nor new
+        var entity = await _factory.Fetch(1);
+        Assert.IsFalse(entity.IsSavable);
+
+        // Reaching this is a programming error: the UI binds Save to IsSavable
+        var exception = await Assert.ThrowsExactlyAsync<SaveOperationException>(() => entity.Save());
+
+        Assert.AreEqual(SaveFailureReason.NotModified, exception.Reason);
+    }
+    #endregion
+
+    #region docs-paused-edit-not-modified
+    [TestMethod]
+    public async Task PausedEdit_IsNotTrackedAsModified()
+    {
+        var entity = await _factory.Fetch(1);
+
+        using (entity.PauseAllActions())
+        {
+            entity.Name = "Edited while paused";
+        }
+
+        // The value is set, but nothing caught up when the pause ended
+        Assert.AreEqual("Edited while paused", entity.Name);
+        Assert.IsFalse(entity.IsModified, "A paused assignment is a baseline load, not an edit");
+        Assert.IsFalse(entity.IsSavable, "...so there is nothing to save");
+    }
+    #endregion
 }

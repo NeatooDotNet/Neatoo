@@ -65,6 +65,7 @@ using Neatoo;
 
 namespace Design.Domain.Aggregates.OrderAggregate;
 
+#region skill-aggregate-interfaces
 /// <summary>
 /// Aggregate root interface — extends IEntityRoot.
 /// Exposes IsSavable and Save() for the root entity.
@@ -72,7 +73,7 @@ namespace Design.Domain.Aggregates.OrderAggregate;
 /// </summary>
 public interface IOrder : IEntityRoot
 {
-    int Id { get; }
+    Guid Id { get; }
     string? OrderNumber { get; set; }
     string? CustomerName { get; set; }
     DateTime OrderDate { get; set; }
@@ -87,7 +88,7 @@ public interface IOrder : IEntityRoot
 /// </summary>
 public interface IOrderItem : IEntityBase
 {
-    int Id { get; }
+    Guid Id { get; }
     string? ProductName { get; set; }
     int Quantity { get; set; }
     decimal UnitPrice { get; set; }
@@ -105,3 +106,4 @@ public interface IOrderItemList : IEntityListBase<IOrderItem>
     /// </summary>
     int DeletedCount { get; }
 }
+#endregion

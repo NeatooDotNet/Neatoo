@@ -67,6 +67,7 @@ public sealed class PlausibleAttribute : Attribute
     public double Max { get; }
 }
 
+#region skill-custom-property-type
 /// <summary>
 /// Property type exposing IsPlausible and the declared range beside the standard property metadata.
 /// </summary>
@@ -101,6 +102,7 @@ public class PlausibleProperty<T> : EntityProperty<T>
         Range = propertyInfo.GetCustomAttribute<PlausibleAttribute>();
     }
 }
+#endregion
 
 /// <summary>
 /// Creates PlausibleProperty for [Plausible] properties; defers everything else to the framework factory.
@@ -130,6 +132,7 @@ internal sealed class PlausiblePropertyFactory<[DynamicallyAccessedMembers(Dynam
         => _inner.CreateEntityLazyLoad<TInner>(owner, propertyName);
 }
 
+#region skill-custom-property-services
 /// <summary>
 /// Services wrapper: delegates everything to the injected services except PropertyFactory.
 /// </summary>
@@ -172,6 +175,7 @@ internal partial class MeasurementDemo : EntityBase<MeasurementDemo>, IMeasureme
     [Create]
     public void Create() { }
 }
+#endregion
 
 public interface IMeasurementDemo : IEntityRoot
 {

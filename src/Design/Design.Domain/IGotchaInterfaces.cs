@@ -14,8 +14,7 @@ namespace Design.Domain;
 
 /// <summary>
 /// Interface for Gotcha 1 demo (ValidateBase — no IEntityRoot needed).
-/// Exposes RunRules and WaitForTasks because this demo's purpose is
-/// demonstrating rule timing during and after factory operations.
+/// RunRules and WaitForTasks come from IValidateBase.
 /// </summary>
 public interface IGotcha1Demo : IValidateBase
 {
@@ -23,8 +22,6 @@ public interface IGotcha1Demo : IValidateBase
     decimal Price { get; set; }
     decimal Total { get; set; }
     bool RuleHasRun { get; }
-    Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null);
-    Task WaitForTasks();
 }
 
 // =============================================================================
@@ -75,7 +72,7 @@ public interface IGotcha3Demo : IEntityRoot
 
 /// <summary>
 /// Interface for Gotcha 4 demo (ValidateBase — no IEntityRoot needed).
-/// Exposes PauseAllActions and RunRules because this demo's entire purpose
+/// Exposes PauseAllActions (not on IValidateBase) because this demo's purpose
 /// is demonstrating pause/resume behavior.
 /// </summary>
 public interface IGotcha4Demo : IValidateBase
@@ -84,8 +81,6 @@ public interface IGotcha4Demo : IValidateBase
     decimal Price { get; set; }
     decimal Total { get; set; }
     IDisposable PauseAllActions();
-    Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null);
-    Task WaitForTasks();
 }
 
 // =============================================================================
@@ -94,13 +89,11 @@ public interface IGotcha4Demo : IValidateBase
 
 /// <summary>
 /// Root interface for Gotcha 5 parent entity.
-/// Exposes WaitForTasks because this demo tests async rule timing.
 /// </summary>
 public interface IGotcha5Parent : IEntityRoot
 {
     string? Name { get; set; }
     IGotcha5Child? Child { get; }
-    Task WaitForTasks();
 }
 
 /// <summary>

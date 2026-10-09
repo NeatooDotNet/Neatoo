@@ -30,6 +30,8 @@ Add these `@using` directives to your `_Imports.razor` or individual `.razor` fi
 
 Every MudNeatoo component takes an `EntityProperty` parameter — the `IEntityProperty` object accessed via the entity's indexer `entity["PropertyName"]`. This single binding point gives the component everything: value, label, validation messages, busy state, and read-only state.
 
+`IEntityProperty` is the property type of an `EntityBase` entity. A `ValidateBase` object's properties are `IValidateProperty` only, so a `ValidateBase` (a value object, or form data with no persistence lifecycle) cannot be bound through MudNeatoo components; bind it with Manual Metadata Binding (below), which needs nothing beyond `IValidateProperty`.
+
 ```razor
 @* CORRECT: MudNeatoo component with EntityProperty binding *@
 <MudNeatooTextField T="string"
@@ -39,7 +41,7 @@ Every MudNeatoo component takes an `EntityProperty` parameter — the `IEntityPr
 
 The component automatically:
 - Displays `DisplayName` as the label
-- Calls `SetValue()` on change (triggers business rules)
+- Calls `SetValue()` on change (triggers business rules). `MudNeatooTextField` and `MudNeatooNumericField` are `Immediate="false"`: they commit when the field loses focus, so a rule behind them runs once per committed value, not per keystroke
 - Shows `PropertyMessages` as validation errors
 - Disables when `IsBusy` (async rules running) or when the caller passes `Disabled="true"`
 - Sets read-only when `IsReadOnly`
@@ -55,7 +57,7 @@ The component automatically:
 
 @code {
     void OnFirstNameChanged(string value) {
-        entity.FirstName = value;  // Bypasses async rule pipeline
+        entity.FirstName = value;  // Runs the same rules, but cannot be awaited; no validation, busy or read-only binding
     }
 }
 
@@ -91,11 +93,11 @@ See `references/anti-patterns.md` for the complete anti-pattern catalog with rea
 | `MudNeatooAutocomplete<T>` | `MudAutocomplete<T>` | Any type |
 | `NeatooValidationSummary` | `MudAlert` | (entity-level errors) |
 
-All MudBlazor parameters pass through — `Variant`, `Margin`, `HelperText`, `Adornment`, `Class`, `Min`, `Max`, etc. — **except `ReadOnly`** (hardcoded to `EntityProperty.IsReadOnly`; see ReadOnly Behavior below) and **`Disabled`** (OR'd with `EntityProperty.IsBusy`; see Disabled Behavior below).
+Each component forwards a curated set of its wrapped MudBlazor component's parameters — `Variant`, `Margin`, `HelperText`, `Adornment`, `Class`, and others — not every parameter (`MudNeatooTextField` has no `Mask` or `Label`, for example). Two are never forwarded: **`ReadOnly`** (hardcoded to `EntityProperty.IsReadOnly`; see ReadOnly Behavior below) and **`Disabled`** (OR'd with `EntityProperty.IsBusy`; see Disabled Behavior below). A parameter that is not forwarded means Manual Metadata Binding for that field.
 
 ### `MudNeatooTextField` escape hatch: `UserAttributes`
 
-`MudNeatooTextField<T>` forwards a `UserAttributes` (`Dictionary<string, object>?`) parameter to `MudTextField`. MudBlazor spreads the dictionary onto the native `<input>` or `<textarea>`, so any HTML attribute works — including ones with no typed MudBlazor parameter. Use it for:
+`MudNeatooTextField<T>` forwards a `UserAttributes` (`Dictionary<string, object>`, defaults to an empty dictionary) parameter to `MudTextField`. MudBlazor spreads the dictionary onto the native `<input>` or `<textarea>`, so any HTML attribute works — including ones with no typed MudBlazor parameter. Use it for:
 
 - **Spellcheck** — MudBlazor does NOT expose a `Spellcheck` parameter on `MudTextField` or `MudInput`. Set `["spellcheck"] = "true"` via `UserAttributes`.
 - **Drag-handle resize** — CSS `resize: vertical` on the `<textarea>`. Set `["style"] = "resize: vertical;"` via `UserAttributes`.
@@ -263,7 +265,7 @@ A complete form page follows this structure:
 
 ### EntityLazyLoad Databinding Pattern
 
-`EntityLazyLoad<T>` properties use a 4-branch rendering pattern. `.Value` is a passive read — it never triggers a load. Trigger the load explicitly in `OnInitializedAsync()`, then bind to `.Value` and state properties in Razor markup. Blazor re-renders when `PropertyChanged` fires on load completion.
+`EntityLazyLoad<T>` properties use a 4-branch rendering pattern. `.Value` is a passive read — it never triggers a load. Trigger the load explicitly in `OnInitializedAsync()`, then bind to `.Value` and state properties in Razor markup. On load completion the entity raises `PropertyChanged`, and the page's subscription (Page Structure Pattern above) re-renders.
 
 **Trigger the load in `OnInitializedAsync()`:**
 
@@ -393,7 +395,7 @@ This is what MudNeatoo components do internally — prefer the components, fall 
 - Property with public setter -> `IsReadOnly = false`
 - Property with `internal set` -> `IsReadOnly = false` (not treated as read-only; `PropertyInfoWrapper` checks `SetMethod?.IsPrivate`, and `internal` setters are not private)
 
-This means read-only state is controlled entirely by the domain model's property declaration. To make a property read-only, declare it with a `private set` or as get-only.
+Read-only state is owned by the domain model, in two forms. The property declaration (`private set` or get-only) makes a property read-only on every instance. `IValidateProperty.MarkReadOnly()` makes it read-only on one instance, permanently — the entity calls it during `[Fetch]` from a server-side permission service, so a field is editable for one user and locked for another. Either way the component binds `IsReadOnly` and the UI has nothing to decide.
 
 ### Disabled Behavior
 
@@ -454,7 +456,7 @@ else
 }
 ```
 
-This is intentional — ReadOnly state belongs to the domain model (via private setters), not the UI. View/edit toggling is a UI concern handled with Razor conditionals.
+This is intentional — ReadOnly state belongs to the domain model (a private setter, or `MarkReadOnly()` during `[Fetch]`), not the UI. View/edit toggling is a UI concern handled with Razor conditionals.
 
 ## MudBlazor 9.x Compatibility
 
@@ -464,4 +466,4 @@ MudBlazor 9.x renamed `ShowMessageBox` to `ShowMessageBoxAsync` on `IDialogServi
 
 - **`references/anti-patterns.md`** — Complete catalog of anti-patterns with correct alternatives
 - **`references/property-change-events.md`** — `PropertyChanged` vs `NeatooPropertyChanged`: which to use, why MudNeatoo components only need `PropertyChanged`, and how to build custom container components that react to deep-graph changes
-- **`references/aggregate-reactive-vm.md`** — ViewModel computed properties that stay in sync with live aggregate edits via PropertyChanged subscription
+- **`references/aggregate-reactive-vm.md`** — A ViewModel over a live aggregate: derived values are entity rules the component binds to; the VM only re-raises and forwards gestures

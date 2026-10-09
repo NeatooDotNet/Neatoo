@@ -95,4 +95,34 @@ public class AsyncRuleTests
         Assert.IsNotNull(entity.Status);
         Assert.IsTrue(entity.Status!.Contains("Validated"));
     }
+
+    // =========================================================================
+    // Rule plus command: the rule takes a [Remote, Execute] delegate
+    // =========================================================================
+
+    [TestMethod]
+    public async Task CommandBackedRule_TakenUsername_IsInvalid()
+    {
+        var entity = _scope.GetRequiredService<IAsyncRulesDemoFactory>().Create();
+        entity.Email = "user@example.com";
+
+        entity.Username = "taken";
+        await entity.WaitForTasks();
+
+        Assert.IsFalse(entity.IsValid, "The command reported the username taken");
+        Assert.IsFalse(entity.IsUsernameAvailable);
+    }
+
+    [TestMethod]
+    public async Task CommandBackedRule_FreeUsername_IsValid()
+    {
+        var entity = _scope.GetRequiredService<IAsyncRulesDemoFactory>().Create();
+        entity.Email = "user@example.com";
+
+        entity.Username = "available";
+        await entity.WaitForTasks();
+
+        Assert.IsTrue(entity.IsValid);
+        Assert.IsTrue(entity.IsUsernameAvailable);
+    }
 }

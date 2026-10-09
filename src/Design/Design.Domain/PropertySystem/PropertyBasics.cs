@@ -2,7 +2,8 @@
 // Design.Domain - Property System Basics
 // -----------------------------------------------------------------------------
 // This file demonstrates the Neatoo property system: partial properties,
-// Getter<T>/Setter, IValidateProperty/IEntityProperty, and LoadValue vs SetValue.
+// IValidateProperty/IEntityProperty, and how assignment behaves inside and
+// outside a factory operation.
 // -----------------------------------------------------------------------------
 
 using Neatoo;
@@ -20,34 +21,39 @@ namespace Design.Domain.PropertySystem;
 // DESIGN DECISION: Partial properties are the ONLY supported pattern.
 // The old Getter<T>()/Setter() methods are deprecated.
 //
+#region skill-generated-property-shape
 // For this declaration:
 //   public partial string? Name { get; set; }
 //
-// GENERATOR BEHAVIOR: Neatoo.BaseGenerator produces:
+// GENERATOR BEHAVIOR: Neatoo.BaseGenerator produces the same shape for
+// ValidateBase and EntityBase (from DemoEntity.g.cs):
 //
-// For ValidateBase:
-//   private IValidateProperty<string?> _nameProperty = null!;
+//   protected IValidateProperty<string?> NameProperty
+//       => (IValidateProperty<string?>)PropertyManager[nameof(Name)]!;
+//
 //   public partial string? Name
 //   {
-//       get => _nameProperty.Value;
-//       set => _nameProperty.SetValue(value);
+//       get => NameProperty.Value;
+//       set
+//       {
+//           NameProperty.Value = value;
+//           if (!NameProperty.Task.IsCompleted)
+//           {
+//               Parent?.AddChildTask(NameProperty.Task);
+//               RunningTasks.AddTask(NameProperty.Task);
+//           }
+//       }
 //   }
 //
-// For EntityBase (adds modification tracking):
-//   private IEntityProperty<string?> _nameProperty = null!;
-//   public partial string? Name
-//   {
-//       get => _nameProperty.Value;
-//       set => _nameProperty.SetValue(value);
-//   }
-//
-// The InitializePropertyBackingFields() method creates the property instances:
 //   protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
 //   {
-//       base.InitializePropertyBackingFields(factory);
-//       _nameProperty = factory.CreateProperty<string?>("Name", this);
-//       PropertyManager.Add(_nameProperty);
+//       PropertyManager.Register(factory.Create<string?>(this, nameof(Name)));
 //   }
+//
+// On an EntityBase the factory creates an entity property (modification
+// tracking); the accessor is still typed IValidateProperty<T>. The real output
+// is on disk under Generated/Neatoo.BaseGenerator/.
+#endregion
 // =============================================================================
 
 /// <summary>
@@ -66,11 +72,13 @@ internal partial class PropertyBasicsDemo : EntityBase<PropertyBasicsDemo>, IPro
     // - PropertyChanged notifications
     // =========================================================================
 
+    #region skill-partial-properties
     public partial string? Name { get; set; }
 
     public partial int Count { get; set; }
 
     public partial decimal Price { get; set; }
+    #endregion
 
     // =========================================================================
     // Pattern 2: Properties with Validation Attributes
@@ -162,6 +170,7 @@ internal partial class PropertyChildDemo : ValidateBase<PropertyChildDemo>, IPro
 // SetPrivateValue() which bypasses the IsReadOnly check.
 // =============================================================================
 
+#region skill-private-set-property
 /// <summary>
 /// Demonstrates: Private setter properties with computed values via rules.
 /// </summary>
@@ -190,45 +199,52 @@ internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDem
     [Create]
     public void Create() { }
 }
+#endregion
 
 // =============================================================================
-// SetValue vs LoadValue - Critical Distinction
+// Assignment and Pause State
 // =============================================================================
-// The property system has TWO ways to set a value:
+// Application code sets a value one way: the property setter. What the setter
+// does depends on whether the object is paused.
 //
-// SetValue (via property setter): Marks property as modified, triggers rules
-//   entity.Name = "New";  // Uses SetValue internally
-//   // Result: IsSelfModified=true, rules triggered
+// Not paused (a ViewModel, a Razor binding, an entity method, after a factory
+// operation has returned):
+//   entity.Name = "New";
+//   // Result: IsSelfModified=true, rules triggered, PropertyChanged raised
 //
-// LoadValue (via indexer): Sets value WITHOUT modification tracking
-//   entity["Name"].LoadValue("New");  // No modification tracking
-//   // Result: IsSelfModified unchanged, no rules triggered
+// Paused (inside every factory operation, and during deserialization):
+//   Name = data.Name;
+//   // Result: IsSelfModified unchanged, no rules, no PropertyChanged
 //
-// DESIGN DECISION: LoadValue exists for persistence loading.
-// When fetching from database, we don't want IsModified=true.
-// The entity should reflect database state (IsModified=false).
+// DESIGN DECISION: Every factory operation is paused for the length of its
+// body (FactoryStart before, FactoryComplete after), so a [Create] or [Fetch]
+// loads its baseline by plain assignment. LoadValue, PauseAllActions and
+// MarkUnmodified are not used inside a factory operation.
 //
-// COMMON MISTAKE: Using property setter in Fetch.
+// The property object also has LoadValue(value), which sets the value without
+// tracking regardless of pause state. The framework uses it - the generated
+// EntityLazyLoad setter, for example. A factory operation never needs it.
+//
+// COMMON MISTAKE: LoadValue inside a factory operation.
 //
 // WRONG:
-//   [Fetch]
-//   public void Fetch(int id, [Service] IRepo repo) {
+//   [Remote, Fetch]
+//   internal void Fetch(int id, [Service] IRepo repo) {
 //       var data = repo.Get(id);
-//       Name = data.Name;  // SetValue! IsModified becomes true!
+//       this["Name"].LoadValue(data.Name);  // Noise - the object is already paused
 //   }
-//   // After Fetch: IsModified=true (unexpected!)
 //
 // RIGHT:
-//   [Fetch]
-//   public void Fetch(int id, [Service] IRepo repo) {
+//   [Remote, Fetch]
+//   internal void Fetch(int id, [Service] IRepo repo) {
 //       var data = repo.Get(id);
-//       this["Name"].LoadValue(data.Name);  // LoadValue! No modification.
+//       Name = data.Name;  // Paused: a clean baseline load
 //   }
-//   // After Fetch: IsModified=false (correct!)
+//   // After Fetch: IsModified=false
 // =============================================================================
 
 /// <summary>
-/// Demonstrates: SetValue vs LoadValue distinction.
+/// Demonstrates: assignment inside a factory operation (paused) and after it (tracked).
 /// </summary>
 [Factory]
 internal partial class SetValueVsLoadValueDemo : EntityBase<SetValueVsLoadValueDemo>, ISetValueVsLoadValueDemo
@@ -241,19 +257,19 @@ internal partial class SetValueVsLoadValueDemo : EntityBase<SetValueVsLoadValueD
     [Create]
     public void Create()
     {
-        // Using property setter - this marks as modified
+        // Paused by the Create operation - this is a default, not user work
         Name = "Default";
-        // IsNew=true, IsSelfModified=true (from setter)
+        // IsNew=true, IsSelfModified=false
     }
 
     [Remote]
     [Fetch]
     internal void Fetch(int id, [Service] IPropertyDemoRepository repository)
     {
-        // Using LoadValue - does NOT mark as modified
+        // Paused by the Fetch operation - plain assignment is the load
         var data = repository.GetById(id);
-        this["Name"].LoadValue(data.Name);
-        this["Value"].LoadValue(data.Value);
+        Name = data.Name;
+        Value = data.Value;
         // After Fetch: IsNew=false, IsSelfModified=false
     }
 
@@ -278,14 +294,12 @@ internal partial class SetValueVsLoadValueDemo : EntityBase<SetValueVsLoadValueD
 // - For ValidateBase: returns IValidateProperty
 //
 // Through the indexer you can:
-// - LoadValue: Set without modification tracking
-// - SetValue: Set with modification tracking (same as property setter)
-// - Access Value directly
-// - Check IsModified (EntityBase only)
+// - Check IsModified (EntityBase only), IsBusy, IsReadOnly
 // - Access validation messages
+// - MarkReadOnly (field-level authorization, see FieldLevelAuthorization.cs)
 //
-// DESIGN DECISION: Indexer provides escape hatch for advanced scenarios.
-// Normal code uses property accessors; indexer is for framework/persistence code.
+// DESIGN DECISION: The indexer is for a property's metadata. Values are set
+// through the property accessors, including inside factory operations.
 // =============================================================================
 
 /// <summary>
@@ -308,16 +322,16 @@ internal partial class IndexerAccessDemo : EntityBase<IndexerAccessDemo>, IIndex
     {
         var data = repository.GetById(id);
 
-        // Access properties through indexer
-        IEntityProperty nameProperty = this["Name"];
-        IEntityProperty amountProperty = this["Amount"];
+        // The object is paused by its own factory operation, so plain
+        // assignment is a clean baseline load.
+        Name = data.Name;
+        Amount = data.Value;
 
-        // LoadValue for fetch (no modification tracking)
-        nameProperty.LoadValue(data.Name);
-        amountProperty.LoadValue(data.Value);
+        // The indexer gives the property's metadata, not a way to load it
+        IEntityProperty nameProperty = this["Name"];
 
         // Check property state
-        bool isNameModified = nameProperty.IsModified; // false after LoadValue
+        bool isNameModified = nameProperty.IsModified; // false: assigned while paused
 
         // Access validation messages for this property
         var nameMessages = nameProperty.PropertyMessages;
@@ -344,11 +358,12 @@ internal partial class IndexerAccessDemo : EntityBase<IndexerAccessDemo>, IIndex
 // IValidateProperty (base):
 // - Value: Get/set the property value
 // - SetValue(value): Set with events and rules
+// - LoadValue(value): Set without tracking, regardless of pause state
+//   (framework use; a factory operation assigns the property instead)
 // - Messages: Validation messages for this property
 // - IsBusy: Async operations pending on this property
 //
 // IEntityProperty (extends IValidateProperty):
-// - LoadValue(value): Set WITHOUT modification tracking
 // - IsModified: True if value changed since last MarkUnmodified
 // - MarkSelfUnmodified(): Clear modification state
 //

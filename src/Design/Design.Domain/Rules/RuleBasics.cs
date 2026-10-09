@@ -16,9 +16,10 @@ namespace Design.Domain.Rules;
 // =============================================================================
 // Neatoo provides two ways to define rules:
 //
-// 1. RuleBase<T> Classes: For complex, reusable rules
-//    - Inherit from AsyncRuleBase<T> (all rules are async-capable)
-//    - Override Execute() to implement rule logic
+// 1. Rule classes: For complex, reusable rules
+//    - RuleBase<T> for synchronous logic: override IRuleMessages Execute(T)
+//    - AsyncRuleBase<T> for asynchronous logic: override Task<IRuleMessages>
+//      Execute(T, CancellationToken?)
 //    - Register with RuleManager.AddRule(new MyRule())
 //
 // 2. Fluent API: For simple inline rules
@@ -26,22 +27,22 @@ namespace Design.Domain.Rules;
 //    - RuleManager.AddAction() for side-effect rules
 //    - See FluentRules.cs for fluent API patterns
 //
-// DESIGN DECISION: All rules extend AsyncRuleBase<T> internally.
-// Even synchronous rules are async-capable for consistency.
-// "RuleBase<T>" in documentation refers to AsyncRuleBase<T>.
+// DESIGN DECISION: One rule pipeline. RuleBase<T> derives from
+// AsyncRuleBase<T> and seals the async Execute, wrapping the synchronous
+// Execute(T) in a completed task. The RuleManager sees only async rules.
 //
-// DID NOT DO THIS: Have separate sync and async rule hierarchies.
+// DID NOT DO THIS: Separate sync and async rule pipelines.
 //
 // REJECTED PATTERN:
-//   public class SyncRule : SyncRuleBase<T> { ... }
-//   public class AsyncRule : AsyncRuleBase<T> { ... }
+//   public class SyncRule : SyncRuleBase<T> { ... }  // its own pipeline
 //
 // ACTUAL PATTERN:
-//   public class MyRule : AsyncRuleBase<T> { ... }
-//   // Execute can be sync or async - framework handles both
+//   internal class NameRequiredRule : RuleBase<T> { ... }      // synchronous
+//   internal class UniqueEmailRule : AsyncRuleBase<T> { ... }  // asynchronous
 //
-// WHY NOT: Maintaining two hierarchies adds complexity. Async rules that
-// happen to be sync just return completed tasks - no performance penalty.
+// WHY NOT: Two pipelines would mean two execution orders and two ways for
+// IsBusy to be wrong. RuleBase<T> keeps synchronous rules free of
+// Task.FromResult while running through the same pipeline.
 // =============================================================================
 
 /// <summary>
@@ -55,11 +56,22 @@ internal partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>, IRuleBasicsD
     public partial decimal Price { get; set; }
     public partial decimal Total { get; set; }
 
+    /// <summary>Written by the two trace rules below, in execution order.</summary>
+    public partial string? RuleTrace { get; set; }
+
     public RuleBasicsDemo(IEntityBaseServices<RuleBasicsDemo> services) : base(services)
     {
-        // Register class-based rules
+        #region skill-add-rule-inline
+        // Rules with no dependencies are constructed here; a rule that needs
+        // a command delegate comes from DI instead (see AsyncRules.cs)
         RuleManager.AddRule(new NameRequiredRule());
         RuleManager.AddRule(new CalculateTotalRule());
+        #endregion
+
+        // Registration order deliberately reversed: RuleOrder decides, not
+        // registration (see the Rule Execution Order section below)
+        RuleManager.AddRule(new LateTraceRule());
+        RuleManager.AddRule(new EarlyTraceRule());
     }
 
     [Create]
@@ -70,10 +82,10 @@ internal partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>, IRuleBasicsD
     internal void Fetch(int id, [Service] IRulesDemoRepository repository)
     {
         var data = repository.GetById(id);
-        this["Name"].LoadValue(data.Name);
-        this["Quantity"].LoadValue(data.Quantity);
-        this["Price"].LoadValue(data.Price);
-        this["Total"].LoadValue(data.Total);
+        Name = data.Name;
+        Quantity = data.Quantity;
+        Price = data.Price;
+        Total = data.Total;
     }
 
     [Remote]
@@ -90,7 +102,7 @@ internal partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>, IRuleBasicsD
 }
 
 // =============================================================================
-// Class-Based Rules - AsyncRuleBase<T>
+// Class-Based Rules - RuleBase<T> (synchronous)
 // =============================================================================
 // For complex rules that need:
 // - Multiple trigger properties
@@ -100,14 +112,15 @@ internal partial class RuleBasicsDemo : EntityBase<RuleBasicsDemo>, IRuleBasicsD
 //
 // Rule class members:
 // - TriggerProperties: Properties that trigger this rule when changed
-// - Execute(): The rule logic (can be sync or async)
+// - Execute(): The rule logic (synchronous on RuleBase<T>)
 // - Return: IRuleMessages with validation errors or empty for success
 // =============================================================================
 
+#region skill-rule-class
 /// <summary>
 /// Demonstrates: Simple validation rule as a class.
 /// </summary>
-internal class NameRequiredRule : AsyncRuleBase<RuleBasicsDemo>
+internal class NameRequiredRule : RuleBase<RuleBasicsDemo>
 {
     // =========================================================================
     // TriggerProperties - When Does This Rule Run?
@@ -126,24 +139,24 @@ internal class NameRequiredRule : AsyncRuleBase<RuleBasicsDemo>
     //
     // The messages are associated with the specified property.
     // =========================================================================
-    protected override Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
+    protected override IRuleMessages Execute(RuleBasicsDemo target)
     {
         if (string.IsNullOrWhiteSpace(target.Name))
         {
             // Return error - this makes IsValid=false
-            return Task.FromResult<IRuleMessages>(
-                (nameof(RuleBasicsDemo.Name), "Name is required").AsRuleMessages());
+            return (nameof(RuleBasicsDemo.Name), "Name is required").AsRuleMessages();
         }
 
         // Return None - validation passed (None is inherited from AsyncRuleBase)
-        return Task.FromResult<IRuleMessages>(None);
+        return None;
     }
 }
+#endregion
 
 /// <summary>
 /// Demonstrates: Action rule that computes derived values.
 /// </summary>
-internal class CalculateTotalRule : AsyncRuleBase<RuleBasicsDemo>
+internal class CalculateTotalRule : RuleBase<RuleBasicsDemo>
 {
     // =========================================================================
     // Multiple Trigger Properties
@@ -154,13 +167,13 @@ internal class CalculateTotalRule : AsyncRuleBase<RuleBasicsDemo>
     // =========================================================================
     public CalculateTotalRule() : base(t => t.Quantity, t => t.Price) { }
 
-    protected override Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
+    protected override IRuleMessages Execute(RuleBasicsDemo target)
     {
         // Calculate derived value
         target.Total = target.Quantity * target.Price;
 
         // Action rules typically return None (no validation message)
-        return Task.FromResult<IRuleMessages>(None);
+        return None;
     }
 }
 
@@ -185,24 +198,24 @@ internal class CalculateTotalRule : AsyncRuleBase<RuleBasicsDemo>
 // Exceptions in rules are actual errors (bugs, external failures).
 // =============================================================================
 
+#region skill-multi-message-rule
 /// <summary>
 /// Demonstrates: Rule returning multiple messages.
 /// </summary>
-internal class MultiMessageRule : AsyncRuleBase<RuleBasicsDemo>
+internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
 {
     public MultiMessageRule() : base(t => t.Quantity, t => t.Price) { }
 
-    protected override Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
+    protected override IRuleMessages Execute(RuleBasicsDemo target)
     {
         // Use fluent API to build multiple conditional messages
-        var result = new RuleMessages()
+        return new RuleMessages()
             .If(target.Quantity < 0, nameof(RuleBasicsDemo.Quantity), "Quantity cannot be negative")
             .If(target.Price < 0, nameof(RuleBasicsDemo.Price), "Price cannot be negative")
             .If(target.Quantity > 1000, nameof(RuleBasicsDemo.Quantity), "Quantity exceeds maximum order limit");
-
-        return Task.FromResult<IRuleMessages>(result);
     }
 }
+#endregion
 
 // =============================================================================
 // Rule Execution Order
@@ -211,40 +224,54 @@ internal class MultiMessageRule : AsyncRuleBase<RuleBasicsDemo>
 // Use RuleOrder property to control execution order.
 //
 // DESIGN DECISION: Lower RuleOrder values execute first.
-// Default is 0. Use negative values for early rules, positive for late.
+// Default is 1. Use lower values for early rules, higher for late.
 //
 // Example:
 //   RuleOrder = -10  // Runs early
-//   RuleOrder = 0    // Default
+//   RuleOrder = 1    // Default
 //   RuleOrder = 10   // Runs late
 //
 // PERFORMANCE: Rule execution considerations:
 // - Rules are stored in Dictionary<uint, IRule> keyed by stable rule ID
 // - Triggering rules: O(n) where n = total rules (filters by trigger property)
 // - Sorting by RuleOrder: Happens on each trigger (consider caching for hot paths)
-// - Async rules: Run sequentially, not in parallel (maintains predictable state)
+// - Rules triggered by one property change run one after another, awaited
+//   in RuleOrder (maintains predictable state); rules triggered by separate
+//   property changes can overlap
 // - Rule messages: Stored per-property, cleared before each rule execution
 // - WaitForTasks(): Awaits all pending async rules before proceeding
 // =============================================================================
 
-/// <summary>
-/// Demonstrates: Rule ordering.
-/// </summary>
-internal class EarlyValidationRule : AsyncRuleBase<RuleBasicsDemo>
+#region docs-rule-order
+/// <summary>Runs before rules with the default RuleOrder (1).</summary>
+internal class EarlyTraceRule : RuleBase<RuleBasicsDemo>
 {
-    public EarlyValidationRule() : base(t => t.Name)
+    public EarlyTraceRule() : base(t => t.Name)
     {
-        // This rule runs before rules with default RuleOrder (1)
-        // Lower values execute first
-        RuleOrder = -10;
+        RuleOrder = -10;   // lower runs first; the default is 1
     }
 
-    protected override Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
+    protected override IRuleMessages Execute(RuleBasicsDemo target)
     {
-        // Early validation - check preconditions
-        return Task.FromResult<IRuleMessages>(None);
+        target.RuleTrace += "early;";
+        return None;
     }
 }
+
+/// <summary>
+/// Default RuleOrder: runs after EarlyTraceRule although it is registered first.
+/// </summary>
+internal class LateTraceRule : RuleBase<RuleBasicsDemo>
+{
+    public LateTraceRule() : base(t => t.Name) { }
+
+    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    {
+        target.RuleTrace += "late;";
+        return None;
+    }
+}
+#endregion
 
 // =============================================================================
 // Running Rules Manually
@@ -255,7 +282,8 @@ internal class EarlyValidationRule : AsyncRuleBase<RuleBasicsDemo>
 // RunRules(propertyName): Run rules for specific property
 // RunRules(RunRulesFlag.All): Run all rules, clear all messages first
 // RunRules(RunRulesFlag.Self): Run this object's rules only
-// RunRules(RunRulesFlag.Children): Run children's rules only
+// Other flags select rules by state: Messages, NoMessages, Executed,
+// NotExecuted (see Neatoo.RunRulesFlag). There is no Children flag.
 //
 // await WaitForTasks(): Wait for async rules to complete
 // =============================================================================
@@ -369,8 +397,8 @@ internal class EarlyValidationRule : AsyncRuleBase<RuleBasicsDemo>
 // Each property change triggers its rules. Rapid changes mean multiple
 // concurrent rule executions. The last one to complete sets the final state.
 //
-// For long-running rules with rapid input (e.g., typeahead search):
-// Consider debouncing at the UI layer, not in rules.
+// For long-running rules: bind the property so it is set on field commit,
+// not per keystroke. Rules contain no debouncing.
 // =============================================================================
 
 // =============================================================================
@@ -391,7 +419,8 @@ internal class EarlyValidationRule : AsyncRuleBase<RuleBasicsDemo>
 // WHAT'S NOT GUARANTEED:
 // - Order between rules with different trigger properties
 // - Order when multiple properties change simultaneously
-// - Order after object deserialization (rules re-run, order preserved)
+// (Rules are not re-run after deserialization; their messages travel with
+// the object.)
 //
 // USE CASES FOR ORDERING:
 // - Dependent calculations: Calculate subtotal before total
@@ -402,6 +431,55 @@ internal class EarlyValidationRule : AsyncRuleBase<RuleBasicsDemo>
 //   public PrerequisiteRule() : base(...) { RuleOrder = -100; }
 //   public DependentRule() : base(...) { RuleOrder = 0; }  // Runs after
 // =============================================================================
+
+// =============================================================================
+// LoadProperty - Writing a Property From a Rule Without Triggering Its Rules
+// =============================================================================
+// A rule normally writes a derived value through the property setter, which
+// runs the rules registered on that property (the chained-rules pattern).
+// LoadProperty writes through the property's LoadValue instead: no rules on
+// that property run, and on an entity the property is not marked modified.
+// Whether a rule should write with LoadProperty or the setter is not settled;
+// the default shown everywhere else in Design.Domain is the setter.
+// =============================================================================
+
+#region docs-load-property
+/// <summary>
+/// Demonstrates: LoadProperty writes a property through its wrapper's
+/// LoadValue - no rules registered on that property run.
+/// </summary>
+[Factory]
+internal partial class LoadPropertyDemo : ValidateBase<LoadPropertyDemo>, ILoadPropertyDemo
+{
+    public partial int Quantity { get; set; }
+    public partial decimal UnitPrice { get; set; }
+    public partial decimal Total { get; private set; }
+    public partial bool TotalRuleRan { get; private set; }
+
+    public LoadPropertyDemo(IValidateBaseServices<LoadPropertyDemo> services) : base(services)
+    {
+        RuleManager.AddRule(new LoadPropertyTotalRule());
+
+        // A rule on Total: it does NOT run when Total is written by LoadProperty
+        RuleManager.AddAction(t => t.TotalRuleRan = true, t => t.Total);
+    }
+
+    [Create]
+    public void Create() { }
+}
+
+internal class LoadPropertyTotalRule : RuleBase<LoadPropertyDemo>
+{
+    public LoadPropertyTotalRule() : base(t => t.Quantity, t => t.UnitPrice) { }
+
+    protected override IRuleMessages Execute(LoadPropertyDemo target)
+    {
+        // Written without triggering the rules registered on Total
+        LoadProperty(target, t => t.Total, target.Quantity * target.UnitPrice);
+        return None;
+    }
+}
+#endregion
 
 // =============================================================================
 // Support Interfaces

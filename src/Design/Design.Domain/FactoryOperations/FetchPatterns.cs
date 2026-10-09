@@ -2,7 +2,8 @@
 // Design.Domain - [Fetch] Factory Operation Patterns
 // -----------------------------------------------------------------------------
 // This file demonstrates the [Fetch] attribute for loading existing objects
-// from persistence. [Fetch] typically needs [Remote] to access database.
+// from persistence. A root [Fetch] the client calls carries [Remote]; child
+// and list [Fetch] never do.
 // -----------------------------------------------------------------------------
 
 using Neatoo;
@@ -19,31 +20,20 @@ namespace Design.Domain.FactoryOperations;
 // - Loading aggregates with children
 // - Loading read models / projections
 //
-// DESIGN DECISION: [Fetch] methods almost always need [Remote].
-// Fetching requires database access, which is only on the server.
+// DESIGN DECISION: A root [Fetch] the client calls carries [Remote]; child
+// and list [Fetch] are internal and never [Remote]. The reason is the entry
+// point, not database access: a child [Fetch] that reads from the repository
+// runs on the server too, because only server-side code calls it.
 //
 // After [Fetch] completes:
 // - EntityBase: IsNew=false, IsModified=false (just loaded, no changes)
 // - ValidateBase: No persistence state changes
 //
-// GENERATOR BEHAVIOR: For [Remote][Fetch], RemoteFactory generates:
-//
-// Client-side factory (HTTP call):
-//   public async Task<FetchDemo> Fetch(int id) {
-//       var request = new FetchRequest { Id = id };
-//       var response = await httpClient.PostAsJsonAsync("FetchDemo/Fetch", request);
-//       return await response.Content.ReadFromJsonAsync<FetchDemo>();
-//   }
-//
-// Server-side factory (actual execution):
-//   public FetchDemo Fetch(int id) {
-//       var obj = serviceProvider.GetRequiredService<FetchDemo>();
-//       var repository = serviceProvider.GetRequiredService<IRepository>();
-//       obj.FactoryStart(FactoryOperation.Fetch);
-//       obj.Fetch(id, repository);  // Your method with [Service] resolved
-//       obj.FactoryComplete(FactoryOperation.Fetch);
-//       return obj;
-//   }
+// GENERATOR BEHAVIOR: For [Remote][Fetch], the generated factory sends the
+// call from the client to the single POST /api/neatoo endpoint; on the server
+// it resolves the object and the [Service] parameters, calls FactoryStart,
+// your method, then FactoryComplete, and returns the object. The real output
+// is under Generated/Neatoo.Generator/Neatoo.Factory/.
 // =============================================================================
 
 /// <summary>
@@ -68,16 +58,12 @@ internal partial class FetchDemo : EntityBase<FetchDemo>, IFetchDemo
     //
     // GENERATOR BEHAVIOR: instance factory methods run inside
     // FactoryStart/FactoryComplete - the object is PAUSED for the duration of
-    // the method body. While paused, plain property setters also load cleanly
-    // (no modification tracking, no rules).
+    // the method body.
     //
-    // DESIGN DECISION: Use LoadValue() for loads anyway. LoadValue() is the
-    // explicit load primitive: it never marks the property modified and never
-    // fires rules, REGARDLESS of pause state. That matters for [Create]
-    // CONSTRUCTORS (read-style lifecycle - the constructor body runs before
-    // the factory pause exists) and for any load code that runs outside a
-    // factory operation. Using LoadValue consistently means load code never
-    // depends on knowing whether it happens to be paused.
+    // DESIGN DECISION: Inside a factory operation, assign properties directly.
+    // The object is paused, so assignment marks nothing modified and runs no
+    // rules. LoadValue, PauseAllActions and MarkUnmodified are not used inside
+    // a factory operation.
     // =========================================================================
     [Remote]
     [Fetch]
@@ -85,10 +71,10 @@ internal partial class FetchDemo : EntityBase<FetchDemo>, IFetchDemo
     {
         var data = repository.GetById(id);
 
-        // LoadValue sets value without triggering modification tracking
-        this["Id"].LoadValue(data.Id);
-        this["Name"].LoadValue(data.Name);
-        this["Description"].LoadValue(data.Description);
+        // Paused - plain assignment is a clean baseline load
+        Id = data.Id;
+        Name = data.Name;
+        Description = data.Description;
 
         // After this method completes:
         // - IsNew = false (it exists in DB)
@@ -106,9 +92,9 @@ internal partial class FetchDemo : EntityBase<FetchDemo>, IFetchDemo
     {
         var data = repository.GetByCriteria(criteria.Name, criteria.MinValue);
 
-        this["Id"].LoadValue(data.Id);
-        this["Name"].LoadValue(data.Name);
-        this["Description"].LoadValue(data.Description);
+        Id = data.Id;
+        Name = data.Name;
+        Description = data.Description;
     }
 
     // =========================================================================
@@ -209,8 +195,8 @@ internal partial class FetchWithChildrenDemo : EntityBase<FetchWithChildrenDemo>
     {
         // Object is paused by its own factory operation - loads are clean
         var parentData = parentRepository.GetById(id);
-        this["Id"].LoadValue(parentData.Id);
-        this["Title"].LoadValue(parentData.Title);
+        Id = parentData.Id;
+        Title = parentData.Title;
 
         // Children load through the list factory's [Fetch]
         Items = itemsFactory.Fetch(id);

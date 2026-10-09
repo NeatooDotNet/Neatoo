@@ -18,7 +18,7 @@ namespace Design.Domain.Entities;
 /// </summary>
 public interface IEmployee : IEntityRoot
 {
-    int Id { get; }
+    Guid Id { get; }
     string? FirstName { get; set; }
     string? LastName { get; set; }
     string? Email { get; set; }
@@ -36,7 +36,7 @@ public interface IEmployee : IEntityRoot
 /// </summary>
 public interface IAddress : IEntityBase
 {
-    int Id { get; }
+    Guid Id { get; }
     string? Street { get; set; }
     string? City { get; set; }
     string? State { get; set; }
