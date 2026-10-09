@@ -15,7 +15,7 @@
 
 ## Scope
 
-Copy `skills/neatoo` and `skills/mudneatoo` to `~/.claude/skills/`, confirm the copies are byte-identical, and run `dotnet mdsnippets` and the hand-written-block count one last time. Then test the skill on a fresh session, not on the orchestrator: launch a fresh-context agent from a directory that does not contain this repository's `CLAUDE.md` (so no doctrine leaks in beside the skill), give it only the installed skill and the five zCRM scenarios listed under the habit-trap table, and score its output row by row against that table. Every row it falls into becomes a punchlist fix to the skill; re-sync and re-run until it falls into none (AC-9). The orchestrator's own cold read is not evidence. A repeatable eval suite (`claude plugin eval`) is a sibling todo if wanted, not this plan.
+Copy `skills/neatoo` and `skills/mudneatoo` to `~/.claude/skills/`, confirm the copies are byte-identical, and run `dotnet mdsnippets` and the hand-written-block count one last time. Then test the skill on a fresh session, not on the orchestrator: launch a fresh-context agent from a directory that does not contain this repository's `CLAUDE.md` (so no doctrine leaks in beside the skill), give it only the two installed skills (neatoo and RemoteFactory, the latter once the sibling todo has synced it) and the five zCRM scenarios listed under the habit-trap table, and score its output row by row against that table. Every row it falls into becomes a punchlist fix to the skill; re-sync and re-run until it falls into none (AC-9). The orchestrator's own cold read is not evidence. A repeatable eval suite (`claude plugin eval`) is a sibling todo if wanted, not this plan.
 
 ---
 
