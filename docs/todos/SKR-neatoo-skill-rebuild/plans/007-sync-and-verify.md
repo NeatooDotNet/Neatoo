@@ -1,9 +1,9 @@
-# Installed skills synced and verified
+# Sync, then fresh-session test
 
 **Plan #:** 007
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
-**Serves:** AC-8
+**Serves:** AC-8, AC-9
 **Status:** Draft
 **Last Updated:** 2026-10-09
 **Plan-review opt-in:** —
@@ -15,7 +15,7 @@
 
 ## Scope
 
-Copy `skills/neatoo` and `skills/mudneatoo` to `~/.claude/skills/`, confirm the copies are byte-identical, run `dotnet mdsnippets` and the hand-written-block count one last time, and read the rebuilt `SKILL.md` cold as a zCRM developer would to check the three decisions (shape, attribute, tier) can be made from it for a contact, a search form, a duplicate-contact check and a nightly job. Findings go to the punchlist or Follow-on; this plan writes no new skill content beyond what that read turns up as a one-line fix.
+Copy `skills/neatoo` and `skills/mudneatoo` to `~/.claude/skills/`, confirm the copies are byte-identical, and run `dotnet mdsnippets` and the hand-written-block count one last time. Then test the skill on a fresh session, not on the orchestrator: launch a fresh-context agent from a directory that does not contain this repository's `CLAUDE.md` (so no doctrine leaks in beside the skill), give it only the installed skill and the five zCRM scenarios listed under the habit-trap table, and score its output row by row against that table. Every row it falls into becomes a punchlist fix to the skill; re-sync and re-run until it falls into none (AC-9). The orchestrator's own cold read is not evidence. A repeatable eval suite (`claude plugin eval`) is a sibling todo if wanted, not this plan.
 
 ---
 
