@@ -20,45 +20,47 @@ Someone building zCRM, human or Claude, opens `skills/neatoo` and can decide thr
 
 - [ ] **AC-1** · Must — `SKILL.md` leads with the model, then answers every row of the habit-trap table at its decision point, with the type, operation, tier and placement decisions and the UI contract consistent with D1–D19.
 - [ ] **AC-2** · Must — Every C# block in `skills/neatoo` comes from a compiled `src/Design` region, except blocks labelled WRONG.
-- [ ] **AC-3** · Must — Design.Domain has a tested example of each type choice: aggregate, input model, read model, context, static command, class-level `[Execute]`, domain-service interface factory, and an entity reused by a job.
+- [ ] **AC-3** · Must — Design.Domain has a tested example of each Neatoo-owned type choice: aggregate, input model, read model, an entity reused by a job, and a rule that takes an interface-factory domain service.
 - [ ] **AC-4** · Must — Design.App and Design.Server build and test in CI and supply the tier-composition snippets.
 - [ ] **AC-5** · Must — No skill, doc or Design.Domain text teaches running rules at the end of `[Create]` or `[Fetch]` as a routine step.
 - [ ] **AC-6** · Should — mudneatoo's Blazor blocks come from Design.App.
 - [ ] **AC-7** · Should — The skill names each known framework pain with its issue or analyzer.
 - [ ] **AC-8** · Should — The installed copies in `~/.claude/skills` match `skills/` at close.
-- [ ] **AC-9** · Must — A fresh session given only the installed skill and the zCRM scenarios falls into none of the habit-trap rows.
+- [ ] **AC-9** · Must — A fresh session given only the two installed skills and the zCRM scenarios falls into none of the habit-trap rows.
 - [ ] **AC-10** · Should — `SKILL.md` is at most about 400 lines, with the habit-trap table in the first screen after the model.
 
 ## Habit traps the skill must answer
 
 The rubric for AC-1 and AC-9. Each row is a question a mainstream .NET developer (or model) asks by habit, Neatoo's answer, and the compiled example a reader copies instead. Sources: `docs/VisionAlignment.md` sections 1.3 and 2.1, Appendix A, RemoteFactory#112, and the 2026-10-09 job-example miss.
 
-| # | The question the habit asks | Neatoo's answer | Compiled example | Plan |
-|---|---|---|---|---|
-| T1 | Where do I validate before Save? | Nowhere; the rules ran when the property was set. `WaitForTasks()`, read `IsSavable`. `RunRules` is not a validate step | job; Blazor save handler | 001, 002 |
-| T2 | Where do I throw when input is bad? | A rule. Exceptions are application failures, never validation (D2) | `ErrorPatterns`; a validation rule | existing |
-| T3 | How do I load-or-create? | An `[Execute]` that calls Fetch and Create (D11) | class-level `[Execute]` | 001 |
-| T4 | Can I `[Create]` from loaded data? | No. Create = new, Fetch = existing (D3) | `FetchPatterns` | existing |
-| T5 | How does the client call the repository? | It doesn't. A repository is `[Service]` on a server operation; a service the client calls is an interface factory (D12, RF#112) | domain-service interface factory | 001 |
-| T6 | Where does my application service go? | Static command; class-level `[Execute]` when the result is the aggregate; context when the screen binds to it (D12, D13) | `Commands/`; context | 001 |
-| T7 | Nobody edits this, so plain EF? | An entity is right with no person involved (D4) | job | 001 |
-| T8 | Where do the screen's derived values and visibility go? | Rules on the entity expose business facts; the UI binds (D16) | `WorkOrder.CanApprove`; a Design.App page | 002 |
-| T9 | How do I set a value in Fetch without marking it modified? | Plain assignment inside an operation is baseline; `LoadValue` is not for operations | `FetchPatterns` | existing |
-| T10 | How do I re-run rules after Fetch so computed values populate? | You don't. Assign the derived value inside the operation (D18) | 003's replacement regions | 003 |
-| T11 | The parent saves its children's rows? | Each object writes itself; the list coordinates (D10) | `Order` / `OrderItemList` | existing |
-| T12 | A rule can't call the server? | It can, through an injected command (D1) | `CheckUsernameAvailabilityRule` | existing |
-| T13 | `Save()` updates my object? | It returns a new instance; reassign it (analyzer pending) | `SavePatterns` | existing |
-| T14 | Which services can a constructor take? | Both tiers. `[Service]` parameters are server-only | `ServiceInjectionDemo` | existing |
-| T15 | Should the child's `[Insert]` be `[Remote]`? | No; `internal`. The call is already on the server | `OrderItem` | existing |
-| T16 | Value object, so `ValidateBase`? | A `record`. `ValidateBase` is an input model (D17) | `EmployeeSummary`; input model | 001 |
-| T17 | Can I call `Save()` on a child? | No. `IEntityBase` has none; only `IEntityRoot` does | `IOrderInterfaces` | existing |
+| # | Owner | The question the habit asks | Neatoo's answer | Compiled example | Plan |
+|---|---|---|---|---|---|
+| T1 | Neatoo | Where do I validate before Save? | Nowhere; the rules ran when the property was set. `WaitForTasks()`, read `IsSavable`. `RunRules` is not a validate step | job; Blazor save handler | 001, 002 |
+| T2 | Neatoo | Where do I throw when input is bad? | A rule. Exceptions are application failures, never validation (D2) | `ErrorPatterns`; a validation rule | existing |
+| T3 | RF | How do I load-or-create? | An `[Execute]` that calls Fetch and Create (D11) | RF skill: class-level `[Execute]` | RF sibling |
+| T4 | RF | Can I `[Create]` from loaded data? | No. Create = new, Fetch = existing (D3) | RF skill | RF sibling |
+| T5 | RF | How does the client call the repository? | It doesn't. A repository is `[Service]` on a server operation; a service the client calls is an interface factory (D12, RF#112) | RF skill: domain-service interface factory | RF sibling |
+| T6 | RF | Where does my application service go? | Static command; class-level `[Execute]` when the result is the aggregate; context when the screen binds to it (D12, D13) | RF skill: command, context | RF sibling |
+| T7 | Neatoo | Nobody edits this, so plain EF? | An entity is right with no person involved (D4) | job | 001 |
+| T8 | Neatoo | Where do the screen's derived values and visibility go? | Rules on the entity expose business facts; the UI binds (D16) | `WorkOrder.CanApprove`; a Design.App page | 002 |
+| T9 | Neatoo | How do I set a value in Fetch without marking it modified? | Plain assignment inside an operation is baseline; `LoadValue` is not for operations | `FetchPatterns` | existing |
+| T10 | Neatoo | How do I re-run rules after Fetch so computed values populate? | You don't. Assign the derived value inside the operation (D18) | 003's replacement regions | 003 |
+| T11 | both | The parent saves its children's rows? | Each object writes itself (RF); the list coordinates with `DeletedList` and `IsNew` routing (Neatoo, D10) | `Order` / `OrderItemList` | existing |
+| T12 | Neatoo | A rule can't call the server? | It can, through an injected command or an interface-factory domain service (D1, C6 ruling) | `CheckUsernameAvailabilityRule`; rule with a domain service | existing, 001 |
+| T13 | RF | `Save()` updates my object? | It returns a new instance; reassign it (analyzer pending) | RF skill | RF sibling |
+| T14 | RF | Which services can a constructor take? | Both tiers. `[Service]` parameters are server-only | RF skill | RF sibling |
+| T15 | RF | Should the child's `[Insert]` be `[Remote]`? | No; `internal`. The call is already on the server | RF skill | RF sibling |
+| T16 | Neatoo | Value object, so `ValidateBase`? | A `record`. `ValidateBase` is an input model (D17) | `EmployeeSummary`; input model | 001 |
+| T17 | Neatoo | Can I call `Save()` on a child? | No. `IEntityBase` has none; only `IEntityRoot` does | `IOrderInterfaces` | existing |
+
+Ownership (agreed 2026-10-09): each row lives in the skill of the framework that enforces it. The RemoteFactory skill owns model statements 1–4 and 6 and the RF rows; the Neatoo skill owns statements 5, 7, 8, 9 and the Neatoo rows. Each `SKILL.md` carries a pointer block naming the other's rows; nothing is copied. The RF rows are built by the sibling todo in the RemoteFactory repository.
 
 Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact search form; a duplicate-contact check; open-or-create today's visit; a nightly job over Contacts.
 
 ## Out of Scope
 
 - The analyzers (collection-reference trigger, `LoadValue` inside an operation, discarded `Save()` result): their own todo; the skill links to them as they land.
-- The RemoteFactory repository and skill (deferred; RemoteFactory#112 filed).
+- The RemoteFactory repository and skill: the sibling todo in that repository, run by the desktopRemoteFactory session, owns the RF rows, the RF model statements and RemoteFactory#112.
 - Restructuring the user docs beyond the D18 edits AC-5 requires.
 - Fixing MudNeatoo components or adding bUnit coverage beyond what AC-6's snippets need.
 
@@ -68,7 +70,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 
 | # | File | Title (≤ 8 words) | Serves | Status | PR |
 |---|------|-------|--------|--------|----|
-| 001 | [001-type-choice-examples](./plans/001-type-choice-examples.md) | Design.Domain example per type choice | AC-3 | Draft | — |
+| 001 | [001-type-choice-examples](./plans/001-type-choice-examples.md) | Design.Domain example per Neatoo type choice | AC-3 | Draft | — |
 | 002 | [002-design-app-server](./plans/002-design-app-server.md) | Design.App and Design.Server in CI | AC-4, AC-1 | Draft | — |
 | 003 | [003-no-end-of-operation-runrules](./plans/003-no-end-of-operation-runrules.md) | Stop teaching end-of-operation RunRules | AC-5 | Draft | — |
 | 004 | [004-skill-model-and-decisions](./plans/004-skill-model-and-decisions.md) | SKILL.md: model, habit traps, decisions, UI contract | AC-1, AC-2, AC-10 | Draft | — |
@@ -98,6 +100,12 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - **Index changes:** AC-1 reworded; AC-9, AC-10 added; habit-trap table added as rubric; 002, 004, 007 scopes amended. Cap unchanged, 7 of 11 issued.
 - **Follow-up:** SKR-004, SKR-007
 
+### 2026-10-09 — SKR-001 · serves AC-3
+- **Finding:** Three of plan 001's four shapes (context, class-level `[Execute]`, interface factory) are RemoteFactory doctrine; building them in Design.Domain would duplicate the RF skill and drift.
+- **Decision:** Re-split (skills split by owner, agreed with the user)
+- **Index changes:** AC-3 narrowed to Neatoo-owned shapes; trap table gains an Owner column; RF rows move to a sibling todo in the RemoteFactory repository; 001 re-drafted; 004 restates nothing RF-owned; 007 loads both skills. Cap unchanged, 7 of 11 issued.
+- **Follow-up:** SKR-001, sibling
+
 ---
 
 ## Skipped Steps
@@ -108,7 +116,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 
 ## Sibling Todos
 
-- 
+- RemoteFactory skill rebuild, in the RemoteFactory repository (ID assigned there), run by the desktopRemoteFactory session. Owns T3–T6, T13–T15, T11's RF half, model statements 1–4 and 6, rulings D3/D8/D11–D15, RemoteFactory#112. SKR-007 waits on its skill being synced. Its branches land on its own arc, not this one.
 
 ---
 
