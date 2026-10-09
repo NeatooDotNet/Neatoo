@@ -31,7 +31,6 @@ The Neatoo Solution is at src/Neatoo.sln
 | `Neatoo.Console` | Console app for testing/debugging |
 | `Neatoo.UnitTest` | Main test project (Unit/, Integration/) |
 | `Neatoo.UnitTest.Demo` | Demo tests |
-| `samples` | Code samples for documentation (MarkdownSnippets) |
 | `Design.Domain` | Authoritative API design reference (heavily commented) |
 | `Design.Infrastructure` | Empty project; repository interfaces live in Design.Domain beside their aggregates |
 | `Design.Tests` | Tests verifying design patterns |
@@ -166,7 +165,7 @@ Neatoo depends on **RemoteFactory** for source generation of factory methods. Ne
 
 ## Documentation and Project Management
 
-- **Framework documentation**: Use `/docs-create`, `/docs-update`, or `/docs-review` commands (powered by `docs-writer` agent) for creating and maintaining user-facing docs with MarkdownSnippets. Code snippets are moving from `src/samples/` to `src/Design/Design.Domain/`, the one canonical example set.
+- **Framework documentation**: Use `/docs-create`, `/docs-update`, or `/docs-review` commands (powered by `docs-writer` agent) for creating and maintaining user-facing docs with MarkdownSnippets. Every code snippet comes from `#region` blocks in `src/Design/` (Design.Domain and Design.Tests), the one canonical example set.
 - **Project todos/plans**: Use the `/iterative-todo` skill for tracking work and design documents
 - **DDD terminology**: See global CLAUDE.md for DDD documentation guidelines
 

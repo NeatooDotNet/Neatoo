@@ -1,0 +1,3 @@
+# MarkdownSnippets rewrites markdown with LF line endings; checking markdown
+# out as LF keeps every mdsnippets run from showing untouched files as modified.
+*.md text eol=lf

@@ -606,7 +606,7 @@ RuleManager.AddAction(
 
 ### Cancellation
 
-A class-based rule receives an optional `CancellationToken`; `AddActionAsync` has an overload whose lambda receives one. The token reaches a rule only from an explicit `RunRules(flag, token)` or `Save(token)`; a property setter passes none. A cancelled `RunRules` throws `OperationCanceledException` and marks the object invalid with "Validation cancelled" through `MarkInvalid`; `RunRules(RunRulesFlag.All)` does not clear that (the built-in rule re-reports `ObjectInvalid`, despite the framework's XML doc), so cancellation is for abandoning the object, not recovering it:
+A class-based rule receives an optional `CancellationToken`; `AddActionAsync` has an overload whose lambda receives one. The token reaches a rule only from an explicit `RunRules(flag, token)` or `Save(token)`; a property setter passes none. A cancelled `RunRules` throws `OperationCanceledException` and marks the object invalid with "Validation cancelled" through `MarkInvalid`; `RunRules(RunRulesFlag.All)` does not clear that (the built-in rule re-reports `ObjectInvalid`; known bug, NeatooDotNet/Neatoo#96), so cancellation is for abandoning the object, not recovering it:
 
 <!-- snippet: skill-cancellable-rule -->
 <a id='snippet-skill-cancellable-rule'></a>

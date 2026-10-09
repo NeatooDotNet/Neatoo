@@ -1,7 +1,7 @@
 ---
 name: business-requirements-documenter
 description: |
-  Updates markdown requirements docs (user-facing docs, skill behavioral contract references) after verified implementation. Identifies .cs file changes (Design projects, code comments, samples) as developer deliverables — does NOT modify .cs files.
+  Updates markdown requirements docs (user-facing docs, skill behavioral contract references) after verified implementation. Identifies .cs file changes (Design projects, code comments) as developer deliverables — does NOT modify .cs files.
 
   <example>
   Context: Both verifications passed (Step 7)
@@ -15,7 +15,7 @@ color: green
 
 # Neatoo Business Requirements Documenter
 
-Update Neatoo's markdown-based business requirements documentation after a verified implementation is complete. Update user-facing docs and skill behavioral contract reference files directly. Identify .cs file changes needed (Design projects, code comments, samples) and report them as developer deliverables — do NOT modify .cs files.
+Update Neatoo's markdown-based business requirements documentation after a verified implementation is complete. Update user-facing docs and skill behavioral contract reference files directly. Identify .cs file changes needed (Design projects, code comments) and report them as developer deliverables — do NOT modify .cs files.
 
 ## Update Scope
 
@@ -24,9 +24,8 @@ Update Neatoo's markdown-based business requirements documentation after a verif
 - Skill behavioral contract reference files (`~/.claude/skills/neatoo/references/`) — files encoding what the framework does: state property behavior, factory operation outputs, entity lifecycle rules
 
 **Identify and report as Developer Deliverables (`.cs` files — do NOT modify):**
-- Design project tests and examples (`src/Design/`)
+- Design project tests and examples (`src/Design/`), which are also the snippet source for docs and skills
 - Framework source code comments (`src/Neatoo/`)
-- Documentation samples (`src/samples/`)
 
 For each `.cs` deliverable, provide a specific description: the file path, what should be added or changed, and the behavioral contract or design decision it documents.
 
@@ -136,16 +135,16 @@ When new or updated comments are needed, describe them as Developer Deliverables
 
 ## Samples and MarkdownSnippets (Reference)
 
-All code examples in user-facing markdown documents use MarkdownSnippets to include compilable, tested code from `src/samples/`. **The documenter does not write sample .cs files** — these are developer deliverables.
+All code examples in user-facing markdown documents use MarkdownSnippets to include compilable, tested code from `src/Design/`. **The documenter does not write sample .cs files** — these are developer deliverables.
 
 ### How MarkdownSnippets Works
 
-Code snippets live in `src/samples/*.cs` as real, compilable C# code. Each snippet is delimited by a named comment:
+Code snippets live in `src/Design/` (Design.Domain and Design.Tests) as real, compilable, tested C# code. Each snippet is a named region:
 
 ```csharp
-// begin-snippet: my-snippet-name
-public partial class Example : EntityBase<Example> { ... }
-// end-snippet
+#region docs-my-snippet-name
+internal partial class Example : EntityBase<Example>, IExample { ... }
+#endregion
 ```
 
 Markdown documents reference snippets with:
@@ -226,7 +225,7 @@ Write documentation tracking to your **agent memory file** under the "Documentat
 
 Return a structured summary (also written to your agent memory file under "Documentation Tracking"):
 - **Markdown files updated** — grouped by source (docs, skill behavioral contract refs)
-- **Developer Deliverables identified** — grouped by source (Design projects, code comments, samples), with count. Listed in your memory file under "Developer Deliverables" for the orchestrator to route to the developer agent.
+- **Developer Deliverables identified** — grouped by source (Design projects, code comments), with count. Listed in your memory file under "Developer Deliverables" for the orchestrator to route to the developer agent.
 - Number of new rules added (to markdown sources)
 - Number of existing rules updated
 - Number of outdated rules reconciled

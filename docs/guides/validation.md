@@ -556,41 +556,9 @@ Meta-properties raise `PropertyChanged` when their values change; a page that su
 
 ## Object-Level Validation
 
-Not every validation failure maps to a specific property. A payment gateway might reject an entire transaction. `MarkInvalid` marks the whole object invalid with an error message that is not tied to any one property:
+Application code does not mark a whole object invalid. A failure that spans several properties is a rule triggered on all of them (see Cross-Property Validation above); a failure that comes back from outside the object, such as a payment gateway rejecting a transaction, is an exception, not a validation message.
 
-<!-- snippet: docs-mark-invalid -->
-<a id='snippet-docs-mark-invalid'></a>
-```cs
-/// <summary>
-/// Demonstrates: MarkInvalid, the object-level invalid flag for a failure that
-/// belongs to no single property.
-/// </summary>
-[Factory]
-internal partial class PaymentDemo : ValidateBase<PaymentDemo>, IPaymentDemo
-{
-    public partial string? Reference { get; set; }
-    public partial decimal Amount { get; set; }
-
-    public PaymentDemo(IValidateBaseServices<PaymentDemo> services) : base(services) { }
-
-    [Create]
-    public void Create() { }
-
-    // MarkInvalid is protected: only the object itself records an object-level
-    // failure. The message appears in PropertyMessages (under ObjectInvalid)
-    // and IsValid is false while ObjectInvalid is set.
-    public void RecordGatewayRejection(string reason) => MarkInvalid(reason);
-}
-```
-<sup><a href='/src/Design/Design.Domain/ErrorHandling/MarkInvalidDemo.cs#L15-L36' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-mark-invalid' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Object-level validation patterns:
-- **MarkInvalid(message)**: Mark the object invalid with an error message. Protected: only the object itself calls it
-- **ObjectInvalid property**: Stores the object-level error message; a built-in rule reports it as a property message so `IsValid` reflects it
-- **Clearing it**: `RunRules(RunRulesFlag.All)` does *not* clear `ObjectInvalid` — it drops the message, then the built-in rule re-reports the still-set value (the framework's XML documentation on `MarkInvalid` says otherwise; the design tests pin the observed behaviour). Only the object itself can reset `ObjectInvalid`; its setter is protected
-
-Object-level validation captures errors that span multiple properties or depend on external state.
+`ValidateBase` has a protected `MarkInvalid(message)` and an `ObjectInvalid` property, which a built-in rule reports as a property message. The framework uses them itself when a `RunRules` call is cancelled (see Cancellation Token Support below). They are not an application validation channel.
 
 ## PauseAllActions for Batching
 
@@ -831,7 +799,7 @@ Cancellation behavior:
 - **Field commit, not keystroke**: MudNeatoo text and numeric fields set the property on blur, so a rule runs once per committed value — cancellation is for abandoned pages, not superseded keystrokes
 - **OperationCanceledException**: Thrown when cancellation occurs
 - **MarkInvalid("Validation cancelled")**: Object marked invalid when a `RunRules` is cancelled; a cancelled `WaitForTasks(token)` only stops the wait
-- **Recovery**: `RunRules(RunRulesFlag.All)` re-runs the rules but does not clear `ObjectInvalid` (see Object-Level Validation above), so a cancelled `RunRules` leaves the object invalid until the object itself resets `ObjectInvalid`. Cancellation is for abandoning the object, not for recovering it
+- **Recovery**: `RunRules(RunRulesFlag.All)` re-runs the rules but does not clear `ObjectInvalid` — a known bug ([#96](https://github.com/NeatooDotNet/Neatoo/issues/96)) — so a cancelled `RunRules` leaves the object invalid. Until it is fixed, cancellation is for abandoning the object, not for recovering it
 
 ## Validation Rule Execution Order
 

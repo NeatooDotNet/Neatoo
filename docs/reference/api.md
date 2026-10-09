@@ -149,8 +149,8 @@ public void Indexer_ExposesPropertyMetadata()
 | RunRules | `public virtual Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null)` | `All` clears messages and re-runs every rule. Works while paused (no `IsPaused` guard). A cancelled `RunRules` marks the object invalid with "Validation cancelled" until re-run. |
 | ClearAllMessages | `public virtual void ClearAllMessages()` | Clears messages on this object and every descendant. |
 | ClearSelfMessages | `public virtual void ClearSelfMessages()` | Clears this object's own property messages only. |
-| MarkInvalid | `protected virtual void MarkInvalid(string message)` | Records an object-level failure that is not tied to a property. Protected: only the object itself can call it. |
-| ObjectInvalid | `public string? ObjectInvalid { get; protected set; }` | The object-level message, or `null`. A built-in rule reports it as a property message so `IsValid` reflects it. |
+| MarkInvalid | `protected virtual void MarkInvalid(string message)` | Framework use: sets `ObjectInvalid` when a `RunRules` call is cancelled. Not an application validation channel; validation is a rule. |
+| ObjectInvalid | `public string? ObjectInvalid { get; protected set; }` | The object-level message, or `null`. A built-in rule reports it as a property message so `IsValid` reflects it. `RunRules(RunRulesFlag.All)` does not clear it ([#96](https://github.com/NeatooDotNet/Neatoo/issues/96)). |
 
 Rules run when a property is set outside a factory operation; there is nothing to call before reading `IsValid` except `WaitForTasks()` when async rules may be in flight. `RunRules` is for forcing a re-run — most often at the end of a `[Create]` or `[Fetch]` that set inputs while the object was paused, so that computed properties populate:
 
@@ -212,60 +212,6 @@ public Address(IEntityBaseServices<Address> services) : base(services)
 }
 ```
 <sup><a href='/src/Design/Design.Domain/Entities/Address.cs#L30-L59' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation-attributes-and-rules' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-#### MarkInvalid
-
-`MarkInvalid` records a failure that no property rule can express — a result that came back from outside the object. The object exposes a business method for it; the message appears in `PropertyMessages` and `IsValid` goes false. `RunRules(RunRulesFlag.All)` does *not* clear it: the built-in rule on `ObjectInvalid` re-reports the still-set value (the framework's XML documentation says otherwise; the design tests pin the observed behaviour). Only the object itself can reset `ObjectInvalid`, whose setter is protected. (Validation is otherwise always a rule; when `MarkInvalid` is legitimate is not settled.)
-
-<!-- snippet: docs-mark-invalid -->
-<a id='snippet-docs-mark-invalid'></a>
-```cs
-/// <summary>
-/// Demonstrates: MarkInvalid, the object-level invalid flag for a failure that
-/// belongs to no single property.
-/// </summary>
-[Factory]
-internal partial class PaymentDemo : ValidateBase<PaymentDemo>, IPaymentDemo
-{
-    public partial string? Reference { get; set; }
-    public partial decimal Amount { get; set; }
-
-    public PaymentDemo(IValidateBaseServices<PaymentDemo> services) : base(services) { }
-
-    [Create]
-    public void Create() { }
-
-    // MarkInvalid is protected: only the object itself records an object-level
-    // failure. The message appears in PropertyMessages (under ObjectInvalid)
-    // and IsValid is false while ObjectInvalid is set.
-    public void RecordGatewayRejection(string reason) => MarkInvalid(reason);
-}
-```
-<sup><a href='/src/Design/Design.Domain/ErrorHandling/MarkInvalidDemo.cs#L15-L36' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-mark-invalid' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-<!-- snippet: docs-mark-invalid-test -->
-<a id='snippet-docs-mark-invalid-test'></a>
-```cs
-[TestMethod]
-public async Task MarkInvalid_SetsAnObjectLevelMessage()
-{
-    var payment = _factory.Create();
-    payment.Reference = "TXN-001";
-    payment.Amount = 100m;
-    await payment.WaitForTasks();
-    Assert.IsTrue(payment.IsValid);
-
-    payment.RecordGatewayRejection("Payment gateway rejected");
-    await payment.WaitForTasks();
-
-    Assert.IsFalse(payment.IsValid);
-    Assert.AreEqual("Payment gateway rejected", payment.ObjectInvalid);
-    Assert.IsTrue(payment.PropertyMessages.Any(m => m.Message.Contains("Payment gateway rejected")));
-}
-```
-<sup><a href='/src/Design/Design.Tests/RuleTests/MarkInvalidTests.cs#L34-L51' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-mark-invalid-test' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Meta Properties
