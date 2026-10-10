@@ -27,3 +27,23 @@
 ## Read report
 
 Beyond the brief: RemoteFactory generator at tag v1.9.0 (Transform, Types, both renderers, diagnostics), its Design `CtorInjectionExample.cs` and `ClassFactoryWithExecute.cs`, `EntityBase.cs` Save guard, repo-wide grep of `DemoValueObject`. Lightly used: `static-factory.md`, `interface-factory.md`, `EmployeeDirectory.cs`, `ApproveEmployee.cs`.
+
+---
+
+# SKR-001 second plan review (re-draft) — 2026-10-09
+
+**Reviewer:** plan-reviewer (tight budget). **Verdict: APPROVED.** No veto-tier findings; four callouts on AC-3 (Must), one Pass A.
+
+Fold-in check on the first review: V1 moot (context gone); C1, C4, C5, C6 folded correctly; C2's RunRules conclusion correctly overruled by the user's ruling, its NotModified point kept; C3's business-key Fetch no longer needed (job takes Guid keys).
+
+Reality check: Order's only validation rule is `Items?.Count == 0 && Status != "Draft"`, triggered by `Status`, synchronous; `IOrder : IEntityRoot` exposes `Save()`; `MockOrderRepository` can seed all three cases unchanged; `AreSame` value equality makes the unchanged case fire nothing; no `[Factory]` interface exists in Design.Domain yet and in Server mode the implementation must be registered by the test setup.
+
+| # | Finding | Where |
+|---|---|---|
+| P-A1 | The "command for one call, interface factory for several" criterion is attributed to D12, which does not say it. Needs the user's confirmation before it becomes the `AsyncRules.cs` header. | `VisionAlignment.md:33` |
+| P-B1 | The verb must assign `Status`: it is the rule's only trigger. A verb that clears items would leave `IsValid` true, `Save()` would hit the D6 gate and throw, and the habitual fix is a `RunRules` call, trap T1. Scope ("the breakable validation rule") and Step 1 ("without inventing a new rule") disagree. | `Order.cs:58-62, 250-254` |
+| P-B2 | "Report" and "skip" are not separated: the unchanged order falls into the report branch with no messages. Doctrine choice: `!IsModified` silent skip, `!IsValid` report. | Acceptance bullet 1 |
+| P-B3 | Interface-first puts the verb on `IOrder` (region `skill-aggregate-interfaces`, rendered in 5 files) and the rule on `AsyncRulesDemo` (region `skill-rule-injected`, rendered in 5 files); Scope's "only rename re-renders" check would fail, and a rule on an existing demo could change existing tests' `IsValid`. | `IOrderInterfaces.cs:68-109`, `AsyncRules.cs:55-67` |
+| P-B4 | Step 5 "register the mock repository" is a leftover; only the service implementation needs registering. | `TestInfrastructure.cs:69` |
+
+Theoretical: `CLAUDE-DESIGN.md:77,87`, `README.md:24` and `docs/guides` prose call `ValidateBase` value objects (out of this plan's scope); `valueObjectFactory` parameter name survives; the bullet-4 grep must target comments, not region names; production registration of the domain service waits on plan 002; the job must return `Task<T>` and should throw on a null Fetch.
