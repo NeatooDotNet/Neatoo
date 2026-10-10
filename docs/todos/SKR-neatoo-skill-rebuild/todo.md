@@ -50,8 +50,11 @@ The rubric for AC-1 and AC-9. Each row is a question a mainstream .NET developer
 | T13 | RF | `Save()` updates my object? | It returns a new instance; reassign it (analyzer pending) | RF skill | RF sibling |
 | T14 | RF | Which services can a constructor take? | Both tiers. `[Service]` parameters are server-only | RF skill | RF sibling |
 | T15 | RF | Should the child's `[Insert]` be `[Remote]`? | No; `internal`. The call is already on the server | RF skill | RF sibling |
-| T16 | Neatoo | Value object, so `ValidateBase`? | A `record`. `ValidateBase` is an input model (D17) | `EmployeeSummary`; input model | 001 |
-| T17 | Neatoo | Can I call `Save()` on a child? | No. `IEntityBase` has none; only `IEntityRoot` does | `IOrderInterfaces` | existing |
+| T16 | Neatoo | Value object, so `ValidateBase`? | A `record`; `[Factory]` only when construction needs a service or authorization; its constructor may throw. `ValidateBase` is an input model (D17, D25) | `EmployeeSummary`; input model | 001 |
+| T17 | Neatoo | Can I call `Save()` on a child? | Not through a child-only interface: `IEntityBase` has none. A type that is both root and child extends `IEntityRoot` and is saved as a root only when fetched as one (D23) | `IOrderInterfaces` | existing |
+| T18 | RF | Does `[Remote]` mean "runs on the server"? | RF skill | RF skill | RF sibling |
+| T19 | RF | My command needs the server, so plain `[Execute]`? | RF skill | RF skill | RF sibling |
+| T20 | RF | I'll return a DTO from a controller for this screen? | RF skill | RF skill | RF sibling |
 
 Ownership (agreed 2026-10-09): each row lives in the skill of the framework that enforces it. The RemoteFactory skill owns model statements 1–4 and 6 and the RF rows; the Neatoo skill owns statements 5, 7, 8, 9 and the Neatoo rows. Each `SKILL.md` carries a pointer block naming the other's rows; nothing is copied. The RF rows are built by the sibling todo in the RemoteFactory repository.
 
@@ -63,6 +66,8 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - The RemoteFactory repository and skill: the sibling todo in that repository, run by the desktopRemoteFactory session, owns the RF rows, the RF model statements and RemoteFactory#112.
 - Restructuring the user docs beyond the D18 edits AC-5 requires.
 - Fixing MudNeatoo components or adding bUnit coverage beyond what AC-6's snippets need.
+- Removing Neatoo's lazy-load surface (D24: `lazy-loading.md`, `LazyLoadProperty.cs`, Person's phone list, mudneatoo's `EntityLazyLoad`, #97): its own todo once RemoteFactory ships the removal. SKR builds nothing new on LazyLoad and copies none of it into the rebuilt skill.
+- Moving the RemoteFactory pin from 1.9.0 to 1.10.1 (D8): its own task, with a full build and test.
 
 ---
 
@@ -82,7 +87,9 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 
 ## Punchlist
 
-- [ ] `CLAUDE.md` "Central Pillar" and "The Rules" wording softened to strongly recommended (D19) · `CLAUDE.md` · done when neither word "pillar" nor "must be internal" remains · AC-1 · Must
+- [x] `CLAUDE.md` "Central Pillar" and "The Rules" wording softened to strongly recommended (D19) · `CLAUDE.md` · PR #100 · AC-1 · Must
+- [ ] Design.Domain duality text reversed (D23): `RemoteBoundary.cs` "do not bolt a root role", `Address.cs` "NO STANDALONE-ROOT OPERATIONS", `IFactoryInterfaces.cs` "a root only" rewritten to the endorsed shape · `src/Design/Design.Domain` · done when no comment forbids a type being both root and child and the `DualUseEntity` demo shows both roles · AC-3 · Must
+- [ ] `CLAUDE-DESIGN.md:77,87` and `README.md:24` stop calling `ValidateBase` a value object (D17) · `src/Design/CLAUDE-DESIGN.md`, `README.md` · done when grep for "value object" near `ValidateBase` is empty · AC-3 · Must
 - [ ] Close #98 as moot under D18 · GitHub · done when closed with a comment naming D18 · AC-5 · Must
 - [ ] mudneatoo block count corrected in the audit README (49, not 14) · `docs/todos/consistency-audit/README.md` · done when the line reads 49 · AC-6 · Should
 
