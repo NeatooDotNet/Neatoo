@@ -4,7 +4,7 @@
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-3
-**Status:** Draft
+**Status:** In Progress
 **Last Updated:** 2026-10-09 (re-drafted after the owner split; first draft and review in `reviews/001-plan-review.md`)
 **Plan-review opt-in:** Yes — these examples become doctrine that `SKILL.md` points at and that gets copied; `plan-reviewer`, Pass A against D1–D19
 **Code-review opt-in:** Yes — examples are what gets copied, so the shape matters more than in ordinary code
@@ -15,7 +15,7 @@
 
 ## Scope
 
-Add to Design.Domain the Neatoo-owned type-choice examples the rebuilt `SKILL.md` will point at and that it does not yet have: a Neatoo entity reused by a server job with no person involved (D4, traps T1 and T7), and a rule that takes an interface-factory domain service (D1 as extended on 2026-10-09, trap T12). Give `Order` the verb and the breakable validation rule the job needs. Rename `DemoValueObject` and its list to input-model names and make sure no Design.Domain or Design.Tests text calls `ValidateBase` a value object (D17, T16). Each new shape gets a Design.Tests test and `skill-*` regions. The RemoteFactory-owned shapes (context, class-level `[Execute]`, interface factory as a pattern) are the sibling todo's and are not built here; this plan defines only the small domain-service interface the rule needs to compile. It does not touch the skill files or the user docs; snippets that re-render from the rename are accepted and the two prose lines that name the old type are fixed.
+Add to Design.Domain the Neatoo-owned type-choice examples the rebuilt `SKILL.md` will point at and that it does not yet have: a Neatoo entity reused by a server job with no person involved (D4, traps T1 and T7), and a rule that takes an interface-factory domain service (D1 as extended on 2026-10-09, trap T12). Give `Order` the verb the job needs; its existing validation rule is the one the verb can break. Rename `DemoValueObject` and its list to input-model names and make sure no Design.Domain or Design.Tests text calls `ValidateBase` a value object (D17, T16). Each new shape gets a Design.Tests test and `skill-*` regions. The RemoteFactory-owned shapes (context, class-level `[Execute]`, interface factory as a pattern) are the sibling todo's and are not built here; this plan defines only the small domain-service interface the rule needs to compile. It does not touch the skill files or the user docs by hand; snippets that re-render from the rename and from the new `IOrder` verb are accepted, and the two prose lines that name the old type are fixed. It also reverses the Design.Domain text that forbids a type being both root and child (D23; pulled from the todo punchlist).
 
 ---
 
@@ -41,22 +41,22 @@ Add to Design.Domain the Neatoo-owned type-choice examples the rebuilt `SKILL.md
 
 - Existing Design.Tests stay green and unchanged except for the rename.
 - The job calls no `RunRules` and catches nothing; an entity the verb leaves unchanged is skipped because it is not savable, never because `Save()` threw `NotModified`.
-- The job reports every skipped entity with its rule messages and returns; the valid ones are saved through the root's own `Save()` and the result is reassigned (T13).
+- The job separates three outcomes: `IsSavable` is saved through the root's own `Save()` and the result is reassigned (T13); `!IsValid` is reported with its rule messages; `!IsModified` is skipped silently (user, 2026-10-10). It returns the report.
 - The domain-service interface factory is named and documented as a service, never as a repository; it exposes nothing persistence-shaped.
-- `AsyncRules.cs`'s header is rewritten so the two rule examples read as one doctrine: a command delegate for one call, an interface-factory domain service for a service with several related calls (D12); neither is a server-only service.
+- `AsyncRules.cs`'s header is rewritten so the two rule examples read as one doctrine: a rule may take a command delegate or an interface-factory domain service (D1, D21); neither is a server-only service. No preference between the two is stated (user, 2026-10-10).
 - `Design.sln` builds with 0 warnings; `dotnet mdsnippets` reports no duplicate or missing regions.
 
 ---
 
 ## Steps
 
-1. Give `Order` a verb a job would call and whose outcome can break Order's existing validation rule, so an invalid-after-verb case exists without inventing a new rule. State in its comment that a verb sets state and never persists.
+1. Give `Order` a Submit verb that sets `Status`, the trigger of its existing validation rule, so an order with no items becomes invalid at once and the job never reaches `Save()` for it (review P-B1). The verb goes on `IOrder`; the `skill-aggregate-interfaces` re-render is accepted. State in its comment that a verb sets state and never persists.
 2. Add the job under `Jobs/`: a `[Remote, Execute] private static` command that takes a set of order keys, fetches each through the factory, applies the verb, awaits `WaitForTasks()`, saves those that are savable and reports the rest with their messages. Its header states D4, T1 and T7, and says why `[Remote]` is on it.
-3. Add a domain-service interface factory under `Services/`: a small `[Factory]` interface with one or two related calls, a server implementation without `[Factory]`, and a rule on an existing `ValidateBase` or `EntityBase` demo that takes the interface in its constructor and writes a message from its answer. Rewrite the `AsyncRules.cs` header so the command-delegate rule and this one read as one doctrine (D12).
+3. Add a domain-service interface factory under `Services/`: a small `[Factory]` interface with one or two related calls, a server implementation without `[Factory]`, and a rule on a new small demo type (not `AsyncRulesDemo`, so no existing test's `IsValid` changes and no existing region re-renders; review P-B3) that takes the interface in its constructor and writes a message from its answer. Rewrite the `AsyncRules.cs` header so the command-delegate rule and this one read as one doctrine, with no preference stated.
 4. Rename `DemoValueObject` / `IDemoValueObject` / `DemoValueObjectList` / `IDemoValueObjectList` to input-model names; re-point every reference including `DesignTestServices`; rewrite the surrounding comments and `ServiceContracts.cs`'s `MyValueObject` comment so `ValidateBase` is an input model; fix the two doc prose lines that name the old type. Keep the existing region names.
-5. Register the mock repository and the service implementation in `DesignTestServices`.
+5. Register the service implementation in `DesignTestServices` (the job uses the already-registered `IOrderRepository`; review P-B4). Reverse the duality text at `RemoteBoundary.cs`, `Address.cs` and `IFactoryInterfaces.cs` to the endorsed shape (D23) and make the `DualUseEntity` demo show both roles.
 6. Write one Design.Tests class per new shape pinning the Acceptance bullets; wrap each shape in a `skill-*` region sized for the skill.
-7. Build, test, run `dotnet mdsnippets`; confirm no duplicate or missing regions; confirm the re-rendered snippets are only those the rename touches.
+7. Build, test, run `dotnet mdsnippets`; confirm no duplicate or missing regions; confirm the re-rendered snippets are only those the rename, the `IOrder` verb and the duality demo touch.
 
 ---
 
@@ -73,13 +73,22 @@ Add to Design.Domain the Neatoo-owned type-choice examples the rebuilt `SKILL.md
 
 ## Current State (Pre-Flight)
 
--
+Walked 2026-10-10 before the first edit.
+
+- `Order.cs:58-62`: the only validation rule is `Items?.Count == 0 && Status != "Draft"` → "Order must have at least one item", triggered by `t => t.Status`, synchronous. `Create` sets `Status = "Draft"` (`:111`). `[Remote][Fetch]` at `:140`, `[Remote][Insert]` `:187`, `[Remote][Update]` `:242` (D6 gate: `RunRules(All)` then `SaveOperationException` at `:250-253`), `[Remote][Delete]` `:279`. No verb exists. `OrderRow.Status` is a string.
+- `IOrderInterfaces.cs:68-109`: `IOrder : IEntityRoot` inside region `skill-aggregate-interfaces`, which renders into `SKILL.md`, `references/collections.md`, `docs/guides/collections.md`, `docs/guides/entities.md`, `docs/reference/api.md`. Adding `Submit()` re-renders all five.
+- `TestInfrastructure.cs:149-168`: `MockOrderRepository` is scoped, has `Store`, `SeedOrder()` (two default items) and `SeedOrder(params OrderItemRow[])`; an empty call seeds an order with no items. No mock change needed.
+- `ApproveEmployee.cs:101-121`: command shape to copy — `[Remote][Execute] private static Task<T> _Name(..., [Service] ...)`, throws `InvalidOperationException` on not-found, returns a `sealed record`.
+- `AsyncRules.cs:95-115`: header's DESIGN DECISION reads "The rule depends on a command delegate, never on a server-only service", with a DID NOT DO THIS on injecting `IUsernameRepository`. `CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>` takes `UsernameAvailability.IsAvailable` (`:143-151`), inside region `skill-rule-with-command`. `AddDesignDomainRules` registers `ICheckUsernameAvailabilityRule` and `IUniqueCodeRule` transient.
+- No `[Factory]` interface exists in Design.Domain. `DI/DomainRegistration.cs` is the one registration extension.
+- `DemoValueObject` (`AllBaseClasses.cs:103`, `ValidateBase`, rules on `Name`, `Create()`, `Create(string)`, internal `Fetch(string)`), `DemoValueObjectList` (`:342`, parameter `valueObjectFactory` `:354,360`), `IDemoValueObject` (`IBaseClassInterfaces.cs:16`), `IDemoValueObjectList` (`:57`). References: `TestInfrastructure.cs:48`, `ValidateBaseTests.cs:18,24`, `ValidateListBaseTests.cs:18-26` (generated factory names), `ServiceContracts.cs:68` (`MyValueObject` comment), comments at `AllBaseClasses.cs:18,53,63,78,82`. Prose naming the type: `docs/guides/collections.md:7`, `docs/guides/validation.md:160`. Regions `skill-value-object`, `skill-value-object-interface`, `skill-validate-list`, `skill-validate-list-interface`, `skill-test-services` render into `docs/getting-started.md`, `docs/guides/collections.md`, `docs/guides/validation.md`, `docs/reference/api.md`, `skills/neatoo/references/base-classes.md`, `collections.md`, `testing.md`.
+- Duality text: `RemoteBoundary.cs:226-259` (DESIGN DECISION "do not bolt a root role onto a child-only type"; `DualUseEntity` has the root role only, `:264-320`), `Address.cs:165-199` ("NO STANDALONE-ROOT OPERATIONS ... a hard rule", REJECTED PATTERN, two reasons), `IFactoryInterfaces.cs:160-163` ("A root only").
 
 ---
 
 ## Punchlist
 
-- (todo-level rows triaged at Step 2: none lie in this plan's path)
+- [ ] Design.Domain duality text reversed (D23) · `RemoteBoundary.cs`, `Address.cs`, `IFactoryInterfaces.cs` · done when no comment forbids both roles and `DualUseEntity` shows both · AC-3 · Must (pulled from the todo, 2026-10-10)
 
 ---
 
