@@ -53,7 +53,7 @@ public static IServiceScope GetScope()
             // domain assembly. Server mode: every operation runs in-process.
             services.AddNeatooServices(
                 NeatooFactory.Server,
-                typeof(Design.Domain.BaseClasses.IDemoValueObject).Assembly);
+                typeof(Design.Domain.BaseClasses.IDemoInputModel).Assembly);
 
             // The domain's DI-provided rules, as both tiers would register them
             services.AddDesignDomainRules();

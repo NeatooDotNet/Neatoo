@@ -33,9 +33,9 @@ Every Neatoo object gets a public interface, and the concrete class is `internal
 <a id='snippet-skill-value-object-interface'></a>
 ```cs
 /// <summary>
-/// Interface for ValidateBase demo — value objects and validation-only scenarios.
+/// Interface for ValidateBase demo — input models and validation-only scenarios.
 /// </summary>
-public interface IDemoValueObject : IValidateBase
+public interface IDemoInputModel : IValidateBase
 {
     string? Name { get; set; }
     string? Description { get; set; }
@@ -50,7 +50,7 @@ The class inherits `ValidateBase<T>` and declares `partial` properties — Neato
 <a id='snippet-skill-value-object'></a>
 ```cs
 /// <summary>
-/// Demonstrates: ValidateBase&lt;T&gt; for value objects and validation-only scenarios.
+/// Demonstrates: ValidateBase&lt;T&gt; for input models and validation-only scenarios.
 ///
 /// Key points:
 /// - Provides validation infrastructure without persistence tracking
@@ -60,13 +60,13 @@ The class inherits `ValidateBase<T>` and declares `partial` properties — Neato
 /// - RuleManager provides fluent API for adding rules
 /// </summary>
 [Factory]
-internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoValueObject
+internal partial class DemoInputModel : ValidateBase<DemoInputModel>, IDemoInputModel
 {
     public partial string? Name { get; set; }
 
     public partial string? Description { get; set; }
 
-    public DemoValueObject(IValidateBaseServices<DemoValueObject> services) : base(services)
+    public DemoInputModel(IValidateBaseServices<DemoInputModel> services) : base(services)
     {
         // Rules are added in the constructor; they run when a trigger property changes
         RuleManager.AddValidation(
@@ -95,7 +95,7 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L91-L137' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L93-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The attributes are standard `System.ComponentModel.DataAnnotations` attributes (`Required`, `StringLength`, `MinLength`, `MaxLength`, `RegularExpression`, `Range`, `EmailAddress`). Neatoo runs them when a property is set.
@@ -384,7 +384,7 @@ public static IServiceScope GetScope()
             // domain assembly. Server mode: every operation runs in-process.
             services.AddNeatooServices(
                 NeatooFactory.Server,
-                typeof(Design.Domain.BaseClasses.IDemoValueObject).Assembly);
+                typeof(Design.Domain.BaseClasses.IDemoInputModel).Assembly);
 
             // The domain's DI-provided rules, as both tiers would register them
             services.AddDesignDomainRules();
@@ -419,11 +419,15 @@ public static class DomainRegistration
         // a rule tracks execution state
         services.AddTransient<ICheckUsernameAvailabilityRule, CheckUsernameAvailabilityRule>();
         services.AddTransient<IUniqueCodeRule, UniqueCodeRule>();
+        // A rule that takes an interface-factory domain service registers the
+        // same way; the service itself is the proxy on the client (generated)
+        // and the implementation on the server (registered there, not here).
+        services.AddTransient<IShippingQuoteRule, ShippingQuoteRule>();
         return services;
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/DI/DomainRegistration.cs#L14-L31' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rules-di-registration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/DI/DomainRegistration.cs#L14-L35' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rules-di-registration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 To use a generated factory, inject the factory interface (`IProductFactory`) into the Blazor component: `await ProductFactory.Fetch(id)` returns the entity, or `null` when there is no such product.

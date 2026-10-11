@@ -163,38 +163,21 @@ internal partial class Address : EntityBase<Address>, IAddress
     }
 
     // =========================================================================
-    // NO STANDALONE-ROOT OPERATIONS - and why that is a hard rule, not a
-    // simplification
+    // CHILD-ONLY BY CHOICE
     // =========================================================================
-    // DID NOT DO THIS: give Address a second, parent-less set of [Remote]
-    // persistence operations so it could also be saved as its own aggregate
-    // root ("entity duality").
+    // Address has no parent-less operations, so it can be saved only through
+    // an Employee. That is a modelling choice, not a framework rule: an entity
+    // type may also play both roles (ruling D23). If an address screen ever
+    // needed to save an address on its own, this class would gain [Remote]
+    // root operations beside the row-taking child operations above, and
+    // IAddress would extend IEntityRoot instead of IEntityBase. The factory
+    // method signatures tell the two roles apart; see
+    // FactoryOperations/RemoteBoundary.cs for the both-roles shape.
     //
-    // REJECTED PATTERN:
-    //   [Remote] [Insert] internal void Insert([Service] IAddressOnlyRepository repo)
-    //   [Remote] [Delete] internal void Delete([Service] IAddressOnlyRepository repo)
-    //
-    // WHY NOT - two independent reasons, either one decisive:
-    //
-    // 1. It punches a hole in the aggregate boundary. Operations whose
-    //    signatures need nothing from the aggregate make the generator emit a
-    //    PUBLIC Save(IAddress target) on IAddressFactory. A consumer holding a
-    //    child out of employee.Addresses could then persist or delete it
-    //    directly, bypassing the aggregate's save flow entirely. The
-    //    row-scoped Save(target, row) above cannot be misused that way: it is
-    //    internal AND it demands a row from the employee row's Addresses
-    //    collection, which only the aggregate's save flow holds.
-    //    Compare the canonical: IOrderItemFactory exposes nothing public.
-    //
-    // 2. The interface already settled the question. IAddress extends
-    //    IEntityBase, which is how a type declares "child, not root" - so no
-    //    consumer can Save() it as a root regardless. A type that genuinely
-    //    plays both roles needs a second interface extending IEntityRoot;
-    //    keeping root-shaped operations behind a child-shaped interface just
-    //    produces runtime NotImplementedExceptions from the generated routing.
-    //
-    // For the remote/local boundary aspects of dual-use types, see
-    // FactoryOperations/RemoteBoundary.cs.
+    // What child-only buys: IAddress extends IEntityBase, so no consumer can
+    // call Save() on an address, and the generated IAddressFactory exposes no
+    // public Save(target) - only the row-scoped Save(target, row) the list's
+    // [Update] uses. Choose it when the type has no life outside its parent.
     // =========================================================================
 }
 

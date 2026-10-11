@@ -15,7 +15,9 @@ namespace Design.Domain.BaseClasses;
 // BASE CLASS 1: ValidateBase<T> - Objects That Need Rules, Not Persistence
 // =============================================================================
 // Use ValidateBase<T> only when the object needs rules:
-// - Value objects a person edits (an address on a form)
+// - Input models: something a person edits and validates that is not persisted
+//   as itself (an address block on a form, a search form, a dialog). A value
+//   object is a record, not a ValidateBase (D17, D25).
 // - Criteria, filters and wizard steps that validate but don't persist
 //
 // A read model is NOT a ValidateBase: it is a plain [Factory] class with
@@ -50,7 +52,7 @@ namespace Design.Domain.BaseClasses;
 //       public bool IsModified { get; } // NO - modification tracking is EntityBase concern
 //   }
 //
-// WHY NOT: Separation of concerns. Value objects and criteria don't need IsNew/IsModified.
+// WHY NOT: Separation of concerns. Input models and criteria don't need IsNew/IsModified.
 // Tracking modification state adds memory overhead for objects that will never be persisted.
 // =============================================================================
 
@@ -60,7 +62,7 @@ namespace Design.Domain.BaseClasses;
 // For this declaration:
 //   public partial string? Name { get; set; }
 //
-// Neatoo.BaseGenerator produces (in DemoValueObject.g.cs) a NameProperty
+// Neatoo.BaseGenerator produces (in DemoInputModel.g.cs) a NameProperty
 // accessor over PropertyManager, a Name implementation that reads and
 // writes NameProperty.Value and tracks its Task, and an
 // InitializePropertyBackingFields override that registers the property.
@@ -75,11 +77,11 @@ namespace Design.Domain.BaseClasses;
 // COMMON MISTAKE: Creating services manually.
 //
 // WRONG:
-//   public DemoValueObject() : base(new ValidateBaseServices<DemoValueObject>()) { }
+//   public DemoInputModel() : base(new ValidateBaseServices<DemoInputModel>()) { }
 //
 // RIGHT:
 //   Use the factory to create instances - factory handles DI automatically.
-//   var obj = demoValueObjectFactory.Create();  // injected IDemoValueObjectFactory
+//   var obj = demoInputModelFactory.Create();  // injected IDemoInputModelFactory
 // =============================================================================
 // Factory Methods: [Create] initializes new objects.
 //
@@ -90,7 +92,7 @@ namespace Design.Domain.BaseClasses;
 
 #region skill-value-object
 /// <summary>
-/// Demonstrates: ValidateBase&lt;T&gt; for value objects and validation-only scenarios.
+/// Demonstrates: ValidateBase&lt;T&gt; for input models and validation-only scenarios.
 ///
 /// Key points:
 /// - Provides validation infrastructure without persistence tracking
@@ -100,13 +102,13 @@ namespace Design.Domain.BaseClasses;
 /// - RuleManager provides fluent API for adding rules
 /// </summary>
 [Factory]
-internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoValueObject
+internal partial class DemoInputModel : ValidateBase<DemoInputModel>, IDemoInputModel
 {
     public partial string? Name { get; set; }
 
     public partial string? Description { get; set; }
 
-    public DemoValueObject(IValidateBaseServices<DemoValueObject> services) : base(services)
+    public DemoInputModel(IValidateBaseServices<DemoInputModel> services) : base(services)
     {
         // Rules are added in the constructor; they run when a trigger property changes
         RuleManager.AddValidation(
@@ -339,7 +341,7 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
 /// - Parent-child relationships managed automatically
 /// </summary>
 [Factory]
-internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>, IDemoValueObjectList
+internal partial class DemoInputModelList : ValidateListBase<IDemoInputModel>, IDemoInputModelList
 {
     // ValidateListBase has no required constructor - uses default.
 
@@ -351,13 +353,13 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 
     [Remote]
     [Fetch]
-    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoValueObjectFactory valueObjectFactory)
+    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoInputModelFactory inputModelFactory)
     {
         // The list is paused by its own factory operation (FactoryStart),
         // like any factory target. Each item is loaded by its own [Fetch].
         foreach (var name in repository.GetAllNames())
         {
-            Add(valueObjectFactory.Fetch(name));
+            Add(inputModelFactory.Fetch(name));
         }
     }
 }

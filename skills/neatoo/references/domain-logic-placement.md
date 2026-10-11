@@ -207,7 +207,7 @@ public static partial class UsernameAvailability
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L117-L131' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L126-L140' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The rule takes the command delegate. It never sees the repository:
@@ -256,7 +256,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L133-L174' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L142-L183' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The entity receives the rule by constructor injection; the rule's interface is registered in DI on both tiers (see `validation.md` → "Async Rules That Call the Server"):
@@ -821,7 +821,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L133-L174' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L142-L183' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The entity receives the rule by constructor injection and registers it with `RuleManager.AddRule(rule)` (Pattern 4 shows the constructor).

@@ -15,15 +15,15 @@ namespace Design.Tests.BaseClassTests;
 public class ValidateListBaseTests
 {
     private IServiceScope _scope = null!;
-    private IDemoValueObjectListFactory _listFactory = null!;
-    private IDemoValueObjectFactory _itemFactory = null!;
+    private IDemoInputModelListFactory _listFactory = null!;
+    private IDemoInputModelFactory _itemFactory = null!;
 
     [TestInitialize]
     public void TestInitialize()
     {
         _scope = DesignTestServices.GetScope();
-        _listFactory = _scope.GetRequiredService<IDemoValueObjectListFactory>();
-        _itemFactory = _scope.GetRequiredService<IDemoValueObjectFactory>();
+        _listFactory = _scope.GetRequiredService<IDemoInputModelListFactory>();
+        _itemFactory = _scope.GetRequiredService<IDemoInputModelFactory>();
     }
 
     [TestCleanup]

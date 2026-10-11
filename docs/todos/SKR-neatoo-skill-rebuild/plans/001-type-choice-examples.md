@@ -96,12 +96,13 @@ Walked 2026-10-10 before the first edit.
 
 | Acceptance bullet (short) | Priority | Tier declared | Test method | Tier confirmed |
 |---|---|---|---|---|
-| Job saves valid, reports invalid, skips unchanged | Must | `[integration]` | | |
-| No `RunRules` in the job | Must | `[explicit-skip]` | | |
-| Rule message reflects the service | Must | `[integration]` | | |
-| No `ValidateBase` value object | Must | `[explicit-skip]` | | |
-| Regions and mdsnippets | Must | `[explicit-skip]` | | |
-| Build and tests green | Must | `[explicit-skip]` | | |
+| Job saves valid, reports invalid, skips unchanged | Must | `[integration]` | `JobTests/SubmitDraftOrdersTests.Run_ValidInvalidAndUnchangedOrders_SavesReportsAndSkipsWithoutThrowing` (plus `Run_UnknownOrder_Throws` for the D2 edge) | `[integration]` — real `IOrderFactory`, `MockOrderRepository`, Server-mode DI via `DesignTestServices` |
+| No `RunRules` in the job | Must | `[explicit-skip]` | `grep -rn RunRules src/Design/Design.Domain/Jobs` → one hit, the DESIGN DECISION comment at `SubmitDraftOrders.cs:16` saying why there is none | skip honoured |
+| Rule message reflects the service | Must | `[integration]` | `ServiceTests/ShippingQuoteRuleTests.Rule_DestinationServed_QuotesFromTheService`, `Rule_DestinationNotServed_ReportsTheServiceAnswer` | `[integration]` — `IShippingRateService` resolves to `ShippingRateService` in Server mode |
+| No `ValidateBase` value object | Must | `[explicit-skip]` | `grep -rniE "value object\|ValueObject" src/Design --include=*.cs` excluding `Generated/` → no hits | skip honoured |
+| Regions and mdsnippets | Must | `[explicit-skip]` | `dotnet mdsnippets` exit 0, no missing-snippet lines; 150 regions in `src/Design` excluding `Generated/`, 0 duplicates. New regions: `skill-verb-submit`, `skill-job-over-entities`, `skill-domain-service-interface-factory`, `skill-rule-with-domain-service`, `skill-entity-both-roles` and their `-test` partners | skip honoured |
+| Build and tests green | Must | `[explicit-skip]` | `reviews/001-build.log`: 0 errors, 0 warnings; `reviews/001-test.log`: 187 passed, 0 failed | skip honoured |
+| Duality punchlist row (D23) | Must | — | `FactoryTests/DualUseEntityTests.RootRole_FetchByIdAndSave_WritesThroughTheRepository`, `ChildRole_FetchFromRowAndSave_WritesIntoTheRow` | `[integration]` — pins both roles of one class |
 
 ---
 
@@ -120,6 +121,20 @@ Walked 2026-10-10 before the first edit.
 - **What changed:** context, class-level `[Execute]` and the interface-factory pattern moved to the RemoteFactory sibling (owner split). The job runs no rules: the verb already triggered them (user, 2026-10-09). The context's verb, where it is built, is a plain instance method calling the held aggregate's verb (user's choice (b) on V1). A rule may take an interface-factory domain service (user's ruling on C6). Review callouts C1–C6 folded into Alignment and Constraints.
 - **Why:** the first review (`reviews/001-plan-review.md`) and the split agreed the same day.
 - **Discovery Log:** 2026-10-09 / SKR-001
+
+### 2026-10-10 — `InternalsVisibleTo("Design.Tests")` on Design.Domain
+
+- **Section affected:** Step 5 / Step 6 (duality demo and its test)
+- **Original said:** make the `DualUseEntity` demo show both roles and pin each with a test.
+- **What changed:** the generator emits the child-role operations (`internal`, no `[Remote]`) as `internal` members of `IDualUseEntityFactory`, so Design.Tests could not call `Fetch(row)` / `Save(entity, row)`. Design.Domain now declares `<InternalsVisibleTo Include="Design.Tests" />`, matching `Person.DomainModel`. The alternatives — a parent/list for `DualUseEntity`, or making `Address` the both-roles example — were put to the user, who chose this one.
+- **Why:** the child role is reached only by a list's `[Update]` on the server; `internal` is the correct visibility, and the test needs to see it.
+- **Discovery Log:** not logged — a mechanical choice recorded here only.
+
+### 2026-10-10 — Child-role `Save` is synchronous
+
+- **Section affected:** Step 6
+- **What changed:** the test's `await _factory.Save(entity, row)` became a plain call; a local (non-`[Remote]`) operation on a synchronous method generates a synchronous factory member. The root-role `Save()` stays `await`ed.
+- **Why:** generator behaviour, not a design choice.
 
 ---
 

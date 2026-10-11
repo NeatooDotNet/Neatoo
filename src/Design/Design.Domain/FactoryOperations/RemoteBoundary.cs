@@ -223,13 +223,38 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
 }
 
 // =============================================================================
-// Entity Duality - Same Class as Root or Child
+// Entity Duality - One Class, Root in One Graph and Child in Another
 // =============================================================================
-// An entity class CAN serve as an aggregate root in one graph and a child in
-// another - but the two roles need separate factory operations and separate
-// interfaces, because the framework decides which role a consumer sees from
-// the interface (IEntityRoot vs IEntityBase), and decides what the generated
-// factory exposes from each operation's signature and visibility.
+// An entity type is child-only, or it is both root and child (ruling D23).
+// "Absolutely an entity can be both a root and a child." The same address
+// class is saved on its own from an address screen and saved inside an
+// employee from the employee screen. One class carries both roles:
+//
+// - ROOT role: operations with no parent in the signature. [Remote], because
+//   the client calls them. Fetch(id, [Service] repo); Insert/Update/Delete
+//   that take only services. The generated factory exposes a public
+//   Save(target) for them.
+// - CHILD role: operations that take the child's own row from its parent's
+//   row. internal and NOT [Remote]: the call is already on the server, inside
+//   the parent's operation. Fetch(row); Insert(row)/Update(row). The
+//   generated factory exposes Save(target, row) for them, reached only by the
+//   list's [Update].
+//
+// The factory method SIGNATURE is the whole distinction. "The signature of
+// the factory method is many times all the difference you need." RemoteFactory
+// routes Save by which operations exist for the arguments it is given.
+//
+// The interface extends IEntityRoot, so a holder may call Save() on it. That
+// is right for the root role and harmless for the child role: a child fetched
+// through its list is saved by that list, and a consumer that calls Save() on
+// it saves it as a root, which the type supports. A type that must never be
+// saved on its own is child-only: no parent-less operations, interface
+// extending IEntityBase (see Entities/Address.cs).
+//
+// COMMON MISTAKE: putting [Remote] on the CHILD-role operations. They run
+// inside the parent's server-side operation; [Remote] there is a client entry
+// point nobody should have. RemoteFactory's own guidance (Anti-Pattern 7)
+// warns about exactly this.
 //
 // COMMON MISTAKE: assuming a child's persistence methods are called "by the
 // parent's persistence code, NOT through the factory." Child persistence runs
@@ -237,28 +262,12 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
 // that is what marks each child unmodified and old as it saves. A parent that
 // writes child rows to the repository directly leaves every child dirty and
 // new. See Aggregates/OrderAggregate and Entities for the canonical shape.
-//
-// The role split, concretely:
-//
-// - ROOT role: parent-less operations, [Remote], reached through a public
-//   factory Save(target). Its interface extends IEntityRoot.
-// - CHILD role: operations that take the child's own row from its list,
-//   internal and non-[Remote], reached only through the list's [Update]. Its
-//   interface extends IEntityBase.
-//
-// DESIGN DECISION: do not bolt a root role onto a child-only type. Any
-// parent-less [Remote] operation makes the generator emit a PUBLIC
-// Save(target) that lets consumers persist a child outside its aggregate -
-// see the NO STANDALONE-ROOT OPERATIONS block in Entities/Address.cs for the
-// full reasoning and the rejected pattern.
-//
-// The class below has only the ROOT role. Its [Remote] operations are client
-// entry points; [Remote] does not decide root versus child - the interface
-// and the operation signatures do.
 // =============================================================================
 
+#region skill-entity-both-roles
 /// <summary>
-/// Demonstrates: an entity in the ROOT role only.
+/// Demonstrates: one entity class in both roles. Root operations are [Remote]
+/// and take services; child operations are internal and take the row.
 /// </summary>
 [Factory]
 internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
@@ -272,23 +281,12 @@ internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
     [Create]
     public void Create() { }
 
-    // =========================================================================
-    // These are ROOT-role operations: no parent identity in the signature, so
-    // the generated factory exposes a public Save(target) for them.
-    //
-    // [Remote] makes these client entry points. It does NOT decide
-    // root-vs-child - the interface and the operation signatures do.
-    //
-    // To ALSO serve as a child, this class would need a second set of
-    // internal, non-[Remote] operations that take its own row from a list,
-    // and a child-shaped interface extending IEntityBase.
-    // =========================================================================
+    // ---- ROOT role: no parent in the signature; [Remote]; public Save(target)
 
     [Remote]
     [Fetch]
     internal void Fetch(int id, [Service] IDualUseRepository repository)
     {
-        // Called via factory when this is an aggregate root
         var data = repository.GetAddressById(id);
         Id = data.Id;
         Street = data.Street;
@@ -299,9 +297,7 @@ internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
     [Insert]
     internal void Insert([Service] IDualUseRepository repository)
     {
-        // Reached through the root factory's Save
-        var newId = repository.InsertAddress(Street!, City!);
-        Id = newId;
+        Id = repository.InsertAddress(Street!, City!);
     }
 
     [Remote]
@@ -317,7 +313,43 @@ internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
     {
         repository.DeleteAddress(Id);
     }
+
+    // ---- CHILD role: takes its own row; internal, not [Remote]; Save(target, row)
+
+    [Fetch]
+    internal void Fetch(DualUseRow row)
+    {
+        Id = row.Id;
+        Street = row.Street;
+        City = row.City;
+    }
+
+    [Insert]
+    internal void Insert(DualUseRow row)
+    {
+        row.Street = Street!;
+        row.City = City!;
+    }
+
+    [Update]
+    internal void Update(DualUseRow row)
+    {
+        row.Street = Street!;
+        row.City = City!;
+    }
 }
+
+/// <summary>
+/// The row a parent's row holds for this entity in its child role.
+/// </summary>
+public class DualUseRow
+{
+    public int Id { get; set; }
+    public string Street { get; set; } = "";
+    public string City { get; set; } = "";
+}
+#endregion
+
 
 // =============================================================================
 // Blazor WASM Best Practice: Isolate EF Core

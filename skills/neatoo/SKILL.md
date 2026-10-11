@@ -218,6 +218,11 @@ public interface IOrder : IEntityRoot
     string? Status { get; set; }
     decimal TotalAmount { get; }
     IOrderItemList? Items { get; }
+
+    /// <summary>
+    /// Verb: moves the order to Submitted. Sets state; never persists.
+    /// </summary>
+    void Submit();
 }
 
 /// <summary>
@@ -245,7 +250,7 @@ public interface IOrderItemList : IEntityListBase<IOrderItem>
     int DeletedCount { get; }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs#L68-L109' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregate-interfaces' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs#L68-L114' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregate-interfaces' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Domain Logic First — The Core Principle
