@@ -65,7 +65,7 @@ namespace Design.Domain.DI;
 // }
 //
 // USAGE IN CONSTRUCTOR:
-//   public MyValueObject(IValidateBaseServices<MyValueObject> services) : base(services)
+//   public MyInputModel(IValidateBaseServices<MyInputModel> services) : base(services)
 //   {
 //       // services.PropertyFactory used by InitializePropertyBackingFields
 //       // services.ValidatePropertyManager manages all properties

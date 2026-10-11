@@ -289,6 +289,22 @@ internal partial class Order : EntityBase<Order>, IOrder
     }
     #endregion
 
+    // =========================================================================
+    // Verb - Submit
+    // =========================================================================
+    // A verb sets state and never persists. Setting Status is a property set
+    // outside a factory operation, so the validation rule triggered by Status
+    // runs at once: an order with no items becomes invalid here, and IsSavable
+    // reports it. Nothing else validates - no RunRules, no guard, no throw.
+    // Whoever holds the order (a page, a job) reads IsSavable and decides.
+    // =========================================================================
+    #region skill-verb-submit
+    public void Submit()
+    {
+        Status = "Submitted";
+    }
+    #endregion
+
     private void MapTo(OrderRow row)
     {
         row.Id = Id;
