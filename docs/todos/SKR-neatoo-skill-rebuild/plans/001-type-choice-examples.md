@@ -9,7 +9,7 @@
 **Plan-review opt-in:** Yes — these examples become doctrine that `SKILL.md` points at and that gets copied; `plan-reviewer`, Pass A against D1–D19
 **Code-review opt-in:** Yes — examples are what gets copied, so the shape matters more than in ordinary code
 **Branch:** skr-001-type-choice-examples — cut from the arc at Step 2
-**PR:** —
+**PR:** #101 → `skr-arc`
 
 ---
 

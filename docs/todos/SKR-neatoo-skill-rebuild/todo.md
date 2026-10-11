@@ -5,7 +5,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-10-09
-**Last Updated:** 2026-10-09 (Goal and criteria revised the same day; see Discovery Log)
+**Last Updated:** 2026-10-10 (SKR-001 Done, PR #101)
 **Initial split:** 7 plans
 **Plan cap:** 11
 **Arc branch:** skr-arc
@@ -75,7 +75,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 
 | # | File | Title (≤ 8 words) | Serves | Status | PR |
 |---|------|-------|--------|--------|----|
-| 001 | [001-type-choice-examples](./plans/001-type-choice-examples.md) | Design.Domain example per Neatoo type choice | AC-3 | Draft | — |
+| 001 | [001-type-choice-examples](./plans/001-type-choice-examples.md) | Design.Domain example per Neatoo type choice | AC-3 | Done | #101 |
 | 002 | [002-design-app-server](./plans/002-design-app-server.md) | Design.App and Design.Server in CI | AC-4, AC-1 | Draft | — |
 | 003 | [003-no-end-of-operation-runrules](./plans/003-no-end-of-operation-runrules.md) | Stop teaching end-of-operation RunRules | AC-5 | Draft | — |
 | 004 | [004-skill-model-and-decisions](./plans/004-skill-model-and-decisions.md) | SKILL.md: model, habit traps, decisions, UI contract | AC-1, AC-2, AC-10 | Draft | — |
@@ -88,7 +88,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 ## Punchlist
 
 - [x] `CLAUDE.md` "Central Pillar" and "The Rules" wording softened to strongly recommended (D19) · `CLAUDE.md` · PR #100 · AC-1 · Must
-- [ ] Design.Domain duality text reversed (D23): `RemoteBoundary.cs` "do not bolt a root role", `Address.cs` "NO STANDALONE-ROOT OPERATIONS", `IFactoryInterfaces.cs` "a root only" rewritten to the endorsed shape · `src/Design/Design.Domain` · done when no comment forbids a type being both root and child and the `DualUseEntity` demo shows both roles · AC-3 · Must
+- [x] Design.Domain duality text reversed (D23): `RemoteBoundary.cs` "do not bolt a root role", `Address.cs` "NO STANDALONE-ROOT OPERATIONS", `IFactoryInterfaces.cs` "a root only" rewritten to the endorsed shape · `src/Design/Design.Domain` · done when no comment forbids a type being both root and child and the `DualUseEntity` demo shows both roles · AC-3 · Must — pulled onto SKR-001, PR #101
 - [ ] `CLAUDE-DESIGN.md:77,87` and `README.md:24` stop calling `ValidateBase` a value object (D17) · `src/Design/CLAUDE-DESIGN.md`, `README.md` · done when grep for "value object" near `ValidateBase` is empty · AC-3 · Must
 - [ ] Close #98 as moot under D18 · GitHub · done when closed with a comment naming D18 · AC-5 · Must
 - [ ] mudneatoo block count corrected in the audit README (49, not 14) · `docs/todos/consistency-audit/README.md` · done when the line reads 49 · AC-6 · Should
