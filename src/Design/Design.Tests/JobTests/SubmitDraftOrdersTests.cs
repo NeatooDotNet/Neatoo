@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Design.Tests - Job Over Entities
 // -----------------------------------------------------------------------------
-// Pins the shape of a server job that reuses a Neatoo aggregate (D4): the verb
+// Pins the shape of a server job that reuses a Neatoo aggregate: the verb
 // triggers the rules, WaitForTasks settles them, IsSavable decides. Three
 // outcomes from one run: saved, reported as invalid, skipped as unchanged.
 // Nothing is thrown and nothing is caught.
@@ -64,7 +64,7 @@ public class SubmitDraftOrdersTests
     [TestMethod]
     public async Task Run_UnknownOrder_Throws()
     {
-        // A missing row is an application failure, not a report entry (D2).
+        // A missing row is an application failure, not a report entry.
         await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => _run([Guid.NewGuid()]));
     }
 }

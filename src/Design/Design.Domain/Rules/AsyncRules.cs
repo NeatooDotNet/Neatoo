@@ -97,7 +97,7 @@ internal partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>, IAsyncRulesD
 // Checking a value against the database (is this username taken?) belongs in
 // a rule, so the user sees the message on the client as they edit. The rule
 // runs on the client, so it cannot take a server-only service. It takes
-// something that crosses to the server for it. Two shapes do that (D1, D21):
+// something that crosses to the server for it. Two shapes do that:
 //
 //   1. The delegate of a [Remote, Execute] command - this file. Calling the
 //      delegate crosses to the server, where the command resolves the

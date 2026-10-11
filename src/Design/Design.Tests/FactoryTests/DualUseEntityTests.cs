@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Design.Tests - One Entity Class in Both Roles
 // -----------------------------------------------------------------------------
-// Pins D23: the same class is fetched and saved as a root through its
+// Pins entity duality: the same class is fetched and saved as a root through its
 // [Remote] service-taking operations, and fetched and saved as a child through
 // its internal row-taking operations. The factory method signature selects the
 // role; neither path marks the other's state wrong.

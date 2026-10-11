@@ -4,8 +4,8 @@
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-3
-**Status:** In Progress
-**Last Updated:** 2026-10-09 (re-drafted after the owner split; first draft and review in `reviews/001-plan-review.md`)
+**Status:** Done
+**Last Updated:** 2026-10-10 (implemented; both gates CLEAN round 1)
 **Plan-review opt-in:** Yes — these examples become doctrine that `SKILL.md` points at and that gets copied; `plan-reviewer`, Pass A against D1–D19
 **Code-review opt-in:** Yes — examples are what gets copied, so the shape matters more than in ordinary code
 **Branch:** skr-001-type-choice-examples — cut from the arc at Step 2
@@ -62,12 +62,12 @@ Add to Design.Domain the Neatoo-owned type-choice examples the rebuilt `SKILL.md
 
 ## Acceptance
 
-- [ ] Given one order the verb leaves valid, one it leaves invalid and one it leaves unchanged, the job saves the first, reports the second with its rule messages, skips the third, and throws nothing `[integration]` · Must
-- [ ] The job's source contains no `RunRules` call `[explicit-skip: verified by grep, pinned by review]` · Must
-- [ ] A rule taking the domain service produces the message that reflects the service's answer `[integration]` · Must
-- [ ] No type named `*ValueObject*` derives from `ValidateBase`, and no Design.Domain or Design.Tests comment calls `ValidateBase` a value object `[explicit-skip: rename and prose, verified by grep excluding Generated/]` · Must
-- [ ] Every new shape has a `skill-*` region and `dotnet mdsnippets` reports no duplicate or missing regions `[explicit-skip: tooling]` · Must
-- [ ] `Design.sln` builds with 0 errors and 0 warnings and every Design.Tests test passes `[explicit-skip: meta-bullet]` · Must
+- [x] Given one order the verb leaves valid, one it leaves invalid and one it leaves unchanged, the job saves the first, reports the second with its rule messages, skips the third, and throws nothing `[integration]` · Must
+- [x] The job's source contains no `RunRules` call `[explicit-skip: verified by grep, pinned by review]` · Must
+- [x] A rule taking the domain service produces the message that reflects the service's answer `[integration]` · Must
+- [x] No type named `*ValueObject*` derives from `ValidateBase`, and no Design.Domain or Design.Tests comment calls `ValidateBase` a value object `[explicit-skip: rename and prose, verified by grep excluding Generated/]` · Must
+- [x] Every new shape has a `skill-*` region and `dotnet mdsnippets` reports no duplicate or missing regions `[explicit-skip: tooling]` · Must
+- [x] `Design.sln` builds with 0 errors and 0 warnings and every Design.Tests test passes `[explicit-skip: meta-bullet]` · Must
 
 ---
 
@@ -88,7 +88,7 @@ Walked 2026-10-10 before the first edit.
 
 ## Punchlist
 
-- [ ] Design.Domain duality text reversed (D23) · `RemoteBoundary.cs`, `Address.cs`, `IFactoryInterfaces.cs` · done when no comment forbids both roles and `DualUseEntity` shows both · AC-3 · Must (pulled from the todo, 2026-10-10)
+- [x] Design.Domain duality text reversed (D23) · `RemoteBoundary.cs`, `Address.cs`, `IFactoryInterfaces.cs` · done when no comment forbids both roles and `DualUseEntity` shows both · AC-3 · Must (pulled from the todo, 2026-10-10) — `11acfb8`
 
 ---
 
@@ -100,7 +100,7 @@ Walked 2026-10-10 before the first edit.
 | No `RunRules` in the job | Must | `[explicit-skip]` | `grep -rn RunRules src/Design/Design.Domain/Jobs` → one hit, the DESIGN DECISION comment at `SubmitDraftOrders.cs:16` saying why there is none | skip honoured |
 | Rule message reflects the service | Must | `[integration]` | `ServiceTests/ShippingQuoteRuleTests.Rule_DestinationServed_QuotesFromTheService`, `Rule_DestinationNotServed_ReportsTheServiceAnswer` | `[integration]` — `IShippingRateService` resolves to `ShippingRateService` in Server mode |
 | No `ValidateBase` value object | Must | `[explicit-skip]` | `grep -rniE "value object\|ValueObject" src/Design --include=*.cs` excluding `Generated/` → no hits | skip honoured |
-| Regions and mdsnippets | Must | `[explicit-skip]` | `dotnet mdsnippets` exit 0, no missing-snippet lines; 150 regions in `src/Design` excluding `Generated/`, 0 duplicates. New regions: `skill-verb-submit`, `skill-job-over-entities`, `skill-domain-service-interface-factory`, `skill-rule-with-domain-service`, `skill-entity-both-roles` and their `-test` partners | skip honoured |
+| Regions and mdsnippets | Must | `[explicit-skip]` | `dotnet mdsnippets` exit 0, no missing-snippet lines; 150 regions in `src/Design` excluding `Generated/`, 0 duplicates. New regions: `skill-verb-submit`, `skill-job-over-entities`, `skill-domain-service-interface-factory`, `skill-rule-with-domain-service`, `skill-entity-both-roles`; `-test` partners on the last three of job, rule and both-roles (`skill-verb-submit` is pinned by the job test, `skill-domain-service-interface-factory` by the rule tests) | skip honoured |
 | Build and tests green | Must | `[explicit-skip]` | `reviews/001-build.log`: 0 errors, 0 warnings; `reviews/001-test.log`: 187 passed, 0 failed | skip honoured |
 | Duality punchlist row (D23) | Must | — | `FactoryTests/DualUseEntityTests.RootRole_FetchByIdAndSave_WritesThroughTheRepository`, `ChildRole_FetchFromRowAndSave_WritesIntoTheRow` | `[integration]` — pins both roles of one class |
 
@@ -108,7 +108,9 @@ Walked 2026-10-10 before the first edit.
 
 ## Gate Record
 
--
+- **2026-10-10, round 1 — test-reviewer: CLEAN** (`reviews/001-test-review.md`). Every Must bullet pinned at its declared tier; explicit-skip grep claims verified true; sacred tests rename-only; logs green. One untiered wording nit in the Test Evidence map, fixed inline. Two theoretical items listed, not triaged.
+- **2026-10-10, round 1 — code-reviewer: CLEAN** (`reviews/001-code-review.md`). No veto-tier. Three Must-affecting callouts, all comment text: the job's `[Remote]` reason, the duality block's "harmless" `Save()` claim (T17), and ruling/trap IDs plus owner quotes in the example set. All three fixed the same day; build 0/0, 187 tests, `mdsnippets` clean after the fixes; logs refreshed.
+- **Closing bar:** all six Acceptance bullets Must and pinned; no gaps accepted. Gate closed after round 1.
 
 ---
 

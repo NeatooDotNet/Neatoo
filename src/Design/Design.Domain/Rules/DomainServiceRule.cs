@@ -1,9 +1,9 @@
 // -----------------------------------------------------------------------------
 // Design.Domain - A Rule That Takes a Domain Service
 // -----------------------------------------------------------------------------
-// A rule may call the server (ruling D1). AsyncRules.cs shows the first shape:
+// A rule may call the server. AsyncRules.cs shows the first shape:
 // the rule takes the delegate of a [Remote, Execute] command. This file shows
-// the second (ruling D21): the rule takes an interface-factory domain service,
+// the second: the rule takes an interface-factory domain service,
 // IShippingRateService, in its constructor. On the client that interface
 // resolves to RemoteFactory's generated proxy, so each call crosses to the
 // server; on the server it resolves to the implementation. Either way the

@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Design.Tests - Rule With a Domain Service
 // -----------------------------------------------------------------------------
-// Pins D21: a rule may take an interface-factory domain service. In Server
+// Pins the second rule shape: a rule may take an interface-factory domain service. In Server
 // mode the interface resolves to the implementation, so the test observes the
 // rule's behaviour: the message and the derived quote follow the service's
 // answer. The implementation carries no [Factory]; that is for code review.

@@ -157,7 +157,7 @@ public interface IServiceInjectionDemo : IEntityRoot
 // =============================================================================
 
 /// <summary>
-/// Interface for the DualUseEntity demo, which plays both roles (D23). It
+/// Interface for the DualUseEntity demo, which plays both roles. It
 /// extends IEntityRoot because the type can be saved on its own; in its child
 /// role it is saved by its list through the row-taking operations. See
 /// RemoteBoundary.cs.

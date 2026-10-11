@@ -17,7 +17,7 @@ namespace Design.Domain.BaseClasses;
 // Use ValidateBase<T> only when the object needs rules:
 // - Input models: something a person edits and validates that is not persisted
 //   as itself (an address block on a form, a search form, a dialog). A value
-//   object is a record, not a ValidateBase (D17, D25).
+//   object is a record, not a ValidateBase.
 // - Criteria, filters and wizard steps that validate but don't persist
 //
 // A read model is NOT a ValidateBase: it is a plain [Factory] class with

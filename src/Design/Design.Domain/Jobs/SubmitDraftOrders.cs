@@ -2,11 +2,11 @@
 // Design.Domain - A Server Job Over Neatoo Entities
 // -----------------------------------------------------------------------------
 // A nightly job submits every draft order it is given. No person is involved,
-// and the entity is still the right tool (ruling D4): the job reuses the same
-// aggregate, the same verb and the same rules the screens use, so the two
-// paths cannot drift apart.
+// and the entity is still the right tool: the job reuses the same aggregate,
+// the same verb and the same rules the screens use, so the two paths cannot
+// drift apart.
 //
-// THE QUESTION THE HABIT ASKS: "Where do I validate before Save?" (trap T1)
+// THE QUESTION THE HABIT ASKS: "Where do I validate before Save?"
 //
 // Nowhere. order.Submit() sets Status outside a factory operation, so the
 // rule triggered by Status has already run by the time Submit returns. The
@@ -15,30 +15,32 @@
 //
 // DESIGN DECISION: no RunRules anywhere in this file. RunRules forces a
 // re-run; the verb already ran what matters, and persisted data is assumed
-// valid (D18). The root's own [Update] still runs every rule and throws if
-// the aggregate is invalid (the D6 gate) - that is the server's safety net,
-// and this job never reaches it for an invalid order, because IsSavable was
-// already false.
+// valid. The root's own [Update] still runs every rule and throws if the
+// aggregate is invalid - that is the server's safety net, and this job never
+// reaches it for an invalid order, because IsSavable was already false.
 //
 // DESIGN DECISION: three outcomes, decided by the entity's state, not by
 // the job:
 //   - IsSavable          -> Save() and reassign the result (Save returns a
 //                           new instance; the old reference is stale).
 //   - !IsValid           -> report it with the rule messages. Listing the
-//                           broken rules is the D4 answer; throwing is not.
+//                           broken rules is the answer; throwing is not.
 //   - otherwise          -> !IsModified: the verb changed nothing (the order
 //                           was already Submitted). Skip silently. Calling
 //                           Save() here would throw NotModified.
 //
 // DID NOT DO THIS: catch SaveOperationException around Save() and turn it
 // into a report entry. WHY NOT: an exception is an application failure, not
-// a validation message (D2). The gate cannot fire here because IsSavable was
+// a validation message. The gate cannot fire here because IsSavable was
 // checked first.
 //
-// [Remote] is on the command because it takes a [Service]. A static [Execute]
-// without [Remote] is a local-only delegate that RemoteFactory registers on
-// the client as well, with its body untrimmed, so a server-only [Service] on
-// it would break the client build. On the server, [Remote] changes nothing.
+// [Remote] is on the command because the job is server work: one call from
+// wherever it is triggered, and every factory call inside it is then local.
+// A static [Execute] without [Remote] is a local-only delegate that
+// RemoteFactory registers on the client as well, with its body untrimmed. A
+// client calling that would pay a round trip for every Fetch and every Save,
+// and a server-only [Service] on it would compile and then fail on the client
+// at call time. On the server itself, [Remote] changes nothing.
 // -----------------------------------------------------------------------------
 
 using Design.Domain.Aggregates.OrderAggregate;
@@ -49,7 +51,7 @@ namespace Design.Domain.Jobs;
 #region skill-job-over-entities
 /// <summary>
 /// Job: submits the given draft orders. Reuses the Order aggregate, its
-/// Submit verb and its rules; no person involved (D4).
+/// Submit verb and its rules; no person involved.
 /// </summary>
 [Factory]
 public static partial class SubmitDraftOrders

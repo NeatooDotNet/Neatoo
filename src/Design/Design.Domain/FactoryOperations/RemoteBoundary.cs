@@ -225,10 +225,10 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
 // =============================================================================
 // Entity Duality - One Class, Root in One Graph and Child in Another
 // =============================================================================
-// An entity type is child-only, or it is both root and child (ruling D23).
-// "Absolutely an entity can be both a root and a child." The same address
-// class is saved on its own from an address screen and saved inside an
-// employee from the employee screen. One class carries both roles:
+// An entity type is a root, child-only, or both root and child.
+// The both-roles case: the same address class is saved on its own from an
+// address screen and saved inside an employee from the employee screen. One
+// class carries both roles:
 //
 // - ROOT role: operations with no parent in the signature. [Remote], because
 //   the client calls them. Fetch(id, [Service] repo); Insert/Update/Delete
@@ -240,16 +240,18 @@ internal partial class ServiceInjectionDemo : EntityBase<ServiceInjectionDemo>, 
 //   generated factory exposes Save(target, row) for them, reached only by the
 //   list's [Update].
 //
-// The factory method SIGNATURE is the whole distinction. "The signature of
-// the factory method is many times all the difference you need." RemoteFactory
-// routes Save by which operations exist for the arguments it is given.
+// The factory method SIGNATURE is the whole distinction. RemoteFactory routes
+// Save by which operations exist for the arguments it is given.
 //
 // The interface extends IEntityRoot, so a holder may call Save() on it. That
-// is right for the root role and harmless for the child role: a child fetched
-// through its list is saved by that list, and a consumer that calls Save() on
-// it saves it as a root, which the type supports. A type that must never be
-// saved on its own is child-only: no parent-less operations, interface
-// extending IEntityBase (see Entities/Address.cs).
+// is right for the root role only. An instance fetched as a child is saved by
+// its list, through Save(target, row); calling Save() on it directly routes
+// to the ROOT [Update] against the repository, bypassing the parent's row and
+// leaving the list holding a stale instance. The compiler cannot catch that -
+// the interface is one interface - so the rule is: it is saved as a root only
+// when it was fetched as one. That is the cost of the both-roles choice. A
+// type that must never be saved on its own is child-only: no parent-less
+// operations, interface extending IEntityBase (see Entities/Address.cs).
 //
 // COMMON MISTAKE: putting [Remote] on the CHILD-role operations. They run
 // inside the parent's server-side operation; [Remote] there is a client entry

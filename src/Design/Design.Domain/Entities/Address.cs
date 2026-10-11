@@ -167,7 +167,7 @@ internal partial class Address : EntityBase<Address>, IAddress
     // =========================================================================
     // Address has no parent-less operations, so it can be saved only through
     // an Employee. That is a modelling choice, not a framework rule: an entity
-    // type may also play both roles (ruling D23). If an address screen ever
+    // type may also play both roles. If an address screen ever
     // needed to save an address on its own, this class would gain [Remote]
     // root operations beside the row-taking child operations above, and
     // IAddress would extend IEntityRoot instead of IEntityBase. The factory
