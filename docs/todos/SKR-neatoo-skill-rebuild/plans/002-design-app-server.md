@@ -4,8 +4,8 @@
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-4, AC-1 (AC-4 as narrowed 2026-10-11: Neatoo-owned composition only)
-**Status:** Draft
-**Last Updated:** 2026-10-11 (amended after plan review round 1)
+**Status:** In Progress
+**Last Updated:** 2026-10-11 (plan review round 2 APPROVED; implementation started)
 **Plan-review opt-in:** Yes — two new projects in CI, the first Blazor code in the example set, and a composition the skill will tell people to copy
 **Code-review opt-in:** Yes — examples are what gets copied
 **Branch:** skr-002-design-app-server — cut from the arc at Step 2
@@ -22,7 +22,7 @@ Create `src/Design/Design.App` (Blazor WebAssembly with MudBlazor and MudNeatoo 
 - **One edit page over `Order`** with its item list, as the first page plan 006 builds on.
 - **`WorkOrder.ShowHoldBanner` renamed to a business fact** (`IsHeld`): the property was the `ShowTreatmentPanel` smell (D16, N5) inside the example set's own `skill-visibility-rules` region; the region is renamed to say "derived facts", and the three prose sites that teach `ShowHoldBanner` follow the re-render (plan review V1; user 2026-10-11).
 - **In-memory implementations of Design.Domain's `[Service]` interfaces in Design.Infrastructure**, registered singleton by Design.Server so rows survive requests. Design.Tests keeps its own mocks (plan review C4; user 2026-10-11).
-- **A client/server test pair in Design.Tests** built from the two composition seams, with a stub `IMakeRemoteDelegateRequest` that serializes and dispatches to the server container, in the shape of `Neatoo.UnitTest/ClientServerContainer.cs` — so the server bullet exercises serialization (which is what C1 breaks) and the handler bullet can tell a reassigned result from a dropped one (C2, C3).
+- **A client/server test pair in Design.Tests** built from the two composition seams, with the keyed `HttpClient` re-registered over an `HttpMessageHandler` that forwards each request to the server container's `HandleRemoteDelegateRequest` (one layer below `Neatoo.UnitTest/ClientServerContainer.cs`'s stub, so RemoteFactory's real `MakeRemoteDelegateRequest` runs and only a Remote-mode seam reaches it; round 2 callout 1) — so the server bullet exercises serialization (which is what C1 breaks) and the handler bullet can tell a reassigned result from a dropped one (C2, C3).
 
 The RemoteFactory-owned half of the composition — the endpoint, `UseNeatoo`, the keyed `HttpClient`, the `IsServerRuntime` trim switch — must exist for the app to run, but gets no `skill-*` region here: RemoteFactory's own `Design.Client.Blazor` and `Design.Server` already demonstrate it, with composition tests, and the Neatoo skill points at the RemoteFactory skill for it (owner split, 2026-10-09; both skills are assumed loaded together, user 2026-10-11). Plan 006 writes the mudneatoo text and adds any further pages it needs.
 
@@ -57,7 +57,7 @@ The RemoteFactory-owned half of the composition — the endpoint, `UseNeatoo`, t
 - Existing Design.Tests stay green; the only change to an existing test is the `ShowHoldBanner` → `IsHeld` rename in `WorkOrderAggregateTests` (identifier only, assertions intact).
 - The ViewModel and save handler are plain C# in Design.App, so Design.Tests can pin them without bUnit; the Razor pages are pinned by compiling (no bUnit — todo Out of Scope).
 - No business decision lives in the ViewModel or the page: every value the page shows or hides on comes from a business fact on the aggregate. The ViewModel may name a screen element only by mapping such a fact one-to-one, never by combining or deciding (D16).
-- Design.Infrastructure's implementations are in-memory and registered singleton; they exist so the server composition can serve every factory in Design.Domain, not to be realistic persistence.
+- Design.Infrastructure's implementations are in-memory and registered singleton; they exist so the server composition can serve every factory in Design.Domain except the LazyLoad demos (D24; round 2 callout 2), not to be realistic persistence.
 - `Design.sln` builds with 0 warnings; `dotnet mdsnippets` reports no duplicate or missing regions.
 
 ---
@@ -65,13 +65,13 @@ The RemoteFactory-owned half of the composition — the endpoint, `UseNeatoo`, t
 ## Steps
 
 1. Rename `WorkOrder.ShowHoldBanner` to `IsHeld` (interface, entity, rule, test, region name, and the three prose sites that re-render or name it); the rule's comment says the UI binds a fact, not a show/hide decision.
-2. Fill Design.Infrastructure with in-memory implementations of every `[Service]` interface Design.Domain's operations take, plus `IShippingRateService`'s real implementation already in Design.Domain; update `CLAUDE.md`'s "empty project" line.
+2. Fill Design.Infrastructure with in-memory implementations of every `[Service]` interface Design.Domain's operations take — except `ILazyLoadChildRepository` and `ILazyLoadParentRepository` (D24: nothing new on LazyLoad) — plus `IShippingRateService`'s real implementation already in Design.Domain; update `CLAUDE.md`'s "empty project" line.
 3. Create Design.Server as an ASP.NET Core host over Design.Domain: one composition method that `Program.cs` calls and the tests call — `AddNeatooServices(Server)`, `AddDesignDomainRules()`, Design.Infrastructure's services as singletons — then `UseNeatoo()` and the hosted-WASM middleware. The composition's header states the #117 hazard and why `AddNeatooAspNetCore` is absent.
 4. Create Design.App as a Blazor WebAssembly client over Design.Domain with MudBlazor and MudNeatoo: one composition method taking the base address — `AddNeatooServices(Remote)`, `AddDesignDomainRules()`, the keyed `HttpClient`, MudBlazor — which `Program.cs` calls with `HostEnvironment.BaseAddress`; plus the trim configuration.
 5. Add an Order edit page with its item list, bound through MudNeatoo, and a save handler with the T1 shape.
 6. Add a ViewModel over the live `WorkOrder` aggregate and a page bound to it: approval and the derived facts come from the aggregate's rules; the ViewModel holds the aggregate, exposes the verb, and saves.
 7. Wrap the Neatoo-owned parts in `skill-*` regions: Neatoo registration on each tier, the save handler, the ViewModel, and the page's binding (comment-style marker in `.razor`, confirmed against `dotnet mdsnippets`).
-8. Add Design.App and Design.Server to `Design.sln`; reference both from Design.Tests; build the client/server test pair from the two seams with a serializing stub `IMakeRemoteDelegateRequest`; write the tests that pin the Acceptance bullets. Update `.claude/rules/design-snippets.md`, `.claude/rules/docs.md` and `CLAUDE.md`'s Project Map.
+8. Add Design.App and Design.Server to `Design.sln`; reference both from Design.Tests; build the client/server test pair from the two seams with the keyed `HttpClient` forwarding into the server container; write the tests that pin the Acceptance bullets. Update `.claude/rules/design-snippets.md`, `.claude/rules/docs.md` and `CLAUDE.md`'s Project Map.
 9. Build, test, run `dotnet mdsnippets`; confirm no duplicate or missing regions.
 
 ---
@@ -79,7 +79,7 @@ The RemoteFactory-owned half of the composition — the endpoint, `UseNeatoo`, t
 ## Acceptance
 
 - [ ] Through the client/server pair, an `IOrder` fetched on the client, modified and saved crosses to the server composition, is serialized both ways, and lands in Design.Infrastructure's store `[integration]` · Must
-- [ ] The client composition runs in Remote mode: the same `[Remote]` call observed above goes through the stub `IMakeRemoteDelegateRequest`, not the local path `[integration]` · Must
+- [ ] The client composition runs in Remote mode: the same `[Remote]` call observed above leaves the client container through the keyed `HttpClient` (the forwarding handler sees it), which only a Remote-mode seam does; a Server-mode seam would take the local path and fail the assertion `[integration]` · Must
 - [ ] The save handler, run through the pair, saves a savable order and holds the server's returned instance afterwards (not the one it sent); given an invalid order it does not call `Save()` and leaves the messages on the entity; it calls no `RunRules` `[integration]` · Must
 - [ ] The WorkOrder ViewModel's approve action and the facts the page binds to (`CanApprove`, `IsHeld`, `IsOverBudget`, `HasUnschedulableTasks`) follow the aggregate's rules: changing the aggregate changes what the ViewModel exposes, with no logic in the ViewModel deciding it `[integration]` · Must
 - [ ] No property on `WorkOrder` is named for a screen element; `WorkOrderAggregateTests` keeps every assertion under the renamed fact `[explicit-skip: rename, verified by grep and the unchanged test count]` · Must
@@ -147,6 +147,12 @@ Walked 2026-10-11.
 - **What changed:** V1 — `ShowHoldBanner` renamed to `IsHeld` (user: rename to a business fact), new Step 1 and a new Must bullet. C1 — the combination is answered and the hazard filed as RemoteFactory#117 (user: file on RF); Design.Server is `AddNeatooServices(Server)` + `UseNeatoo()` only. C2/C3 — a client/server test pair with a serializing stub `IMakeRemoteDelegateRequest`, and a client seam taking the base address; the first three bullets now run through the pair. C4 — in-memory implementations in Design.Infrastructure, singleton (user's choice). C5 — `internal` + `InternalsVisibleTo`. C6 — comment-style marker for `.razor`, rule files extended, the build-pinned exception stated. Theoretical: `docs.md` added to Step 8; 003's `RunRules` change in `WorkOrder.Create/Fetch` noted as a dependency for the ViewModel test's post-Fetch assertions (D18) — the test asserts after a property change, not after Fetch alone.
 - **Why:** plan review round 1; three choices were the user's and are recorded with the finding.
 - **Discovery Log:** 2026-10-11 / SKR-002 (second entry)
+
+### 2026-10-11 — Amended for plan review round 2 (APPROVED, two Must callouts)
+
+- **Section affected:** Scope, Constraints, Steps 2 and 8, Acceptance bullet 2
+- **What changed:** the test pair stubs the keyed `HttpClient`'s handler rather than `IMakeRemoteDelegateRequest`, so RemoteFactory's real remote path runs and only a Remote-mode client seam reaches the server container (a Server-mode seam takes the local path and the bullet fails). Design.Infrastructure excludes the two LazyLoad demo repositories (D24).
+- **Why:** round 2 callouts 1 and 2; both mechanical.
 
 ---
 

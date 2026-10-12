@@ -53,4 +53,41 @@ Files examined: Neatoo `AddNeatooServices.cs`, `NeatooJsonConverterFactory.cs`, 
 
 ### Triage
 
-See the plan's Amendments entry of 2026-10-11 and the todo's Discovery Log.
+See the plan's Amendments entry of 2026-10-11 (first) and the todo's Discovery Log. User decided V1 (rename), C1 (file on RF → #117), C4 (Design.Infrastructure). C2/C3/C5/C6 amended.
+
+---
+
+## Round 2 — 2026-10-11 (plan at `4255b64`)
+
+**Verdict: APPROVED**
+
+### Pass A
+
+Docs consulted: VisionAlignment D16, D24; `todo.md` Out of Scope and Discovery Log; the amended plan.
+
+**Veto-tier:** none. V1 resolved: the page binds only facts, the constraint allows a one-to-one fact-to-element mapping in the ViewModel, a Must bullet pins the rename.
+
+**Callout (Must, AC-4)**
+
+- **Step 2's "every `[Service]` interface" includes the LazyLoad demos.** `LazyLoadProperty.cs:208,:255` take `[Service] ILazyLoadChildRepository` / `ILazyLoadParentRepository`. In-memory implementations for them build new code on LazyLoad, which the todo's Out of Scope and the plan's D24 line rule out. Option: exclude them and narrow "serve every factory in Design.Domain". **Triage: amended** — Step 2 and the constraint exclude the LazyLoad demos.
+
+### Pass B
+
+Disposition check: C1 resolved (`UseNeatoo` resolves only `ICorrelationContext`, `HandleRemoteDelegateRequest`, `NeatooSerializationOptions`, all registered by `AddNeatooServices(Server)`); C2 resolved; C4 resolved (singleton storage; Design.Tests already references Design.Infrastructure); C5 resolved (Design.Tests already builds internal DI-registered mocks under `AnalysisMode=all`); C6 resolved. C3: only the seam part resolved.
+
+**Veto-tier:** none.
+
+**Callout (Must, AC-4)**
+
+- **Bullet 2 passes whatever mode the client seam registers.** The generated registrars register the same services in every mode (`OrderFactory.g.cs:395-410` never reads `remoteLocal`); DI picks the `(IServiceProvider, IMakeRemoteDelegateRequest)` constructor whenever `IMakeRemoteDelegateRequest` is registered; the test registers its stub after the seam, so a seam wrongly calling `AddNeatooServices(Server)` still takes the remote path through the stub. Nothing pins Remote mode. Option: stub one layer down — re-register the keyed `HttpClient` with an `HttpMessageHandler` that forwards to the server container; RF's real `MakeRemoteDelegateRequest` then runs only if the seam registered Remote, and a Server-mode seam falls to the local path and the test fails. **Triage: amended** — the pair stubs the keyed `HttpClient`'s handler, not `IMakeRemoteDelegateRequest`.
+
+### Theoretical (not triaged)
+
+- `Design.Infrastructure.csproj` sets no TargetFramework, so it inherits `net9.0;net10.0` plus `AnalysisMode=all`; its net10.0 leg references net9.0 Design.Domain (works); public implementation types would draw CA1062/CA1002 — `internal` is the easy path.
+- A static pair shares the singleton store across tests; harmless while Design.Tests runs serially and asserts by id.
+- `skills/neatoo/references/domain-logic-placement.md:133` is hand-written Razor (`@if (order.ShowHoldBanner)`); the rename edits it by hand, replacing it is 006's job.
+
+### Read report
+
+- Beyond the brief: `Design.Infrastructure.csproj`, `LazyLoadProperty.cs` `[Service]` parameters, the `4255b64` todo diff, rename-site grep.
+- Named but unused: this file's round 1.
