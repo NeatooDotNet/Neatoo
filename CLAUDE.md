@@ -36,19 +36,25 @@ The Neatoo Solution is at src/Neatoo.sln
 | `Design.Tests` | Tests verifying design patterns |
 | `Examples/Person/*` | Full example application (App, DomainModel, Ef, Server) |
 
-## Central Pillar: Interface-First Design
+## Interface-First Design (strongly recommended, not required)
 
-**Every entity/list gets a matched public interface. Concretes are `internal`. All references use interfaces, never concretes.** This is how `IEntityRoot` vs `IEntityBase` separation works -- without it, `IsSavable` on child entities silently returns `false` (real zTreatment bug).
+**Every entity/list gets a matched public interface. Concretes are `internal`. All references use interfaces.** This is the recommended architecture (ruling D19 in `docs/VisionAlignment.md`); nothing blocks using the concretes and no analyzer enforces it. The reason to follow it: `EntityBase<T>` gives every concrete `IsSavable` and `Save()`, and a modified child concrete reports `IsSavable == true` although children are persisted by their root. Holding the child interface (`IEntityBase`) makes that misuse a compile error (real zTreatment bug). Design.Domain follows the pattern throughout.
 
-### The Rules
+### The Pattern
 
 1. Every entity class gets a matched public interface (`IOrder`, `IOrderItem`, `IOrderItemList`)
 2. Concrete classes are `internal`
 3. All references use interfaces -- properties, parameters, list type parameters
-4. Root interfaces extend `IEntityRoot` (exposes `IsSavable`, `Save()`)
-5. Child interfaces extend `IEntityBase` (no `IsSavable`, no `Save()`)
+4. A type that is a root, or both root and child, has an interface extending `IEntityRoot` (exposes `IsSavable`, `Save()`)
+5. A child-only type has an interface extending `IEntityBase` (no `IsSavable`, no `Save()`)
 6. List interfaces extend `IEntityListBase<IChild>` -- parameterized on child interface
-7. ValidateBase entities follow the same pattern
+7. ValidateBase types follow the same pattern
+
+A type can be both root and child (D23): `[Remote]` root operations and `internal` child operations side by side, distinguished by signature. `IEntityRoot` exists because of the generic typing of `EntityBase<T>.Save()`, not to say a type is only ever a root.
+
+## LazyLoad Is Going Away
+
+RemoteFactory is removing `LazyLoad<T>` / `ILazyLoadFactory` (ruling D24, 2026-10-09; techdebt issue in the RemoteFactory repo). The replacement is a `[Remote] [Fetch]` on the child list's factory, called when the data is needed. Until the removal ships and Neatoo follows: build nothing new on LazyLoad, and treat `skills/neatoo/references/lazy-loading.md`, `Design.Domain/PropertySystem/LazyLoadProperty.cs`, the Person example's phone list and mudneatoo's `EntityLazyLoad` guidance as pending removal, not as patterns to copy. Remove this section when Neatoo's lazy-load surface is gone.
 
 ```csharp
 public interface IOrder : IEntityRoot { IOrderItemList? Items { get; } }
