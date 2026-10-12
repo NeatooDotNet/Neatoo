@@ -90,9 +90,9 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - [x] `CLAUDE.md` "Central Pillar" and "The Rules" wording softened to strongly recommended (D19) · `CLAUDE.md` · PR #100 · AC-1 · Must
 - [x] Design.Domain duality text reversed (D23): `RemoteBoundary.cs` "do not bolt a root role", `Address.cs` "NO STANDALONE-ROOT OPERATIONS", `IFactoryInterfaces.cs` "a root only" rewritten to the endorsed shape · `src/Design/Design.Domain` · done when no comment forbids a type being both root and child and the `DualUseEntity` demo shows both roles · AC-3 · Must — pulled onto SKR-001, PR #101
 - [ ] `CLAUDE-DESIGN.md:77,87` and `README.md:24` stop calling `ValidateBase` a value object (D17) · `src/Design/CLAUDE-DESIGN.md`, `README.md` · done when grep for "value object" near `ValidateBase` is empty · AC-3 · Must
-- [ ] Close #98 as moot under D18 · GitHub · done when closed with a comment naming D18 · AC-5 · Must
+- [ ] Close #98 as moot under D18 · GitHub · done when closed with a comment naming D18 · AC-5 · Must — pulled onto SKR-003 (2026-10-11)
 - [ ] mudneatoo block count corrected in the audit README (49, not 14) · `docs/todos/consistency-audit/README.md` · done when the line reads 49 · AC-6 · Should
-- [ ] Framework pain for the skill: `Save()` does not mark the entity busy, so a double-click on Save sends two Inserts (the sent instance stays `IsSavable` until the result is reassigned) · `skills/neatoo` pain list (plan 004/005), issue to file on Neatoo · done when the skill names it with its issue · AC-7 · Should (SKR-002 code review callout 3, 2026-10-11)
+- [ ] Framework pain for the skill: `Save()` does not mark the entity busy, so a double-click on Save sends two Inserts (the sent instance stays `IsSavable` until the result is reassigned) · `skills/neatoo` pain list (plan 004/005) · done when the skill names it with Neatoo#103 (critical, filed 2026-10-11) · AC-7 · Should (SKR-002 code review callout 3)
 
 ## Dismissed
 
