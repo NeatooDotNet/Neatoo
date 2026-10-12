@@ -252,7 +252,7 @@ public static partial class UsernameAvailability
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L117-L131' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L126-L140' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The rule. It never sees the repository, and it has a DI interface so the entity can take it from DI and tests can substitute it. The empty-value early return is the usual way to skip an expensive check:
@@ -301,7 +301,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L133-L174' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L142-L183' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The entity receives the rule by constructor injection:
@@ -342,11 +342,15 @@ public static class DomainRegistration
         // a rule tracks execution state
         services.AddTransient<ICheckUsernameAvailabilityRule, CheckUsernameAvailabilityRule>();
         services.AddTransient<IUniqueCodeRule, UniqueCodeRule>();
+        // A rule that takes an interface-factory domain service registers the
+        // same way; the service itself is the proxy on the client (generated)
+        // and the implementation on the server (registered there, not here).
+        services.AddTransient<IShippingQuoteRule, ShippingQuoteRule>();
         return services;
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/DI/DomainRegistration.cs#L14-L31' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rules-di-registration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/DI/DomainRegistration.cs#L14-L35' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rules-di-registration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A rule runs every time its trigger property is set, and rules contain no debouncing. Bind the property so it is set on field commit: `MudNeatooTextField` and `MudNeatooNumericField` commit when the field loses focus, so a server-calling rule behind them makes one call per committed value.
@@ -570,7 +574,7 @@ internal class CancellableRule : AsyncRuleBase<AsyncRulesDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L250-L272' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cancellable-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L259-L281' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cancellable-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Async rules track busy state: the trigger property and the entity report `IsBusy` from the moment the rule starts until it completes, so a bound UI can disable a Save button or show a spinner. Always `await WaitForTasks()` before reading `IsValid` or saving when async rules may be in flight:

@@ -15,13 +15,13 @@ namespace Design.Tests.BaseClassTests;
 public class ValidateBaseTests
 {
     private IServiceScope _scope = null!;
-    private IDemoValueObjectFactory _factory = null!;
+    private IDemoInputModelFactory _factory = null!;
 
     [TestInitialize]
     public void TestInitialize()
     {
         _scope = DesignTestServices.GetScope();
-        _factory = _scope.GetRequiredService<IDemoValueObjectFactory>();
+        _factory = _scope.GetRequiredService<IDemoInputModelFactory>();
     }
 
     [TestCleanup]

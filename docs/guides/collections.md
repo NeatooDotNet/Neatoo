@@ -4,7 +4,7 @@
 
 Neatoo provides specialized collection base classes for managing lists of validatable objects and entities within aggregates. These collections automatically propagate parent references to establish aggregate boundaries, aggregate validation state from all items, track modifications through the entity graph, and manage deleted items for persistence.
 
-The examples are the `Order` aggregate (`Order`, `OrderItem`, `OrderItemList`) and the smaller `DemoParent`/`DemoChild`/`DemoEntityList` and `DemoValueObject`/`DemoValueObjectList` demos. Tests are MSTest and resolve factories from a DI scope (`DesignTestServices.GetScope()`).
+The examples are the `Order` aggregate (`Order`, `OrderItem`, `OrderItemList`) and the smaller `DemoParent`/`DemoChild`/`DemoEntityList` and `DemoInputModel`/`DemoInputModelList` demos. Tests are MSTest and resolve factories from a DI scope (`DesignTestServices.GetScope()`).
 
 ## Interface-First
 
@@ -27,6 +27,11 @@ public interface IOrder : IEntityRoot
     string? Status { get; set; }
     decimal TotalAmount { get; }
     IOrderItemList? Items { get; }
+
+    /// <summary>
+    /// Verb: moves the order to Submitted. Sets state; never persists.
+    /// </summary>
+    void Submit();
 }
 
 /// <summary>
@@ -54,7 +59,7 @@ public interface IOrderItemList : IEntityListBase<IOrderItem>
     int DeletedCount { get; }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs#L68-L109' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregate-interfaces' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs#L68-L114' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregate-interfaces' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## ValidateListBase
@@ -69,7 +74,7 @@ A list is a `[Factory]` class like any other Neatoo object: the parent creates i
 /// <summary>
 /// List interface for ValidateListBase demo — parameterized on child INTERFACE.
 /// </summary>
-public interface IDemoValueObjectList : IValidateListBase<IDemoValueObject> { }
+public interface IDemoInputModelList : IValidateListBase<IDemoInputModel> { }
 ```
 <sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L53-L58' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
@@ -87,7 +92,7 @@ public interface IDemoValueObjectList : IValidateListBase<IDemoValueObject> { }
 /// - Parent-child relationships managed automatically
 /// </summary>
 [Factory]
-internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>, IDemoValueObjectList
+internal partial class DemoInputModelList : ValidateListBase<IDemoInputModel>, IDemoInputModelList
 {
     // ValidateListBase has no required constructor - uses default.
 
@@ -99,18 +104,18 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 
     [Remote]
     [Fetch]
-    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoValueObjectFactory valueObjectFactory)
+    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoInputModelFactory inputModelFactory)
     {
         // The list is paused by its own factory operation (FactoryStart),
         // like any factory target. Each item is loaded by its own [Fetch].
         foreach (var name in repository.GetAllNames())
         {
-            Add(valueObjectFactory.Fetch(name));
+            Add(inputModelFactory.Fetch(name));
         }
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L331-L364' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L333-L366' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The collection automatically tracks:
@@ -213,7 +218,7 @@ internal partial class DemoEntityList : EntityListBase<IDemoChild>, IDemoEntityL
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L441-L487' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L443-L489' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The root creates the list through the list factory inside its own `[Create]` and loads it inside its `[Fetch]` — never with `new`, and never in the constructor:
@@ -247,7 +252,7 @@ internal partial class DemoParent : EntityBase<DemoParent>, IDemoParent
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L518-L544' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-creates-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L520-L546' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-creates-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 In addition to validation state, EntityListBase tracks:

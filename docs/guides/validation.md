@@ -16,9 +16,9 @@ Inherit from `ValidateBase<T>` to give a domain object rules without a persisten
 <a id='snippet-skill-value-object-interface'></a>
 ```cs
 /// <summary>
-/// Interface for ValidateBase demo — value objects and validation-only scenarios.
+/// Interface for ValidateBase demo — input models and validation-only scenarios.
 /// </summary>
-public interface IDemoValueObject : IValidateBase
+public interface IDemoInputModel : IValidateBase
 {
     string? Name { get; set; }
     string? Description { get; set; }
@@ -31,7 +31,7 @@ public interface IDemoValueObject : IValidateBase
 <a id='snippet-skill-value-object'></a>
 ```cs
 /// <summary>
-/// Demonstrates: ValidateBase&lt;T&gt; for value objects and validation-only scenarios.
+/// Demonstrates: ValidateBase&lt;T&gt; for input models and validation-only scenarios.
 ///
 /// Key points:
 /// - Provides validation infrastructure without persistence tracking
@@ -41,13 +41,13 @@ public interface IDemoValueObject : IValidateBase
 /// - RuleManager provides fluent API for adding rules
 /// </summary>
 [Factory]
-internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoValueObject
+internal partial class DemoInputModel : ValidateBase<DemoInputModel>, IDemoInputModel
 {
     public partial string? Name { get; set; }
 
     public partial string? Description { get; set; }
 
-    public DemoValueObject(IValidateBaseServices<DemoValueObject> services) : base(services)
+    public DemoInputModel(IValidateBaseServices<DemoInputModel> services) : base(services)
     {
         // Rules are added in the constructor; they run when a trigger property changes
         RuleManager.AddValidation(
@@ -76,7 +76,7 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L91-L137' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L93-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ValidateBase provides:
@@ -157,7 +157,7 @@ Other DataAnnotations attributes (`[Phone]`, `[Url]`, ...) are not mapped and ar
 
 ## Custom Validation Rules
 
-An inline rule is registered in the constructor with `RuleManager.AddValidation`: the lambda receives the object and returns an error message or an empty string, and the message is attached to the trigger property. The `DemoValueObject` and `ValidationChildDemo` classes above show the shape.
+An inline rule is registered in the constructor with `RuleManager.AddValidation`: the lambda receives the object and returns an error message or an empty string, and the message is attached to the trigger property. The `DemoInputModel` and `ValidationChildDemo` classes above show the shape.
 
 A rule with more than a line or two of logic is a class. A synchronous rule derives from `RuleBase<T>`, takes its trigger properties in the base constructor, and returns `IRuleMessages`:
 
@@ -331,7 +331,7 @@ public static partial class UsernameAvailability
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L117-L131' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L126-L140' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The rule takes the command delegate and never sees the repository. It has a DI interface so the entity can take it from DI and tests can substitute it:
@@ -380,7 +380,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L133-L174' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L142-L183' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The entity receives the rule by constructor injection:
@@ -421,11 +421,15 @@ public static class DomainRegistration
         // a rule tracks execution state
         services.AddTransient<ICheckUsernameAvailabilityRule, CheckUsernameAvailabilityRule>();
         services.AddTransient<IUniqueCodeRule, UniqueCodeRule>();
+        // A rule that takes an interface-factory domain service registers the
+        // same way; the service itself is the proxy on the client (generated)
+        // and the implementation on the server (registered there, not here).
+        services.AddTransient<IShippingQuoteRule, ShippingQuoteRule>();
         return services;
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/DI/DomainRegistration.cs#L14-L31' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rules-di-registration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/DI/DomainRegistration.cs#L14-L35' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rules-di-registration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Async validation behavior:
@@ -791,7 +795,7 @@ internal class CancellableRule : AsyncRuleBase<AsyncRulesDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L250-L272' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cancellable-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L259-L281' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cancellable-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cancellation behavior:

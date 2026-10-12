@@ -17,6 +17,9 @@
 
   <ItemGroup>
     <PackageReference Include="Neatoo.RemoteFactory" />
+    <!-- Child-role factory operations (internal, no [Remote]) are internal members of the
+         generated factory interface; the tests that pin them need to see them. -->
+    <InternalsVisibleTo Include="Design.Tests" />
     <Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*.cs" />
   </ItemGroup>
 

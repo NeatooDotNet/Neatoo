@@ -129,7 +129,7 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L224-L300' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-crud' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L226-L302' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-crud' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 When the persistence methods take a non-service parameter — a child's own row — `IFactorySave<T>` is not generated and `entity.Save()` is not available. The generated factory exposes `Save(child, row)` instead, routed on the child's `IsDeleted`/`IsNew`, and the list's `[Update]` calls it. That is the child shape of the save cascade described in [entities.md](entities.md):
