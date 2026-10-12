@@ -4,7 +4,7 @@
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-1, AC-2, AC-10 (and AC-7 for the pains the skill names)
-**Status:** In Progress
+**Status:** Done
 **Last Updated:** 2026-10-12 (plan review round 2; implementation started)
 **Plan-review opt-in:** Yes — this is the deliverable the todo exists for; Pass A against D1–D25 as clarified, Pass B against the regions and the three plans' examples
 **Code-review opt-in:** No — the deliverable is prose plus rendered regions; the test-reviewer's map check and plan 007's fresh-session test are the gates that fit
@@ -111,8 +111,8 @@ Walked 2026-10-12.
 | New Order not savable until required fields filled | Must | `[integration]` | `Design.Tests/ViewModelTests/OrderEditViewModelTests.cs` `New_EmptyForm_IsNotSavableUntilRequiredFieldsAreFilled` — through `DesignClientServer.Scopes()`: `IsValid` false, `CanSave` false, `CustomerName` message present; set it, `WaitForTasks`, `CanSave` true. Premise also asserted in `AggregateTests/AggregateLifecycleTests.cs` server-gate Arrange (`Assert.IsFalse(order.IsValid, "Create ran the rules…")`). | integration |
 | Record value object rejects bad input, round-trips | Must | `[integration]` | `Design.Tests/EntityTests/PayGradeTests.cs` `Record_ComparesByValue_AndRejectsAnUnknownCode` (value equality; `ArgumentException` on `"Z"`) and `Employee_CarriesTheRecord_AcrossTheClientServerPair` (Grade `C` saved and fetched through the pair, `link.Calls == 2`, equals `new PayGrade("C")`, `MaxSalary 90_000m`). `Employee.Grade` assigned in Create/Fetch/MapTo. | integration |
 | Every Neatoo-owned trap row answered, example inline or linked | Must | `[explicit-skip]` | Rendered `SKILL.md` table rows (line → T): 31 → T1; 32 → T2; 33 → T7; 34 → T8; 35 → T9; 36 → T10; 37 → T11-Neatoo; 38 → T12; 39 → T16; 40 → T17. Each row's third column links `references/<file>.md` (anchors verified present: blazor.md `#the-save-handler`, base-classes.md `#a-job-over-entities` / `#a-value-object-is-a-record`, validation.md `#a-rule-that-takes-a-domain-service`, entities.md `#one-class-in-both-roles`). Decisions re-answer T1/T10 (:50–100), T2/T8 (:102–125), T1 UI (:127–279), T17 (:281, :289), T12 (:285), T16 (:293). | skip confirmed |
-| RF rows once, pointer only | Must | `[explicit-skip]` | One block at `SKILL.md:42` naming T3, T4, T5, T6, T11-RF, T13, T14, T15, T18, T19, T20 as RemoteFactory phrases them, each with a parenthetical pointer, no example. `grep -c "RemoteFactory's questions"` = 1; none of those questions appears in the Neatoo table. | skip confirmed |
-| Every C# block a filled snippet (or WRONG) | Must | `[explicit-skip]` | Four fenced blocks (`:56`, `:115`, `:133`, `:203`), each inside a `<!-- snippet: … -->`/`<!-- endSnippet -->` pair (`skill-fetch-computes-derived`, `skill-can-x-rule`, `skill-save-handler`, `skill-page-binds-facts`); no WRONG block. `dotnet mdsnippets` exit 0, log has no "missing"/"duplicate" lines (`TreatMissingAsWarning` checked by grep, not exit code). | skip confirmed |
+| RF rows once, pointer only | Must | `[explicit-skip]` | One block at `SKILL.md:42`: the eleven questions alone (T3, T4, T5, T6, T11-RF "Who writes a child's row?", T13, T14, T15, T18, T19, T20), no answers, no examples, pointing at the RemoteFactory skill. `grep -c "RemoteFactory's questions"` = 1; none of the RF-only questions appears in the Neatoo table. The Neatoo T11 row (`:37`) answers only the list's part and names the RemoteFactory skill for self-writing. Revised after test review round 1. | skip confirmed |
+| Every C# block a filled snippet (or WRONG) | Must | `[explicit-skip]` | Four fenced blocks (`:56`, `:115`, `:133`, `:203`), each inside a `<!-- snippet: … -->`/`<!-- endSnippet -->` pair (`skill-fetch-computes-derived`, `skill-can-x-rule`, `skill-save-handler`, `skill-page-binds-facts`); no WRONG block. `dotnet mdsnippets` exit 0; `reviews/004-mdsnippets.log` (git-ignored, like the build/test logs) has no "missing"/"duplicate" line beyond the `TreatMissingAsWarning: True` config echo. | skip confirmed |
 | Model first, table in first screen, ≤ ~400 lines | Should | `[explicit-skip]` | `## The model` at `:13`; `## The questions the habit asks` at `:25`; rendered file 329 lines (139 before mdsnippets). | skip confirmed |
 | No prohibition-teaching, no routine validate step, no LazyLoad, no Dn | Must | `[explicit-skip]` | `grep -nE "\b(D[0-9]{1,2}\|T[0-9]{1,2})\b"` empty. `RunRules` appears at `:31` (denied as a validate step), `:36` (targeted, per-operation), inside the Fetch block, and `:299` (the server gate). "lazy" appears only at `:308` (pain: being removed, build nothing new) and `:327` (index: pending removal). Read-through: each row states the answer before any "never". | skip confirmed |
 | Frontmatter triggers on the questions | Must | `[explicit-skip]` | `SKILL.md:3`: description 952 characters (cap 1,024); leads with nine habit questions in compact form, then the type/property names; no LazyLoad words; names the RemoteFactory skill as the owner of attributes and composition. | skip confirmed |
@@ -123,7 +123,8 @@ Walked 2026-10-12.
 
 ## Gate Record
 
--
+- **Test review, round 1 (2026-10-12): CONCERNS** — `reviews/004-test-review.md`. No veto. Sacred-test diff reconciled: only the two recorded changes (lifecycle Arrange; the moved `AddThenRemoveNewItem` test, same assertions on `SaveAggregateDemo`), the rest mechanical async/await. Build 0/0, 201 passing. One Must-cover on bullet 4: the RF pointer block restated RemoteFactory's answers and lacked T11-RF. **Fixed** by the reviewer's option (i), which matches the bullet as written: the block now lists the eleven questions alone, T11-RF included; the Evidence cell is corrected. Tech-debt (no mdsnippets log): the run is now captured to `reviews/004-mdsnippets.log`. No round 2: the fix is a one-line prose cut that the reviewer prescribed and the grep confirms.
+- Code review: not opted in.
 
 ---
 
