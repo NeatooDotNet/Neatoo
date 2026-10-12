@@ -217,5 +217,26 @@ public class WorkOrderAggregateTests
         Assert.IsFalse(fetched.Tasks[0].IsSchedulable);
         Assert.AreEqual(200m, fetched.Tasks[1].Cost);
     }
+
+    [TestMethod]
+    public async Task Fetch_TargetedRunRules_DoesNotWriteTheFinishedChildren()
+    {
+        // The #98 hazard needs a root rule that would write a DIFFERENT value
+        // than the child loaded: a task row whose Discount is not the root's.
+        // (Saved through the aggregate the two always agree, so the test above
+        // cannot tell the targeted form from RunRulesFlag.All; this one can.)
+        var task = MockWorkOrderRepository.Task("Design", 1, 2m, 30m);
+        task.Discount = 0.25m;                 // root row's Discount is 0
+        var row = _repository.SeedWorkOrder(task);
+
+        var fetched = (await _factory.Fetch(row.Id))!;
+
+        // RunRules(nameof(Status)) / (nameof(Budget)) did not run the Discount
+        // orchestrator, so the finished task kept its loaded value and is a clean
+        // baseline. RunRulesFlag.All would have pushed 0 into it and marked it modified.
+        Assert.AreEqual(0.25m, fetched.Tasks![0].Discount);
+        Assert.IsFalse(fetched.Tasks[0].IsModified);
+        Assert.IsFalse(fetched.IsModified);
+    }
     #endregion
 }
