@@ -300,6 +300,8 @@ The root's `[Insert]` and `[Update]` run `RunRules(All)` and throw on an invalid
 
 ## Known pains
 
+The ones a new aggregate meets first; [pains.md](references/pains.md) has all of them with today's workaround.
+
 - `Save()` does not mark the entity busy; double-click sends two Inserts - [Neatoo#103](https://github.com/NeatooDotNet/Neatoo/issues/103).
 - `Save()` returns a new instance; a discarded result leaves a stale object - an analyzer is pending; until then, reassign.
 - A rule trigger on a collection *reference* (`t => t.Items`) fires only when the list is reassigned; trigger on the child property path (`t => t.Items![0].LineTotal`) - an analyzer is pending.
@@ -324,6 +326,7 @@ Each file is a mechanism reference under the decisions above. Every block in the
 - [source-generation.md](references/source-generation.md) - what the two generators produce
 - [trimming.md](references/trimming.md) - IL trimming for the Blazor client
 - [pitfalls.md](references/pitfalls.md) - the mistakes, each with its fix
+- [pains.md](references/pains.md) - open framework defects and missing analyzers, each with its issue and workaround
 - [lazy-loading.md](references/lazy-loading.md) - pending removal; do not copy
 
-Mechanism that used to live in this file lives in, or is moving into, these references: the quick start and the base-class quick reference → [base-classes.md](references/base-classes.md); the state properties, save routing, the three-phase save and the aggregate save cascade → [entities.md](references/entities.md); partial properties → [properties.md](references/properties.md); `Parent` (in a rule, a factory method, a verb), the open-mutation design assumption, child-property triggers and the parent orchestrator → [domain-logic-placement.md](references/domain-logic-placement.md); the server gate and validation → [validation.md](references/validation.md); troubleshooting → [pitfalls.md](references/pitfalls.md).
+Mechanism that used to live in this file lives in these references: the base-class quick reference and a complete entity → [base-classes.md](references/base-classes.md); the state properties, save routing, edit-then-save and the aggregate save cascade → [entities.md](references/entities.md); partial properties → [properties.md](references/properties.md); `Parent` (in a rule, a factory method, a verb), the aggregate as a graph and rules for open mutation, child-property triggers and the parent orchestrator → [domain-logic-placement.md](references/domain-logic-placement.md); the server gate and validation → [validation.md](references/validation.md); troubleshooting → [pitfalls.md](references/pitfalls.md).

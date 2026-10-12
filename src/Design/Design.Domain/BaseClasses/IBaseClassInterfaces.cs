@@ -9,7 +9,7 @@ using Neatoo;
 
 namespace Design.Domain.BaseClasses;
 
-#region skill-value-object-interface
+#region skill-input-model-interface
 /// <summary>
 /// Interface for ValidateBase demo — input models and validation-only scenarios.
 /// </summary>

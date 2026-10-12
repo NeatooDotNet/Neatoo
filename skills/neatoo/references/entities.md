@@ -231,6 +231,52 @@ public async Task UnDelete_ReversesDeleteBeforeSave()
 
 An override must call `base.FactoryComplete(operation)` first. Anything it assigns after that call is a live edit: the object is already resumed, so rules run and the entity reports `IsModified=true`. Set defaults and derived values inside the factory method itself, where the object is paused. Reserve an override for work that sets no state.
 
+## State Properties
+
+There is no `IsDirty`; use `IsModified` / `IsSelfModified`.
+
+| Property | Meaning |
+|---|---|
+| `IsModified` | The graph differs from the baseline its last factory operation left — would discarding it lose work? Does **not** include `IsNew`: false after Create, false after Fetch. |
+| `IsSelfModified` | This object's own properties changed (children excluded). |
+| `IsValid` | This object and every descendant pass their rules. |
+| `IsSelfValid` | This object's own rules pass. |
+| `IsBusy` | An async rule is running on this object or a descendant. |
+| `IsNew` | Not yet persisted: true after Create, false after Fetch and Insert. Routing state only — it never makes an object modified and never aggregates upward. |
+| `IsDeleted` | Marked for deletion; routes the next save to `[Delete]`. |
+| `IsSavable` | `(IsModified \|\| IsNew) && IsValid && !IsBusy`. Says nothing about aggregate position; only `IEntityRoot` exposes it. |
+
+## Edit, Then Save
+
+An interaction with an aggregate is two phases that do not overlap.
+
+1. **Edit.** Setters and verbs — on the root or any child, called by any consumer — change state. Each change runs the rules it triggers at once, sync and async; validity, modification and busy state aggregate to the root as they go. Adding a child to a list is an edit. Before reading `IsSavable`, `await WaitForTasks()` if an async rule may be in flight.
+2. **Save.** The caller calls `Save()` on the root. Routing picks `[Insert]`, `[Update]` or `[Delete]`; the root's operation runs the server gate, maps its row, hands the row's child collection to the list factory's `Save`, and flushes once.
+
+The line between them is ownership. A verb never owns persistence — no repository, no transaction, no `[Service]` parameter — though it may pass *through* a generated seam (`Save()`, an `[Execute]`, a command delegate) exactly as a ViewModel does. A persisting operation never calls a verb; it reads the state the edits left. A seam that edits a graph on someone's behalf is the edit phase run elsewhere, and it persists only through `Save`.
+
+| Persisting operations own | Verbs own |
+|---|---|
+| Mapping the row (`MapTo`) | Property setters |
+| Repository calls | Calling other verbs on `this` or on children |
+| The transaction (one flush per root save) | Adding items to child lists |
+| Factory events (`[Service] IFactoryEvents`) | Queuing records onto state-collection properties |
+| Handing the row's child collection to the list factory's `Save` | Reading `Parent` for the aggregate's state |
+| `[Service]` parameters | Calling `Save()`, an `[Execute]`, or a command delegate — pass-through, not ownership |
+
+A `[Service]` parameter belongs to the operation it is injected into; it is never passed on as an ordinary argument.
+
+### What the Save Needs Must Be State
+
+A persisting operation reads only the graph. It cannot see the caller's locals, the verb that ran before it, or an intention nobody wrote down. If a save decision depends on something, put it on an entity:
+
+- A side effect on this save → a flag the verb sets and `[Update]` reads.
+- "Emit this audit once" → a `HasX` flag loaded in `[Fetch]` and compared in `[Update]`.
+- "This save extends, it does not replace" → the loaded value kept beside the current one.
+- A decision that depends on the root → the child's operation reads it through `Parent`.
+
+Not: flags passed to `Save()` (its signature is fixed), state stashed in a service instance, an `[Update]` that calls back into a verb, or intent inferred from `IsModified` alone.
+
 ## Change Tracking
 
 ### IsModified and IsSelfModified

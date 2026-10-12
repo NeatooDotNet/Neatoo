@@ -1,19 +1,21 @@
 # Base Classes
 
-Neatoo provides base classes that map to Domain-Driven Design concepts. Choose the base class by what the object does: an object a person edits that needs rules is a Neatoo object; anything else is a plain `[Factory]` class.
+Choose the shape by what the object must answer. An object that carries rules or change tracking something relies on — a person over many edits, or a job over many rows — is a Neatoo object. Anything else is plain RemoteFactory: a read model, a command, a context, a `record`.
 
-## Base Class to DDD Mapping
+## The Shapes
 
-| Neatoo Base Class | DDD Concept | Persistence | Validation | Change Tracking |
-|-------------------|-------------|-------------|------------|-----------------|
-| `ValidateBase<T>` | Value Object, validated input | No | Yes | Yes |
-| `EntityBase<T>` | Entity / Aggregate Root | Yes | Yes | Yes |
-| `EntityListBase<I>` | Collection of child entities | Yes (via root) | Yes | Yes |
-| `ValidateListBase<I>` | Collection of `ValidateBase` objects | No | Yes | Yes |
-| Static partial class with `[Remote, Execute]` | Command | Execute only | No | No |
-| Plain `[Factory]` class, `[Remote, Fetch]` only | Read Model | No | No | No |
+| Shape | What it is | Persistence | Rules | Change tracking |
+|---|---|---|---|---|
+| `EntityBase<T>`, interface extends `IEntityRoot` | Aggregate root | Yes | Yes | Yes |
+| `EntityBase<T>`, interface extends `IEntityBase` | Child entity, saved by its root | Through the root | Yes | Yes |
+| `EntityListBase<I>` | List of child entities; tracks removals in `DeletedList` | Through the root | Yes | Yes |
+| `ValidateBase<T>` | Input model — something a person edits that has rules but no persistence lifecycle of its own (a search form, a wizard step) | No | Yes | Yes |
+| `ValidateListBase<I>` | List of input models | No | Yes | Yes |
+| `record` | Value object — immutable, compared by value, no rules | No | No | No |
+| Plain `[Factory]` class, `[Fetch]` only | Read model — server-computed truth a screen shows or gates on | No | No | No |
+| Static `[Factory]` class with `[Execute]` | Command | — | No | No |
 
-For validated criteria objects (search forms with rules and `IsValid`), use `ValidateBase<T>`. For simple criteria, use method parameters or POCOs.
+The attributes on the last three are the RemoteFactory skill's.
 
 ## Interface-First
 
@@ -21,19 +23,16 @@ Every entity and list gets a matched public interface; the concrete is `internal
 
 ## ValidateBase<T>
 
-Use for objects that need validation and change tracking but no persistence lifecycle of their own.
-
-**DDD Concept:** Value Object or validated input. Despite the DDD "immutable" ideal, Neatoo value objects have setters for form-binding and validation-before-submit workflows.
+An input model: something a person edits that has rules and change tracking but no persistence lifecycle of its own.
 
 **When to use:**
-- Composite values a person edits (Address, Money, DateRange)
-- Form data that needs validation before submission
-- Search/criteria objects with validation rules
+- A form whose fields validate as the person types — search criteria, a wizard step, a dialog's input
+- A typed value with rules (an email address on a form); the person sees a message, not an exception
 
-Use `ValidateBase<T>` only when the object needs rules. A read model is not a `ValidateBase`.
+A value code assigns from a known set is a `record`, not an input model — [A Value Object Is a Record](#a-value-object-is-a-record). A read model is not a `ValidateBase`.
 
-<!-- snippet: skill-value-object-interface -->
-<a id='snippet-skill-value-object-interface'></a>
+<!-- snippet: skill-input-model-interface -->
+<a id='snippet-skill-input-model-interface'></a>
 ```cs
 /// <summary>
 /// Interface for ValidateBase demo — input models and validation-only scenarios.
@@ -44,11 +43,11 @@ public interface IDemoInputModel : IValidateBase
     string? Description { get; set; }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object-interface' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-<!-- snippet: skill-value-object -->
-<a id='snippet-skill-value-object'></a>
+<!-- snippet: skill-input-model -->
+<a id='snippet-skill-input-model'></a>
 ```cs
 /// <summary>
 /// Demonstrates: ValidateBase&lt;T&gt; for input models and validation-only scenarios.
@@ -96,19 +95,18 @@ internal partial class DemoInputModel : ValidateBase<DemoInputModel>, IDemoInput
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L93-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L93-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## EntityBase<T>
 
 Use for persistent entities with full CRUD lifecycle.
 
-**DDD Concept:** Entity or Aggregate Root - Objects with identity that persist across time.
-
 **When to use:**
 - Domain entities that are saved to a database
 - Aggregate roots that coordinate child entities
 - Any object that needs Create/Fetch/Update/Delete operations
+- An entity a job edits with no person involved — [A Job Over Entities](#a-job-over-entities)
 
 A root's interface extends `IEntityRoot`:
 
@@ -216,8 +214,6 @@ The root's `[Insert]` and `[Update]` should also re-run the rules and refuse an 
 ## EntityListBase<I>
 
 Use for collections of child entities within an aggregate.
-
-**DDD Concept:** Collection of Entities - Managed collection within an aggregate boundary.
 
 **When to use:**
 - Order lines in an Order aggregate
@@ -411,8 +407,6 @@ internal partial class DemoInputModelList : ValidateListBase<IDemoInputModel>, I
 
 Use for operations that need the server and are not an edit of one aggregate: a batch, a side effect, a check a rule asks for.
 
-**DDD Concept:** Command - Request to perform an action.
-
 **When to use:**
 - Operations that don't return entity state
 - Batch operations
@@ -450,8 +444,6 @@ A command does not check data and return a failure result. Whether the action is
 ## Read Models (Plain [Factory] Class, [Fetch] Only)
 
 Use for server truth shaped for one screen: a list, a dashboard tile, the flags a page gates on.
-
-**DDD Concept:** Read Model - Optimized view of data for queries.
 
 **When to use:**
 - Dashboard data

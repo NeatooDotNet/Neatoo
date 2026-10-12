@@ -12,8 +12,8 @@ Validation is a rule. A violation is a message on a property, `IsValid` goes fal
 
 Inherit from `ValidateBase<T>` to give a domain object rules without a persistence lifecycle — a value object, or form data that is never saved on its own. The type parameter uses the curiously recurring template pattern (CRTP) to provide strongly-typed rule registration and property access. Every Neatoo class gets a matched public interface; the concrete is `internal`, and consumers only ever see the interface:
 
-<!-- snippet: skill-value-object-interface -->
-<a id='snippet-skill-value-object-interface'></a>
+<!-- snippet: skill-input-model-interface -->
+<a id='snippet-skill-input-model-interface'></a>
 ```cs
 /// <summary>
 /// Interface for ValidateBase demo — input models and validation-only scenarios.
@@ -24,11 +24,11 @@ public interface IDemoInputModel : IValidateBase
     string? Description { get; set; }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object-interface' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-<!-- snippet: skill-value-object -->
-<a id='snippet-skill-value-object'></a>
+<!-- snippet: skill-input-model -->
+<a id='snippet-skill-input-model'></a>
 ```cs
 /// <summary>
 /// Demonstrates: ValidateBase&lt;T&gt; for input models and validation-only scenarios.
@@ -76,7 +76,7 @@ internal partial class DemoInputModel : ValidateBase<DemoInputModel>, IDemoInput
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L93-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L93-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ValidateBase provides:

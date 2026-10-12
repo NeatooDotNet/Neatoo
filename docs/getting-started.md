@@ -29,8 +29,8 @@ The package includes:
 
 Every Neatoo object gets a public interface, and the concrete class is `internal`: consumers, including the Blazor UI, see only the interface. A value object's interface extends `IValidateBase`:
 
-<!-- snippet: skill-value-object-interface -->
-<a id='snippet-skill-value-object-interface'></a>
+<!-- snippet: skill-input-model-interface -->
+<a id='snippet-skill-input-model-interface'></a>
 ```cs
 /// <summary>
 /// Interface for ValidateBase demo — input models and validation-only scenarios.
@@ -41,13 +41,13 @@ public interface IDemoInputModel : IValidateBase
     string? Description { get; set; }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object-interface' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The class inherits `ValidateBase<T>` and declares `partial` properties — Neatoo's source generator creates the backing fields and wires up property change notifications and validation. Validation attributes on the properties and rules in the constructor are the validation:
 
-<!-- snippet: skill-value-object -->
-<a id='snippet-skill-value-object'></a>
+<!-- snippet: skill-input-model -->
+<a id='snippet-skill-input-model'></a>
 ```cs
 /// <summary>
 /// Demonstrates: ValidateBase&lt;T&gt; for input models and validation-only scenarios.
@@ -95,7 +95,7 @@ internal partial class DemoInputModel : ValidateBase<DemoInputModel>, IDemoInput
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L93-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L93-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The attributes are standard `System.ComponentModel.DataAnnotations` attributes (`Required`, `StringLength`, `MinLength`, `MaxLength`, `RegularExpression`, `Range`, `EmailAddress`). Neatoo runs them when a property is set.

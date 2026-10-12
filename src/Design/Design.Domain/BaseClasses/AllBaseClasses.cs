@@ -90,7 +90,7 @@ namespace Design.Domain.BaseClasses;
 // on client or server. Only methods needing server resources get [Remote].
 // =============================================================================
 
-#region skill-value-object
+#region skill-input-model
 /// <summary>
 /// Demonstrates: ValidateBase&lt;T&gt; for input models and validation-only scenarios.
 ///
