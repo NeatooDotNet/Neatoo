@@ -44,7 +44,7 @@ The rubric for AC-1 and AC-9. Each row is a question a mainstream .NET developer
 | T7 | Neatoo | Nobody edits this, so plain EF? | An entity is right with no person involved (D4) | job | 001 |
 | T8 | Neatoo | Where do the screen's derived values and visibility go? | Rules on the entity expose business facts; the UI binds (D16) | `WorkOrder.CanApprove`; a Design.App page | 002 |
 | T9 | Neatoo | How do I set a value in Fetch without marking it modified? | Plain assignment inside an operation is baseline; `LoadValue` is not for operations | `FetchPatterns` | existing |
-| T10 | Neatoo | How do I re-run rules after Fetch so computed values populate? | You don't. Assign the derived value inside the operation (D18) | 003's replacement regions | 003 |
+| T10 | Neatoo | How do I get computed values after Fetch — call `RunRules(All)` at the end? | Rules do not fire during an operation, so compute what the operation needs: `RunRules(nameof(X))` for the rules that write the object, or load the value from the row. Not `All` from a root whose rules write children (#98), and never as a routine validate step: persisted data is assumed valid (D18, clarified 2026-10-11) | `WorkOrder` `[Fetch]`; `OrderItem` `[Fetch]` | 003 |
 | T11 | both | The parent saves its children's rows? | Each object writes itself (RF); the list coordinates with `DeletedList` and `IsNew` routing (Neatoo, D10) | `Order` / `OrderItemList` | existing |
 | T12 | Neatoo | A rule can't call the server? | It can, through an injected command or an interface-factory domain service (D1, C6 ruling) | `CheckUsernameAvailabilityRule`; rule with a domain service | existing, 001 |
 | T13 | RF | `Save()` updates my object? | It returns a new instance; reassign it (analyzer pending) | RF skill | RF sibling |
@@ -113,6 +113,12 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - **Decision:** Amend (user: Neatoo parts only; assume both skills are loaded together)
 - **Index changes:** AC-4 narrowed to the Neatoo-owned composition; 002 regions only `AddNeatooServices` per tier, MudNeatoo, the save handler and the WorkOrder ViewModel/page. Cap unchanged, 7 of 11 issued.
 - **Follow-up:** SKR-002
+
+### 2026-10-11 — SKR-003 D18 clarified · serves AC-5, AC-1
+- **Finding:** Plan 003's first draft read D18 as "no `RunRules` inside a `[Create]`/`[Fetch]`" and proposed removing `WorkOrder.Fetch`'s targeted re-run in favour of persisting derived values. The user: the ruling was against prescribing `RunRules(All)` at the end of *every* operation and as a validate step; `RunRules` inside an operation to compute the derived values it needs is "a great case to use RunRules". The 2026-10-09 miss (validate step added by habit) and this over-correction are the same misunderstanding from opposite sides — the skill has to state the distinction, not a ban.
+- **Decision:** Amend. D18's row in `VisionAlignment.md` clarified; T10 reworded (compute what the operation needs: targeted `RunRules` or load from the row; never `All` from a root with child-writing rules, #98; never as a validate step); plan 003 re-drafted; #98 fulfilled rather than closed as moot; memory note `feedback-no-validate-step` records both errors.
+- **Index changes:** none. Cap unchanged, 7 of 11 issued.
+- **Follow-up:** SKR-003; SKR-004 states the distinction at T1/T10.
 
 ### 2026-10-11 — SKR-002 plan review · serves AC-4, AC-1
 - **Finding:** (1) `WorkOrder.ShowHoldBanner` is the D16/N5 screen-element smell inside the example set's own region, and the T8 page was about to bind it. (2) `AddNeatooServices(Server)` followed by RemoteFactory's `AddNeatooAspNetCore` drops Neatoo.dll from `IServiceAssemblies` and undoes Neatoo's converter override, so every remote Save fails on the server; the natural order with both skills loaded. (3) Design.Server's `[Service]` implementations had no home.
