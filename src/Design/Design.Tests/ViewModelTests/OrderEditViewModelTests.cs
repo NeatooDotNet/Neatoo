@@ -65,6 +65,11 @@ public class OrderEditViewModelTests
 
         var store = (InMemoryOrderRepository)_server.ServiceProvider.GetRequiredService<IOrderRepository>();
         Assert.AreEqual("Grace", store.Store[_vm.Order.Id].CustomerName);
+
+        // Load brings it back through the same seam
+        await _vm.Load(_vm.Order.Id);
+        Assert.AreEqual(2, _link.Calls);
+        Assert.AreEqual("ORD-2001", _vm.Order!.OrderNumber);
     }
 
     [TestMethod]

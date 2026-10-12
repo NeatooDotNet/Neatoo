@@ -64,6 +64,19 @@ public class ClientServerPairTests
         Assert.IsNotNull(fetched);
         Assert.AreEqual("ORD-1001", fetched.OrderNumber);
         Assert.AreEqual(1, fetched.Items!.Count);
+
+        // Modify the fetched graph and save again: the [Update] path, with an
+        // IsNew=false aggregate and its child crossing to the server.
+        fetched.CustomerName = "Ada Lovelace";
+        fetched.Items[0].Quantity = 3;
+        await fetched.WaitForTasks();
+
+        var updated = (IOrder)await fetched.Save();
+
+        Assert.IsFalse(updated.IsModified);
+        Assert.AreEqual(30.00m, updated.TotalAmount);
+        Assert.AreEqual("Ada Lovelace", store.Store[saved.Id].CustomerName);
+        Assert.AreEqual(3, store.Store[saved.Id].Items[0].Quantity);
     }
 
     [TestMethod]
