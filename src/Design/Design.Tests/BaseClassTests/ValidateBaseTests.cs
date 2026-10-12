@@ -76,14 +76,15 @@ public class ValidateBaseTests
         var model = _factory.Create();
         var name = model[nameof(IDemoInputModel.Name)];
 
-        model.Name = "";
+        // The page commits through SetValue, as MudNeatoo does
+        await name.SetValue("");
         await model.WaitForTasks();
 
         Assert.IsFalse(name.IsValid);
         Assert.IsTrue(name.PropertyMessages.Any(m => m.Message == "Name is required"));
         Assert.IsFalse(name.IsBusy);
 
-        model.Name = "Ada";
+        await name.SetValue("Ada");
         await model.WaitForTasks();
 
         Assert.IsTrue(name.IsValid);

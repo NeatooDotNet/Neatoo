@@ -415,9 +415,15 @@ internal sealed class EmployeeEditViewModel
 
     public async Task CancelEdit()
     {
-        if (Employee is null || Employee.IsNew)
+        if (Employee is null)
         {
-            return;  // nothing saved to go back to
+            return;
+        }
+
+        if (Employee.IsNew)
+        {
+            New();  // nothing saved to go back to: discarding the edit is a fresh form
+            return;
         }
 
         await Load(Employee.Id);
@@ -444,7 +450,7 @@ internal sealed class EmployeeEditViewModel
     }
 }
 ```
-<sup><a href='/src/Design/Design.App/ViewModels/EmployeeEditViewModel.cs#L22-L92' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-viewmodel' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ViewModels/EmployeeEditViewModel.cs#L23-L99' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-viewmodel' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Key Points in the Page Structure
@@ -574,7 +580,7 @@ A value worth displaying that the entity does not have — a label chosen by a c
 
 ## View/Edit Mode Pattern
 
-Since most MudNeatoo components bind `ReadOnly` from `IsReadOnly` automatically (with no override), the pattern for view/edit mode switching is conditional rendering — not toggling a ReadOnly parameter. The page above does it: `@if (Vm.IsEditing)` shows the MudNeatoo components with Save and Cancel; otherwise plain `MudText` and an Edit button. `IsEditing` is screen state on the ViewModel; Cancel fetches the saved employee again, because the entity's tracked state *is* the edit.
+Since most MudNeatoo components bind `ReadOnly` from `IsReadOnly` automatically (with no override), the pattern for view/edit mode switching is conditional rendering — not toggling a ReadOnly parameter. The page above does it: `@if (Vm.IsEditing)` shows the MudNeatoo components with Save and Cancel; otherwise plain `MudText` and an Edit button. `IsEditing` is screen state on the ViewModel; Cancel fetches the saved employee again, because the entity's tracked state *is* the edit; a new employee has nothing saved, so Cancel gives a fresh form.
 
 This is intentional — ReadOnly state belongs to the domain model (a private setter, or `MarkReadOnly()` during `[Fetch]`), not the UI. View/edit toggling is a UI concern handled with Razor conditionals.
 

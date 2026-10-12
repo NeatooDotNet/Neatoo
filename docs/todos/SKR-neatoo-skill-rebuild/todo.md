@@ -80,7 +80,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 | 003 | [003-no-end-of-operation-runrules](./plans/003-no-end-of-operation-runrules.md) | Stop teaching end-of-operation RunRules as a step | AC-5 | Done | #104 |
 | 004 | [004-skill-model-and-decisions](./plans/004-skill-model-and-decisions.md) | SKILL.md: model, habit traps, decisions, UI contract | AC-1, AC-2, AC-10 | Done | #105 |
 | 005 | [005-references-as-mechanism](./plans/005-references-as-mechanism.md) | References reorganized as mechanism | AC-1, AC-2, AC-7 | Done | #106 |
-| 006 | [006-mudneatoo-from-design-app](./plans/006-mudneatoo-from-design-app.md) | mudneatoo blocks sourced from Design.App | AC-6 | In Progress | — |
+| 006 | [006-mudneatoo-from-design-app](./plans/006-mudneatoo-from-design-app.md) | mudneatoo blocks sourced from Design.App | AC-6 | Done | PR pending |
 | 007 | [007-sync-and-verify](./plans/007-sync-and-verify.md) | Sync, then fresh-session test | AC-8, AC-9 | Draft | — |
 
 ---

@@ -4,7 +4,7 @@
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-6 (and AC-2's rule for every skill block)
-**Status:** In Progress
+**Status:** Done
 **Last Updated:** 2026-10-12 (drafted from the stub after SKR-005 merged)
 **Plan-review opt-in:** No — the stub authorized the Design.App pages; no ruling or API changes. The decisions are listed under Notes
 **Code-review opt-in:** No — the new page and ViewModel follow the two that SKR-002 reviewed; the test-reviewer's map check is the gate
@@ -94,9 +94,9 @@ Walked 2026-10-12 on `skr-arc` at `6afac34`.
 
 | Acceptance bullet (short) | Priority | Tier declared | Evidence | Confirmed |
 |---|---|---|---|---|
-| Every mudneatoo block a snippet or WRONG | Should | `[explicit-skip]` | awk sweep (fenced blocks outside `<!-- snippet -->` pairs) over `skills/mudneatoo/`: 11 blocks, every one opening with a WRONG label (`SKILL.md:60`; `aggregate-reactive-vm.md:9`; `anti-patterns.md:11,85,155,202,243,319,334,358,421` — the eight Anti-Pattern Wrong blocks gained the label line). 22 placeholders, all filled; `reviews/006-mdsnippets.log` exit 0 with no missing/duplicate line beyond the config echo. Nested regions render with inner markers stripped (grep for `begin-snippet` in `skills/`, `docs/` outside todos/plans: none). | skip confirmed |
+| Every mudneatoo block a snippet or WRONG | Should | `[explicit-skip]` | awk sweep (fenced blocks outside `<!-- snippet -->` pairs) over `skills/mudneatoo/`: 11 blocks, every one opening with a WRONG label (`SKILL.md:60`; `aggregate-reactive-vm.md:9`; `anti-patterns.md:11,85,155,202,243,319,334,358,421` — the eight Anti-Pattern Wrong blocks gained the label line). 25 placeholders, all filled; `reviews/006-mdsnippets.log` exit 0 with no missing/duplicate line beyond the config echo. Nested regions render with inner markers stripped (grep for `begin-snippet` in `skills/`, `docs/` outside todos/plans: none). | skip confirmed |
 | Employee round-trips every bound field | Should | `[integration]` | `Design.Tests/ViewModelTests/EmployeeEditViewModelTests.cs:60` `EditedThroughTheViewModel_SavesAndFetchesBackEveryBoundField` — through `DesignClientServer.Scopes()`: the grade options are A–D in order; FirstName, LastName, Email, HireDate, Salary, IsActive, Grade (`PayGrade("C")`) and Notes set on the client, saved (1 call), fetched (2 calls), each asserted equal; not modified after fetch; the screen returns to view mode after save. | integration |
-| Cancel restores the saved employee | Should | `[integration]` | `EmployeeEditViewModelTests.cs:88` `CancelEdit_RestoresTheSavedEmployee` — after a save, edits FirstName and Notes (`IsModified` true), `CancelEdit` re-fetches through the pair (2 calls total): same id, original values, not modified, view mode. | integration |
+| Cancel restores the saved employee | Should | `[integration]` | `EmployeeEditViewModelTests.cs:88` `CancelEdit_RestoresTheSavedEmployee` — after a save, edits FirstName and Notes (`IsModified` true), `CancelEdit` re-fetches through the pair (2 calls total): same id, original values, not modified, view mode. `CancelEdit_NewEmployee_DiscardsTheEditForAFreshForm` (added at the gate): a new employee's cancel gives a fresh new form, still editing, no call. | integration |
 | Remove item → DeletedList, savable | Should | `[integration]` | `ViewModelTests/OrderEditViewModelTests.cs:114` `RemoveItem_FetchedOrder_MovesTheItemToDeletedListAndTheOrderIsSavable` — a saved two-item order fetched back (not savable), `RemoveItem` leaves one item and `DeletedCount == 1`, `CanSave` true; the save leaves one row in the server store. Outside the `skill-save-handler-test` region. | integration |
 | No LazyLoad / value-object / VM-subscription contradictions | Should | `[explicit-skip]` | grep `skills/mudneatoo/` for "lazy": one line, `SKILL.md:460` (being removed, build nothing on it); frontmatter has no LazyLoad trigger; the EntityLazyLoad section and Anti-Pattern 9 are gone. "value object": only `SKILL.md:159`, the `record`. `aggregate-reactive-vm.md` shows Design.App's `WorkOrderViewModel` (plain class) and its Key Points 2–3 put the subscription on the page; `SKILL.md` Page Structure Key Point 3 and `property-change-events.md` say the same and render `skill-mud-page-code`. | skip confirmed |
 
@@ -104,7 +104,8 @@ Walked 2026-10-12 on `skr-arc` at `6afac34`.
 
 ## Gate Record
 
-- (pending)
+- **Test review, round 1 (2026-10-12): CLEAN** — `reviews/006-test-review.md`. No veto, no Must-cover. Sacred tests: one new file and one method outside the region. The reviewer confirmed each integration test fails on the breakage it names. **Should-cover** (Cancel on `/employees/new` returned early, untested — reachable, since `New()` starts in edit mode): `CancelEdit` on a new employee now gives a fresh form, pinned by `CancelEdit_NewEmployee_DiscardsTheEditForAFreshForm`; mudneatoo's view/edit prose says so. Tech-debt: `ValidateBaseTests.PropertyObject_CarriesWhatTheInputModelPageBinds` (added in SKR-005) now commits through `SetValue` as the page does — same assertions. Evidence count corrected (25 placeholders). Rebuilt: 0/0, 206 passing, mdsnippets clean.
+- Code review: not opted in.
 
 ---
 

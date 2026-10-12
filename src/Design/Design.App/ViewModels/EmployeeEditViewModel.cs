@@ -12,7 +12,8 @@
 //
 // DESIGN DECISION: CancelEdit fetches the saved employee again. The entity's
 // tracked state is the edit; discarding the edit means going back to the
-// saved one, which only the server has.
+// saved one, which only the server has. A new employee has none, so
+// discarding its edit is a fresh form.
 // -----------------------------------------------------------------------------
 
 using Design.Domain.Entities;
@@ -61,9 +62,15 @@ internal sealed class EmployeeEditViewModel
 
     public async Task CancelEdit()
     {
-        if (Employee is null || Employee.IsNew)
+        if (Employee is null)
         {
-            return;  // nothing saved to go back to
+            return;
+        }
+
+        if (Employee.IsNew)
+        {
+            New();  // nothing saved to go back to: discarding the edit is a fresh form
+            return;
         }
 
         await Load(Employee.Id);

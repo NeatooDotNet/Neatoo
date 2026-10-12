@@ -103,4 +103,20 @@ public class EmployeeEditViewModelTests
         Assert.IsFalse(_vm.Employee.IsModified);
         Assert.AreEqual(2, _link.Calls, "save, then the fetch that cancel made");
     }
+
+    [TestMethod]
+    public async Task CancelEdit_NewEmployee_DiscardsTheEditForAFreshForm()
+    {
+        _vm.New();
+        var discarded = _vm.Employee!;
+        discarded.FirstName = "Ada";
+
+        await _vm.CancelEdit();
+
+        Assert.IsFalse(ReferenceEquals(discarded, _vm.Employee), "the edit is discarded");
+        Assert.IsNull(_vm.Employee!.FirstName);
+        Assert.IsTrue(_vm.Employee.IsNew);
+        Assert.IsTrue(_vm.IsEditing, "still the new-employee form");
+        Assert.AreEqual(0, _link.Calls, "nothing saved, nothing to fetch");
+    }
 }
