@@ -34,10 +34,10 @@ public class EntityRootInterfaceTests
     }
 
     [TestMethod]
-    public void RootInterface_ExposesIsSavable()
+    public async Task RootInterface_ExposesIsSavable()
     {
         // Arrange — IOrder extends IEntityRoot, so IsSavable is accessible
-        IOrder order = _orderFactory.Create();
+        IOrder order = await _orderFactory.Create();
         order.CustomerName = "Test";
 
         // Act & Assert — IsSavable is available on IEntityRoot
@@ -47,10 +47,10 @@ public class EntityRootInterfaceTests
 
     #region skill-child-interface-no-save
     [TestMethod]
-    public void ChildInterface_DoesNotExposeIsSavable()
+    public async Task ChildInterface_DoesNotExposeIsSavable()
     {
         // Arrange — IOrderItem extends IEntityBase, not IEntityRoot
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         var item = _itemFactory.Create("Widget", 5, 10.00m);
         order.Items!.Add(item);
 
@@ -70,10 +70,10 @@ public class EntityRootInterfaceTests
     #endregion
 
     [TestMethod]
-    public void RootInterface_ExposessSave()
+    public async Task RootInterface_ExposessSave()
     {
         // Arrange — IEntityRoot exposes Save()
-        IOrder order = _orderFactory.Create();
+        IOrder order = await _orderFactory.Create();
         order.CustomerName = "Test";
 
         // Act — Save is accessible through IEntityRoot
@@ -86,10 +86,10 @@ public class EntityRootInterfaceTests
     }
 
     [TestMethod]
-    public void OrderImplementsIEntityRoot()
+    public async Task OrderImplementsIEntityRoot()
     {
         // Arrange & Act
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
 
         // Assert — Order is assignable to IEntityRoot
         Assert.IsInstanceOfType<IEntityRoot>(order,

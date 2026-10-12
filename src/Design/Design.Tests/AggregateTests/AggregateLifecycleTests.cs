@@ -189,12 +189,13 @@ public class AggregateLifecycleTests
     [TestMethod]
     public async Task InvalidOrder_DirectFactorySave_ServerRulesRefuseBeforeWriting()
     {
-        // Arrange: CustomerName is [Required], but rules do not run during
-        // [Create], so the new order still reports valid on this side.
-        var order = _orderFactory.Create();
-        Assert.IsTrue(order.IsValid, "No rule has run yet, so nothing is broken");
+        // Arrange: CustomerName is [Required] and Order.Create ran its rules,
+        // so the new order already reports invalid on this side.
+        var order = await _orderFactory.Create();
+        Assert.IsFalse(order.IsValid, "Create ran the rules; CustomerName is missing");
 
-        // Act: a direct factory.Save does not check IsSavable, so only the
+        // Act: a direct factory.Save does not check IsSavable - a caller that
+        // skips the entity's own answer reaches the server - so only the
         // re-run of the rules inside [Insert] stands between this order and
         // the write.
         var ex = await Assert.ThrowsExactlyAsync<Neatoo.SaveOperationException>(
@@ -211,7 +212,7 @@ public class AggregateLifecycleTests
     public async Task CreateWithItems_Save_InsertsAllAndGraphIsClean()
     {
         // Arrange
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         order.CustomerName = "Test Customer";
         order.Items!.Add(_itemFactory.Create("Widget", 2, 10.00m));
         order.Items.Add(_itemFactory.Create("Gadget", 1, 50.00m));

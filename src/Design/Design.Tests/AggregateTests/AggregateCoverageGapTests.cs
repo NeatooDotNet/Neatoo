@@ -159,7 +159,7 @@ public class AggregateCoverageGapTests
     [TestMethod]
     public async Task Order_NonDraftWithNoItems_IsInvalid()
     {
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         order.CustomerName = "Test Customer";
 
         // Draft with no items is fine

@@ -52,7 +52,10 @@ public interface ISaveDemoItem : IEntityBase
 /// <summary>
 /// List interface for save demo item list.
 /// </summary>
-public interface ISaveDemoItemList : IEntityListBase<ISaveDemoItem> { }
+public interface ISaveDemoItemList : IEntityListBase<ISaveDemoItem>
+{
+    int DeletedCount { get; }
+}
 
 // =============================================================================
 // Create Pattern Interfaces

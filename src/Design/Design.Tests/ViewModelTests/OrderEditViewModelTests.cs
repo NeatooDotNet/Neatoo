@@ -41,9 +41,28 @@ public class OrderEditViewModelTests
 
     #region skill-save-handler-test
     [TestMethod]
+    public async Task New_EmptyForm_IsNotSavableUntilRequiredFieldsAreFilled()
+    {
+        // Order.Create decided its form must not come back unvalidated: the
+        // rules ran inside Create, so the Save button is disabled at once and
+        // the summary shows what is missing. Nothing in the UI validated.
+        await _vm.New();
+        var order = _vm.Order!;
+
+        Assert.IsFalse(order.IsValid);
+        Assert.IsFalse(_vm.CanSave);
+        Assert.IsTrue(order.PropertyMessages.Any(m => m.Property.Name == nameof(IOrder.CustomerName)));
+
+        order.CustomerName = "Grace";
+        await order.WaitForTasks();
+
+        Assert.IsTrue(_vm.CanSave, "filling the required field is all it takes");
+    }
+
+    [TestMethod]
     public async Task Save_SavableOrder_SavesAndHoldsTheReturnedInstance()
     {
-        _vm.New();
+        await _vm.New();
         var sent = _vm.Order!;
         sent.OrderNumber = "ORD-2001";
         sent.CustomerName = "Grace";
@@ -75,7 +94,7 @@ public class OrderEditViewModelTests
     [TestMethod]
     public async Task Save_InvalidOrder_DoesNotCallSaveAndKeepsTheMessages()
     {
-        _vm.New();
+        await _vm.New();
         var order = _vm.Order!;
         order.Submit();  // no items: "Order must have at least one item"
         await order.WaitForTasks();
