@@ -69,6 +69,28 @@ public class ValidateBaseTests
     }
 
     [TestMethod]
+    public async Task PropertyObject_CarriesWhatTheInputModelPageBinds()
+    {
+        // The input-model page binds model[nameof(Name)] by hand because
+        // MudNeatoo fields take IEntityProperty only. This is that object.
+        var model = _factory.Create();
+        var name = model[nameof(IDemoInputModel.Name)];
+
+        model.Name = "";
+        await model.WaitForTasks();
+
+        Assert.IsFalse(name.IsValid);
+        Assert.IsTrue(name.PropertyMessages.Any(m => m.Message == "Name is required"));
+        Assert.IsFalse(name.IsBusy);
+
+        model.Name = "Ada";
+        await model.WaitForTasks();
+
+        Assert.IsTrue(name.IsValid);
+        Assert.AreEqual(0, name.PropertyMessages.Count);
+    }
+
+    [TestMethod]
     public void Create_WithValidName_IsValid()
     {
         // Arrange & Act

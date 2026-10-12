@@ -38,14 +38,7 @@ A `.razor` file with 20+ conditional/LINQ expressions indicates business logic h
 { <ExtensionWarning /> }
 ```
 
-```razor
-<!-- RIGHT: Domain exposes computed state, UI binds -->
-@if (visit.ShowTreatmentPanel) { <TreatmentPanel /> }
-@if (visit.ShowReviewAlert) { <ReviewAlert /> }
-@if (visit.ShowExtensionWarning) { <ExtensionWarning /> }
-```
-
-The domain model computes `ShowTreatmentPanel`, `ShowReviewAlert`, `ShowExtensionWarning` via `AddAction` rules into `private set` partial properties. See `domain-logic-placement.md` for the full pattern.
+Each of those conditions is a business fact the aggregate computes with an `AddAction` rule into a `private set` property, named for the fact (`IsHeld`, `HasUnschedulableTasks`, `CanApprove`), never for the panel it shows. The page binds the facts and has no condition of its own: [A ViewModel Over a Live Aggregate](#a-viewmodel-over-a-live-aggregate). The rules are in [domain-logic-placement.md](domain-logic-placement.md), Patterns 2 and 7.
 
 ## Two Binding Modes
 
@@ -53,33 +46,39 @@ Neatoo entities support two distinct binding modes in Blazor.
 
 ### Mode 1: Display Value Binding
 
-Bind directly to entity properties to display values:
-
-```razor
-<MudText>@order.Total</MudText>
-<MudText>@order.Status</MudText>
-```
+Bind directly to entity properties to display values. The work-order page does this for `@Vm.WorkOrder.Status`, `@task.Cost` and `@Vm.WorkOrder.TotalCost`: [A ViewModel Over a Live Aggregate](#a-viewmodel-over-a-live-aggregate).
 
 The entity implements `INotifyPropertyChanged`, but **Blazor does not subscribe on its own**. The page subscribes to the entity's `PropertyChanged` (the mudneatoo skill's Page Structure Pattern does this for `IsSavable`) and calls `StateHasChanged`; display bindings re-render on that cycle. When a rule updates `Total` in response to `Quantity`, the entity raises `PropertyChanged("Total")`, the page's handler re-renders, and the binding shows the new value. A view-only page with no form must subscribe itself.
 
 ### Mode 2: Property Metadata Binding
 
-Each partial property is backed by its own property object (see [properties.md](properties.md) — Object-Per-Property Architecture), reached through the indexer `entity["PropertyName"]`. Each property object fires its own `PropertyChanged` for `IsValid`, `PropertyMessages`, `IsBusy`, and `IsReadOnly`:
+Each partial property is backed by its own property object (see [properties.md](properties.md) — Object-Per-Property Architecture), reached through the indexer `entity["PropertyName"]`. Each property object fires its own `PropertyChanged` for `IsValid`, `PropertyMessages`, `IsBusy`, and `IsReadOnly`.
 
+MudNeatoo components (`MudNeatooTextField`, etc.) bind an entity property's value and metadata together; the work-order page uses them for every editable field.
+
+**MudNeatoo components bind `EntityBase` properties only** ([#95](https://github.com/NeatooDotNet/Neatoo/issues/95)). Every component's `EntityProperty` parameter is typed `IEntityProperty`; an input model's (`ValidateBase`) properties are `IValidateProperty`. Until #95 closes, bind an input model's property object by hand — the value, then the messages, busy and read-only state it carries:
+
+<!-- snippet: skill-input-model-manual-binding -->
+<a id='snippet-skill-input-model-manual-binding'></a>
 ```razor
-@{ var emailProp = employee["Email"]; }
-<MudTextField Value="@employee.Email" />
-@if (!emailProp.IsValid)
+@* MudNeatoo fields take an IEntityProperty; an input model's properties are
+   IValidateProperty, so the page binds the property object by hand: the value,
+   then the messages, busy and read-only state the property object carries. *@
+@{ var name = _model[nameof(IDemoInputModel.Name)]; }
+<MudTextField T="string"
+              Label="Name"
+              Value="@_model.Name"
+              ValueChanged="@(v => _model.Name = v)"
+              Error="@(!name.IsValid)"
+              ErrorText="@string.Join(" ", name.PropertyMessages.Select(m => m.Message))"
+              Disabled="@name.IsReadOnly" />
+@if (name.IsBusy)
 {
-    @foreach (var msg in emailProp.PropertyMessages)
-    { <MudText Color="Color.Error">@msg.Message</MudText> }
+    <MudProgressLinear Indeterminate="true" />
 }
-@if (emailProp.IsBusy) { <MudProgressCircular Size="Size.Small" /> }
 ```
-
-MudNeatoo components (`MudNeatooTextField`, etc.) handle Mode 2 internally — they bind to both the value and the property metadata.
-
-**MudNeatoo components bind `EntityBase` properties only.** Every component's `EntityProperty` parameter is typed `IEntityProperty`. A `ValidateBase` object's properties are `IValidateProperty` and not `IEntityProperty`, so a `ValidateBase` (a value object, or form data without a persistence lifecycle) cannot be bound through MudNeatoo components. Bind it with the manual metadata pattern above (`Value`, `SetValue`, `IsValid`, `PropertyMessages`, `IsBusy`, `IsReadOnly` are all on `IValidateProperty`).
+<sup><a href='/src/Design/Design.App/Pages/InputModelPage.razor#L13-L29' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model-manual-binding' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ### When to Use Each Mode
 

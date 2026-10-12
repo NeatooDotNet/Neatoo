@@ -79,7 +79,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 | 002 | [002-design-app-server](./plans/002-design-app-server.md) | Design.App and Design.Server in CI | AC-4, AC-1 | Done | #102 |
 | 003 | [003-no-end-of-operation-runrules](./plans/003-no-end-of-operation-runrules.md) | Stop teaching end-of-operation RunRules as a step | AC-5 | Done | #104 |
 | 004 | [004-skill-model-and-decisions](./plans/004-skill-model-and-decisions.md) | SKILL.md: model, habit traps, decisions, UI contract | AC-1, AC-2, AC-10 | Done | #105 |
-| 005 | [005-references-as-mechanism](./plans/005-references-as-mechanism.md) | References reorganized as mechanism | AC-1, AC-2, AC-7 | Draft | — |
+| 005 | [005-references-as-mechanism](./plans/005-references-as-mechanism.md) | References reorganized as mechanism | AC-1, AC-2, AC-7 | In Progress | — |
 | 006 | [006-mudneatoo-from-design-app](./plans/006-mudneatoo-from-design-app.md) | mudneatoo blocks sourced from Design.App | AC-6 | Draft | — |
 | 007 | [007-sync-and-verify](./plans/007-sync-and-verify.md) | Sync, then fresh-session test | AC-8, AC-9 | Draft | — |
 
@@ -92,7 +92,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - [x] `CLAUDE-DESIGN.md:77,87` and `README.md:24` stop calling `ValidateBase` a value object (D17) · `src/Design/CLAUDE-DESIGN.md`, `README.md` · done when grep for "value object" near `ValidateBase` is empty · AC-3 · Must — pulled onto SKR-004 (the record value object lands there), 2026-10-12
 - [x] Close #98 · GitHub · done when closed with a comment naming D18 · AC-5 · Must — pulled onto SKR-003; closed as done (not moot) after the D18 clarification, 2026-10-11
 - [ ] mudneatoo block count corrected in the audit README (49, not 14) · `docs/todos/consistency-audit/README.md` · done when the line reads 49 · AC-6 · Should
-- [ ] Framework pain for the skill: `Save()` does not mark the entity busy, so a double-click on Save sends two Inserts (the sent instance stays `IsSavable` until the result is reassigned) · `skills/neatoo` pain list (plan 004/005) · done when the skill names it with Neatoo#103 (critical, filed 2026-10-11) · AC-7 · Should (SKR-002 code review callout 3) — pulled onto SKR-004 (inline) and SKR-005 (pains reference), 2026-10-12
+- [x] Framework pain for the skill: `Save()` does not mark the entity busy, so a double-click on Save sends two Inserts (the sent instance stays `IsSavable` until the result is reassigned) · `skills/neatoo` pain list (plan 004/005) · done when the skill names it with Neatoo#103 (critical, filed 2026-10-11) · AC-7 · Should (SKR-002 code review callout 3) — pulled onto SKR-004 (inline) and SKR-005 (pains reference), 2026-10-12
 - [x] Design.App Order page: an empty `New()` form is `IsSavable` (`Order.Create` runs no rules; two `[Required]` fields unset), so New → Save hits the `[Insert]` gate and throws into the `ErrorBoundary` — the rare validate case the Blazor prose describes, unapplied in the compiled example beside it · `Order.Create` (run rules so the form shows its errors) or `OrderEditViewModel` · done when the user decides which and the example follows · AC-4 · Must (SKR-003 plan review round 2, 2026-10-11) — user decided 2026-10-12: `Order.Create` runs its rules; pulled onto SKR-004
 
 ## Dismissed
