@@ -3,7 +3,7 @@
 **Plan #:** 002
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
-**Serves:** AC-4, AC-1
+**Serves:** AC-4, AC-1 (AC-4 as narrowed 2026-10-11: Neatoo-owned composition only)
 **Status:** Draft
 **Last Updated:** 2026-10-11 (drafted from the stub after recon)
 **Plan-review opt-in:** Yes — two new projects in CI, the first Blazor code in the example set, and a composition the skill will tell people to copy

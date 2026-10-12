@@ -21,7 +21,7 @@ Someone building zCRM, human or Claude, opens `skills/neatoo` and can decide thr
 - [ ] **AC-1** · Must — `SKILL.md` leads with the model, then answers every row of the habit-trap table at its decision point, with the type, operation, tier and placement decisions and the UI contract consistent with D1–D19.
 - [ ] **AC-2** · Must — Every C# block in `skills/neatoo` comes from a compiled `src/Design` region, except blocks labelled WRONG.
 - [ ] **AC-3** · Must — Design.Domain has a tested example of each Neatoo-owned type choice: aggregate, input model, read model, an entity reused by a job, and a rule that takes an interface-factory domain service.
-- [ ] **AC-4** · Must — Design.App and Design.Server build and test in CI and supply the tier-composition snippets.
+- [ ] **AC-4** · Must — Design.App and Design.Server build and test in CI and supply the Neatoo-owned tier-composition snippets (`AddNeatooServices` per tier, MudNeatoo, the UI contract); the RemoteFactory half is pointed at, not restated (user, 2026-10-11).
 - [ ] **AC-5** · Must — No skill, doc or Design.Domain text teaches running rules at the end of `[Create]` or `[Fetch]` as a routine step.
 - [ ] **AC-6** · Should — mudneatoo's Blazor blocks come from Design.App.
 - [ ] **AC-7** · Should — The skill names each known framework pain with its issue or analyzer.
@@ -67,7 +67,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - Restructuring the user docs beyond the D18 edits AC-5 requires.
 - Fixing MudNeatoo components or adding bUnit coverage beyond what AC-6's snippets need.
 - Removing Neatoo's lazy-load surface (D24: `lazy-loading.md`, `LazyLoadProperty.cs`, Person's phone list, mudneatoo's `EntityLazyLoad`, #97): its own todo once RemoteFactory ships the removal. SKR builds nothing new on LazyLoad and copies none of it into the rebuilt skill.
-- Moving the RemoteFactory pin from 1.9.0 to 1.10.1 (D8): its own task, with a full build and test.
+- Moving the RemoteFactory pin from 1.9.0 to 1.10.2 (D8; 1.10.2 listed 2026-10-11 with the #113 fix): its own task, with a full build and test. That task also withdraws "`[Execute]` must return `Task<T>`" (`ApproveEmployee.cs:50,170`, rendered into `references/base-classes.md`): from 1.10.2 a static `[Execute]` returns `Task` with no result or `Task<T>` with one, never `void`.
 
 ---
 
@@ -106,6 +106,12 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - **Decision:** Re-split (Goal revised with the user)
 - **Index changes:** AC-1 reworded; AC-9, AC-10 added; habit-trap table added as rubric; 002, 004, 007 scopes amended. Cap unchanged, 7 of 11 issued.
 - **Follow-up:** SKR-004, SKR-007
+
+### 2026-10-11 — SKR-002 · serves AC-4
+- **Finding:** RemoteFactory's own `src/Design` (`Design.Client.Blazor`, `Design.Server`, `DesignServerCompositionTests`) already demonstrates and tests the endpoint, `UseNeatoo`, the keyed `HttpClient` and the `IsServerRuntime` trim switch. Restating them in Neatoo regions would duplicate and drift.
+- **Decision:** Amend (user: Neatoo parts only; assume both skills are loaded together)
+- **Index changes:** AC-4 narrowed to the Neatoo-owned composition; 002 regions only `AddNeatooServices` per tier, MudNeatoo, the save handler and the WorkOrder ViewModel/page. Cap unchanged, 7 of 11 issued.
+- **Follow-up:** SKR-002
 
 ### 2026-10-09 — SKR-001 · serves AC-3
 - **Finding:** Three of plan 001's four shapes (context, class-level `[Execute]`, interface factory) are RemoteFactory doctrine; building them in Design.Domain would duplicate the RF skill and drift.
