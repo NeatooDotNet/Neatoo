@@ -9,7 +9,7 @@
 **Plan-review opt-in:** Yes — two new projects in CI, the first Blazor code in the example set, and a composition the skill will tell people to copy
 **Code-review opt-in:** Yes — examples are what gets copied
 **Branch:** skr-002-design-app-server — cut from the arc at Step 2
-**PR:** —
+**PR:** #102 → `skr-arc`
 
 ---
 
