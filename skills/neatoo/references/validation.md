@@ -605,7 +605,7 @@ RuleManager.AddAction(
         t => t.Status, t => t.IsOnHold, t => t.Budget, t => t.Discount
     });
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L112-L121' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-four-trigger-array' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L114-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-four-trigger-array' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Cancellation

@@ -4,7 +4,7 @@ The domain layer is the home for all business logic. In a Neatoo application tha
 
 > **Design assumption: open mutation.** Neatoo aggregates are graphs, not façades — any consumer (ViewModel, Razor binding, service) can call business methods on children or bind directly to deep properties. Design rules so that mutating any descendant leaves the root's `IsValid` / `IsModified` correct after all rules settle. See the main `/neatoo` skill → "The Aggregate Is a Graph, Not a Façade" and "Designing Rules for Open Mutation."
 
-The compiled examples below come from one aggregate: a `WorkOrder` root with a list of `WorkOrderTask` children. Each task has `Hours`, `Rate`, a `Discount` the root pushes down, and a derived `Cost`; the root has a `Budget`, a `Status` driven by an `Approve` verb, and derived `TotalCost`, `IsOverBudget`, `CanApprove`, `ShowHoldBanner` and `HasUnschedulableTasks`.
+The compiled examples below come from one aggregate: a `WorkOrder` root with a list of `WorkOrderTask` children. Each task has `Hours`, `Rate`, a `Discount` the root pushes down, and a derived `Cost`; the root has a `Budget`, a `Status` driven by an `Approve` verb, and derived `TotalCost`, `IsOverBudget`, `CanApprove`, `IsHeld` and `HasUnschedulableTasks`.
 
 ## The Logic Placement Decision Tree
 
@@ -86,9 +86,9 @@ RuleManager.AddAction(
 - Logic is testable without Blazor
 - UI binds to properties, doesn't compute
 
-## Pattern 2: Conditional Visibility via Domain Properties
+## Pattern 2: Visibility Binds to Business Facts
 
-When the UI shows/hides elements based on business state, expose that decision as a domain property.
+When the UI shows or hides elements based on business state, the entity exposes the business fact (`IsHeld`, `HasUnschedulableTasks`) and the UI binds to it. The entity never names a screen element: `ShowHoldBanner` on an entity is the smell, `IsHeld` is the fact. If a screen needs a name of its own for the element, that mapping lives in a ViewModel, one-to-one, deciding nothing.
 
 ### Anti-Pattern: UI Decides Visibility
 
@@ -108,14 +108,16 @@ When the UI shows/hides elements based on business state, expose that decision a
 
 ### Correct: Domain Exposes State, UI Binds
 
-A show/hide decision is a `bool` the domain computes. When the decision depends on a child's property, the trigger is the child's property path (`t => t.Tasks![0].IsSchedulable`), not the child reference — a trigger on `t => t.Tasks` fires only when the list is reassigned.
+The fact is a `bool` the domain computes. When it depends on a child's property, the trigger is the child's property path (`t => t.Tasks![0].IsSchedulable`), not the child reference — a trigger on `t => t.Tasks` fires only when the list is reassigned.
 
-<!-- snippet: skill-visibility-rules -->
-<a id='snippet-skill-visibility-rules'></a>
+<!-- snippet: skill-derived-facts -->
+<a id='snippet-skill-derived-facts'></a>
 ```cs
-// A show/hide decision is domain state. The UI binds @if (ShowHoldBanner).
+// A business fact derived from two others. The UI binds to it (for
+// example @if (workOrder.IsHeld) around a banner) and decides nothing;
+// the entity never names a screen element (no "ShowHoldBanner").
 RuleManager.AddAction(
-    t => t.ShowHoldBanner = t.IsOnHold && t.Status != "Closed",
+    t => t.IsHeld = t.IsOnHold && t.Status != "Closed",
     t => t.IsOnHold,
     t => t.Status);
 
@@ -125,12 +127,12 @@ RuleManager.AddAction(
     t => t.HasUnschedulableTasks = t.Tasks?.Any(task => !task.IsSchedulable) ?? false,
     t => t.Tasks![0].IsSchedulable);
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L56-L68' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-visibility-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L56-L70' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-derived-facts' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ```razor
 <!-- UI just binds -->
-@if (order.ShowHoldBanner)
+@if (order.IsHeld)
 {
     <HoldBanner />
 }
@@ -154,7 +156,7 @@ RuleManager.AddAction(
     t => t.TotalCost,
     t => t.Budget);
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L77-L84' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-chained-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L79-L86' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-chained-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-aggregation-test -->
@@ -533,7 +535,7 @@ public void Approve(string approver)
     Status = "Approved";
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L124-L134' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-verb' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L126-L136' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-verb' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-can-x-rule -->
@@ -564,7 +566,7 @@ public async Task Create([Service] IWorkOrderTaskListFactory tasksFactory)
     await RunRules(RunRulesFlag.All);
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L136-L147' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-with-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L138-L149' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-with-run-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-can-x-test -->
@@ -620,7 +622,7 @@ RuleManager.AddAction(
     t => t.TotalCost = t.Tasks?.Sum(task => task.Cost) ?? 0,
     t => t.Tasks![0].Cost);
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L70-L75' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-aggregation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L72-L77' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-aggregation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ```razor
@@ -682,7 +684,7 @@ RuleManager.AddActionAsync(
     },
     t => t.IsOnHold);
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L86-L110' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-orchestrator' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L88-L112' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-orchestrator' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-parent-in-child-method -->
@@ -843,14 +845,14 @@ public async Task ChildRule_ReadsRootStateThroughParent_AndTheRootRerunsItWhenTh
 
     Assert.IsTrue(design.IsSchedulable, "Hours > 0 and the parent is not on hold");
     Assert.IsFalse(order.HasUnschedulableTasks);
-    Assert.IsFalse(order.ShowHoldBanner);
+    Assert.IsFalse(order.IsHeld);
 
     order.IsOnHold = true;
     await order.WaitForTasks();
 
     Assert.IsFalse(design.IsSchedulable, "The root re-ran the tasks' rules; the child rule read Parent.IsOnHold");
     Assert.IsTrue(order.HasUnschedulableTasks, "...and the child's change bubbled into the root's flag");
-    Assert.IsTrue(order.ShowHoldBanner);
+    Assert.IsTrue(order.IsHeld);
 }
 ```
 <sup><a href='/src/Design/Design.Tests/AggregateTests/WorkOrderAggregateTests.cs#L108-L128' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-read-test' title='Start of snippet'>anchor</a></sup>

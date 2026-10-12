@@ -389,7 +389,7 @@ RuleManager.AddAction(
     t => t.TotalCost = t.Tasks?.Sum(task => task.Cost) ?? 0,
     t => t.Tasks![0].Cost);
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L70-L75' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-aggregation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L72-L77' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-aggregation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The aggregation writes `TotalCost`, which triggers the budget rule — a chain, with no handler code:
@@ -404,7 +404,7 @@ RuleManager.AddAction(
     t => t.TotalCost,
     t => t.Budget);
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L77-L84' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-chained-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L79-L86' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-chained-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-aggregation-test -->
@@ -444,7 +444,7 @@ RuleManager.AddAction(
         t => t.Status, t => t.IsOnHold, t => t.Budget, t => t.Discount
     });
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L112-L121' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-four-trigger-array' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L114-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-four-trigger-array' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Rule Execution Order
@@ -671,7 +671,7 @@ public async Task LoadProperty_WritesTheValue_WithoutRunningTheRulesOnThatProper
 
 Rules are registered in the target class constructor.
 
-Fluent rules for simple, entity-specific logic — the `WorkOrder` root registers an admission rule and two visibility flags this way:
+Fluent rules for simple, entity-specific logic — the `WorkOrder` root registers an admission rule and two derived facts this way (the UI binds to the facts; the entity never names a screen element):
 
 <!-- snippet: skill-can-x-rule -->
 <a id='snippet-skill-can-x-rule'></a>
@@ -685,12 +685,14 @@ RuleManager.AddAction(
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-can-x-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-<!-- snippet: skill-visibility-rules -->
-<a id='snippet-skill-visibility-rules'></a>
+<!-- snippet: skill-derived-facts -->
+<a id='snippet-skill-derived-facts'></a>
 ```cs
-// A show/hide decision is domain state. The UI binds @if (ShowHoldBanner).
+// A business fact derived from two others. The UI binds to it (for
+// example @if (workOrder.IsHeld) around a banner) and decides nothing;
+// the entity never names a screen element (no "ShowHoldBanner").
 RuleManager.AddAction(
-    t => t.ShowHoldBanner = t.IsOnHold && t.Status != "Closed",
+    t => t.IsHeld = t.IsOnHold && t.Status != "Closed",
     t => t.IsOnHold,
     t => t.Status);
 
@@ -700,7 +702,7 @@ RuleManager.AddAction(
     t => t.HasUnschedulableTasks = t.Tasks?.Any(task => !task.IsSchedulable) ?? false,
     t => t.Tasks![0].IsSchedulable);
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L56-L68' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-visibility-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L56-L70' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-derived-facts' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Rule classes with no dependencies are constructed inline (`RuleManager.AddRule(new NameRequiredRule())`, shown under "Custom Rule Classes"). A rule class with a dependency comes from DI through its interface and is registered on both tiers (`skill-rule-injected` and the registration above). A rule shared by several entity types operates on a shared interface — see the `IHasUniqueCode` example in the Neatoo skill's shared-rules reference.

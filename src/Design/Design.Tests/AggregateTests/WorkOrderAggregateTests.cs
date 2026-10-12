@@ -116,14 +116,14 @@ public class WorkOrderAggregateTests
 
         Assert.IsTrue(design.IsSchedulable, "Hours > 0 and the parent is not on hold");
         Assert.IsFalse(order.HasUnschedulableTasks);
-        Assert.IsFalse(order.ShowHoldBanner);
+        Assert.IsFalse(order.IsHeld);
 
         order.IsOnHold = true;
         await order.WaitForTasks();
 
         Assert.IsFalse(design.IsSchedulable, "The root re-ran the tasks' rules; the child rule read Parent.IsOnHold");
         Assert.IsTrue(order.HasUnschedulableTasks, "...and the child's change bubbled into the root's flag");
-        Assert.IsTrue(order.ShowHoldBanner);
+        Assert.IsTrue(order.IsHeld);
     }
     #endregion
 
