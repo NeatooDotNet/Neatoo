@@ -46,9 +46,9 @@ internal sealed class OrderEditViewModel
     /// <summary>The aggregate the page binds to. Null until loaded or created.</summary>
     public IOrder? Order { get; private set; }
 
-    public void New()
+    public async Task New()
     {
-        Order = _orderFactory.Create();
+        Order = await _orderFactory.Create();
     }
 
     public async Task Load(Guid id)

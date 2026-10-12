@@ -95,7 +95,7 @@ internal bool Fetch(Guid id,
     return true;
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L139-L165' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-fetch' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L146-L172' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-fetch' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Every object in the fetched graph lands old and clean:
@@ -365,10 +365,10 @@ A child's interface extends `IEntityBase`, which has neither `IsSavable` nor `Sa
 <a id='snippet-skill-child-interface-no-save'></a>
 ```cs
 [TestMethod]
-public void ChildInterface_DoesNotExposeIsSavable()
+public async Task ChildInterface_DoesNotExposeIsSavable()
 {
     // Arrange — IOrderItem extends IEntityBase, not IEntityRoot
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     order.Items!.Add(item);
 
@@ -424,9 +424,9 @@ A child added to a list gets `Parent` (the owning entity; the list is transparen
 <a id='snippet-skill-parent-and-root'></a>
 ```cs
 [TestMethod]
-public void AddItem_SetsParentAndRoot()
+public async Task AddItem_SetsParentAndRoot()
 {
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     Assert.IsNull(item.Parent, "Not attached yet");
 
@@ -502,7 +502,7 @@ internal async Task Insert([Service] IOrderRepository repository,
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L186-L213' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L193-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The root's `[Update]` writes its own columns only when its own properties changed, then delegates the same way:
@@ -539,7 +539,7 @@ internal async Task Update([Service] IOrderRepository repository,
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L240-L269' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-update' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L247-L276' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-update' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The list's `[Update]` brings the row collection in line with the list:
@@ -627,7 +627,7 @@ internal void Delete([Service] IOrderRepository repository)
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L278-L290' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L285-L297' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 External code only saves the aggregate root. A child added to a fetched aggregate gets exactly one row, and a second save does not insert it again:
@@ -779,6 +779,100 @@ internal void Fetch(OrderItemRow row)
 Internal methods get `IsServerRuntime` guards in the generated factory implementation, making them trimmable on the client. See [Trimming](trimming.md).
 
 A type that must be both a root in one graph and a child in another needs two interfaces (`IEntityRoot` and `IEntityBase`) and two sets of operations. Do not bolt root-shaped `[Remote]` operations onto a child type: any parent-less persistence operation makes the generator emit a public `Save(target)` that lets a consumer persist the child outside its aggregate.
+
+## One Class in Both Roles
+
+A type may be child-only or both root and child. The factory method signature is the distinction: root operations take services and are `[Remote]`; child operations take the child's row from its parent and are `internal`. An instance is saved as a root only when it was fetched as one.
+
+<!-- snippet: skill-entity-both-roles -->
+<a id='snippet-skill-entity-both-roles'></a>
+```cs
+/// <summary>
+/// Demonstrates: one entity class in both roles. Root operations are [Remote]
+/// and take services; child operations are internal and take the row.
+/// </summary>
+[Factory]
+internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
+{
+    public partial int Id { get; set; }
+    public partial string? Street { get; set; }
+    public partial string? City { get; set; }
+
+    public DualUseEntity(IEntityBaseServices<DualUseEntity> services) : base(services) { }
+
+    [Create]
+    public void Create() { }
+
+    // ---- ROOT role: no parent in the signature; [Remote]; public Save(target)
+
+    [Remote]
+    [Fetch]
+    internal void Fetch(int id, [Service] IDualUseRepository repository)
+    {
+        var data = repository.GetAddressById(id);
+        Id = data.Id;
+        Street = data.Street;
+        City = data.City;
+    }
+
+    [Remote]
+    [Insert]
+    internal void Insert([Service] IDualUseRepository repository)
+    {
+        Id = repository.InsertAddress(Street!, City!);
+    }
+
+    [Remote]
+    [Update]
+    internal void Update([Service] IDualUseRepository repository)
+    {
+        repository.UpdateAddress(Id, Street!, City!);
+    }
+
+    [Remote]
+    [Delete]
+    internal void Delete([Service] IDualUseRepository repository)
+    {
+        repository.DeleteAddress(Id);
+    }
+
+    // ---- CHILD role: takes its own row; internal, not [Remote]; Save(target, row)
+
+    [Fetch]
+    internal void Fetch(DualUseRow row)
+    {
+        Id = row.Id;
+        Street = row.Street;
+        City = row.City;
+    }
+
+    [Insert]
+    internal void Insert(DualUseRow row)
+    {
+        row.Street = Street!;
+        row.City = City!;
+    }
+
+    [Update]
+    internal void Update(DualUseRow row)
+    {
+        row.Street = Street!;
+        row.City = City!;
+    }
+}
+
+/// <summary>
+/// The row a parent's row holds for this entity in its child role.
+/// </summary>
+public class DualUseRow
+{
+    public int Id { get; set; }
+    public string Street { get; set; } = "";
+    public string City { get; set; } = "";
+}
+```
+<sup><a href='/src/Design/Design.Domain/FactoryOperations/RemoteBoundary.cs#L269-L353' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-both-roles' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Related
 

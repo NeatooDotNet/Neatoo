@@ -39,10 +39,10 @@ public class DeletedListTests
 
     #region skill-remove-new-item-discarded
     [TestMethod]
-    public void RemoveNewItem_NotAddedToDeletedList()
+    public async Task RemoveNewItem_NotAddedToDeletedList()
     {
         // Arrange
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         var item = _itemFactory.Create("Widget", 1, 10.00m);
         order.Items!.Add(item);
         Assert.IsTrue(item.IsNew, "Created item should be new");
@@ -57,10 +57,10 @@ public class DeletedListTests
     #endregion
 
     [TestMethod]
-    public void RemoveNewItem_ItemIsDiscarded()
+    public async Task RemoveNewItem_ItemIsDiscarded()
     {
         // Arrange
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         var item = _itemFactory.Create("Widget", 1, 10.00m);
         order.Items!.Add(item);
 
@@ -73,10 +73,10 @@ public class DeletedListTests
     }
 
     [TestMethod]
-    public void AddMultipleNewItems_RemoveAll_NoDeletedListEntries()
+    public async Task AddMultipleNewItems_RemoveAll_NoDeletedListEntries()
     {
         // Arrange
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         var item1 = _itemFactory.Create("Widget1", 1, 10.00m);
         var item2 = _itemFactory.Create("Widget2", 2, 20.00m);
         order.Items!.Add(item1);
@@ -91,10 +91,10 @@ public class DeletedListTests
     }
 
     [TestMethod]
-    public void RemoveAt_NewItem_NotAddedToDeletedList()
+    public async Task RemoveAt_NewItem_NotAddedToDeletedList()
     {
         // Arrange
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         var item1 = _itemFactory.Create("Widget1", 1, 10.00m);
         var item2 = _itemFactory.Create("Widget2", 2, 20.00m);
         order.Items!.Add(item1);
@@ -110,10 +110,10 @@ public class DeletedListTests
 
     #region skill-add-marks-modified
     [TestMethod]
-    public void IsModified_TrueWhenNewItemAdded()
+    public async Task IsModified_TrueWhenNewItemAdded()
     {
         // Arrange
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
 
         // Act
         var item = _itemFactory.Create("Widget", 1, 10.00m);
@@ -125,28 +125,4 @@ public class DeletedListTests
     }
     #endregion
 
-    [TestMethod]
-    public void AddThenRemoveNewItem_LeavesOrderCleanButSavable()
-    {
-        // Arrange
-        var order = _orderFactory.Create();
-        var item = _itemFactory.Create("Widget", 1, 10.00m);
-        order.Items!.Add(item);
-        Assert.IsTrue(order.IsModified, "Attaching a child dirties the aggregate");
-
-        // Act - remove it again. A never-persisted child is discarded, not queued
-        order.Items.Remove(item);
-
-        // Assert - the add is fully undone: nothing was persisted, nothing is
-        // pending, so there is no user work left to lose. The order is still
-        // NEW, so it remains savable.
-        //
-        // Before the ISNEW split this asserted "New order is always modified",
-        // which was the weld speaking - IsNew was a term in IsModified, so a
-        // created aggregate could never report clean no matter what was undone.
-        Assert.AreEqual(0, order.Items.DeletedCount, "Nothing queued for deletion");
-        Assert.IsFalse(order.IsModified, "The add was undone - no work remains");
-        Assert.IsTrue(order.IsNew, "...but the order itself is still unpersisted");
-        Assert.IsTrue(order.IsSavable, "...and therefore still savable");
-    }
 }

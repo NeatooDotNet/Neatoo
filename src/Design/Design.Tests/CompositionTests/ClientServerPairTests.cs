@@ -42,7 +42,7 @@ public class ClientServerPairTests
         var factory = _client.ServiceProvider.GetRequiredService<IOrderFactory>();
         var itemFactory = _client.ServiceProvider.GetRequiredService<IOrderItemFactory>();
 
-        var order = factory.Create();
+        var order = await factory.Create();
         order.OrderNumber = "ORD-1001";
         order.CustomerName = "Ada";
         order.Items!.Add(itemFactory.Create("Widget", 2, 10.00m));

@@ -104,12 +104,19 @@ internal partial class Order : EntityBase<Order>, IOrder
 
     #region skill-root-create
     [Create]
-    public void Create([Service] IOrderItemListFactory itemsFactory)
+    public async Task Create([Service] IOrderItemListFactory itemsFactory)
     {
         Items = itemsFactory.Create();
         OrderDate = DateTime.Today;
         Status = "Draft";
         OrderNumber = $"ORD-{DateTime.Now:yyyyMMddHHmmss}";
+
+        // This Create hands a form to a person. It decides that the form must
+        // not come back unvalidated: run the rules so the required fields show
+        // their messages at once and IsSavable is false until they are filled.
+        // A per-operation choice (the rare validate case), not a step every
+        // Create ends with. All is safe here: the item list is empty.
+        await RunRules(RunRulesFlag.All);
     }
     #endregion
 

@@ -1,8 +1,8 @@
 # Domain Logic Placement
 
-The domain layer is the home for all business logic. In a Neatoo application that layer has four rungs — entity rules, entity verbs, orchestration seams, and read models — and the ViewModel and Razor above them bind, adapt gestures, and mirror. The ladder, the three ownership questions, the mirror rule, and the gesture test are in the main `/neatoo` skill → "Domain Logic First." This reference is the decision tree that walks the ladder, followed by the wiring patterns for **rung 1, the entity rule** — Patterns 1–9 below all assume the tree has already put you on that rung.
+The domain layer is the home for all business logic. In a Neatoo application that layer has four rungs — entity rules, entity verbs, orchestration seams, and read models — and the ViewModel and Razor above them bind, adapt gestures, and mirror. The placement rule — logic goes where whoever drives it lives — is the main `/neatoo` skill's third model statement and its "Logic is placed by who drives it" decision. This reference is the decision tree that walks the ladder, followed by the wiring patterns for **rung 1, the entity rule** — Patterns 1–9 below all assume the tree has already put you on that rung.
 
-> **Design assumption: open mutation.** Neatoo aggregates are graphs, not façades — any consumer (ViewModel, Razor binding, service) can call business methods on children or bind directly to deep properties. Design rules so that mutating any descendant leaves the root's `IsValid` / `IsModified` correct after all rules settle. See the main `/neatoo` skill → "The Aggregate Is a Graph, Not a Façade" and "Designing Rules for Open Mutation."
+> **Design assumption: open mutation.** Neatoo aggregates are graphs, not façades — any consumer (ViewModel, Razor binding, service) can call business methods on children or bind directly to deep properties. Design rules so that mutating any descendant leaves the root's `IsValid` / `IsModified` correct after all rules settle. The ViewModel adapts gestures into those calls and decides nothing (the main `/neatoo` skill's fourth model statement); the rules below are what make that safe.
 
 The compiled examples below come from one aggregate: a `WorkOrder` root with a list of `WorkOrderTask` children. Each task has `Hours`, `Rate`, a `Discount` the root pushes down, and a derived `Cost`; the root has a `Budget`, a `Status` driven by an `Approve` verb, and derived `TotalCost`, `IsOverBudget`, `CanApprove`, `IsHeld` and `HasUnschedulableTasks`.
 
@@ -861,3 +861,18 @@ public async Task ChildRule_ReadsRootStateThroughParent_AndTheRootRerunsItWhenTh
 <!-- endSnippet -->
 
 If the logic lived in a `.razor` file, this test would be impossible.
+
+## A Verb
+
+A verb sets state and never persists; the rule its trigger names runs at once. No `RunRules`, no guard, no throw.
+
+<!-- snippet: skill-verb-submit -->
+<a id='snippet-skill-verb-submit'></a>
+```cs
+public void Submit()
+{
+    Status = "Submitted";
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L308-L313' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-verb-submit' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->

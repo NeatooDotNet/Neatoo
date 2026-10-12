@@ -21,7 +21,7 @@ The domain model you bind to your Blazor form is the same object that validates 
 - **Source-generated properties** — Partial properties generate backing fields, `PropertyChanged` events, validation triggers, and change tracking at compile time. Zero reflection.
 - **Validation and business rules** — Attribute validation (`[Required]`, `[Range]`), inline rules, class-based rules, async rules that reach the server through a command, and error aggregation across the entire object graph.
 - **Change tracking** — `IsModified`, `IsSelfModified`, and `IsDeleted` cascade through parent-child graphs to the aggregate root (`IsNew` is per-object routing state and deliberately does not). `ModifiedProperties` tells you exactly what changed. `IsModified` and `IsNew` answer different questions on purpose: a freshly created entity is savable but *not* modified, so unsaved-changes guards stay quiet until the user actually edits something ([why](docs/guides/change-tracking.md#why-isnew-is-not-part-of-ismodified)).
-- **DDD aggregate support** — `EntityBase` for persistent entities, `ValidateBase` for value objects, `EntityListBase` for child collections. Interface-first design enforces aggregate boundaries at compile time: roots expose `Save()`, children do not.
+- **DDD aggregate support** — `EntityBase` for persistent entities, `ValidateBase` for input models (a value object is a `record`), `EntityListBase` for child collections. Interface-first design enforces aggregate boundaries at compile time: roots expose `Save()`, children do not.
 - **Blazor integration** — MudNeatoo components bind directly to domain model properties with two-way binding, validation display, and form integration out of the box.
 
 ## Example

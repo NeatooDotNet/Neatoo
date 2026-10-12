@@ -135,4 +135,33 @@ public class SaveAggregateLifecycleTests
             Assert.IsFalse(child.IsModified, $"Child {child.Id} should be clean after save");
         }
     }
+
+    [TestMethod]
+    public void AddThenRemoveNewItem_LeavesAggregateCleanButSavable()
+    {
+        // Moved from DeletedListTests (Order) when Order.Create began running
+        // its rules: a new Order is no longer savable until CustomerName is
+        // filled, and this test is about the IsNew/IsModified split, not Order's
+        // form. SaveAggregateDemo has no required fields, so the intent survives
+        // here with the same assertions.
+        var demo = _factory.Create();
+        var item = _itemFactory.Create();
+        demo.Items!.Add(item);
+        Assert.IsTrue(demo.IsModified, "Attaching a child dirties the aggregate");
+
+        // Act - remove it again. A never-persisted child is discarded, not queued
+        demo.Items.Remove(item);
+
+        // Assert - the add is fully undone: nothing was persisted, nothing is
+        // pending, so there is no user work left to lose. The aggregate is still
+        // NEW, so it remains savable.
+        //
+        // Before the ISNEW split this asserted "New aggregate is always modified",
+        // which was the weld speaking - IsNew was a term in IsModified, so a
+        // created aggregate could never report clean no matter what was undone.
+        Assert.AreEqual(0, demo.Items.DeletedCount, "Nothing queued for deletion");
+        Assert.IsFalse(demo.IsModified, "The add was undone - no work remains");
+        Assert.IsTrue(demo.IsNew, "...but the aggregate itself is still unpersisted");
+        Assert.IsTrue(demo.IsSavable, "...and therefore still savable");
+    }
 }

@@ -70,10 +70,10 @@ public class AggregateBoundaryTests
     #endregion
 
     [TestMethod]
-    public void AddItemWithNoAggregate_Succeeds()
+    public async Task AddItemWithNoAggregate_Succeeds()
     {
         // A freshly created item has no Root yet, so it can join any aggregate
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         var item = _itemFactory.Create("Widget", 1, 10.00m);
         Assert.IsNull(item.Root, "A created item is not part of an aggregate yet");
 

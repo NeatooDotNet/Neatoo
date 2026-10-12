@@ -398,6 +398,8 @@ internal partial class SaveDemoItem : EntityBase<SaveDemoItem>, ISaveDemoItem
 [Factory]
 internal partial class SaveDemoItemList : EntityListBase<ISaveDemoItem>, ISaveDemoItemList
 {
+    public int DeletedCount => DeletedList.Count;
+
     [Create]
     public void Create() { }
 
