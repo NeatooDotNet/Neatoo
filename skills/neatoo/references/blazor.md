@@ -63,12 +63,12 @@ MudNeatoo components (`MudNeatooTextField`, etc.) bind an entity property's valu
 ```razor
 @* MudNeatoo fields take an IEntityProperty; an input model's properties are
    IValidateProperty, so the page binds the property object by hand: the value,
-   then the messages, busy and read-only state the property object carries. *@
+   then the messages, busy and read-only state the property object carries; the value commits through SetValue, as MudNeatoo does. *@
 @{ var name = _model[nameof(IDemoInputModel.Name)]; }
 <MudTextField T="string"
               Label="Name"
               Value="@_model.Name"
-              ValueChanged="@(v => _model.Name = v)"
+              ValueChanged="@(async (string v) => await name.SetValue(v))"
               Error="@(!name.IsValid)"
               ErrorText="@string.Join(" ", name.PropertyMessages.Select(m => m.Message))"
               Disabled="@name.IsReadOnly" />
@@ -323,6 +323,11 @@ internal sealed class OrderEditViewModel
         Order?.Items?.Add(_itemFactory.Create());
     }
 
+    public void RemoveItem(IOrderItem item)
+    {
+        Order?.Items?.Remove(item);
+    }
+
     /// <summary>
     /// The Save button binds to this: enabled only when the entity says it
     /// can be saved. No separate validity check lives in the UI.
@@ -351,7 +356,7 @@ internal sealed class OrderEditViewModel
     }
 }
 ```
-<sup><a href='/src/Design/Design.App/ViewModels/OrderEditViewModel.cs#L31-L91' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-handler' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ViewModels/OrderEditViewModel.cs#L31-L96' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-handler' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## A ViewModel Over a Live Aggregate
@@ -545,11 +550,12 @@ internal static IServiceCollection AddDesignClient(this IServiceCollection servi
     // The screens' ViewModels: plain classes over a live aggregate.
     services.AddTransient<OrderEditViewModel>();
     services.AddTransient<WorkOrderViewModel>();
+    services.AddTransient<EmployeeEditViewModel>();
 
     return services;
 }
 ```
-<sup><a href='/src/Design/Design.App/ClientServices.cs#L27-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-client-composition' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ClientServices.cs#L27-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-client-composition' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-server-composition -->

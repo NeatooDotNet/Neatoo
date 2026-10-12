@@ -61,6 +61,11 @@ internal sealed class OrderEditViewModel
         Order?.Items?.Add(_itemFactory.Create());
     }
 
+    public void RemoveItem(IOrderItem item)
+    {
+        Order?.Items?.Remove(item);
+    }
+
     /// <summary>
     /// The Save button binds to this: enabled only when the entity says it
     /// can be saved. No separate validity check lives in the UI.

@@ -47,6 +47,7 @@ internal static class ClientServices
         // The screens' ViewModels: plain classes over a live aggregate.
         services.AddTransient<OrderEditViewModel>();
         services.AddTransient<WorkOrderViewModel>();
+        services.AddTransient<EmployeeEditViewModel>();
 
         return services;
     }

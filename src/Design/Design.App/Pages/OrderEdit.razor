@@ -32,13 +32,18 @@
 
             <MudText Typo="Typo.h6" Class="my-3">Items</MudText>
 
+            @* begin-snippet: skill-mud-child-collection *@
             @if (Vm.Order.Items is not null)
             {
                 @foreach (var item in Vm.Order.Items)
                 {
                     <MudGrid Class="mb-2" Spacing="2">
-                        <MudItem xs="12" sm="6">
+                        <MudItem xs="11" sm="5">
                             <MudNeatooTextField T="string" EntityProperty="@item[nameof(IOrderItem.ProductName)]" />
+                        </MudItem>
+                        <MudItem xs="1" Class="d-flex align-center">
+                            @* A gesture: the list moves a fetched item to DeletedList *@
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => Vm.RemoveItem(item))" />
                         </MudItem>
                         <MudItem xs="6" sm="2">
                             <MudNeatooNumericField T="int" EntityProperty="@item[nameof(IOrderItem.Quantity)]" />
@@ -52,6 +57,7 @@
                     </MudGrid>
                 }
             }
+            @* end-snippet *@
 
             <MudButton Variant="Variant.Outlined" OnClick="Vm.AddItem" Class="mb-3">Add Item</MudButton>
 

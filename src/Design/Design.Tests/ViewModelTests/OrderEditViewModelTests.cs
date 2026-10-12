@@ -109,4 +109,35 @@ public class OrderEditViewModelTests
         Assert.IsTrue(order.PropertyMessages.Any(m => m.Message.Contains("at least one item")));
     }
     #endregion
+
+    [TestMethod]
+    public async Task RemoveItem_FetchedOrder_MovesTheItemToDeletedListAndTheOrderIsSavable()
+    {
+        await _vm.New();
+        _vm.Order!.CustomerName = "Grace";
+        _vm.AddItem();
+        _vm.AddItem();
+        foreach (var line in _vm.Order.Items!)
+        {
+            line.ProductName = "Gadget";
+            line.Quantity = 1;
+            line.UnitPrice = 5.00m;
+        }
+        await _vm.Order.WaitForTasks();
+        await _vm.Save();
+        await _vm.Load(_vm.Order!.Id);
+        Assert.IsFalse(_vm.CanSave, "freshly fetched: nothing to save");
+
+        _vm.RemoveItem(_vm.Order!.Items![0]);
+        await _vm.Order.WaitForTasks();
+
+        Assert.AreEqual(1, _vm.Order.Items.Count);
+        Assert.AreEqual(1, _vm.Order.Items.DeletedCount, "a fetched item waits in DeletedList for the save");
+        Assert.IsTrue(_vm.CanSave);
+
+        await _vm.Save();
+
+        var store = (InMemoryOrderRepository)_server.ServiceProvider.GetRequiredService<IOrderRepository>();
+        Assert.AreEqual(1, store.Store[_vm.Order!.Id].Items.Count, "the save removed the row");
+    }
 }

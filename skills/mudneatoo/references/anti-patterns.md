@@ -9,6 +9,7 @@ Creating a plain class that mirrors entity properties, binding MudBlazor to the 
 ### Wrong
 
 ```razor
+@* WRONG *@
 <EditForm Model="@_model" OnValidSubmit="HandleSave">
     <DataAnnotationsValidator />
     <MudTextField @bind-Value="_model.FirstName"
@@ -59,27 +60,19 @@ Creating a plain class that mirrors entity properties, binding MudBlazor to the 
 
 ### Correct
 
+Bind each field to the entity's property wrapper; there is no copy to sync:
+
+<!-- snippet: skill-mud-text-field -->
+<a id='snippet-skill-mud-text-field'></a>
 ```razor
-<MudForm @ref="form">
-    <MudNeatooTextField T="string"
-                        EntityProperty="@entity[nameof(IUser.FirstName)]" />
-    <MudNeatooTextField T="string"
-                        EntityProperty="@entity[nameof(IUser.LastName)]" />
-</MudForm>
-
-<MudButton OnClick="Save" Disabled="@(!entity.IsSavable)">Save</MudButton>
-
-@code {
-    private IUser? entity;
-
-    private async Task Save()
-    {
-        await entity!.WaitForTasks();
-        if (!entity.IsSavable) return;
-        entity = await UserFactory.Save(entity);
-    }
-}
+<MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.FirstName)]" Variant="Variant.Outlined" Class="mb-3" />
+<MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.LastName)]" Variant="Variant.Outlined" Class="mb-3" />
+<MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.Email)]" Variant="Variant.Outlined" Class="mb-3" />
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L32-L36' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-text-field' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The Save button binds `IsSavable`, and the ViewModel's save handler waits, asks `IsSavable`, saves and reassigns (SKILL.md → Page Structure Pattern).
 
 ---
 
@@ -90,6 +83,7 @@ Using standard MudBlazor components with `ValueChanged` callbacks that manually 
 ### Wrong
 
 ```razor
+@* WRONG *@
 <MudTextField T="string"
               Value="@entity.PrimaryPhone"
               ValueChanged="OnPhoneChanged"
@@ -127,15 +121,26 @@ Using standard MudBlazor components with `ValueChanged` callbacks that manually 
 
 ### Correct
 
+<!-- snippet: skill-mud-select -->
+<a id='snippet-skill-mud-select'></a>
 ```razor
-<MudNeatooTextField T="string"
-                    EntityProperty="@entity[nameof(IPatient.PrimaryPhone)]" />
-
-<MudNeatooSelect T="PhoneType?"
-                 EntityProperty="@entity[nameof(IPatient.PrimaryPhoneType)]">
-    <MudSelectItem Value="@((PhoneType?)PhoneType.Home)">Home</MudSelectItem>
+@* A record bound through MudNeatoo: the options are values, and
+   selecting one assigns it. Disabled binds a business fact as it
+   is - an inactive employee's grade is frozen - with no
+   condition of the page's own. T is the record type: Razor-generated code
+   cannot carry a nullable annotation. *@
+<MudNeatooSelect T="PayGrade"
+                 EntityProperty="@Vm.Employee[nameof(IEmployee.Grade)]"
+                 Disabled="@(!Vm.Employee.IsActive)"
+                 Class="mb-3">
+    @foreach (var grade in Vm.Grades)
+    {
+        <MudSelectItem T="PayGrade" Value="@grade">@grade.Code</MudSelectItem>
+    }
 </MudNeatooSelect>
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L58-L73' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-select' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 Zero handlers. The component calls `SetValue()` internally, which triggers the async rule pipeline.
 
@@ -148,6 +153,7 @@ Using Blazor's `@bind-Value` two-way binding directly to entity properties.
 ### Wrong
 
 ```razor
+@* WRONG *@
 <MudTextField @bind-Value="entity.FirstName"
               Label="First Name"
               Required="true"
@@ -171,18 +177,19 @@ Using Blazor's `@bind-Value` two-way binding directly to entity properties.
 - Label is hardcoded instead of using `DisplayName`
 ### Correct
 
+<!-- snippet: skill-mud-date-picker -->
+<a id='snippet-skill-mud-date-picker'></a>
 ```razor
-<MudNeatooTextField T="string"
-                    EntityProperty="@entity[nameof(IPatient.FirstName)]" />
-
-<MudNeatooDatePicker EntityProperty="@entity[nameof(IPatient.DateOfBirth)]" />
-
-<MudNeatooRadioGroup T="Gender"
-                     EntityProperty="@entity[nameof(IPatient.Gender)]">
-    <MudRadio Value="@Gender.Male">Male</MudRadio>
-    <MudRadio Value="@Gender.Female">Female</MudRadio>
-</MudNeatooRadioGroup>
+<MudNeatooDatePicker EntityProperty="@Vm.Employee[nameof(IEmployee.HireDate)]"
+                     MaxDate="@DateTime.Today"
+                     DateFormat="yyyy-MM-dd"
+                     Editable="true"
+                     Class="mb-3" />
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L38-L44' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-date-picker' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The text fields, select and checkbox bind the same way (SKILL.md → Page Structure Pattern).
 
 ---
 
@@ -193,6 +200,7 @@ Using Blazor's `EditForm` and `DataAnnotationsValidator` instead of `MudForm` wi
 ### Wrong
 
 ```razor
+@* WRONG *@
 <EditForm Model="@entity" OnValidSubmit="HandleSave">
     <DataAnnotationsValidator />
     <ValidationSummary />
@@ -214,16 +222,15 @@ Using Blazor's `EditForm` and `DataAnnotationsValidator` instead of `MudForm` wi
 
 ### Correct
 
+No form wrapper and no validator: the summary and each field show the entity's own messages, and the Save button binds `IsSavable`.
+
+<!-- snippet: skill-mud-validation-summary -->
+<a id='snippet-skill-mud-validation-summary'></a>
 ```razor
-<MudForm @ref="form">
-    <NeatooValidationSummary Entity="@entity" ShowHeader="false" Dense="true" />
-
-    <MudNeatooTextField T="string"
-                        EntityProperty="@entity[nameof(IPatient.FirstName)]" />
-
-    <MudButton OnClick="Save" Disabled="@(!entity.IsSavable)">Save</MudButton>
-</MudForm>
+<NeatooValidationSummary Entity="@Vm.Employee" ShowHeader="false" Dense="true" Class="mb-4" />
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L28-L30' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-validation-summary' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ---
 
@@ -234,6 +241,7 @@ Storing form values in local component variables instead of binding to the entit
 ### Wrong
 
 ```razor
+@* WRONG *@
 @code {
     private int _durationMinutes = 20;
     private string _laser = "POWERBOX";
@@ -270,26 +278,35 @@ Storing form values in local component variables instead of binding to the entit
 
 Bind directly to entity properties. If the entity needs these fields, they should be entity properties with domain validation rules.
 
+<!-- snippet: skill-mud-numeric-field -->
+<a id='snippet-skill-mud-numeric-field'></a>
 ```razor
-<MudNeatooNumericField T="int"
-                       EntityProperty="@entity[nameof(ITreatment.DurationMinutes)]" />
-
-<MudNeatooTextField T="string"
-                    EntityProperty="@entity[nameof(ITreatment.Laser)]" />
-
-<MudNeatooNumericField T="double"
-                       EntityProperty="@entity[nameof(ITreatment.Power)]" />
-
-<MudButton OnClick="Save" Disabled="@(!entity.IsSavable)">Save</MudButton>
+<MudNeatooNumericField T="decimal"
+                       EntityProperty="@Vm.Employee[nameof(IEmployee.Salary)]"
+                       Adornment="Adornment.Start"
+                       AdornmentText="$"
+                       Class="mb-3" />
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L46-L52' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-numeric-field' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 Validation lives in the domain model:
 
-```csharp
-RuleManager.AddValidation(
-    t => t.Power < 0 || t.Power > 60 ? "Power must be between 0 and 60" : "",
-    t => t.Power);
+<!-- snippet: skill-validation-attributes -->
+<a id='snippet-skill-validation-attributes'></a>
+```cs
+[Required(ErrorMessage = "Product name is required")]
+[StringLength(100)]
+public partial string? ProductName { get; set; }
+
+[Range(1, 10000, ErrorMessage = "Quantity must be between 1 and 10000")]
+public partial int Quantity { get; set; }
+
+[Range(0.01, 1000000, ErrorMessage = "Unit price must be positive")]
+public partial decimal UnitPrice { get; set; }
 ```
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/OrderItem.cs#L32-L42' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation-attributes' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ---
 
@@ -300,6 +317,7 @@ Checking `IsSavable` in the save handler and showing a snackbar/banner when inva
 ### Wrong
 
 ```csharp
+// WRONG
 private async Task Save()
 {
     if (!entity.IsSavable)
@@ -314,6 +332,7 @@ private async Task Save()
 With the save button always enabled:
 
 ```razor
+@* WRONG: the button is enabled whatever the entity says *@
 <MudButton OnClick="Save" Variant="Variant.Filled">Save</MudButton>
 ```
 
@@ -326,28 +345,7 @@ With the save button always enabled:
 
 ### Correct
 
-```razor
-<NeatooValidationSummary Entity="@entity" ShowHeader="false" Dense="true" />
-
-@* Individual fields show their own errors via MudNeatoo *@
-<MudNeatooTextField T="string" EntityProperty="@entity[nameof(IPatient.Name)]" />
-
-@* Button disabled when entity can't be saved *@
-<MudButton OnClick="Save"
-           Disabled="@(!entity.IsSavable)"
-           Variant="Variant.Filled">
-    Save
-</MudButton>
-```
-
-```csharp
-private async Task Save()
-{
-    await entity!.WaitForTasks();
-    if (!entity.IsSavable) return;  // Guard only — button should already be disabled
-    entity = await factory.Save(entity);
-}
-```
+The summary (Anti-Pattern 4) shows every message, each field shows its own, and the Save button binds `IsSavable`, so an invalid entity never reaches `Save`. The save handler's `IsSavable` check is a guard, not a validation step (SKILL.md → Page Structure Pattern).
 
 ---
 
@@ -358,6 +356,7 @@ Using MudNeatoo components for some fields and standard MudBlazor for others in 
 ### Wrong
 
 ```razor
+@* WRONG *@
 @* Some fields use MudNeatoo correctly *@
 <MudNeatooTextField T="string"
                     EntityProperty="@entity[nameof(IPatient.FirstName)]" />
@@ -387,27 +386,29 @@ Using MudNeatoo components for some fields and standard MudBlazor for others in 
 
 Use MudNeatoo for all fields. If a MudNeatoo component needs an additional parameter (like `Mask`), check if the parameter passes through. If not, use manual metadata binding (see SKILL.md → "Manual Metadata Binding").
 
+If a pass-through parameter is missing (a `Mask`, a `Converter` — [#93](https://github.com/NeatooDotNet/Neatoo/issues/93)), bind that one field to the property object by hand and add the parameter to the plain `MudTextField`, rather than dropping to `@bind-Value`:
+
+<!-- snippet: skill-input-model-manual-binding -->
+<a id='snippet-skill-input-model-manual-binding'></a>
 ```razor
-<MudNeatooTextField T="string"
-                    EntityProperty="@entity[nameof(IPatient.FirstName)]" />
-
-@* MudNeatooTextField supports most MudTextField parameters *@
-<MudNeatooTextField T="string"
-                    EntityProperty="@entity[nameof(IPatient.PrimaryPhone)]" />
-```
-
-If a pass-through parameter is missing (like `Mask`), fall back to manual metadata binding rather than dropping to plain MudBlazor:
-
-```razor
-@{ var phoneProp = entity[nameof(IPatient.PrimaryPhone)]; }
+@* MudNeatoo fields take an IEntityProperty; an input model's properties are
+   IValidateProperty, so the page binds the property object by hand: the value,
+   then the messages, busy and read-only state the property object carries; the value commits through SetValue, as MudNeatoo does. *@
+@{ var name = _model[nameof(IDemoInputModel.Name)]; }
 <MudTextField T="string"
-              Value="@((string?)phoneProp.Value)"
-              ValueChanged="@(async (string v) => await phoneProp.SetValue(v))"
-              Label="@phoneProp.DisplayName"
-              Disabled="@phoneProp.IsBusy"
-              ReadOnly="@phoneProp.IsReadOnly"
-              Mask="@(new PatternMask("(000) 000-0000"))" />
+              Label="Name"
+              Value="@_model.Name"
+              ValueChanged="@(async (string v) => await name.SetValue(v))"
+              Error="@(!name.IsValid)"
+              ErrorText="@string.Join(" ", name.PropertyMessages.Select(m => m.Message))"
+              Disabled="@name.IsReadOnly" />
+@if (name.IsBusy)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
 ```
+<sup><a href='/src/Design/Design.App/Pages/InputModelPage.razor#L13-L29' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model-manual-binding' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ---
 
@@ -418,6 +419,7 @@ Subscribing to `PropertyChanged` in Blazor to compute derived values, instead of
 ### Wrong
 
 ```csharp
+// WRONG
 entity.PropertyChanged += (s, e) => {
     if (e.PropertyName == "Hours" || e.PropertyName == "Rate")
         totalDisplay = $"${entity.Hours * entity.Rate:F2}";
@@ -434,62 +436,25 @@ entity.PropertyChanged += (s, e) => {
 ### Correct
 
 Domain model:
-```csharp
-RuleManager.AddAction(
-    t => t.TotalPay = t.Hours * t.Rate,
-    t => t.Hours, t => t.Rate);
-```
 
-Razor:
-```razor
-<MudText>@entity.TotalPay</MudText>
+<!-- snippet: skill-add-action-computed -->
+<a id='snippet-skill-add-action-computed'></a>
+```cs
+public OrderItem(IEntityBaseServices<OrderItem> services) : base(services)
+{
+    // Action rule to calculate line total
+    RuleManager.AddAction(
+        t => t.LineTotal = t.Quantity * t.UnitPrice,
+        t => t.Quantity,
+        t => t.UnitPrice);
+}
 ```
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/OrderItem.cs#L46-L55' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-add-action-computed' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Razor binds the result as it is — the child collection in SKILL.md shows `@item.LineTotal`.
 
 The `PropertyChanged` subscription in Blazor should only trigger `StateHasChanged` — never compute values. See the Neatoo skill's `references/domain-logic-placement.md` for the full pattern.
-
----
-
-## Anti-Pattern 9: Blocking Await for LazyLoad in Razor Lifecycle
-
-Awaiting `LoadAsync()` with `await` in `OnInitializedAsync()`, which blocks rendering until data arrives. Use fire-and-forget instead.
-
-### Wrong
-
-```csharp
-protected override async Task OnInitializedAsync()
-{
-    entity = await OrderFactory.Fetch(orderId);
-
-    // WRONG: Blocks rendering until load completes
-    await entity.OrderLines.LoadAsync();
-    await entity.ShippingAddress.LoadAsync();
-}
-```
-
-### Why It's Wrong
-
-- Blocks page rendering until all lazy loads complete — defeats the purpose of lazy loading
-- User sees nothing until all data arrives
-- Multiple awaits run sequentially instead of concurrently
-
-### Correct
-
-Trigger loads fire-and-forget, let the 4-branch Razor pattern handle the loading state:
-
-```csharp
-protected override async Task OnInitializedAsync()
-{
-    entity = await OrderFactory.Fetch(orderId);
-
-    // Fire-and-forget — page renders immediately with spinners
-    _ = entity.OrderLines.LoadAsync();
-    _ = entity.ShippingAddress.LoadAsync();
-}
-```
-
-The page renders immediately with spinners. Each section fills in as its `PropertyChanged` fires on load completion.
-
-**Note:** Blocking `await` IS correct in non-UI code — e.g., `var lines = await entity.OrderLines.LoadAsync()` in tests, domain logic, or before save (`await entity.WaitForTasks()`).
 
 ---
 

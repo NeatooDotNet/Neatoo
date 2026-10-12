@@ -13,12 +13,12 @@
 @* begin-snippet: skill-input-model-manual-binding *@
 @* MudNeatoo fields take an IEntityProperty; an input model's properties are
    IValidateProperty, so the page binds the property object by hand: the value,
-   then the messages, busy and read-only state the property object carries. *@
+   then the messages, busy and read-only state the property object carries; the value commits through SetValue, as MudNeatoo does. *@
 @{ var name = _model[nameof(IDemoInputModel.Name)]; }
 <MudTextField T="string"
               Label="Name"
               Value="@_model.Name"
-              ValueChanged="@(v => _model.Name = v)"
+              ValueChanged="@(async (string v) => await name.SetValue(v))"
               Error="@(!name.IsValid)"
               ErrorText="@string.Join(" ", name.PropertyMessages.Select(m => m.Message))"
               Disabled="@name.IsReadOnly" />
