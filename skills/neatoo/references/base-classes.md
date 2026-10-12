@@ -546,6 +546,131 @@ internal partial class EmployeeDirectory : IEmployeeDirectory
 3. **Interface-first** - public interface, `internal` concrete, every reference typed on the interface
 4. **Follow DDD aggregate boundaries** - `IEntityRoot` for roots, `IEntityBase` for children within the aggregate
 
+## A Job Over Entities
+
+An entity is right with no person involved. A nightly job reuses the aggregate, its verb and its rules; it calls no `RunRules` and catches nothing: the verb triggered the rules, `WaitForTasks()` settles them, and `IsSavable` decides — saved, reported with its messages, or skipped as unchanged.
+
+<!-- snippet: skill-job-over-entities -->
+<a id='snippet-skill-job-over-entities'></a>
+```cs
+/// <summary>
+/// Job: submits the given draft orders. Reuses the Order aggregate, its
+/// Submit verb and its rules; no person involved.
+/// </summary>
+[Factory]
+public static partial class SubmitDraftOrders
+{
+    [Remote]
+    [Execute]
+    private static async Task<SubmitReport> _Run(
+        IReadOnlyList<Guid> orderIds,
+        [Service] IOrderFactory orderFactory)
+    {
+        var submitted = new List<Guid>();
+        var rejected = new List<RejectedOrder>();
+        var unchanged = new List<Guid>();
+
+        foreach (var id in orderIds)
+        {
+            var order = await orderFactory.Fetch(id)
+                ?? throw new InvalidOperationException($"Order {id} not found");
+
+            // The verb sets Status; the rule triggered by Status runs now.
+            order.Submit();
+
+            // Async rules, if any, finish here. Nothing else is run.
+            await order.WaitForTasks();
+
+            if (order.IsSavable)
+            {
+                // Save returns a new instance; use the result, not the old reference.
+                order = (IOrder)await order.Save();
+                submitted.Add(order.Id);
+            }
+            else if (!order.IsValid)
+            {
+                // The rules have spoken; report them, do not throw.
+                rejected.Add(new RejectedOrder(
+                    id,
+                    order.PropertyMessages.Select(m => $"{m.Property.Name}: {m.Message}").ToList()));
+            }
+            else
+            {
+                // Valid but not modified: the verb changed nothing. Skip.
+                unchanged.Add(id);
+            }
+        }
+
+        return new SubmitReport(submitted, rejected, unchanged);
+    }
+}
+
+/// <summary>
+/// What the job did: data, not a success flag.
+/// </summary>
+public sealed record SubmitReport(
+    IReadOnlyList<Guid> Submitted,
+    IReadOnlyList<RejectedOrder> Rejected,
+    IReadOnlyList<Guid> Unchanged);
+
+/// <summary>
+/// An order the rules rejected, with the messages a screen would have shown.
+/// </summary>
+public sealed record RejectedOrder(Guid OrderId, IReadOnlyList<string> Messages);
+```
+<sup><a href='/src/Design/Design.Domain/Jobs/SubmitDraftOrders.cs#L51-L116' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-job-over-entities' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+## A Value Object Is a Record
+
+A value object is a `record`: immutable, compared by value, no rules. Its constructor may throw, because code assigns it and an unknown value is a programming error. `ValidateBase` is for an input model — something a person edits. If a value needs rules, it is not a value object.
+
+<!-- snippet: skill-value-object-record -->
+<a id='snippet-skill-value-object-record'></a>
+```cs
+/// <summary>
+/// Value object for an employee's pay grade: one of a closed set of codes,
+/// each with a salary band.
+/// </summary>
+public sealed record PayGrade
+{
+    private static readonly IReadOnlyDictionary<string, (decimal Min, decimal Max)> Bands =
+        new Dictionary<string, (decimal, decimal)>
+        {
+            ["A"] = (30_000m, 45_000m),
+            ["B"] = (45_000m, 65_000m),
+            ["C"] = (65_000m, 90_000m),
+            ["D"] = (90_000m, 130_000m),
+        };
+
+    public PayGrade(string code)
+    {
+        // Bad input is an application failure, not a validation message:
+        // nobody types a grade; code assigns one from the set.
+        if (!Bands.ContainsKey(code))
+        {
+            throw new ArgumentException($"Unknown pay grade '{code}'", nameof(code));
+        }
+
+        Code = code;
+    }
+
+    public string Code { get; }
+
+    public decimal MinSalary => Bands[Code].Min;
+    public decimal MaxSalary => Bands[Code].Max;
+
+    public bool Covers(decimal salary) => salary >= MinSalary && salary <= MaxSalary;
+
+    /// <summary>The grade every new hire starts at.</summary>
+    public static PayGrade Entry => new("A");
+
+    public override string ToString() => Code;
+}
+```
+<sup><a href='/src/Design/Design.Domain/Entities/PayGrade.cs#L23-L63' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object-record' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
 ## Related
 
 - [Properties](properties.md) - Partial properties and the property object

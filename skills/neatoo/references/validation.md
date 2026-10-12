@@ -697,6 +697,71 @@ public void RuleThatThrows_SurfacesToTheCaller_AndMarksPropertyInvalid()
 <sup><a href='/src/Design/Design.Tests/RuleTests/RuleExceptionTests.cs#L34-L51' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-exception' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+## A Rule That Takes a Domain Service
+
+The second shape for a rule that needs the server: an interface-factory domain service (`[Factory]` on the interface). On the client the interface resolves to the generated proxy, on the server to the implementation; the rule holds a wrapped server call either way. Neither this nor the command delegate above is preferred.
+
+<!-- snippet: skill-rule-with-domain-service -->
+<a id='snippet-skill-rule-with-domain-service'></a>
+```cs
+/// <summary>
+/// Demonstrates: a rule that calls the server through an interface-factory
+/// domain service. One rule, both tiers; the service is the proxy on the
+/// client and the implementation on the server.
+/// </summary>
+internal class ShippingQuoteRule : AsyncRuleBase<ShipmentRequest>, IShippingQuoteRule
+{
+    private readonly IShippingRateService _rates;
+
+    public ShippingQuoteRule(IShippingRateService rates)
+        : base(t => t.Destination, t => t.WeightKg)
+    {
+        _rates = rates;
+    }
+
+    protected override async Task<IRuleMessages> Execute(ShipmentRequest target, CancellationToken? token = null)
+    {
+        if (string.IsNullOrWhiteSpace(target.Destination) || target.WeightKg <= 0)
+        {
+            target.Quote = 0m;
+            return None;
+        }
+
+        if (!await _rates.ShipsTo(target.Destination))
+        {
+            target.Quote = 0m;
+            return (nameof(ShipmentRequest.Destination), $"We do not ship to {target.Destination}").AsRuleMessages();
+        }
+
+        target.Quote = await _rates.Quote(target.Destination, target.WeightKg);
+        return None;
+    }
+}
+
+/// <summary>
+/// Input model whose quote comes from the domain service while the user edits.
+/// </summary>
+[Factory]
+internal partial class ShipmentRequest : ValidateBase<ShipmentRequest>, IShipmentRequest
+{
+    public partial string? Destination { get; set; }
+    public partial decimal WeightKg { get; set; }
+    public partial decimal Quote { get; set; }
+
+    public ShipmentRequest(
+        IValidateBaseServices<ShipmentRequest> services,
+        IShippingQuoteRule quoteRule) : base(services)
+    {
+        RuleManager.AddRule(quoteRule);
+    }
+
+    [Create]
+    public void Create() { }
+}
+```
+<sup><a href='/src/Design/Design.Domain/Rules/DomainServiceRule.cs#L43-L98' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-domain-service' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
 ## Related
 
 - [Properties](properties.md) - How properties trigger validation

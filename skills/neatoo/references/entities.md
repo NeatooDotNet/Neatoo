@@ -780,6 +780,100 @@ Internal methods get `IsServerRuntime` guards in the generated factory implement
 
 A type that must be both a root in one graph and a child in another needs two interfaces (`IEntityRoot` and `IEntityBase`) and two sets of operations. Do not bolt root-shaped `[Remote]` operations onto a child type: any parent-less persistence operation makes the generator emit a public `Save(target)` that lets a consumer persist the child outside its aggregate.
 
+## One Class in Both Roles
+
+A type may be child-only or both root and child. The factory method signature is the distinction: root operations take services and are `[Remote]`; child operations take the child's row from its parent and are `internal`. An instance is saved as a root only when it was fetched as one.
+
+<!-- snippet: skill-entity-both-roles -->
+<a id='snippet-skill-entity-both-roles'></a>
+```cs
+/// <summary>
+/// Demonstrates: one entity class in both roles. Root operations are [Remote]
+/// and take services; child operations are internal and take the row.
+/// </summary>
+[Factory]
+internal partial class DualUseEntity : EntityBase<DualUseEntity>, IDualUseEntity
+{
+    public partial int Id { get; set; }
+    public partial string? Street { get; set; }
+    public partial string? City { get; set; }
+
+    public DualUseEntity(IEntityBaseServices<DualUseEntity> services) : base(services) { }
+
+    [Create]
+    public void Create() { }
+
+    // ---- ROOT role: no parent in the signature; [Remote]; public Save(target)
+
+    [Remote]
+    [Fetch]
+    internal void Fetch(int id, [Service] IDualUseRepository repository)
+    {
+        var data = repository.GetAddressById(id);
+        Id = data.Id;
+        Street = data.Street;
+        City = data.City;
+    }
+
+    [Remote]
+    [Insert]
+    internal void Insert([Service] IDualUseRepository repository)
+    {
+        Id = repository.InsertAddress(Street!, City!);
+    }
+
+    [Remote]
+    [Update]
+    internal void Update([Service] IDualUseRepository repository)
+    {
+        repository.UpdateAddress(Id, Street!, City!);
+    }
+
+    [Remote]
+    [Delete]
+    internal void Delete([Service] IDualUseRepository repository)
+    {
+        repository.DeleteAddress(Id);
+    }
+
+    // ---- CHILD role: takes its own row; internal, not [Remote]; Save(target, row)
+
+    [Fetch]
+    internal void Fetch(DualUseRow row)
+    {
+        Id = row.Id;
+        Street = row.Street;
+        City = row.City;
+    }
+
+    [Insert]
+    internal void Insert(DualUseRow row)
+    {
+        row.Street = Street!;
+        row.City = City!;
+    }
+
+    [Update]
+    internal void Update(DualUseRow row)
+    {
+        row.Street = Street!;
+        row.City = City!;
+    }
+}
+
+/// <summary>
+/// The row a parent's row holds for this entity in its child role.
+/// </summary>
+public class DualUseRow
+{
+    public int Id { get; set; }
+    public string Street { get; set; } = "";
+    public string City { get; set; } = "";
+}
+```
+<sup><a href='/src/Design/Design.Domain/FactoryOperations/RemoteBoundary.cs#L269-L353' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-both-roles' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
 ## Related
 
 - [Collections](collections.md) - Child entity collections

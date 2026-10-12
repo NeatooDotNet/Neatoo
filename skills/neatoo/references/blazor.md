@@ -285,6 +285,303 @@ Keep EF Core out of the client by splitting data access into two projects: a **D
 
 The server registers the Ef implementations against the Dal interfaces; the client registers none, so a `[Service]` repository parameter resolves only on the server. The domain's `[Remote]` operations and `[Remote, Execute]` commands are the only paths from the client to that code.
 
+## The Save Handler
+
+There is no validate step. The handler waits for any async rule, asks the entity whether it is savable, saves, and holds the returned instance.
+
+<!-- snippet: skill-save-handler -->
+<a id='snippet-skill-save-handler'></a>
+```cs
+/// <summary>
+/// ViewModel for the Order edit screen: holds the aggregate, saves it.
+/// </summary>
+internal sealed class OrderEditViewModel
+{
+    private readonly IOrderFactory _orderFactory;
+    private readonly IOrderItemFactory _itemFactory;
+
+    public OrderEditViewModel(IOrderFactory orderFactory, IOrderItemFactory itemFactory)
+    {
+        _orderFactory = orderFactory;
+        _itemFactory = itemFactory;
+    }
+
+    /// <summary>The aggregate the page binds to. Null until loaded or created.</summary>
+    public IOrder? Order { get; private set; }
+
+    public async Task New()
+    {
+        Order = await _orderFactory.Create();
+    }
+
+    public async Task Load(Guid id)
+    {
+        Order = await _orderFactory.Fetch(id);
+    }
+
+    public void AddItem()
+    {
+        Order?.Items?.Add(_itemFactory.Create());
+    }
+
+    /// <summary>
+    /// The Save button binds to this: enabled only when the entity says it
+    /// can be saved. No separate validity check lives in the UI.
+    /// </summary>
+    public bool CanSave => Order?.IsSavable ?? false;
+
+    /// <summary>
+    /// The save handler. Waits for any async rule still running, then lets the
+    /// entity decide; the messages for a refused save are already on the entity.
+    /// </summary>
+    public async Task Save()
+    {
+        if (Order is null)
+        {
+            return;
+        }
+
+        await Order.WaitForTasks();
+
+        if (!Order.IsSavable)
+        {
+            return;  // invalid, or nothing changed; the summary shows why
+        }
+
+        Order = (IOrder)await Order.Save();  // reassign: Save returns a new instance
+    }
+}
+```
+<sup><a href='/src/Design/Design.App/ViewModels/OrderEditViewModel.cs#L31-L91' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-handler' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+## A ViewModel Over a Live Aggregate
+
+The ViewModel holds the aggregate, exposes its verbs and saves. The page binds to the aggregate's business facts. The one thing the ViewModel may add is a screen's own name for a fact, mapped one-to-one.
+
+<!-- snippet: skill-viewmodel-over-aggregate -->
+<a id='snippet-skill-viewmodel-over-aggregate'></a>
+```cs
+/// <summary>
+/// ViewModel for the WorkOrder screen: holds the aggregate; the page binds to
+/// the aggregate's facts and this class's one screen-named mapping.
+/// </summary>
+internal sealed class WorkOrderViewModel
+{
+    private readonly IWorkOrderFactory _workOrderFactory;
+    private readonly IWorkOrderTaskFactory _taskFactory;
+
+    public WorkOrderViewModel(IWorkOrderFactory workOrderFactory, IWorkOrderTaskFactory taskFactory)
+    {
+        _workOrderFactory = workOrderFactory;
+        _taskFactory = taskFactory;
+    }
+
+    /// <summary>The aggregate the page binds to. Null until loaded or created.</summary>
+    public IWorkOrder? WorkOrder { get; private set; }
+
+    public async Task New()
+    {
+        WorkOrder = await _workOrderFactory.Create();
+    }
+
+    public async Task Load(Guid id)
+    {
+        WorkOrder = await _workOrderFactory.Fetch(id);
+    }
+
+    public void AddTask(string name)
+    {
+        if (WorkOrder?.Tasks is null)
+        {
+            return;
+        }
+
+        // Count + 1 is an input default for the new task's position, which the
+        // user may change; the task's own rule validates uniqueness. Not a decision.
+        WorkOrder.Tasks.Add(_taskFactory.Create(name, WorkOrder.Tasks.Count + 1));
+    }
+
+    /// <summary>
+    /// This screen's name for the entity's IsHeld fact. A mapping, not a decision.
+    /// </summary>
+    public bool ShowHoldBanner => WorkOrder?.IsHeld ?? false;
+
+    /// <summary>The Approve button binds to the entity's own admission fact.</summary>
+    public bool CanApprove => WorkOrder?.CanApprove ?? false;
+
+    /// <summary>Calls the verb; the entity's rules update CanApprove and Status.</summary>
+    public void Approve(string approver)
+    {
+        WorkOrder?.Approve(approver);
+    }
+
+    public bool CanSave => WorkOrder?.IsSavable ?? false;
+
+    public async Task Save()
+    {
+        if (WorkOrder is null)
+        {
+            return;
+        }
+
+        await WorkOrder.WaitForTasks();
+
+        if (!WorkOrder.IsSavable)
+        {
+            return;
+        }
+
+        WorkOrder = (IWorkOrder)await WorkOrder.Save();
+    }
+}
+```
+<sup><a href='/src/Design/Design.App/ViewModels/WorkOrderViewModel.cs#L28-L102' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-viewmodel-over-aggregate' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-page-binds-facts -->
+<a id='snippet-skill-page-binds-facts'></a>
+```razor
+@* @key: Save returns a new instance; keying on it rebuilds the bound
+   components so each field subscribes to the new instance's wrappers. *@
+<div @key="Vm.WorkOrder">
+@* Every show/hide and enable/disable here is a business fact the
+   aggregate computed. The page has no condition of its own. *@
+@if (Vm.ShowHoldBanner)
+{
+    <MudAlert Severity="Severity.Warning" Class="mb-3">This work order is on hold.</MudAlert>
+}
+
+@if (Vm.WorkOrder.IsOverBudget)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">Over budget: @Vm.WorkOrder.Summary</MudAlert>
+}
+
+@if (Vm.WorkOrder.HasUnschedulableTasks)
+{
+    <MudAlert Severity="Severity.Info" Class="mb-3">Some tasks cannot be scheduled.</MudAlert>
+}
+
+<NeatooValidationSummary Entity="@Vm.WorkOrder" Class="mb-4" />
+
+<MudText Typo="Typo.subtitle1">Status: @Vm.WorkOrder.Status</MudText>
+
+<MudNeatooNumericField T="decimal" EntityProperty="@Vm.WorkOrder[nameof(IWorkOrder.Budget)]" Class="mb-3" />
+<MudNeatooNumericField T="decimal" EntityProperty="@Vm.WorkOrder[nameof(IWorkOrder.Discount)]" Class="mb-3" />
+<MudNeatooSwitch T="bool" EntityProperty="@Vm.WorkOrder[nameof(IWorkOrder.IsOnHold)]" Class="mb-3" />
+
+<MudText Typo="Typo.h6" Class="my-3">Tasks</MudText>
+
+@if (Vm.WorkOrder.Tasks is not null)
+{
+    @foreach (var task in Vm.WorkOrder.Tasks)
+    {
+        <MudGrid Class="mb-2" Spacing="2">
+            <MudItem xs="12" sm="5">
+                <MudNeatooTextField T="string" EntityProperty="@task[nameof(IWorkOrderTask.Name)]" />
+            </MudItem>
+            <MudItem xs="6" sm="2">
+                <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Hours)]" />
+            </MudItem>
+            <MudItem xs="6" sm="2">
+                <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Rate)]" />
+            </MudItem>
+            <MudItem xs="12" sm="3" Class="d-flex align-center">
+                <MudText>@task.Cost.ToString("C")</MudText>
+            </MudItem>
+        </MudGrid>
+    }
+}
+
+<MudButton Variant="Variant.Outlined" OnClick="@(() => Vm.AddTask("New task"))" Class="mb-3">Add Task</MudButton>
+
+<MudText Typo="Typo.subtitle1" Class="mb-3">Total: @Vm.WorkOrder.TotalCost.ToString("C")</MudText>
+
+@* The verb's button is enabled by the entity's admission fact. *@
+<MudButton Variant="Variant.Outlined"
+           Color="Color.Secondary"
+           Disabled="@(!Vm.CanApprove)"
+           OnClick="@(() => Vm.Approve("design.app"))"
+           Class="mr-2">
+    Approve
+</MudButton>
+
+<MudButton Variant="Variant.Filled"
+           Color="Color.Primary"
+           Disabled="@(!Vm.CanSave)"
+           OnClick="SaveAsync">
+    Save
+</MudButton>
+</div>
+```
+<sup><a href='/src/Design/Design.App/Pages/WorkOrderPage.razor#L20-L92' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-page-binds-facts' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+## Neatoo on Each Tier
+
+One line per tier registers Neatoo and the generated factories: Remote mode on the client, Server mode on the server. Everything else in the composition is RemoteFactory's — see the RemoteFactory skill.
+
+<!-- snippet: skill-client-composition -->
+<a id='snippet-skill-client-composition'></a>
+```cs
+/// <summary>
+/// Registers the client tier. <paramref name="baseAddress"/> is the server
+/// the generated proxies call.
+/// </summary>
+internal static IServiceCollection AddDesignClient(this IServiceCollection services, Uri baseAddress)
+{
+    // Neatoo on the client: Remote mode, the domain assembly. The generated
+    // factories are proxies; [Remote] operations cross to the server.
+    services.AddNeatooServices(NeatooFactory.Remote, typeof(IOrder).Assembly);
+
+    // The domain's DI-provided rules, registered on both tiers.
+    services.AddDesignDomainRules();
+
+    // RemoteFactory's transport (the keyed HttpClient its proxies call
+    // through): RemoteFactory's concern - see the RemoteFactory skill.
+    services.AddRemoteFactoryTransport(baseAddress);
+
+    services.AddMudServices();
+
+    // The screens' ViewModels: plain classes over a live aggregate.
+    services.AddTransient<OrderEditViewModel>();
+    services.AddTransient<WorkOrderViewModel>();
+
+    return services;
+}
+```
+<sup><a href='/src/Design/Design.App/ClientServices.cs#L27-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-client-composition' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-server-composition -->
+<a id='snippet-skill-server-composition'></a>
+```cs
+/// <summary>
+/// Registers the server tier: Neatoo in Server mode, the domain's rules,
+/// and the server-only services the domain's operations take.
+/// </summary>
+internal static IServiceCollection AddDesignServer(this IServiceCollection services)
+{
+    // Neatoo on the server: Server mode, the domain assembly. The generated
+    // factories run the operations here; this also registers what
+    // UseNeatoo() resolves. Do not add AddNeatooAspNetCore after this line -
+    // see the header (RemoteFactory#117).
+    services.AddNeatooServices(NeatooFactory.Server, typeof(IOrder).Assembly);
+
+    // The domain's DI-provided rules, registered on both tiers.
+    services.AddDesignDomainRules();
+
+    // The [Service] dependencies the operations resolve: repositories and
+    // the other server-only services. Singleton here so the in-memory rows
+    // survive across requests.
+    services.AddDesignInfrastructure();
+
+    return services;
+}
+```
+<sup><a href='/src/Design/Design.Server/ServerServices.cs#L38-L61' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-server-composition' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
 ## Related
 
 - [Validation](validation.md) - Validation rules

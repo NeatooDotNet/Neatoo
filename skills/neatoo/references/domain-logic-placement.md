@@ -861,3 +861,18 @@ public async Task ChildRule_ReadsRootStateThroughParent_AndTheRootRerunsItWhenTh
 <!-- endSnippet -->
 
 If the logic lived in a `.razor` file, this test would be impossible.
+
+## A Verb
+
+A verb sets state and never persists; the rule its trigger names runs at once. No `RunRules`, no guard, no throw.
+
+<!-- snippet: skill-verb-submit -->
+<a id='snippet-skill-verb-submit'></a>
+```cs
+public void Submit()
+{
+    Status = "Submitted";
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L308-L313' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-verb-submit' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->

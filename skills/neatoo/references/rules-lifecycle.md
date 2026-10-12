@@ -187,6 +187,56 @@ public void Gotcha4_PausedPropertyChanges_DoNotTriggerRules()
 <sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L177-L196' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-pause-all-actions' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+## A Fetch That Computes What It Needs
+
+Both shapes in one operation: child aggregates loaded from the row; the root's own derived values recomputed by trigger-named `RunRules`, never `All` from a root whose rules write children.
+
+<!-- snippet: skill-fetch-computes-derived -->
+<a id='snippet-skill-fetch-computes-derived'></a>
+```cs
+[Remote]
+[Fetch]
+internal async Task<bool> Fetch(Guid id,
+    [Service] IWorkOrderRepository repository,
+    [Service] IWorkOrderTaskListFactory tasksFactory)
+{
+    var row = repository.Get(id);
+    if (row == null)
+    {
+        return false;
+    }
+
+    Id = row.Id;
+    Status = row.Status;
+    ApprovedBy = row.ApprovedBy;
+    IsOnHold = row.IsOnHold;
+    Budget = row.Budget;
+    Discount = row.Discount;
+    TotalCost = row.TotalCost;
+    HasUnschedulableTasks = row.HasUnschedulableTasks;
+
+    Tasks = tasksFactory.Fetch(row.Tasks);
+
+    // Rules do not fire during an operation, so this one computes what it
+    // needs. Two shapes, both used here:
+    //  - Aggregates over the children (TotalCost, HasUnschedulableTasks) are
+    //    persisted and loaded, as the tasks load Cost and IsSchedulable and
+    //    OrderItem loads LineTotal.
+    //  - The root's own derived values (CanApprove, IsHeld, IsOverBudget,
+    //    Summary) are recomputed by running the rules that write THIS
+    //    object, named by their trigger. Not RunRulesFlag.All: the tasks
+    //    finished their own [Fetch] and are no longer paused, so a root rule
+    //    that changed one of their values would mark it modified and the graph
+    //    would report IsModified == true.
+    // Neither is a validate step; persisted data is assumed valid.
+    await RunRules(nameof(Status));
+    await RunRules(nameof(Budget));
+    return true;
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L153-L193' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fetch-computes-derived' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
 ## Related
 
 - [validation.md](validation.md) — Rule types (AddAction, AddValidation, AddActionAsync, class-based rules)
