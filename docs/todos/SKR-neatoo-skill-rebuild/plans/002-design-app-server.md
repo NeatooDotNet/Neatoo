@@ -4,8 +4,8 @@
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-4, AC-1 (AC-4 as narrowed 2026-10-11: Neatoo-owned composition only)
-**Status:** In Progress
-**Last Updated:** 2026-10-11 (plan review round 2 APPROVED; implementation started)
+**Status:** Done
+**Last Updated:** 2026-10-11 (implemented; test review CLEAN round 2, code review CLEAN round 2)
 **Plan-review opt-in:** Yes — two new projects in CI, the first Blazor code in the example set, and a composition the skill will tell people to copy
 **Code-review opt-in:** Yes — examples are what gets copied
 **Branch:** skr-002-design-app-server — cut from the arc at Step 2
@@ -78,14 +78,14 @@ The RemoteFactory-owned half of the composition — the endpoint, `UseNeatoo`, t
 
 ## Acceptance
 
-- [ ] Through the client/server pair, an `IOrder` fetched on the client, modified and saved crosses to the server composition, is serialized both ways, and lands in Design.Infrastructure's store `[integration]` · Must
-- [ ] The client composition runs in Remote mode: the same `[Remote]` call observed above leaves the client container through the keyed `HttpClient` (the forwarding handler sees it), which only a Remote-mode seam does; a Server-mode seam would take the local path and fail (it cannot resolve the repository on the client, and `Calls` stays 0) `[integration]` · Must
-- [ ] The save handler, run through the pair, saves a savable order and holds the server's returned instance afterwards (not the one it sent); given an invalid order it does not call `Save()` and leaves the messages on the entity; it calls no `RunRules` `[integration]` · Must
-- [ ] The WorkOrder ViewModel's approve action and the facts the page binds to (`CanApprove`, `IsHeld`, `IsOverBudget`, `HasUnschedulableTasks`) follow the aggregate's rules: changing the aggregate changes what the ViewModel exposes, with no logic in the ViewModel deciding it `[integration]` · Must
-- [ ] No property on `WorkOrder` is named for a screen element; `WorkOrderAggregateTests` keeps every assertion under the renamed fact `[explicit-skip: rename, verified by grep and the unchanged test count]` · Must
-- [ ] Design.App's pages compile in `Design.sln` `[explicit-skip: no bUnit; pinned by the build]` · Must
-- [ ] Every new Neatoo-owned shape has a `skill-*` region and `dotnet mdsnippets` reports no duplicate or missing regions `[explicit-skip: tooling]` · Must
-- [ ] `Design.sln` builds with 0 errors and 0 warnings and every Design.Tests test passes, locally and in the CI steps that already build and test `Design.sln` `[explicit-skip: meta-bullet]` · Must
+- [x] Through the client/server pair, an `IOrder` fetched on the client, modified and saved crosses to the server composition, is serialized both ways, and lands in Design.Infrastructure's store `[integration]` · Must
+- [x] The client composition runs in Remote mode: the same `[Remote]` call observed above leaves the client container through the keyed `HttpClient` (the forwarding handler sees it), which only a Remote-mode seam does; a Server-mode seam would take the local path and fail (it cannot resolve the repository on the client, and `Calls` stays 0) `[integration]` · Must
+- [x] The save handler, run through the pair, saves a savable order and holds the server's returned instance afterwards (not the one it sent); given an invalid order it does not call `Save()` and leaves the messages on the entity; it calls no `RunRules` `[integration]` · Must
+- [x] The WorkOrder ViewModel's approve action and the facts the page binds to (`CanApprove`, `IsHeld`, `IsOverBudget`, `HasUnschedulableTasks`) follow the aggregate's rules: changing the aggregate changes what the ViewModel exposes, with no logic in the ViewModel deciding it `[integration]` · Must
+- [x] No property on `WorkOrder` is named for a screen element; `WorkOrderAggregateTests` keeps every assertion under the renamed fact `[explicit-skip: rename, verified by grep and the unchanged test count]` · Must
+- [x] Design.App's pages compile in `Design.sln` `[explicit-skip: no bUnit; pinned by the build]` · Must
+- [x] Every new Neatoo-owned shape has a `skill-*` region and `dotnet mdsnippets` reports no duplicate or missing regions `[explicit-skip: tooling]` · Must
+- [x] `Design.sln` builds with 0 errors and 0 warnings and every Design.Tests test passes, locally and in the CI steps that already build and test `Design.sln` `[explicit-skip: meta-bullet]` · Must
 
 ---
 
@@ -127,7 +127,11 @@ Walked 2026-10-11.
 
 ## Gate Record
 
--
+- **2026-10-11, round 1 — test-reviewer: CONCERNS** (`reviews/002-test-review.md`). Two Must-cover: the round-trip test never ran `[Update]` through the pair; `HasUnschedulableTasks` untested on the client scope (map overstated the over-budget test). Two Should-cover: WorkOrder never through the pair; `OrderEditViewModel.Load`. All four fixed the same day (`b4250f6`, 196 tests); map wording corrected (`d5d5fcc`).
+- **2026-10-11, round 2 — test-reviewer: CLEAN.** Both Musts closed against fresh logs; sacred tests intact (two-line rename only).
+- **2026-10-11, round 1 — code-reviewer: CONCERNS** (`reviews/002-code-review.md`). Veto: the keyed `HttpClient` sat inside `skill-client-composition` (AC-4 "pointed at, not restated") — moved below the region. Five Must callouts: stale page subscription after Save (fixed: `SaveAsync` + `@key`); `AddTask` sequence defaulting (dismissed as input defaulting, commented); double-click Save inserts twice (accepted → AC-7 punchlist row); unsynchronized singleton stores (accepted, header note); missing `ErrorBoundary` (fixed). `2f4fb12`.
+- **2026-10-11, round 2 — code-reviewer: CLEAN.** Veto and callout 1 confirmed resolved. One new non-blocking callout — `ErrorBoundary` never `Recover()`ed — fixed inline; build 0/0, 196 tests, logs refreshed.
+- **Closing bar:** all eight Acceptance bullets Must and pinned; no gaps accepted. Gate closed after round 2 of each.
 
 ---
 
