@@ -51,3 +51,22 @@ Beyond the brief: `design-snippets.md`; `TestInfrastructure.cs` (`MockWorkOrderR
 ### Orchestrator note
 
 While this review was in flight the user corrected the plan's reading of D18: "You asked about adding a runrules at the end of every fetch and I said no. When did I say you cannot use RunRules in fetch?" and, of `WorkOrder.Fetch`'s targeted re-run, "That's a great case to use runrules." The plan was re-drafted around that (Amendments, 2026-10-11 second entry); D18's row and T10 were clarified; the memory note records the over-correction. Round 2 reviews the re-draft.
+
+---
+
+## Round 2 — 2026-10-11 (re-drafted plan at `176fa17`)
+
+**Verdict: APPROVED** (no veto-tier; two callouts; one routing note outside the plan)
+
+- (a) D18 as clarified is applied without swinging to a ban or a prescription: `RunRules` kept in `WorkOrder.Create`/`Fetch` and `CreateWithRunRules`; the answer framed as "what does this operation need?" with two ways to supply it; prose removal narrowed to the blanket step and the validate step; D6 untouched.
+- (b) `HasUnschedulableTasks`: neither option risks #98. `RunRules(string)` matches a trigger path exactly (`RuleManager.cs:607-619`, `TriggerProperty.cs:86-88`); `RecurseMembers` drops the indexer so `t => t.Tasks![0].IsSchedulable` is `"Tasks.IsSchedulable"` — undocumented, and a wrong string matches nothing silently. Persisting in the row like `TotalCost` is symmetric (Insert computes at the gate before `MapTo`; Update's `IsSelfModified` still fires). Advisory pick: persist. **Taken.**
+- (c) No sacred-test concern left. (d) "Stated where it applies" is sound.
+
+**Callouts (Must, AC-5)**
+1. **`skill-run-rules-forces` still renders the habit's shape** (`CommonGotchaTests.cs:52-69`: caller-side `entity.RunRules(All)` after Create "so Total is calculated" — T10 word for word, computed outside the operation) into five placeholders. **Amended:** those placeholders switch to the `CreateWithRunRules` region; the test stays, unrendered.
+2. **Bullet 2 worded so option 1 would fail it.** **Amended:** reworded to "runs only rules that write the root itself"; option 2 settled.
+- Minor: `IsOverBudget` triggers are `TotalCost` and `Budget` (`WorkOrder.cs:82-85`). **Fixed.**
+
+**Outside this plan (routed to the todo punchlist):** Design.App's Order page is where the rare validate case comes up for real — `Order.Create` leaves its two `[Required]` fields unset and `OrderEditViewModel.New()` runs no rules, so an empty form is `IsSavable` (`IsNew`, `IsValid` with no rule run) and New → Save reaches the `[Insert]` gate, which throws into the page's `ErrorBoundary`. The compiled example sits beside the Blazor prose that describes exactly this and does not follow it. AC-4 / SKR-002's shipped work.
+
+Read beyond the brief: `RuleManager.cs:600-640`, `TriggerProperty.cs:70-130`, `ValidateBase.cs:387`.

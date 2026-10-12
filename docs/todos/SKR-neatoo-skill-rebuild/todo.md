@@ -93,6 +93,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - [ ] Close #98 as moot under D18 · GitHub · done when closed with a comment naming D18 · AC-5 · Must — pulled onto SKR-003 (2026-10-11)
 - [ ] mudneatoo block count corrected in the audit README (49, not 14) · `docs/todos/consistency-audit/README.md` · done when the line reads 49 · AC-6 · Should
 - [ ] Framework pain for the skill: `Save()` does not mark the entity busy, so a double-click on Save sends two Inserts (the sent instance stays `IsSavable` until the result is reassigned) · `skills/neatoo` pain list (plan 004/005) · done when the skill names it with Neatoo#103 (critical, filed 2026-10-11) · AC-7 · Should (SKR-002 code review callout 3)
+- [ ] Design.App Order page: an empty `New()` form is `IsSavable` (`Order.Create` runs no rules; two `[Required]` fields unset), so New → Save hits the `[Insert]` gate and throws into the `ErrorBoundary` — the rare validate case the Blazor prose describes, unapplied in the compiled example beside it · `Order.Create` (run rules so the form shows its errors) or `OrderEditViewModel` · done when the user decides which and the example follows · AC-4 · Must (SKR-003 plan review round 2, 2026-10-11)
 
 ## Dismissed
 
