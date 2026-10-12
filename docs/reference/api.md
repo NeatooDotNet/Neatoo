@@ -152,29 +152,26 @@ public void Indexer_ExposesPropertyMetadata()
 | MarkInvalid | `protected virtual void MarkInvalid(string message)` | Framework use: sets `ObjectInvalid` when a `RunRules` call is cancelled. Not an application validation channel; validation is a rule. |
 | ObjectInvalid | `public string? ObjectInvalid { get; protected set; }` | The object-level message, or `null`. A built-in rule reports it as a property message so `IsValid` reflects it. `RunRules(RunRulesFlag.All)` does not clear it ([#96](https://github.com/NeatooDotNet/Neatoo/issues/96)). |
 
-Rules run when a property is set outside a factory operation; there is nothing to call before reading `IsValid` except `WaitForTasks()` when async rules may be in flight. `RunRules` is for forcing a re-run — most often at the end of a `[Create]` or `[Fetch]` that set inputs while the object was paused, so that computed properties populate:
+Rules run when a property is set outside a factory operation; there is nothing to call before reading `IsValid` except `WaitForTasks()` when async rules may be in flight. `RunRules` is what an operation calls for the derived values it needs, since rules do not fire while it runs — a per-operation choice, not a step every `[Create]` or `[Fetch]` ends with, and never a validate step (persisted data is assumed valid):
 
-<!-- snippet: skill-run-rules-forces -->
-<a id='snippet-skill-run-rules-forces'></a>
+<!-- snippet: skill-create-computes-what-it-needs -->
+<a id='snippet-skill-create-computes-what-it-needs'></a>
 ```cs
-[TestMethod]
-public async Task Gotcha1_RulesFireAfterCreate_WithExplicitRunRules()
+/// <summary>
+/// RIGHT WAY: this operation needs Total to be right when it returns, so
+/// it runs the rules that compute it. RunRules has no IsPaused guard.
+/// A per-operation choice, not a step every operation ends with.
+/// </summary>
+[Create]
+public async Task CreateWithRunRules()
 {
-    // Arrange
-    var factory = _scope.GetRequiredService<IGotcha1DemoFactory>();
-
-    // Act
-    var entity = factory.Create();
-
-    // RunRules works even after factory (IsPaused is now false)
-    await entity.RunRules(RunRulesFlag.All);
-
-    // Assert - Now the rule has run
-    Assert.AreEqual(50.00m, entity.Total, "Total should be calculated after RunRules");
-    Assert.IsTrue(entity.RuleHasRun, "Rule should have run after explicit RunRules call");
+    Quantity = 10;
+    Price = 5.00m;
+    await RunRules(RunRulesFlag.All);  // no children here, so All is safe
+    // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L52-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-run-rules-forces' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L108-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Rules are declared in the constructor through `RuleManager`. Validation attributes become rules on construction; `AddValidation` attaches its message to the single trigger property:

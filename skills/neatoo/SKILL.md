@@ -721,28 +721,29 @@ Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
 
 Inside the operation, assign properties directly. The assignment is a clean baseline load: nothing is marked modified. Do not use `LoadValue`, `PauseAllActions` or `MarkUnmodified` there.
 
-**`RunRules` works while paused** — it has no `IsPaused` guard. Call `await RunRules(RunRulesFlag.All)` at the end of any factory method that sets properties with dependent `AddAction` rules:
+**`RunRules` works while paused** — it has no `IsPaused` guard. An operation that needs a derived value right when it returns runs the rules that compute it (or loads it from the row). A per-operation choice, not a step every factory method ends with:
 
-<!-- snippet: skill-create-run-rules -->
-<a id='snippet-skill-create-run-rules'></a>
+<!-- snippet: skill-create-computes-what-it-needs -->
+<a id='snippet-skill-create-computes-what-it-needs'></a>
 ```cs
 /// <summary>
-/// RIGHT WAY: Call RunRules at end of factory method.
-/// RunRules works even while paused — no IsPaused guard.
+/// RIGHT WAY: this operation needs Total to be right when it returns, so
+/// it runs the rules that compute it. RunRules has no IsPaused guard.
+/// A per-operation choice, not a step every operation ends with.
 /// </summary>
 [Create]
 public async Task CreateWithRunRules()
 {
     Quantity = 10;
     Price = 5.00m;
-    await RunRules(RunRulesFlag.All);  // Forces all rules to execute
+    await RunRules(RunRulesFlag.All);  // no children here, so All is safe
     // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L97-L110' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L108-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Without this call, computed properties remain at their default values when the entity reaches the client. See `references/rules-lifecycle.md` for the complete execution lifecycle, `RunRulesFlag` enum reference, and the factory method timeline.
+Without it, a computed property the operation did not load stays at its default when the entity reaches the client. A `[Fetch]` loads persisted data, assumed valid, and recomputes only what it is not loading — with `RunRules(nameof(X))` for the rules that write the root, never `All` from a root whose rules write children (they are no longer paused and would be marked modified). See `references/rules-lifecycle.md` for the lifecycle, the `RunRulesFlag` reference and the factory method timeline.
 
 ### Child Property Triggers — Parent Reacts to Child Changes
 

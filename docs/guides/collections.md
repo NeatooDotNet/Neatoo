@@ -436,7 +436,7 @@ The collection uses cached meta properties with incremental updates:
 - When a child becomes valid and collection is invalid, checks if any other child is still invalid (O(k) where k = first invalid)
 - Same algorithm applies to IsBusy state
 
-`RunRules()` on a list runs every item's rules. It is a forced re-run — for example after a `[Create]` that set values while the object was paused, when no rule has evaluated the data yet — not a routine step before reading `IsValid`:
+`RunRules()` on a list runs every item's rules. It is what an operation calls for the derived values it needs (rules do not fire while it runs), not a routine step before reading `IsValid`:
 
 <!-- snippet: skill-run-rules-after-create -->
 <a id='snippet-skill-run-rules-after-create'></a>

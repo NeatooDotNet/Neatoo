@@ -153,7 +153,7 @@ internal void Fetch(int id, [Service] IRepository repo)
 
 Do not use `LoadValue`, `PauseAllActions` or `MarkUnmodified` inside a factory operation. Wrapping the body in `using (PauseAllActions())` resumes the object early, when the `using` disposes, before the operation completes.
 
-Rules do not run while paused. A factory method that sets properties feeding a computed value calls `await RunRules(RunRulesFlag.All)` at the end of its body.
+Rules do not run while paused. An operation that needs a derived value right when it returns computes it: `RunRules` for the rules that write the object (named by trigger from a root whose rules write children — `All` there marks the just-fetched children modified, #98), or load it from the row. A per-operation choice, never a routine last line and never a validate step; persisted data is assumed valid. `WorkOrder.Fetch` shows both shapes.
 
 ### 5. Two-Generator Interaction
 

@@ -550,10 +550,10 @@ RuleManager.AddAction(
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-can-x-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The `[Create]` ends with `RunRules`, so `CanApprove` is right before the user touches anything (rules do not fire during a factory operation):
+The `[Create]` needs `CanApprove` and `Summary` right before the user touches anything, and rules do not fire during an operation, so it runs them itself (`All` is safe: a new work order has no children yet):
 
-<!-- snippet: skill-create-with-run-rules -->
-<a id='snippet-skill-create-with-run-rules'></a>
+<!-- snippet: skill-create-computes-derived -->
+<a id='snippet-skill-create-computes-derived'></a>
 ```cs
 [Create]
 public async Task Create([Service] IWorkOrderTaskListFactory tasksFactory)
@@ -562,11 +562,13 @@ public async Task Create([Service] IWorkOrderTaskListFactory tasksFactory)
     Status = "Pending";
 
     // The object is paused: the assignment above ran no rule, so CanApprove
-    // is still false. Force the rules so the new object is consistent.
+    // and Summary are still default. This operation needs them, so it runs
+    // the rules that compute them. All is safe here because the task list
+    // is empty - no finished child exists for a root rule to write.
     await RunRules(RunRulesFlag.All);
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L138-L149' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-with-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L138-L151' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-derived' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-can-x-test -->

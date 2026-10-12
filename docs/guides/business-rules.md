@@ -506,25 +506,121 @@ public async Task RuleOrder_LowerValuesRunFirst_RegardlessOfRegistrationOrder()
 <sup><a href='/src/Design/Design.Tests/RuleTests/SyncRuleTests.cs#L104-L116' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-rule-order-test' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Rules do not run during a factory operation (`[Create]`, `[Fetch]`, ...): the object is paused. A factory method that sets inputs of a computed property ends with `await RunRules(RunRulesFlag.All)`:
+Rules do not run during a factory operation (`[Create]`, `[Fetch]`, ...): the object is paused. An operation that needs a computed property right when it returns runs the rules that compute it — here `All`, safe because the object has no children. A per-operation choice, not a step every factory method ends with:
 
-<!-- snippet: skill-create-run-rules -->
-<a id='snippet-skill-create-run-rules'></a>
+<!-- snippet: skill-create-computes-what-it-needs -->
+<a id='snippet-skill-create-computes-what-it-needs'></a>
 ```cs
 /// <summary>
-/// RIGHT WAY: Call RunRules at end of factory method.
-/// RunRules works even while paused — no IsPaused guard.
+/// RIGHT WAY: this operation needs Total to be right when it returns, so
+/// it runs the rules that compute it. RunRules has no IsPaused guard.
+/// A per-operation choice, not a step every operation ends with.
 /// </summary>
 [Create]
 public async Task CreateWithRunRules()
 {
     Quantity = 10;
     Price = 5.00m;
-    await RunRules(RunRulesFlag.All);  // Forces all rules to execute
+    await RunRules(RunRulesFlag.All);  // no children here, so All is safe
     // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L97-L110' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L108-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+A `[Fetch]` is the other side of the same choice. It loads persisted data, which is assumed valid, so it never re-runs rules to validate; it computes only the derived values it is not loading. In an aggregate that has two shapes, and `WorkOrder.Fetch` uses both: aggregates over the children (`TotalCost`, `HasUnschedulableTasks`) are persisted and loaded, as the tasks load `Cost`; the root's own derived values are recomputed with `RunRules` named by trigger — never `RunRulesFlag.All` from a root whose rules write children. The children finished their own `[Fetch]` and are no longer paused, so a root rule that wrote them would mark them modified, and the fetched aggregate would report `IsModified == true` with no user work:
+
+<!-- snippet: skill-fetch-computes-derived -->
+<a id='snippet-skill-fetch-computes-derived'></a>
+```cs
+[Remote]
+[Fetch]
+internal async Task<bool> Fetch(Guid id,
+    [Service] IWorkOrderRepository repository,
+    [Service] IWorkOrderTaskListFactory tasksFactory)
+{
+    var row = repository.Get(id);
+    if (row == null)
+    {
+        return false;
+    }
+
+    Id = row.Id;
+    Status = row.Status;
+    ApprovedBy = row.ApprovedBy;
+    IsOnHold = row.IsOnHold;
+    Budget = row.Budget;
+    Discount = row.Discount;
+    TotalCost = row.TotalCost;
+    HasUnschedulableTasks = row.HasUnschedulableTasks;
+
+    Tasks = tasksFactory.Fetch(row.Tasks);
+
+    // Rules do not fire during an operation, so this one computes what it
+    // needs. Two shapes, both used here:
+    //  - Aggregates over the children (TotalCost, HasUnschedulableTasks) are
+    //    persisted and loaded, as the tasks load Cost and IsSchedulable and
+    //    OrderItem loads LineTotal.
+    //  - The root's own derived values (CanApprove, IsHeld, IsOverBudget,
+    //    Summary) are recomputed by running the rules that write THIS
+    //    object, named by their trigger. Not RunRulesFlag.All: the tasks
+    //    finished their own [Fetch] and are no longer paused, so a root rule
+    //    that wrote them would mark them modified and the fetched graph
+    //    would report IsModified == true.
+    // Neither is a validate step; persisted data is assumed valid.
+    await RunRules(nameof(Status));
+    await RunRules(nameof(Budget));
+    return true;
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L153-L193' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fetch-computes-derived' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The test that pins it: a saved-then-fetched work order with tasks is not modified and carries every derived value it had when saved.
+
+<!-- snippet: skill-fetch-computes-derived-test -->
+<a id='snippet-skill-fetch-computes-derived-test'></a>
+```cs
+[TestMethod]
+public async Task Fetch_RecomputesTheRootsDerivedValues_LoadsTheChildAggregates_AndIsNotModified()
+{
+    // Save through the aggregate so every derived value is what the rules
+    // computed: one task unschedulable (zero hours), one over budget.
+    var (order, design, build) = await CreateWithTwoTasks();
+    order.Budget = 100m;
+    order.IsOnHold = false;
+    design.Hours = 0m;            // not schedulable
+    build.Hours = 10m;
+    build.Rate = 20m;             // 200 > budget
+    await order.WaitForTasks();
+    Assert.IsTrue(order.HasUnschedulableTasks);
+    Assert.IsTrue(order.IsOverBudget);
+    order = (IWorkOrder)await order.Save();
+
+    var fetched = (await _factory.Fetch(order.Id))!;
+
+    // #98: the root recomputed only its own rules (named by trigger) and
+    // loaded the child aggregates; no finished child was written, so the
+    // fetched graph is a clean baseline.
+    Assert.IsFalse(fetched.IsModified, "a fetched aggregate is not modified");
+    Assert.IsFalse(fetched.Tasks![0].IsModified);
+
+    // The root's own derived values, recomputed by RunRules(nameof(Status)) / (nameof(Budget))
+    Assert.AreEqual(order.CanApprove, fetched.CanApprove);
+    Assert.AreEqual(order.IsHeld, fetched.IsHeld);
+    Assert.AreEqual(order.IsOverBudget, fetched.IsOverBudget);
+    Assert.AreEqual(order.Summary, fetched.Summary);
+
+    // The aggregates over the children, loaded from the row
+    Assert.AreEqual(200m, fetched.TotalCost);
+    Assert.IsTrue(fetched.HasUnschedulableTasks, "persisted like TotalCost; no rule re-run writes the children");
+
+    // The children's own derived values, loaded from their rows
+    Assert.IsFalse(fetched.Tasks[0].IsSchedulable);
+    Assert.AreEqual(200m, fetched.Tasks[1].Cost);
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/WorkOrderAggregateTests.cs#L181-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fetch-computes-derived-test' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Conditional Rules
@@ -758,7 +854,7 @@ Messages attach to the named property and display through the validation UI; the
 
 Rules fire when a property is set outside a factory operation, so the routine step before reading `IsValid` is `await WaitForTasks()`, not `RunRules`. `RunRules` forces a re-run. It is needed in two places:
 
-- **At the end of a factory method** that set inputs of computed properties — the object was paused, so nothing ran (`skill-create-run-rules` above).
+- **Inside a factory operation**, for the derived values that operation needs — the object is paused, so nothing ran (`skill-create-computes-what-it-needs` above). Named by trigger from a root whose rules write children (`RunRules(nameof(Status))` in `WorkOrder.Fetch`), never `All` there; or the value is loaded from the row. Not a routine last line: persisted data is assumed valid.
 - **On the server, before a write.** The root's `[Insert]`/`[Update]` re-run every rule and refuse an invalid aggregate; this is the one validation gate in a factory method:
 
 <!-- snippet: skill-root-insert -->
@@ -796,27 +892,24 @@ internal async Task Insert([Service] IOrderRepository repository,
 
 Forcing a run after `Create`:
 
-<!-- snippet: skill-run-rules-forces -->
-<a id='snippet-skill-run-rules-forces'></a>
+<!-- snippet: skill-create-computes-what-it-needs -->
+<a id='snippet-skill-create-computes-what-it-needs'></a>
 ```cs
-[TestMethod]
-public async Task Gotcha1_RulesFireAfterCreate_WithExplicitRunRules()
+/// <summary>
+/// RIGHT WAY: this operation needs Total to be right when it returns, so
+/// it runs the rules that compute it. RunRules has no IsPaused guard.
+/// A per-operation choice, not a step every operation ends with.
+/// </summary>
+[Create]
+public async Task CreateWithRunRules()
 {
-    // Arrange
-    var factory = _scope.GetRequiredService<IGotcha1DemoFactory>();
-
-    // Act
-    var entity = factory.Create();
-
-    // RunRules works even after factory (IsPaused is now false)
-    await entity.RunRules(RunRulesFlag.All);
-
-    // Assert - Now the rule has run
-    Assert.AreEqual(50.00m, entity.Total, "Total should be calculated after RunRules");
-    Assert.IsTrue(entity.RuleHasRun, "Rule should have run after explicit RunRules call");
+    Quantity = 10;
+    Price = 5.00m;
+    await RunRules(RunRulesFlag.All);  // no children here, so All is safe
+    // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L52-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-run-rules-forces' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L108-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `RunRulesFlag` enum selects which rules run:

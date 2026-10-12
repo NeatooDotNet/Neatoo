@@ -147,7 +147,7 @@ public void Indexer_ExposesPropertyMetadata()
 
 ## Form Submission
 
-A `[Create]` runs paused, so a freshly created entity reports `IsValid == true` until a rule runs — a Save button bound to `IsSavable` is enabled on an empty form. A `[Create]` that must not hand back an unvalidated object calls `RunRules()` at the end; otherwise the page calls it once after `Create`. After that, each committed field runs its own rules, and the Save handler calls `WaitForTasks()` and checks `IsSavable` before saving:
+A `[Create]` runs paused, so a freshly created entity reports `IsValid == true` until a rule runs — a Save button bound to `IsSavable` is enabled on an empty form. This is the rare case where running the rules to *validate* a returned object is right, and it is the `[Create]`'s own decision: a `[Create]` that must not hand back an unvalidated form calls `RunRules()` before returning, so the empty required fields show their messages and `IsSavable` is false until they are filled. It is a choice made for that operation, never a step every operation ends with. After that, each committed field runs its own rules, and the Save handler calls `WaitForTasks()` and checks `IsSavable` before saving:
 
 <!-- snippet: skill-run-rules-after-create -->
 <a id='snippet-skill-run-rules-after-create'></a>
