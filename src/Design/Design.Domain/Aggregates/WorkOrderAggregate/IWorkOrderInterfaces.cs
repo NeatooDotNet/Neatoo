@@ -24,7 +24,7 @@ public interface IWorkOrder : IEntityRoot
     decimal TotalCost { get; }
     bool IsOverBudget { get; }
     bool CanApprove { get; }
-    bool ShowHoldBanner { get; }
+    bool IsHeld { get; }
     bool HasUnschedulableTasks { get; }
     string? Summary { get; }
     IWorkOrderTaskList? Tasks { get; }

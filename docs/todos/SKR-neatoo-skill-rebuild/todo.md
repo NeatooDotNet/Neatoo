@@ -5,7 +5,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-10-09
-**Last Updated:** 2026-10-10 (SKR-001 Done, PR #101)
+**Last Updated:** 2026-10-11 (SKR-002 Done, PR #102)
 **Initial split:** 7 plans
 **Plan cap:** 11
 **Arc branch:** skr-arc
@@ -21,7 +21,7 @@ Someone building zCRM, human or Claude, opens `skills/neatoo` and can decide thr
 - [ ] **AC-1** · Must — `SKILL.md` leads with the model, then answers every row of the habit-trap table at its decision point, with the type, operation, tier and placement decisions and the UI contract consistent with D1–D19.
 - [ ] **AC-2** · Must — Every C# block in `skills/neatoo` comes from a compiled `src/Design` region, except blocks labelled WRONG.
 - [ ] **AC-3** · Must — Design.Domain has a tested example of each Neatoo-owned type choice: aggregate, input model, read model, an entity reused by a job, and a rule that takes an interface-factory domain service.
-- [ ] **AC-4** · Must — Design.App and Design.Server build and test in CI and supply the tier-composition snippets.
+- [ ] **AC-4** · Must — Design.App and Design.Server build and test in CI and supply the Neatoo-owned tier-composition snippets (`AddNeatooServices` per tier, MudNeatoo, the UI contract); the RemoteFactory half is pointed at, not restated (user, 2026-10-11).
 - [ ] **AC-5** · Must — No skill, doc or Design.Domain text teaches running rules at the end of `[Create]` or `[Fetch]` as a routine step.
 - [ ] **AC-6** · Should — mudneatoo's Blazor blocks come from Design.App.
 - [ ] **AC-7** · Should — The skill names each known framework pain with its issue or analyzer.
@@ -67,7 +67,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - Restructuring the user docs beyond the D18 edits AC-5 requires.
 - Fixing MudNeatoo components or adding bUnit coverage beyond what AC-6's snippets need.
 - Removing Neatoo's lazy-load surface (D24: `lazy-loading.md`, `LazyLoadProperty.cs`, Person's phone list, mudneatoo's `EntityLazyLoad`, #97): its own todo once RemoteFactory ships the removal. SKR builds nothing new on LazyLoad and copies none of it into the rebuilt skill.
-- Moving the RemoteFactory pin from 1.9.0 to 1.10.1 (D8): its own task, with a full build and test.
+- Moving the RemoteFactory pin from 1.9.0 to 1.10.2 (D8; 1.10.2 listed 2026-10-11 with the #113 fix): its own task, with a full build and test. That task also withdraws "`[Execute]` must return `Task<T>`" (`ApproveEmployee.cs:50,170`, rendered into `references/base-classes.md`): from 1.10.2 a static `[Execute]` returns `Task` with no result or `Task<T>` with one, never `void`.
 
 ---
 
@@ -76,7 +76,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 | # | File | Title (≤ 8 words) | Serves | Status | PR |
 |---|------|-------|--------|--------|----|
 | 001 | [001-type-choice-examples](./plans/001-type-choice-examples.md) | Design.Domain example per Neatoo type choice | AC-3 | Done | #101 |
-| 002 | [002-design-app-server](./plans/002-design-app-server.md) | Design.App and Design.Server in CI | AC-4, AC-1 | Draft | — |
+| 002 | [002-design-app-server](./plans/002-design-app-server.md) | Design.App and Design.Server in CI | AC-4, AC-1 | Done | #102 |
 | 003 | [003-no-end-of-operation-runrules](./plans/003-no-end-of-operation-runrules.md) | Stop teaching end-of-operation RunRules | AC-5 | Draft | — |
 | 004 | [004-skill-model-and-decisions](./plans/004-skill-model-and-decisions.md) | SKILL.md: model, habit traps, decisions, UI contract | AC-1, AC-2, AC-10 | Draft | — |
 | 005 | [005-references-as-mechanism](./plans/005-references-as-mechanism.md) | References reorganized as mechanism | AC-1, AC-2, AC-7 | Draft | — |
@@ -92,6 +92,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - [ ] `CLAUDE-DESIGN.md:77,87` and `README.md:24` stop calling `ValidateBase` a value object (D17) · `src/Design/CLAUDE-DESIGN.md`, `README.md` · done when grep for "value object" near `ValidateBase` is empty · AC-3 · Must
 - [ ] Close #98 as moot under D18 · GitHub · done when closed with a comment naming D18 · AC-5 · Must
 - [ ] mudneatoo block count corrected in the audit README (49, not 14) · `docs/todos/consistency-audit/README.md` · done when the line reads 49 · AC-6 · Should
+- [ ] Framework pain for the skill: `Save()` does not mark the entity busy, so a double-click on Save sends two Inserts (the sent instance stays `IsSavable` until the result is reassigned) · `skills/neatoo` pain list (plan 004/005), issue to file on Neatoo · done when the skill names it with its issue · AC-7 · Should (SKR-002 code review callout 3, 2026-10-11)
 
 ## Dismissed
 
@@ -106,6 +107,18 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - **Decision:** Re-split (Goal revised with the user)
 - **Index changes:** AC-1 reworded; AC-9, AC-10 added; habit-trap table added as rubric; 002, 004, 007 scopes amended. Cap unchanged, 7 of 11 issued.
 - **Follow-up:** SKR-004, SKR-007
+
+### 2026-10-11 — SKR-002 · serves AC-4
+- **Finding:** RemoteFactory's own `src/Design` (`Design.Client.Blazor`, `Design.Server`, `DesignServerCompositionTests`) already demonstrates and tests the endpoint, `UseNeatoo`, the keyed `HttpClient` and the `IsServerRuntime` trim switch. Restating them in Neatoo regions would duplicate and drift.
+- **Decision:** Amend (user: Neatoo parts only; assume both skills are loaded together)
+- **Index changes:** AC-4 narrowed to the Neatoo-owned composition; 002 regions only `AddNeatooServices` per tier, MudNeatoo, the save handler and the WorkOrder ViewModel/page. Cap unchanged, 7 of 11 issued.
+- **Follow-up:** SKR-002
+
+### 2026-10-11 — SKR-002 plan review · serves AC-4, AC-1
+- **Finding:** (1) `WorkOrder.ShowHoldBanner` is the D16/N5 screen-element smell inside the example set's own region, and the T8 page was about to bind it. (2) `AddNeatooServices(Server)` followed by RemoteFactory's `AddNeatooAspNetCore` drops Neatoo.dll from `IServiceAssemblies` and undoes Neatoo's converter override, so every remote Save fails on the server; the natural order with both skills loaded. (3) Design.Server's `[Service]` implementations had no home.
+- **Decision:** Amend. Rename to `IsHeld`; Design.Server uses `AddNeatooServices(Server)` + `UseNeatoo()` and states why; RemoteFactory#117 filed; in-memory implementations go in Design.Infrastructure (user, all three, 2026-10-11). Tests run through a client/server pair so serialization is exercised.
+- **Index changes:** none. Cap unchanged, 7 of 11 issued.
+- **Follow-up:** SKR-002; the mudneatoo and docs prose that teach `ShowHoldBanner` re-render under 002.
 
 ### 2026-10-09 — SKR-001 · serves AC-3
 - **Finding:** Three of plan 001's four shapes (context, class-level `[Execute]`, interface factory) are RemoteFactory doctrine; building them in Design.Domain would duplicate the RF skill and drift.

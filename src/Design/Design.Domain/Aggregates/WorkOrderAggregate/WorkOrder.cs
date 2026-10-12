@@ -37,7 +37,7 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
     public partial decimal TotalCost { get; private set; }
     public partial bool IsOverBudget { get; private set; }
     public partial bool CanApprove { get; private set; }
-    public partial bool ShowHoldBanner { get; private set; }
+    public partial bool IsHeld { get; private set; }
     public partial bool HasUnschedulableTasks { get; private set; }
     public partial string? Summary { get; private set; }
 
@@ -53,10 +53,12 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
             t => t.Status);
         #endregion
 
-        #region skill-visibility-rules
-        // A show/hide decision is domain state. The UI binds @if (ShowHoldBanner).
+        #region skill-derived-facts
+        // A business fact derived from two others. The UI binds to it (for
+        // example @if (workOrder.IsHeld) around a banner) and decides nothing;
+        // the entity never names a screen element (no "ShowHoldBanner").
         RuleManager.AddAction(
-            t => t.ShowHoldBanner = t.IsOnHold && t.Status != "Closed",
+            t => t.IsHeld = t.IsOnHold && t.Status != "Closed",
             t => t.IsOnHold,
             t => t.Status);
 
@@ -168,7 +170,7 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
 
         Tasks = tasksFactory.Fetch(row.Tasks);
 
-        // The root's own derived values (CanApprove, ShowHoldBanner, IsOverBudget,
+        // The root's own derived values (CanApprove, IsHeld, IsOverBudget,
         // Summary) are not persisted: re-run the rules that compute them. Only
         // rules that write THIS object - the tasks finished their own [Fetch]
         // and are no longer paused, so a rule that wrote them would mark them

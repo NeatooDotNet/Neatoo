@@ -20,6 +20,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Design.Domain\Design.Domain.csproj" />
     <ProjectReference Include="..\Design.Infrastructure\Design.Infrastructure.csproj" />
+    <ProjectReference Include="..\Design.App\Design.App.csproj" />
+    <ProjectReference Include="..\Design.Server\Design.Server.csproj" />
   </ItemGroup>
 
 </Project>

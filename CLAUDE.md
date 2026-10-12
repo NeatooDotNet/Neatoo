@@ -32,7 +32,9 @@ The Neatoo Solution is at src/Neatoo.sln
 | `Neatoo.UnitTest` | Main test project (Unit/, Integration/) |
 | `Neatoo.UnitTest.Demo` | Demo tests |
 | `Design.Domain` | Authoritative API design reference (heavily commented) |
-| `Design.Infrastructure` | Empty project; repository interfaces live in Design.Domain beside their aggregates |
+| `Design.Infrastructure` | In-memory implementations of the `[Service]` interfaces Design.Domain declares beside its aggregates; Design.Server registers them |
+| `Design.App` | Blazor WebAssembly client over Design.Domain (MudBlazor, MudNeatoo): the client composition, the save handler, ViewModels over live aggregates, the pages |
+| `Design.Server` | ASP.NET Core host for Design.App and the RemoteFactory endpoint: the server composition |
 | `Design.Tests` | Tests verifying design patterns |
 | `Examples/Person/*` | Full example application (App, DomainModel, Ef, Server) |
 
@@ -171,7 +173,7 @@ Neatoo depends on **RemoteFactory** for source generation of factory methods. Ne
 
 ## Documentation and Project Management
 
-- **Framework documentation**: Use `/docs-create`, `/docs-update`, or `/docs-review` commands (powered by `docs-writer` agent) for creating and maintaining user-facing docs with MarkdownSnippets. Every code snippet comes from `#region` blocks in `src/Design/` (Design.Domain and Design.Tests), the one canonical example set.
+- **Framework documentation**: Use `/docs-create`, `/docs-update`, or `/docs-review` commands (powered by `docs-writer` agent) for creating and maintaining user-facing docs with MarkdownSnippets. Every code snippet comes from `#region` blocks (or Razor `@* begin-snippet *@` comments) in `src/Design/`, the one canonical example set.
 - **Project todos/plans**: Use the `/iterative-todo` skill for tracking work and design documents
 - **DDD terminology**: See global CLAUDE.md for DDD documentation guidelines
 
@@ -180,7 +182,9 @@ Neatoo depends on **RemoteFactory** for source generation of factory methods. Ne
 The `src/Design/` directory contains the **authoritative reference** for Neatoo's API design:
 
 - **Design.Domain** - Heavily-commented demonstrations of all base classes, factory operations, properties, and rules
-- **Design.Infrastructure** - Empty project; repository interfaces live in Design.Domain
+- **Design.Infrastructure** - In-memory implementations of the `[Service]` interfaces (declared in Design.Domain beside their aggregates), for Design.Server
+- **Design.App** - Blazor WebAssembly client: client composition (`ClientServices.cs`), save handler and ViewModels (`ViewModels/`), pages (`Pages/`)
+- **Design.Server** - ASP.NET Core host: server composition (`ServerServices.cs`) and why it does not call `AddNeatooAspNetCore` (RemoteFactory#117)
 - **Design.Tests** - Tests verifying documented patterns
 
 When learning about Neatoo concepts, **read Design.Domain files first**. They contain:
@@ -203,5 +207,9 @@ When learning about Neatoo concepts, **read Design.Domain files first**. They co
 - Common gotchas: `Design.Domain/CommonGotchas.cs`
 - Entities (standalone): `Design.Domain/Entities/`
 - Read models: `Design.Domain/ReadModels/`
+- Jobs over entities: `Design.Domain/Jobs/`
+- Domain services and the rule that takes one: `Design.Domain/Services/`, `Design.Domain/Rules/DomainServiceRule.cs`
+- Tier composition: `Design.App/ClientServices.cs`, `Design.Server/ServerServices.cs`
+- UI contract (save handler, ViewModel over an aggregate): `Design.App/ViewModels/`
 
 See `src/Design/CLAUDE-DESIGN.md` for detailed Claude Code guidance.

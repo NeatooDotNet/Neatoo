@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <!-- Single target like the rest of the Design set - override Directory.Build.props -->
+    <TargetFrameworks></TargetFrameworks>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AnalysisMode>default</AnalysisMode>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Types are internal (CA1515 under the repo's analyzer settings); the tests see them. -->
+    <InternalsVisibleTo Include="Design.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- net9.0 leg: the central version is 10.0.x, so pin the latest listed 9.0.x here -->
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" VersionOverride="9.0.20" />
+    <!-- UseNeatoo(): the RemoteFactory endpoint as middleware -->
+    <PackageReference Include="Neatoo.RemoteFactory.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Design.App\Design.App.csproj" />
+    <ProjectReference Include="..\Design.Domain\Design.Domain.csproj" />
+    <ProjectReference Include="..\Design.Infrastructure\Design.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

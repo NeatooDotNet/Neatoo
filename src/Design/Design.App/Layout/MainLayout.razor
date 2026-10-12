@@ -1,0 +1,31 @@
+@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudMainContent Class="pa-4">
+        @* Application failures (an exception out of Save, a lost server) stop
+           here. Validation never does: it is state on the entity, not an error. *@
+        <ErrorBoundary @ref="_errorBoundary">
+            <ChildContent>
+                @Body
+            </ChildContent>
+            <ErrorContent Context="ex">
+                <MudAlert Severity="Severity.Error">Something went wrong: @ex.Message</MudAlert>
+            </ErrorContent>
+        </ErrorBoundary>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private ErrorBoundary? _errorBoundary;
+
+    // The layout outlives the page; clear a shown error when the user navigates.
+    protected override void OnParametersSet()
+    {
+        _errorBoundary?.Recover();
+    }
+}
