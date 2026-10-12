@@ -271,10 +271,10 @@ A child whose `[Create]` takes parameters is created by its factory and added wi
 <a id='snippet-skill-add-item'></a>
 ```cs
 [TestMethod]
-public void AddItem_ItemJoinsAggregate()
+public async Task AddItem_ItemJoinsAggregate()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
 
     // Act
@@ -370,9 +370,9 @@ Adding an item sets `Parent` (the owning entity — the list is transparent) and
 <a id='snippet-skill-parent-and-root'></a>
 ```cs
 [TestMethod]
-public void AddItem_SetsParentAndRoot()
+public async Task AddItem_SetsParentAndRoot()
 {
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     Assert.IsNull(item.Parent, "Not attached yet");
 
@@ -488,10 +488,10 @@ New items (never persisted) are removed immediately since there's nothing to del
 <a id='snippet-skill-remove-new-item-discarded'></a>
 ```cs
 [TestMethod]
-public void RemoveNewItem_NotAddedToDeletedList()
+public async Task RemoveNewItem_NotAddedToDeletedList()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 1, 10.00m);
     order.Items!.Add(item);
     Assert.IsTrue(item.IsNew, "Created item should be new");
@@ -587,10 +587,10 @@ Attaching a child to a live list marks the item and the collection modified, whe
 <a id='snippet-skill-add-marks-modified'></a>
 ```cs
 [TestMethod]
-public void IsModified_TrueWhenNewItemAdded()
+public async Task IsModified_TrueWhenNewItemAdded()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
 
     // Act
     var item = _itemFactory.Create("Widget", 1, 10.00m);

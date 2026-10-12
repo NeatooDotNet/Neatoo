@@ -223,7 +223,7 @@ A regular (non-partial) computed getter is allowed but is not tracked: it raises
 // =========================================================================
 public string FullName => $"{FirstName} {LastName}";
 ```
-<sup><a href='/src/Design/Design.Domain/Entities/Employee.cs#L70-L80' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-plain-computed-getter' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Entities/Employee.cs#L74-L84' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-plain-computed-getter' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Field-Level Authorization via MarkReadOnly

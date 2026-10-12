@@ -74,7 +74,7 @@ See `Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs` for the author
 - Root entity interfaces extend `IEntityRoot` (exposes IsSavable, Save())
 - Child entity interfaces extend `IEntityBase` (no IsSavable, no Save())
 
-**ValidateBase<T>** - Use for value objects and validation-only:
+**ValidateBase<T>** - Use for input models: objects a person edits and that validate as they type, with no persistence lifecycle of their own. (A value object is a `record` - see `Entities/PayGrade.cs`.)
 - Has IsValid, IsSelfValid, IsBusy
 - No persistence state tracking
 - RuleManager for validation
@@ -84,7 +84,7 @@ See `Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs` for the author
 - IsModified cascades from children
 - Enforces aggregate boundaries
 
-**ValidateListBase<I>** - Use for value object collections:
+**ValidateListBase<I>** - Use for collections of input models:
 - IsValid aggregates from all children
 - No DeletedList (no persistence tracking)
 

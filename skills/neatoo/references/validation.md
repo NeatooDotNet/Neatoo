@@ -543,12 +543,13 @@ Never use it inside a factory operation: the operation is already paused, and di
 [TestMethod]
 public async Task InvalidOrder_DirectFactorySave_ServerRulesRefuseBeforeWriting()
 {
-    // Arrange: CustomerName is [Required], but rules do not run during
-    // [Create], so the new order still reports valid on this side.
-    var order = _orderFactory.Create();
-    Assert.IsTrue(order.IsValid, "No rule has run yet, so nothing is broken");
+    // Arrange: CustomerName is [Required] and Order.Create ran its rules,
+    // so the new order already reports invalid on this side.
+    var order = await _orderFactory.Create();
+    Assert.IsFalse(order.IsValid, "Create ran the rules; CustomerName is missing");
 
-    // Act: a direct factory.Save does not check IsSavable, so only the
+    // Act: a direct factory.Save does not check IsSavable - a caller that
+    // skips the entity's own answer reaches the server - so only the
     // re-run of the rules inside [Insert] stands between this order and
     // the write.
     var ex = await Assert.ThrowsExactlyAsync<Neatoo.SaveOperationException>(
@@ -560,7 +561,7 @@ public async Task InvalidOrder_DirectFactorySave_ServerRulesRefuseBeforeWriting(
     Assert.AreEqual(0, _repository.SaveChangesCount, "No flush may happen");
 }
 ```
-<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateLifecycleTests.cs#L188-L208' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-server-gate-refuses' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateLifecycleTests.cs#L188-L209' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-server-gate-refuses' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Async Action Rules (AddActionAsync)

@@ -95,7 +95,7 @@ internal bool Fetch(Guid id,
     return true;
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L139-L165' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-fetch' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L146-L172' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-fetch' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Every object in the fetched graph lands old and clean:
@@ -365,10 +365,10 @@ A child's interface extends `IEntityBase`, which has neither `IsSavable` nor `Sa
 <a id='snippet-skill-child-interface-no-save'></a>
 ```cs
 [TestMethod]
-public void ChildInterface_DoesNotExposeIsSavable()
+public async Task ChildInterface_DoesNotExposeIsSavable()
 {
     // Arrange — IOrderItem extends IEntityBase, not IEntityRoot
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     order.Items!.Add(item);
 
@@ -424,9 +424,9 @@ A child added to a list gets `Parent` (the owning entity; the list is transparen
 <a id='snippet-skill-parent-and-root'></a>
 ```cs
 [TestMethod]
-public void AddItem_SetsParentAndRoot()
+public async Task AddItem_SetsParentAndRoot()
 {
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     Assert.IsNull(item.Parent, "Not attached yet");
 
@@ -502,7 +502,7 @@ internal async Task Insert([Service] IOrderRepository repository,
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L186-L213' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L193-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The root's `[Update]` writes its own columns only when its own properties changed, then delegates the same way:
@@ -539,7 +539,7 @@ internal async Task Update([Service] IOrderRepository repository,
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L240-L269' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-update' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L247-L276' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-update' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The list's `[Update]` brings the row collection in line with the list:
@@ -627,7 +627,7 @@ internal void Delete([Service] IOrderRepository repository)
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L278-L290' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L285-L297' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 External code only saves the aggregate root. A child added to a fetched aggregate gets exactly one row, and a second save does not insert it again:

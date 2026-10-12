@@ -196,15 +196,22 @@ The root owns the child list. It creates the list through the list factory insid
 <a id='snippet-skill-root-create'></a>
 ```cs
 [Create]
-public void Create([Service] IOrderItemListFactory itemsFactory)
+public async Task Create([Service] IOrderItemListFactory itemsFactory)
 {
     Items = itemsFactory.Create();
     OrderDate = DateTime.Today;
     Status = "Draft";
     OrderNumber = $"ORD-{DateTime.Now:yyyyMMddHHmmss}";
+
+    // This Create hands a form to a person. It decides that the form must
+    // not come back unvalidated: run the rules so the required fields show
+    // their messages at once and IsSavable is false until they are filled.
+    // A per-operation choice (the rare validate case), not a step every
+    // Create ends with. All is safe here: the item list is empty.
+    await RunRules(RunRulesFlag.All);
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L105-L114' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-create' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L105-L121' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-create' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Aggregate roots:
@@ -333,7 +340,7 @@ internal bool Fetch(Guid id,
     return true;
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L139-L165' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-fetch' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L146-L172' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-fetch' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After Fetch completes, every object in the graph is old and clean:
@@ -473,7 +480,7 @@ internal async Task Insert([Service] IOrderRepository repository,
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L186-L213' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L193-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-server-gate-refuses -->
@@ -482,12 +489,13 @@ internal async Task Insert([Service] IOrderRepository repository,
 [TestMethod]
 public async Task InvalidOrder_DirectFactorySave_ServerRulesRefuseBeforeWriting()
 {
-    // Arrange: CustomerName is [Required], but rules do not run during
-    // [Create], so the new order still reports valid on this side.
-    var order = _orderFactory.Create();
-    Assert.IsTrue(order.IsValid, "No rule has run yet, so nothing is broken");
+    // Arrange: CustomerName is [Required] and Order.Create ran its rules,
+    // so the new order already reports invalid on this side.
+    var order = await _orderFactory.Create();
+    Assert.IsFalse(order.IsValid, "Create ran the rules; CustomerName is missing");
 
-    // Act: a direct factory.Save does not check IsSavable, so only the
+    // Act: a direct factory.Save does not check IsSavable - a caller that
+    // skips the entity's own answer reaches the server - so only the
     // re-run of the rules inside [Insert] stands between this order and
     // the write.
     var ex = await Assert.ThrowsExactlyAsync<Neatoo.SaveOperationException>(
@@ -499,7 +507,7 @@ public async Task InvalidOrder_DirectFactorySave_ServerRulesRefuseBeforeWriting(
     Assert.AreEqual(0, _repository.SaveChangesCount, "No flush may happen");
 }
 ```
-<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateLifecycleTests.cs#L188-L208' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-server-gate-refuses' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateLifecycleTests.cs#L188-L209' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-server-gate-refuses' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Delete Operations
@@ -548,7 +556,7 @@ internal void Delete([Service] IOrderRepository repository)
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L278-L290' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L285-L297' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Reverse deletion before saving:
@@ -587,9 +595,9 @@ Adding a child to a list sets `Parent` (the owning entity — the list is transp
 <a id='snippet-skill-parent-and-root'></a>
 ```cs
 [TestMethod]
-public void AddItem_SetsParentAndRoot()
+public async Task AddItem_SetsParentAndRoot()
 {
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     Assert.IsNull(item.Parent, "Not attached yet");
 
@@ -833,10 +841,10 @@ A child's interface extends `IEntityBase`, which has neither `IsSavable` nor `Sa
 <a id='snippet-skill-child-interface-no-save'></a>
 ```cs
 [TestMethod]
-public void ChildInterface_DoesNotExposeIsSavable()
+public async Task ChildInterface_DoesNotExposeIsSavable()
 {
     // Arrange — IOrderItem extends IEntityBase, not IEntityRoot
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     order.Items!.Add(item);
 
@@ -916,7 +924,7 @@ internal async Task Update([Service] IOrderRepository repository,
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L240-L269' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-update' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L247-L276' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-update' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The list's `[Update]` brings the row collection in line with the list and drains the `DeletedList`:
