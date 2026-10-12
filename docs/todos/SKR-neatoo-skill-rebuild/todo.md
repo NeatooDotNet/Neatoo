@@ -89,11 +89,11 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 
 - [x] `CLAUDE.md` "Central Pillar" and "The Rules" wording softened to strongly recommended (D19) · `CLAUDE.md` · PR #100 · AC-1 · Must
 - [x] Design.Domain duality text reversed (D23): `RemoteBoundary.cs` "do not bolt a root role", `Address.cs` "NO STANDALONE-ROOT OPERATIONS", `IFactoryInterfaces.cs` "a root only" rewritten to the endorsed shape · `src/Design/Design.Domain` · done when no comment forbids a type being both root and child and the `DualUseEntity` demo shows both roles · AC-3 · Must — pulled onto SKR-001, PR #101
-- [ ] `CLAUDE-DESIGN.md:77,87` and `README.md:24` stop calling `ValidateBase` a value object (D17) · `src/Design/CLAUDE-DESIGN.md`, `README.md` · done when grep for "value object" near `ValidateBase` is empty · AC-3 · Must
+- [ ] `CLAUDE-DESIGN.md:77,87` and `README.md:24` stop calling `ValidateBase` a value object (D17) · `src/Design/CLAUDE-DESIGN.md`, `README.md` · done when grep for "value object" near `ValidateBase` is empty · AC-3 · Must — pulled onto SKR-004 (the record value object lands there), 2026-10-12
 - [x] Close #98 · GitHub · done when closed with a comment naming D18 · AC-5 · Must — pulled onto SKR-003; closed as done (not moot) after the D18 clarification, 2026-10-11
 - [ ] mudneatoo block count corrected in the audit README (49, not 14) · `docs/todos/consistency-audit/README.md` · done when the line reads 49 · AC-6 · Should
 - [ ] Framework pain for the skill: `Save()` does not mark the entity busy, so a double-click on Save sends two Inserts (the sent instance stays `IsSavable` until the result is reassigned) · `skills/neatoo` pain list (plan 004/005) · done when the skill names it with Neatoo#103 (critical, filed 2026-10-11) · AC-7 · Should (SKR-002 code review callout 3) — pulled onto SKR-004 (inline) and SKR-005 (pains reference), 2026-10-12
-- [ ] Design.App Order page: an empty `New()` form is `IsSavable` (`Order.Create` runs no rules; two `[Required]` fields unset), so New → Save hits the `[Insert]` gate and throws into the `ErrorBoundary` — the rare validate case the Blazor prose describes, unapplied in the compiled example beside it · `Order.Create` (run rules so the form shows its errors) or `OrderEditViewModel` · done when the user decides which and the example follows · AC-4 · Must (SKR-003 plan review round 2, 2026-10-11)
+- [ ] Design.App Order page: an empty `New()` form is `IsSavable` (`Order.Create` runs no rules; two `[Required]` fields unset), so New → Save hits the `[Insert]` gate and throws into the `ErrorBoundary` — the rare validate case the Blazor prose describes, unapplied in the compiled example beside it · `Order.Create` (run rules so the form shows its errors) or `OrderEditViewModel` · done when the user decides which and the example follows · AC-4 · Must (SKR-003 plan review round 2, 2026-10-11) — user decided 2026-10-12: `Order.Create` runs its rules; pulled onto SKR-004
 
 ## Dismissed
 
@@ -114,6 +114,12 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - **Decision:** Amend (user: Neatoo parts only; assume both skills are loaded together)
 - **Index changes:** AC-4 narrowed to the Neatoo-owned composition; 002 regions only `AddNeatooServices` per tier, MudNeatoo, the save handler and the WorkOrder ViewModel/page. Cap unchanged, 7 of 11 issued.
 - **Follow-up:** SKR-002
+
+### 2026-10-12 — SKR-004 plan review · serves AC-1, AC-10, AC-4
+- **Finding:** (1) The plan stated D18 as a ban ("never a validate step"), the mirror of the 2026-10-11 over-correction. (2) The ~400-line budget cannot hold a rendered block per trap row (~830 lines of regions). (3) T16 has no compiled `record`; the T1 example hands back an empty form that is `IsSavable` (the open Order-form row). (4) §2's "does a person edit it" test was superseded by D4 with no replacement stated.
+- **Decision:** Amend. Three-leg D18 wording; blocks live in `references/`, `SKILL.md` renders four and points (user); `Order.Create` runs its rules (user — the `[Create]` decides); one `record` value object added (user); D26 ruled (user: Neatoo when rules or tracking something relies on — a person or a job; plain RF when nothing is tracked or validated).
+- **Index changes:** AC-10 unchanged at ~400. Cap unchanged, 7 of 11 issued.
+- **Follow-up:** SKR-004; 005 receives the removed sections by the list 004 records; 007 uses 004's row→line map.
 
 ### 2026-10-11 — SKR-003 D18 clarified · serves AC-5, AC-1
 - **Finding:** Plan 003's first draft read D18 as "no `RunRules` inside a `[Create]`/`[Fetch]`" and proposed removing `WorkOrder.Fetch`'s targeted re-run in favour of persisting derived values. The user: the ruling was against prescribing `RunRules(All)` at the end of *every* operation and as a validate step; `RunRules` inside an operation to compute the derived values it needs is "a great case to use RunRules". The 2026-10-09 miss (validate step added by habit) and this over-correction are the same misunderstanding from opposite sides — the skill has to state the distinction, not a ban.
