@@ -639,7 +639,7 @@ internal class CancellableRule : AsyncRuleBase<AsyncRulesDemo>
 
 ### Rules Do Not Run While Paused
 
-Properties set in a factory operation (`[Create]`, `[Fetch]`, ...) or during JSON deserialization do not trigger rules, and `ResumeAllActions()` does not run them afterward. A `[Fetch]` loads persisted data, assumed valid, and recomputes only the derived values it is not loading: `RunRules(nameof(X))` for the rules that write the root, or the value loaded from the row. Not `RunRules(RunRulesFlag.All)` as a routine last line: from a root whose rules write children it marks the just-fetched children modified. See [rules-lifecycle.md](rules-lifecycle.md).
+Properties set in a factory operation (`[Create]`, `[Fetch]`, ...) or during JSON deserialization do not trigger rules, and `ResumeAllActions()` does not run them afterward. A `[Fetch]` loads persisted data, assumed valid, and recomputes only the derived values it is not loading: `RunRules(nameof(X))` for the rules that write the root, or the value loaded from the row. Not `RunRules(RunRulesFlag.All)` as a routine last line: from a root whose rules write children it marks any just-fetched child whose value changes as modified. See [rules-lifecycle.md](rules-lifecycle.md).
 
 ### Exception Propagation
 

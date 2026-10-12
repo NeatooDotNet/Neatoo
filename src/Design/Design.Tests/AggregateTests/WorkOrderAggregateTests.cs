@@ -223,7 +223,8 @@ public class WorkOrderAggregateTests
     {
         // The #98 hazard needs a root rule that would write a DIFFERENT value
         // than the child loaded: a task row whose Discount is not the root's.
-        // (Saved through the aggregate the two always agree, so the test above
+        // Divergence is what a changed rule leaves behind in old rows. (Saved through
+        // the aggregate the two always agree, so the test above
         // cannot tell the targeted form from RunRulesFlag.All; this one can.)
         var task = MockWorkOrderRepository.Task("Design", 1, 2m, 30m);
         task.Discount = 0.25m;                 // root row's Discount is 0

@@ -183,7 +183,7 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
         //    Summary) are recomputed by running the rules that write THIS
         //    object, named by their trigger. Not RunRulesFlag.All: the tasks
         //    finished their own [Fetch] and are no longer paused, so a root rule
-        //    that wrote them would mark them modified and the fetched graph
+        //    that changed one of their values would mark it modified and the graph
         //    would report IsModified == true.
         // Neither is a validate step; persisted data is assumed valid.
         await RunRules(nameof(Status));

@@ -528,7 +528,7 @@ public async Task CreateWithRunRules()
 <sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L108-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-A `[Fetch]` is the other side of the same choice. It loads persisted data, which is assumed valid, so it never re-runs rules to validate; it computes only the derived values it is not loading. In an aggregate that has two shapes, and `WorkOrder.Fetch` uses both: aggregates over the children (`TotalCost`, `HasUnschedulableTasks`) are persisted and loaded, as the tasks load `Cost`; the root's own derived values are recomputed with `RunRules` named by trigger — never `RunRulesFlag.All` from a root whose rules write children. The children finished their own `[Fetch]` and are no longer paused, so a root rule that wrote them would mark them modified, and the fetched aggregate would report `IsModified == true` with no user work:
+A `[Fetch]` is the other side of the same choice. It loads persisted data, which is assumed valid, so it never re-runs rules to validate; it computes only the derived values it is not loading. In an aggregate that has two shapes, and `WorkOrder.Fetch` uses both: aggregates over the children (`TotalCost`, `HasUnschedulableTasks`) are persisted and loaded, as the tasks load `Cost`; the root's own derived values are recomputed with `RunRules` named by trigger — never `RunRulesFlag.All` from a root whose rules write children. The children finished their own `[Fetch]` and are no longer paused, so a root rule that changed one of their values would mark that child modified, and the fetched aggregate would report `IsModified == true` with no user work:
 
 <!-- snippet: skill-fetch-computes-derived -->
 <a id='snippet-skill-fetch-computes-derived'></a>
@@ -565,7 +565,7 @@ internal async Task<bool> Fetch(Guid id,
     //    Summary) are recomputed by running the rules that write THIS
     //    object, named by their trigger. Not RunRulesFlag.All: the tasks
     //    finished their own [Fetch] and are no longer paused, so a root rule
-    //    that wrote them would mark them modified and the fetched graph
+    //    that changed one of their values would mark it modified and the graph
     //    would report IsModified == true.
     // Neither is a validate step; persisted data is assumed valid.
     await RunRules(nameof(Status));
@@ -619,8 +619,30 @@ public async Task Fetch_RecomputesTheRootsDerivedValues_LoadsTheChildAggregates_
     Assert.IsFalse(fetched.Tasks[0].IsSchedulable);
     Assert.AreEqual(200m, fetched.Tasks[1].Cost);
 }
+
+[TestMethod]
+public async Task Fetch_TargetedRunRules_DoesNotWriteTheFinishedChildren()
+{
+    // The #98 hazard needs a root rule that would write a DIFFERENT value
+    // than the child loaded: a task row whose Discount is not the root's.
+    // Divergence is what a changed rule leaves behind in old rows. (Saved through
+    // the aggregate the two always agree, so the test above
+    // cannot tell the targeted form from RunRulesFlag.All; this one can.)
+    var task = MockWorkOrderRepository.Task("Design", 1, 2m, 30m);
+    task.Discount = 0.25m;                 // root row's Discount is 0
+    var row = _repository.SeedWorkOrder(task);
+
+    var fetched = (await _factory.Fetch(row.Id))!;
+
+    // RunRules(nameof(Status)) / (nameof(Budget)) did not run the Discount
+    // orchestrator, so the finished task kept its loaded value and is a clean
+    // baseline. RunRulesFlag.All would have pushed 0 into it and marked it modified.
+    Assert.AreEqual(0.25m, fetched.Tasks![0].Discount);
+    Assert.IsFalse(fetched.Tasks[0].IsModified);
+    Assert.IsFalse(fetched.IsModified);
+}
 ```
-<sup><a href='/src/Design/Design.Tests/AggregateTests/WorkOrderAggregateTests.cs#L181-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fetch-computes-derived-test' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/WorkOrderAggregateTests.cs#L181-L242' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fetch-computes-derived-test' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Conditional Rules
@@ -890,27 +912,7 @@ internal async Task Insert([Service] IOrderRepository repository,
 <sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L186-L213' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Forcing a run after `Create`:
-
-<!-- snippet: skill-create-computes-what-it-needs -->
-<a id='snippet-skill-create-computes-what-it-needs'></a>
-```cs
-/// <summary>
-/// RIGHT WAY: this operation needs Total to be right when it returns, so
-/// it runs the rules that compute it. RunRules has no IsPaused guard.
-/// A per-operation choice, not a step every operation ends with.
-/// </summary>
-[Create]
-public async Task CreateWithRunRules()
-{
-    Quantity = 10;
-    Price = 5.00m;
-    await RunRules(RunRulesFlag.All);  // no children here, so All is safe
-    // Total is now 50.00
-}
-```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L108-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+Inside an operation, `RunRules` computes the derived values that operation needs — the `CreateWithRunRules` and `WorkOrder.Fetch` examples under [Rule Execution Order](#rule-execution-order). It is the operation's choice, made per operation; nothing calls `RunRules` after `Create` from the outside to "finish" it.
 
 The `RunRulesFlag` enum selects which rules run:
 - `All`: Clear all messages and run all rules

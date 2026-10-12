@@ -225,7 +225,7 @@ public async Task Add_InvalidItem_ListBecomesInvalid()
 <sup><a href='/src/Design/Design.Tests/BaseClassTests/ValidateListBaseTests.cs#L60-L79' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-list-validity-aggregates' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-`RunRules()` on a list runs every item's rules. It is what an operation calls for the derived values it needs (rules do not fire while it runs), not a routine step before reading `IsValid`. After a live edit, `await WaitForTasks()` is what waits for async rules:
+`RunRules()` on a list runs every item's rules. Inside an operation it computes the derived values the operation needs; from outside, it is the rare validate case — an object a `[Create]` handed back unvalidated, which the caller decides to validate before showing it (the test below is that case). It is never the routine step before reading `IsValid`; after a live edit, `await WaitForTasks()` is what waits for async rules:
 
 <!-- snippet: skill-run-rules-after-create -->
 <a id='snippet-skill-run-rules-after-create'></a>

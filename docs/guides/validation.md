@@ -470,7 +470,7 @@ RunRules overloads:
 - **RunRules(RunRulesFlag.Self)**: Run only this object's rules (not children)
 - **RunRules(flag, token)**: Run with cancellation token support
 
-`RunRulesFlag.All` clears existing validation messages before running rules. `RunRules` has no `IsPaused` guard, so an operation can run the rules it needs while paused; a `[Fetch]` names them by trigger (`RunRules(nameof(Status))`) rather than `All`, which from a root would mark its just-fetched children modified. It is not the step between setting a property and reading `IsValid` — the setter already ran the rules; when async rules may be in flight, `await WaitForTasks()` instead.
+`RunRulesFlag.All` clears existing validation messages before running rules. `RunRules` has no `IsPaused` guard, so an operation can run the rules it needs while paused; a `[Fetch]` names them by trigger (`RunRules(nameof(Status))`) rather than `All`, which from a root whose rules write children would mark any just-fetched child whose value a rule changes as modified. It is not the step between setting a property and reading `IsValid` — the setter already ran the rules; when async rules may be in flight, `await WaitForTasks()` instead.
 
 ## Error Messages and Property-Level State
 

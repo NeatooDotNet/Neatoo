@@ -77,7 +77,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 |---|------|-------|--------|--------|----|
 | 001 | [001-type-choice-examples](./plans/001-type-choice-examples.md) | Design.Domain example per Neatoo type choice | AC-3 | Done | #101 |
 | 002 | [002-design-app-server](./plans/002-design-app-server.md) | Design.App and Design.Server in CI | AC-4, AC-1 | Done | #102 |
-| 003 | [003-no-end-of-operation-runrules](./plans/003-no-end-of-operation-runrules.md) | Stop teaching end-of-operation RunRules | AC-5 | Draft | — |
+| 003 | [003-no-end-of-operation-runrules](./plans/003-no-end-of-operation-runrules.md) | Stop teaching end-of-operation RunRules as a step | AC-5 | In Progress | — |
 | 004 | [004-skill-model-and-decisions](./plans/004-skill-model-and-decisions.md) | SKILL.md: model, habit traps, decisions, UI contract | AC-1, AC-2, AC-10 | Draft | — |
 | 005 | [005-references-as-mechanism](./plans/005-references-as-mechanism.md) | References reorganized as mechanism | AC-1, AC-2, AC-7 | Draft | — |
 | 006 | [006-mudneatoo-from-design-app](./plans/006-mudneatoo-from-design-app.md) | mudneatoo blocks sourced from Design.App | AC-6 | Draft | — |
