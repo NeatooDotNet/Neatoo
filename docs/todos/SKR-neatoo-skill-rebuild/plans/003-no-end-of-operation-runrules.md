@@ -9,7 +9,7 @@
 **Plan-review opt-in:** Yes — the shape the skill points at for T10; Pass A against D18 as clarified and D6
 **Code-review opt-in:** Yes — examples are what gets copied
 **Branch:** skr-003-no-end-of-operation-runrules — cut from the arc at Step 2
-**PR:** —
+**PR:** #104 → `skr-arc`
 
 ---
 
