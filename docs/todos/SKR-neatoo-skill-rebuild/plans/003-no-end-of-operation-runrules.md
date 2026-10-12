@@ -89,7 +89,7 @@ Walked 2026-10-11; plan review round 1 added the items marked (PR).
 
 ## Punchlist
 
-- [ ] Close #98 · GitHub · done when closed as done with a comment naming D18 and the three deliverables · AC-5 · Must (pulled from the todo, 2026-10-11; reframed from "moot" to "done" after the D18 clarification)
+- [x] Close #98 · GitHub · done when closed as done with a comment naming D18 and the three deliverables · AC-5 · Must (pulled from the todo, 2026-10-11; reframed from "moot" to "done" after the D18 clarification) — closed 2026-10-11 (`48c1098`)
 
 ---
 
@@ -97,12 +97,12 @@ Walked 2026-10-11; plan review round 1 added the items marked (PR).
 
 | Acceptance bullet (short) | Priority | Tier declared | Test method | Tier confirmed |
 |---|---|---|---|---|
-| Fetched WorkOrder: unmodified, derived values intact incl. HasUnschedulableTasks | Must | `[integration]` | | |
-| Fetch targeted, in a region, pinned | Must | `[explicit-skip]` | | |
-| Gotcha 1 statement pinned; remedy text no longer prescribes | Must | `[explicit-skip]` | | |
-| No prose prescribes the step; rare case where it applies | Must | `[explicit-skip]` | | |
-| #98 delivered and closed | Must | `[explicit-skip]` | | |
-| Build, tests, mdsnippets green | Must | `[explicit-skip]` | | |
+| Fetched WorkOrder: unmodified, derived values intact incl. HasUnschedulableTasks | Must | `[integration]` | `AggregateTests/WorkOrderAggregateTests.Fetch_RecomputesTheRootsDerivedValues_LoadsTheChildAggregates_AndIsNotModified` — saves through the aggregate (one task unschedulable, over budget), fetches back, asserts `IsModified == false` on root and child, `CanApprove`/`IsHeld`/`IsOverBudget`/`Summary` equal to the saved instance, `TotalCost` 200, `HasUnschedulableTasks` true, task `IsSchedulable`/`Cost` | `[integration]` — Server-mode DI, real factories, `MockWorkOrderRepository` |
+| Fetch targeted, in a region, pinned | Must | `[explicit-skip]` | `WorkOrder.cs` region `skill-fetch-computes-derived`: `RunRules(nameof(Status))`, `RunRules(nameof(Budget))`, no `All`; `HasUnschedulableTasks` loaded from the row; pinned by the test above (region `skill-fetch-computes-derived-test`) | skip honoured |
+| Gotcha 1 statement pinned; remedy text no longer prescribes | Must | `[explicit-skip]` | `CommonGotchaTests` unchanged (`Gotcha1_RulesDoNotFireDuringCreate`, `Gotcha1_RulesFireAfterCreate_WithExplicitRunRules`, `Gotcha1_RunRulesInsideFactoryMethod_WorksWhilePaused` all pass); `grep -n "at the end" CommonGotchas.cs` → no prescription; summary row 1 reads "Compute what the operation needs: RunRules, or load it" | skip honoured |
+| No prose prescribes the step; rare case where it applies | Must | `[explicit-skip]` | grep over skills/neatoo, docs/guides, docs/reference, README, CLAUDE-DESIGN, Design.Domain for `at (the) end of (the|your|any|every) factory method|all factory methods|must call await RunRules` excluding lines that negate it → 0 hits (one unrelated comment in `ServiceRegistration.cs:227`); rare case stated at skill `blazor.md:150`, docs `blazor.md:173`, `rules-lifecycle.md` doctrine paragraph, `CommonGotchas.cs` header, all pointing at `skill-run-rules-after-create` | skip honoured |
+| #98 delivered and closed | Must | `[explicit-skip]` | #98 CLOSED 2026-10-11 with a comment naming D18 and the three deliverables (`business-rules.md` statement + `skill-fetch-computes-derived` snippet and test; the test; `CLAUDE-DESIGN.md:156`) | skip honoured |
+| Build, tests, mdsnippets green | Must | `[explicit-skip]` | `reviews/003-build.log`: 0 errors, 0 warnings; `reviews/003-test.log`: 197 passed, 0 failed; `dotnet mdsnippets` exit 0, no missing-snippet lines, 0 duplicate regions | skip honoured |
 
 ---
 
