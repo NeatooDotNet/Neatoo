@@ -51,3 +51,27 @@ Files examined: all 863 lines of `SKILL.md` plus placeholders and headings acros
 Beyond the brief: RF `docs/VisionAlignment.md` §4; `.claude/rules/skills-neatoo.md`; `Order.cs`, `OrderItem.cs`, `OrderItemList.cs`, `ErrorPatterns.cs`, `AllBaseClasses.cs`; plan 003 and its reviews (grep); the description length (wc). Named but unused: none.
 
 **Closing:** CONCERNS. One amendment for the veto; callouts 1, 2, 3 (T16) and 6 needed user decisions — all four made 2026-10-12 and recorded above.
+
+---
+
+## Round 2 — 2026-10-12 (amended plan at `a2e19d1`)
+
+**Verdict: CONCERNS** (one wording veto; five Must callouts, two of which priced the user's decisions)
+
+**Dispositions checked:** V1, C2 (budget — four inline blocks ≈ 200 lines of code, so ~400 is realistic), C4, C5, C6/D26, C7, Should 1, Should 2 resolved. C1 and C3 resolved in direction, with costs below. C2's linking had a gap (callout 3). The D17 row was marked pulled but carried nowhere (callout 5).
+
+**Veto (Pass A)** — the third D18 leg said "caller-decided validation", but D26 says the `[Create]` decides for itself (`Order.Create`), and Step 1 makes it that example; `blazor.md:150` states the operation-decided form. **Triage: fixed** — "the developer's decision, made by the operation or by the caller".
+
+**Callouts (Must)**
+
+1. **`Order.Create` running its rules makes the factory async** (`RunRules` is async-only): `Create` returns `Task<IOrder>`; ~24 sync call sites across `OrderAggregateTests` ×8, `DeletedListTests` ×6, `EntityRootInterfaceTests` ×4, `AggregateLifecycleTests` ×2, `AggregateBoundaryTests`, `AggregateCoverageGapTests`, `ClientServerPairTests`; `OrderEditViewModel.New()` async (inside `skill-save-handler`), `OrderEdit.razor:86`; ~20 render sites across six regions re-render. Mechanical, but touches out-of-scope tests and docs — user's go-ahead needed. Alternative offered: caller-side `RunRules` in `New()`. **Triage: user chose to proceed** (async Create; the `[Create]` decides).
+2. **One out-of-scope test cannot be kept as is**: `DeletedListTests.AddThenRemoveNewItem_LeavesOrderCleanButSavable` asserts `IsSavable` on an untouched new Order; setting `CustomerName` would break its `IsFalse(IsModified)`. Its intent (IsNew/IsModified split) survives only on another entity. `AggregateLifecycleTests:192-195` ("still reports valid") is in scope — a direct `factory.Save` still bypasses `IsSavable`. Everything else sets `CustomerName` already; `SubmitDraftOrdersTests` seeds via the repository. **Triage: user approved moving the test's intent to an entity with no required fields, assertions unchanged.**
+3. **Five regions the plan links to render in no reference file**: `skill-job-over-entities`, `skill-rule-with-domain-service`, `skill-entity-both-roles`, `skill-viewmodel-over-aggregate`, `skill-value-object-record`. **Triage: amended** — their placeholders are added in this plan (Step 4).
+4. **Which aggregate carries the record** (answered under (c)). **Triage: amended** — `Employee`, a new property outside existing regions.
+5. **The D17 row was untraced.** **Triage: amended** — Step 7 and the plan Punchlist.
+
+**(c) Record home:** not a typed `EmailAddress` (a constructor that throws on typed input contradicts D2 and T2; D25: "if you need rules it's not a value object anymore") — a value code builds (amount+currency, a date range from a verb, a closed-set code). Not `Order` (`skill-aggregate-interfaces` renders in five files; Order already takes the async ripple). Not `Product` (`skill-quick-start*` render in README, getting-started, entities). Not converting `Employee.Email` (typed, `[Required]`/`[EmailAddress]`, six test sites). **Least disruptive: a new property on `Employee`** — its only region is `skill-plain-computed-getter`; `IEmployee`, `EmployeeRow` mapping and `EmployeeAggregateLifecycleTests` are region-free.
+
+**(d) New:** Should — bullet 2's round-trip should cross the client/server pair (JSON constructor binding and trimming are the risk). **Amended.** Theoretical: reference links may rot until 005 reconciles; CLAUDE.md's generic "after `[Create]`: `IsSavable=true`" gains Order as counterexample; bullet 1's "messages" plural — only `CustomerName`'s remains (fixed to singular).
+
+Read: the amended plan; VisionAlignment:47, :197; `Order.cs`; `Employee.cs`/`IEntityInterfaces.cs` (region scan); the Order-creating tests; `OrderEditViewModelTests`; `ClientServerPairTests`; `ValidateBase` `RunRules` signatures; render-site greps.
