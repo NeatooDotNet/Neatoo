@@ -74,7 +74,7 @@ Mock repositories that a save writes to are registered **scoped**, so the test s
 
 ## Testing Validation
 
-Set the property, await `WaitForTasks()`, read `IsValid`. `RunRules()` is for forcing a re-run (for example after a `[Create]` that set values while paused), not the routine step before reading validity:
+Set the property, await `WaitForTasks()`, read `IsValid`. `RunRules()` is what an operation calls for the derived values it needs (rules do not fire while it runs), or what a caller uses in the rare validate case (an object handed back unvalidated); it is never the routine step before reading validity:
 
 <!-- snippet: skill-test-validation -->
 <a id='snippet-skill-test-validation'></a>

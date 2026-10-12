@@ -14,7 +14,7 @@ Rules in Neatoo follow strict execution rules. Understanding when rules fire —
 
 | Situation | Why | What To Do |
 |-----------|-----|------------|
-| During `[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]` | `FactoryStart()` calls `PauseAllActions()` before your code runs | Call `await RunRules(RunRulesFlag.All)` at end of factory method |
+| During `[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]` | `FactoryStart()` calls `PauseAllActions()` before your code runs | The operation computes what it needs: run the rules that compute a derived value (`RunRules(nameof(X))`, or `All` when no finished child can be written), or load it from the row. Not a step every operation ends with |
 | During `PauseAllActions()` block | `IsPaused = true` — `ChildNeatooPropertyChanged` skips rules | Call `await RunRules(RunRulesFlag.All)` inside or after the block |
 | `this["Prop"].LoadValue(x)` outside a factory operation | Uses `ChangeReason.Load` — the framework skips rules for Load events | Framework use (deserialization, the generated `EntityLazyLoad` setter). Application code sets properties through the setter; inside a factory operation plain assignment is already a baseline load |
 | During JSON deserialization | `OnDeserializing` calls `PauseAllActions()` | Automatic — `OnDeserialized` calls `ResumeAllActions()` |
@@ -52,7 +52,7 @@ RuleManager.AddAction(
     t => t.Quantity,
     t => t.Price);
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L70-L80' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-computed-gap-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L82-L92' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-computed-gap-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A `[Create]` that sets the inputs and expects the rule to have run. After it returns, `Total` is still 0:
@@ -72,35 +72,36 @@ public void Create()
     // Total is NOT calculated here - rule is paused!
 }
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L83-L95' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-without-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L95-L107' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-without-run-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## RunRules Works While Paused
 
-`RunRules()` has **no IsPaused guard** — neither in `ValidateBase` nor in `RuleManager`. Call it inside a factory method or a `PauseAllActions()` block and it executes all matching rules immediately. The fix for the gap above:
+`RunRules()` has **no IsPaused guard** — neither in `ValidateBase` nor in `RuleManager`. Call it inside a factory method or a `PauseAllActions()` block and it executes all matching rules immediately. So an operation that needs a derived value right when it returns runs the rules that compute it:
 
-<!-- snippet: skill-create-run-rules -->
-<a id='snippet-skill-create-run-rules'></a>
+<!-- snippet: skill-create-computes-what-it-needs -->
+<a id='snippet-skill-create-computes-what-it-needs'></a>
 ```cs
 /// <summary>
-/// RIGHT WAY: Call RunRules at end of factory method.
-/// RunRules works even while paused — no IsPaused guard.
+/// RIGHT WAY: this operation needs Total to be right when it returns, so
+/// it runs the rules that compute it. RunRules has no IsPaused guard.
+/// A per-operation choice, not a step every operation ends with.
 /// </summary>
 [Create]
 public async Task CreateWithRunRules()
 {
     Quantity = 10;
     Price = 5.00m;
-    await RunRules(RunRulesFlag.All);  // Forces all rules to execute
+    await RunRules(RunRulesFlag.All);  // no children here, so All is safe
     // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L97-L110' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L109-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The same applies to a `[Fetch]`: assign the row's values (the object is paused, so the assignments are a clean baseline), then `await RunRules(RunRulesFlag.All)` to populate the derived values that are not persisted. In an aggregate, run only the rules that write the root itself: the children finished their own `[Fetch]` and are no longer paused, so a root rule that wrote them would mark them modified. Their derived values are loaded from their rows, as `OrderItem` loads `LineTotal`.
+A `[Fetch]` loads persisted data, which is assumed valid, so it never re-runs rules to validate. It computes only the derived values it is not loading. Two shapes, and `WorkOrder.Fetch` uses both: aggregates over the children (`TotalCost`, `HasUnschedulableTasks`) are persisted and loaded, as the tasks load `Cost` and `OrderItem` loads `LineTotal`; the root's own derived values (`CanApprove`, `IsHeld`, `IsOverBudget`, `Summary`) are recomputed with `RunRules(nameof(Status))` / `RunRules(nameof(Budget))` — the rules that write the root itself, named by trigger. Not `RunRulesFlag.All` from a root whose rules write children: the children finished their own `[Fetch]` and are no longer paused, so a root rule that changed one of their values would mark that child modified and the fetched graph would report `IsModified == true`.
 
-**This applies to all factory methods** — `[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]`. Any factory method that sets properties which have dependent AddAction rules must call `await RunRules(RunRulesFlag.All)` at the end.
+**It is a per-operation choice, not a step.** Ask what derived values this operation must hand back right, and supply those. `RunRules(RunRulesFlag.All)` at the end of every factory method is the mainstream habit ("validate before returning"), and it is wrong twice over: persisted data is assumed valid, and `All` from a root whose rules write children marks any just-fetched child whose value a rule changes as modified. Running rules to *validate* a returned object is the rare case — an operation that must not hand back an unvalidated object (the empty form a `[Create]` returns, see the Blazor reference) — and it is the user's call, made per operation.
 
 **Chaining caveat:** When a rule sets a property while paused, the property value IS updated, but the property change does not cascade to trigger other rules. `RunRulesFlag.All` handles this because it runs ALL rules regardless of triggers — not just rules whose trigger property changed.
 
@@ -115,7 +116,7 @@ The same applies to a `[Fetch]`: assign the row's values (the object is paused, 
    → Property setters work — values ARE set
    → But ChildNeatooPropertyChanged skips because IsPaused
    → No rules fire, no PropertyChanged fires, no modification tracking
-   → Call await RunRules(RunRulesFlag.All) here if needed
+   → Compute what the operation needs here: RunRules for the rules that write this object, or load the value
 
 3. Generated factory code calls FactoryComplete(FactoryOperation)
    → ResumeAllActions() → IsPaused = false
@@ -146,10 +147,10 @@ The same applies to a `[Fetch]`: assign the row's values (the object is paused, 
 
 | Call | When |
 |------|------|
-| `await RunRules(RunRulesFlag.All)` | Re-run all rules (default). Clears messages first. Use at end of factory methods. |
+| `await RunRules(RunRulesFlag.All)` | Re-run all rules (default). Clears messages first. Inside a `[Create]` when the object has no children yet; at the top of a root's `[Insert]`/`[Update]` as the server gate, where any child a rule changes is about to be saved and re-baselined anyway. Not in a root's `[Fetch]` when its rules write children. |
 | `await RunRules(RunRulesFlag.NotExecuted)` | Run only rules that haven't executed yet. Does not clear existing messages. |
 | `await RunRules(RunRulesFlag.Self)` | Run this object's rules only, skip child property rules. |
-| `await RunRules("PropertyName")` | Run rules triggered by a specific property. |
+| `await RunRules("PropertyName")` | Run rules triggered by a specific property. The form a root's `[Fetch]` uses to recompute its own derived values without writing its children (`RunRules(nameof(Status))`). |
 
 *`Messages` flag checks `IRule.Messages` which is never populated. `NoMessages` always matches (empty list), `Messages` never matches. Use `All` or `NotExecuted` instead.
 

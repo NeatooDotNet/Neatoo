@@ -31,15 +31,27 @@ namespace Design.Domain;
 //       // Total is still 0! The calculation rule hasn't run.
 //   }
 //
-// RIGHT: Call RunRules at the end of your factory method.
-// RunRules works even while paused — it has no IsPaused guard.
+// RIGHT: The operation computes what it needs. If a derived value must be
+// right when the operation returns, run the rules that compute it (RunRules
+// has no IsPaused guard, so it works inside the operation), or load it from
+// the row as persisted data. Here the object has no children, so All is fine:
 //   [Create]
 //   public async Task Create() {
 //       Quantity = 10;
 //       Price = 5.00m;
-//       await RunRules(RunRulesFlag.All);  // Forces all rules to execute
+//       await RunRules(RunRulesFlag.All);  // the rules this object needs
 //       // Total is now 50.00
 //   }
+//
+// This is a per-operation choice, not a step every operation ends with.
+// A [Fetch] loads persisted data, which is assumed valid, and recomputes
+// only the derived values it is not loading - see WorkOrder.Fetch, which
+// names the rules by trigger (RunRules(nameof(Status))) because All from a
+// root whose rules write children would, wherever a rule changed a child's
+// value, mark that just-fetched child modified. Running rules to VALIDATE a
+// returned object is the rare case:
+// an operation that must not hand back an unvalidated object (see
+// skill-run-rules-after-create in Design.Tests).
 //
 // NOTE: ResumeAllActions (called by FactoryComplete) does NOT run rules.
 // It only recalculates cached validity. PropertyChanged does NOT fire
@@ -94,17 +106,18 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
     }
     #endregion
 
-    #region skill-create-run-rules
+    #region skill-create-computes-what-it-needs
     /// <summary>
-    /// RIGHT WAY: Call RunRules at end of factory method.
-    /// RunRules works even while paused — no IsPaused guard.
+    /// RIGHT WAY: this operation needs Total to be right when it returns, so
+    /// it runs the rules that compute it. RunRules has no IsPaused guard.
+    /// A per-operation choice, not a step every operation ends with.
     /// </summary>
     [Create]
     public async Task CreateWithRunRules()
     {
         Quantity = 10;
         Price = 5.00m;
-        await RunRules(RunRulesFlag.All);  // Forces all rules to execute
+        await RunRules(RunRulesFlag.All);  // no children here, so All is safe
         // Total is now 50.00
     }
     #endregion
@@ -497,8 +510,8 @@ public interface IGotcha5Repository
 // +-----+------------------------------------------+-----------------------------+
 // | #   | Gotcha                                   | Solution                    |
 // +-----+------------------------------------------+-----------------------------+
-// | 1   | Rules don't fire during [Create]        | await RunRules() at end     |
-// |     |                                          | of factory method           |
+// | 1   | Rules don't fire during [Create]        | Compute what the operation  |
+// |     |                                          | needs: RunRules, or load it |
 // +-----+------------------------------------------+-----------------------------+
 // | 2   | DeletedList ignores IsNew=true items    | Expected behavior - new     |
 // |     |                                          | items don't need deletion   |

@@ -442,29 +442,26 @@ When an async rule executes, RuleManager marks all trigger properties as busy us
 
 ## Forcing a Re-run: RunRules
 
-Rules run on their own when a property is set outside a factory operation. `RunRules` is for forcing a re-run. The common case: a `[Create]` or `[Fetch]` set properties while the object was paused, so no rule has evaluated them yet — the object reports valid until something asks:
+Rules run on their own when a property is set outside a factory operation; there is no validate step before reading `IsValid`. Inside an operation nothing fires, so an operation that needs a derived value right when it returns runs the rules that compute it — a per-operation choice, not a step every `[Create]` or `[Fetch]` ends with:
 
-<!-- snippet: skill-run-rules-forces -->
-<a id='snippet-skill-run-rules-forces'></a>
+<!-- snippet: skill-create-computes-what-it-needs -->
+<a id='snippet-skill-create-computes-what-it-needs'></a>
 ```cs
-[TestMethod]
-public async Task Gotcha1_RulesFireAfterCreate_WithExplicitRunRules()
+/// <summary>
+/// RIGHT WAY: this operation needs Total to be right when it returns, so
+/// it runs the rules that compute it. RunRules has no IsPaused guard.
+/// A per-operation choice, not a step every operation ends with.
+/// </summary>
+[Create]
+public async Task CreateWithRunRules()
 {
-    // Arrange
-    var factory = _scope.GetRequiredService<IGotcha1DemoFactory>();
-
-    // Act
-    var entity = factory.Create();
-
-    // RunRules works even after factory (IsPaused is now false)
-    await entity.RunRules(RunRulesFlag.All);
-
-    // Assert - Now the rule has run
-    Assert.AreEqual(50.00m, entity.Total, "Total should be calculated after RunRules");
-    Assert.IsTrue(entity.RuleHasRun, "Rule should have run after explicit RunRules call");
+    Quantity = 10;
+    Price = 5.00m;
+    await RunRules(RunRulesFlag.All);  // no children here, so All is safe
+    // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L52-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-run-rules-forces' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L109-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 RunRules overloads:
@@ -473,7 +470,7 @@ RunRules overloads:
 - **RunRules(RunRulesFlag.Self)**: Run only this object's rules (not children)
 - **RunRules(flag, token)**: Run with cancellation token support
 
-`RunRulesFlag.All` clears existing validation messages before running rules. `RunRules` has no `IsPaused` guard, so a factory method can call it at the end to populate computed values. It is not the step between setting a property and reading `IsValid` — the setter already ran the rules; when async rules may be in flight, `await WaitForTasks()` instead.
+`RunRulesFlag.All` clears existing validation messages before running rules. `RunRules` has no `IsPaused` guard, so an operation can run the rules it needs while paused; a `[Fetch]` names them by trigger (`RunRules(nameof(Status))`) rather than `All`, which from a root whose rules write children would mark any just-fetched child whose value a rule changes as modified. It is not the step between setting a property and reading `IsValid` — the setter already ran the rules; when async rules may be in flight, `await WaitForTasks()` instead.
 
 ## Error Messages and Property-Level State
 

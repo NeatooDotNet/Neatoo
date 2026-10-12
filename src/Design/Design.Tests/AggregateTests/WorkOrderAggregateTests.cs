@@ -177,4 +177,67 @@ public class WorkOrderAggregateTests
         Assert.IsFalse(order.IsModified);
     }
     #endregion
+
+    #region skill-fetch-computes-derived-test
+    [TestMethod]
+    public async Task Fetch_RecomputesTheRootsDerivedValues_LoadsTheChildAggregates_AndIsNotModified()
+    {
+        // Save through the aggregate so every derived value is what the rules
+        // computed: one task unschedulable (zero hours), one over budget.
+        var (order, design, build) = await CreateWithTwoTasks();
+        order.Budget = 100m;
+        order.IsOnHold = false;
+        design.Hours = 0m;            // not schedulable
+        build.Hours = 10m;
+        build.Rate = 20m;             // 200 > budget
+        await order.WaitForTasks();
+        Assert.IsTrue(order.HasUnschedulableTasks);
+        Assert.IsTrue(order.IsOverBudget);
+        order = (IWorkOrder)await order.Save();
+
+        var fetched = (await _factory.Fetch(order.Id))!;
+
+        // #98: the root recomputed only its own rules (named by trigger) and
+        // loaded the child aggregates; no finished child was written, so the
+        // fetched graph is a clean baseline.
+        Assert.IsFalse(fetched.IsModified, "a fetched aggregate is not modified");
+        Assert.IsFalse(fetched.Tasks![0].IsModified);
+
+        // The root's own derived values, recomputed by RunRules(nameof(Status)) / (nameof(Budget))
+        Assert.AreEqual(order.CanApprove, fetched.CanApprove);
+        Assert.AreEqual(order.IsHeld, fetched.IsHeld);
+        Assert.AreEqual(order.IsOverBudget, fetched.IsOverBudget);
+        Assert.AreEqual(order.Summary, fetched.Summary);
+
+        // The aggregates over the children, loaded from the row
+        Assert.AreEqual(200m, fetched.TotalCost);
+        Assert.IsTrue(fetched.HasUnschedulableTasks, "persisted like TotalCost; no rule re-run writes the children");
+
+        // The children's own derived values, loaded from their rows
+        Assert.IsFalse(fetched.Tasks[0].IsSchedulable);
+        Assert.AreEqual(200m, fetched.Tasks[1].Cost);
+    }
+
+    [TestMethod]
+    public async Task Fetch_TargetedRunRules_DoesNotWriteTheFinishedChildren()
+    {
+        // The #98 hazard needs a root rule that would write a DIFFERENT value
+        // than the child loaded: a task row whose Discount is not the root's.
+        // Divergence is what a changed rule leaves behind in old rows. (Saved through
+        // the aggregate the two always agree, so the test above
+        // cannot tell the targeted form from RunRulesFlag.All; this one can.)
+        var task = MockWorkOrderRepository.Task("Design", 1, 2m, 30m);
+        task.Discount = 0.25m;                 // root row's Discount is 0
+        var row = _repository.SeedWorkOrder(task);
+
+        var fetched = (await _factory.Fetch(row.Id))!;
+
+        // RunRules(nameof(Status)) / (nameof(Budget)) did not run the Discount
+        // orchestrator, so the finished task kept its loaded value and is a clean
+        // baseline. RunRulesFlag.All would have pushed 0 into it and marked it modified.
+        Assert.AreEqual(0.25m, fetched.Tasks![0].Discount);
+        Assert.IsFalse(fetched.Tasks[0].IsModified);
+        Assert.IsFalse(fetched.IsModified);
+    }
+    #endregion
 }

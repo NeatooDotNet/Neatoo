@@ -224,29 +224,26 @@ public async Task Save_WithCancelledToken_ThrowsAndLeavesStateUnchanged()
 
 ## RunRules with Async
 
-`RunRules` forces a re-run of rules and returns a `Task` that completes when the async ones finish. It is not the routine step between setting a property and reading `IsValid` — the setter already ran the rules; `WaitForTasks()` is what you await. `RunRules` is for the cases where nothing ran: after a factory operation (the object was paused), or to re-validate after a cancelled `RunRules`.
+`RunRules` forces a re-run of rules and returns a `Task` that completes when the async ones finish. It is not the routine step between setting a property and reading `IsValid` — the setter already ran the rules; `WaitForTasks()` is what you await. `RunRules` is for the cases where nothing ran: inside a factory operation, for the derived values that operation needs (the object is paused, so it runs the rules that compute them — a per-operation choice, not a step every operation ends with), or to re-validate after a cancelled `RunRules`.
 
-<!-- snippet: skill-run-rules-forces -->
-<a id='snippet-skill-run-rules-forces'></a>
+<!-- snippet: skill-create-computes-what-it-needs -->
+<a id='snippet-skill-create-computes-what-it-needs'></a>
 ```cs
-[TestMethod]
-public async Task Gotcha1_RulesFireAfterCreate_WithExplicitRunRules()
+/// <summary>
+/// RIGHT WAY: this operation needs Total to be right when it returns, so
+/// it runs the rules that compute it. RunRules has no IsPaused guard.
+/// A per-operation choice, not a step every operation ends with.
+/// </summary>
+[Create]
+public async Task CreateWithRunRules()
 {
-    // Arrange
-    var factory = _scope.GetRequiredService<IGotcha1DemoFactory>();
-
-    // Act
-    var entity = factory.Create();
-
-    // RunRules works even after factory (IsPaused is now false)
-    await entity.RunRules(RunRulesFlag.All);
-
-    // Assert - Now the rule has run
-    Assert.AreEqual(50.00m, entity.Total, "Total should be calculated after RunRules");
-    Assert.IsTrue(entity.RuleHasRun, "Rule should have run after explicit RunRules call");
+    Quantity = 10;
+    Price = 5.00m;
+    await RunRules(RunRulesFlag.All);  // no children here, so All is safe
+    // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L52-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-run-rules-forces' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L109-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `RunRules(RunRulesFlag.All)` clears all validation messages before running, giving a clean validation state.

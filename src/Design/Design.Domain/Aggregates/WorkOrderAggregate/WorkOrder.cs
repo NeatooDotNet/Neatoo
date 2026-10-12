@@ -135,7 +135,7 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
     }
     #endregion
 
-    #region skill-create-with-run-rules
+    #region skill-create-computes-derived
     [Create]
     public async Task Create([Service] IWorkOrderTaskListFactory tasksFactory)
     {
@@ -143,11 +143,14 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
         Status = "Pending";
 
         // The object is paused: the assignment above ran no rule, so CanApprove
-        // is still false. Force the rules so the new object is consistent.
+        // and Summary are still default. This operation needs them, so it runs
+        // the rules that compute them. All is safe here because the task list
+        // is empty - no finished child exists for a root rule to write.
         await RunRules(RunRulesFlag.All);
     }
     #endregion
 
+    #region skill-fetch-computes-derived
     [Remote]
     [Fetch]
     internal async Task<bool> Fetch(Guid id,
@@ -167,19 +170,27 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
         Budget = row.Budget;
         Discount = row.Discount;
         TotalCost = row.TotalCost;
+        HasUnschedulableTasks = row.HasUnschedulableTasks;
 
         Tasks = tasksFactory.Fetch(row.Tasks);
 
-        // The root's own derived values (CanApprove, IsHeld, IsOverBudget,
-        // Summary) are not persisted: re-run the rules that compute them. Only
-        // rules that write THIS object - the tasks finished their own [Fetch]
-        // and are no longer paused, so a rule that wrote them would mark them
-        // modified. Their derived values (Cost, IsSchedulable) are loaded from
-        // their rows, as OrderItem loads LineTotal.
+        // Rules do not fire during an operation, so this one computes what it
+        // needs. Two shapes, both used here:
+        //  - Aggregates over the children (TotalCost, HasUnschedulableTasks) are
+        //    persisted and loaded, as the tasks load Cost and IsSchedulable and
+        //    OrderItem loads LineTotal.
+        //  - The root's own derived values (CanApprove, IsHeld, IsOverBudget,
+        //    Summary) are recomputed by running the rules that write THIS
+        //    object, named by their trigger. Not RunRulesFlag.All: the tasks
+        //    finished their own [Fetch] and are no longer paused, so a root rule
+        //    that changed one of their values would mark it modified and the graph
+        //    would report IsModified == true.
+        // Neither is a validate step; persisted data is assumed valid.
         await RunRules(nameof(Status));
         await RunRules(nameof(Budget));
         return true;
     }
+    #endregion
 
     [Remote]
     [Insert]
@@ -248,6 +259,7 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
         row.Budget = Budget;
         row.Discount = Discount;
         row.TotalCost = TotalCost;
+        row.HasUnschedulableTasks = HasUnschedulableTasks;
     }
 }
 
@@ -264,6 +276,7 @@ public class WorkOrderRow
     public decimal Budget { get; set; }
     public decimal Discount { get; set; }
     public decimal TotalCost { get; set; }
+    public bool HasUnschedulableTasks { get; set; }
     public List<WorkOrderTaskRow> Tasks { get; } = new();
 }
 
