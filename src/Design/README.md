@@ -40,7 +40,9 @@ src/Design/
 │   ├── ErrorHandling/         # Exceptions vs validation
 │   ├── DI/                    # Service registration and contracts
 │   └── CommonGotchas.cs       # Gotchas with tests in Design.Tests/GotchaTests
-├── Design.Infrastructure/     # Empty; repository interfaces live in Design.Domain
+├── Design.Infrastructure/     # In-memory [Service] implementations for Design.Server (interfaces live in Design.Domain)
+├── Design.App/                # Blazor WASM client: ClientServices.cs, ViewModels/, Pages/
+├── Design.Server/             # ASP.NET Core host: ServerServices.cs, UseNeatoo()
 └── Design.Tests/              # Test coverage for all patterns
     ├── BaseClassTests/
     ├── AggregateTests/
@@ -48,7 +50,11 @@ src/Design/
     ├── GotchaTests/
     ├── PropertyTests/
     ├── ReadModelTests/
-    └── RuleTests/
+    ├── RuleTests/
+    ├── JobTests/
+    ├── ServiceTests/
+    ├── CompositionTests/      # Client/server pair from the two compositions
+    └── ViewModelTests/
 ```
 
 ## Key Concepts

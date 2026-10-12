@@ -1,0 +1,123 @@
+@page "/orders/new"
+@page "/orders/{Id:guid}"
+@using Design.App.ViewModels
+@using Design.Domain.Aggregates.OrderAggregate
+@inject OrderEditViewModel Vm
+@implements IDisposable
+
+<PageTitle>Order</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Order</MudText>
+
+        @if (Vm.Order is null)
+        {
+            <MudText>Loading...</MudText>
+        }
+        else
+        {
+            @* begin-snippet: skill-page-order-edit *@
+            @* The page binds each field to the entity's property wrapper. The
+               component reads the wrapper's value, messages, IsBusy and IsReadOnly;
+               nothing here validates or decides. *@
+            <NeatooValidationSummary Entity="@Vm.Order" Class="mb-4" />
+
+            <MudNeatooTextField T="string" EntityProperty="@Vm.Order[nameof(IOrder.OrderNumber)]" Class="mb-3" />
+            <MudNeatooTextField T="string" EntityProperty="@Vm.Order[nameof(IOrder.CustomerName)]" Class="mb-3" />
+            <MudNeatooDatePicker EntityProperty="@Vm.Order[nameof(IOrder.OrderDate)]" Class="mb-3" />
+
+            <MudText Typo="Typo.h6" Class="my-3">Items</MudText>
+
+            @if (Vm.Order.Items is not null)
+            {
+                @foreach (var item in Vm.Order.Items)
+                {
+                    <MudGrid Class="mb-2" Spacing="2">
+                        <MudItem xs="12" sm="6">
+                            <MudNeatooTextField T="string" EntityProperty="@item[nameof(IOrderItem.ProductName)]" />
+                        </MudItem>
+                        <MudItem xs="6" sm="2">
+                            <MudNeatooNumericField T="int" EntityProperty="@item[nameof(IOrderItem.Quantity)]" />
+                        </MudItem>
+                        <MudItem xs="6" sm="2">
+                            <MudNeatooNumericField T="decimal" EntityProperty="@item[nameof(IOrderItem.UnitPrice)]" />
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Class="d-flex align-center">
+                            <MudText>@item.LineTotal.ToString("C")</MudText>
+                        </MudItem>
+                    </MudGrid>
+                }
+            }
+
+            <MudButton Variant="Variant.Outlined" OnClick="Vm.AddItem" Class="mb-3">Add Item</MudButton>
+
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Total: @Vm.Order.TotalAmount.ToString("C")</MudText>
+
+            @* The Save button is enabled by the entity's own answer. *@
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Disabled="@(!Vm.CanSave)"
+                       OnClick="Vm.Save">
+                Save
+            </MudButton>
+            @* end-snippet *@
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private IOrder? _subscribed;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is Guid id)
+        {
+            await Vm.Load(id);
+        }
+        else
+        {
+            Vm.New();
+        }
+
+        Resubscribe();
+    }
+
+    // The aggregate's rules change properties the page shows outside any input
+    // component (TotalAmount, IsSavable), so the page re-renders on the
+    // graph-wide event. Input components subscribe to their own wrappers.
+    private void Resubscribe()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+        }
+
+        _subscribed = Vm.Order;
+
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged += OnEntityChanged;
+        }
+    }
+
+    private Task OnEntityChanged(NeatooPropertyChangedEventArgs e)
+    {
+        if (!ReferenceEquals(_subscribed, Vm.Order))
+        {
+            Resubscribe();  // Save returned a new instance
+        }
+
+        return InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+        }
+    }
+}

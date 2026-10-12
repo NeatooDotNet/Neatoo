@@ -1,0 +1,14 @@
+@page "/"
+
+<PageTitle>Design.App</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Design.App</MudText>
+        <MudText Class="mb-4">The Blazor client over Design.Domain. Each page is a compiled example the Neatoo skill points at.</MudText>
+        <MudStack>
+            <MudLink Href="/orders/new">New order (save handler, MudNeatoo binding)</MudLink>
+            <MudLink Href="/workorders/new">New work order (ViewModel over a live aggregate)</MudLink>
+        </MudStack>
+    </MudPaper>
+</MudContainer>

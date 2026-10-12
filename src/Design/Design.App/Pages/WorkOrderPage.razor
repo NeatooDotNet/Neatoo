@@ -1,0 +1,144 @@
+@page "/workorders/new"
+@page "/workorders/{Id:guid}"
+@using Design.App.ViewModels
+@using Design.Domain.Aggregates.WorkOrderAggregate
+@inject WorkOrderViewModel Vm
+@implements IDisposable
+
+<PageTitle>Work Order</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Work Order</MudText>
+
+        @if (Vm.WorkOrder is null)
+        {
+            <MudText>Loading...</MudText>
+        }
+        else
+        {
+            @* begin-snippet: skill-page-binds-facts *@
+            @* Every show/hide and enable/disable here is a business fact the
+               aggregate computed. The page has no condition of its own. *@
+            @if (Vm.ShowHoldBanner)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-3">This work order is on hold.</MudAlert>
+            }
+
+            @if (Vm.WorkOrder.IsOverBudget)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-3">Over budget: @Vm.WorkOrder.Summary</MudAlert>
+            }
+
+            @if (Vm.WorkOrder.HasUnschedulableTasks)
+            {
+                <MudAlert Severity="Severity.Info" Class="mb-3">Some tasks cannot be scheduled.</MudAlert>
+            }
+
+            <NeatooValidationSummary Entity="@Vm.WorkOrder" Class="mb-4" />
+
+            <MudText Typo="Typo.subtitle1">Status: @Vm.WorkOrder.Status</MudText>
+
+            <MudNeatooNumericField T="decimal" EntityProperty="@Vm.WorkOrder[nameof(IWorkOrder.Budget)]" Class="mb-3" />
+            <MudNeatooNumericField T="decimal" EntityProperty="@Vm.WorkOrder[nameof(IWorkOrder.Discount)]" Class="mb-3" />
+            <MudNeatooSwitch T="bool" EntityProperty="@Vm.WorkOrder[nameof(IWorkOrder.IsOnHold)]" Class="mb-3" />
+
+            <MudText Typo="Typo.h6" Class="my-3">Tasks</MudText>
+
+            @if (Vm.WorkOrder.Tasks is not null)
+            {
+                @foreach (var task in Vm.WorkOrder.Tasks)
+                {
+                    <MudGrid Class="mb-2" Spacing="2">
+                        <MudItem xs="12" sm="5">
+                            <MudNeatooTextField T="string" EntityProperty="@task[nameof(IWorkOrderTask.Name)]" />
+                        </MudItem>
+                        <MudItem xs="6" sm="2">
+                            <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Hours)]" />
+                        </MudItem>
+                        <MudItem xs="6" sm="2">
+                            <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Rate)]" />
+                        </MudItem>
+                        <MudItem xs="12" sm="3" Class="d-flex align-center">
+                            <MudText>@task.Cost.ToString("C")</MudText>
+                        </MudItem>
+                    </MudGrid>
+                }
+            }
+
+            <MudButton Variant="Variant.Outlined" OnClick="@(() => Vm.AddTask("New task"))" Class="mb-3">Add Task</MudButton>
+
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Total: @Vm.WorkOrder.TotalCost.ToString("C")</MudText>
+
+            @* The verb's button is enabled by the entity's admission fact. *@
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       Disabled="@(!Vm.CanApprove)"
+                       OnClick="@(() => Vm.Approve("design.app"))"
+                       Class="mr-2">
+                Approve
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Disabled="@(!Vm.CanSave)"
+                       OnClick="Vm.Save">
+                Save
+            </MudButton>
+            @* end-snippet *@
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private IWorkOrder? _subscribed;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is Guid id)
+        {
+            await Vm.Load(id);
+        }
+        else
+        {
+            await Vm.New();
+        }
+
+        Resubscribe();
+    }
+
+    private void Resubscribe()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+        }
+
+        _subscribed = Vm.WorkOrder;
+
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged += OnEntityChanged;
+        }
+    }
+
+    private Task OnEntityChanged(NeatooPropertyChangedEventArgs e)
+    {
+        if (!ReferenceEquals(_subscribed, Vm.WorkOrder))
+        {
+            Resubscribe();
+        }
+
+        return InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+        }
+    }
+}
