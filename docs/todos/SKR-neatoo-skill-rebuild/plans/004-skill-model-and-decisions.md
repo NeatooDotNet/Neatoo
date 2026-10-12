@@ -69,16 +69,16 @@ Two small Design changes are in this plan because the plan review found the trap
 
 ## Acceptance
 
-- [ ] A new `Order` from `Order.Create` is not savable and carries `CustomerName`'s required message before any edit; filling it makes the order savable `[integration]` · Must
-- [ ] The `record` value object rejects bad input in its constructor and is used by `Employee`; a valid one round-trips through the client/server pair `[integration]` · Must
-- [ ] Every Neatoo-owned trap row (T1, T2, T7, T8, T9, T10, T11-Neatoo, T12, T16, T17) is answered in `SKILL.md` at a decision point, phrased against the question, with its compiled example rendered inline or linked to the `references/` file that renders it `[explicit-skip: table walk, line numbers recorded]` · Must
-- [ ] Every RF-owned row (T3–T6, T11-RF, T13–T15, T18–T20) appears once, in the pointer block, with no restated answer `[explicit-skip: grep]` · Must
-- [ ] Every C# block in `SKILL.md` is a filled `skill-*` snippet except blocks labelled WRONG; `dotnet mdsnippets` reports no missing or duplicate regions `[explicit-skip: tooling + grep for fenced blocks without a placeholder]` · Must
-- [ ] `SKILL.md` leads with the model; the trap table starts within the first screen after it; total ≤ ~400 lines `[explicit-skip: line count]` · Should
-- [ ] No sentence teaches a prohibition where the model gives the answer; no `RunRules` step before Save; no LazyLoad teaching; no ruling IDs in prose `[explicit-skip: read-through + grep]` · Must
-- [ ] The frontmatter description contains the habit questions and triggers on them `[explicit-skip: read]` · Must
-- [ ] The named pains carry their issue numbers (Neatoo#103, RemoteFactory#117) and the analyzers are named `[explicit-skip: grep]` · Should
-- [ ] Each mechanism section removed from `SKILL.md` leaves a pointer to the `references/` file 005 will give it `[explicit-skip: diff walk]` · Must
+- [x] A new `Order` from `Order.Create` is not savable and carries `CustomerName`'s required message before any edit; filling it makes the order savable `[integration]` · Must
+- [x] The `record` value object rejects bad input in its constructor and is used by `Employee`; a valid one round-trips through the client/server pair `[integration]` · Must
+- [x] Every Neatoo-owned trap row (T1, T2, T7, T8, T9, T10, T11-Neatoo, T12, T16, T17) is answered in `SKILL.md` at a decision point, phrased against the question, with its compiled example rendered inline or linked to the `references/` file that renders it `[explicit-skip: table walk, line numbers recorded]` · Must
+- [x] Every RF-owned row (T3–T6, T11-RF, T13–T15, T18–T20) appears once, in the pointer block, with no restated answer `[explicit-skip: grep]` · Must
+- [x] Every C# block in `SKILL.md` is a filled `skill-*` snippet except blocks labelled WRONG; `dotnet mdsnippets` reports no missing or duplicate regions `[explicit-skip: tooling + grep for fenced blocks without a placeholder]` · Must
+- [x] `SKILL.md` leads with the model; the trap table starts within the first screen after it; total ≤ ~400 lines `[explicit-skip: line count]` · Should
+- [x] No sentence teaches a prohibition where the model gives the answer; no `RunRules` step before Save; no LazyLoad teaching; no ruling IDs in prose `[explicit-skip: read-through + grep]` · Must
+- [x] The frontmatter description contains the habit questions and triggers on them `[explicit-skip: read]` · Must
+- [x] The named pains carry their issue numbers (Neatoo#103, RemoteFactory#117) and the analyzers are named `[explicit-skip: grep]` · Should
+- [x] Each mechanism section removed from `SKILL.md` leaves a pointer to the `references/` file 005 will give it `[explicit-skip: diff walk]` · Must
 
 ---
 
@@ -98,9 +98,9 @@ Walked 2026-10-12.
 
 ## Punchlist
 
-- [ ] Neatoo#103 named inline at T1/the save handler · `SKILL.md` · done when the pain and issue appear beside the save-handler block · AC-7 · Should (pulled from the todo, 2026-10-12; the pains *reference* is 005's)
-- [ ] Design.App Order form: `Order.Create` runs its rules so the empty form is not savable · `Order.cs`, tests · done when the New → Save path cannot reach the gate · AC-4 · Must (pulled from the todo, 2026-10-12; user: the `[Create]` decides)
-- [ ] `CLAUDE-DESIGN.md:77,87` and `README.md:24` value-object wording (D17) · done when grep for "value object" near `ValidateBase` is empty · AC-3 · Must (pulled from the todo, 2026-10-12)
+- [x] Neatoo#103 named inline at T1/the save handler · `SKILL.md` · done when the pain and issue appear beside the save-handler block · AC-7 · Should (pulled from the todo, 2026-10-12; the pains *reference* is 005's)
+- [x] Design.App Order form: `Order.Create` runs its rules so the empty form is not savable · `Order.cs`, tests · done when the New → Save path cannot reach the gate · AC-4 · Must (pulled from the todo, 2026-10-12; user: the `[Create]` decides)
+- [x] `CLAUDE-DESIGN.md:77,87` and `README.md:24` value-object wording (D17) · done when grep for "value object" near `ValidateBase` is empty · AC-3 · Must (pulled from the todo, 2026-10-12)
 
 ---
 
@@ -108,16 +108,16 @@ Walked 2026-10-12.
 
 | Acceptance bullet (short) | Priority | Tier declared | Evidence | Confirmed |
 |---|---|---|---|---|
-| New Order not savable until required fields filled | Must | `[integration]` | | |
-| Record value object rejects bad input, round-trips | Must | `[integration]` | | |
-| Every Neatoo-owned trap row answered, example inline or linked | Must | `[explicit-skip]` | | |
-| RF rows once, pointer only | Must | `[explicit-skip]` | | |
-| Every C# block a filled snippet (or WRONG) | Must | `[explicit-skip]` | | |
-| Model first, table in first screen, ≤ ~400 lines | Should | `[explicit-skip]` | | |
-| No prohibition-teaching, no routine validate step, no LazyLoad, no Dn | Must | `[explicit-skip]` | | |
-| Frontmatter triggers on the questions | Must | `[explicit-skip]` | | |
-| Pains carry issue numbers | Should | `[explicit-skip]` | | |
-| Removed sections leave pointers | Must | `[explicit-skip]` | | |
+| New Order not savable until required fields filled | Must | `[integration]` | `Design.Tests/ViewModelTests/OrderEditViewModelTests.cs` `New_EmptyForm_IsNotSavableUntilRequiredFieldsAreFilled` — through `DesignClientServer.Scopes()`: `IsValid` false, `CanSave` false, `CustomerName` message present; set it, `WaitForTasks`, `CanSave` true. Premise also asserted in `AggregateTests/AggregateLifecycleTests.cs` server-gate Arrange (`Assert.IsFalse(order.IsValid, "Create ran the rules…")`). | integration |
+| Record value object rejects bad input, round-trips | Must | `[integration]` | `Design.Tests/EntityTests/PayGradeTests.cs` `Record_ComparesByValue_AndRejectsAnUnknownCode` (value equality; `ArgumentException` on `"Z"`) and `Employee_CarriesTheRecord_AcrossTheClientServerPair` (Grade `C` saved and fetched through the pair, `link.Calls == 2`, equals `new PayGrade("C")`, `MaxSalary 90_000m`). `Employee.Grade` assigned in Create/Fetch/MapTo. | integration |
+| Every Neatoo-owned trap row answered, example inline or linked | Must | `[explicit-skip]` | Rendered `SKILL.md` table rows (line → T): 31 → T1; 32 → T2; 33 → T7; 34 → T8; 35 → T9; 36 → T10; 37 → T11-Neatoo; 38 → T12; 39 → T16; 40 → T17. Each row's third column links `references/<file>.md` (anchors verified present: blazor.md `#the-save-handler`, base-classes.md `#a-job-over-entities` / `#a-value-object-is-a-record`, validation.md `#a-rule-that-takes-a-domain-service`, entities.md `#one-class-in-both-roles`). Decisions re-answer T1/T10 (:50–100), T2/T8 (:102–125), T1 UI (:127–279), T17 (:281, :289), T12 (:285), T16 (:293). | skip confirmed |
+| RF rows once, pointer only | Must | `[explicit-skip]` | One block at `SKILL.md:42` naming T3, T4, T5, T6, T11-RF, T13, T14, T15, T18, T19, T20 as RemoteFactory phrases them, each with a parenthetical pointer, no example. `grep -c "RemoteFactory's questions"` = 1; none of those questions appears in the Neatoo table. | skip confirmed |
+| Every C# block a filled snippet (or WRONG) | Must | `[explicit-skip]` | Four fenced blocks (`:56`, `:115`, `:133`, `:203`), each inside a `<!-- snippet: … -->`/`<!-- endSnippet -->` pair (`skill-fetch-computes-derived`, `skill-can-x-rule`, `skill-save-handler`, `skill-page-binds-facts`); no WRONG block. `dotnet mdsnippets` exit 0, log has no "missing"/"duplicate" lines (`TreatMissingAsWarning` checked by grep, not exit code). | skip confirmed |
+| Model first, table in first screen, ≤ ~400 lines | Should | `[explicit-skip]` | `## The model` at `:13`; `## The questions the habit asks` at `:25`; rendered file 329 lines (139 before mdsnippets). | skip confirmed |
+| No prohibition-teaching, no routine validate step, no LazyLoad, no Dn | Must | `[explicit-skip]` | `grep -nE "\b(D[0-9]{1,2}\|T[0-9]{1,2})\b"` empty. `RunRules` appears at `:31` (denied as a validate step), `:36` (targeted, per-operation), inside the Fetch block, and `:299` (the server gate). "lazy" appears only at `:308` (pain: being removed, build nothing new) and `:327` (index: pending removal). Read-through: each row states the answer before any "never". | skip confirmed |
+| Frontmatter triggers on the questions | Must | `[explicit-skip]` | `SKILL.md:3`: description 952 characters (cap 1,024); leads with nine habit questions in compact form, then the type/property names; no LazyLoad words; names the RemoteFactory skill as the owner of attributes and composition. | skip confirmed |
+| Pains carry issue numbers | Should | `[explicit-skip]` | Neatoo#103 at `:197` (beside the save handler) and `:303`; RemoteFactory#117 at `:307`; three analyzers named `:304–306` (Save result, collection-reference trigger, LoadValue in operation). | skip confirmed |
+| Removed sections leave pointers | Must | `[explicit-skip]` | Closing paragraph of `## References` (`:329`) maps each removed section to its reference; the full move list with base-commit line ranges and today's render status is in Notes. The two `domain-logic-placement.md` pointers (`:3`, `:5`) fixed. | skip confirmed |
 
 ---
 
@@ -155,3 +155,33 @@ Walked 2026-10-12.
 ## Notes
 
 - Skills consulted at drafting: `skills/neatoo/*` read from the repo (not loaded via the Skill tool, per `CLAUDE.md`); the RemoteFactory skill's current files for the pointer vocabulary.
+
+### Sections removed from `SKILL.md` (base commit `3877443`, 863 lines) — 005's move list
+
+Line ranges are at the base commit. "Renders today" is the reference that already carries the region (grep 2026-10-12); a blank means no reference renders it yet and 005 moves the block from the old file. Pointer phrasing in the new `SKILL.md` ("lives in, or is moving into") covers both.
+
+| Removed section | Lines | Regions held | Renders today | Target reference |
+|---|---|---|---|---|
+| Quick Start | 15–192 | `skill-quick-start-interface`, `skill-quick-start`, `skill-quick-start-create`, `skill-quick-start-save` | — (docs only) | base-classes.md |
+| Interface-First Design | 193–255 | `skill-aggregate-interfaces` | collections.md | collections.md (kept as the decision in SKILL.md) |
+| Domain Logic First: ladder, where logic goes, mirror rule, gesture test, smell test (one WRONG line) | 256–327 | none | — | domain-logic-placement.md (its intro now points at the model's third statement; the smell test and the WRONG line go beside the decision tree) |
+| Three-Phase Pattern; factory-vs-business boundary table; "what the save needs must be state" table | 328–375 | none | — | entities.md |
+| The Aggregate Is a Graph, Not a Façade | 376–391 | none | — | domain-logic-placement.md (the open-mutation callout at its line 5 is the seed) |
+| Designing Rules for Open Mutation; rule placement by scope table | 392–415 | none | — | domain-logic-placement.md |
+| Parent: in a child rule / factory method / business method; cast pattern; rules of use; why under-taught | 416–534 | `skill-parent-in-child-rule`, `skill-parent-in-child-update`, `skill-parent-in-update-test`, `skill-parent-in-child-method` | `skill-parent-in-child-method` in domain-logic-placement.md; the other three — (docs only or nowhere) | domain-logic-placement.md |
+| Base Class Quick Reference | 535–547 | none | — | base-classes.md |
+| Key Properties | 548–562 | none | — | entities.md |
+| Core Patterns: properties with change tracking | 565–582 | `skill-partial-properties` | — (docs only) | properties.md |
+| Core Patterns: factory methods; save routing | 583–600 | none | — | entities.md |
+| Core Patterns: server gate | 601–670 | `skill-root-insert`, `skill-server-gate-refuses` | entities.md; validation.md | validation.md |
+| Core Patterns: aggregate save cascading | 671–674 | none | — | entities.md |
+| Core Patterns: validation | 675–717 | `skill-validation-attributes-and-rules` | validation.md | validation.md |
+| Core Patterns: rules do not fire during factory methods | 718–747 | `skill-create-computes-what-it-needs` | rules-lifecycle.md, validation.md | rules-lifecycle.md |
+| Core Patterns: child property triggers; parent orchestrator | 748–797 | `skill-child-property-trigger`, `skill-parent-orchestrator` | domain-logic-placement.md | domain-logic-placement.md |
+| Testing | 798–801 | none | — | testing.md |
+| Reference Documentation | 802–823 | none | — | replaced by the new index |
+| Troubleshooting | 824–827 | none | — | pitfalls.md |
+| IsNew vs IsModified | 828–863 | `skill-create-is-new-not-modified` | entities.md | entities.md |
+
+- **Rename traced to 005:** `skill-value-object` and `skill-value-object-test` are the `ValidateBase` input model (`EmployeeSummary`-style); the record is `skill-value-object-record`. 005 renames the input-model regions (e.g. `skill-input-model`) and updates base-classes.md and the docs that render them.
+- **Pointer fixes landed here:** `references/domain-logic-placement.md:3` now names the model's third statement and the "Logic is placed by who drives it" decision; `:5` names the fourth statement instead of the deleted "Aggregate Is a Graph" / "Open Mutation" sections.
