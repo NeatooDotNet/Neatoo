@@ -113,6 +113,12 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - **Index changes:** AC-4 narrowed to the Neatoo-owned composition; 002 regions only `AddNeatooServices` per tier, MudNeatoo, the save handler and the WorkOrder ViewModel/page. Cap unchanged, 7 of 11 issued.
 - **Follow-up:** SKR-002
 
+### 2026-10-11 — SKR-002 plan review · serves AC-4, AC-1
+- **Finding:** (1) `WorkOrder.ShowHoldBanner` is the D16/N5 screen-element smell inside the example set's own region, and the T8 page was about to bind it. (2) `AddNeatooServices(Server)` followed by RemoteFactory's `AddNeatooAspNetCore` drops Neatoo.dll from `IServiceAssemblies` and undoes Neatoo's converter override, so every remote Save fails on the server; the natural order with both skills loaded. (3) Design.Server's `[Service]` implementations had no home.
+- **Decision:** Amend. Rename to `IsHeld`; Design.Server uses `AddNeatooServices(Server)` + `UseNeatoo()` and states why; RemoteFactory#117 filed; in-memory implementations go in Design.Infrastructure (user, all three, 2026-10-11). Tests run through a client/server pair so serialization is exercised.
+- **Index changes:** none. Cap unchanged, 7 of 11 issued.
+- **Follow-up:** SKR-002; the mudneatoo and docs prose that teach `ShowHoldBanner` re-render under 002.
+
 ### 2026-10-09 — SKR-001 · serves AC-3
 - **Finding:** Three of plan 001's four shapes (context, class-level `[Execute]`, interface factory) are RemoteFactory doctrine; building them in Design.Domain would duplicate the RF skill and drift.
 - **Decision:** Re-split (skills split by owner, agreed with the user)
