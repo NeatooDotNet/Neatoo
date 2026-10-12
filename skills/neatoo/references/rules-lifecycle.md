@@ -52,7 +52,7 @@ RuleManager.AddAction(
     t => t.Quantity,
     t => t.Price);
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L81-L91' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-computed-gap-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L82-L92' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-computed-gap-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A `[Create]` that sets the inputs and expects the rule to have run. After it returns, `Total` is still 0:
@@ -72,7 +72,7 @@ public void Create()
     // Total is NOT calculated here - rule is paused!
 }
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L94-L106' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-without-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L95-L107' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-without-run-rules' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## RunRules Works While Paused
@@ -96,7 +96,7 @@ public async Task CreateWithRunRules()
     // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L108-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L109-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A `[Fetch]` loads persisted data, which is assumed valid, so it never re-runs rules to validate. It computes only the derived values it is not loading. Two shapes, and `WorkOrder.Fetch` uses both: aggregates over the children (`TotalCost`, `HasUnschedulableTasks`) are persisted and loaded, as the tasks load `Cost` and `OrderItem` loads `LineTotal`; the root's own derived values (`CanApprove`, `IsHeld`, `IsOverBudget`, `Summary`) are recomputed with `RunRules(nameof(Status))` / `RunRules(nameof(Budget))` — the rules that write the root itself, named by trigger. Not `RunRulesFlag.All` from a root whose rules write children: the children finished their own `[Fetch]` and are no longer paused, so a root rule that changed one of their values would mark that child modified and the fetched graph would report `IsModified == true`.

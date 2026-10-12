@@ -497,7 +497,7 @@ public async Task CreateWithRunRules()
     // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L108-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L109-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `RunRules(RunRulesFlag.All)` clears existing messages and runs every rule; `RunRules("PropertyName")` runs the rules for one property. `RunRules` has no `IsPaused` guard, so it works inside a factory operation. See [rules-lifecycle.md](rules-lifecycle.md).

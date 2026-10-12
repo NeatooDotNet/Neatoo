@@ -48,7 +48,8 @@ namespace Design.Domain;
 // only the derived values it is not loading - see WorkOrder.Fetch, which
 // names the rules by trigger (RunRules(nameof(Status))) because All from a
 // root whose rules write children would, wherever a rule changed a child's
-// value, mark that just-fetched child modified. Running rules to VALIDATE a returned object is the rare case:
+// value, mark that just-fetched child modified. Running rules to VALIDATE a
+// returned object is the rare case:
 // an operation that must not hand back an unvalidated object (see
 // skill-run-rules-after-create in Design.Tests).
 //

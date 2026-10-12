@@ -525,7 +525,7 @@ public async Task CreateWithRunRules()
     // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L108-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L109-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A `[Fetch]` is the other side of the same choice. It loads persisted data, which is assumed valid, so it never re-runs rules to validate; it computes only the derived values it is not loading. In an aggregate that has two shapes, and `WorkOrder.Fetch` uses both: aggregates over the children (`TotalCost`, `HasUnschedulableTasks`) are persisted and loaded, as the tasks load `Cost`; the root's own derived values are recomputed with `RunRules` named by trigger — never `RunRulesFlag.All` from a root whose rules write children. The children finished their own `[Fetch]` and are no longer paused, so a root rule that changed one of their values would mark that child modified, and the fetched aggregate would report `IsModified == true` with no user work:
@@ -576,7 +576,7 @@ internal async Task<bool> Fetch(Guid id,
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L153-L193' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fetch-computes-derived' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The test that pins it: a saved-then-fetched work order with tasks is not modified and carries every derived value it had when saved.
+Two tests pin it. The first: a saved-then-fetched work order with tasks is not modified and carries every derived value it had when saved. The second shows why the targeted form matters: a task row whose `Discount` differs from the root's stays as loaded and unmodified, because the rules that write children never ran — `RunRulesFlag.All` would have overwritten it and marked it modified.
 
 <!-- snippet: skill-fetch-computes-derived-test -->
 <a id='snippet-skill-fetch-computes-derived-test'></a>

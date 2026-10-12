@@ -740,7 +740,7 @@ public async Task CreateWithRunRules()
     // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L108-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L109-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Without it, a computed property the operation did not load stays at its default when the entity reaches the client. A `[Fetch]` loads persisted data, assumed valid, and recomputes only what it is not loading — with `RunRules(nameof(X))` for the rules that write the root, never `All` from a root whose rules write children (they are no longer paused; one whose value a root rule changes is marked modified). See `references/rules-lifecycle.md` for the lifecycle, the `RunRulesFlag` reference and the factory method timeline.

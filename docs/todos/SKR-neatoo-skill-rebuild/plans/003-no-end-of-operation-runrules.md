@@ -4,8 +4,8 @@
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-5
-**Status:** In Progress
-**Last Updated:** 2026-10-11 (plan review round 2 APPROVED; implementation started)
+**Status:** Done
+**Last Updated:** 2026-10-11 (implemented; test review CLEAN round 2, code review CLEAN round 2)
 **Plan-review opt-in:** Yes — the shape the skill points at for T10; Pass A against D18 as clarified and D6
 **Code-review opt-in:** Yes — examples are what gets copied
 **Branch:** skr-003-no-end-of-operation-runrules — cut from the arc at Step 2
@@ -63,12 +63,12 @@ In prose: the lines found at pre-flight (plus the six the plan review added) tha
 
 ## Acceptance
 
-- [ ] A `WorkOrder` with tasks (one unschedulable) saved and fetched back reports `IsModified == false` and the same `CanApprove`, `IsHeld`, `IsOverBudget`, `Summary`, `HasUnschedulableTasks` and task `Cost`/`IsSchedulable` it had when saved `[integration]` · Must
-- [ ] `WorkOrder.Fetch` runs no `RunRules(All)`; its `RunRules` calls run only rules that write the root itself (child aggregates are loaded from the row), and the shape is in a `skill-*` region pinned by the test above `[explicit-skip: verified by reading the region and the test]` · Must
-- [ ] Gotcha 1 still pins "rules do not fire during an operation" and "`RunRules` has no `IsPaused` guard"; its remedy text and summary row no longer prescribe `RunRules` at the end of every factory method `[explicit-skip: existing tests unchanged; verified by grep]` · Must
-- [ ] No skill, doc or Design.Domain text prescribes `RunRules(All)` as a routine end-of-operation step or a validate step; the rare validate case is stated where it applies and nowhere as a step `[explicit-skip: verified by grep of the pre-flight list plus the plan review's additions]` · Must
-- [ ] #98's three asks delivered (doc statement with snippet, fetched-unmodified test, `CLAUDE-DESIGN.md` mention); #98 closed as done `[explicit-skip: GitHub]` · Must
-- [ ] `Design.sln` builds with 0 errors and 0 warnings, every Design.Tests test passes, `dotnet mdsnippets` reports no duplicate or missing regions `[explicit-skip: meta-bullet]` · Must
+- [x] A `WorkOrder` with tasks (one unschedulable) saved and fetched back reports `IsModified == false` and the same `CanApprove`, `IsHeld`, `IsOverBudget`, `Summary`, `HasUnschedulableTasks` and task `Cost`/`IsSchedulable` it had when saved `[integration]` · Must
+- [x] `WorkOrder.Fetch` runs no `RunRules(All)`; its `RunRules` calls run only rules that write the root itself (child aggregates are loaded from the row), and the shape is in a `skill-*` region pinned by the test above `[explicit-skip: verified by reading the region and the test]` · Must
+- [x] Gotcha 1 still pins "rules do not fire during an operation" and "`RunRules` has no `IsPaused` guard"; its remedy text and summary row no longer prescribe `RunRules` at the end of every factory method `[explicit-skip: existing tests unchanged; verified by grep]` · Must
+- [x] No skill, doc or Design.Domain text prescribes `RunRules(All)` as a routine end-of-operation step or a validate step; the rare validate case is stated where it applies and nowhere as a step `[explicit-skip: verified by grep of the pre-flight list plus the plan review's additions]` · Must
+- [x] #98's three asks delivered (doc statement with snippet, fetched-unmodified test, `CLAUDE-DESIGN.md` mention); #98 closed as done `[explicit-skip: GitHub]` · Must
+- [x] `Design.sln` builds with 0 errors and 0 warnings, every Design.Tests test passes, `dotnet mdsnippets` reports no duplicate or missing regions `[explicit-skip: meta-bullet]` · Must
 
 ---
 
@@ -108,7 +108,11 @@ Walked 2026-10-11; plan review round 1 added the items marked (PR).
 
 ## Gate Record
 
--
+- **2026-10-11, round 1 — test-reviewer: CONCERNS** (`reviews/003-test-review.md`). No veto, no Must-cover. One Should-cover: the #98 test could not tell targeted `RunRules` from `All` (same-value writes are no-ops). Fixed with a second, mutation-checked test seeding a divergent child row (`8d37fef`).
+- **2026-10-11, round 1 — code-reviewer: CLEAN** (`reviews/003-code-review.md`). Five Must callouts, all wording or render-fit: "marks modified" → "changes a value"; duplicate snippet under a stale lead-in; collections/testing lead-ins vs the rare-case test they render; the D6 gate's reason in the `RunRulesFlag` table; a dropped qualifier. All fixed (`8b697b2`). Confirmed `HasUnschedulableTasks` reaches the row on Update.
+- **2026-10-11, round 2 — test-reviewer: CLEAN.** Should-cover closed; map rows honest; Design.Tests additions only.
+- **2026-10-11, round 2 — code-reviewer: CLEAN.** 1–5 resolved; one new minor callout (plural lead-in for the two-test snippet) fixed inline; build 0/0, 198 tests, mdsnippets clean.
+- **Closing bar:** all six Acceptance bullets Must and pinned; no gaps accepted. Gate closed after round 2 of each.
 
 ---
 
