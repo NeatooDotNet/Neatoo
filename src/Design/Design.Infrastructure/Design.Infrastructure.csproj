@@ -14,10 +14,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The in-memory services are internal; the test host and the server
-         host see them only through AddDesignInfrastructure(). -->
+    <!-- The in-memory services are internal; hosts see them only through
+         AddDesignInfrastructure(). The tests read the stores directly. -->
     <InternalsVisibleTo Include="Design.Tests" />
-    <InternalsVisibleTo Include="Design.Server" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,6 +7,15 @@
 
 <MudLayout>
     <MudMainContent Class="pa-4">
-        @Body
+        @* Application failures (an exception out of Save, a lost server) stop
+           here. Validation never does: it is state on the entity, not an error. *@
+        <ErrorBoundary>
+            <ChildContent>
+                @Body
+            </ChildContent>
+            <ErrorContent Context="ex">
+                <MudAlert Severity="Severity.Error">Something went wrong: @ex.Message</MudAlert>
+            </ErrorContent>
+        </ErrorBoundary>
     </MudMainContent>
 </MudLayout>

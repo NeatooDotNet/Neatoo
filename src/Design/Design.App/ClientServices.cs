@@ -38,9 +38,9 @@ internal static class ClientServices
         // The domain's DI-provided rules, registered on both tiers.
         services.AddDesignDomainRules();
 
-        // RemoteFactory sends [Remote] calls through this keyed HttpClient.
-        services.AddKeyedScoped(RemoteFactoryServices.HttpClientKey,
-            (_, _) => new HttpClient { BaseAddress = baseAddress });
+        // RemoteFactory's transport (the keyed HttpClient its proxies call
+        // through): RemoteFactory's concern - see the RemoteFactory skill.
+        services.AddRemoteFactoryTransport(baseAddress);
 
         services.AddMudServices();
 
@@ -51,4 +51,15 @@ internal static class ClientServices
         return services;
     }
     #endregion
+
+    /// <summary>
+    /// RemoteFactory sends every [Remote] call through this keyed HttpClient.
+    /// Kept outside the Neatoo region: the RemoteFactory skill owns it.
+    /// </summary>
+    private static IServiceCollection AddRemoteFactoryTransport(this IServiceCollection services, Uri baseAddress)
+    {
+        services.AddKeyedScoped(RemoteFactoryServices.HttpClientKey,
+            (_, _) => new HttpClient { BaseAddress = baseAddress });
+        return services;
+    }
 }

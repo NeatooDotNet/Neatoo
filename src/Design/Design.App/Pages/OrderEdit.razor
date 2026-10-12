@@ -18,6 +18,9 @@
         else
         {
             @* begin-snippet: skill-page-order-edit *@
+            @* @key: Save returns a new instance; keying on it rebuilds the bound
+               components so each field subscribes to the new instance's wrappers. *@
+            <div @key="Vm.Order">
             @* The page binds each field to the entity's property wrapper. The
                component reads the wrapper's value, messages, IsBusy and IsReadOnly;
                nothing here validates or decides. *@
@@ -58,9 +61,10 @@
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
                        Disabled="@(!Vm.CanSave)"
-                       OnClick="Vm.Save">
+                       OnClick="SaveAsync">
                 Save
             </MudButton>
+            </div>
             @* end-snippet *@
         }
     </MudPaper>
@@ -103,13 +107,17 @@
         }
     }
 
+    // Save returns a new instance; the old one raises nothing afterwards, so
+    // the page moves its subscription itself and re-renders for the new state.
+    private async Task SaveAsync()
+    {
+        await Vm.Save();
+        Resubscribe();
+        StateHasChanged();
+    }
+
     private Task OnEntityChanged(NeatooPropertyChangedEventArgs e)
     {
-        if (!ReferenceEquals(_subscribed, Vm.Order))
-        {
-            Resubscribe();  // Save returned a new instance
-        }
-
         return InvokeAsync(StateHasChanged);
     }
 

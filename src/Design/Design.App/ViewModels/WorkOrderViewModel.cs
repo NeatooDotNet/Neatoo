@@ -61,6 +61,8 @@ internal sealed class WorkOrderViewModel
             return;
         }
 
+        // Count + 1 is an input default for the new task's position, which the
+        // user may change; the task's own rule validates uniqueness. Not a decision.
         WorkOrder.Tasks.Add(_taskFactory.Create(name, WorkOrder.Tasks.Count + 1));
     }
 

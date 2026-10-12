@@ -5,6 +5,11 @@
 // Design.Domain's factory operations take, plus the server side of the domain
 // service interface factory. Singletons: one store per host, so a row written
 // by one request is there for the next.
+//
+// A single-user demo store, not thread-safe: plain collections, no locking.
+// Two concurrent requests to a running Design.Server could interleave their
+// pending writes. It exists so the server composition can serve every factory,
+// not to stand in for persistence.
 // -----------------------------------------------------------------------------
 
 using Design.Domain;
