@@ -523,7 +523,7 @@ internal sealed class WorkOrderViewModel
 
 ## Neatoo on Each Tier
 
-One line per tier registers Neatoo and the generated factories: Remote mode on the client, Server mode on the server. Everything else in the composition is RemoteFactory's — see the RemoteFactory skill.
+One line per tier registers Neatoo and the generated factories: Remote mode on the client, Server mode on the server. Everything else in the composition is RemoteFactory's — see the RemoteFactory skill. `AddRemoteFactoryTransport` below is this app's own helper, not a library method: write the keyed `HttpClient` registration the RemoteFactory skill shows, or a helper of your own around it.
 
 <!-- snippet: skill-client-composition -->
 <a id='snippet-skill-client-composition'></a>
@@ -541,8 +541,10 @@ internal static IServiceCollection AddDesignClient(this IServiceCollection servi
     // The domain's DI-provided rules, registered on both tiers.
     services.AddDesignDomainRules();
 
-    // RemoteFactory's transport (the keyed HttpClient its proxies call
-    // through): RemoteFactory's concern - see the RemoteFactory skill.
+    // RemoteFactory's transport: this app's own two-line helper, not a
+    // library method. It registers the keyed HttpClient the proxies call
+    // through (RemoteFactoryServices.HttpClientKey) - the RemoteFactory
+    // skill shows the registration.
     services.AddRemoteFactoryTransport(baseAddress);
 
     services.AddMudServices();
@@ -555,7 +557,7 @@ internal static IServiceCollection AddDesignClient(this IServiceCollection servi
     return services;
 }
 ```
-<sup><a href='/src/Design/Design.App/ClientServices.cs#L27-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-client-composition' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ClientServices.cs#L27-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-client-composition' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-server-composition -->

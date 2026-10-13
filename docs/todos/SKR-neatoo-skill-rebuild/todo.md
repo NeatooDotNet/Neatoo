@@ -26,7 +26,7 @@ Someone building zCRM, human or Claude, opens `skills/neatoo` and can decide thr
 - [ ] **AC-6** · Should — mudneatoo's Blazor blocks come from Design.App.
 - [ ] **AC-7** · Should — The skill names each known framework pain with its issue or analyzer.
 - [ ] **AC-8** · Should — The installed copies in `~/.claude/skills` match `skills/` at close.
-- [ ] **AC-9** · Must — A fresh session given only the two installed skills and the zCRM scenarios falls into none of the habit-trap rows.
+- [ ] **AC-9** · Must — A fresh session given only the two installed skills and the zCRM scenarios falls into none of the Neatoo-owned habit-trap rows; the RF-owned rows it falls into are reported to the RemoteFactory sibling (user, 2026-10-12).
 - [ ] **AC-10** · Should — `SKILL.md` is at most about 400 lines, with the habit-trap table in the first screen after the model.
 
 ## Habit traps the skill must answer
@@ -67,7 +67,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - Restructuring the user docs beyond the D18 edits AC-5 requires.
 - Fixing MudNeatoo components or adding bUnit coverage beyond what AC-6's snippets need.
 - Removing Neatoo's lazy-load surface (D24: `lazy-loading.md`, `LazyLoadProperty.cs`, Person's phone list, mudneatoo's `EntityLazyLoad`, #97): its own todo once RemoteFactory ships the removal. SKR builds nothing new on LazyLoad and copies none of it into the rebuilt skill.
-- Moving the RemoteFactory pin from 1.9.0 to 1.10.2 (D8; 1.10.2 listed 2026-10-11 with the #113 fix): its own task, with a full build and test. That task also withdraws "`[Execute]` must return `Task<T>`" (`ApproveEmployee.cs:50,170`, rendered into `references/base-classes.md`): from 1.10.2 a static `[Execute]` returns `Task` with no result or `Task<T>` with one, never `void`.
+- Moving the RemoteFactory pin from 1.9.0 to 1.10.3 (D8; 1.10.2 listed 2026-10-11 with the #113 fix; 1.10.3 listed 2026-10-12 with the #119 fix, which does not touch Neatoo's lists): its own task, with a full build and test. That task also withdraws "`[Execute]` must return `Task<T>`" (`ApproveEmployee.cs:50,170`, rendered into `references/base-classes.md`): from 1.10.2 a static `[Execute]` returns `Task` with no result or `Task<T>` with one, never `void`.
 
 ---
 
@@ -81,7 +81,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 | 004 | [004-skill-model-and-decisions](./plans/004-skill-model-and-decisions.md) | SKILL.md: model, habit traps, decisions, UI contract | AC-1, AC-2, AC-10 | Done | #105 |
 | 005 | [005-references-as-mechanism](./plans/005-references-as-mechanism.md) | References reorganized as mechanism | AC-1, AC-2, AC-7 | Done | #106 |
 | 006 | [006-mudneatoo-from-design-app](./plans/006-mudneatoo-from-design-app.md) | mudneatoo blocks sourced from Design.App | AC-6 | Done | #107 |
-| 007 | [007-sync-and-verify](./plans/007-sync-and-verify.md) | Sync, then fresh-session test | AC-8, AC-9 | Draft | — |
+| 007 | [007-sync-and-verify](./plans/007-sync-and-verify.md) | Sync, then fresh-session test | AC-8, AC-9 | Done | #108 |
 
 ---
 
@@ -102,6 +102,12 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 ---
 
 ## Discovery Log
+
+### 2026-10-12 — SKR-007 RF skill not rebuilt · serves AC-9, AC-8
+- **Finding:** The RemoteFactory skill rebuild (desktopRemoteFactory's Todo 2) has not started and waits for EXSET (12 plans, 1 merged); no date. Both RF skill copies are stale (installed: pre-1.9.0; repo: post-1.9.0, most audit findings still open). AC-9 as written cannot be met inside SKR.
+- **Decision:** Narrow (user). 007 runs now: neatoo and mudneatoo synced, the RF repo copy installed for the test; AC-9 gates on the Neatoo-owned rows; RF-owned rows the fresh session falls into go to desktopRemoteFactory as findings for Todo 2.
+- **Index changes:** AC-9 narrowed. Cap unchanged, 7 of 11 issued.
+- **Follow-up:** SKR-007; RF Todo 2's fresh-session test.
 
 ### 2026-10-09 — SKR · serves AC-1, AC-9
 - **Finding:** The orchestrator and the plan-reviewer both added a validate-before-save step to the job example by habit, with the fact present in the skill; the todo guaranteed structure and compiled code but not answers keyed to the habit's questions, nor a fresh-session test.

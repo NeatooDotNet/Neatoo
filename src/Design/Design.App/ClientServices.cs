@@ -38,8 +38,10 @@ internal static class ClientServices
         // The domain's DI-provided rules, registered on both tiers.
         services.AddDesignDomainRules();
 
-        // RemoteFactory's transport (the keyed HttpClient its proxies call
-        // through): RemoteFactory's concern - see the RemoteFactory skill.
+        // RemoteFactory's transport: this app's own two-line helper, not a
+        // library method. It registers the keyed HttpClient the proxies call
+        // through (RemoteFactoryServices.HttpClientKey) - the RemoteFactory
+        // skill shows the registration.
         services.AddRemoteFactoryTransport(baseAddress);
 
         services.AddMudServices();
