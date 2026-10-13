@@ -9,8 +9,7 @@
 **Plan-review opt-in:** No — the stub authorized the Design.App pages; no ruling or API changes. The decisions are listed under Notes
 **Code-review opt-in:** No — the new page and ViewModel follow the two that SKR-002 reviewed; the test-reviewer's map check is the gate
 **Branch:** skr-006-mudneatoo-from-design-app — cut from the arc at Step 2
-**PR:** —
-
+**PR:** #107
 ---
 
 ## Scope

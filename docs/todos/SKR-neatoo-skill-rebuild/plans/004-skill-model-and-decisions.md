@@ -9,8 +9,7 @@
 **Plan-review opt-in:** Yes — this is the deliverable the todo exists for; Pass A against D1–D25 as clarified, Pass B against the regions and the three plans' examples
 **Code-review opt-in:** No — the deliverable is prose plus rendered regions; the test-reviewer's map check and plan 007's fresh-session test are the gates that fit
 **Branch:** skr-004-skill-model-and-decisions — cut from the arc at Step 2
-**PR:** —
-
+**PR:** #105
 ---
 
 ## Scope

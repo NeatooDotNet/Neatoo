@@ -49,7 +49,7 @@ namespace Design.Domain;
 // names the rules by trigger (RunRules(nameof(Status))) because All from a
 // root whose rules write children would, wherever a rule changed a child's
 // value, mark that just-fetched child modified. Running rules to VALIDATE a
-// returned object is the rare case:
+// returned object is the developer's choice, never the framework's:
 // an operation that must not hand back an unvalidated object (see
 // skill-run-rules-after-create in Design.Tests).
 //

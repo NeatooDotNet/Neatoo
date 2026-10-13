@@ -9,8 +9,7 @@
 **Plan-review opt-in:** No — no ruling is new and no API changes; the Design changes are Razor regions over pages that exist and one input-model page. The decisions this plan makes are listed under Notes for the user
 **Code-review opt-in:** No — prose plus rendered regions; the test-reviewer's map check and 007's fresh-session test are the gates that fit
 **Branch:** skr-005-references-as-mechanism — cut from the arc at Step 2
-**PR:** —
-
+**PR:** #106
 ---
 
 ## Scope

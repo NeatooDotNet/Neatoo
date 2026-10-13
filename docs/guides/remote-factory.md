@@ -45,12 +45,13 @@ public async Task Create([Service] IOrderItemListFactory itemsFactory)
     // This Create hands a form to a person. It decides that the form must
     // not come back unvalidated: run the rules so the required fields show
     // their messages at once and IsSavable is false until they are filled.
-    // A per-operation choice (the rare validate case), not a step every
-    // Create ends with. All is safe here: the item list is empty.
+    // The developer's choice for this operation - the framework never makes
+    // it - and not a step every Create ends with. All is safe here: the item
+    // list is empty.
     await RunRules(RunRulesFlag.All);
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L105-L121' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-create' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L105-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-create' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After Create completes: `IsNew = true`, `IsModified = false` (a created object needs inserting but holds no user work), `IsSavable = true` because savability admits `IsNew`.
@@ -88,7 +89,7 @@ internal bool Fetch(Guid id,
     return true;
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L146-L172' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-fetch' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L147-L173' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-fetch' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After Fetch completes, every object in the graph is old and clean:
@@ -193,7 +194,7 @@ internal async Task Insert([Service] IOrderRepository repository,
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L193-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L194-L221' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 After `[Insert]` or `[Update]` completes, `FactoryComplete` marks the root unmodified and old; each child saved through its own factory is marked the same way by its own completion.
