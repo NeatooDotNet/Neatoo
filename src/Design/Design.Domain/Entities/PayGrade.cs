@@ -58,6 +58,9 @@ public sealed record PayGrade
     /// <summary>The grade every new hire starts at.</summary>
     public static PayGrade Entry => new("A");
 
+    /// <summary>Every grade, in order: what a select offers.</summary>
+    public static IReadOnlyList<PayGrade> All { get; } = Bands.Keys.Order().Select(code => new PayGrade(code)).ToList();
+
     public override string ToString() => Code;
 }
 #endregion

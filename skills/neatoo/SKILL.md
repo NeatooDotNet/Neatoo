@@ -163,6 +163,11 @@ internal sealed class OrderEditViewModel
         Order?.Items?.Add(_itemFactory.Create());
     }
 
+    public void RemoveItem(IOrderItem item)
+    {
+        Order?.Items?.Remove(item);
+    }
+
     /// <summary>
     /// The Save button binds to this: enabled only when the entity says it
     /// can be saved. No separate validity check lives in the UI.
@@ -191,7 +196,7 @@ internal sealed class OrderEditViewModel
     }
 }
 ```
-<sup><a href='/src/Design/Design.App/ViewModels/OrderEditViewModel.cs#L31-L91' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-handler' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ViewModels/OrderEditViewModel.cs#L31-L96' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-handler' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Pain:** `Save()` does not mark the entity busy during the remote call, so a second click sends a second Insert until the handler has reassigned the result ([Neatoo#103](https://github.com/NeatooDotNet/Neatoo/issues/103)). Disable the button while a save is in flight.

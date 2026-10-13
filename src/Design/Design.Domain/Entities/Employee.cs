@@ -57,6 +57,10 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
     // by value. See PayGrade.cs.
     public partial PayGrade? Grade { get; set; }
 
+    // Free text a person writes; the edit page shows it as a multi-line field.
+    [StringLength(2000, ErrorMessage = "Notes cannot exceed 2000 characters")]
+    public partial string? Notes { get; set; }
+
     // =========================================================================
     // Child Collection
     // =========================================================================
@@ -161,6 +165,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
         Salary = row.Salary;
         IsActive = row.IsActive;
         Grade = new PayGrade(row.Grade);
+        Notes = row.Notes;
 
         // Addresses and every address within: IsNew=false, IsModified=false
         Addresses = addressListFactory.Fetch(row.Addresses);
@@ -301,6 +306,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
         row.Salary = Salary;
         row.IsActive = IsActive;
         row.Grade = Grade!.Code;
+        row.Notes = Notes;
     }
 }
 
@@ -323,6 +329,7 @@ public class EmployeeRow
     public decimal Salary { get; set; }
     public bool IsActive { get; set; }
     public string Grade { get; set; } = "A";
+    public string? Notes { get; set; }
     public List<AddressRow> Addresses { get; } = new();
 }
 

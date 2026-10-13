@@ -1,7 +1,7 @@
 ---
 name: MudNeatoo
-description: This skill should be used when writing or modifying .razor files that bind to Neatoo entities, when using MudBlazor components with Neatoo domain models, when the user mentions "MudNeatooTextField", "MudNeatooSelect", "MudNeatooDatePicker", "MudNeatooNumericField", "MudNeatooCheckBox", "NeatooValidationSummary", "EntityProperty", "@bind-Value with Neatoo", "form binding", "Blazor form", "LazyLoad databinding", "LazyLoad in Razor", "LazyLoad Blazor pattern", "lazy load spinner", or asks to build a form, page, or dialog that edits a Neatoo entity. Also triggers when reviewing .razor files for correct Neatoo integration patterns, including LazyLoad rendering. Assumes the Neatoo skill is also loaded for domain model concepts.
-version: 1.0.0
+description: This skill should be used when writing or modifying .razor files that bind to Neatoo entities, when using MudBlazor components with Neatoo domain models, when the user mentions "MudNeatooTextField", "MudNeatooSelect", "MudNeatooDatePicker", "MudNeatooNumericField", "MudNeatooCheckBox", "NeatooValidationSummary", "EntityProperty", "@bind-Value with Neatoo", "form binding", "Blazor form", or asks to build a form, page, or dialog that edits a Neatoo entity. Also triggers when reviewing .razor files for correct Neatoo integration patterns. Assumes the Neatoo skill is also loaded for domain model concepts.
+version: 2.0.0
 ---
 
 # MudNeatoo — Blazor Binding for Neatoo Entities
@@ -10,15 +10,21 @@ MudNeatoo provides wrapper components around MudBlazor that bind directly to Nea
 
 **Required package:** `Neatoo.Blazor.MudNeatoo`
 
+Every block below is compiled in the Neatoo repository's Design.App (Blazor WebAssembly over Design.Domain) or Design.Domain, and the ViewModels are tested.
+
 ## Namespaces & @using Directives
 
 Add these `@using` directives to your `_Imports.razor` or individual `.razor` files:
 
+<!-- snippet: skill-mud-usings -->
+<a id='snippet-skill-mud-usings'></a>
 ```razor
 @using Neatoo.Blazor.MudNeatoo.Components
 @using Neatoo.Blazor.MudNeatoo.Validation
 @using Neatoo.Blazor.MudNeatoo.Extensions
 ```
+<sup><a href='/src/Design/Design.App/_Imports.razor#L9-L13' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-usings' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 | Namespace | Contains |
 |-----------|----------|
@@ -28,16 +34,19 @@ Add these `@using` directives to your `_Imports.razor` or individual `.razor` fi
 
 ## The Core Pattern
 
-Every MudNeatoo component takes an `EntityProperty` parameter — the `IEntityProperty` object accessed via the entity's indexer `entity["PropertyName"]`. This single binding point gives the component everything: value, label, validation messages, busy state, and read-only state.
+Every MudNeatoo component takes an `EntityProperty` parameter — the `IEntityProperty` object accessed via the entity's indexer `entity[nameof(IEmployee.FirstName)]`. This single binding point gives the component everything: value, label, validation messages, busy state, and read-only state.
 
-`IEntityProperty` is the property type of an `EntityBase` entity. A `ValidateBase` object's properties are `IValidateProperty` only, so a `ValidateBase` (a value object, or form data with no persistence lifecycle) cannot be bound through MudNeatoo components; bind it with Manual Metadata Binding (below), which needs nothing beyond `IValidateProperty`.
+`IEntityProperty` is the property type of an `EntityBase` entity. An input model's (`ValidateBase`) properties are `IValidateProperty` only, so an input model cannot be bound through MudNeatoo components ([Neatoo#95](https://github.com/NeatooDotNet/Neatoo/issues/95)); bind it with Manual Metadata Binding (below), which needs nothing beyond `IValidateProperty`.
 
+<!-- snippet: skill-mud-text-field -->
+<a id='snippet-skill-mud-text-field'></a>
 ```razor
-@* CORRECT: MudNeatoo component with EntityProperty binding *@
-<MudNeatooTextField T="string"
-                    EntityProperty="@entity[nameof(IPatient.FirstName)]"
-                    Variant="Variant.Outlined" />
+<MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.FirstName)]" Variant="Variant.Outlined" Class="mb-3" />
+<MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.LastName)]" Variant="Variant.Outlined" Class="mb-3" />
+<MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.Email)]" Variant="Variant.Outlined" Class="mb-3" />
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L32-L36' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-text-field' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 The component automatically:
 - Displays `DisplayName` as the label
@@ -82,7 +91,7 @@ See `references/anti-patterns.md` for the complete anti-pattern catalog with rea
 |---------------------|-------|----------------|
 | `MudNeatooTextField<T>` | `MudTextField<T>` | `string`, `int`, etc. |
 | `MudNeatooNumericField<T>` | `MudNumericField<T>` | `int`, `decimal`, `double` |
-| `MudNeatooSelect<T>` | `MudSelect<T>` | Enum or value type |
+| `MudNeatooSelect<T>` | `MudSelect<T>` | Enum, value type, or record |
 | `MudNeatooDatePicker` | `MudDatePicker` | (no type param — always `DateTime?`) |
 | `MudNeatooDateRangePicker` | `MudDateRangePicker` | (no type param) |
 | `MudNeatooTimePicker` | `MudTimePicker` | (no type param) |
@@ -93,7 +102,9 @@ See `references/anti-patterns.md` for the complete anti-pattern catalog with rea
 | `MudNeatooAutocomplete<T>` | `MudAutocomplete<T>` | Any type |
 | `NeatooValidationSummary` | `MudAlert` | (entity-level errors) |
 
-Each component forwards a curated set of its wrapped MudBlazor component's parameters — `Variant`, `Margin`, `HelperText`, `Adornment`, `Class`, and others — not every parameter (`MudNeatooTextField` has no `Mask` or `Label`, for example). Two are never forwarded: **`ReadOnly`** (hardcoded to `EntityProperty.IsReadOnly`; see ReadOnly Behavior below) and **`Disabled`** (OR'd with `EntityProperty.IsBusy`; see Disabled Behavior below). A parameter that is not forwarded means Manual Metadata Binding for that field.
+Each component forwards a curated set of its wrapped MudBlazor component's parameters — `Variant`, `Margin`, `HelperText`, `Adornment`, `Class`, and others — not every parameter (`MudNeatooTextField` has no `Mask`, `Label` or `Converter`, for example). Two are never forwarded: **`ReadOnly`** (hardcoded to `EntityProperty.IsReadOnly`; see ReadOnly Behavior below) and **`Disabled`** (OR'd with `EntityProperty.IsBusy`; see Disabled Behavior below). A parameter that is not forwarded means Manual Metadata Binding for that field.
+
+In Razor, a component's `T` cannot carry a nullable reference annotation (`T="PayGrade?"` raises CS8669 in the generated code); use the type itself (`T="PayGrade"`) for a nullable reference-type property.
 
 ### `MudNeatooTextField` escape hatch: `UserAttributes`
 
@@ -102,21 +113,22 @@ Each component forwards a curated set of its wrapped MudBlazor component's param
 - **Spellcheck** — MudBlazor does NOT expose a `Spellcheck` parameter on `MudTextField` or `MudInput`. Set `["spellcheck"] = "true"` via `UserAttributes`.
 - **Drag-handle resize** — CSS `resize: vertical` on the `<textarea>`. Set `["style"] = "resize: vertical;"` via `UserAttributes`.
 
+<!-- snippet: skill-mud-multiline -->
+<a id='snippet-skill-mud-multiline'></a>
 ```razor
-@* Auto-growing textarea with browser spellcheck *@
+@* A textarea that grows with its content up to 20 lines, with the
+   browser's spellcheck - an HTML attribute MudBlazor has no
+   parameter for, passed through UserAttributes. *@
 <MudNeatooTextField T="string"
-                    EntityProperty="@entity[nameof(IPatient.Notes)]"
+                    EntityProperty="@Vm.Employee[nameof(IEmployee.Notes)]"
                     Lines="4"
                     Sizing="InputSizing.Auto"
                     MaxLines="20"
-                    UserAttributes="@(new() { ["spellcheck"] = "true" })" />
-
-@* Fixed-height textarea with user drag handle *@
-<MudNeatooTextField T="string"
-                    EntityProperty="@entity[nameof(IPatient.Notes)]"
-                    Lines="4"
-                    UserAttributes="@(new() { ["style"] = "resize: vertical;" })" />
+                    UserAttributes="@(new() { ["spellcheck"] = "true" })"
+                    Class="mb-3" />
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L75-L86' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-multiline' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ### Multi-line text: `Lines`, `Sizing`, `MaxLines`
 
@@ -128,225 +140,365 @@ Each component forwards a curated set of its wrapped MudBlazor component's param
 
 ## Binding Patterns
 
-### Text and Numeric Fields
+### Numeric Field
 
+<!-- snippet: skill-mud-numeric-field -->
+<a id='snippet-skill-mud-numeric-field'></a>
 ```razor
-<MudNeatooTextField T="string"
-                    EntityProperty="@entity[nameof(IPatient.FirstName)]"
-                    Variant="Variant.Outlined" />
-
 <MudNeatooNumericField T="decimal"
-                       EntityProperty="@entity[nameof(IOrder.UnitPrice)]"
+                       EntityProperty="@Vm.Employee[nameof(IEmployee.Salary)]"
                        Adornment="Adornment.Start"
-                       AdornmentText="$" />
+                       AdornmentText="$"
+                       Class="mb-3" />
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L46-L52' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-numeric-field' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ### Select with Options
 
+The options are values of the property's type; selecting one assigns it. Here the property is a `record` value object, so each option is a `PayGrade`:
+
+<!-- snippet: skill-mud-select -->
+<a id='snippet-skill-mud-select'></a>
 ```razor
-<MudNeatooSelect T="PhoneType?"
-                 EntityProperty="@phone[nameof(IPersonPhone.PhoneType)]"
-                 Placeholder="Select Phone Type">
-    <MudSelectItem Value="@((PhoneType?)PhoneType.Home)">Home</MudSelectItem>
-    <MudSelectItem Value="@((PhoneType?)PhoneType.Mobile)">Mobile</MudSelectItem>
-    <MudSelectItem Value="@((PhoneType?)PhoneType.Work)">Work</MudSelectItem>
+@* A record bound through MudNeatoo: the options are values, and
+   selecting one assigns it. Disabled binds a business fact as it
+   is - an inactive employee's grade is frozen - with no
+   condition of the page's own. T is the record type: Razor-generated code
+   cannot carry a nullable annotation. *@
+<MudNeatooSelect T="PayGrade"
+                 EntityProperty="@Vm.Employee[nameof(IEmployee.Grade)]"
+                 Disabled="@(!Vm.Employee.IsActive)"
+                 Class="mb-3">
+    @foreach (var grade in Vm.Grades)
+    {
+        <MudSelectItem T="PayGrade" Value="@grade">@grade.Code</MudSelectItem>
+    }
 </MudNeatooSelect>
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L58-L73' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-select' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ### Date Picker
 
+<!-- snippet: skill-mud-date-picker -->
+<a id='snippet-skill-mud-date-picker'></a>
 ```razor
-<MudNeatooDatePicker EntityProperty="@entity[nameof(IPatient.DateOfBirth)]"
+<MudNeatooDatePicker EntityProperty="@Vm.Employee[nameof(IEmployee.HireDate)]"
                      MaxDate="@DateTime.Today"
-                     DateFormat="MM/dd/yyyy"
-                     Editable="true" />
+                     DateFormat="yyyy-MM-dd"
+                     Editable="true"
+                     Class="mb-3" />
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L38-L44' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-date-picker' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ### CheckBox
 
+<!-- snippet: skill-mud-checkbox -->
+<a id='snippet-skill-mud-checkbox'></a>
 ```razor
-<MudNeatooCheckBox T="bool"
-                   EntityProperty="@entity[nameof(IUser.IsActive)]" />
+<MudNeatooCheckBox T="bool" EntityProperty="@Vm.Employee[nameof(IEmployee.IsActive)]" Label="Active" Class="mb-3" />
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L54-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-checkbox' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ### Validation Summary
 
 Display all entity-level validation errors in a `MudAlert`:
 
+<!-- snippet: skill-mud-validation-summary -->
+<a id='snippet-skill-mud-validation-summary'></a>
 ```razor
-<NeatooValidationSummary Entity="@entity"
-                         ShowHeader="false"
-                         Dense="true"
-                         IncludePropertyNames="false" />
+<NeatooValidationSummary Entity="@Vm.Employee" ShowHeader="false" Dense="true" Class="mb-4" />
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L28-L30' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-validation-summary' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 Parameters: `Entity` (required, `IValidateMetaProperties`), `ShowHeader`, `HeaderText`, `Dense`, `IncludePropertyNames`, `Variant`, `Elevation`, `Class`.
 
 ## Page Structure Pattern
 
-A complete form page follows this structure:
+A complete edit page: the ViewModel holds the aggregate and saves it; the page binds the entity's property wrappers and owns the subscription that re-renders it.
 
+<!-- snippet: skill-mud-page -->
+<a id='snippet-skill-mud-page'></a>
 ```razor
-@implements IDisposable
-@inject IPatientEditFactory PatientEditFactory
-
-@if (entity != null)
+@* @key: Save returns a new instance; keying on it rebuilds the bound
+   components so each field subscribes to the new instance's wrappers. *@
+<div @key="Vm.Employee">
+@* View or edit is the screen's own choice of components. Read-only
+   state is the entity's, and each component binds it itself. *@
+@if (Vm.IsEditing)
 {
-    <MudForm @ref="form">
-        <NeatooValidationSummary Entity="@entity" ShowHeader="false" Dense="true" />
+    <NeatooValidationSummary Entity="@Vm.Employee" ShowHeader="false" Dense="true" Class="mb-4" />
 
-        <MudNeatooTextField T="string"
-                            EntityProperty="@entity[nameof(IPatientEdit.FirstName)]" />
-        <MudNeatooTextField T="string"
-                            EntityProperty="@entity[nameof(IPatientEdit.LastName)]" />
+    <MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.FirstName)]" Variant="Variant.Outlined" Class="mb-3" />
+    <MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.LastName)]" Variant="Variant.Outlined" Class="mb-3" />
+    <MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.Email)]" Variant="Variant.Outlined" Class="mb-3" />
 
-        <MudButton OnClick="Save"
-                   Disabled="@(!entity.IsSavable)"
-                   Variant="Variant.Filled"
-                   Color="Color.Primary">
-            Save
-        </MudButton>
-    </MudForm>
+    <MudNeatooDatePicker EntityProperty="@Vm.Employee[nameof(IEmployee.HireDate)]"
+                         MaxDate="@DateTime.Today"
+                         DateFormat="yyyy-MM-dd"
+                         Editable="true"
+                         Class="mb-3" />
+
+    <MudNeatooNumericField T="decimal"
+                           EntityProperty="@Vm.Employee[nameof(IEmployee.Salary)]"
+                           Adornment="Adornment.Start"
+                           AdornmentText="$"
+                           Class="mb-3" />
+
+    <MudNeatooCheckBox T="bool" EntityProperty="@Vm.Employee[nameof(IEmployee.IsActive)]" Label="Active" Class="mb-3" />
+
+    @* A record bound through MudNeatoo: the options are values, and
+       selecting one assigns it. Disabled binds a business fact as it
+       is - an inactive employee's grade is frozen - with no
+       condition of the page's own. T is the record type: Razor-generated code
+       cannot carry a nullable annotation. *@
+    <MudNeatooSelect T="PayGrade"
+                     EntityProperty="@Vm.Employee[nameof(IEmployee.Grade)]"
+                     Disabled="@(!Vm.Employee.IsActive)"
+                     Class="mb-3">
+        @foreach (var grade in Vm.Grades)
+        {
+            <MudSelectItem T="PayGrade" Value="@grade">@grade.Code</MudSelectItem>
+        }
+    </MudNeatooSelect>
+
+    @* A textarea that grows with its content up to 20 lines, with the
+       browser's spellcheck - an HTML attribute MudBlazor has no
+       parameter for, passed through UserAttributes. *@
+    <MudNeatooTextField T="string"
+                        EntityProperty="@Vm.Employee[nameof(IEmployee.Notes)]"
+                        Lines="4"
+                        Sizing="InputSizing.Auto"
+                        MaxLines="20"
+                        UserAttributes="@(new() { ["spellcheck"] = "true" })"
+                        Class="mb-3" />
+
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               Disabled="@(!Vm.CanSave)"
+               OnClick="SaveAsync"
+               Class="mr-2">
+        Save
+    </MudButton>
+    <MudButton Variant="Variant.Text" OnClick="CancelAsync">Cancel</MudButton>
 }
+else
+{
+    <MudText Typo="Typo.h6">@Vm.Employee.FirstName @Vm.Employee.LastName</MudText>
+    <MudText Class="mb-3">@Vm.Employee.Email</MudText>
+    <MudButton Variant="Variant.Text" OnClick="Vm.StartEdit">Edit</MudButton>
+}
+</div>
+```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L20-L104' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-page' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
+<!-- snippet: skill-mud-page-code -->
+<a id='snippet-skill-mud-page-code'></a>
+```razor
 @code {
-    private MudForm? form;
-    private IPatientEdit? entity;
+    [Parameter] public Guid? Id { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    private IEmployee? _subscribed;
+
+    protected override async Task OnParametersSetAsync()
     {
-        entity = await PatientEditFactory.Fetch(patientId);
-        if (entity != null)
-            entity.PropertyChanged += OnEntityPropertyChanged;
+        if (Id is Guid id)
+        {
+            await Vm.Load(id);
+        }
+        else
+        {
+            Vm.New();
+        }
+
+        Resubscribe();
     }
 
-    private async Task Save()
+    // The page owns the subscription: the input components subscribe to their
+    // own property wrappers, but the Save button and the view-mode text read
+    // the entity, so the page re-renders on the graph-wide event.
+    private void Resubscribe()
     {
-        await entity!.WaitForTasks();
-        if (!entity.IsSavable) return;
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+        }
 
-        var saved = await PatientEditFactory.Save(entity);
-        SetEntity(saved);
+        _subscribed = Vm.Employee;
+
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged += OnEntityChanged;
+        }
     }
 
-    private void OnEntityPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    // Save and Cancel each leave the ViewModel holding a new instance.
+    private async Task SaveAsync()
     {
-        // Re-render when state properties change (IsSavable, IsValid, etc.)
-        if (e.PropertyName?.StartsWith("Is") == true)
-            InvokeAsync(StateHasChanged);
+        await Vm.Save();
+        Resubscribe();
+        StateHasChanged();
     }
 
-    private void SetEntity(IPatientEdit? newEntity)
+    private async Task CancelAsync()
     {
-        if (entity != null)
-            entity.PropertyChanged -= OnEntityPropertyChanged;
-        entity = newEntity;
-        if (entity != null)
-            entity.PropertyChanged += OnEntityPropertyChanged;
+        await Vm.CancelEdit();
+        Resubscribe();
+        StateHasChanged();
+    }
+
+    private Task OnEntityChanged(NeatooPropertyChangedEventArgs e)
+    {
+        return InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
     {
-        if (entity != null)
-            entity.PropertyChanged -= OnEntityPropertyChanged;
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+        }
     }
 }
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L109-L175' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-page-code' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The ViewModel it injects:
+
+<!-- snippet: skill-mud-viewmodel -->
+<a id='snippet-skill-mud-viewmodel'></a>
+```cs
+/// <summary>
+/// ViewModel for the Employee screen: holds the aggregate, toggles the screen
+/// between viewing and editing, saves.
+/// </summary>
+internal sealed class EmployeeEditViewModel
+{
+    private readonly IEmployeeFactory _employeeFactory;
+
+    public EmployeeEditViewModel(IEmployeeFactory employeeFactory)
+    {
+        _employeeFactory = employeeFactory;
+    }
+
+    /// <summary>The aggregate the page binds to. Null until loaded or created.</summary>
+    public IEmployee? Employee { get; private set; }
+
+    /// <summary>What the grade select offers.</summary>
+    public IReadOnlyList<PayGrade> Grades => PayGrade.All;
+
+    /// <summary>The screen shows the edit components; a new employee starts there.</summary>
+    public bool IsEditing { get; private set; }
+
+    public void New()
+    {
+        Employee = _employeeFactory.Create();
+        IsEditing = true;
+    }
+
+    public async Task Load(Guid id)
+    {
+        Employee = await _employeeFactory.Fetch(id);
+        IsEditing = false;
+    }
+
+    public void StartEdit()
+    {
+        IsEditing = true;
+    }
+
+    public async Task CancelEdit()
+    {
+        if (Employee is null)
+        {
+            return;
+        }
+
+        if (Employee.IsNew)
+        {
+            New();  // nothing saved to go back to: discarding the edit is a fresh form
+            return;
+        }
+
+        await Load(Employee.Id);
+    }
+
+    public bool CanSave => Employee?.IsSavable ?? false;
+
+    public async Task Save()
+    {
+        if (Employee is null)
+        {
+            return;
+        }
+
+        await Employee.WaitForTasks();
+
+        if (!Employee.IsSavable)
+        {
+            return;
+        }
+
+        Employee = (IEmployee)await Employee.Save();
+        IsEditing = false;
+    }
+}
+```
+<sup><a href='/src/Design/Design.App/ViewModels/EmployeeEditViewModel.cs#L23-L99' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-viewmodel' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ### Key Points in the Page Structure
 
-1. **Inject the factory interface** — not the concrete class
-2. **Use `IsSavable` to disable save button** — it combines `IsValid && (IsModified || IsNew) && !IsBusy`, so a freshly created entity enables the button without reporting unsaved changes
-3. **Subscribe to `PropertyChanged`** — so Blazor re-renders when `IsSavable` changes. This is sufficient here because root meta flags (`IsValid`, `IsModified`, `IsBusy`) bubble through `PropertyChanged` even when the trigger is a descendant change. For components that need to react to descendant *property names* (e.g. a custom validation summary), use `NeatooPropertyChanged` instead. See `references/property-change-events.md`.
-4. **Call `WaitForTasks()` before save** — ensures async validation completes
-5. **Replace the entity reference after save** — `Save()` returns the updated entity
-6. **Implement `IDisposable`** — unsubscribe from `PropertyChanged`
-7. **No `EditForm`, no `DataAnnotationsValidator`** — use `MudForm` with MudNeatoo components
+1. **Inject the ViewModel; the ViewModel takes the factory interface** — never the concrete class.
+2. **Bind the Save button to `IsSavable`** (through the ViewModel's `CanSave`) — it combines `IsValid && (IsModified || IsNew) && !IsBusy`, so a freshly created entity enables the button without reporting unsaved changes.
+3. **The page owns the subscription.** Input components subscribe to their own property wrappers; the Save button and any display binding read the entity, so the page subscribes to the entity and calls `StateHasChanged`. `NeatooPropertyChanged` carries every change in the graph; `PropertyChanged` alone is enough when only root-level flags (`IsSavable`, `IsValid`, `IsBusy`) are read, because they bubble through it. See `references/property-change-events.md`.
+4. **`WaitForTasks()` before save** — the ViewModel's save handler waits for async rules, then asks `IsSavable`.
+5. **Replace the entity reference after save** — `Save()` returns a new instance. The ViewModel reassigns; the page moves its subscription to the new instance, and `@key` rebuilds the bound components so each subscribes to the new instance's wrappers.
+6. **Implement `IDisposable`** — unsubscribe on dispose.
+7. **No `EditForm`, no `DataAnnotationsValidator`, no `MudForm` validation** — MudNeatoo components show the entity's own messages; nothing wraps them.
 
-### EntityLazyLoad Databinding Pattern
-
-`EntityLazyLoad<T>` properties use a 4-branch rendering pattern. `.Value` is a passive read — it never triggers a load. Trigger the load explicitly in `OnInitializedAsync()`, then bind to `.Value` and state properties in Razor markup. On load completion the entity raises `PropertyChanged`, and the page's subscription (Page Structure Pattern above) re-renders.
-
-**Trigger the load in `OnInitializedAsync()`:**
-
-```csharp
-protected override async Task OnInitializedAsync()
-{
-    entity = await entityFactory.Fetch(orderId);
-    // Explicitly trigger the lazy load — does not block rendering
-    _ = entity.OrderLines.LoadAsync();
-}
-```
-
-**Bind to `.Value` and state properties in Razor:**
-
-```razor
-@if (entity.OrderLines.HasLoadError)
-{
-    <MudAlert Severity="Severity.Error">@entity.OrderLines.LoadError</MudAlert>
-}
-else if (entity.OrderLines.Value is { } orderLines)
-{
-    <MudButton OnClick="AddLine">Add Line</MudButton>
-    @foreach (var line in orderLines)
-    {
-        <MudNeatooTextField T="string"
-                            EntityProperty="@line[nameof(IOrderLine.ProductName)]" />
-    }
-}
-else if (entity.OrderLines.IsLoaded)
-{
-    <MudAlert Severity="Severity.Warning">No data available</MudAlert>
-}
-else
-{
-    <MudProgressCircular Indeterminate="true" Size="Size.Small" />
-}
-```
-
-**Branch order matters:**
-1. **HasLoadError** — show error state (load failed)
-2. **Value != null** — show data (loaded successfully with content)
-3. **IsLoaded** — loaded but null (rare — empty result)
-4. **else** — loading spinner (load triggered in `OnInitializedAsync()`, not yet complete)
-
-**Accessing the inner collection** — use `.Value` to get the loaded entity:
-
-```csharp
-private void AddLine()
-{
-    entity!.OrderLines.Value!.AddItem();
-}
-
-private Task RemoveLine(IOrderLine line)
-{
-    return entity!.OrderLines.Value!.RemoveItem(line);
-}
-```
+`LazyLoad<T>` / `EntityLazyLoad` are being removed from RemoteFactory and Neatoo; build no page on them. The replacement is a `[Remote] [Fetch]` on the child list's factory, called when the data is needed (RemoteFactory skill).
 
 ### Child Entity Collections
 
-Iterate over child collections and bind each child's properties:
+Iterate over the child list and bind each child's properties; removing a child is a gesture the ViewModel forwards to the list:
 
+<!-- snippet: skill-mud-child-collection -->
+<a id='snippet-skill-mud-child-collection'></a>
 ```razor
-@foreach (var item in entity.Items)
+@if (Vm.Order.Items is not null)
 {
-    <MudGrid Spacing="2">
-        <MudItem xs="6">
-            <MudNeatooTextField T="string"
-                                EntityProperty="@item[nameof(IOrderItem.ProductName)]" />
-        </MudItem>
-        <MudItem xs="3">
-            <MudNeatooNumericField T="int"
-                                   EntityProperty="@item[nameof(IOrderItem.Quantity)]" />
-        </MudItem>
-        <MudItem xs="3">
-            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                           OnClick="@(() => entity.Items.Remove(item))" />
-        </MudItem>
-    </MudGrid>
+    @foreach (var item in Vm.Order.Items)
+    {
+        <MudGrid Class="mb-2" Spacing="2">
+            <MudItem xs="11" sm="5">
+                <MudNeatooTextField T="string" EntityProperty="@item[nameof(IOrderItem.ProductName)]" />
+            </MudItem>
+            <MudItem xs="1" Class="d-flex align-center">
+                @* A gesture: the list moves a fetched item to DeletedList *@
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => Vm.RemoveItem(item))" />
+            </MudItem>
+            <MudItem xs="6" sm="2">
+                <MudNeatooNumericField T="int" EntityProperty="@item[nameof(IOrderItem.Quantity)]" />
+            </MudItem>
+            <MudItem xs="6" sm="2">
+                <MudNeatooNumericField T="decimal" EntityProperty="@item[nameof(IOrderItem.UnitPrice)]" />
+            </MudItem>
+            <MudItem xs="12" sm="2" Class="d-flex align-center">
+                <MudText>@item.LineTotal.ToString("C")</MudText>
+            </MudItem>
+        </MudGrid>
+    }
 }
 ```
+<sup><a href='/src/Design/Design.App/Pages/OrderEdit.razor#L35-L60' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-child-collection' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## IEntityProperty Metadata
 
@@ -364,25 +516,35 @@ The `EntityProperty` parameter exposes these metadata properties, all automatica
 | `SetValue(object?)` | `Task` | Async value assignment (triggers rules) |
 | `WaitForTasks()` | `Task` | Wait for async rules to complete |
 
+`DisplayName` and `IsModified` are `IEntityProperty` members; the rest are on `IValidateProperty`, which every Neatoo property implements.
+
 ### Manual Metadata Binding
 
-For custom UI elements not covered by MudNeatoo components, access property metadata directly:
+For a control MudNeatoo does not cover — an input model's property ([#95](https://github.com/NeatooDotNet/Neatoo/issues/95)), or a parameter a component does not forward, such as a `Converter` ([#93](https://github.com/NeatooDotNet/Neatoo/issues/93)) — bind the property object directly:
 
+<!-- snippet: skill-input-model-manual-binding -->
+<a id='snippet-skill-input-model-manual-binding'></a>
 ```razor
-@{ var emailProp = entity["Email"]; }
-<MudTextField Value="@((string?)emailProp.Value)"
-              ValueChanged="@(async (string v) => await emailProp.SetValue(v))"
-              Label="@emailProp.DisplayName"
-              Disabled="@emailProp.IsBusy"
-              ReadOnly="@emailProp.IsReadOnly" />
-@if (!emailProp.IsValid)
+@* MudNeatoo fields take an IEntityProperty; an input model's properties are
+   IValidateProperty, so the page binds the property object by hand: the value,
+   then the messages, busy and read-only state the property object carries; the value commits through SetValue, as MudNeatoo does. *@
+@{ var name = _model[nameof(IDemoInputModel.Name)]; }
+<MudTextField T="string"
+              Label="Name"
+              Value="@_model.Name"
+              ValueChanged="@(async (string v) => await name.SetValue(v))"
+              Error="@(!name.IsValid)"
+              ErrorText="@string.Join(" ", name.PropertyMessages.Select(m => m.Message))"
+              Disabled="@name.IsReadOnly" />
+@if (name.IsBusy)
 {
-    @foreach (var msg in emailProp.PropertyMessages)
-    { <MudText Color="Color.Error">@msg.Message</MudText> }
+    <MudProgressLinear Indeterminate="true" />
 }
 ```
+<sup><a href='/src/Design/Design.App/Pages/InputModelPage.razor#L13-L29' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model-manual-binding' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
-This is what MudNeatoo components do internally — prefer the components, fall back to manual binding only for unsupported controls.
+This is what MudNeatoo components do internally — prefer the components, fall back to manual binding only for unsupported controls. On an entity property, `DisplayName` is available for the label.
 
 ### ReadOnly Behavior
 
@@ -399,62 +561,26 @@ Read-only state is owned by the domain model, in two forms. The property declara
 
 ### Disabled Behavior
 
-Every MudNeatoo component accepts an optional `Disabled` parameter (default `false`). The inner MudBlazor component is disabled when EITHER `EntityProperty.IsBusy` is true (async rules running) OR the caller passes `Disabled="true"`. The template expression is:
-
-```razor
-Disabled="@(EntityProperty.IsBusy || Disabled)"
-```
+Every MudNeatoo component accepts an optional `Disabled` parameter (default `false`). The inner MudBlazor component is disabled when EITHER `EntityProperty.IsBusy` is true (async rules running) OR the caller passes `Disabled="true"` — the template binds `Disabled="@(EntityProperty.IsBusy || Disabled)"`.
 
 This means:
-- Without a `Disabled` parameter, components disable only during async rule execution (backward-compatible default)
+- Without a `Disabled` parameter, components disable only during async rule execution
 - Passing `Disabled="true"` (or binding to a condition) forces the field disabled regardless of `IsBusy`
 - You cannot force a field *enabled* while `IsBusy` is true — `IsBusy` always wins
 
-Common use case — disable fields based on a domain condition:
-
-```razor
-<MudNeatooTextField T="string"
-                    EntityProperty="@entity[nameof(IOrder.ShippingAddress)]"
-                    Disabled="@(!entity.RequiresShipping)" />
-```
+The common use is a field disabled by a domain fact, bound as it is. The grade select above does this: `Disabled="@(!Vm.Employee.IsActive)"` — an inactive employee's grade is frozen. Bind a fact the entity owns; a condition composed in the page is business logic in the UI.
 
 **Contrast with ReadOnly:** `ReadOnly` is hardcoded to `EntityProperty.IsReadOnly` with no caller override — read-only state is owned entirely by the domain model. `Disabled` allows both domain-driven (`IsBusy`) and UI-driven disabling.
 
 ## Display-Only Binding
 
-For read-only display of entity values (not form inputs), bind directly to entity properties. Blazor does **not** auto-subscribe to `INotifyPropertyChanged` — these bindings re-render because the containing form page is already subscribed to entity `PropertyChanged` for `IsSavable` (see the Page Structure Pattern above), and display bindings piggyback on that re-render cycle. If you render a view-only page with no form subscription, subscribe explicitly — see `references/property-change-events.md`.
+For read-only display of entity values (not form inputs), bind directly to entity properties — the view branch of the page above shows `@Vm.Employee.FirstName` and `@Vm.Employee.Email`, and the child collection shows `@item.LineTotal`. Blazor does **not** auto-subscribe to `INotifyPropertyChanged`; these bindings re-render because the page subscribes to the entity (Page Structure Pattern), and display bindings piggyback on that re-render. A view-only page must subscribe itself — see `references/property-change-events.md`.
 
-```razor
-<MudText>@entity.Total</MudText>
-<MudText>@entity.Status</MudText>
-<MudChip Color="@(entity.IsValid ? Color.Success : Color.Error)">
-    @(entity.IsValid ? "Valid" : "Has Errors")
-</MudChip>
-```
+A value worth displaying that the entity does not have — a label chosen by a condition, a total, a status colour — is a rule on the entity, not an expression in the markup.
 
 ## View/Edit Mode Pattern
 
-Since most MudNeatoo components bind `ReadOnly` from `IsReadOnly` automatically (with no override), the pattern for view/edit mode switching is conditional rendering — not toggling a ReadOnly parameter.
-
-Use plain MudBlazor display components in view mode and MudNeatoo components in edit mode:
-
-```razor
-@if (isEditing)
-{
-    <MudNeatooTextField T="string"
-                        EntityProperty="@entity[nameof(IPatient.FirstName)]" />
-    <MudNeatooTextField T="string"
-                        EntityProperty="@entity[nameof(IPatient.LastName)]" />
-
-    <MudButton OnClick="Save" Disabled="@(!entity.IsSavable)">Save</MudButton>
-    <MudButton OnClick="CancelEdit" Variant="Variant.Text">Cancel</MudButton>
-}
-else
-{
-    <MudText Typo="Typo.body1">@entity.FirstName @entity.LastName</MudText>
-    <MudButton OnClick="StartEdit" Variant="Variant.Text">Edit</MudButton>
-}
-```
+Since most MudNeatoo components bind `ReadOnly` from `IsReadOnly` automatically (with no override), the pattern for view/edit mode switching is conditional rendering — not toggling a ReadOnly parameter. The page above does it: `@if (Vm.IsEditing)` shows the MudNeatoo components with Save and Cancel; otherwise plain `MudText` and an Edit button. `IsEditing` is screen state on the ViewModel; Cancel fetches the saved employee again, because the entity's tracked state *is* the edit; a new employee has nothing saved, so Cancel gives a fresh form.
 
 This is intentional — ReadOnly state belongs to the domain model (a private setter, or `MarkReadOnly()` during `[Fetch]`), not the UI. View/edit toggling is a UI concern handled with Razor conditionals.
 
@@ -465,5 +591,5 @@ MudBlazor 9.x renamed `ShowMessageBox` to `ShowMessageBoxAsync` on `IDialogServi
 ## Reference Documentation
 
 - **`references/anti-patterns.md`** — Complete catalog of anti-patterns with correct alternatives
-- **`references/property-change-events.md`** — `PropertyChanged` vs `NeatooPropertyChanged`: which to use, why MudNeatoo components only need `PropertyChanged`, and how to build custom container components that react to deep-graph changes
-- **`references/aggregate-reactive-vm.md`** — A ViewModel over a live aggregate: derived values are entity rules the component binds to; the VM only re-raises and forwards gestures
+- **`references/property-change-events.md`** — `PropertyChanged` vs `NeatooPropertyChanged`: which to use, why MudNeatoo components only need `PropertyChanged`, and how a page or container component subscribes to deep-graph changes
+- **`references/aggregate-reactive-vm.md`** — A ViewModel over a live aggregate: derived values are entity rules the component binds to; the ViewModel holds the aggregate and forwards gestures
