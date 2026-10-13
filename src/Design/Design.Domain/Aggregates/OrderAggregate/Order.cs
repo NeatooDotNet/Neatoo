@@ -114,8 +114,9 @@ internal partial class Order : EntityBase<Order>, IOrder
         // This Create hands a form to a person. It decides that the form must
         // not come back unvalidated: run the rules so the required fields show
         // their messages at once and IsSavable is false until they are filled.
-        // A per-operation choice (the rare validate case), not a step every
-        // Create ends with. All is safe here: the item list is empty.
+        // The developer's choice for this operation - the framework never makes
+        // it - and not a step every Create ends with. All is safe here: the item
+        // list is empty.
         await RunRules(RunRulesFlag.All);
     }
     #endregion

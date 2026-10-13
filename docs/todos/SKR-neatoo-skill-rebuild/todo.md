@@ -103,6 +103,16 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 
 ## Discovery Log
 
+### 2026-10-12 — SKR close-out audit (grade C) · serves AC-1, AC-6, AC-7
+- **Finding:** Veto: 005 deferred pitfalls.md's RF rows to 007, which never did it. Callouts: 006 removed mudneatoo's LazyLoad guidance without a log entry; Neatoo#109 unnamed.
+- **Decision:** Fix the veto (rows now pointer-only); accept the LazyLoad removal (user: Out of Scope already says SKR copies none of it); add #109 to pains.md (user).
+- **Follow-up:** re-audit.
+
+### 2026-10-12 — "Rare" is the wrong word · serves AC-1, AC-5
+- **Finding:** The skill, docs, Design comments and D18/D26 called validating a returned object "the rare case".
+- **Decision:** Amend (user): it is the developer's choice; the framework never makes it. Wording changed everywhere it appeared.
+- **Follow-up:** none.
+
 ### 2026-10-12 — SKR-007 RF skill not rebuilt · serves AC-9, AC-8
 - **Finding:** The RemoteFactory skill rebuild (desktopRemoteFactory's Todo 2) has not started and waits for EXSET (12 plans, 1 merged); no date. Both RF skill copies are stale (installed: pre-1.9.0; repo: post-1.9.0, most audit findings still open). AC-9 as written cannot be met inside SKR.
 - **Decision:** Narrow (user). 007 runs now: neatoo and mudneatoo synced, the RF repo copy installed for the test; AC-9 gates on the Neatoo-owned rows; RF-owned rows the fresh session falls into go to desktopRemoteFactory as findings for Todo 2.

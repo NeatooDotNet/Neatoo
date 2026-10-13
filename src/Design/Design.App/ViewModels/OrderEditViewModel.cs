@@ -17,7 +17,7 @@
 //
 // DID NOT DO THIS: RunRules(RunRulesFlag.All) before Save. WHY NOT: the rules
 // are not a step the UI runs; they ran when the properties changed. A forced
-// re-run is a user decision for rare cases, not a save step.
+// re-run is the developer's choice where it is wanted, not a save step.
 //
 // DID NOT DO THIS: try { Save } catch { show a banner }. WHY NOT: an invalid
 // aggregate never reaches Save (IsSavable is false); what Save can throw is an

@@ -170,7 +170,7 @@ The Save handler awaits `WaitForTasks()`, re-checks `IsSavable` (a guard only â€
 }
 ```
 
-A `[Create]` runs paused, so a freshly created entity reports `IsValid == true` until a rule runs: an empty required field has not been validated yet. This is the rare case where running the rules to *validate* a returned object is right, and it is the `[Create]`'s own decision: a `[Create]` that must not hand back an unvalidated form calls `RunRules()` before returning, so the empty required fields show their messages and `IsSavable` is false until they are filled. A choice made for that operation, never a step every operation ends with. After that, every committed field runs its own rules.
+A `[Create]` runs paused, so a freshly created entity reports `IsValid == true` until a rule runs: an empty required field has not been validated yet. Running the rules to *validate* a returned object is right here, and it is the developer's choice, made in the `[Create]` â€” the framework never makes it: a `[Create]` that must not hand back an unvalidated form calls `RunRules()` before returning, so the empty required fields show their messages and `IsSavable` is false until they are filled. A choice made for that operation, never a step every operation ends with. After that, every committed field runs its own rules.
 
 <!-- snippet: skill-run-rules-after-create -->
 <a id='snippet-skill-run-rules-after-create'></a>

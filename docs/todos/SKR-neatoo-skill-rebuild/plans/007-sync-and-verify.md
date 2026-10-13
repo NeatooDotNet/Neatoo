@@ -9,8 +9,7 @@
 **Plan-review opt-in:** No — no code; the deliverable is the eval and the fixes it produces
 **Code-review opt-in:** No
 **Branch:** skr-007-sync-and-verify — cut from the arc at Step 2
-**PR:** —
-
+**PR:** #108
 ---
 
 ## Scope
