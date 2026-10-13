@@ -4,11 +4,13 @@
 **Skills under test:** `~/.claude/skills/neatoo` and `~/.claude/skills/mudneatoo` (byte-identical to `skills/` at the run), `~/.claude/skills/RemoteFactory` (the RF repository copy at `3e3823b`, per the user's choice).
 **Mechanism:** one headless `claude -p` per scenario (Claude Code 2.1.296), started in an empty scratch directory outside the repository, so there was no repository `CLAUDE.md`, no project memory and no `src/Design`. `--allowedTools "Skill Read Glob Grep"`: the sessions could read the installed skills and nothing else, and could not write files. The user-global `~/.claude/CLAUDE.md` loads in every session; it holds no Neatoo doctrine.
 **Prompts and outputs:** `007-runs/s1.txt`–`s5.txt` (verbatim) and `007-runs/out1.md`–`out5.md`, plus `out5b.md` (scenario 5 re-run after the fix below). Line references below are into those files.
-**Scorer:** the habit-trap table in `todo.md`. A row is fallen into when the output does what the row's question assumes. "—" means the scenario gives the row no occasion.
+**Scorer:** the habit-trap table in `todo.md`. A row is fallen into when the output does what the row's question assumes. "—" means the scenario gives the row no occasion. Cells for rows every scenario passes the same way (T8, T20, and the RF rows T5, T14, T18) carry a line reference where the evidence is specific; the test review lists the T8 lines.
 
 ## Verdict
 
 **No scenario falls into any trap row, Neatoo-owned or RF-owned.** AC-9, narrowed to the Neatoo-owned rows on 2026-10-12, is met. No RF-owned row was fallen into, so desktopRemoteFactory gets no findings, only this result.
+
+S5 is scored on its first run (out5); its re-run after the fix (out5b) was read against T1–T20 as well and falls into no row.
 
 One Neatoo-side defect surfaced outside the table and was fixed on this branch (Findings, 1). Three observations go to the user (Findings, 2–4).
 
@@ -42,8 +44,8 @@ One Neatoo-side defect surfaced outside the table and was fixed on this branch (
 
 1. **Fixed — the client composition called a helper the skill does not show.** S5's client calls `builder.Services.AddRemoteFactoryTransport(...)` (out5:642) and never defines it. The call comes from `skill-client-composition` in `references/blazor.md`, which calls Design.App's private helper, deliberately kept outside the region (the SKR-002 plan review vetoed RemoteFactory's keyed `HttpClient` inside a Neatoo region). S1–S4 wrote the keyed client inline and were right. Fix: the region's comment and the section's prose now say that `AddRemoteFactoryTransport` is the app's own helper, not a library method, and point at the RemoteFactory skill for the registration. Re-synced, S5 re-run: out5b writes the registration inline (out5b:634). Not a trap row; Neatoo-owned (AC-4, AC-2).
 2. **Observation — every form's `[Create]` runs its rules.** S1, S3, S4 (the action item) and S5 all end a form-producing `[Create]` with `RunRules(RunRulesFlag.All)` and give the per-operation reason (out1:90–93, out3:157–160, out4:310–315, out5:92). The skill frames this as the rare validate case, decided by the operation, with `Order.Create` as its example. The sessions treat a form a person fills in as that case every time. This matches the ruling (the developer's decision, made by the operation). It is listed so the user can say whether "rare" in the skill's wording should change.
-3. **Observation — S5's first run set the Guid key in `[Create]`** (out5:91). `pitfalls.md` says to set it in `[Insert]`. The re-run set it in `[Insert]` (out5b:150), so this is run-to-run variation, not a skill gap. Not a trap row.
-4. **Observation — the double-click guard was applied everywhere it applied.** S1, S3, S4 and S5 hold an in-flight flag in the save handler and cite Neatoo#103 (out1:493, out3:378, out4:546, out5:499): the pain note is being read and acted on.
+3. **Observation — S5's first run set the Guid key in `[Create]`** (out5:91). `pitfalls.md` says to set it in `[Insert]`. The re-run set it in `[Insert]` (out5b:151), so this is run-to-run variation, not a skill gap. Not a trap row.
+4. **Observation — the double-click guard was applied everywhere it applied.** S1, S3, S4 and S5 hold an in-flight flag in the save handler because `Save()` does not mark the entity busy (out1:493, out3:378, out4:546, out5:499); S3 and out5b cite Neatoo#103 by number. The pain note is being read and acted on.
 
 ## For the RemoteFactory sibling
 

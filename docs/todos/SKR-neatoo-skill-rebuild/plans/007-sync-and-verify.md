@@ -4,7 +4,7 @@
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-8, AC-9
-**Status:** In Progress
+**Status:** Done
 **Last Updated:** 2026-10-12 (drafted from the stub after SKR-006 merged)
 **Plan-review opt-in:** No — no code; the deliverable is the eval and the fixes it produces
 **Code-review opt-in:** No
@@ -79,13 +79,14 @@ Walked 2026-10-12 on `skr-arc` at `864ab78`.
 | Acceptance bullet (short) | Priority | Tier declared | Evidence | Confirmed |
 |---|---|---|---|---|
 | Installed copies byte-identical | Should | `[explicit-skip]` | `diff -rq skills/neatoo ~/.claude/skills/neatoo` and the same for `mudneatoo`: 0 lines, after the final re-sync (post-fix). `~/.claude/skills/RemoteFactory` vs `RemoteFactory/skills/RemoteFactory` at `3e3823b`: 0 lines. Previous copies backed up in the session scratchpad. | skip confirmed |
-| Fresh session falls into no Neatoo-owned row | Must | `[explicit-skip]` | `reviews/007-fresh-session.md`: five headless sessions (prompts and outputs in `reviews/007-runs/`), scored row by row against T1–T20 with a line reference per verdict. No row fallen into, Neatoo or RF. One defect outside the table (the transport helper) fixed and S5 re-run (`out5b.md`). RF sibling told: no RF-owned findings. | skip confirmed |
+| Fresh session falls into no Neatoo-owned row | Must | `[explicit-skip]` | `reviews/007-fresh-session.md`: five headless sessions (prompts and outputs in `reviews/007-runs/`), scored row by row against T1–T20, with line references for the substantive verdicts (the test reviewer added the T8 lines). No row fallen into, Neatoo or RF. One defect outside the table (the transport helper) fixed and S5 re-run (`out5b.md`). RF sibling told: no RF-owned findings. | skip confirmed |
 
 ---
 
 ## Gate Record
 
-- (pending)
+- **Test review, round 1 (2026-10-12): CLEAN** — `reviews/007-test-review.md`. No veto, Must- or Should-cover. The reviewer checked every T1/T7/T10/T12/T17 pass cell and four or more others per scenario, found no missed trap (no validate step anywhere), no prompt leak, the fix leaving the keyed `HttpClient` outside the region, and ran the sync `diff -rq` itself. Tech-debt corrected in the scored review: the line-reference claim scoped to the substantive verdicts; Neatoo#103 cited by S3 and out5b only; out5b:151; out5b read against T1–T20 and noted. Theoretical, not triaged: S5's prompt mentions the on-screen edit, which weakens the T7 evidence.
+- Code review: not opted in.
 
 ---
 
