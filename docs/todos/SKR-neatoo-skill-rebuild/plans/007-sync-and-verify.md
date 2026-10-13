@@ -53,8 +53,8 @@ Copy `skills/neatoo` and `skills/mudneatoo` to `~/.claude/skills/`, confirm the 
 
 ## Acceptance
 
-- [ ] `~/.claude/skills/neatoo` and `~/.claude/skills/mudneatoo` are byte-identical to `skills/` `[explicit-skip: diff -rq]` · Should
-- [ ] A fresh session with only the two installed skills falls into no Neatoo-owned trap row on the five zCRM scenarios; any RF-owned row it falls into is reported to the sibling todo `[explicit-skip: scored transcripts in reviews/007-fresh-session.md]` · Must
+- [x] `~/.claude/skills/neatoo` and `~/.claude/skills/mudneatoo` are byte-identical to `skills/` `[explicit-skip: diff -rq]` · Should
+- [x] A fresh session with only the two installed skills falls into no Neatoo-owned trap row on the five zCRM scenarios; any RF-owned row it falls into is reported to the sibling todo `[explicit-skip: scored transcripts in reviews/007-fresh-session.md]` · Must
 
 ---
 
@@ -70,7 +70,7 @@ Walked 2026-10-12 on `skr-arc` at `864ab78`.
 
 ## Punchlist
 
--
+- [x] The client composition called `AddRemoteFactoryTransport` as if it were a library method; the region comment and `blazor.md` now say it is the app's own helper · `Design.App/ClientServices.cs`, `references/blazor.md` · done when S5 re-run writes the keyed `HttpClient` itself · AC-4 · Must (found by the fresh session, S5)
 
 ---
 
@@ -78,14 +78,14 @@ Walked 2026-10-12 on `skr-arc` at `864ab78`.
 
 | Acceptance bullet (short) | Priority | Tier declared | Evidence | Confirmed |
 |---|---|---|---|---|
-| Installed copies byte-identical | Should | `[explicit-skip]` | | |
-| Fresh session falls into no Neatoo-owned row | Must | `[explicit-skip]` | | |
+| Installed copies byte-identical | Should | `[explicit-skip]` | `diff -rq skills/neatoo ~/.claude/skills/neatoo` and the same for `mudneatoo`: 0 lines, after the final re-sync (post-fix). `~/.claude/skills/RemoteFactory` vs `RemoteFactory/skills/RemoteFactory` at `3e3823b`: 0 lines. Previous copies backed up in the session scratchpad. | skip confirmed |
+| Fresh session falls into no Neatoo-owned row | Must | `[explicit-skip]` | `reviews/007-fresh-session.md`: five headless sessions (prompts and outputs in `reviews/007-runs/`), scored row by row against T1–T20 with a line reference per verdict. No row fallen into, Neatoo or RF. One defect outside the table (the transport helper) fixed and S5 re-run (`out5b.md`). RF sibling told: no RF-owned findings. | skip confirmed |
 
 ---
 
 ## Gate Record
 
--
+- (pending)
 
 ---
 
