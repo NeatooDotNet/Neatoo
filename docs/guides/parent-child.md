@@ -14,9 +14,9 @@ The examples on this page come from two compiled aggregates: `Order` with its `O
 <a id='snippet-skill-parent-and-root'></a>
 ```cs
 [TestMethod]
-public void AddItem_SetsParentAndRoot()
+public async Task AddItem_SetsParentAndRoot()
 {
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     Assert.IsNull(item.Parent, "Not attached yet");
 
@@ -49,10 +49,10 @@ The framework uses `Parent` to navigate the aggregate tree and cascade state upw
 <a id='snippet-skill-add-item'></a>
 ```cs
 [TestMethod]
-public void AddItem_ItemJoinsAggregate()
+public async Task AddItem_ItemJoinsAggregate()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
 
     // Act
@@ -185,10 +185,10 @@ Attaching a child to a live parent is itself a change to the graph. `Add` marks 
 <a id='snippet-skill-add-marks-modified'></a>
 ```cs
 [TestMethod]
-public void IsModified_TrueWhenNewItemAdded()
+public async Task IsModified_TrueWhenNewItemAdded()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
 
     // Act
     var item = _itemFactory.Create("Widget", 1, 10.00m);
@@ -220,10 +220,10 @@ Adding a child to an `EntityListBase` sets its `Parent`, its `Root`, and its `Co
 <a id='snippet-skill-child-interface-no-save'></a>
 ```cs
 [TestMethod]
-public void ChildInterface_DoesNotExposeIsSavable()
+public async Task ChildInterface_DoesNotExposeIsSavable()
 {
     // Arrange — IOrderItem extends IEntityBase, not IEntityRoot
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     order.Items!.Add(item);
 
@@ -353,14 +353,14 @@ public async Task ChildRule_ReadsRootStateThroughParent_AndTheRootRerunsItWhenTh
 
     Assert.IsTrue(design.IsSchedulable, "Hours > 0 and the parent is not on hold");
     Assert.IsFalse(order.HasUnschedulableTasks);
-    Assert.IsFalse(order.ShowHoldBanner);
+    Assert.IsFalse(order.IsHeld);
 
     order.IsOnHold = true;
     await order.WaitForTasks();
 
     Assert.IsFalse(design.IsSchedulable, "The root re-ran the tasks' rules; the child rule read Parent.IsOnHold");
     Assert.IsTrue(order.HasUnschedulableTasks, "...and the child's change bubbled into the root's flag");
-    Assert.IsTrue(order.ShowHoldBanner);
+    Assert.IsTrue(order.IsHeld);
 }
 ```
 <sup><a href='/src/Design/Design.Tests/AggregateTests/WorkOrderAggregateTests.cs#L108-L128' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-read-test' title='Start of snippet'>anchor</a></sup>

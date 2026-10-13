@@ -104,12 +104,20 @@ internal partial class Order : EntityBase<Order>, IOrder
 
     #region skill-root-create
     [Create]
-    public void Create([Service] IOrderItemListFactory itemsFactory)
+    public async Task Create([Service] IOrderItemListFactory itemsFactory)
     {
         Items = itemsFactory.Create();
         OrderDate = DateTime.Today;
         Status = "Draft";
         OrderNumber = $"ORD-{DateTime.Now:yyyyMMddHHmmss}";
+
+        // This Create hands a form to a person. It decides that the form must
+        // not come back unvalidated: run the rules so the required fields show
+        // their messages at once and IsSavable is false until they are filled.
+        // The developer's choice for this operation - the framework never makes
+        // it - and not a step every Create ends with. All is safe here: the item
+        // list is empty.
+        await RunRules(RunRulesFlag.All);
     }
     #endregion
 
@@ -286,6 +294,22 @@ internal partial class Order : EntityBase<Order>, IOrder
         repository.Remove(row);
 
         repository.SaveChanges();
+    }
+    #endregion
+
+    // =========================================================================
+    // Verb - Submit
+    // =========================================================================
+    // A verb sets state and never persists. Setting Status is a property set
+    // outside a factory operation, so the validation rule triggered by Status
+    // runs at once: an order with no items becomes invalid here, and IsSavable
+    // reports it. Nothing else validates - no RunRules, no guard, no throw.
+    // Whoever holds the order (a page, a job) reads IsSavable and decides.
+    // =========================================================================
+    #region skill-verb-submit
+    public void Submit()
+    {
+        Status = "Submitted";
     }
     #endregion
 

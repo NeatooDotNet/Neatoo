@@ -1,43 +1,27 @@
 # Domain Logic Placement
 
-The domain layer is the home for all business logic. In a Neatoo application that layer has four rungs — entity rules, entity verbs, orchestration seams, and read models — and the ViewModel and Razor above them bind, adapt gestures, and mirror. The ladder, the three ownership questions, the mirror rule, and the gesture test are in the main `/neatoo` skill → "Domain Logic First." This reference is the decision tree that walks the ladder, followed by the wiring patterns for **rung 1, the entity rule** — Patterns 1–9 below all assume the tree has already put you on that rung.
+The main `/neatoo` skill decides where logic goes ("Logic is placed by who drives it"): a property change drives a rule, a person's gesture on one aggregate drives a verb, a load or another aggregate drives a seam, and a screen's need for server truth drives a read model. This reference is the mechanism for the first two — which rule shape for which trigger, the patterns that make an aggregate behave as one, and the verb. The seam's and the read model's attributes are the RemoteFactory skill's.
 
-> **Design assumption: open mutation.** Neatoo aggregates are graphs, not façades — any consumer (ViewModel, Razor binding, service) can call business methods on children or bind directly to deep properties. Design rules so that mutating any descendant leaves the root's `IsValid` / `IsModified` correct after all rules settle. See the main `/neatoo` skill → "The Aggregate Is a Graph, Not a Façade" and "Designing Rules for Open Mutation."
+> **Design assumption: open mutation.** Neatoo aggregates are graphs, not façades — any consumer (ViewModel, Razor binding, service) can call business methods on children or bind directly to deep properties. Design rules so that mutating any descendant leaves the root's `IsValid` / `IsModified` correct after all rules settle. The ViewModel adapts gestures into those calls and decides nothing (the main `/neatoo` skill's fourth model statement); the rules below are what make that safe.
 
-The compiled examples below come from one aggregate: a `WorkOrder` root with a list of `WorkOrderTask` children. Each task has `Hours`, `Rate`, a `Discount` the root pushes down, and a derived `Cost`; the root has a `Budget`, a `Status` driven by an `Approve` verb, and derived `TotalCost`, `IsOverBudget`, `CanApprove`, `ShowHoldBanner` and `HasUnschedulableTasks`.
+The compiled examples below come from one aggregate: a `WorkOrder` root with a list of `WorkOrderTask` children. Each task has `Hours`, `Rate`, a `Discount` the root pushes down, and a derived `Cost`; the root has a `Budget`, a `Status` driven by an `Approve` verb, and derived `TotalCost`, `IsOverBudget`, `CanApprove`, `IsHeld` and `HasUnschedulableTasks`.
 
-## The Logic Placement Decision Tree
+## Which Rule Shape
 
-Start from who initiates the behavior — not from what the screen shows. Every branch ends at a rung, and only some of them end at a rule.
+A property change drives a rule; what the rule reacts to decides its shape.
 
-```
-Who initiates this behavior?
-├── The user, with a gesture (click, pick, keystroke)
-│   ├── It changes one property                  → ViewModel calls the entity setter; rules react (rung 1)
-│   ├── It is an operation on one aggregate      → entity verb (rung 2), CanX by rule; ViewModel calls it
-│   └── It spans aggregates or needs services    → orchestration seam: a static [Remote, Execute] (rung 3); ViewModel invokes it
-├── A property change on an entity
-│   ├── Derived from own properties              → AddAction (rung 1)
-│   ├── Reacts to a child's property             → AddAction with child trigger (rung 1)
-│   ├── Parent pushes to another child           → AddAction with child trigger, action writes the sibling (rung 1)
-│   ├── Cross-sibling consistency in a list      → override HandleNeatooPropertyChanged on the list (rung 1)
-│   ├── Validation                               → AddValidation / RuleBase<T> (rung 1)
-│   └── Needs server truth (uniqueness, overlap, a lookup)
-│       ├── One question, one call               → async rule with an injected [Remote, Execute] command (rung 1)
-│       └── Work the user starts on purpose      → NOT a rule. A verb or seam the ViewModel invokes (rung 2 or 3)
-├── A load — nothing the user did
-│   ├── State the screen shows or gates on       → read model [Fetch] computes it (rung 4)
-│   ├── The object always exists                 → the root's [Fetch] by key (rung 3)
-│   └── It may have to be created, or a policy   → a static [Remote, Execute] seam that creates or loads and
-│       is applied on the user's behalf            returns the graph (rung 3). Not a [Fetch]: Fetch takes a key
-│       (normalize, stage forward, seed)            for existing data, and rules are paused inside it. Never the
-│                                                  ViewModel's InitializeAsync.
-└── Another aggregate, or a command
-    └──                                          → orchestration seam: a static [Remote, Execute] (rung 3)
+| The rule reacts to | Shape | Pattern |
+|---|---|---|
+| The entity's own properties, producing a value | `AddAction` writing a `private set` partial property | 1 |
+| The entity's own properties, producing a fact the UI shows or gates on | `AddAction` writing a `bool` named for the business fact (`IsHeld`, `CanApprove`) | 2, 7 |
+| A value another rule wrote | A second `AddAction` triggered by that value — rules chain | 3 |
+| A question only the server can answer, once per change | An async rule that takes a `[Remote, Execute]` command delegate or an interface-factory domain service | 4 |
+| Several of the entity's properties together | `AddValidation` or `RuleBase<T>`, returning every message at once | 5 |
+| A child's property | `AddAction` on the parent with a child-property trigger (`t => t.Items![0].LineTotal`) | 6, 8 |
+| A parent's property every child must follow | `AddAction` on the parent that calls a business method on each child | 9 |
+| A sibling's property in the same list | A rule on the child that reads its siblings through `Parent`; the list re-runs the siblings' rules (`HandleNeatooPropertyChanged`) | 6 |
 
-No branch ends at a ViewModel writing an entity outside the gesture branch.
-Purely presentational choices — CSS class, layout, which component — are the UI's own and never enter this tree.
-```
+Not a rule: work a person starts on purpose — several server calls, or a result they review before it applies. That is a verb or a seam the ViewModel calls on a named gesture. Presentational choices (CSS class, layout, which component) are the UI's own.
 
 ## Pattern 1: Computed/Derived Properties via AddAction
 
@@ -72,23 +56,16 @@ RuleManager.AddAction(
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L37-L45' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-computed-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-```razor
-<!-- UI is a thin binding layer -->
-<MudText>Cost: @task.Cost</MudText>
-@if (task.IsSchedulable)
-{
-    <MudChip>Schedulable</MudChip>
-}
-```
+The page renders `@task.Cost` as it is, with no arithmetic of its own: [blazor.md — A ViewModel Over a Live Aggregate](blazor.md#a-viewmodel-over-a-live-aggregate).
 
 **Why this matters:**
 - `Cost` updates when either input changes, wherever the change came from
 - Logic is testable without Blazor
 - UI binds to properties, doesn't compute
 
-## Pattern 2: Conditional Visibility via Domain Properties
+## Pattern 2: Visibility Binds to Business Facts
 
-When the UI shows/hides elements based on business state, expose that decision as a domain property.
+When the UI shows or hides elements based on business state, the entity exposes the business fact (`IsHeld`, `HasUnschedulableTasks`) and the UI binds to it. The entity never names a screen element: `ShowHoldBanner` on an entity is the smell, `IsHeld` is the fact. If a screen needs a name of its own for the element, that mapping lives in a ViewModel, one-to-one, deciding nothing.
 
 ### Anti-Pattern: UI Decides Visibility
 
@@ -108,14 +85,16 @@ When the UI shows/hides elements based on business state, expose that decision a
 
 ### Correct: Domain Exposes State, UI Binds
 
-A show/hide decision is a `bool` the domain computes. When the decision depends on a child's property, the trigger is the child's property path (`t => t.Tasks![0].IsSchedulable`), not the child reference — a trigger on `t => t.Tasks` fires only when the list is reassigned.
+The fact is a `bool` the domain computes. When it depends on a child's property, the trigger is the child's property path (`t => t.Tasks![0].IsSchedulable`), not the child reference — a trigger on `t => t.Tasks` fires only when the list is reassigned.
 
-<!-- snippet: skill-visibility-rules -->
-<a id='snippet-skill-visibility-rules'></a>
+<!-- snippet: skill-derived-facts -->
+<a id='snippet-skill-derived-facts'></a>
 ```cs
-// A show/hide decision is domain state. The UI binds @if (ShowHoldBanner).
+// A business fact derived from two others. The UI binds to it (for
+// example @if (workOrder.IsHeld) around a banner) and decides nothing;
+// the entity never names a screen element (no "ShowHoldBanner").
 RuleManager.AddAction(
-    t => t.ShowHoldBanner = t.IsOnHold && t.Status != "Closed",
+    t => t.IsHeld = t.IsOnHold && t.Status != "Closed",
     t => t.IsOnHold,
     t => t.Status);
 
@@ -125,20 +104,10 @@ RuleManager.AddAction(
     t => t.HasUnschedulableTasks = t.Tasks?.Any(task => !task.IsSchedulable) ?? false,
     t => t.Tasks![0].IsSchedulable);
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L56-L68' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-visibility-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L56-L70' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-derived-facts' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-```razor
-<!-- UI just binds -->
-@if (order.ShowHoldBanner)
-{
-    <HoldBanner />
-}
-@if (order.HasUnschedulableTasks)
-{
-    <MudAlert Severity="Severity.Warning">Some tasks cannot be scheduled</MudAlert>
-}
-```
+The page binds `HasUnschedulableTasks` directly and `IsHeld` through the ViewModel's one-to-one name for it; it has no condition of its own: [blazor.md — A ViewModel Over a Live Aggregate](blazor.md#a-viewmodel-over-a-live-aggregate).
 
 ## Pattern 3: Cascading State via Chained Rules
 
@@ -154,7 +123,7 @@ RuleManager.AddAction(
     t => t.TotalCost,
     t => t.Budget);
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L77-L84' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-chained-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L79-L86' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-chained-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-aggregation-test -->
@@ -207,7 +176,7 @@ public static partial class UsernameAvailability
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L117-L131' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L126-L140' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The rule takes the command delegate. It never sees the repository:
@@ -256,7 +225,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L133-L174' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L142-L183' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The entity receives the rule by constructor injection; the rule's interface is registered in DI on both tiers (see `validation.md` → "Async Rules That Call the Server"):
@@ -281,7 +250,7 @@ public AsyncRulesDemo(
 
 **Trigger on field commit, not per keystroke.** A rule runs every time its trigger property is set. `MudNeatooTextField` and `MudNeatooNumericField` set the property when the field loses focus, so a rule behind them makes one call per committed value. A control that sets the property continuously (a slider with `Immediate`, a raw `@bind:event="oninput"`) makes one call per change.
 
-**What does not belong in a rule** is work the user should start on purpose: a recalculation that takes several server calls, or a result the user must review before it applies. That is an entity verb or a seam the ViewModel invokes on a named gesture (rung 2 or 3).
+**What does not belong in a rule** is work the user should start on purpose: a recalculation that takes several server calls, or a result the user must review before it applies. That is an entity verb or a seam the ViewModel invokes on a named gesture.
 
 Two shapes to refuse:
 
@@ -303,6 +272,7 @@ Business rules that span multiple properties belong in the domain model, not in 
 ### Anti-Pattern: UI Validates Cross-Property Rules
 
 ```razor
+<!-- WRONG: the UI validates; the rule has no home in the domain -->
 @code {
     void OnEndDateChanged(DateTime? value)
     {
@@ -503,6 +473,7 @@ Workflow transitions and status logic belong in the domain model.
 ### Anti-Pattern: UI Manages Workflow
 
 ```razor
+<!-- WRONG: the UI owns the transition and its guard -->
 @code {
     void OnApprove()
     {
@@ -533,7 +504,7 @@ public void Approve(string approver)
     Status = "Approved";
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L124-L134' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-verb' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L126-L136' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-verb' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-can-x-rule -->
@@ -548,10 +519,10 @@ RuleManager.AddAction(
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-can-x-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The `[Create]` ends with `RunRules`, so `CanApprove` is right before the user touches anything (rules do not fire during a factory operation):
+The `[Create]` needs `CanApprove` and `Summary` right before the user touches anything, and rules do not fire during an operation, so it runs them itself (`All` is safe: a new work order has no children yet):
 
-<!-- snippet: skill-create-with-run-rules -->
-<a id='snippet-skill-create-with-run-rules'></a>
+<!-- snippet: skill-create-computes-derived -->
+<a id='snippet-skill-create-computes-derived'></a>
 ```cs
 [Create]
 public async Task Create([Service] IWorkOrderTaskListFactory tasksFactory)
@@ -560,11 +531,13 @@ public async Task Create([Service] IWorkOrderTaskListFactory tasksFactory)
     Status = "Pending";
 
     // The object is paused: the assignment above ran no rule, so CanApprove
-    // is still false. Force the rules so the new object is consistent.
+    // and Summary are still default. This operation needs them, so it runs
+    // the rules that compute them. All is safe here because the task list
+    // is empty - no finished child exists for a root rule to write.
     await RunRules(RunRulesFlag.All);
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L136-L147' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-with-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L138-L151' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-derived' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-can-x-test -->
@@ -588,12 +561,7 @@ public async Task Approve_SetsState_AndTheCanApproveRuleRecomputesAdmission()
 <sup><a href='/src/Design/Design.Tests/AggregateTests/WorkOrderAggregateTests.cs#L49-L64' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-can-x-test' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-```razor
-<!-- UI calls domain method, binds to computed state -->
-<MudButton Disabled="@(!order.CanApprove)" OnClick="@(() => order.Approve(currentUser.Name))">
-    Approve
-</MudButton>
-```
+The page enables the Approve button from `CanApprove` and calls the verb; it never re-checks the status: [blazor.md — A ViewModel Over a Live Aggregate](blazor.md#a-viewmodel-over-a-live-aggregate).
 
 ## Pattern 8: Child Collection Aggregation
 
@@ -620,17 +588,10 @@ RuleManager.AddAction(
     t => t.TotalCost = t.Tasks?.Sum(task => task.Cost) ?? 0,
     t => t.Tasks![0].Cost);
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L70-L75' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-aggregation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L72-L77' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-aggregation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-```razor
-<!-- UI binds to precomputed domain properties -->
-<MudText>Total: @order.TotalCost</MudText>
-@if (order.HasUnschedulableTasks)
-{
-    <MudAlert>Some tasks cannot be scheduled</MudAlert>
-}
-```
+The page renders `@Vm.WorkOrder.TotalCost` as it is: [blazor.md — A ViewModel Over a Live Aggregate](blazor.md#a-viewmodel-over-a-live-aggregate).
 
 Each aggregation targets the specific child property it depends on (`HasUnschedulableTasks`, in Pattern 2, triggers on `Tasks.IsSchedulable`). The `[0]` indexer is a syntactic placeholder — any child in the collection that changes the named property triggers the rule.
 
@@ -641,6 +602,7 @@ When one child changes and a different child needs updating, the parent orchestr
 ### Anti-Pattern: UI Bridges Between Entities
 
 ```razor
+<!-- WRONG: the UI orchestrates between children -->
 @code {
     void OnDiscountChanged(decimal discount)
     {
@@ -682,7 +644,7 @@ RuleManager.AddActionAsync(
     },
     t => t.IsOnHold);
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L86-L110' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-orchestrator' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L88-L112' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-orchestrator' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-parent-in-child-method -->
@@ -749,14 +711,14 @@ Two layers, two tests. The Razor test catches leaks into markup. The ViewModel t
 
 | Smell | Move to |
 |---|---|
-| `@(a.X * b.Y)` arithmetic | Entity rule (rung 1) |
-| `@if (a.Status == "X" && b.Count > 0)` | Entity `CanX` by rule (1) or a read-model flag (4); bind to it |
-| `@(list.Where(...).Count())` LINQ | Entity rule with child trigger (1) |
-| `@(condition ? "Label A" : "Label B")` ternary | Domain `string` property (1) |
-| `OnClick` handler that sets several properties | Entity verb (2); the handler calls it |
-| `OnChanged` handler that validates | `AddValidation` (1) |
-| `@code` block with more than 5 lines of logic | A verb (2) or a seam (3); at most a ViewModel gesture handler that calls one |
-| Handler touching two entities | Orchestration seam (3), or a parent-orchestrator rule (1) if both are children of one root |
+| `@(a.X * b.Y)` arithmetic | Entity rule |
+| `@if (a.Status == "X" && b.Count > 0)` | Entity `CanX` by rule or a read-model flag; bind to it |
+| `@(list.Where(...).Count())` LINQ | Entity rule with child trigger |
+| `@(condition ? "Label A" : "Label B")` ternary | Domain `string` property |
+| `OnClick` handler that sets several properties | Entity verb; the handler calls it |
+| `OnChanged` handler that validates | `AddValidation` |
+| `@code` block with more than 5 lines of logic | A verb or a seam; at most a ViewModel gesture handler that calls one |
+| Handler touching two entities | Orchestration seam, or a parent-orchestrator rule if both are children of one root |
 
 **Rule of thumb:** more than three conditional or computed expressions in a `.razor` file, and logic has leaked.
 
@@ -764,12 +726,12 @@ Two layers, two tests. The Razor test catches leaks into markup. The ViewModel t
 
 | Smell | What it is | Move to |
 |---|---|---|
-| `bool X => A && B` over entity or read-model values | A re-deriving mirror — the rule now has two owners | Entity `CanX` rule (1) or read-model flag (4); the ViewModel reads it |
-| `X => Id != 0 && Id == OtherId` | A domain fact assembled from ids | Read model (4) |
-| A method that writes an entity and handles no named gesture | A policy in the wrong layer | The seam that loads the graph (3), or a rule (1) |
-| A method that reads a registry or service and writes entity defaults | A verb in the wrong layer | Entity verb (2), or the seam (3) |
-| A guard in the ViewModel that re-derives an entity's admission check | The rule now has two owners | Entity `CanX` rule (1); the ViewModel binds to it |
-| `InitializeAsync` that does more than fetch, bind, and subscribe | Load-time policy | A static `[Remote, Execute]` seam that creates or loads (3); a `[Fetch]` only when the object always exists |
+| `bool X => A && B` over entity or read-model values | A re-deriving mirror — the rule now has two owners | Entity `CanX` rule or read-model flag; the ViewModel reads it |
+| `X => Id != 0 && Id == OtherId` | A domain fact assembled from ids | Read model |
+| A method that writes an entity and handles no named gesture | A policy in the wrong layer | The seam that loads the graph, or a rule |
+| A method that reads a registry or service and writes entity defaults | A verb in the wrong layer | Entity verb, or the seam |
+| A guard in the ViewModel that re-derives an entity's admission check | The rule now has two owners | Entity `CanX` rule; the ViewModel binds to it |
+| `InitializeAsync` that does more than fetch, bind, and subscribe | Load-time policy | A static `[Remote, Execute]` seam that creates or loads; a `[Fetch]` only when the object always exists |
 
 **Rule of thumb:** every ViewModel member that writes an entity must name the gesture it handles; every ViewModel bool must be a read, not a composition.
 
@@ -821,7 +783,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L133-L174' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L142-L183' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The entity receives the rule by constructor injection and registers it with `RuleManager.AddRule(rule)` (Pattern 4 shows the constructor).
@@ -843,17 +805,139 @@ public async Task ChildRule_ReadsRootStateThroughParent_AndTheRootRerunsItWhenTh
 
     Assert.IsTrue(design.IsSchedulable, "Hours > 0 and the parent is not on hold");
     Assert.IsFalse(order.HasUnschedulableTasks);
-    Assert.IsFalse(order.ShowHoldBanner);
+    Assert.IsFalse(order.IsHeld);
 
     order.IsOnHold = true;
     await order.WaitForTasks();
 
     Assert.IsFalse(design.IsSchedulable, "The root re-ran the tasks' rules; the child rule read Parent.IsOnHold");
     Assert.IsTrue(order.HasUnschedulableTasks, "...and the child's change bubbled into the root's flag");
-    Assert.IsTrue(order.ShowHoldBanner);
+    Assert.IsTrue(order.IsHeld);
 }
 ```
 <sup><a href='/src/Design/Design.Tests/AggregateTests/WorkOrderAggregateTests.cs#L108-L128' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-read-test' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 If the logic lived in a `.razor` file, this test would be impossible.
+
+## A Verb
+
+A verb sets state and never persists; the rule its trigger names runs at once. No `RunRules`, no guard, no throw.
+
+<!-- snippet: skill-verb-submit -->
+<a id='snippet-skill-verb-submit'></a>
+```cs
+public void Submit()
+{
+    Status = "Submitted";
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L309-L314' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-verb-submit' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+## The Aggregate Is a Graph
+
+Every node of an aggregate is directly addressable. A ViewModel calls a child's verb (`workOrder.Tasks![0].ApplyParentDiscount()`), a page binds a deep property (`task[nameof(IWorkOrderTask.Hours)]`), a service reads any depth. The root coordinates — it owns `Save()`, and its `IsValid`, `IsModified` and `IsSavable` aggregate every descendant — but it does not mediate access to its children. Encapsulation lives at the property: `private set`, verbs and rules guard state wherever it sits.
+
+Routing every child mutation through a root wrapper rebuilds a gate the framework does not have, and duplicates the logic between root and child.
+
+## Rules for Open Mutation
+
+Because any consumer can call a child's verb, the rule graph must converge after that call: the child sets its state, its own rules run, its validity changes and bubbles, the root's rules triggered on that child property run, and the root's `IsValid` / `IsSavable` raise `PropertyChanged` for the bindings. Every mutation a consumer can make must leave the root correct once the rules have settled. If a child edit can leave the root invalid but unreported, a rule is missing — usually on the root, triggered by the child property that changed. That is the rule author's responsibility, not a framework guarantee.
+
+| The invariant is about | The rule lives on | Its trigger |
+|---|---|---|
+| The child's own state | The child | Its own property |
+| Root state that depends on a child | The root | A child-property trigger (Pattern 6) |
+| A summary of the children exposed on the root | The root (`AddAction`) | A child-property trigger (Pattern 8) |
+| Consistency between siblings | The child, reading siblings through `Parent` | Its own property; the list re-runs the siblings |
+
+## Parent
+
+Every child has a `Parent`, set when it is assigned to a parent's partial property or added to a child list. It is the child's read access to the aggregate around it.
+
+**In a child rule**, the child may not be attached yet, so pattern-match rather than cast:
+
+<!-- snippet: skill-parent-in-child-rule -->
+<a id='snippet-skill-parent-in-child-rule'></a>
+```cs
+// A child rule reads ambient root state through Parent. Parent is null
+// until the task is attached, so pattern-match instead of casting.
+RuleManager.AddAction(
+    t => t.IsSchedulable = t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold,
+    t => t.Hours);
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L47-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-rule' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+**In a child factory method**, the child is always attached. Here the task writes a denormalized column from the root's state:
+
+<!-- snippet: skill-parent-in-child-update -->
+<a id='snippet-skill-parent-in-child-update'></a>
+```cs
+[Update]
+internal void Update(WorkOrderTaskRow row)
+{
+    MapTo(row);
+}
+
+private void MapTo(WorkOrderTaskRow row)
+{
+    row.Id = Id;
+    row.Name = Name!;
+    row.Sequence = Sequence;
+    row.Hours = Hours;
+    row.Rate = Rate;
+    row.Discount = Discount;
+    row.Cost = Cost;
+    row.IsSchedulable = IsSchedulable;
+
+    // A denormalized column decided from root state, read through Parent.
+    // On a persistence path the task is always attached.
+    row.WorkOrderStatus = ((IWorkOrder)this.Parent!).Status!;
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L107-L129' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-update' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The saved row carries the root's status, read through `Parent` at save time:
+
+<!-- snippet: skill-parent-in-update-test -->
+<a id='snippet-skill-parent-in-update-test'></a>
+```cs
+[TestMethod]
+public async Task Save_TaskMapsRootStateIntoItsRow_ThroughParent()
+{
+    var row = _repository.SeedWorkOrder(MockWorkOrderRepository.Task("Design", 1, 2m, 30m));
+
+    var order = (await _factory.Fetch(row.Id))!;
+    Assert.IsFalse(order.IsModified, "A fetched aggregate is a clean baseline");
+    Assert.IsTrue(order.CanApprove, "Fetch re-ran the root's own rules for its derived values");
+
+    order.Tasks![0].Hours = 3m;   // a modified child: the list hands it its row
+    order.Approve("ada");
+    await order.WaitForTasks();
+    Assert.IsTrue(order.IsSavable);
+
+    order = (IWorkOrder)await order.Save();
+
+    var saved = _repository.Store[row.Id];
+    Assert.AreEqual("Approved", saved.Status);
+    Assert.AreEqual("ada", saved.ApprovedBy);
+    Assert.AreEqual(3m, saved.Tasks.Single().Hours);
+    Assert.AreEqual("Approved", saved.Tasks.Single().WorkOrderStatus,
+        "The task read the root's status through Parent when it mapped itself");
+    Assert.IsFalse(order.IsModified);
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/WorkOrderAggregateTests.cs#L154-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-update-test' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+**In a child verb**, the cast is safe for the same reason; `ApplyParentDiscount` under [Pattern 9](#correct-parent-orchestrates-in-the-domain) is the example.
+
+Rules of use:
+
+- `Parent` is typed `IValidateBase?`. Cast to the root's interface (`(IWorkOrder)Parent!`) where the child is always attached; pattern-match (`Parent is IWorkOrder root`) where it may not be, or where the same child type can sit under different roots.
+- Children read `Parent`; parents write children. A child never mutates through `Parent`.
+- `Parent` stays inside the aggregate. A child that needs another aggregate through `Parent` has its boundary drawn wrong.
+- A child rule that reads `Parent` has no trigger for the parent's property. When that state changes, the parent re-runs the children's rules — the orchestrator rule in Pattern 9.

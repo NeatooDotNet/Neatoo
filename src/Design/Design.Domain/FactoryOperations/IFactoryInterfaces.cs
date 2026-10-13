@@ -52,7 +52,10 @@ public interface ISaveDemoItem : IEntityBase
 /// <summary>
 /// List interface for save demo item list.
 /// </summary>
-public interface ISaveDemoItemList : IEntityListBase<ISaveDemoItem> { }
+public interface ISaveDemoItemList : IEntityListBase<ISaveDemoItem>
+{
+    int DeletedCount { get; }
+}
 
 // =============================================================================
 // Create Pattern Interfaces
@@ -157,9 +160,10 @@ public interface IServiceInjectionDemo : IEntityRoot
 // =============================================================================
 
 /// <summary>
-/// Root interface for the DualUseEntity demo. A root only: serving as a child
-/// would need a separate class with internal child operations and a child
-/// interface (see RemoteBoundary.cs).
+/// Interface for the DualUseEntity demo, which plays both roles. It
+/// extends IEntityRoot because the type can be saved on its own; in its child
+/// role it is saved by its list through the row-taking operations. See
+/// RemoteBoundary.cs.
 /// </summary>
 public interface IDualUseEntity : IEntityRoot
 {

@@ -267,7 +267,7 @@ public static partial class UsernameAvailability
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L117-L131' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L126-L140' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The rule takes the command delegate. It never sees the repository. The rule has a DI interface so the entity can take it from DI and tests can substitute it:
@@ -316,7 +316,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L133-L174' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L142-L183' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The entity receives the rule by constructor injection:
@@ -357,11 +357,15 @@ public static class DomainRegistration
         // a rule tracks execution state
         services.AddTransient<ICheckUsernameAvailabilityRule, CheckUsernameAvailabilityRule>();
         services.AddTransient<IUniqueCodeRule, UniqueCodeRule>();
+        // A rule that takes an interface-factory domain service registers the
+        // same way; the service itself is the proxy on the client (generated)
+        // and the implementation on the server (registered there, not here).
+        services.AddTransient<IShippingQuoteRule, ShippingQuoteRule>();
         return services;
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/DI/DomainRegistration.cs#L14-L31' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rules-di-registration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/DI/DomainRegistration.cs#L14-L35' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rules-di-registration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 **Trigger on field commit, not per keystroke.** A rule runs every time its trigger property is set, and rules contain no debouncing. `MudNeatooTextField` and `MudNeatooNumericField` set the property when the field loses focus, so a rule behind them makes one server call per committed value.
@@ -474,29 +478,26 @@ public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 
 ## Forcing a Re-run: RunRules
 
-Rules run on their own when a property is set outside a factory operation. `RunRules` is for forcing a re-run — most often at the end of a `[Create]` or `[Fetch]` that set properties while the object was paused, so that computed properties populate:
+Rules run on their own when a property is set outside a factory operation; there is no validate step before reading `IsValid`. Inside an operation nothing fires, so an operation that needs a derived value right when it returns runs the rules that compute it — a per-operation choice, not a step every `[Create]` or `[Fetch]` ends with:
 
-<!-- snippet: skill-run-rules-forces -->
-<a id='snippet-skill-run-rules-forces'></a>
+<!-- snippet: skill-create-computes-what-it-needs -->
+<a id='snippet-skill-create-computes-what-it-needs'></a>
 ```cs
-[TestMethod]
-public async Task Gotcha1_RulesFireAfterCreate_WithExplicitRunRules()
+/// <summary>
+/// RIGHT WAY: this operation needs Total to be right when it returns, so
+/// it runs the rules that compute it. RunRules has no IsPaused guard.
+/// A per-operation choice, not a step every operation ends with.
+/// </summary>
+[Create]
+public async Task CreateWithRunRules()
 {
-    // Arrange
-    var factory = _scope.GetRequiredService<IGotcha1DemoFactory>();
-
-    // Act
-    var entity = factory.Create();
-
-    // RunRules works even after factory (IsPaused is now false)
-    await entity.RunRules(RunRulesFlag.All);
-
-    // Assert - Now the rule has run
-    Assert.AreEqual(50.00m, entity.Total, "Total should be calculated after RunRules");
-    Assert.IsTrue(entity.RuleHasRun, "Rule should have run after explicit RunRules call");
+    Quantity = 10;
+    Price = 5.00m;
+    await RunRules(RunRulesFlag.All);  // no children here, so All is safe
+    // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L52-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-run-rules-forces' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L109-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `RunRules(RunRulesFlag.All)` clears existing messages and runs every rule; `RunRules("PropertyName")` runs the rules for one property. `RunRules` has no `IsPaused` guard, so it works inside a factory operation. See [rules-lifecycle.md](rules-lifecycle.md).
@@ -542,12 +543,13 @@ Never use it inside a factory operation: the operation is already paused, and di
 [TestMethod]
 public async Task InvalidOrder_DirectFactorySave_ServerRulesRefuseBeforeWriting()
 {
-    // Arrange: CustomerName is [Required], but rules do not run during
-    // [Create], so the new order still reports valid on this side.
-    var order = _orderFactory.Create();
-    Assert.IsTrue(order.IsValid, "No rule has run yet, so nothing is broken");
+    // Arrange: CustomerName is [Required] and Order.Create ran its rules,
+    // so the new order already reports invalid on this side.
+    var order = await _orderFactory.Create();
+    Assert.IsFalse(order.IsValid, "Create ran the rules; CustomerName is missing");
 
-    // Act: a direct factory.Save does not check IsSavable, so only the
+    // Act: a direct factory.Save does not check IsSavable - a caller that
+    // skips the entity's own answer reaches the server - so only the
     // re-run of the rules inside [Insert] stands between this order and
     // the write.
     var ex = await Assert.ThrowsExactlyAsync<Neatoo.SaveOperationException>(
@@ -559,7 +561,7 @@ public async Task InvalidOrder_DirectFactorySave_ServerRulesRefuseBeforeWriting(
     Assert.AreEqual(0, _repository.SaveChangesCount, "No flush may happen");
 }
 ```
-<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateLifecycleTests.cs#L188-L208' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-server-gate-refuses' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateLifecycleTests.cs#L188-L209' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-server-gate-refuses' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Async Action Rules (AddActionAsync)
@@ -601,7 +603,7 @@ RuleManager.AddAction(
         t => t.Status, t => t.IsOnHold, t => t.Budget, t => t.Discount
     });
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L112-L121' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-four-trigger-array' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L114-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-four-trigger-array' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Cancellation
@@ -633,12 +635,12 @@ internal class CancellableRule : AsyncRuleBase<AsyncRulesDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L250-L272' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cancellable-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L259-L281' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cancellable-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Rules Do Not Run While Paused
 
-Properties set in a factory operation (`[Create]`, `[Fetch]`, ...) or during JSON deserialization do not trigger rules, and `ResumeAllActions()` does not run them afterward. To populate computed values after a load, call `await RunRules(RunRulesFlag.All)` at the end of the factory method. See [rules-lifecycle.md](rules-lifecycle.md).
+Properties set in a factory operation (`[Create]`, `[Fetch]`, ...) or during JSON deserialization do not trigger rules, and `ResumeAllActions()` does not run them afterward. A `[Fetch]` loads persisted data, assumed valid, and recomputes only the derived values it is not loading: `RunRules(nameof(X))` for the rules that write the root, or the value loaded from the row. Not `RunRules(RunRulesFlag.All)` as a routine last line: from a root whose rules write children it marks any just-fetched child whose value changes as modified. See [rules-lifecycle.md](rules-lifecycle.md).
 
 ### Exception Propagation
 
@@ -693,6 +695,71 @@ public void RuleThatThrows_SurfacesToTheCaller_AndMarksPropertyInvalid()
 }
 ```
 <sup><a href='/src/Design/Design.Tests/RuleTests/RuleExceptionTests.cs#L34-L51' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-exception' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+## A Rule That Takes a Domain Service
+
+The second shape for a rule that needs the server: an interface-factory domain service (`[Factory]` on the interface). On the client the interface resolves to the generated proxy, on the server to the implementation; the rule holds a wrapped server call either way. Neither this nor the command delegate above is preferred.
+
+<!-- snippet: skill-rule-with-domain-service -->
+<a id='snippet-skill-rule-with-domain-service'></a>
+```cs
+/// <summary>
+/// Demonstrates: a rule that calls the server through an interface-factory
+/// domain service. One rule, both tiers; the service is the proxy on the
+/// client and the implementation on the server.
+/// </summary>
+internal class ShippingQuoteRule : AsyncRuleBase<ShipmentRequest>, IShippingQuoteRule
+{
+    private readonly IShippingRateService _rates;
+
+    public ShippingQuoteRule(IShippingRateService rates)
+        : base(t => t.Destination, t => t.WeightKg)
+    {
+        _rates = rates;
+    }
+
+    protected override async Task<IRuleMessages> Execute(ShipmentRequest target, CancellationToken? token = null)
+    {
+        if (string.IsNullOrWhiteSpace(target.Destination) || target.WeightKg <= 0)
+        {
+            target.Quote = 0m;
+            return None;
+        }
+
+        if (!await _rates.ShipsTo(target.Destination))
+        {
+            target.Quote = 0m;
+            return (nameof(ShipmentRequest.Destination), $"We do not ship to {target.Destination}").AsRuleMessages();
+        }
+
+        target.Quote = await _rates.Quote(target.Destination, target.WeightKg);
+        return None;
+    }
+}
+
+/// <summary>
+/// Input model whose quote comes from the domain service while the user edits.
+/// </summary>
+[Factory]
+internal partial class ShipmentRequest : ValidateBase<ShipmentRequest>, IShipmentRequest
+{
+    public partial string? Destination { get; set; }
+    public partial decimal WeightKg { get; set; }
+    public partial decimal Quote { get; set; }
+
+    public ShipmentRequest(
+        IValidateBaseServices<ShipmentRequest> services,
+        IShippingQuoteRule quoteRule) : base(services)
+    {
+        RuleManager.AddRule(quoteRule);
+    }
+
+    [Create]
+    public void Create() { }
+}
+```
+<sup><a href='/src/Design/Design.Domain/Rules/DomainServiceRule.cs#L43-L98' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-domain-service' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Related

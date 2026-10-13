@@ -30,26 +30,26 @@ Abstract base class providing property management, validation, business rules, a
 
 Partial properties are the property system. Declare the signature; the generator supplies the backing property object, the accessors, and the registration. (`Getter<P>()`/`Setter<P>()` still exist on the class but are `[Obsolete]`; the generator does not call them.)
 
-<!-- snippet: skill-value-object-interface -->
-<a id='snippet-skill-value-object-interface'></a>
+<!-- snippet: skill-input-model-interface -->
+<a id='snippet-skill-input-model-interface'></a>
 ```cs
 /// <summary>
-/// Interface for ValidateBase demo — value objects and validation-only scenarios.
+/// Interface for ValidateBase demo — input models and validation-only scenarios.
 /// </summary>
-public interface IDemoValueObject : IValidateBase
+public interface IDemoInputModel : IValidateBase
 {
     string? Name { get; set; }
     string? Description { get; set; }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object-interface' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-<!-- snippet: skill-value-object -->
-<a id='snippet-skill-value-object'></a>
+<!-- snippet: skill-input-model -->
+<a id='snippet-skill-input-model'></a>
 ```cs
 /// <summary>
-/// Demonstrates: ValidateBase&lt;T&gt; for value objects and validation-only scenarios.
+/// Demonstrates: ValidateBase&lt;T&gt; for input models and validation-only scenarios.
 ///
 /// Key points:
 /// - Provides validation infrastructure without persistence tracking
@@ -59,13 +59,13 @@ public interface IDemoValueObject : IValidateBase
 /// - RuleManager provides fluent API for adding rules
 /// </summary>
 [Factory]
-internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoValueObject
+internal partial class DemoInputModel : ValidateBase<DemoInputModel>, IDemoInputModel
 {
     public partial string? Name { get; set; }
 
     public partial string? Description { get; set; }
 
-    public DemoValueObject(IValidateBaseServices<DemoValueObject> services) : base(services)
+    public DemoInputModel(IValidateBaseServices<DemoInputModel> services) : base(services)
     {
         // Rules are added in the constructor; they run when a trigger property changes
         RuleManager.AddValidation(
@@ -94,7 +94,7 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L91-L137' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L93-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### Property Access
@@ -152,29 +152,26 @@ public void Indexer_ExposesPropertyMetadata()
 | MarkInvalid | `protected virtual void MarkInvalid(string message)` | Framework use: sets `ObjectInvalid` when a `RunRules` call is cancelled. Not an application validation channel; validation is a rule. |
 | ObjectInvalid | `public string? ObjectInvalid { get; protected set; }` | The object-level message, or `null`. A built-in rule reports it as a property message so `IsValid` reflects it. `RunRules(RunRulesFlag.All)` does not clear it ([#96](https://github.com/NeatooDotNet/Neatoo/issues/96)). |
 
-Rules run when a property is set outside a factory operation; there is nothing to call before reading `IsValid` except `WaitForTasks()` when async rules may be in flight. `RunRules` is for forcing a re-run — most often at the end of a `[Create]` or `[Fetch]` that set inputs while the object was paused, so that computed properties populate:
+Rules run when a property is set outside a factory operation; there is nothing to call before reading `IsValid` except `WaitForTasks()` when async rules may be in flight. `RunRules` is what an operation calls for the derived values it needs, since rules do not fire while it runs — a per-operation choice, not a step every `[Create]` or `[Fetch]` ends with, and never a validate step (persisted data is assumed valid):
 
-<!-- snippet: skill-run-rules-forces -->
-<a id='snippet-skill-run-rules-forces'></a>
+<!-- snippet: skill-create-computes-what-it-needs -->
+<a id='snippet-skill-create-computes-what-it-needs'></a>
 ```cs
-[TestMethod]
-public async Task Gotcha1_RulesFireAfterCreate_WithExplicitRunRules()
+/// <summary>
+/// RIGHT WAY: this operation needs Total to be right when it returns, so
+/// it runs the rules that compute it. RunRules has no IsPaused guard.
+/// A per-operation choice, not a step every operation ends with.
+/// </summary>
+[Create]
+public async Task CreateWithRunRules()
 {
-    // Arrange
-    var factory = _scope.GetRequiredService<IGotcha1DemoFactory>();
-
-    // Act
-    var entity = factory.Create();
-
-    // RunRules works even after factory (IsPaused is now false)
-    await entity.RunRules(RunRulesFlag.All);
-
-    // Assert - Now the rule has run
-    Assert.AreEqual(50.00m, entity.Total, "Total should be calculated after RunRules");
-    Assert.IsTrue(entity.RuleHasRun, "Rule should have run after explicit RunRules call");
+    Quantity = 10;
+    Price = 5.00m;
+    await RunRules(RunRulesFlag.All);  // no children here, so All is safe
+    // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L52-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-run-rules-forces' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L109-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Rules are declared in the constructor through `RuleManager`. Validation attributes become rules on construction; `AddValidation` attaches its message to the single trigger property:
@@ -264,9 +261,9 @@ A child's `Parent` is the entity it was added to; a root has no parent, and an e
 <a id='snippet-skill-parent-and-root'></a>
 ```cs
 [TestMethod]
-public void AddItem_SetsParentAndRoot()
+public async Task AddItem_SetsParentAndRoot()
 {
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     Assert.IsNull(item.Parent, "Not attached yet");
 
@@ -601,7 +598,7 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L224-L300' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-crud' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L226-L302' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-crud' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-save-routes-to-insert -->
@@ -734,7 +731,7 @@ A value-object list is interface-first like everything else:
 /// <summary>
 /// List interface for ValidateListBase demo — parameterized on child INTERFACE.
 /// </summary>
-public interface IDemoValueObjectList : IValidateListBase<IDemoValueObject> { }
+public interface IDemoInputModelList : IValidateListBase<IDemoInputModel> { }
 ```
 <sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L53-L58' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
@@ -752,7 +749,7 @@ public interface IDemoValueObjectList : IValidateListBase<IDemoValueObject> { }
 /// - Parent-child relationships managed automatically
 /// </summary>
 [Factory]
-internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>, IDemoValueObjectList
+internal partial class DemoInputModelList : ValidateListBase<IDemoInputModel>, IDemoInputModelList
 {
     // ValidateListBase has no required constructor - uses default.
 
@@ -764,18 +761,18 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 
     [Remote]
     [Fetch]
-    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoValueObjectFactory valueObjectFactory)
+    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoInputModelFactory inputModelFactory)
     {
         // The list is paused by its own factory operation (FactoryStart),
         // like any factory target. Each item is loaded by its own [Fetch].
         foreach (var name in repository.GetAllNames())
         {
-            Add(valueObjectFactory.Fetch(name));
+            Add(inputModelFactory.Fetch(name));
         }
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L331-L364' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L333-L366' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Validity aggregates from the items:
@@ -904,7 +901,7 @@ internal partial class DemoEntityList : EntityListBase<IDemoChild>, IDemoEntityL
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L441-L487' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L443-L489' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Adding and Removing
@@ -925,10 +922,10 @@ Adds inside the list's own `[Fetch]` are paused: they set identity (`Parent`, `C
 <a id='snippet-skill-add-marks-modified'></a>
 ```cs
 [TestMethod]
-public void IsModified_TrueWhenNewItemAdded()
+public async Task IsModified_TrueWhenNewItemAdded()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
 
     // Act
     var item = _itemFactory.Create("Widget", 1, 10.00m);
@@ -946,10 +943,10 @@ public void IsModified_TrueWhenNewItemAdded()
 <a id='snippet-skill-remove-new-item-discarded'></a>
 ```cs
 [TestMethod]
-public void RemoveNewItem_NotAddedToDeletedList()
+public async Task RemoveNewItem_NotAddedToDeletedList()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 1, 10.00m);
     order.Items!.Add(item);
     Assert.IsTrue(item.IsNew, "Created item should be new");
@@ -1112,6 +1109,11 @@ public interface IOrder : IEntityRoot
     string? Status { get; set; }
     decimal TotalAmount { get; }
     IOrderItemList? Items { get; }
+
+    /// <summary>
+    /// Verb: moves the order to Submitted. Sets state; never persists.
+    /// </summary>
+    void Submit();
 }
 
 /// <summary>
@@ -1139,17 +1141,17 @@ public interface IOrderItemList : IEntityListBase<IOrderItem>
     int DeletedCount { get; }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs#L68-L109' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregate-interfaces' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs#L68-L114' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregate-interfaces' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-child-interface-no-save -->
 <a id='snippet-skill-child-interface-no-save'></a>
 ```cs
 [TestMethod]
-public void ChildInterface_DoesNotExposeIsSavable()
+public async Task ChildInterface_DoesNotExposeIsSavable()
 {
     // Arrange — IOrderItem extends IEntityBase, not IEntityRoot
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     order.Items!.Add(item);
 
@@ -1436,15 +1438,23 @@ A root's `[Create]` builds its child list through the injected list factory and 
 <a id='snippet-skill-root-create'></a>
 ```cs
 [Create]
-public void Create([Service] IOrderItemListFactory itemsFactory)
+public async Task Create([Service] IOrderItemListFactory itemsFactory)
 {
     Items = itemsFactory.Create();
     OrderDate = DateTime.Today;
     Status = "Draft";
     OrderNumber = $"ORD-{DateTime.Now:yyyyMMddHHmmss}";
+
+    // This Create hands a form to a person. It decides that the form must
+    // not come back unvalidated: run the rules so the required fields show
+    // their messages at once and IsSavable is false until they are filled.
+    // The developer's choice for this operation - the framework never makes
+    // it - and not a step every Create ends with. All is safe here: the item
+    // list is empty.
+    await RunRules(RunRulesFlag.All);
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L105-L114' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-create' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L105-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-create' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Fetch]
@@ -1480,7 +1490,7 @@ internal bool Fetch(Guid id,
     return true;
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L139-L165' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-fetch' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L147-L173' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-fetch' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A child's `[Fetch]` is `internal`, never `[Remote]`, and takes its own row from the list's `[Fetch]`:
@@ -1535,7 +1545,7 @@ internal async Task Insert([Service] IOrderRepository repository,
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L186-L213' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L194-L221' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Update]
@@ -1572,7 +1582,7 @@ internal async Task Update([Service] IOrderRepository repository,
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L240-L269' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-update' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L248-L277' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-update' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 #### [Delete]
@@ -1594,7 +1604,7 @@ internal void Delete([Service] IOrderRepository repository)
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L278-L290' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-delete' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L286-L298' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-delete' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A child's persistence operations take its row and map it; the generated `Save(target, row)` is what the list's `[Update]` calls:

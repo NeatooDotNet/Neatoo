@@ -32,23 +32,31 @@ The Neatoo Solution is at src/Neatoo.sln
 | `Neatoo.UnitTest` | Main test project (Unit/, Integration/) |
 | `Neatoo.UnitTest.Demo` | Demo tests |
 | `Design.Domain` | Authoritative API design reference (heavily commented) |
-| `Design.Infrastructure` | Empty project; repository interfaces live in Design.Domain beside their aggregates |
+| `Design.Infrastructure` | In-memory implementations of the `[Service]` interfaces Design.Domain declares beside its aggregates; Design.Server registers them |
+| `Design.App` | Blazor WebAssembly client over Design.Domain (MudBlazor, MudNeatoo): the client composition, the save handler, ViewModels over live aggregates, the pages |
+| `Design.Server` | ASP.NET Core host for Design.App and the RemoteFactory endpoint: the server composition |
 | `Design.Tests` | Tests verifying design patterns |
 | `Examples/Person/*` | Full example application (App, DomainModel, Ef, Server) |
 
-## Central Pillar: Interface-First Design
+## Interface-First Design (strongly recommended, not required)
 
-**Every entity/list gets a matched public interface. Concretes are `internal`. All references use interfaces, never concretes.** This is how `IEntityRoot` vs `IEntityBase` separation works -- without it, `IsSavable` on child entities silently returns `false` (real zTreatment bug).
+**Every entity/list gets a matched public interface. Concretes are `internal`. All references use interfaces.** This is the recommended architecture (ruling D19 in `docs/VisionAlignment.md`); nothing blocks using the concretes and no analyzer enforces it. The reason to follow it: `EntityBase<T>` gives every concrete `IsSavable` and `Save()`, and a modified child concrete reports `IsSavable == true` although children are persisted by their root. Holding the child interface (`IEntityBase`) makes that misuse a compile error (real zTreatment bug). Design.Domain follows the pattern throughout.
 
-### The Rules
+### The Pattern
 
 1. Every entity class gets a matched public interface (`IOrder`, `IOrderItem`, `IOrderItemList`)
 2. Concrete classes are `internal`
 3. All references use interfaces -- properties, parameters, list type parameters
-4. Root interfaces extend `IEntityRoot` (exposes `IsSavable`, `Save()`)
-5. Child interfaces extend `IEntityBase` (no `IsSavable`, no `Save()`)
+4. A type that is a root, or both root and child, has an interface extending `IEntityRoot` (exposes `IsSavable`, `Save()`)
+5. A child-only type has an interface extending `IEntityBase` (no `IsSavable`, no `Save()`)
 6. List interfaces extend `IEntityListBase<IChild>` -- parameterized on child interface
-7. ValidateBase entities follow the same pattern
+7. ValidateBase types follow the same pattern
+
+A type can be both root and child (D23): `[Remote]` root operations and `internal` child operations side by side, distinguished by signature. `IEntityRoot` exists because of the generic typing of `EntityBase<T>.Save()`, not to say a type is only ever a root.
+
+## LazyLoad Is Going Away
+
+RemoteFactory is removing `LazyLoad<T>` / `ILazyLoadFactory` (ruling D24, 2026-10-09; techdebt issue in the RemoteFactory repo). The replacement is a `[Remote] [Fetch]` on the child list's factory, called when the data is needed. Until the removal ships and Neatoo follows: build nothing new on LazyLoad, and treat `skills/neatoo/references/lazy-loading.md`, `Design.Domain/PropertySystem/LazyLoadProperty.cs`, the Person example's phone list and mudneatoo's `EntityLazyLoad` guidance as pending removal, not as patterns to copy. Remove this section when Neatoo's lazy-load surface is gone.
 
 ```csharp
 public interface IOrder : IEntityRoot { IOrderItemList? Items { get; } }
@@ -165,7 +173,7 @@ Neatoo depends on **RemoteFactory** for source generation of factory methods. Ne
 
 ## Documentation and Project Management
 
-- **Framework documentation**: Use `/docs-create`, `/docs-update`, or `/docs-review` commands (powered by `docs-writer` agent) for creating and maintaining user-facing docs with MarkdownSnippets. Every code snippet comes from `#region` blocks in `src/Design/` (Design.Domain and Design.Tests), the one canonical example set.
+- **Framework documentation**: Use `/docs-create`, `/docs-update`, or `/docs-review` commands (powered by `docs-writer` agent) for creating and maintaining user-facing docs with MarkdownSnippets. Every code snippet comes from `#region` blocks (or Razor `@* begin-snippet *@` comments) in `src/Design/`, the one canonical example set.
 - **Project todos/plans**: Use the `/iterative-todo` skill for tracking work and design documents
 - **DDD terminology**: See global CLAUDE.md for DDD documentation guidelines
 
@@ -174,7 +182,9 @@ Neatoo depends on **RemoteFactory** for source generation of factory methods. Ne
 The `src/Design/` directory contains the **authoritative reference** for Neatoo's API design:
 
 - **Design.Domain** - Heavily-commented demonstrations of all base classes, factory operations, properties, and rules
-- **Design.Infrastructure** - Empty project; repository interfaces live in Design.Domain
+- **Design.Infrastructure** - In-memory implementations of the `[Service]` interfaces (declared in Design.Domain beside their aggregates), for Design.Server
+- **Design.App** - Blazor WebAssembly client: client composition (`ClientServices.cs`), save handler and ViewModels (`ViewModels/`), pages (`Pages/`)
+- **Design.Server** - ASP.NET Core host: server composition (`ServerServices.cs`) and why it does not call `AddNeatooAspNetCore` (RemoteFactory#117)
 - **Design.Tests** - Tests verifying documented patterns
 
 When learning about Neatoo concepts, **read Design.Domain files first**. They contain:
@@ -197,5 +207,9 @@ When learning about Neatoo concepts, **read Design.Domain files first**. They co
 - Common gotchas: `Design.Domain/CommonGotchas.cs`
 - Entities (standalone): `Design.Domain/Entities/`
 - Read models: `Design.Domain/ReadModels/`
+- Jobs over entities: `Design.Domain/Jobs/`
+- Domain services and the rule that takes one: `Design.Domain/Services/`, `Design.Domain/Rules/DomainServiceRule.cs`
+- Tier composition: `Design.App/ClientServices.cs`, `Design.Server/ServerServices.cs`
+- UI contract (save handler, ViewModel over an aggregate): `Design.App/ViewModels/`
 
 See `src/Design/CLAUDE-DESIGN.md` for detailed Claude Code guidance.

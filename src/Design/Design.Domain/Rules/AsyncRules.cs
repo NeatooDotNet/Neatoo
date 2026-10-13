@@ -96,12 +96,21 @@ internal partial class AsyncRulesDemo : EntityBase<AsyncRulesDemo>, IAsyncRulesD
 // =============================================================================
 // Checking a value against the database (is this username taken?) belongs in
 // a rule, so the user sees the message on the client as they edit. The rule
-// runs on the client, so it cannot take a server-only service. It takes the
-// delegate of a [Remote, Execute] command instead; calling the delegate
-// crosses to the server, where the command resolves the repository.
+// runs on the client, so it cannot take a server-only service. It takes
+// something that crosses to the server for it. Two shapes do that:
 //
-// DESIGN DECISION: The rule depends on a command delegate, never on a
-// server-only service.
+//   1. The delegate of a [Remote, Execute] command - this file. Calling the
+//      delegate crosses to the server, where the command resolves the
+//      repository.
+//   2. An interface-factory domain service ([Factory] on the interface) -
+//      Rules/DomainServiceRule.cs. On the client the interface resolves to the
+//      generated proxy; on the server, to the implementation.
+//
+// Both are the same thing to the rule: a dependency it can take on either
+// tier. Pick whichever reads better for the call; neither is preferred.
+//
+// DESIGN DECISION: The rule depends on a command delegate or an
+// interface-factory domain service, never on a server-only service.
 //
 // DID NOT DO THIS:
 //   public CheckUsernameAvailabilityRule(IUsernameRepository repository)

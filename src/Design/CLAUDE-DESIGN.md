@@ -74,7 +74,7 @@ See `Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs` for the author
 - Root entity interfaces extend `IEntityRoot` (exposes IsSavable, Save())
 - Child entity interfaces extend `IEntityBase` (no IsSavable, no Save())
 
-**ValidateBase<T>** - Use for value objects and validation-only:
+**ValidateBase<T>** - Use for input models: objects a person edits and that validate as they type, with no persistence lifecycle of their own. (A value object is a `record` - see `Entities/PayGrade.cs`.)
 - Has IsValid, IsSelfValid, IsBusy
 - No persistence state tracking
 - RuleManager for validation
@@ -84,7 +84,7 @@ See `Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs` for the author
 - IsModified cascades from children
 - Enforces aggregate boundaries
 
-**ValidateListBase<I>** - Use for value object collections:
+**ValidateListBase<I>** - Use for collections of input models:
 - IsValid aggregates from all children
 - No DeletedList (no persistence tracking)
 
@@ -153,7 +153,7 @@ internal void Fetch(int id, [Service] IRepository repo)
 
 Do not use `LoadValue`, `PauseAllActions` or `MarkUnmodified` inside a factory operation. Wrapping the body in `using (PauseAllActions())` resumes the object early, when the `using` disposes, before the operation completes.
 
-Rules do not run while paused. A factory method that sets properties feeding a computed value calls `await RunRules(RunRulesFlag.All)` at the end of its body.
+Rules do not run while paused. An operation that needs a derived value right when it returns computes it: `RunRules` for the rules that write the object (named by trigger from a root whose rules write children — `All` there marks any just-fetched child whose value a root rule changes as modified, #98), or load it from the row. A per-operation choice, never a routine last line and never a validate step; persisted data is assumed valid. `WorkOrder.Fetch` shows both shapes.
 
 ### 5. Two-Generator Interaction
 

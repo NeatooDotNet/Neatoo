@@ -15,13 +15,13 @@ namespace Design.Tests.BaseClassTests;
 public class ValidateBaseTests
 {
     private IServiceScope _scope = null!;
-    private IDemoValueObjectFactory _factory = null!;
+    private IDemoInputModelFactory _factory = null!;
 
     [TestInitialize]
     public void TestInitialize()
     {
         _scope = DesignTestServices.GetScope();
-        _factory = _scope.GetRequiredService<IDemoValueObjectFactory>();
+        _factory = _scope.GetRequiredService<IDemoInputModelFactory>();
     }
 
     [TestCleanup]
@@ -66,6 +66,29 @@ public class ValidateBaseTests
         // Assert
         Assert.IsFalse(obj.IsValid, "Empty name should fail validation");
         Assert.IsFalse(obj.IsSelfValid, "Empty name should fail self validation");
+    }
+
+    [TestMethod]
+    public async Task PropertyObject_CarriesWhatTheInputModelPageBinds()
+    {
+        // The input-model page binds model[nameof(Name)] by hand because
+        // MudNeatoo fields take IEntityProperty only. This is that object.
+        var model = _factory.Create();
+        var name = model[nameof(IDemoInputModel.Name)];
+
+        // The page commits through SetValue, as MudNeatoo does
+        await name.SetValue("");
+        await model.WaitForTasks();
+
+        Assert.IsFalse(name.IsValid);
+        Assert.IsTrue(name.PropertyMessages.Any(m => m.Message == "Name is required"));
+        Assert.IsFalse(name.IsBusy);
+
+        await name.SetValue("Ada");
+        await model.WaitForTasks();
+
+        Assert.IsTrue(name.IsValid);
+        Assert.AreEqual(0, name.PropertyMessages.Count);
     }
 
     [TestMethod]

@@ -175,10 +175,10 @@ Adding a child is also a change to the graph. A live `Add` marks the added item 
 <a id='snippet-skill-add-marks-modified'></a>
 ```cs
 [TestMethod]
-public void IsModified_TrueWhenNewItemAdded()
+public async Task IsModified_TrueWhenNewItemAdded()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
 
     // Act
     var item = _itemFactory.Create("Widget", 1, 10.00m);
@@ -227,10 +227,10 @@ A new item removed from the list is discarded: it never had a row, so there is n
 <a id='snippet-skill-remove-new-item-discarded'></a>
 ```cs
 [TestMethod]
-public void RemoveNewItem_NotAddedToDeletedList()
+public async Task RemoveNewItem_NotAddedToDeletedList()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 1, 10.00m);
     order.Items!.Add(item);
     Assert.IsTrue(item.IsNew, "Created item should be new");

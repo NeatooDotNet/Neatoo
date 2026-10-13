@@ -3,7 +3,24 @@
   <PropertyGroup>
     <RootNamespace>Design.Infrastructure</RootNamespace>
     <AssemblyName>Design.Infrastructure</AssemblyName>
+    <!-- Single target to match Design.Domain - override Directory.Build.props -->
+    <TargetFrameworks></TargetFrameworks>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <AnalysisMode>default</AnalysisMode>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The in-memory services are internal; hosts see them only through
+         AddDesignInfrastructure(). The tests read the stores directly. -->
+    <InternalsVisibleTo Include="Design.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Design.Domain\Design.Domain.csproj" />
+  </ItemGroup>
 
 </Project>

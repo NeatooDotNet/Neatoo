@@ -36,14 +36,7 @@ Pick the event by looking at **what object you subscribe to**:
 
 **Input components** (`MudNeatooTextField`, `MudNeatooSelect`, etc.) subscribe to `this.EntityProperty.PropertyChanged`. The subscription target is the **property wrapper**, not the entity. Each component is scoped to a single leaf, so `PropertyChanged` is sufficient — there is nothing below the property to bubble from.
 
-**`NeatooValidationSummary`** subscribes to **both** on the root entity:
-
-```csharp
-if (this.Entity is INotifyPropertyChanged notifyPropertyChanged)
-    notifyPropertyChanged.PropertyChanged += this.OnPropertyChanged;
-if (this.Entity is INotifyNeatooPropertyChanged neatooNotify)
-    neatooNotify.NeatooPropertyChanged += this.OnNeatooPropertyChanged;
-```
+**`NeatooValidationSummary`** subscribes to **both** on the root entity: `PropertyChanged` when the entity implements `INotifyPropertyChanged`, and `NeatooPropertyChanged` when it implements `INotifyNeatooPropertyChanged`.
 
 Because the summary displays `entity.PropertyMessages` across the whole aggregate, it needs notification whenever any descendant becomes invalid. That's what `NeatooPropertyChanged` provides.
 
@@ -53,33 +46,85 @@ If you're building a Blazor component that takes a root entity as a parameter an
 
 1. **Subscribe in `OnInitialized`, unsubscribe in `Dispose`.** Neither event is auto-managed by Blazor.
 2. **Use `NeatooPropertyChanged` for graph-wide awareness.** Marshal `StateHasChanged` via `InvokeAsync` — the delegate is async and may run off the UI thread.
-3. **Use `PropertyChanged` alone if you only care about root-level flags** like `IsSavable`, `IsValid`, `IsBusy` — the Page Structure Pattern in SKILL.md shows this case.
+3. **Use `PropertyChanged` alone if you only care about root-level flags** like `IsSavable`, `IsValid`, `IsBusy`.
+4. **Move the subscription when the instance changes.** `Save()` returns a new instance; the old one raises nothing afterwards.
 
-```csharp
-@implements IDisposable
+The Employee page does all four (it subscribes to `NeatooPropertyChanged` because its view branch reads entity properties as well as flags):
 
+<!-- snippet: skill-mud-page-code -->
+<a id='snippet-skill-mud-page-code'></a>
+```razor
 @code {
-    [Parameter, EditorRequired] public IOrder Entity { get; set; } = default!;
+    [Parameter] public Guid? Id { get; set; }
 
-    protected override void OnInitialized()
+    private IEmployee? _subscribed;
+
+    protected override async Task OnParametersSetAsync()
     {
-        Entity.NeatooPropertyChanged += OnAnyChange;
+        if (Id is Guid id)
+        {
+            await Vm.Load(id);
+        }
+        else
+        {
+            Vm.New();
+        }
+
+        Resubscribe();
     }
 
-    private Task OnAnyChange(NeatooPropertyChangedEventArgs e)
+    // The page owns the subscription: the input components subscribe to their
+    // own property wrappers, but the Save button and the view-mode text read
+    // the entity, so the page re-renders on the graph-wide event.
+    private void Resubscribe()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+        }
+
+        _subscribed = Vm.Employee;
+
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged += OnEntityChanged;
+        }
+    }
+
+    // Save and Cancel each leave the ViewModel holding a new instance.
+    private async Task SaveAsync()
+    {
+        await Vm.Save();
+        Resubscribe();
+        StateHasChanged();
+    }
+
+    private async Task CancelAsync()
+    {
+        await Vm.CancelEdit();
+        Resubscribe();
+        StateHasChanged();
+    }
+
+    private Task OnEntityChanged(NeatooPropertyChangedEventArgs e)
     {
         return InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
     {
-        Entity.NeatooPropertyChanged -= OnAnyChange;
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+        }
     }
 }
 ```
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L109-L175' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-page-code' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Common Misconception: Blazor Does Not Auto-Subscribe
 
-Blazor does **not** observe `INotifyPropertyChanged` automatically. A binding like `<MudText>@entity.Total</MudText>` only re-renders when the containing component calls `StateHasChanged`. In practice that call happens because the form page is already subscribed to entity `PropertyChanged` for `IsSavable` (see the Page Structure Pattern in SKILL.md) — the display binding piggybacks on the form's re-render cycle. It is not automatic.
+Blazor does **not** observe `INotifyPropertyChanged` automatically. A binding like `<MudText>@entity.Total</MudText>` only re-renders when the containing component calls `StateHasChanged`. In practice that call happens because the page is already subscribed to the entity (see the Page Structure Pattern in SKILL.md) — the display binding piggybacks on the form's re-render cycle. It is not automatic.
 
 If you render a view-only page with no form subscription, you must subscribe to `PropertyChanged` (for root-level state) or `NeatooPropertyChanged` (for any descendant state) yourself.

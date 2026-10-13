@@ -12,26 +12,26 @@ Validation is a rule. A violation is a message on a property, `IsValid` goes fal
 
 Inherit from `ValidateBase<T>` to give a domain object rules without a persistence lifecycle — a value object, or form data that is never saved on its own. The type parameter uses the curiously recurring template pattern (CRTP) to provide strongly-typed rule registration and property access. Every Neatoo class gets a matched public interface; the concrete is `internal`, and consumers only ever see the interface:
 
-<!-- snippet: skill-value-object-interface -->
-<a id='snippet-skill-value-object-interface'></a>
+<!-- snippet: skill-input-model-interface -->
+<a id='snippet-skill-input-model-interface'></a>
 ```cs
 /// <summary>
-/// Interface for ValidateBase demo — value objects and validation-only scenarios.
+/// Interface for ValidateBase demo — input models and validation-only scenarios.
 /// </summary>
-public interface IDemoValueObject : IValidateBase
+public interface IDemoInputModel : IValidateBase
 {
     string? Name { get; set; }
     string? Description { get; set; }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object-interface' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-<!-- snippet: skill-value-object -->
-<a id='snippet-skill-value-object'></a>
+<!-- snippet: skill-input-model -->
+<a id='snippet-skill-input-model'></a>
 ```cs
 /// <summary>
-/// Demonstrates: ValidateBase&lt;T&gt; for value objects and validation-only scenarios.
+/// Demonstrates: ValidateBase&lt;T&gt; for input models and validation-only scenarios.
 ///
 /// Key points:
 /// - Provides validation infrastructure without persistence tracking
@@ -41,13 +41,13 @@ public interface IDemoValueObject : IValidateBase
 /// - RuleManager provides fluent API for adding rules
 /// </summary>
 [Factory]
-internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoValueObject
+internal partial class DemoInputModel : ValidateBase<DemoInputModel>, IDemoInputModel
 {
     public partial string? Name { get; set; }
 
     public partial string? Description { get; set; }
 
-    public DemoValueObject(IValidateBaseServices<DemoValueObject> services) : base(services)
+    public DemoInputModel(IValidateBaseServices<DemoInputModel> services) : base(services)
     {
         // Rules are added in the constructor; they run when a trigger property changes
         RuleManager.AddValidation(
@@ -76,7 +76,7 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L91-L137' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L93-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ValidateBase provides:
@@ -157,7 +157,7 @@ Other DataAnnotations attributes (`[Phone]`, `[Url]`, ...) are not mapped and ar
 
 ## Custom Validation Rules
 
-An inline rule is registered in the constructor with `RuleManager.AddValidation`: the lambda receives the object and returns an error message or an empty string, and the message is attached to the trigger property. The `DemoValueObject` and `ValidationChildDemo` classes above show the shape.
+An inline rule is registered in the constructor with `RuleManager.AddValidation`: the lambda receives the object and returns an error message or an empty string, and the message is attached to the trigger property. The `DemoInputModel` and `ValidationChildDemo` classes above show the shape.
 
 A rule with more than a line or two of logic is a class. A synchronous rule derives from `RuleBase<T>`, takes its trigger properties in the base constructor, and returns `IRuleMessages`:
 
@@ -331,7 +331,7 @@ public static partial class UsernameAvailability
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L117-L131' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L126-L140' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The rule takes the command delegate and never sees the repository. It has a DI interface so the entity can take it from DI and tests can substitute it:
@@ -380,7 +380,7 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L133-L174' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L142-L183' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-with-command' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The entity receives the rule by constructor injection:
@@ -421,11 +421,15 @@ public static class DomainRegistration
         // a rule tracks execution state
         services.AddTransient<ICheckUsernameAvailabilityRule, CheckUsernameAvailabilityRule>();
         services.AddTransient<IUniqueCodeRule, UniqueCodeRule>();
+        // A rule that takes an interface-factory domain service registers the
+        // same way; the service itself is the proxy on the client (generated)
+        // and the implementation on the server (registered there, not here).
+        services.AddTransient<IShippingQuoteRule, ShippingQuoteRule>();
         return services;
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/DI/DomainRegistration.cs#L14-L31' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rules-di-registration' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/DI/DomainRegistration.cs#L14-L35' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rules-di-registration' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Async validation behavior:
@@ -438,29 +442,26 @@ When an async rule executes, RuleManager marks all trigger properties as busy us
 
 ## Forcing a Re-run: RunRules
 
-Rules run on their own when a property is set outside a factory operation. `RunRules` is for forcing a re-run. The common case: a `[Create]` or `[Fetch]` set properties while the object was paused, so no rule has evaluated them yet — the object reports valid until something asks:
+Rules run on their own when a property is set outside a factory operation; there is no validate step before reading `IsValid`. Inside an operation nothing fires, so an operation that needs a derived value right when it returns runs the rules that compute it — a per-operation choice, not a step every `[Create]` or `[Fetch]` ends with:
 
-<!-- snippet: skill-run-rules-forces -->
-<a id='snippet-skill-run-rules-forces'></a>
+<!-- snippet: skill-create-computes-what-it-needs -->
+<a id='snippet-skill-create-computes-what-it-needs'></a>
 ```cs
-[TestMethod]
-public async Task Gotcha1_RulesFireAfterCreate_WithExplicitRunRules()
+/// <summary>
+/// RIGHT WAY: this operation needs Total to be right when it returns, so
+/// it runs the rules that compute it. RunRules has no IsPaused guard.
+/// A per-operation choice, not a step every operation ends with.
+/// </summary>
+[Create]
+public async Task CreateWithRunRules()
 {
-    // Arrange
-    var factory = _scope.GetRequiredService<IGotcha1DemoFactory>();
-
-    // Act
-    var entity = factory.Create();
-
-    // RunRules works even after factory (IsPaused is now false)
-    await entity.RunRules(RunRulesFlag.All);
-
-    // Assert - Now the rule has run
-    Assert.AreEqual(50.00m, entity.Total, "Total should be calculated after RunRules");
-    Assert.IsTrue(entity.RuleHasRun, "Rule should have run after explicit RunRules call");
+    Quantity = 10;
+    Price = 5.00m;
+    await RunRules(RunRulesFlag.All);  // no children here, so All is safe
+    // Total is now 50.00
 }
 ```
-<sup><a href='/src/Design/Design.Tests/GotchaTests/CommonGotchaTests.cs#L52-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-run-rules-forces' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L109-L123' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-computes-what-it-needs' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 RunRules overloads:
@@ -469,7 +470,7 @@ RunRules overloads:
 - **RunRules(RunRulesFlag.Self)**: Run only this object's rules (not children)
 - **RunRules(flag, token)**: Run with cancellation token support
 
-`RunRulesFlag.All` clears existing validation messages before running rules. `RunRules` has no `IsPaused` guard, so a factory method can call it at the end to populate computed values. It is not the step between setting a property and reading `IsValid` — the setter already ran the rules; when async rules may be in flight, `await WaitForTasks()` instead.
+`RunRulesFlag.All` clears existing validation messages before running rules. `RunRules` has no `IsPaused` guard, so an operation can run the rules it needs while paused; a `[Fetch]` names them by trigger (`RunRules(nameof(Status))`) rather than `All`, which from a root whose rules write children would mark any just-fetched child whose value a rule changes as modified. It is not the step between setting a property and reading `IsValid` — the setter already ran the rules; when async rules may be in flight, `await WaitForTasks()` instead.
 
 ## Error Messages and Property-Level State
 
@@ -727,7 +728,7 @@ internal async Task Insert([Service] IOrderRepository repository,
     repository.SaveChanges();
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L186-L213' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L194-L221' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-server-gate-refuses -->
@@ -736,12 +737,13 @@ internal async Task Insert([Service] IOrderRepository repository,
 [TestMethod]
 public async Task InvalidOrder_DirectFactorySave_ServerRulesRefuseBeforeWriting()
 {
-    // Arrange: CustomerName is [Required], but rules do not run during
-    // [Create], so the new order still reports valid on this side.
-    var order = _orderFactory.Create();
-    Assert.IsTrue(order.IsValid, "No rule has run yet, so nothing is broken");
+    // Arrange: CustomerName is [Required] and Order.Create ran its rules,
+    // so the new order already reports invalid on this side.
+    var order = await _orderFactory.Create();
+    Assert.IsFalse(order.IsValid, "Create ran the rules; CustomerName is missing");
 
-    // Act: a direct factory.Save does not check IsSavable, so only the
+    // Act: a direct factory.Save does not check IsSavable - a caller that
+    // skips the entity's own answer reaches the server - so only the
     // re-run of the rules inside [Insert] stands between this order and
     // the write.
     var ex = await Assert.ThrowsExactlyAsync<Neatoo.SaveOperationException>(
@@ -753,7 +755,7 @@ public async Task InvalidOrder_DirectFactorySave_ServerRulesRefuseBeforeWriting(
     Assert.AreEqual(0, _repository.SaveChangesCount, "No flush may happen");
 }
 ```
-<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateLifecycleTests.cs#L188-L208' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-server-gate-refuses' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateLifecycleTests.cs#L188-L209' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-server-gate-refuses' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Save validation patterns:
@@ -791,7 +793,7 @@ internal class CancellableRule : AsyncRuleBase<AsyncRulesDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L250-L272' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cancellable-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L259-L281' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cancellable-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Cancellation behavior:

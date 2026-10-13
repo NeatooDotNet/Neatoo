@@ -1,19 +1,21 @@
 # Base Classes
 
-Neatoo provides base classes that map to Domain-Driven Design concepts. Choose the base class by what the object does: an object a person edits that needs rules is a Neatoo object; anything else is a plain `[Factory]` class.
+Choose the shape by what the object must answer. An object that carries rules or change tracking something relies on — a person over many edits, or a job over many rows — is a Neatoo object. Anything else is plain RemoteFactory: a read model, a command, a context, a `record`.
 
-## Base Class to DDD Mapping
+## The Shapes
 
-| Neatoo Base Class | DDD Concept | Persistence | Validation | Change Tracking |
-|-------------------|-------------|-------------|------------|-----------------|
-| `ValidateBase<T>` | Value Object, validated input | No | Yes | Yes |
-| `EntityBase<T>` | Entity / Aggregate Root | Yes | Yes | Yes |
-| `EntityListBase<I>` | Collection of child entities | Yes (via root) | Yes | Yes |
-| `ValidateListBase<I>` | Collection of `ValidateBase` objects | No | Yes | Yes |
-| Static partial class with `[Remote, Execute]` | Command | Execute only | No | No |
-| Plain `[Factory]` class, `[Remote, Fetch]` only | Read Model | No | No | No |
+| Shape | What it is | Persistence | Rules | Change tracking |
+|---|---|---|---|---|
+| `EntityBase<T>`, interface extends `IEntityRoot` | Aggregate root | Yes | Yes | Yes |
+| `EntityBase<T>`, interface extends `IEntityBase` | Child entity, saved by its root | Through the root | Yes | Yes |
+| `EntityListBase<I>` | List of child entities; tracks removals in `DeletedList` | Through the root | Yes | Yes |
+| `ValidateBase<T>` | Input model — something a person edits that has rules but no persistence lifecycle of its own (a search form, a wizard step) | No | Yes | Yes |
+| `ValidateListBase<I>` | List of input models | No | Yes | Yes |
+| `record` | Value object — immutable, compared by value, no rules | No | No | No |
+| Plain `[Factory]` class, `[Fetch]` only | Read model — server-computed truth a screen shows or gates on | No | No | No |
+| Static `[Factory]` class with `[Execute]` | Command | — | No | No |
 
-For validated criteria objects (search forms with rules and `IsValid`), use `ValidateBase<T>`. For simple criteria, use method parameters or POCOs.
+The attributes on the last three are the RemoteFactory skill's.
 
 ## Interface-First
 
@@ -21,37 +23,34 @@ Every entity and list gets a matched public interface; the concrete is `internal
 
 ## ValidateBase<T>
 
-Use for objects that need validation and change tracking but no persistence lifecycle of their own.
-
-**DDD Concept:** Value Object or validated input. Despite the DDD "immutable" ideal, Neatoo value objects have setters for form-binding and validation-before-submit workflows.
+An input model: something a person edits that has rules and change tracking but no persistence lifecycle of its own.
 
 **When to use:**
-- Composite values a person edits (Address, Money, DateRange)
-- Form data that needs validation before submission
-- Search/criteria objects with validation rules
+- A form whose fields validate as the person types — search criteria, a wizard step, a dialog's input
+- A typed value with rules (an email address on a form); the person sees a message, not an exception
 
-Use `ValidateBase<T>` only when the object needs rules. A read model is not a `ValidateBase`.
+A value code assigns from a known set is a `record`, not an input model — [A Value Object Is a Record](#a-value-object-is-a-record). A read model is not a `ValidateBase`.
 
-<!-- snippet: skill-value-object-interface -->
-<a id='snippet-skill-value-object-interface'></a>
+<!-- snippet: skill-input-model-interface -->
+<a id='snippet-skill-input-model-interface'></a>
 ```cs
 /// <summary>
-/// Interface for ValidateBase demo — value objects and validation-only scenarios.
+/// Interface for ValidateBase demo — input models and validation-only scenarios.
 /// </summary>
-public interface IDemoValueObject : IValidateBase
+public interface IDemoInputModel : IValidateBase
 {
     string? Name { get; set; }
     string? Description { get; set; }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object-interface' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L12-L21' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-<!-- snippet: skill-value-object -->
-<a id='snippet-skill-value-object'></a>
+<!-- snippet: skill-input-model -->
+<a id='snippet-skill-input-model'></a>
 ```cs
 /// <summary>
-/// Demonstrates: ValidateBase&lt;T&gt; for value objects and validation-only scenarios.
+/// Demonstrates: ValidateBase&lt;T&gt; for input models and validation-only scenarios.
 ///
 /// Key points:
 /// - Provides validation infrastructure without persistence tracking
@@ -61,13 +60,13 @@ public interface IDemoValueObject : IValidateBase
 /// - RuleManager provides fluent API for adding rules
 /// </summary>
 [Factory]
-internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoValueObject
+internal partial class DemoInputModel : ValidateBase<DemoInputModel>, IDemoInputModel
 {
     public partial string? Name { get; set; }
 
     public partial string? Description { get; set; }
 
-    public DemoValueObject(IValidateBaseServices<DemoValueObject> services) : base(services)
+    public DemoInputModel(IValidateBaseServices<DemoInputModel> services) : base(services)
     {
         // Rules are added in the constructor; they run when a trigger property changes
         RuleManager.AddValidation(
@@ -96,19 +95,18 @@ internal partial class DemoValueObject : ValidateBase<DemoValueObject>, IDemoVal
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L91-L137' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L93-L139' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-input-model' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## EntityBase<T>
 
 Use for persistent entities with full CRUD lifecycle.
 
-**DDD Concept:** Entity or Aggregate Root - Objects with identity that persist across time.
-
 **When to use:**
 - Domain entities that are saved to a database
 - Aggregate roots that coordinate child entities
 - Any object that needs Create/Fetch/Update/Delete operations
+- An entity a job edits with no person involved — [A Job Over Entities](#a-job-over-entities)
 
 A root's interface extends `IEntityRoot`:
 
@@ -208,7 +206,7 @@ internal partial class DemoEntity : EntityBase<DemoEntity>, IDemoEntity
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L224-L300' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-crud' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L226-L302' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-crud' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The root's `[Insert]` and `[Update]` should also re-run the rules and refuse an invalid aggregate before writing; see `entities.md` → "Re-run the Rules on the Server" and the `Order` aggregate there.
@@ -216,8 +214,6 @@ The root's `[Insert]` and `[Update]` should also re-run the rules and refuse an 
 ## EntityListBase<I>
 
 Use for collections of child entities within an aggregate.
-
-**DDD Concept:** Collection of Entities - Managed collection within an aggregate boundary.
 
 **When to use:**
 - Order lines in an Order aggregate
@@ -314,7 +310,7 @@ internal partial class DemoEntityList : EntityListBase<IDemoChild>, IDemoEntityL
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L441-L487' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L443-L489' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The root creates the list through the list factory inside its own `[Create]`, and loads it through the list factory inside its `[Fetch]`:
@@ -348,7 +344,7 @@ internal partial class DemoParent : EntityBase<DemoParent>, IDemoParent
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L518-L544' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-creates-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L520-L546' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-creates-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 For the list's `[Update]` — the save cascade — see `entities.md` → "Aggregate Save Cascading".
@@ -363,7 +359,7 @@ Use for collections of `ValidateBase` objects: items that need rules but no pers
 /// <summary>
 /// List interface for ValidateListBase demo — parameterized on child INTERFACE.
 /// </summary>
-public interface IDemoValueObjectList : IValidateListBase<IDemoValueObject> { }
+public interface IDemoInputModelList : IValidateListBase<IDemoInputModel> { }
 ```
 <sup><a href='/src/Design/Design.Domain/BaseClasses/IBaseClassInterfaces.cs#L53-L58' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list-interface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
@@ -381,7 +377,7 @@ public interface IDemoValueObjectList : IValidateListBase<IDemoValueObject> { }
 /// - Parent-child relationships managed automatically
 /// </summary>
 [Factory]
-internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>, IDemoValueObjectList
+internal partial class DemoInputModelList : ValidateListBase<IDemoInputModel>, IDemoInputModelList
 {
     // ValidateListBase has no required constructor - uses default.
 
@@ -393,25 +389,23 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 
     [Remote]
     [Fetch]
-    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoValueObjectFactory valueObjectFactory)
+    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoInputModelFactory inputModelFactory)
     {
         // The list is paused by its own factory operation (FactoryStart),
         // like any factory target. Each item is loaded by its own [Fetch].
         foreach (var name in repository.GetAllNames())
         {
-            Add(valueObjectFactory.Fetch(name));
+            Add(inputModelFactory.Fetch(name));
         }
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L331-L364' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L333-L366' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Commands (Static Classes with [Remote, Execute])
 
 Use for operations that need the server and are not an edit of one aggregate: a batch, a side effect, a check a rule asks for.
-
-**DDD Concept:** Command - Request to perform an action.
 
 **When to use:**
 - Operations that don't return entity state
@@ -450,8 +444,6 @@ A command does not check data and return a failure result. Whether the action is
 ## Read Models (Plain [Factory] Class, [Fetch] Only)
 
 Use for server truth shaped for one screen: a list, a dashboard tile, the flags a page gates on.
-
-**DDD Concept:** Read Model - Optimized view of data for queries.
 
 **When to use:**
 - Dashboard data
@@ -545,6 +537,134 @@ internal partial class EmployeeDirectory : IEmployeeDirectory
 2. **Use `partial` keyword** - Source generators extend the class
 3. **Interface-first** - public interface, `internal` concrete, every reference typed on the interface
 4. **Follow DDD aggregate boundaries** - `IEntityRoot` for roots, `IEntityBase` for children within the aggregate
+
+## A Job Over Entities
+
+An entity is right with no person involved. A nightly job reuses the aggregate, its verb and its rules; it calls no `RunRules` and catches nothing: the verb triggered the rules, `WaitForTasks()` settles them, and `IsSavable` decides — saved, reported with its messages, or skipped as unchanged.
+
+<!-- snippet: skill-job-over-entities -->
+<a id='snippet-skill-job-over-entities'></a>
+```cs
+/// <summary>
+/// Job: submits the given draft orders. Reuses the Order aggregate, its
+/// Submit verb and its rules; no person involved.
+/// </summary>
+[Factory]
+public static partial class SubmitDraftOrders
+{
+    [Remote]
+    [Execute]
+    private static async Task<SubmitReport> _Run(
+        IReadOnlyList<Guid> orderIds,
+        [Service] IOrderFactory orderFactory)
+    {
+        var submitted = new List<Guid>();
+        var rejected = new List<RejectedOrder>();
+        var unchanged = new List<Guid>();
+
+        foreach (var id in orderIds)
+        {
+            var order = await orderFactory.Fetch(id)
+                ?? throw new InvalidOperationException($"Order {id} not found");
+
+            // The verb sets Status; the rule triggered by Status runs now.
+            order.Submit();
+
+            // Async rules, if any, finish here. Nothing else is run.
+            await order.WaitForTasks();
+
+            if (order.IsSavable)
+            {
+                // Save returns a new instance; use the result, not the old reference.
+                order = (IOrder)await order.Save();
+                submitted.Add(order.Id);
+            }
+            else if (!order.IsValid)
+            {
+                // The rules have spoken; report them, do not throw.
+                rejected.Add(new RejectedOrder(
+                    id,
+                    order.PropertyMessages.Select(m => $"{m.Property.Name}: {m.Message}").ToList()));
+            }
+            else
+            {
+                // Valid but not modified: the verb changed nothing. Skip.
+                unchanged.Add(id);
+            }
+        }
+
+        return new SubmitReport(submitted, rejected, unchanged);
+    }
+}
+
+/// <summary>
+/// What the job did: data, not a success flag.
+/// </summary>
+public sealed record SubmitReport(
+    IReadOnlyList<Guid> Submitted,
+    IReadOnlyList<RejectedOrder> Rejected,
+    IReadOnlyList<Guid> Unchanged);
+
+/// <summary>
+/// An order the rules rejected, with the messages a screen would have shown.
+/// </summary>
+public sealed record RejectedOrder(Guid OrderId, IReadOnlyList<string> Messages);
+```
+<sup><a href='/src/Design/Design.Domain/Jobs/SubmitDraftOrders.cs#L51-L116' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-job-over-entities' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+## A Value Object Is a Record
+
+A value object is a `record`: immutable, compared by value, no rules. Its constructor may throw, because code assigns it and an unknown value is a programming error. `ValidateBase` is for an input model — something a person edits. If a value needs rules, it is not a value object.
+
+<!-- snippet: skill-value-object-record -->
+<a id='snippet-skill-value-object-record'></a>
+```cs
+/// <summary>
+/// Value object for an employee's pay grade: one of a closed set of codes,
+/// each with a salary band.
+/// </summary>
+public sealed record PayGrade
+{
+    private static readonly IReadOnlyDictionary<string, (decimal Min, decimal Max)> Bands =
+        new Dictionary<string, (decimal, decimal)>
+        {
+            ["A"] = (30_000m, 45_000m),
+            ["B"] = (45_000m, 65_000m),
+            ["C"] = (65_000m, 90_000m),
+            ["D"] = (90_000m, 130_000m),
+        };
+
+    public PayGrade(string code)
+    {
+        // Bad input is an application failure, not a validation message:
+        // nobody types a grade; code assigns one from the set.
+        if (!Bands.ContainsKey(code))
+        {
+            throw new ArgumentException($"Unknown pay grade '{code}'", nameof(code));
+        }
+
+        Code = code;
+    }
+
+    public string Code { get; }
+
+    public decimal MinSalary => Bands[Code].Min;
+    public decimal MaxSalary => Bands[Code].Max;
+
+    public bool Covers(decimal salary) => salary >= MinSalary && salary <= MaxSalary;
+
+    /// <summary>The grade every new hire starts at.</summary>
+    public static PayGrade Entry => new("A");
+
+    /// <summary>Every grade, in order: what a select offers.</summary>
+    public static IReadOnlyList<PayGrade> All { get; } = Bands.Keys.Order().Select(code => new PayGrade(code)).ToList();
+
+    public override string ToString() => Code;
+}
+```
+<sup><a href='/src/Design/Design.Domain/Entities/PayGrade.cs#L23-L66' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-value-object-record' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Related
 

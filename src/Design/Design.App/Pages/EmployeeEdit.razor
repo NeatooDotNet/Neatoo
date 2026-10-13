@@ -1,0 +1,175 @@
+@page "/employees/new"
+@page "/employees/{Id:guid}"
+@using Design.App.ViewModels
+@using Design.Domain.Entities
+@inject EmployeeEditViewModel Vm
+@implements IDisposable
+
+<PageTitle>Employee</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Employee</MudText>
+
+        @if (Vm.Employee is null)
+        {
+            <MudText>Loading...</MudText>
+        }
+        else
+        {
+            @* begin-snippet: skill-mud-page *@
+            @* @key: Save returns a new instance; keying on it rebuilds the bound
+               components so each field subscribes to the new instance's wrappers. *@
+            <div @key="Vm.Employee">
+            @* View or edit is the screen's own choice of components. Read-only
+               state is the entity's, and each component binds it itself. *@
+            @if (Vm.IsEditing)
+            {
+                @* begin-snippet: skill-mud-validation-summary *@
+                <NeatooValidationSummary Entity="@Vm.Employee" ShowHeader="false" Dense="true" Class="mb-4" />
+                @* end-snippet *@
+
+                @* begin-snippet: skill-mud-text-field *@
+                <MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.FirstName)]" Variant="Variant.Outlined" Class="mb-3" />
+                <MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.LastName)]" Variant="Variant.Outlined" Class="mb-3" />
+                <MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.Email)]" Variant="Variant.Outlined" Class="mb-3" />
+                @* end-snippet *@
+
+                @* begin-snippet: skill-mud-date-picker *@
+                <MudNeatooDatePicker EntityProperty="@Vm.Employee[nameof(IEmployee.HireDate)]"
+                                     MaxDate="@DateTime.Today"
+                                     DateFormat="yyyy-MM-dd"
+                                     Editable="true"
+                                     Class="mb-3" />
+                @* end-snippet *@
+
+                @* begin-snippet: skill-mud-numeric-field *@
+                <MudNeatooNumericField T="decimal"
+                                       EntityProperty="@Vm.Employee[nameof(IEmployee.Salary)]"
+                                       Adornment="Adornment.Start"
+                                       AdornmentText="$"
+                                       Class="mb-3" />
+                @* end-snippet *@
+
+                @* begin-snippet: skill-mud-checkbox *@
+                <MudNeatooCheckBox T="bool" EntityProperty="@Vm.Employee[nameof(IEmployee.IsActive)]" Label="Active" Class="mb-3" />
+                @* end-snippet *@
+
+                @* begin-snippet: skill-mud-select *@
+                @* A record bound through MudNeatoo: the options are values, and
+                   selecting one assigns it. Disabled binds a business fact as it
+                   is - an inactive employee's grade is frozen - with no
+                   condition of the page's own. T is the record type: Razor-generated code
+                   cannot carry a nullable annotation. *@
+                <MudNeatooSelect T="PayGrade"
+                                 EntityProperty="@Vm.Employee[nameof(IEmployee.Grade)]"
+                                 Disabled="@(!Vm.Employee.IsActive)"
+                                 Class="mb-3">
+                    @foreach (var grade in Vm.Grades)
+                    {
+                        <MudSelectItem T="PayGrade" Value="@grade">@grade.Code</MudSelectItem>
+                    }
+                </MudNeatooSelect>
+                @* end-snippet *@
+
+                @* begin-snippet: skill-mud-multiline *@
+                @* A textarea that grows with its content up to 20 lines, with the
+                   browser's spellcheck - an HTML attribute MudBlazor has no
+                   parameter for, passed through UserAttributes. *@
+                <MudNeatooTextField T="string"
+                                    EntityProperty="@Vm.Employee[nameof(IEmployee.Notes)]"
+                                    Lines="4"
+                                    Sizing="InputSizing.Auto"
+                                    MaxLines="20"
+                                    UserAttributes="@(new() { ["spellcheck"] = "true" })"
+                                    Class="mb-3" />
+                @* end-snippet *@
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="@(!Vm.CanSave)"
+                           OnClick="SaveAsync"
+                           Class="mr-2">
+                    Save
+                </MudButton>
+                <MudButton Variant="Variant.Text" OnClick="CancelAsync">Cancel</MudButton>
+            }
+            else
+            {
+                <MudText Typo="Typo.h6">@Vm.Employee.FirstName @Vm.Employee.LastName</MudText>
+                <MudText Class="mb-3">@Vm.Employee.Email</MudText>
+                <MudButton Variant="Variant.Text" OnClick="Vm.StartEdit">Edit</MudButton>
+            }
+            </div>
+            @* end-snippet *@
+        }
+    </MudPaper>
+</MudContainer>
+
+@* begin-snippet: skill-mud-page-code *@
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private IEmployee? _subscribed;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is Guid id)
+        {
+            await Vm.Load(id);
+        }
+        else
+        {
+            Vm.New();
+        }
+
+        Resubscribe();
+    }
+
+    // The page owns the subscription: the input components subscribe to their
+    // own property wrappers, but the Save button and the view-mode text read
+    // the entity, so the page re-renders on the graph-wide event.
+    private void Resubscribe()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+        }
+
+        _subscribed = Vm.Employee;
+
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged += OnEntityChanged;
+        }
+    }
+
+    // Save and Cancel each leave the ViewModel holding a new instance.
+    private async Task SaveAsync()
+    {
+        await Vm.Save();
+        Resubscribe();
+        StateHasChanged();
+    }
+
+    private async Task CancelAsync()
+    {
+        await Vm.CancelEdit();
+        Resubscribe();
+        StateHasChanged();
+    }
+
+    private Task OnEntityChanged(NeatooPropertyChangedEventArgs e)
+    {
+        return InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+        }
+    }
+}
+@* end-snippet *@

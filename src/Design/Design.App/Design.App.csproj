@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <!-- Single target like the rest of the Design set - override Directory.Build.props -->
+    <TargetFrameworks></TargetFrameworks>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AnalysisMode>default</AnalysisMode>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- RemoteFactory's trim switch: the client never runs server-side code. See the RemoteFactory skill. -->
+    <RuntimeHostConfigurationOption Include="Neatoo.RemoteFactory.IsServerRuntime"
+                                    Value="false"
+                                    Trim="true" />
+  </ItemGroup>
+
+  <!-- Root the Blazor app assemblies so full trim mode keeps component constructors -->
+  <ItemGroup>
+    <TrimmerRootAssembly Include="Design.App" />
+    <TrimmerRootAssembly Include="Neatoo.Blazor.MudNeatoo" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Types are internal (CA1515 under the repo's analyzer settings); the tests see them. -->
+    <InternalsVisibleTo Include="Design.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MudBlazor" />
+    <!-- net9.0 leg: the central versions are 10.0.x, so pin the latest listed 9.0.x here -->
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" VersionOverride="9.0.20" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" VersionOverride="9.0.20" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Design.Domain\Design.Domain.csproj" />
+    <ProjectReference Include="..\..\Neatoo.Blazor.MudNeatoo\Neatoo.Blazor.MudNeatoo.csproj" />
+  </ItemGroup>
+
+</Project>

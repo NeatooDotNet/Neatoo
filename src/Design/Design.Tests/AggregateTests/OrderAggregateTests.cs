@@ -33,10 +33,10 @@ public class OrderAggregateTests
     }
 
     [TestMethod]
-    public void Create_InitializesWithEmptyItemsList()
+    public async Task Create_InitializesWithEmptyItemsList()
     {
         // Arrange & Act
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
 
         // Assert
         Assert.IsNotNull(order.Items, "Items list should be initialized");
@@ -44,10 +44,10 @@ public class OrderAggregateTests
     }
 
     [TestMethod]
-    public void Create_SetsDefaultValues()
+    public async Task Create_SetsDefaultValues()
     {
         // Arrange & Act
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
 
         // Assert
         Assert.IsNotNull(order.OrderNumber, "OrderNumber should be set");
@@ -57,10 +57,10 @@ public class OrderAggregateTests
 
     #region skill-add-item
     [TestMethod]
-    public void AddItem_ItemJoinsAggregate()
+    public async Task AddItem_ItemJoinsAggregate()
     {
         // Arrange
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         var item = _itemFactory.Create("Widget", 5, 10.00m);
 
         // Act
@@ -74,9 +74,9 @@ public class OrderAggregateTests
 
     #region skill-parent-and-root
     [TestMethod]
-    public void AddItem_SetsParentAndRoot()
+    public async Task AddItem_SetsParentAndRoot()
     {
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         var item = _itemFactory.Create("Widget", 5, 10.00m);
         Assert.IsNull(item.Parent, "Not attached yet");
 
@@ -126,10 +126,10 @@ public class OrderAggregateTests
     }
 
     [TestMethod]
-    public void ChildItem_CannotSaveIndependently()
+    public async Task ChildItem_CannotSaveIndependently()
     {
         // Arrange
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         order.CustomerName = "Test Customer";
         var item = _itemFactory.Create("Widget", 5, 10.00m);
         order.Items!.Add(item);
@@ -144,10 +144,10 @@ public class OrderAggregateTests
     }
 
     [TestMethod]
-    public void Order_IsValidWhenRequiredFieldsSet()
+    public async Task Order_IsValidWhenRequiredFieldsSet()
     {
         // Arrange
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
 
         // Act
         order.CustomerName = "Test Customer";
@@ -177,7 +177,7 @@ public class OrderAggregateTests
     public async Task ChildItemLineTotalChange_RecalculatesOrderTotalAmount()
     {
         // Arrange - Create order with an item
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         order.CustomerName = "Test Customer";
         var item = _itemFactory.Create("Widget", 1, 10.00m);
         order.Items!.Add(item);
@@ -195,7 +195,7 @@ public class OrderAggregateTests
     [TestMethod]
     public async Task ChildPropertyChange_BubblesToTheRoot_WithADottedPath()
     {
-        var order = _orderFactory.Create();
+        var order = await _orderFactory.Create();
         var item = _itemFactory.Create("Widget", 1, 5.00m);
         order.Items!.Add(item);
 

@@ -53,6 +53,14 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
 
     public partial bool IsActive { get; set; }
 
+    // A value object held by the entity: a record, assigned by code, compared
+    // by value. See PayGrade.cs.
+    public partial PayGrade? Grade { get; set; }
+
+    // Free text a person writes; the edit page shows it as a multi-line field.
+    [StringLength(2000, ErrorMessage = "Notes cannot exceed 2000 characters")]
+    public partial string? Notes { get; set; }
+
     // =========================================================================
     // Child Collection
     // =========================================================================
@@ -109,6 +117,7 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
         // during [Create], so a rule triggered by these assignments would
         // not run.
         IsActive = true;
+        Grade = PayGrade.Entry;
         HireDate = DateTime.Today;
     }
 
@@ -155,6 +164,8 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
         HireDate = row.HireDate;
         Salary = row.Salary;
         IsActive = row.IsActive;
+        Grade = new PayGrade(row.Grade);
+        Notes = row.Notes;
 
         // Addresses and every address within: IsNew=false, IsModified=false
         Addresses = addressListFactory.Fetch(row.Addresses);
@@ -294,6 +305,8 @@ internal partial class Employee : EntityBase<Employee>, IEmployee
         row.HireDate = HireDate;
         row.Salary = Salary;
         row.IsActive = IsActive;
+        row.Grade = Grade!.Code;
+        row.Notes = Notes;
     }
 }
 
@@ -315,6 +328,8 @@ public class EmployeeRow
     public DateTime? HireDate { get; set; }
     public decimal Salary { get; set; }
     public bool IsActive { get; set; }
+    public string Grade { get; set; } = "A";
+    public string? Notes { get; set; }
     public List<AddressRow> Addresses { get; } = new();
 }
 

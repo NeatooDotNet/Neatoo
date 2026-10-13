@@ -1,857 +1,337 @@
 ---
 name: Neatoo
-description: This skill should be used when working with Neatoo domain models, ValidateBase, EntityBase, ValidateListBase, EntityListBase, partial properties, property change tracking, validation rules, business rules, aggregate roots, entities, value objects, lazy loading, EntityLazyLoad, IEntityLazyLoadFactory, or any .NET DDD domain model framework work. Also triggers for IsValid, IsSelfValid, IsSavable, IsModified, IsNew, IsDeleted, RuleManager, AddActionAsync, AddValidationAsync, AddAction, AddValidation, IsBusy, WaitForTasks, IsLoaded, IsLoading, and base class behavior. This skill also decides where business logic belongs: the placement ladder (entity rule, entity verb, orchestration seam, read model / Info class) and the ViewModel boundary -- the gesture test, the mirror rule, and why a load-time policy is a seam, never a ViewModel. Consult it before writing any ViewModel member that writes to an entity, any [Execute] or [Fetch] orchestration body, any Info read model, or any .razor file that binds to Neatoo entities. Neatoo is the domain model framework -- it does NOT include factory generation. For factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [AuthorizeFactory]) see the RemoteFactory skill, which is independent and works with any .NET class.
-version: 1.0.0
+description: Use when building or reviewing a Neatoo domain model, Blazor page or ViewModel, or when asking the questions a mainstream .NET habit asks of it - where do I validate before Save, where do I throw on bad input, is this a value object so ValidateBase, nobody edits this so plain EF, where do the screen's derived values and visibility go, how do I get computed values after Fetch, can I call Save on a child, can a rule call the server, who saves the children. Also triggers on EntityBase, ValidateBase, EntityListBase, ValidateListBase, IEntityRoot, IEntityBase, partial properties, RuleManager, AddAction, AddValidation, IsValid, IsSavable, IsModified, IsNew, IsBusy, WaitForTasks, RunRules, PropertyMessages, MudNeatoo. Neatoo is the editing session over a domain graph; factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [Execute]) and tier composition are the RemoteFactory skill's, which is loaded beside this one.
+version: 2.0.0
 ---
 
-# Neatoo Domain Models
+# Neatoo
 
-Neatoo is a .NET framework for building domain models with automatic change tracking, validation, and rules through Roslyn source generators. It provides base classes that map to DDD concepts.
+Neatoo is the editing session. Between a load and a save a person - or a job - changes a graph of objects, and Neatoo makes the graph answer, continuously and per property: what changed, is it valid, is work in flight, can it be saved, and what else must change because of this edit. The answers aggregate to the root and bind to the UI. The same compiled classes run in the browser and on the server, so all of it runs where the object is, with no request.
 
-Neatoo focuses on the domain model: properties, change tracking, validation, rules, and collections. RemoteFactory is a separate, independent tool that generates client-server factories for **any .NET class** — it works with Neatoo entities, plain ViewModels, or POCOs. For factory attributes, authorization, and client-server patterns, see the RemoteFactory skill.
+Every C# block in this skill and its references is compiled and tested in the Neatoo repository's `src/Design` projects. Where a block is not shown inline, the row links to the reference that renders it.
 
-Every code block in this skill is compiled and tested in the Neatoo repository's `Design.Domain` project.
+## The model
 
-## Quick Start
+1. **What an operation sets is baseline. What happens afterwards is the user's work.** Inside a factory operation (`[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]`) the object is paused: an assignment marks nothing modified and runs no rule. Everything the object must hold when it comes back is written inside the operation that produces it, and each child hydrates inside its own operation. Persisted data is assumed valid.
 
-Every entity gets a public interface. A root's interface extends `IEntityRoot`, which exposes `IsSavable` and `Save()`:
+2. **Neatoo is the editing session.** A type is a Neatoo entity when it carries rules or change tracking that something relies on to decide validity, modification or savability - a person over many edits, or a job over many rows. It is plain RemoteFactory when nothing is tracked or validated: a read model, a command, a context that holds an aggregate, a `record`.
 
-<!-- snippet: skill-quick-start-interface -->
-<a id='snippet-skill-quick-start-interface'></a>
-```cs
-/// <summary>
-/// Aggregate root interface. Extends IEntityRoot: exposes IsSavable and Save().
-/// </summary>
-public interface IProduct : IEntityRoot
-{
-    Guid Id { get; }
-    string? Name { get; set; }
-    decimal Price { get; set; }
-}
-```
-<sup><a href='/src/Design/Design.Domain/Entities/Product.cs#L16-L26' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quick-start-interface' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
+3. **Logic is placed by who is driving it.** A property change drives a rule on the entity. A person's gesture on one aggregate drives a verb on that entity. A load, another aggregate, or anything that needs server services drives a seam - an `[Execute]` or a `[Fetch]`. A screen's need for server truth drives a read model.
 
-The concrete class is `internal`. `[Create]` runs locally; the persistence operations are `[Remote]` and `internal`, and take the repository as a `[Service]` parameter, so they run on the server:
+4. **The UI binds and adapts gestures. It decides nothing.** A ViewModel turns a gesture into a call on the domain and reads the domain's answers. It never originates a mutation, re-derives a gate, chooses what to load, or holds a transaction.
 
-<!-- snippet: skill-quick-start -->
-<a id='snippet-skill-quick-start'></a>
-```cs
-/// <summary>
-/// Demonstrates: the minimal aggregate root. Concrete is internal; consumers
-/// hold IProduct.
-/// </summary>
-[Factory]
-internal partial class Product : EntityBase<Product>, IProduct
-{
-    public partial Guid Id { get; set; }
+The seam itself - one domain assembly on both tiers, the factory operation as the only way in or out, what `[Create]`/`[Fetch]`/`[Execute]` each claim, where `[Remote]` goes, every object writing its own row - is RemoteFactory's model. The RemoteFactory skill states it; this skill assumes it.
 
-    [Required(ErrorMessage = "Name is required")]
-    public partial string? Name { get; set; }
+## The questions the habit asks
 
-    [Range(0, 1000000, ErrorMessage = "Price cannot be negative")]
-    public partial decimal Price { get; set; }
+A mainstream .NET developer reaches for these under load. Each row is the question, Neatoo's answer, and the compiled example to copy instead.
 
-    public Product(IEntityBaseServices<Product> services) : base(services) { }
-
-    // Local: creating a product needs nothing from the server
-    [Create]
-    public void Create() { }
-
-    // [Remote]: the client fetches this root, so the call crosses to the
-    // server, where the repository resolves. Returning false makes the
-    // generated factory return null: "no such product" is an answer.
-    [Remote]
-    [Fetch]
-    internal bool Fetch(Guid id, [Service] IProductRepository repository)
-    {
-        var row = repository.Get(id);
-        if (row == null)
-        {
-            return false;
-        }
-
-        // Paused for the length of the body: assignment is a clean baseline load
-        Id = row.Id;
-        Name = row.Name;
-        Price = row.Price;
-        return true;
-    }
-
-    [Remote]
-    [Insert]
-    internal async Task Insert([Service] IProductRepository repository)
-    {
-        // Re-run the rules on the server and refuse an invalid aggregate.
-        // Throw, never return: after [Insert] returns, the framework marks
-        // the entity saved whether or not anything was written.
-        await RunRules(RunRulesFlag.All);
-        if (!IsValid)
-        {
-            throw new SaveOperationException(SaveFailureReason.IsInvalid);
-        }
-
-        Id = Guid.NewGuid();  // the entity sets its own key
-
-        var row = new ProductRow();
-        MapTo(row);
-        repository.Add(row);
-        repository.SaveChanges();
-    }
-
-    [Remote]
-    [Update]
-    internal async Task Update([Service] IProductRepository repository)
-    {
-        await RunRules(RunRulesFlag.All);
-        if (!IsValid)
-        {
-            throw new SaveOperationException(SaveFailureReason.IsInvalid);
-        }
-
-        var row = repository.Get(Id)
-            ?? throw new KeyNotFoundException($"Product {Id} not found");
-
-        MapTo(row);
-        repository.SaveChanges();
-    }
-
-    [Remote]
-    [Delete]
-    internal void Delete([Service] IProductRepository repository)
-    {
-        var row = repository.Get(Id)
-            ?? throw new KeyNotFoundException($"Product {Id} not found");
-
-        repository.Remove(row);
-        repository.SaveChanges();
-    }
-
-    private void MapTo(ProductRow row)
-    {
-        row.Id = Id;
-        row.Name = Name!;
-        row.Price = Price;
-    }
-}
-```
-<sup><a href='/src/Design/Design.Domain/Entities/Product.cs#L28-L126' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quick-start' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-This generates `IProductFactory` with `Create()`, `Fetch(Guid)` and `Save(IProduct)`. Properties track changes, trigger validation, and fire `PropertyChanged`.
-
-Using it: a created object is `IsNew` and not `IsModified` (it needs inserting but holds no user work); an edit makes it savable once its rules pass:
-
-<!-- snippet: skill-quick-start-create -->
-<a id='snippet-skill-quick-start-create'></a>
-```cs
-[TestMethod]
-public async Task Create_ThenEdit_IsSavable()
-{
-    var product = _factory.Create();
-    Assert.IsTrue(product.IsNew);
-    Assert.IsFalse(product.IsModified, "A created object holds no user work");
-
-    product.Name = "Widget";
-    product.Price = 9.99m;
-    await product.WaitForTasks();
-
-    Assert.IsTrue(product.IsValid);
-    Assert.IsTrue(product.IsSavable);
-}
-```
-<sup><a href='/src/Design/Design.Tests/EntityTests/ProductTests.cs#L35-L50' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quick-start-create' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-`Save()` routes to `Insert` or `Update` on `IsNew` and returns the saved instance — keep that one. A `Fetch` is a clean baseline:
-
-<!-- snippet: skill-quick-start-save -->
-<a id='snippet-skill-quick-start-save'></a>
-```cs
-[TestMethod]
-public async Task Save_ThenFetch_RoundTrips()
-{
-    var product = _factory.Create();
-    product.Name = "Widget";
-    product.Price = 9.99m;
-    await product.WaitForTasks();
-
-    // Save returns the saved instance; keep that one
-    product = (IProduct)await product.Save();
-    Assert.IsFalse(product.IsNew);
-    Assert.IsFalse(product.IsModified);
-
-    var fetched = await _factory.Fetch(product.Id);
-    Assert.IsNotNull(fetched);
-    Assert.AreEqual("Widget", fetched.Name);
-    Assert.IsFalse(fetched.IsModified, "A fetched object is a clean baseline");
-}
-```
-<sup><a href='/src/Design/Design.Tests/EntityTests/ProductTests.cs#L52-L71' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-quick-start-save' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Interface-First Design
-
-Every entity and list gets a matched public interface. Concretes are `internal`. All references — properties, parameters, list type arguments, factory method parameters — use the interface, never the concrete.
-
-1. Root entity interfaces extend `IEntityRoot` (exposes `IsSavable` and `Save()`).
-2. Child entity interfaces extend `IEntityBase` (no `IsSavable`, no `Save()`).
-3. List interfaces extend `IEntityListBase<IChild>` — parameterized on the child **interface**.
-4. `ValidateBase` objects follow the same pattern (`IValidateBase`, `IValidateListBase<I>`).
-
-This is what makes the root/child split work. `EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`, so `IsSavable` and `Save()` exist on every concrete — a modified child concrete reports `IsSavable == true`, because `IsSavable` knows nothing about aggregate position. Because concretes are `internal`, a consumer only ever holds the interface, and a child interface has no `Save()` to call. The mistake is a compile error, not a runtime check.
-
-<!-- snippet: skill-aggregate-interfaces -->
-<a id='snippet-skill-aggregate-interfaces'></a>
-```cs
-/// <summary>
-/// Aggregate root interface — extends IEntityRoot.
-/// Exposes IsSavable and Save() for the root entity.
-/// All property types use interfaces, never concretes.
-/// </summary>
-public interface IOrder : IEntityRoot
-{
-    Guid Id { get; }
-    string? OrderNumber { get; set; }
-    string? CustomerName { get; set; }
-    DateTime OrderDate { get; set; }
-    string? Status { get; set; }
-    decimal TotalAmount { get; }
-    IOrderItemList? Items { get; }
-}
-
-/// <summary>
-/// Child entity interface — extends IEntityBase only.
-/// No IsSavable, no Save(). Child entities are saved through the aggregate root.
-/// </summary>
-public interface IOrderItem : IEntityBase
-{
-    Guid Id { get; }
-    string? ProductName { get; set; }
-    int Quantity { get; set; }
-    decimal UnitPrice { get; set; }
-    decimal LineTotal { get; }
-}
-
-/// <summary>
-/// List interface — extends IEntityListBase parameterized on child INTERFACE.
-/// Lists never expose IsSavable — they are always saved through the aggregate root.
-/// </summary>
-public interface IOrderItemList : IEntityListBase<IOrderItem>
-{
-    /// <summary>
-    /// Test helper: Exposes the count of items in DeletedList.
-    /// </summary>
-    int DeletedCount { get; }
-}
-```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs#L68-L109' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregate-interfaces' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-## Domain Logic First — The Core Principle
-
-**Business logic belongs in the domain layer.** In a Neatoo application that layer is more than the entities. It is four things: the entities and their rules; the verbs on those entities; the orchestration seams — `[Remote, Execute]` operations on static commands and plain `[Factory]` classes — that coordinate across aggregates and run at load time; and the read models (`Info` classes) that compute server truth for display and gating. All four are domain. The UI — ViewModel and Razor together — is a binding and gesture-adapting layer over them. It holds view state. It holds no policy.
-
-**Decide ownership before mechanism.** The most common placement failure is finding a mechanism that works and letting it pick the layer. Before writing any behavior, answer three questions about it:
-
-1. **Who initiates it?** A user gesture · a property change · a load or fetch · another aggregate or a command.
-2. **What does it need?** Nothing beyond its own entity · injected services · other aggregates · server-side truth.
-3. **Is it applied or staged?** Takes effect immediately · sits in memory for the user to confirm.
-
-The answers select a rung on the ladder. The rung selects the mechanism. Never the reverse.
-
-### The Placement Ladder
-
-Work down from the top and stop at the first rung that fits. The two rungs below the line are not homes: they bind to, invoke, or mirror the rung above them.
-
-| Rung | Home | Choose it when | Mechanism |
-|---|---|---|---|
-| 1 | **Entity rule** | The behavior reacts to a property change and runs wherever the entity is — the browser included. What it needs from the server it reaches through an injected `[Remote, Execute]` command delegate, never a server-only service. | `AddAction` · `AddValidation` · `RuleBase<T>` · `AsyncRuleBase<T>` |
-| 2 | **Entity verb** | A user invokes an operation on one aggregate. The verb sets state, rules validate, the caller saves. | Public method on the entity; `CanX` exposed by a rung-1 rule |
-| 3 | **Orchestration seam** | The behavior crosses aggregates, needs server `[Service]`s, or runs at load — where rules are paused. Load-time policy lives here. A seam that may create or load returns from an `[Execute]`; `[Fetch]` is only for data that exists. | `[Remote, Execute]` on a static command or a plain `[Factory]` class |
-| 4 | **Read model** | The screen needs server truth for display or gating: flags, counts, cadence, "is X due." | Plain `[Factory]` `Info` class, `[Remote, Fetch]` only, no Neatoo base |
-| — | | | |
-| 5 | ViewModel | Adapts a gesture into a call on rung 1–3 · binds · **mirrors a gate by reading it** · coordinates save and navigation. | `ObservableObject`; factories and commands by DI |
-| 6 | Razor | Binds. | MudNeatoo components |
-
-**Never fall from "not a rule" to "so, the ViewModel."** When rung 1 doesn't fit — the work is something the user should start on purpose, or must run during `[Fetch]` where rules are paused, or must be staged rather than applied — the next rung is 3, not 5. The ViewModel is not exempt from this ladder because it is C#, testable, and has DI.
-
-### Where Logic Goes
-
-Indexed by the behavior you are placing, not by the trigger you would wire.
-
-| The behavior | Home | Not in |
+| The habit asks | Neatoo's answer | Copy this |
 |---|---|---|
-| A value derived from the entity's own properties | Entity rule (1) | ViewModel or Razor arithmetic |
-| A value that needs server truth — a count, a cadence, "is X due" | Read model (4) | ViewModel composing it from ids and flags |
-| Whether a control is enabled | Entity `CanX` by rule (1) or a read-model flag (4); the ViewModel reads it | ViewModel `&&`-ing flags together |
-| A mutation caused by a user gesture | ViewModel calls an entity setter or verb (2) | The ViewModel holding the logic the verb should own |
-| A mutation caused by a property change | Entity rule (1) | A ViewModel `PropertyChanged` handler that writes back |
-| A mutation caused by a load — a policy applied on the user's behalf | Orchestration seam (3): applied to the returned in-memory graph, staged, with an explanation the UI can show | ViewModel `InitializeAsync` |
-| An operation across two aggregates | Orchestration seam (3) | ViewModel bridging two entities |
-| Whether a verb may run | Entity `CanX` rule or validation rule (1), or a read-model flag (4); the ViewModel reads it | A seam that checks data and drops out; a ViewModel re-deriving the check from atoms |
-| Parent reacts to a child's change | Entity rule with child trigger `t => t.Items![0].Prop` (1) | UI event handler |
-| Cross-property validation | `AddValidation` on a computed property, or `RuleBase<T>` with several triggers (1) | UI validation |
-| Cross-sibling consistency in a list | Override `HandleNeatooPropertyChanged` on the list class (1) | UI bridging |
-| A check or lookup that reacts to a property change and needs server truth — uniqueness, overlap, a duplicate | Async rule (1) with an injected `[Remote, Execute]` command | A guard in `[Insert]`/`[Update]`; a rule or entity constructor that takes a repository or other server-only service |
-| A recalculation the user should start on purpose, or one that takes several server calls | Entity verb (2) or seam (3), invoked by the ViewModel on a gesture | A rule that fires it every time a field changes |
+| Where do I validate before Save? | Nowhere. The rules ran when the property was set. `await WaitForTasks()` for async rules, read `IsSavable`, save, hold the returned instance. There is no validate step - and `RunRules(All)` before Save is not one. | The save handler below; [blazor.md](references/blazor.md#the-save-handler) |
+| Where do I throw when input is bad? | In a rule, as a message. An exception is an application failure. A verb sets state and never checks-and-throws; the admission rule (`CanApprove`) says whether the verb applies and the UI binds the button to it. | [domain-logic-placement.md](references/domain-logic-placement.md) - `Approve` and `CanApprove`; [validation.md](references/validation.md) - attributes and rules |
+| Nobody edits this, so plain EF? | An entity is right with no person involved. A job reuses the aggregate, its verb and its rules: verb, `WaitForTasks()`, then `IsSavable` decides - saved, reported with its messages, or skipped. | [base-classes.md](references/base-classes.md#a-job-over-entities) |
+| Where do the screen's derived values and visibility go? | On the entity, as business facts (`IsHeld`, `CanApprove`, `IsOverBudget`), computed by rules. The page binds; the ViewModel may give a fact a screen name, one-to-one, deciding nothing. Never a property named for a screen element. | The page below; [domain-logic-placement.md](references/domain-logic-placement.md) - derived facts |
+| How do I set a value in Fetch without marking it modified? | Assign it. Inside an operation the object is paused; plain assignment is the baseline. `LoadValue` is not for operations. | [entities.md](references/entities.md) - Fetch starts clean |
+| How do I get computed values after Fetch - `RunRules(All)` at the end? | Rules do not fire during an operation, so the operation computes what it needs: load the value from the row, or run the rules that compute it - `RunRules(nameof(Status))`, named by trigger. Not `All` from a root whose rules write children (they finished their own Fetch and would be marked modified). A per-operation choice, never a routine step, and persisted data is assumed valid. Running rules to *validate* what an operation hands back is the developer's choice, made in the operation (`Order.Create` does, so an empty form shows its required fields) or by the caller; the framework never makes it. | The Fetch below; [rules-lifecycle.md](references/rules-lifecycle.md) |
+| The parent saves its children's rows? | The list coordinates: it hands each child its row and the child's own operation writes it; removed children sit in `DeletedList` until the save. The RemoteFactory skill owns "every object writes itself". | [entities.md](references/entities.md) - list update; [collections.md](references/collections.md) |
+| A rule can't call the server? | It can. Inject the delegate of a `[Remote, Execute]` command, or an interface-factory domain service; on the client both are a wrapped server call. Never a server-only service. No preference between the two. | [domain-logic-placement.md](references/domain-logic-placement.md) - rule with a command; [validation.md](references/validation.md#a-rule-that-takes-a-domain-service) |
+| Value object, so `ValidateBase`? | A `record`: immutable, by-value, no rules; its constructor may throw because code assigns it. `ValidateBase` is an input model - something a person edits. If a value needs rules it is not a value object. | [base-classes.md](references/base-classes.md#a-value-object-is-a-record) |
+| Can I call `Save()` on a child? | Not through a child interface: `IEntityBase` has no `Save()` or `IsSavable`; only `IEntityRoot` does. A type that plays both roles is saved as a root only when it was fetched as one. | [collections.md](references/collections.md) - the aggregate interfaces; [entities.md](references/entities.md#one-class-in-both-roles) |
 
-### The Mirror Rule
+**RemoteFactory's questions.** The RemoteFactory skill, loaded beside this one, answers these; they are listed here so the two skills read as one list. How do I load-or-create? Can I `[Create]` from loaded data? How does the client call the repository? Where does my application service go? Who writes a child's row? `Save()` updates my object? Which services can a constructor take? Should the child's `[Insert]` be `[Remote]`? Does `[Remote]` mean "runs on the server"? My command needs the server, so plain `[Execute]`? I'll return a DTO from a controller for this screen?
 
-A ViewModel may pre-disable a control so the user isn't sent on a round-trip the domain would refuse. That mirror **reads** the domain's answer. It never **re-derives** it.
+## The decisions
 
-- Reads — cannot drift from the domain: `public bool CanEndEarly => _visit?.Plan.CanEndEarly ?? false;`
-- Re-derives — the rule now has two owners, and this one silently decides what the UI shows: `public bool CanStartTherapy => IsApproved && IsSymptomsComplete && (IsSignsComplete || !IsSignsDue);`
+### Neatoo, or plain RemoteFactory
 
-If the domain doesn't expose the answer, that is the missing domain member — a `CanX` rule on the entity or a flag on the read model — not a ViewModel computation.
+Apply the model's second statement. An `Order` a person edits, a `WorkOrder` a job approves in bulk: Neatoo entities, and so are their children. An `EmployeeDirectory` a screen reads, an `ApproveEmployee` command, a `PayGrade` record: plain RemoteFactory. The test is what the object must answer, not who is at the keyboard. The job over entities in [base-classes.md](references/base-classes.md#a-job-over-entities) is the case the habit gets wrong.
 
-### The Gesture Test
+### What an operation sets is baseline
 
-Before writing any ViewModel member that writes to an entity or calls a mutating verb: **which user gesture is this handling?** A dropdown pick, a button, a keystroke — name it. If the honest answer is "none, it's just what should happen," stop. It is a rule or a seam, and it is in the wrong layer.
+After `[Create]`: `IsNew = true`, `IsModified = false`, savable once valid. After `[Fetch]`: nothing modified, every derived value present. The operation produces that state; nothing is run afterwards to finish it. The fetch below shows both ways to produce a derived value - load it, or run the rules that write the object:
 
-### The Smell Test
-
-**Razor:** more than three conditional or computed expressions, and logic has leaked. Move it down.
-
-**ViewModel** — the leak the Razor count cannot see, because the ViewModel absorbed the logic before it reached the markup: any member that reads two or more entity or read-model values and yields a bool or a derived value is re-deriving domain logic. Any method that writes to an entity and is not the handler for a named gesture is a rule or a seam in the wrong layer.
-
-- WRONG — the ViewModel composes a gate from server atoms: `public bool CanStartTherapy => IsApprovedOrMaintenance && IsSymptomsComplete && IsSignsReady;`
-- RIGHT — the read model computes it server-side and the ViewModel reads it: `public bool CanStartTherapy => Info.CanStartTherapy;`
-
-See `references/domain-logic-placement.md` for the decision tree that walks the ladder, and for the rung-1 wiring patterns: computed properties, cascading state, child property triggers, class-based rules with an injected command.
-
-## The Three-Phase Pattern
-
-Every user interaction in a Neatoo app follows three sequential, non-overlapping phases:
-
-**1. Set state.** Business methods — on the root, on children, called by any consumer — mutate properties. `IsModified` becomes true. `PropertyChanged` fires. Adding a child to a collection (`itemFactory.Create(...)` then `order.Items.Add(item)`, or a list method such as `AddPhoneNumber()` when the child's `[Create]` takes no parameters) is also phase 1; these are state mutations, not persistence.
-
-**2. Validate.** Rules re-run on the affected properties — sync (`AddAction`, `AddValidation`, `RuleBase<T>`) and async (`AddActionAsync`, `AddValidationAsync`, `AsyncRuleBase<T>`). `IsSelfValid` is the entity alone; `IsValid` aggregates the entity plus every descendant. Consumers call `await entity.WaitForTasks()` if async rules may be in flight before reading `IsValid` / calling `Save()`.
-
-**3. Save.** The caller invokes `Save()` on the root. Factory methods (`[Insert]` / `[Update]` / `[Delete]`, routed by `IsNew` / `IsDeleted`) execute the persistence cascade: re-run the rules, map the root into its row, hand the row's child collection to the list factory's `Save`, flush once, raise factory events.
-
-**The phases don't cross.** The line is *ownership*, not what happens downstream of a call.
-
-- A business method never owns persistence — no repositories, no transactions, no factory events, no `[Service]` parameters. It may pass *through* a factory-generated seam (`Save()`, an `[Execute]`, a command delegate) exactly as a ViewModel does: the seam carries the injection, authorization, transaction, and save cascade, and the caller owns none of it. A method that saves and returns its successor, or hands a validated value to a command, is still inside the three phases.
-- A persisting factory method — `[Insert]`, `[Update]`, `[Delete]` — never calls a business method or reaches back into phase 1. What it needs to read, it reads from state that phase 1 set.
-- An orchestration seam — a `[Remote, Execute]` — is not a persisting factory method, and the line above does not bind it. It *is* phases 1 and 2 performed on the caller's behalf, for the mutations no user gesture initiates (ladder rung 3): it may set state and call verbs on the graph it hands back, staged in memory, and it persists nothing except through `Save`.
-
-### Persisting Factory Method vs. Business Method Boundary
-
-| Persisting factory methods own | Business methods own |
-|---|---|
-| `MapTo` the row (EF entity) | Property setters |
-| Repository calls | Call other business methods on `this` |
-| Transaction begin / commit (one flush per root save) | Call business methods on children (`this.Child.Method()`) |
-| Raise factory events (via `[Service] IFactoryEvents`) | Add items to child collections |
-| Hand the row's child collection to the list factory's `Save` | Queue records onto state-collection properties |
-| `[Service]` parameter injection | Read `Parent` reference for ambient root state |
-| DB-snapshot-vs-in-memory diffing | Call `Save()`, an `[Execute]`, or a command delegate — pass-through, not ownership |
-
-A `[Service]` parameter is resolved by the factory for that operation. It is never passed on to another method as an ordinary argument; the body that needs it is the operation itself.
-
-### What the Save Needs Must Be State
-
-Factory methods can only read what's on the entity graph. They cannot read call-context, local variables from the business method that triggered the save, or "intentions" the caller held in their head.
-
-If a save decision depends on something, put it on an entity:
-
-- "Emit the deferred APPROVED audit at archive time" → `[Update]` reads `IsApproved && !PreHasApprovedAudit && ((IVisit)Parent!).Archived`
-- "Force a side-effect on this save" → a flag the business method sets and the `[Update]` reads (e.g., `ForceEndReassess`)
-- "This save is an extension, not a modification" → loaded state from Fetch (e.g., `PreApprovedTreatments`) compared against current in-memory value
-- "Idempotency — don't emit this audit twice" → a `PreHasX` flag loaded during Fetch
-
-Don't:
-
-- Pass flags as parameters to the root's `Save()` — its signature is fixed
-- Stash post-business state in a service instance
-- Reach from `[Update]` back into a business method to "ask" about something
-- Infer intent from `IsModified` alone when the save decision depends on a combination of in-memory values and ambient state
-
-## The Aggregate Is a Graph, Not a Façade
-
-Strict DDD treats the aggregate root as the single entry point: a `Visit` class would expose `EndPlanEarly(reason)` that internally calls `Plan.EndEarly(reason)`; consumers only ever touch the root; children are hidden implementation details.
-
-Neatoo rejects that encapsulation boundary. The aggregate is a graph whose nodes are all directly addressable by any consumer:
-
-- A ViewModel calls a child business method directly: `visit.Plan.EndEarly(reason);`
-- A Razor component binds to a deep property: `<MudNeatooTextField EntityProperty="@visit.Plan[nameof(IPlan.EndedEarlyReason)]" />`
-- A service reads any depth: `order.LineItems[0].Product.Sku`
-
-**The root is a coordinator, not a gate.** It owns `Save()`, raises factory events at save time, and its `IsValid` / `IsModified` / `IsSavable` aggregate every descendant. But it does not mediate access to children.
-
-**Encapsulation lives at the property level.** Private setters, business methods, and validation rules guard state wherever it lives. You don't need the root to mediate; each entity's own surface does.
-
-**Consequence:** design every entity as though any consumer can call its methods and bind to its properties. Don't try to rebuild strict DDD gatekeeping by routing every child mutation through root wrappers — you'll fight the framework and end up duplicating logic between the root and child.
-
-## Designing Rules for Open Mutation
-
-Because any consumer can call `visit.Plan.EndEarly(reason)` as a first-class operation, your rule graph must converge correctly after that call:
-
-1. `Plan.EndEarly` sets `Plan.EndedEarly = true` and `Plan.EndedEarlyReason = reason`
-2. `Plan`'s own rules run — child-level validation
-3. `Plan.IsValid` / `Plan.IsSelfValid` update; `PropertyChanged` / `NeatooPropertyChanged` fires
-4. `Visit`'s rules that trigger on `Plan` properties re-run (via `AddAction` with a child-property trigger)
-5. `Visit.IsValid` aggregates — root valid only if self plus every descendant is valid
-6. `PropertyChanged` fires on the root for `IsValid` / `IsSavable`; bindings re-render
-
-**Design rule:** every mutation a consumer can make must leave the root in a correct state after all rules have run. If external mutation of a child can put the root into an invalid-but-unreported state, the rule graph is incomplete. This is the rule author's responsibility, not a framework guarantee.
-
-### Rule placement by scope
-
-| Invariant scope | Where the rule lives | Trigger |
-|---|---|---|
-| Child's own state | Child class | Own property |
-| Root state that depends on child state | Root class | Child-property trigger on root rule |
-| Summary of child state exposed on root | Root class (`AddAction`) | Child-property trigger |
-| Sibling consistency in a list | List class | Override `HandleNeatooPropertyChanged` on the list |
-
-**Convergence check.** After any business method that mutates a descendant, confirm `root.IsValid` reflects the full graph. If not, a rule is missing — typically on the root or an ancestor, triggered by the child property that was mutated. See `references/domain-logic-placement.md` → Pattern 6 (Child Property Triggers) and `references/rules-lifecycle.md` for trigger semantics.
-
-## Parent — The Child's Window to Ambient State
-
-Every child entity has a `Parent` reference, set by the property system at runtime when the child is assigned to a parent's partial property or added to a child collection. `Parent` is a first-class API, not an implementation detail.
-
-### Inside a child rule
-
-A rule can run before the child is attached, so pattern-match rather than cast:
-
-<!-- snippet: skill-parent-in-child-rule -->
-<a id='snippet-skill-parent-in-child-rule'></a>
-```cs
-// A child rule reads ambient root state through Parent. Parent is null
-// until the task is attached, so pattern-match instead of casting.
-RuleManager.AddAction(
-    t => t.IsSchedulable = t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold,
-    t => t.Hours);
-```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L47-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-rule' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-### Inside a child factory method
-
-On a persistence path the child is always attached. Here the task decides a denormalized column from the root's state:
-
-<!-- snippet: skill-parent-in-child-update -->
-<a id='snippet-skill-parent-in-child-update'></a>
-```cs
-[Update]
-internal void Update(WorkOrderTaskRow row)
-{
-    MapTo(row);
-}
-
-private void MapTo(WorkOrderTaskRow row)
-{
-    row.Id = Id;
-    row.Name = Name!;
-    row.Sequence = Sequence;
-    row.Hours = Hours;
-    row.Rate = Rate;
-    row.Discount = Discount;
-    row.Cost = Cost;
-    row.IsSchedulable = IsSchedulable;
-
-    // A denormalized column decided from root state, read through Parent.
-    // On a persistence path the task is always attached.
-    row.WorkOrderStatus = ((IWorkOrder)this.Parent!).Status!;
-}
-```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L107-L129' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-update' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-The saved row carries the root's status, read through `Parent` at save time:
-
-<!-- snippet: skill-parent-in-update-test -->
-<a id='snippet-skill-parent-in-update-test'></a>
-```cs
-[TestMethod]
-public async Task Save_TaskMapsRootStateIntoItsRow_ThroughParent()
-{
-    var row = _repository.SeedWorkOrder(MockWorkOrderRepository.Task("Design", 1, 2m, 30m));
-
-    var order = (await _factory.Fetch(row.Id))!;
-    Assert.IsFalse(order.IsModified, "A fetched aggregate is a clean baseline");
-    Assert.IsTrue(order.CanApprove, "Fetch re-ran the root's own rules for its derived values");
-
-    order.Tasks![0].Hours = 3m;   // a modified child: the list hands it its row
-    order.Approve("ada");
-    await order.WaitForTasks();
-    Assert.IsTrue(order.IsSavable);
-
-    order = (IWorkOrder)await order.Save();
-
-    var saved = _repository.Store[row.Id];
-    Assert.AreEqual("Approved", saved.Status);
-    Assert.AreEqual("ada", saved.ApprovedBy);
-    Assert.AreEqual(3m, saved.Tasks.Single().Hours);
-    Assert.AreEqual("Approved", saved.Tasks.Single().WorkOrderStatus,
-        "The task read the root's status through Parent when it mapped itself");
-    Assert.IsFalse(order.IsModified);
-}
-```
-<sup><a href='/src/Design/Design.Tests/AggregateTests/WorkOrderAggregateTests.cs#L154-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-update-test' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-### Inside a child business method
-
-<!-- snippet: skill-parent-in-child-method -->
-<a id='snippet-skill-parent-in-child-method'></a>
-```cs
-/// <summary>
-/// Child business method reading root state through Parent. Called by the
-/// root's orchestrator rule whenever the discount changes.
-/// </summary>
-public void ApplyParentDiscount()
-{
-    Discount = ((IWorkOrder)this.Parent!).Discount;
-}
-```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L74-L83' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-method' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-### Cast pattern
-
-`Parent` is typed `IValidateBase?`. Cast to the root's interface when accessed: `((IRoot)this.Parent!).X`. If the same child type can be attached to different roots in different contexts, guard with `is IRoot root` pattern matching.
-
-### Rules of use
-
-- **Children read Parent; parents write children.** Don't mutate through `Parent` from child code — it inverts the graph.
-- **Parent access is aggregate-scoped.** A child shouldn't use `Parent` to reach an entity belonging to a *different* aggregate. If you need that, the aggregate boundary is drawn wrong.
-- **`Parent` is nullable at the type level, non-null at runtime once attached.** Before attachment (just-constructed, not yet assigned to a parent), `Parent` is null. In business methods and `[Update]` paths the entity is always attached.
-- **A child rule that reads `Parent` has no trigger for the parent's property.** When that state changes, the parent re-runs the children's rules (an `AddActionAsync` on the parent property that calls `task.RunRules()` on each child — see the orchestrator rule under "Child Property Triggers").
-
-### Why Parent is under-taught in DDD literature
-
-DDD orthodoxy flags child→parent references as smelly: "children shouldn't know about parents; if they need parent state, the parent should call a child method passing the data." Neatoo's position: **domain aggregates are inherently coupled graphs.** Coupling inside the aggregate boundary is expected and wanted. `Parent` is the natural API for a child to read ambient aggregate context, and building workarounds to avoid it produces duplicate state flow and harder-to-follow code.
-
-The coupling concerns DDD raises are real — they apply to coupling *across* aggregate boundaries, not within. Neatoo's `Parent` stays within the aggregate by design.
-
-## Base Class Quick Reference
-
-| DDD Concept | Neatoo Base Class | Use When |
-|-------------|-------------------|----------|
-| Aggregate Root | `EntityBase<T>`, interface extends `IEntityRoot` | Root entity with full CRUD lifecycle |
-| Entity | `EntityBase<T>`, interface extends `IEntityBase` | Child entity within an aggregate |
-| Value Object | `ValidateBase<T>` | Editable data that needs rules, no persistence lifecycle of its own |
-| Entity Collection | `EntityListBase<I>` | List of child entities (tracks deletions) |
-| Validate Collection | `ValidateListBase<I>` | List of `ValidateBase` objects (no deletion tracking) |
-| Command | Static partial class with `[Remote, Execute]` | Operation that needs the server; a bare `[Execute]` runs on the calling tier |
-| Orchestration context | Plain `[Factory]` class, no Neatoo base, `[Remote, Execute]` verbs | Bundles entities and derived state for one screen or flow; runs cross-aggregate and load-time logic (ladder rung 3) |
-| Read Model | Plain `[Factory]` class, `[Remote, Fetch]` only, `internal set` properties | Server-computed truth for display and gating — `XxxInfo` (ladder rung 4). No rules, no validation. |
-
-## Key Properties
-
-**There is no `IsDirty` in Neatoo.** Use `IsModified` / `IsSelfModified`.
-
-| Property | Type | Meaning |
-|----------|------|---------|
-| `IsModified` | bool | Differs from the baseline the factory op left — would discarding it lose work? `PropertyManager.IsModified \|\| IsDeleted \|\| IsSelfModified`. **Does NOT include `IsNew`**: false after Create, false after Fetch. |
-| `IsSelfModified` | bool | This object's own properties changed (excludes children) |
-| `IsValid` | bool | This object and all children pass validation |
-| `IsSelfValid` | bool | This object (only) passes validation |
-| `IsSavable` | bool | `(IsModified \|\| IsNew) && IsValid && !IsBusy`. Knows nothing about aggregate position — a modified child concrete reports `true`. Only `IEntityRoot` exposes it. |
-| `IsNew` | bool | Not yet persisted. Set true by Create, false by Fetch/Insert. Routing state only — it does **not** imply `IsModified`; a created object is savable but not modified. |
-| `IsDeleted` | bool | Marked for deletion |
-| `RuleManager` | IRuleManager | Access to validation rules |
-
-## Core Patterns
-
-### Properties with Change Tracking
-
-All Neatoo properties use `partial` properties. The source generator implements backing fields with automatic change tracking and validation triggering:
-
-<!-- snippet: skill-partial-properties -->
-<a id='snippet-skill-partial-properties'></a>
-```cs
-public partial string? Name { get; set; }
-
-public partial int Count { get; set; }
-
-public partial decimal Price { get; set; }
-```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L75-L81' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-partial-properties' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-Each property is backed by its own `IValidateProperty<T>` object; the generated setter writes `NameProperty.Value`. See `references/properties.md`.
-
-### Factory Methods
-
-Neatoo entities use RemoteFactory for factory generation. See the `/RemoteFactory` skill for factory attributes (`[Factory]`, `[Create]`, `[Fetch]`, `[Insert]`, `[Update]`, `[Delete]`), service injection (`[Service]`), remote execution (`[Remote]`), and authorization (`[AuthorizeFactory]`).
-
-Two facts the Neatoo examples depend on:
-
-- `[Remote]` marks a client entry point: when the client calls the operation, the call crosses to the server. It does not mean "this code runs on the server" — `internal` child and list operations run on the server too, because only server code calls them. Root operations the client calls are `[Remote] internal`; child and list operations are `internal`, never `[Remote]`.
-- `[Create]` is `new`: it takes what a constructor would take. `[Fetch]` loads existing data by key. A loaded child is built with its own `[Fetch]`, never `[Create]`.
-
-### Save Routing (Neatoo State-Based)
-
-When `Save()` is called, the factory routes based on Neatoo entity state:
-- `IsDeleted == true` → `[Delete]` (checked first; a created-then-deleted object is a no-op)
-- `IsNew == true` → `[Insert]`
-- otherwise → `[Update]`
-
-`IsModified` is not consulted by routing. `entity.Save()` refuses to call the factory unless `IsSavable` is true; a direct `factory.Save(target)` does not check.
-
-### Re-run the Rules on the Server Before the Write
-
-Rules run in the browser as the user edits, so the client sees every broken rule before it saves. The server should not trust that. The root's `[Insert]` and `[Update]` re-run every rule and refuse an invalid aggregate before writing anything. The framework does not do this for you; it is the strongly recommended form:
-
-<!-- snippet: skill-root-insert -->
-<a id='snippet-skill-root-insert'></a>
+<!-- snippet: skill-fetch-computes-derived -->
+<a id='snippet-skill-fetch-computes-derived'></a>
 ```cs
 [Remote]
-[Insert]
-internal async Task Insert([Service] IOrderRepository repository,
-    [Service] IOrderItemListFactory itemsFactory)
+[Fetch]
+internal async Task<bool> Fetch(Guid id,
+    [Service] IWorkOrderRepository repository,
+    [Service] IWorkOrderTaskListFactory tasksFactory)
 {
-    // Re-run every rule on the server and refuse an invalid aggregate.
-    // Recommended - the framework does not do this for you. Throw, never
-    // return: after [Insert]/[Update] returns, the framework marks the
-    // entity saved whether or not anything was written.
-    await RunRules(RunRulesFlag.All);
-    if (!IsValid)
+    var row = repository.Get(id);
+    if (row == null)
     {
-        throw new SaveOperationException(SaveFailureReason.IsInvalid);
+        return false;
     }
 
-    // Object is paused — assignment is clean
-    Id = Guid.NewGuid();
+    Id = row.Id;
+    Status = row.Status;
+    ApprovedBy = row.ApprovedBy;
+    IsOnHold = row.IsOnHold;
+    Budget = row.Budget;
+    Discount = row.Discount;
+    TotalCost = row.TotalCost;
+    HasUnschedulableTasks = row.HasUnschedulableTasks;
 
-    var row = new OrderRow();
-    MapTo(row);
-    repository.Add(row);
+    Tasks = tasksFactory.Fetch(row.Tasks);
 
-    itemsFactory.Save(Items!, row.Items);
-
-    repository.SaveChanges();
+    // Rules do not fire during an operation, so this one computes what it
+    // needs. Two shapes, both used here:
+    //  - Aggregates over the children (TotalCost, HasUnschedulableTasks) are
+    //    persisted and loaded, as the tasks load Cost and IsSchedulable and
+    //    OrderItem loads LineTotal.
+    //  - The root's own derived values (CanApprove, IsHeld, IsOverBudget,
+    //    Summary) are recomputed by running the rules that write THIS
+    //    object, named by their trigger. Not RunRulesFlag.All: the tasks
+    //    finished their own [Fetch] and are no longer paused, so a root rule
+    //    that changed one of their values would mark it modified and the graph
+    //    would report IsModified == true.
+    // Neither is a validate step; persisted data is assumed valid.
+    await RunRules(nameof(Status));
+    await RunRules(nameof(Budget));
+    return true;
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L186-L213' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-insert' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L153-L193' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fetch-computes-derived' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-- `RunRulesFlag.All` checks the root and every child.
-- `SaveOperationException(SaveFailureReason.IsInvalid)` is what `entity.Save()` already throws on the client for the same condition.
-- **Throw, never `return`.** After `[Insert]` or `[Update]` returns, the framework marks the entity saved (not new, not modified) whether or not anything was written. An early `return` reports a save that did not happen.
-- Reaching the throw means the client let an invalid aggregate through. It is an application failure, not validation feedback; the user's feedback is the rule message they saw while editing.
+`LoadValue` is for the rare write that must be baseline after the operation has ended; `MarkModified()` in a `[Create]` is for the rare created object that *is* the user's work. Both in [entities.md](references/entities.md).
 
-A test pins it: a direct `factory.Save` of an invalid order is refused and nothing is written.
+### Logic is placed by who drives it
 
-<!-- snippet: skill-server-gate-refuses -->
-<a id='snippet-skill-server-gate-refuses'></a>
+| Who drives | Where it goes | Example |
+|---|---|---|
+| A property change | A rule on the entity (`AddAction` for a derived value, `AddValidation` for a message) | the admission rule below |
+| A person's gesture on one aggregate | A verb on the entity: sets state, never persists, never checks-and-throws | `Approve`, `Submit` in [domain-logic-placement.md](references/domain-logic-placement.md) |
+| A load, another aggregate, server services | A seam: an `[Execute]` or `[Fetch]` operation | the job in [base-classes.md](references/base-classes.md#a-job-over-entities) |
+| A screen's need for server truth | A read model: `[Factory]` with `[Fetch]` only, no base class | `EmployeeDirectory` in [base-classes.md](references/base-classes.md) |
+
+The admission rule is the shape most often put in the wrong place. It is domain state, bound by the button, not re-derived by the page:
+
+<!-- snippet: skill-can-x-rule -->
+<a id='snippet-skill-can-x-rule'></a>
 ```cs
-[TestMethod]
-public async Task InvalidOrder_DirectFactorySave_ServerRulesRefuseBeforeWriting()
-{
-    // Arrange: CustomerName is [Required], but rules do not run during
-    // [Create], so the new order still reports valid on this side.
-    var order = _orderFactory.Create();
-    Assert.IsTrue(order.IsValid, "No rule has run yet, so nothing is broken");
-
-    // Act: a direct factory.Save does not check IsSavable, so only the
-    // re-run of the rules inside [Insert] stands between this order and
-    // the write.
-    var ex = await Assert.ThrowsExactlyAsync<Neatoo.SaveOperationException>(
-        () => _orderFactory.Save(order));
-
-    // Assert: refused, and nothing was written
-    Assert.AreEqual(Neatoo.SaveFailureReason.IsInvalid, ex.Reason);
-    Assert.AreEqual(0, _repository.AddedRows.Count, "No row may be added");
-    Assert.AreEqual(0, _repository.SaveChangesCount, "No flush may happen");
-}
+// Admission for the Approve verb. The UI binds the button to it; the
+// verb itself does not check and throw.
+RuleManager.AddAction(
+    t => t.CanApprove = t.Status == "Pending",
+    t => t.Status);
 ```
-<sup><a href='/src/Design/Design.Tests/AggregateTests/AggregateLifecycleTests.cs#L188-L208' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-server-gate-refuses' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-can-x-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-### Aggregate Save Cascading
+A root reads its children and writes derived facts; a child reads the root through `Parent`. The chained rules, child-property triggers and cross-sibling validation that make an aggregate behave as one are in [domain-logic-placement.md](references/domain-logic-placement.md).
 
-State cascades UP automatically; saves cascade DOWN through the factories. The root makes or gets its row, hands the row's child collection to the list factory's `Save`, and flushes once. The list's `[Update]` makes, finds and removes child rows and hands each live child its row through the child factory's `Save`. The child maps itself into the row it is handed. See `references/entities.md` → "Aggregate Save Cascading" for the full pattern.
+### The UI binds and adapts gestures
 
-### Validation
+The ViewModel holds the live aggregate, exposes its verbs, and saves. The Save button binds to `IsSavable`. The handler:
 
-Validation attributes on properties and `AddValidation` rules in the constructor:
-
-<!-- snippet: skill-validation-attributes-and-rules -->
-<a id='snippet-skill-validation-attributes-and-rules'></a>
-```cs
-[Required(ErrorMessage = "Street is required")]
-[StringLength(100)]
-public partial string? Street { get; set; }
-
-[Required(ErrorMessage = "City is required")]
-[StringLength(50)]
-public partial string? City { get; set; }
-
-[Required(ErrorMessage = "State is required")]
-[StringLength(2, MinimumLength = 2, ErrorMessage = "State must be 2 characters")]
-public partial string? State { get; set; }
-
-[Required(ErrorMessage = "Zip code is required")]
-[RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid zip code format")]
-public partial string? ZipCode { get; set; }
-
-[Required(ErrorMessage = "Address type is required")]
-public partial string? AddressType { get; set; } // "Home", "Work", "Other"
-
-public Address(IEntityBaseServices<Address> services) : base(services)
-{
-    // Validation rules
-    RuleManager.AddValidation(
-        t => !new[] { "Home", "Work", "Other" }.Contains(t.AddressType)
-            ? "Address type must be Home, Work, or Other"
-            : string.Empty,
-        t => t.AddressType);
-}
-```
-<sup><a href='/src/Design/Design.Domain/Entities/Address.cs#L30-L59' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validation-attributes-and-rules' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-RuleManager also provides `AddAction`, `AddActionAsync`, `AddValidationAsync`, and class-based rules. **`AddValidation`/`AddValidationAsync` accept exactly one trigger property** — for multiple triggers, validate a computed property or use a class-based rule. See `references/validation.md` for details.
-
-Check validation state with `IsValid`, `IsSelfValid`, and `PropertyMessages`.
-
-### Rules Do NOT Fire During Factory Methods
-
-**Rules (including AddAction computed properties) do NOT fire during `[Create]`, `[Fetch]`, `[Insert]`, `[Update]` or `[Delete]`.** Every factory operation runs paused: `FactoryStart` pauses the object and `FactoryComplete` resumes it. `ResumeAllActions()` does NOT run rules — it only recalculates cached validity. `PropertyChanged` does NOT fire for changes made while paused.
-
-Inside the operation, assign properties directly. The assignment is a clean baseline load: nothing is marked modified. Do not use `LoadValue`, `PauseAllActions` or `MarkUnmodified` there.
-
-**`RunRules` works while paused** — it has no `IsPaused` guard. Call `await RunRules(RunRulesFlag.All)` at the end of any factory method that sets properties with dependent `AddAction` rules:
-
-<!-- snippet: skill-create-run-rules -->
-<a id='snippet-skill-create-run-rules'></a>
+<!-- snippet: skill-save-handler -->
+<a id='snippet-skill-save-handler'></a>
 ```cs
 /// <summary>
-/// RIGHT WAY: Call RunRules at end of factory method.
-/// RunRules works even while paused — no IsPaused guard.
+/// ViewModel for the Order edit screen: holds the aggregate, saves it.
 /// </summary>
-[Create]
-public async Task CreateWithRunRules()
+internal sealed class OrderEditViewModel
 {
-    Quantity = 10;
-    Price = 5.00m;
-    await RunRules(RunRulesFlag.All);  // Forces all rules to execute
-    // Total is now 50.00
+    private readonly IOrderFactory _orderFactory;
+    private readonly IOrderItemFactory _itemFactory;
+
+    public OrderEditViewModel(IOrderFactory orderFactory, IOrderItemFactory itemFactory)
+    {
+        _orderFactory = orderFactory;
+        _itemFactory = itemFactory;
+    }
+
+    /// <summary>The aggregate the page binds to. Null until loaded or created.</summary>
+    public IOrder? Order { get; private set; }
+
+    public async Task New()
+    {
+        Order = await _orderFactory.Create();
+    }
+
+    public async Task Load(Guid id)
+    {
+        Order = await _orderFactory.Fetch(id);
+    }
+
+    public void AddItem()
+    {
+        Order?.Items?.Add(_itemFactory.Create());
+    }
+
+    public void RemoveItem(IOrderItem item)
+    {
+        Order?.Items?.Remove(item);
+    }
+
+    /// <summary>
+    /// The Save button binds to this: enabled only when the entity says it
+    /// can be saved. No separate validity check lives in the UI.
+    /// </summary>
+    public bool CanSave => Order?.IsSavable ?? false;
+
+    /// <summary>
+    /// The save handler. Waits for any async rule still running, then lets the
+    /// entity decide; the messages for a refused save are already on the entity.
+    /// </summary>
+    public async Task Save()
+    {
+        if (Order is null)
+        {
+            return;
+        }
+
+        await Order.WaitForTasks();
+
+        if (!Order.IsSavable)
+        {
+            return;  // invalid, or nothing changed; the summary shows why
+        }
+
+        Order = (IOrder)await Order.Save();  // reassign: Save returns a new instance
+    }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/CommonGotchas.cs#L97-L110' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-run-rules' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ViewModels/OrderEditViewModel.cs#L31-L96' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-handler' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Without this call, computed properties remain at their default values when the entity reaches the client. See `references/rules-lifecycle.md` for the complete execution lifecycle, `RunRulesFlag` enum reference, and the factory method timeline.
+**Pain:** `Save()` does not mark the entity busy during the remote call, so a second click sends a second Insert until the handler has reassigned the result ([Neatoo#103](https://github.com/NeatooDotNet/Neatoo/issues/103)). Disable the button while a save is in flight.
 
-### Child Property Triggers — Parent Reacts to Child Changes
+The page binds to facts; every show/hide and enable/disable is a value the aggregate computed:
 
-To react to child property changes in an aggregate, use a child property trigger expression with `AddAction`. The `[0]` indexer is a syntactic placeholder — any child whose named property changes triggers the rule:
-
-<!-- snippet: skill-child-property-trigger -->
-<a id='snippet-skill-child-property-trigger'></a>
-```cs
-RuleManager.AddAction(
-    t => t.TotalAmount = t.Items?.Sum(i => i.LineTotal) ?? 0,
-    t => t.Items![0].LineTotal);
-```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L98-L102' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-property-trigger' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-The action body can also push changes to other children — the parent acts as orchestrator, writing children through their business methods, and re-running their rules when a root property they read has changed:
-
-<!-- snippet: skill-parent-orchestrator -->
-<a id='snippet-skill-parent-orchestrator'></a>
-```cs
-// Parent writes children: when the discount changes, every task
-// re-applies it through its own business method.
-RuleManager.AddAction(
-    t =>
-    {
-        foreach (var task in t.Tasks ?? Enumerable.Empty<IWorkOrderTask>())
-        {
-            task.ApplyParentDiscount();
-        }
-    },
-    t => t.Discount);
-
-// A child rule that READS root state (IsSchedulable reads IsOnHold) has
-// no trigger for it. The root re-runs the children's rules when it changes.
-RuleManager.AddActionAsync(
-    async t =>
-    {
-        foreach (var task in t.Tasks ?? Enumerable.Empty<IWorkOrderTask>())
-        {
-            await task.RunRules();
-        }
-    },
-    t => t.IsOnHold);
-```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L86-L110' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-orchestrator' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-**Do NOT use `t => t.Items` as the trigger** — that only fires when the `Items` property reference itself is reassigned, not when child items change. `TriggerProperty.IsMatch` uses exact string equality: `"Items" != "Items.LineTotal"`.
-
-See `references/domain-logic-placement.md` → "Pattern 6: Child Property Triggers" for child triggers, orchestrator patterns, `NeatooPropertyChanged`, and `HandleNeatooPropertyChanged` overrides.
-
-## Testing
-
-**Critical:** Never mock Neatoo interfaces or classes. Use real factories and mock only external dependencies. See `references/testing.md` for patterns and `references/pitfalls.md` for common mistakes.
-
-## Reference Documentation
-
-Detailed documentation for each topic area:
-
-- **`references/domain-logic-placement.md`** - Where business logic belongs: computed properties, conditional visibility, cascading state, async rules that call the server, child property triggers, workflow state machines, refactoring smell test
-- **`references/base-classes.md`** - Neatoo-to-DDD mapping, when to use each base
-- **`references/properties.md`** - Partial properties, change tracking, calculated properties
-- **`references/validation.md`** - RuleManager, attributes, async validation
-- **`references/rules-lifecycle.md`** - When rules fire and when they don't, RunRulesFlag enum, factory method gap, RunRules works while paused
-- **`references/shared-rules.md`** - Shared rules across entities via interface-typed AsyncRuleBase and DI injection
-- **`references/entities.md`** - EntityBase lifecycle, persistence, Save routing, the save cascade
-- **`references/collections.md`** - EntityListBase, parent-child relationships, deletion tracking
-- **`references/lazy-loading.md`** - EntityLazyLoad&lt;T&gt;, IEntityLazyLoadFactory, explicit LoadAsync(), passive Value read, WaitForTasks integration
-- **`references/source-generation.md`** - What gets generated, Generated/ folder, [SuppressFactory]
-- **`references/trimming.md`** - IL trimming annotations, suppression strategy, consumer project setup
-- **`references/blazor.md`** - Blazor-specific binding and component patterns (see also the **MudNeatoo skill** for component binding and anti-patterns)
-- **`references/testing.md`** - No mocking Neatoo, integration test patterns
-- **`references/pitfalls.md`** - Common mistakes and gotchas
-
-**RemoteFactory topics** (see `/RemoteFactory` skill):
-- Factory attributes, service injection, remote execution, authorization
-
-## Troubleshooting
-
-See `references/pitfalls.md` for common issues. Key quick checks: class and properties must be `partial`, class needs `[Factory]` attribute, and `IsSavable` requires `IsValid` plus a reason to persist (`IsModified` **or** `IsNew`).
-
-## IsNew vs IsModified
-
-They answer different questions, and Neatoo keeps them separate:
-
-- **`IsModified`** — "would discarding this lose work?" Drives unsaved-changes guards.
-- **`IsNew`** — "does persistence not know this yet?" Drives Insert-vs-Update routing.
-
-A created entity is `IsNew=true, IsModified=false, IsSavable=true`: it needs inserting, but holds no user work, so guards bound to `IsModified` stay quiet on it — including on a freshly re-derived object after a save.
-
-<!-- snippet: skill-create-is-new-not-modified -->
-<a id='snippet-skill-create-is-new-not-modified'></a>
-```cs
-[TestMethod]
-public void Create_SetsIsModifiedFalse_ButStillSavable()
+<!-- snippet: skill-page-binds-facts -->
+<a id='snippet-skill-page-binds-facts'></a>
+```razor
+@* @key: Save returns a new instance; keying on it rebuilds the bound
+   components so each field subscribes to the new instance's wrappers. *@
+<div @key="Vm.WorkOrder">
+@* Every show/hide and enable/disable here is a business fact the
+   aggregate computed. The page has no condition of its own. *@
+@if (Vm.ShowHoldBanner)
 {
-    // Arrange & Act
-    var entity = _factory.Create();
-
-    // Assert - IsNew and IsModified answer different questions. A created
-    // entity needs inserting (IsNew), but holds no user work (not modified),
-    // so unsaved-changes guards stay quiet on it. Savability comes from the
-    // IsNew term. A [Create] that IS the user's work opts in with
-    // MarkModified() in its body.
-    Assert.IsTrue(entity.IsNew, "New entity should have IsNew=true");
-    Assert.IsFalse(entity.IsModified, "New entity holds no user work");
-    Assert.IsTrue(entity.IsSavable, "...but it is savable, so the Insert can happen");
+    <MudAlert Severity="Severity.Warning" Class="mb-3">This work order is on hold.</MudAlert>
 }
+
+@if (Vm.WorkOrder.IsOverBudget)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-3">Over budget: @Vm.WorkOrder.Summary</MudAlert>
+}
+
+@if (Vm.WorkOrder.HasUnschedulableTasks)
+{
+    <MudAlert Severity="Severity.Info" Class="mb-3">Some tasks cannot be scheduled.</MudAlert>
+}
+
+<NeatooValidationSummary Entity="@Vm.WorkOrder" Class="mb-4" />
+
+<MudText Typo="Typo.subtitle1">Status: @Vm.WorkOrder.Status</MudText>
+
+<MudNeatooNumericField T="decimal" EntityProperty="@Vm.WorkOrder[nameof(IWorkOrder.Budget)]" Class="mb-3" />
+<MudNeatooNumericField T="decimal" EntityProperty="@Vm.WorkOrder[nameof(IWorkOrder.Discount)]" Class="mb-3" />
+<MudNeatooSwitch T="bool" EntityProperty="@Vm.WorkOrder[nameof(IWorkOrder.IsOnHold)]" Class="mb-3" />
+
+<MudText Typo="Typo.h6" Class="my-3">Tasks</MudText>
+
+@if (Vm.WorkOrder.Tasks is not null)
+{
+    @foreach (var task in Vm.WorkOrder.Tasks)
+    {
+        <MudGrid Class="mb-2" Spacing="2">
+            <MudItem xs="12" sm="5">
+                <MudNeatooTextField T="string" EntityProperty="@task[nameof(IWorkOrderTask.Name)]" />
+            </MudItem>
+            <MudItem xs="6" sm="2">
+                <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Hours)]" />
+            </MudItem>
+            <MudItem xs="6" sm="2">
+                <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Rate)]" />
+            </MudItem>
+            <MudItem xs="12" sm="3" Class="d-flex align-center">
+                <MudText>@task.Cost.ToString("C")</MudText>
+            </MudItem>
+        </MudGrid>
+    }
+}
+
+<MudButton Variant="Variant.Outlined" OnClick="@(() => Vm.AddTask("New task"))" Class="mb-3">Add Task</MudButton>
+
+<MudText Typo="Typo.subtitle1" Class="mb-3">Total: @Vm.WorkOrder.TotalCost.ToString("C")</MudText>
+
+@* The verb's button is enabled by the entity's admission fact. *@
+<MudButton Variant="Variant.Outlined"
+           Color="Color.Secondary"
+           Disabled="@(!Vm.CanApprove)"
+           OnClick="@(() => Vm.Approve("design.app"))"
+           Class="mr-2">
+    Approve
+</MudButton>
+
+<MudButton Variant="Variant.Filled"
+           Color="Color.Primary"
+           Disabled="@(!Vm.CanSave)"
+           OnClick="SaveAsync">
+    Save
+</MudButton>
+</div>
 ```
-<sup><a href='/src/Design/Design.Tests/BaseClassTests/EntityBaseTests.cs#L43-L59' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-create-is-new-not-modified' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/WorkOrderPage.razor#L20-L92' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-page-binds-facts' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-A `[Create]` that IS the user's work says so with `MarkModified()` in its body — not to make it savable (it already is), but to say a guard should speak.
+The ViewModel that page binds to, the field components, the validation summary and the property-change events are in [blazor.md](references/blazor.md). Business logic in a `.razor` file or a ViewModel is the largest incident cluster in the record; the test is whether the logic could be unit-tested without a browser.
 
-**COMMON MISTAKE:** calling `MarkModified()` in a `[Create]` so the entity can be saved. New entities are already savable — `IsSavable` admits `IsNew`. Using it that way re-welds the two meanings and makes guards cry wolf on every new object.
+### Interface-first, and why
 
-**`IsNew` never aggregates.** It is per-object routing state; lists report `IsNew => false` and a parent's `IsNew` ignores its children. What flows up a graph is modification state — which is why attaching a child to a live parent (list add, or assigning a new child to a property) marks the child modified, so the parent becomes modified and savable.
+Every entity and list gets a matched public interface; concretes are `internal`; every reference uses the interface. Root interfaces extend `IEntityRoot` (adds `IsSavable` and `Save()`); child interfaces extend `IEntityBase`. Strongly recommended, not enforced - and the reason is a real bug: `EntityBase` gives every concrete `IsSavable`, and a modified child concrete reports `true` although children are saved by their root. Through `IEntityBase` the mistake is a compile error. The interfaces: [collections.md](references/collections.md); the child that cannot be saved: [entities.md](references/entities.md).
+
+### A rule that needs the server
+
+Two shapes, no preference: the rule takes the delegate of a `[Remote, Execute]` command, or an interface-factory domain service. On the client either one is a wrapped server call; a server-only service in a rule's constructor makes the entity impossible to build on the client. Both in [validation.md](references/validation.md) and [domain-logic-placement.md](references/domain-logic-placement.md). Bind the property on field commit, not per keystroke.
+
+### One class, two roles
+
+An entity type is a root, child-only, or both. Both: root operations take services and are `[Remote]`; child operations take the child's row from its parent and are `internal`. The factory method signature is the whole distinction, and an instance fetched as a child is saved by its list - calling `Save()` on it would route to the root `[Update]` and bypass the parent. [entities.md](references/entities.md#one-class-in-both-roles).
+
+### Value object, input model, read model
+
+A value object is a `record` ([base-classes.md](references/base-classes.md#a-value-object-is-a-record)). An input model is `ValidateBase` - rules, no persistence lifecycle of its own ([base-classes.md](references/base-classes.md)). A read model is a plain `[Factory]` class with `[Fetch]`, no base class. None of the three is an entity.
+
+### The server gate
+
+The root's `[Insert]` and `[Update]` run `RunRules(All)` and throw on an invalid aggregate before writing. That is the server's safety net against a caller that skipped `IsSavable` - a direct `factory.Save` - and callers never mirror it. The framework does not run it for you. [validation.md](references/validation.md) - the gate refuses.
+
+## Known pains
+
+The ones a new aggregate meets first; [pains.md](references/pains.md) has all of them with today's workaround.
+
+- `Save()` does not mark the entity busy; double-click sends two Inserts - [Neatoo#103](https://github.com/NeatooDotNet/Neatoo/issues/103).
+- `Save()` returns a new instance; a discarded result leaves a stale object - an analyzer is pending; until then, reassign.
+- A rule trigger on a collection *reference* (`t => t.Items`) fires only when the list is reassigned; trigger on the child property path (`t => t.Items![0].LineTotal`) - an analyzer is pending.
+- `LoadValue` inside a factory operation is wrong (the object is already paused) - an analyzer is pending.
+- Registering `AddNeatooAspNetCore` after `AddNeatooServices(Server)` breaks every remote Save - [RemoteFactory#117](https://github.com/NeatooDotNet/RemoteFactory/issues/117); the RemoteFactory skill has the safe shape.
+- `LazyLoad<T>` / `EntityLazyLoad` are being removed from RemoteFactory and Neatoo; build nothing new on them. The replacement is a `[Remote] [Fetch]` on the child list's factory - RemoteFactory skill.
+
+## References
+
+Each file is a mechanism reference under the decisions above. Every block in them is compiled.
+
+- [base-classes.md](references/base-classes.md) - the four base classes, the input model, the read model, the command, the job over entities, the value object record
+- [entities.md](references/entities.md) - the entity lifecycle: Create/Fetch/Insert/Update/Delete, IsNew vs IsModified, the child that cannot be saved, the list update, one class in both roles
+- [collections.md](references/collections.md) - lists, the aggregate interfaces, DeletedList, validity aggregation
+- [properties.md](references/properties.md) - partial properties, the property object, LoadValue, MarkReadOnly, pause
+- [validation.md](references/validation.md) - rule types, attributes and rules, the server gate, rules that reach the server
+- [rules-lifecycle.md](references/rules-lifecycle.md) - when rules fire and when they don't, the Fetch that computes what it needs, RunRulesFlag
+- [domain-logic-placement.md](references/domain-logic-placement.md) - rule, verb, seam, read model with the WorkOrder aggregate: admission, derived facts, chained rules, child triggers, Parent
+- [shared-rules.md](references/shared-rules.md) - one rule across several entity types
+- [blazor.md](references/blazor.md) - the save handler, the ViewModel over an aggregate, the page that binds facts, Neatoo on each tier, MudNeatoo
+- [testing.md](references/testing.md) - real Neatoo objects, the test host, the client/server pair
+- [source-generation.md](references/source-generation.md) - what the two generators produce
+- [trimming.md](references/trimming.md) - IL trimming for the Blazor client
+- [pitfalls.md](references/pitfalls.md) - the mistakes, each with its fix
+- [pains.md](references/pains.md) - open framework defects and missing analyzers, each with its issue and workaround
+- [lazy-loading.md](references/lazy-loading.md) - pending removal; do not copy
+
+Mechanism that used to live in this file lives in these references: the base-class quick reference and a complete entity → [base-classes.md](references/base-classes.md); the state properties, save routing, edit-then-save and the aggregate save cascade → [entities.md](references/entities.md); partial properties → [properties.md](references/properties.md); `Parent` (in a rule, a factory method, a verb), the aggregate as a graph and rules for open mutation, child-property triggers and the parent orchestrator → [domain-logic-placement.md](references/domain-logic-placement.md); the server gate and validation → [validation.md](references/validation.md); troubleshooting → [pitfalls.md](references/pitfalls.md).

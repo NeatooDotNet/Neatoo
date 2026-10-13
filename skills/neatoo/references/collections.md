@@ -23,6 +23,11 @@ public interface IOrder : IEntityRoot
     string? Status { get; set; }
     decimal TotalAmount { get; }
     IOrderItemList? Items { get; }
+
+    /// <summary>
+    /// Verb: moves the order to Submitted. Sets state; never persists.
+    /// </summary>
+    void Submit();
 }
 
 /// <summary>
@@ -50,7 +55,7 @@ public interface IOrderItemList : IEntityListBase<IOrderItem>
     int DeletedCount { get; }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs#L68-L109' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregate-interfaces' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs#L68-L114' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregate-interfaces' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The list loads its children through the child factory's `[Fetch]`, so each lands `IsNew=false`. The list is paused by its own factory operation while items are added, so nothing is marked modified:
@@ -77,15 +82,23 @@ The parent creates the list through the list factory inside its `[Create]`, neve
 <a id='snippet-skill-root-create'></a>
 ```cs
 [Create]
-public void Create([Service] IOrderItemListFactory itemsFactory)
+public async Task Create([Service] IOrderItemListFactory itemsFactory)
 {
     Items = itemsFactory.Create();
     OrderDate = DateTime.Today;
     Status = "Draft";
     OrderNumber = $"ORD-{DateTime.Now:yyyyMMddHHmmss}";
+
+    // This Create hands a form to a person. It decides that the form must
+    // not come back unvalidated: run the rules so the required fields show
+    // their messages at once and IsSavable is false until they are filled.
+    // The developer's choice for this operation - the framework never makes
+    // it - and not a step every Create ends with. All is safe here: the item
+    // list is empty.
+    await RunRules(RunRulesFlag.All);
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L105-L114' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-create' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L105-L122' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-root-create' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Adding Items
@@ -96,10 +109,10 @@ A child whose `[Create]` takes parameters is created by its factory and added:
 <a id='snippet-skill-add-item'></a>
 ```cs
 [TestMethod]
-public void AddItem_ItemJoinsAggregate()
+public async Task AddItem_ItemJoinsAggregate()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
 
     // Act
@@ -171,9 +184,9 @@ Adding sets `Parent` (the owning entity) and `Root` (the aggregate root) on the 
 <a id='snippet-skill-parent-and-root'></a>
 ```cs
 [TestMethod]
-public void AddItem_SetsParentAndRoot()
+public async Task AddItem_SetsParentAndRoot()
 {
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 5, 10.00m);
     Assert.IsNull(item.Parent, "Not attached yet");
 
@@ -220,7 +233,7 @@ public async Task Add_InvalidItem_ListBecomesInvalid()
 <sup><a href='/src/Design/Design.Tests/BaseClassTests/ValidateListBaseTests.cs#L60-L79' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-list-validity-aggregates' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-`RunRules()` on a list runs every item's rules. Use it to force a re-run — for example after a `[Create]` that set values while the object was paused — not as a routine step before reading `IsValid`. After a live edit, `await WaitForTasks()` is what waits for async rules:
+`RunRules()` on a list runs every item's rules. Inside an operation it computes the derived values the operation needs; from outside, it is the developer's choice to validate — an object a `[Create]` handed back unvalidated, which the caller decides to validate before showing it (the test below is that case). It is never the routine step before reading `IsValid`; after a live edit, `await WaitForTasks()` is what waits for async rules:
 
 <!-- snippet: skill-run-rules-after-create -->
 <a id='snippet-skill-run-rules-after-create'></a>
@@ -295,10 +308,10 @@ Understanding how EntityListBase handles removal is critical for correct persist
 <a id='snippet-skill-remove-new-item-discarded'></a>
 ```cs
 [TestMethod]
-public void RemoveNewItem_NotAddedToDeletedList()
+public async Task RemoveNewItem_NotAddedToDeletedList()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 1, 10.00m);
     order.Items!.Add(item);
     Assert.IsTrue(item.IsNew, "Created item should be new");
@@ -345,10 +358,10 @@ Attaching a child to a live list marks the child and the list modified, whether 
 <a id='snippet-skill-add-marks-modified'></a>
 ```cs
 [TestMethod]
-public void IsModified_TrueWhenNewItemAdded()
+public async Task IsModified_TrueWhenNewItemAdded()
 {
     // Arrange
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
 
     // Act
     var item = _itemFactory.Create("Widget", 1, 10.00m);
@@ -460,7 +473,7 @@ Use `ValidateListBase<I>` for collections of `ValidateBase` objects:
 /// - Parent-child relationships managed automatically
 /// </summary>
 [Factory]
-internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>, IDemoValueObjectList
+internal partial class DemoInputModelList : ValidateListBase<IDemoInputModel>, IDemoInputModelList
 {
     // ValidateListBase has no required constructor - uses default.
 
@@ -472,18 +485,18 @@ internal partial class DemoValueObjectList : ValidateListBase<IDemoValueObject>,
 
     [Remote]
     [Fetch]
-    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoValueObjectFactory valueObjectFactory)
+    internal void Fetch([Service] IDemoRepository repository, [Service] IDemoInputModelFactory inputModelFactory)
     {
         // The list is paused by its own factory operation (FactoryStart),
         // like any factory target. Each item is loaded by its own [Fetch].
         foreach (var name in repository.GetAllNames())
         {
-            Add(valueObjectFactory.Fetch(name));
+            Add(inputModelFactory.Fetch(name));
         }
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L331-L364' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/BaseClasses/AllBaseClasses.cs#L333-L366' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-validate-list' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Related

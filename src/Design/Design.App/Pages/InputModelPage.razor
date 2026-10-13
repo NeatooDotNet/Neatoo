@@ -1,0 +1,47 @@
+@page "/input-model"
+@using System.ComponentModel
+@using Design.Domain.BaseClasses
+@inject IDemoInputModelFactory Factory
+@implements IDisposable
+
+<PageTitle>Input model</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Input model</MudText>
+
+@* begin-snippet: skill-input-model-manual-binding *@
+@* MudNeatoo fields take an IEntityProperty; an input model's properties are
+   IValidateProperty, so the page binds the property object by hand: the value,
+   then the messages, busy and read-only state the property object carries; the value commits through SetValue, as MudNeatoo does. *@
+@{ var name = _model[nameof(IDemoInputModel.Name)]; }
+<MudTextField T="string"
+              Label="Name"
+              Value="@_model.Name"
+              ValueChanged="@(async (string v) => await name.SetValue(v))"
+              Error="@(!name.IsValid)"
+              ErrorText="@string.Join(" ", name.PropertyMessages.Select(m => m.Message))"
+              Disabled="@name.IsReadOnly" />
+@if (name.IsBusy)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+@* end-snippet *@
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private IDemoInputModel _model = null!;
+
+    protected override void OnInitialized()
+    {
+        _model = Factory.Create();
+        // Blazor does not subscribe on its own: an async rule that finishes
+        // later re-renders through this handler.
+        _model.PropertyChanged += OnModelChanged;
+    }
+
+    private void OnModelChanged(object? sender, PropertyChangedEventArgs e) => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => _model.PropertyChanged -= OnModelChanged;
+}

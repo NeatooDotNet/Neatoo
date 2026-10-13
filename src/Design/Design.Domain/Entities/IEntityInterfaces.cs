@@ -25,6 +25,8 @@ public interface IEmployee : IEntityRoot
     DateTime? HireDate { get; set; }
     decimal Salary { get; set; }
     bool IsActive { get; set; }
+    PayGrade? Grade { get; set; }
+    string? Notes { get; set; }
     IAddressList? Addresses { get; }
     string FullName { get; }
 }

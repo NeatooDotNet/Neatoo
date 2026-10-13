@@ -45,7 +45,7 @@ public static class DesignTestServices
                 // domain assembly. Server mode: every operation runs in-process.
                 services.AddNeatooServices(
                     NeatooFactory.Server,
-                    typeof(Design.Domain.BaseClasses.IDemoValueObject).Assembly);
+                    typeof(Design.Domain.BaseClasses.IDemoInputModel).Assembly);
 
                 // The domain's DI-provided rules, as both tiers would register them
                 services.AddDesignDomainRules();
@@ -100,6 +100,15 @@ public static class DesignTestServices
         services.AddTransient<Design.Domain.IGotcha2Repository, MockGotcha2Repository>();
         services.AddTransient<Design.Domain.IServerOnlyService, MockServerOnlyService>();
         services.AddTransient<Design.Domain.IGotcha5Repository, MockGotcha5Repository>();
+
+        // Domain service behind an interface factory: in Server mode the
+        // registrar does not register the interface, so the server (here, the
+        // test host) registers the implementation. The client registers nothing;
+        // it gets the generated proxy.
+        services.AddTransient<Design.Domain.Services.IShippingRateService, Design.Domain.Services.ShippingRateService>();
+
+        // Both-roles entity demo
+        services.AddScoped<Design.Domain.FactoryOperations.IDualUseRepository, MockDualUseRepository>();
     }
 
     /// <summary>
@@ -602,4 +611,34 @@ internal class MockApproveEmployeeRepository : Design.Domain.Commands.IApproveEm
 
     public void ApproveEmployee(int id, string? approverName, DateTime approvedDate)
         => Employees[id] = Employees[id] with { IsApproved = true };
+}
+
+// =============================================================================
+// Mock for the both-roles entity demo (RemoteBoundary.cs DualUseEntity)
+// =============================================================================
+
+internal class MockDualUseRepository : Design.Domain.FactoryOperations.IDualUseRepository
+{
+    private int _nextId = 100;
+
+    public Dictionary<int, (string Street, string City)> Store { get; } = new();
+
+    public int Seed(string street, string city)
+    {
+        var id = _nextId++;
+        Store[id] = (street, city);
+        return id;
+    }
+
+    public (int Id, string Street, string City) GetAddressById(int id)
+    {
+        var a = Store[id];
+        return (id, a.Street, a.City);
+    }
+
+    public int InsertAddress(string street, string city) => Seed(street, city);
+
+    public void UpdateAddress(int id, string street, string city) => Store[id] = (street, city);
+
+    public void DeleteAddress(int id) => Store.Remove(id);
 }

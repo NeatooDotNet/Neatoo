@@ -418,7 +418,7 @@ A regular (non-partial) computed getter is allowed but is not tracked: it raises
 // =========================================================================
 public string FullName => $"{FirstName} {LastName}";
 ```
-<sup><a href='/src/Design/Design.Domain/Entities/Employee.cs#L70-L80' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-plain-computed-getter' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Entities/Employee.cs#L78-L88' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-plain-computed-getter' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Marking a Property Read-Only at Runtime
@@ -571,7 +571,7 @@ UI data-binding works at the property level — the UI binds to each property vi
 [TestMethod]
 public async Task ChildPropertyChange_BubblesToTheRoot_WithADottedPath()
 {
-    var order = _orderFactory.Create();
+    var order = await _orderFactory.Create();
     var item = _itemFactory.Create("Widget", 1, 5.00m);
     order.Items!.Add(item);
 

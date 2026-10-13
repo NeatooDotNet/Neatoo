@@ -53,7 +53,7 @@ public static IServiceScope GetScope()
             // domain assembly. Server mode: every operation runs in-process.
             services.AddNeatooServices(
                 NeatooFactory.Server,
-                typeof(Design.Domain.BaseClasses.IDemoValueObject).Assembly);
+                typeof(Design.Domain.BaseClasses.IDemoInputModel).Assembly);
 
             // The domain's DI-provided rules, as both tiers would register them
             services.AddDesignDomainRules();
@@ -74,7 +74,7 @@ Mock repositories that a save writes to are registered **scoped**, so the test s
 
 ## Testing Validation
 
-Set the property, await `WaitForTasks()`, read `IsValid`. `RunRules()` is for forcing a re-run (for example after a `[Create]` that set values while paused), not the routine step before reading validity:
+Set the property, await `WaitForTasks()`, read `IsValid`. `RunRules()` is what an operation calls for the derived values it needs (rules do not fire while it runs), or what a caller uses when it chooses to validate an object handed back unvalidated; it is never the routine step before reading validity:
 
 <!-- snippet: skill-test-validation -->
 <a id='snippet-skill-test-validation'></a>
