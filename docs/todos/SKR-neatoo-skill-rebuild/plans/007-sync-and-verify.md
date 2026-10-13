@@ -4,7 +4,7 @@
 **Date:** 2026-10-09
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-8, AC-9
-**Status:** In Progress — waiting on the RemoteFactory skill sync
+**Status:** In Progress
 **Last Updated:** 2026-10-12 (drafted from the stub after SKR-006 merged)
 **Plan-review opt-in:** No — no code; the deliverable is the eval and the fixes it produces
 **Code-review opt-in:** No
@@ -98,8 +98,15 @@ Walked 2026-10-12 on `skr-arc` at `864ab78`.
 - **What changed:** the run mechanism is a headless `claude -p` per scenario from a scratch directory (no repository `CLAUDE.md`, no project memory); the sync is held until the RF skill is ready, so other sessions on this machine never see the new neatoo skill pointing at RF answers the installed RF skill lacks; RF-owned rows are reported, not fixed.
 - **Why:** pre-flight; the RF skill is not yet rebuilt.
 
+### 2026-10-12 — The user's call: run now, Neatoo rows gate
+
+- **Section affected:** Status, Steps 1–2, Acceptance bullet 2, Notes
+- **Original said:** the sync is held until the RF skill is ready; AC-9 covers every trap row.
+- **What changed:** the RF rebuild has no date (desktopRemoteFactory: it waits for EXSET). The user chose to run now with the RF repo copy (`RemoteFactory/skills/RemoteFactory` at `3e3823b`) installed in place of the pre-1.9.0 copy; AC-9 gates on the Neatoo-owned rows, and RF-owned misses go to desktopRemoteFactory. All three skills synced 2026-10-12, `diff -rq` empty; the previous installed copies are backed up in the session scratchpad.
+- **Why:** the user's decision; recorded in the todo's Discovery Log.
+
 ---
 
 ## Notes
 
-- Open question to the user/RF session: run now against the RF skill as installed and treat RF-owned misses as findings for the sibling, or wait for the RF rebuild.
+- The user decided 2026-10-12: run now (see Amendments).

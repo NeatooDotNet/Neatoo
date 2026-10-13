@@ -26,7 +26,7 @@ Someone building zCRM, human or Claude, opens `skills/neatoo` and can decide thr
 - [ ] **AC-6** · Should — mudneatoo's Blazor blocks come from Design.App.
 - [ ] **AC-7** · Should — The skill names each known framework pain with its issue or analyzer.
 - [ ] **AC-8** · Should — The installed copies in `~/.claude/skills` match `skills/` at close.
-- [ ] **AC-9** · Must — A fresh session given only the two installed skills and the zCRM scenarios falls into none of the habit-trap rows.
+- [ ] **AC-9** · Must — A fresh session given only the two installed skills and the zCRM scenarios falls into none of the Neatoo-owned habit-trap rows; the RF-owned rows it falls into are reported to the RemoteFactory sibling (user, 2026-10-12).
 - [ ] **AC-10** · Should — `SKILL.md` is at most about 400 lines, with the habit-trap table in the first screen after the model.
 
 ## Habit traps the skill must answer
@@ -102,6 +102,12 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 ---
 
 ## Discovery Log
+
+### 2026-10-12 — SKR-007 RF skill not rebuilt · serves AC-9, AC-8
+- **Finding:** The RemoteFactory skill rebuild (desktopRemoteFactory's Todo 2) has not started and waits for EXSET (12 plans, 1 merged); no date. Both RF skill copies are stale (installed: pre-1.9.0; repo: post-1.9.0, most audit findings still open). AC-9 as written cannot be met inside SKR.
+- **Decision:** Narrow (user). 007 runs now: neatoo and mudneatoo synced, the RF repo copy installed for the test; AC-9 gates on the Neatoo-owned rows; RF-owned rows the fresh session falls into go to desktopRemoteFactory as findings for Todo 2.
+- **Index changes:** AC-9 narrowed. Cap unchanged, 7 of 11 issued.
+- **Follow-up:** SKR-007; RF Todo 2's fresh-session test.
 
 ### 2026-10-09 — SKR · serves AC-1, AC-9
 - **Finding:** The orchestrator and the plan-reviewer both added a validate-before-save step to the job example by habit, with the fact present in the skill; the todo guaranteed structure and compiled code but not answers keyed to the habit's questions, nor a fresh-session test.
