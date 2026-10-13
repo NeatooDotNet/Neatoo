@@ -10,6 +10,7 @@
 **Code-review opt-in:** No — the deliverable is prose plus rendered regions; the test-reviewer's map check and plan 007's fresh-session test are the gates that fit
 **Branch:** skr-004-skill-model-and-decisions — cut from the arc at Step 2
 **PR:** #105
+
 ---
 
 ## Scope

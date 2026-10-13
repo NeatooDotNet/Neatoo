@@ -92,3 +92,83 @@ Must-affecting: none.
   - The 001–006 plan, test and code review files. Only grepped for verdicts and dispositions; the plans' Gate Records were relied on.
   - `src/Design/CLAUDE-DESIGN.md` and `.claude/rules/docs.md` (loaded, nothing turned on them).
   - VisionAlignment beyond §0.
+
+---
+
+## Close-Out Audit (Re-Audit) — 2026-10-12
+
+**Grade: A**
+
+Re-audit after PR #110 (`747b4e6`, merged into `skr-arc` at `aa09e89`). `gh pr list --state open --base skr-arc` is empty. The previous entry's veto is resolved by a cited change. Both callouts are disposed: one fixed, one accepted by the user and recorded. Every Acceptance Criterion still traces and holds.
+
+### Previous findings
+| Previous finding | Change | Verified |
+|---|---|---|
+| **Veto:** 005 → 007 untraced deferral, RF-owned rows in `pitfalls.md` | `skills/neatoo/references/pitfalls.md:15-19` now point at the RemoteFactory skill for the RF answers. They keep only the Neatoo half: `:15`, the rule that reaches the server (command delegate or interface-factory domain service → `validation.md`); `:19`, the list coordinating with `DeletedList` (→ `entities.md`). Discovery Log, "SKR close-out audit (grade C)": Fix. | Yes. I read the diff `16ed47d..aa09e89` and the rows; no RF answer is restated. |
+| **Callout 1:** mudneatoo LazyLoad removal without a log entry (AC-6, Should) | Accepted by the user and recorded: Discovery Log, "SKR close-out audit (grade C)" ("Out of Scope already says SKR copies none of it"). | Yes. Container item 7 is now satisfied by an authorizing entry. |
+| **Callout 2:** Neatoo#109 unnamed (AC-7, Should) | `references/pains.md:12`, an Open Defects row: symptom, the issue link, and the workaround (`Move`, then `MarkModified()` on the root; not `Remove` then `Insert`). | Yes. It matches the issue body. |
+| **Theoretical:** plan headers `PR: —` | Plans 004–007 now read `**PR:** #105`–`#108`. | Yes. See Theoretical below for a rendering side effect. |
+
+**User correction, outside the findings:** validating what an operation hands back is now "the developer's choice; the framework never makes it", not "rare". Discovery Log, "'Rare' is the wrong word".
+- **Where it changed:** `SKILL.md:36`; `collections.md`, `blazor.md`, `rules-lifecycle.md` and `testing.md`; the docs guides; `Order.cs:114-119`, `CommonGotchas.cs:52` and `OrderEditViewModel.cs:20`; VisionAlignment D18 (`:39`) and D26.
+- **Grep:** `rare validate|the rare case` outside `docs/todos` returns nothing. Of the remaining whole-word "rare" hits, `SKILL.md:100` and `VisionAlignment.md:185` are about `LoadValue` and `MarkModified`, and `VisionAlignment.md:39` records the clarification. None is about validation.
+- **Effect on the criteria:** AC-1's D18 read and AC-5 still hold against the revised D18 and D26.
+- **Re-render:** mdsnippets re-rendered every snippet that embeds `Order.cs` (line ranges shifted by one across `entities.md`, `collections.md` and the docs).
+
+### Acceptance Criteria Trace
+| AC | Word | Evidence (file:method:line) | Holds? | If not: accepted gap? |
+|---|---|---|---|---|
+| AC-1 | Must | Unchanged from the previous entry, except `SKILL.md:36`, reworded to match D18 as clarified 2026-10-12. | Yes | — |
+| AC-2 | Must | Unchanged. #110 added no fenced block. `lazy-loading.md:251` remains under the Out of Scope / D24 carve-out. | Yes, with the carve-out | — |
+| AC-3 | Must | Unchanged. #110 touched only comments in `Order.cs` and `CommonGotchas.cs`. | Yes | — |
+| AC-4 | Must | Unchanged. The `OrderEditViewModel.cs:20` change is comment-only. `Design.sln` builds 0/0 with 206 passing (regenerated logs). | Yes | — |
+| AC-5 | Must | Re-grepped: no end-of-operation prescription. The validate case is now worded as the developer's choice everywhere. | Yes | — |
+| AC-6 | Should | Unchanged. | Yes | — |
+| AC-7 | Should | `SKILL.md:306-315` and `pains.md:7-25`, now including Neatoo#109. `gh issue list`: no pain issue filed since. | Yes | — |
+| AC-8 | Should | `diff -rq` on both installed copies, run during this audit after the re-sync: no output, exit 0 for both. | Yes | — |
+| AC-9 | Must | Unchanged. #110's skill edits are wording and pointers; no trap answer changed direction. | Yes | — |
+| AC-10 | Should | `SKILL.md` still 337 lines; the table is at `:25`. | Yes | — |
+
+### Veto-Tier Findings
+None.
+
+### Callouts (Must in full; ≤ 5 Should/Could)
+None open. Prose budget (container item 8) is unchanged and listed under Container. It does not bear on any criterion.
+
+### Theoretical (not triaged)
+- Plans 004–007 lost the blank line between `**PR:** #10x` and `---`. In CommonMark that turns the header block into a setext H2 heading when rendered. The text is intact and plans 001–003 keep the blank line.
+- `CLAUDE.md:111` and `docs/guides/remote-factory.md:56` still say `IsSavable = true` after `[Create]` with no qualifier. Carried from the previous entry; on the Follow-on draft.
+
+### Build & Test
+- **Build:** PASSED.
+  - `reviews/final-design-build.log` (`Design.sln`, regenerated 20:30, around commit `747b4e6`): 0 errors, 0 warnings.
+  - `reviews/final-build.log` (`Neatoo.sln`): unchanged from the previous entry, 0 errors and 88 warnings in untouched projects. #110 changed no file in any `Neatoo.sln` project; its only code files are three Design comment edits.
+- **Tests:** 2,158 passed, 0 failed.
+  - `reviews/final-design-test.log`: 206 passed, 0 failed.
+  - `reviews/final-test.log`: 1,952 passed, 0 failed, 2 skipped (pre-existing).
+
+### Container
+- **Plans issued / cap:** 7 / 11.
+- **Status cells over budget:** 0.
+- **Untraced deferrals:** None. The 005 deferral was done in #110.
+- **Prose over budget:** the seven older Discovery Log entries are still over 60 words. The worst is "2026-10-11 — SKR-003 D18 clarified" at 163. The two new entries are within budget per section.
+- **Open PRs into the arc:** None. #110 is MERGED into `skr-arc`.
+- **Must accepted as gap without demotion:** None.
+
+### Follow-on (draft for Step 8)
+- Out of Scope: move the RemoteFactory pin 1.9.0 → 1.10.3. The same task withdraws "`[Execute]` must return `Task<T>`" (`ApproveEmployee.cs:50,170`, rendered into `references/base-classes.md`).
+- Out of Scope: remove the lazy-load surface (D24), including `lazy-loading.md:251`.
+- Out of Scope: the three analyzers. The skill links each as it lands (`SKILL.md:311-313`, `pains.md`).
+- RF sibling Todo 2: its fresh-session test against the rebuilt RF skill (Discovery Log 2026-10-12).
+- Doc debt: unqualified "after `[Create]`: `IsSavable = true`" at `CLAUDE.md:111` and `docs/guides/remote-factory.md:56`.
+- Accepted at the 002 code review: Design.Infrastructure's singleton stores are unsynchronized (header note).
+- Optional, per 007 Scope: a repeatable `claude plugin eval` suite.
+
+### Read report
+- **Read beyond the brief:**
+  - `git diff 16ed47d..aa09e89` over every file #110 touched.
+  - A whole-word "rare" grep beyond the given pattern.
+  - `gh issue list`, for pains filed since.
+  - The `cat -A` read of plan 004's header, which found the setext side effect.
+  - Log timestamps against the commit time.
+- **Named but unused:** none.

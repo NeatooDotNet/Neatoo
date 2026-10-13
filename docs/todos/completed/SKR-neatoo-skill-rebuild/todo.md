@@ -2,10 +2,10 @@
 
 **ID:** SKR
 **Type:** Enhancement
-**Status:** In Progress
+**Status:** Complete
 **Priority:** High
 **Created:** 2026-10-09
-**Last Updated:** 2026-10-11 (SKR-003 Done, PR #104)
+**Last Updated:** 2026-10-12 (closed: re-audit grade A)
 **Initial split:** 7 plans
 **Plan cap:** 11
 **Arc branch:** skr-arc
@@ -18,16 +18,16 @@ Someone building zCRM, human or Claude, opens `skills/neatoo` and can decide thr
 
 ## Acceptance Criteria
 
-- [ ] **AC-1** · Must — `SKILL.md` leads with the model, then answers every row of the habit-trap table at its decision point, with the type, operation, tier and placement decisions and the UI contract consistent with D1–D19.
-- [ ] **AC-2** · Must — Every C# block in `skills/neatoo` comes from a compiled `src/Design` region, except blocks labelled WRONG.
-- [ ] **AC-3** · Must — Design.Domain has a tested example of each Neatoo-owned type choice: aggregate, input model, read model, an entity reused by a job, and a rule that takes an interface-factory domain service.
-- [ ] **AC-4** · Must — Design.App and Design.Server build and test in CI and supply the Neatoo-owned tier-composition snippets (`AddNeatooServices` per tier, MudNeatoo, the UI contract); the RemoteFactory half is pointed at, not restated (user, 2026-10-11).
-- [ ] **AC-5** · Must — No skill, doc or Design.Domain text teaches running rules at the end of `[Create]` or `[Fetch]` as a routine step.
-- [ ] **AC-6** · Should — mudneatoo's Blazor blocks come from Design.App.
-- [ ] **AC-7** · Should — The skill names each known framework pain with its issue or analyzer.
-- [ ] **AC-8** · Should — The installed copies in `~/.claude/skills` match `skills/` at close.
-- [ ] **AC-9** · Must — A fresh session given only the two installed skills and the zCRM scenarios falls into none of the Neatoo-owned habit-trap rows; the RF-owned rows it falls into are reported to the RemoteFactory sibling (user, 2026-10-12).
-- [ ] **AC-10** · Should — `SKILL.md` is at most about 400 lines, with the habit-trap table in the first screen after the model.
+- [x] **AC-1** · Must — `SKILL.md` leads with the model, then answers every row of the habit-trap table at its decision point, with the type, operation, tier and placement decisions and the UI contract consistent with D1–D19.
+- [x] **AC-2** · Must — Every C# block in `skills/neatoo` comes from a compiled `src/Design` region, except blocks labelled WRONG.
+- [x] **AC-3** · Must — Design.Domain has a tested example of each Neatoo-owned type choice: aggregate, input model, read model, an entity reused by a job, and a rule that takes an interface-factory domain service.
+- [x] **AC-4** · Must — Design.App and Design.Server build and test in CI and supply the Neatoo-owned tier-composition snippets (`AddNeatooServices` per tier, MudNeatoo, the UI contract); the RemoteFactory half is pointed at, not restated (user, 2026-10-11).
+- [x] **AC-5** · Must — No skill, doc or Design.Domain text teaches running rules at the end of `[Create]` or `[Fetch]` as a routine step.
+- [x] **AC-6** · Should — mudneatoo's Blazor blocks come from Design.App.
+- [x] **AC-7** · Should — The skill names each known framework pain with its issue or analyzer.
+- [x] **AC-8** · Should — The installed copies in `~/.claude/skills` match `skills/` at close.
+- [x] **AC-9** · Must — A fresh session given only the two installed skills and the zCRM scenarios falls into none of the Neatoo-owned habit-trap rows; the RF-owned rows it falls into are reported to the RemoteFactory sibling (user, 2026-10-12).
+- [x] **AC-10** · Should — `SKILL.md` is at most about 400 lines, with the habit-trap table in the first screen after the model.
 
 ## Habit traps the skill must answer
 
@@ -159,26 +159,41 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 
 ## Skipped Steps
 
-- 
+- None. Plan review was opted out on 005–007 and code review on 004–007, each recorded in its plan header.
 
 ---
 
 ## Sibling Todos
 
-- RemoteFactory skill rebuild, in the RemoteFactory repository (ID assigned there), run by the desktopRemoteFactory session. Owns T3–T6, T13–T15, T11's RF half, model statements 1–4 and 6, rulings D3/D8/D11–D15, RemoteFactory#112. SKR-007 waits on its skill being synced. Its branches land on its own arc, not this one.
+- RemoteFactory skill rebuild, in the RemoteFactory repository (ID assigned there), run by the desktopRemoteFactory session. Owns T3–T6, T13–T15, T11's RF half, model statements 1–4 and 6, rulings D3/D8/D11–D15, RemoteFactory#112. Not started at close (it waits for EXSET in that repository); SKR-007 ran against the RF repository copy instead (user, 2026-10-12). Its branches land on its own arc, not this one.
 
 ---
 
 ## Close-Out Audit
 
+- 2026-10-12: grade C, one veto (an untraced deferral from 005) and two callouts; fixed and decided in PR #110. Re-audit 2026-10-12: **grade A**. `reviews/close-out-audit.md`.
+
 ---
 
 ## Follow-on
+
+- Move the RemoteFactory pin 1.9.0 → 1.10.3; withdraw "`[Execute]` must return `Task<T>`" (`ApproveEmployee.cs:50,170`, rendered in `references/base-classes.md`) · AC-1 · Should
+- Remove the lazy-load surface (D24), `lazy-loading.md` included, once RemoteFactory ships its removal · AC-2 · Should
+- The three analyzers (collection-reference trigger, `LoadValue` in an operation, discarded `Save()` result); link each from `pains.md` as it lands · AC-7 · Should
+- RF sibling Todo 2: its fresh-session test against the rebuilt RF skill, reusing `reviews/007-runs/` · AC-9 · Should
+- Doc debt: unqualified "after `[Create]`: `IsSavable = true`" at `CLAUDE.md:111` and `docs/guides/remote-factory.md:56` (`Order.Create` is the counterexample) · AC-1 · Should
+- Design.Infrastructure's singleton in-memory stores are unsynchronized (accepted at the 002 code review) · AC-4 · Could
+- A repeatable `claude plugin eval` suite over the five zCRM scenarios · AC-9 · Could
 
 ---
 
 ## Docs & Retro
 
+- Docs touched where the work required: the D18 and “rare” wording in `docs/guides`, re-rendered snippets, `VisionAlignment.md` D18 clarified and D26 added. No release notes: no package changes.
+- Retro: the fresh-session test found the one defect a cold read missed (a helper the example called but did not show). The two D18 misreadings, a validate step and then a ban on `RunRules`, are the same misunderstanding from opposite sides; the skill now states the distinction. Numbers: 7 of 11 plans issued, no plan queued from a finding; 7 punchlist rows, all worked; 1 dismissal; 7 Follow-on lines; plan review took a second round on 002, 003 and 004 and test review on 002 and 003 (none needed a third), and the close-out audit went C → A after one fix PR.
+
 ---
 
 ## Results / Conclusions
+
+`skills/neatoo` leads with the model and answers the ten Neatoo-owned habit questions, each with a compiled example. Every C# and Razor block in `skills/neatoo` and `skills/mudneatoo` comes from `src/Design` (which now includes Design.App and Design.Server), except the labelled WRONG blocks and `lazy-loading.md`, which is pending removal. A fresh session given only the installed skills fell into no trap row on the five zCRM scenarios.

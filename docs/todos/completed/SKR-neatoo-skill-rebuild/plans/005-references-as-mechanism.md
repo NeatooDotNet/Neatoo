@@ -10,6 +10,7 @@
 **Code-review opt-in:** No — prose plus rendered regions; the test-reviewer's map check and 007's fresh-session test are the gates that fit
 **Branch:** skr-005-references-as-mechanism — cut from the arc at Step 2
 **PR:** #106
+
 ---
 
 ## Scope
