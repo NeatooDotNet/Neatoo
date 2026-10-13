@@ -67,7 +67,7 @@ Scenarios for AC-9 (plan 007): a Contact aggregate with a Save button; a contact
 - Restructuring the user docs beyond the D18 edits AC-5 requires.
 - Fixing MudNeatoo components or adding bUnit coverage beyond what AC-6's snippets need.
 - Removing Neatoo's lazy-load surface (D24: `lazy-loading.md`, `LazyLoadProperty.cs`, Person's phone list, mudneatoo's `EntityLazyLoad`, #97): its own todo once RemoteFactory ships the removal. SKR builds nothing new on LazyLoad and copies none of it into the rebuilt skill.
-- Moving the RemoteFactory pin from 1.9.0 to 1.10.2 (D8; 1.10.2 listed 2026-10-11 with the #113 fix): its own task, with a full build and test. That task also withdraws "`[Execute]` must return `Task<T>`" (`ApproveEmployee.cs:50,170`, rendered into `references/base-classes.md`): from 1.10.2 a static `[Execute]` returns `Task` with no result or `Task<T>` with one, never `void`.
+- Moving the RemoteFactory pin from 1.9.0 to 1.10.3 (D8; 1.10.2 listed 2026-10-11 with the #113 fix; 1.10.3 listed 2026-10-12 with the #119 fix, which does not touch Neatoo's lists): its own task, with a full build and test. That task also withdraws "`[Execute]` must return `Task<T>`" (`ApproveEmployee.cs:50,170`, rendered into `references/base-classes.md`): from 1.10.2 a static `[Execute]` returns `Task` with no result or `Task<T>` with one, never `void`.
 
 ---
 
