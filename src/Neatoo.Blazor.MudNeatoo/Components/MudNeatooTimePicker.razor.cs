@@ -115,6 +115,15 @@ public partial class MudNeatooTimePicker : ComponentBase, IDisposable
 
     private TimeSpan? TypedValue => (TimeSpan?)this.EntityProperty.Value;
 
+    /// <summary>
+    /// Optional write path. When set, a change calls this instead of <c>EntityProperty.SetValue</c>,
+    /// so the control reads the property and writes through a verb on the entity (an intent the
+    /// property alone cannot carry). The value, messages, busy and read-only state still come from
+    /// <see cref="EntityProperty"/>. The returned task is awaited.
+    /// </summary>
+    [Parameter]
+    public Func<TimeSpan?, Task>? Setter { get; set; }
+
     protected override void OnInitialized()
     {
         this.EntityProperty.PropertyChanged += this.OnPropertyChanged;
@@ -122,7 +131,14 @@ public partial class MudNeatooTimePicker : ComponentBase, IDisposable
 
     private async Task OnValueChanged(TimeSpan? value)
     {
-        await this.EntityProperty.SetValue(value);
+        if (this.Setter is not null)
+        {
+            await this.Setter(value);
+        }
+        else
+        {
+            await this.EntityProperty.SetValue(value);
+        }
     }
 
     private async Task<IEnumerable<string>> ValidateAsync(TimeSpan? value)

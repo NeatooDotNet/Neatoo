@@ -464,5 +464,5 @@ When binding a MudBlazor component to a Neatoo entity property:
 
 1. **Is there a MudNeatoo wrapper?** → Use it with `EntityProperty="@entity[nameof(IEntity.Prop)]"`
 2. **No wrapper but parameters pass through?** → Use manual metadata binding (call `SetValue`, bind `IsBusy`/`IsReadOnly`/`DisplayName`)
-3. **Display-only (no editing)?** → Bind directly to `@entity.Prop`; the page's `PropertyChanged` subscription re-renders it (Blazor does not subscribe on its own)
+3. **Display-only (no editing)?** → Bind directly to `@entity.Prop` inside the component that subscribes to that entity's `PropertyChanged` (Blazor does not subscribe on its own)
 4. **Never:** Create a POCO, use `@bind-Value` to entity, use `EditForm`/`DataAnnotationsValidator`, or write `ValueChanged` handlers that assign to entity properties directly

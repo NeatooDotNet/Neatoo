@@ -1,0 +1,43 @@
+@page "/trainingplan"
+@using Design.App.Components
+@using Design.App.ViewModels
+@using Design.Domain.Aggregates.TrainingPlanAggregate
+@inject TrainingPlanViewModel Vm
+
+<PageTitle>Training Plan</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Training Plan</MudText>
+
+        @if (Vm.Plan is null)
+        {
+            <MudText>Loading...</MudText>
+        }
+        else
+        {
+            @* begin-snippet: skill-mud-component-is-the-unit-of-refresh *@
+            @* The page subscribes to nothing on the aggregate. Each input refreshes
+               from its own property; each component refreshes for what it shows.
+               The page re-renders only after its own gestures (an added row). *@
+            <MudNeatooNumericField T="int" EntityProperty="@Vm.Plan[nameof(ITrainingPlan.ApprovedMinutes)]" Class="mb-3" />
+
+            @foreach (var interval in Vm.Plan.Intervals!)
+            {
+                <IntervalRow @key="interval" Interval="@interval" />
+            }
+
+            <MudButton Variant="Variant.Outlined" OnClick="@(() => Vm.AddInterval("New interval"))" Class="mb-3">Add Interval</MudButton>
+
+            <PlanSummary Plan="@Vm.Plan" OnApprove="@(() => Vm.Approve("ada"))" />
+            @* end-snippet *@
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Vm.New();
+    }
+}

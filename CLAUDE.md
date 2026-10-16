@@ -29,6 +29,7 @@ The Neatoo Solution is at src/Neatoo.sln
 | `Neatoo.CodeFixes` | Code fixes paired with analyzers |
 | `Neatoo.Analyzers.Tests` | Tests for the analyzers and code fixes, run over Neatoo stubs |
 | `Neatoo.Blazor.MudNeatoo` | MudBlazor integration for Neatoo entities |
+| `Neatoo.Blazor.MudNeatoo.Tests` | bUnit tests that render the MudNeatoo inputs (the write path, `Setter`) |
 | `Neatoo.Console` | Console app for testing/debugging |
 | `Neatoo.UnitTest` | Main test project (Unit/, Integration/) |
 | `Neatoo.UnitTest.Demo` | Demo tests |

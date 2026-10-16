@@ -1,7 +1,7 @@
 ---
 name: MudNeatoo
-description: This skill should be used when writing or modifying .razor files that bind to Neatoo entities, when using MudBlazor components with Neatoo domain models, when the user mentions "MudNeatooTextField", "MudNeatooSelect", "MudNeatooDatePicker", "MudNeatooNumericField", "MudNeatooCheckBox", "NeatooValidationSummary", "EntityProperty", "@bind-Value with Neatoo", "form binding", "Blazor form", or asks to build a form, page, or dialog that edits a Neatoo entity. Also triggers when reviewing .razor files for correct Neatoo integration patterns. Assumes the Neatoo skill is also loaded for domain model concepts.
-version: 2.0.0
+description: This skill should be used when writing or modifying .razor files that bind to Neatoo entities, when using MudBlazor components with Neatoo domain models, when the user mentions "MudNeatooTextField", "MudNeatooSelect", "MudNeatooDatePicker", "MudNeatooNumericField", "MudNeatooCheckBox", "NeatooValidationSummary", "EntityProperty", "@bind-Value with Neatoo", "form binding", "Blazor form", "Setter", "verb-bound control", "re-render", "StateHasChanged", or asks to build a form, page, or dialog that edits a Neatoo entity. Also triggers when reviewing .razor files for correct Neatoo integration patterns. Assumes the Neatoo skill is also loaded for domain model concepts.
+version: 2.1.0
 ---
 
 # MudNeatoo — Blazor Binding for Neatoo Entities
@@ -50,10 +50,10 @@ Every MudNeatoo component takes an `EntityProperty` parameter — the `IEntityPr
 
 The component automatically:
 - Displays `DisplayName` as the label
-- Calls `SetValue()` on change (triggers business rules). `MudNeatooTextField` and `MudNeatooNumericField` are `Immediate="false"`: they commit when the field loses focus, so a rule behind them runs once per committed value, not per keystroke
+- Calls `SetValue()` on change (triggers business rules), or the `Setter` you pass ([Verb-Bound Controls](#verb-bound-controls-setter)). `MudNeatooTextField` and `MudNeatooNumericField` are `Immediate="false"`: they commit when the field loses focus, so a rule behind them runs once per committed value, not per keystroke
 - Shows `PropertyMessages` as validation errors
 - Disables when `IsBusy` (async rules running) or when the caller passes `Disabled="true"`
-- Sets read-only when `IsReadOnly`
+- Sets read-only when `IsReadOnly` (every input except the slider, which has no read-only binding)
 
 ### What NOT to Do
 
@@ -102,7 +102,23 @@ See `references/anti-patterns.md` for the complete anti-pattern catalog with rea
 | `MudNeatooAutocomplete<T>` | `MudAutocomplete<T>` | Any type |
 | `NeatooValidationSummary` | `MudAlert` | (entity-level errors) |
 
-Each component forwards a curated set of its wrapped MudBlazor component's parameters — `Variant`, `Margin`, `HelperText`, `Adornment`, `Class`, and others — not every parameter (`MudNeatooTextField` has no `Mask`, `Label` or `Converter`, for example). Two are never forwarded: **`ReadOnly`** (hardcoded to `EntityProperty.IsReadOnly`; see ReadOnly Behavior below) and **`Disabled`** (OR'd with `EntityProperty.IsBusy`; see Disabled Behavior below). A parameter that is not forwarded means Manual Metadata Binding for that field.
+Each component declares its parameters; none captures unmatched attributes, so a MudBlazor parameter that is not in this table is not accepted. Every input also takes `EntityProperty`, `Disabled`, `Setter` and `Class`.
+
+| Component | Forwards |
+|---|---|
+| `MudNeatooTextField<T>` | `Variant`, `Margin`, `Lines`, `Sizing`, `MaxLines`, `HelperText`, `HelperTextOnFocus`, `Placeholder`, `Adornment`, `AdornmentIcon`, `AdornmentColor`, `UserAttributes` |
+| `MudNeatooNumericField<T>` | `Variant`, `Margin`, `HelperText`, `HelperTextOnFocus`, `Placeholder`, `Adornment`, `AdornmentIcon`, `AdornmentText`, `AdornmentColor`, `Format`, `Min`, `Max`, `Step`, `HideSpinButtons` |
+| `MudNeatooSelect<T>` | `ChildContent`, `Variant`, `Margin`, `Dense`, `HelperText`, `Placeholder`, `Clearable` |
+| `MudNeatooAutocomplete<T>` | `SearchFunc`, `ToStringFunc`, `ItemTemplate`, `Variant`, `Margin`, `Dense`, `HelperText`, `HelperTextOnFocus`, `Placeholder`, `Clearable`, `ResetValueOnEmptyText`, `CoerceText`, `CoerceValue`, `DebounceInterval`, `MinCharacters`, `MaxItems`, `Adornment`, `AdornmentIcon`, `AdornmentColor`, `ShowProgressIndicator`, `ProgressIndicatorColor` |
+| `MudNeatooDatePicker` | `Variant`, `Margin`, `HelperText`, `HelperTextOnFocus`, `Placeholder`, `DateFormat`, `Editable`, `Clearable`, `MinDate`, `MaxDate`, `PickerVariant`, `Orientation`, `Color`, `FirstDayOfWeek`, `AdornmentIcon`, `AdornmentColor` |
+| `MudNeatooDateRangePicker` | the date picker's, without `Orientation` |
+| `MudNeatooTimePicker` | `Variant`, `Margin`, `HelperText`, `HelperTextOnFocus`, `Placeholder`, `TimeFormat`, `Editable`, `Clearable`, `AmPm`, `PickerVariant`, `Orientation`, `Color`, `AdornmentIcon`, `AdornmentColor` |
+| `MudNeatooCheckBox<T>` | `Label`, `Color`, `UncheckedColor`, `Size`, `Dense`, `TriState`, `ShowValidation` |
+| `MudNeatooSwitch<T>` | `Label`, `Color`, `UncheckedColor`, `Size`, `ThumbIcon`, `ThumbIconColor`, `ShowValidation` |
+| `MudNeatooRadioGroup<T>` | `ChildContent`, `ShowValidation` |
+| `MudNeatooSlider<T>` | `Label`, `ChildContent`, `Min`, `Max`, `Step`, `Variant`, `Color`, `Size`, `Immediate`, `TickMarks`, `TickMarkLabels`, `ValueLabel`, `ShowValidation` |
+
+Two are never forwarded: **`ReadOnly`** (hardcoded to `EntityProperty.IsReadOnly`; see ReadOnly Behavior below) and **`Disabled`** (OR'd with `EntityProperty.IsBusy`; see Disabled Behavior below). A parameter that is not forwarded means Manual Metadata Binding for that field.
 
 In Razor, a component's `T` cannot carry a nullable reference annotation (`T="PayGrade?"` raises CS8669 in the generated code); use the type itself (`T="PayGrade"`) for a nullable reference-type property.
 
@@ -217,9 +233,181 @@ Display all entity-level validation errors in a `MudAlert`:
 
 Parameters: `Entity` (required, `IValidateMetaProperties`), `ShowHeader`, `HeaderText`, `Dense`, `IncludePropertyNames`, `Variant`, `Elevation`, `Class`.
 
+## Verb-Bound Controls: `Setter`
+
+A control usually writes a fact: the input binds a property and writes it. When one fact is written with two meanings, the property has two verbs, and a control that means one of them reads the property and writes through its verb. Every input takes an optional `Setter` (`Func<T, Task>`). When it is set, a change calls it, awaited, instead of `EntityProperty.SetValue`; the value, label, messages and busy state still come from `EntityProperty`, so the control looks and refreshes like any other.
+
+In the TrainingPlan row, the effort slider and the lock switch write facts, a nudge button writes the next mark the domain publishes, and the minutes slider reads `Minutes` and writes `SlideMinutes`, which fits the other intervals around this one for one cascade:
+
+<!-- snippet: skill-mud-verb-bound-control -->
+<a id='snippet-skill-mud-verb-bound-control'></a>
+```razor
+@* One interval's row. Every input refreshes itself from its own property.
+   The row re-renders for its own interval's changes (its own properties and
+   meta flags), never for the rest of the plan; the minutes text needs it. *@
+<MudGrid Spacing="2" Class="mb-2">
+    <MudItem xs="12" sm="3">
+        <MudNeatooTextField T="string" EntityProperty="@Interval[nameof(IInterval.Name)]" />
+    </MudItem>
+    <MudItem xs="12" sm="4">
+        @* A fact: the slider writes Effort, and the fit follows whoever wrote it. *@
+        <MudNeatooSlider T="int" EntityProperty="@Interval[nameof(IInterval.Effort)]" Min="1" Max="10" Step="1" />
+        @* A nudge is the same fact: the domain publishes the next mark, the button writes it. *@
+        <MudIconButton Icon="@Icons.Material.Filled.Remove" OnClick="@(() => Interval.SetEffort(Interval.NextEffortDown))" />
+        <MudIconButton Icon="@Icons.Material.Filled.Add" OnClick="@(() => Interval.SetEffort(Interval.NextEffortUp))" />
+    </MudItem>
+    <MudItem xs="12" sm="4">
+        @* An intent: the slider reads Minutes and writes through SlideMinutes,
+           which fits the other intervals around this one for one cascade. *@
+        <MudNeatooSlider T="int" EntityProperty="@Interval[nameof(IInterval.Minutes)]"
+                         Setter="@Interval.SlideMinutes"
+                         Min="0" Max="240" Step="1" />
+        <MudText Typo="Typo.caption">@Interval.Minutes min</MudText>
+    </MudItem>
+    <MudItem xs="12" sm="1">
+        @* Locking and unlocking are plain writes of a fact. *@
+        <MudNeatooSwitch T="bool" EntityProperty="@Interval[nameof(IInterval.MinutesLocked)]" />
+    </MudItem>
+</MudGrid>
+```
+<sup><a href='/src/Design/Design.App/Components/IntervalRow.razor#L5-L33' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-verb-bound-control' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The decision is the domain's, not the control's: if the verb carries no intent the property cannot hold, drop the `Setter` and bind the fact. Never hand-write a control to call a verb; the `Setter` keeps the busy, message and refresh handling the component already has.
+
+**Read-only applies as before.** Every input except the slider binds `ReadOnly` to `EntityProperty.IsReadOnly`, and a `private set` property is read-only. So today a verb-bound text, numeric or picker field needs a property with a public setter; the slider, which has no read-only binding, takes a `private set` property, as `Minutes` is.
+
+## The Component Is the Unit of Refresh
+
+Blazor re-renders by component; there is no binding engine. Every MudNeatoo input subscribes to its own property wrapper and re-renders itself, so a page never has to redraw for an edit inside an input. What a page or component displays outside an input - a total, a status, a button's enabled state - re-renders only when that component does. So each region that displays facts is a component that subscribes for what it shows, and the page subscribes to nothing it does not display itself.
+
+The TrainingPlan page has no subscription at all. The row component above re-renders for its own interval's `PropertyChanged` (its own properties and meta flags). The summary re-renders for the plan's own facts, which the rules wrote:
+
+<!-- snippet: skill-mud-component-is-the-unit-of-refresh -->
+<a id='snippet-skill-mud-component-is-the-unit-of-refresh'></a>
+```razor
+@* The page subscribes to nothing on the aggregate. Each input refreshes
+   from its own property; each component refreshes for what it shows.
+   The page re-renders only after its own gestures (an added row). *@
+<MudNeatooNumericField T="int" EntityProperty="@Vm.Plan[nameof(ITrainingPlan.ApprovedMinutes)]" Class="mb-3" />
+
+@foreach (var interval in Vm.Plan.Intervals!)
+{
+    <IntervalRow @key="interval" Interval="@interval" />
+}
+
+<MudButton Variant="Variant.Outlined" OnClick="@(() => Vm.AddInterval("New interval"))" Class="mb-3">Add Interval</MudButton>
+
+<PlanSummary Plan="@Vm.Plan" OnApprove="@(() => Vm.Approve("ada"))" />
+```
+<sup><a href='/src/Design/Design.App/Pages/TrainingPlanPage.razor#L19-L33' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-component-is-the-unit-of-refresh' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The row's subscription takes its entity as a parameter, so it subscribes in `OnParametersSet`, moves when the parameter changes, and unsubscribes on dispose. Key each row on its item (`@key="interval"`): a MudNeatoo input subscribes to its property wrapper once, when it is first rendered, so a row reused for another item would keep listening to the old item's wrappers.
+
+<!-- snippet: skill-mud-row-subscription -->
+<a id='snippet-skill-mud-row-subscription'></a>
+```razor
+[Parameter, EditorRequired]
+public IInterval Interval { get; set; } = default!;
+
+private IInterval? _subscribed;
+
+// The row subscribes to its own interval's PropertyChanged (its own
+// properties and meta flags), not to the plan's graph.
+protected override void OnParametersSet()
+{
+    if (ReferenceEquals(_subscribed, Interval))
+    {
+        return;
+    }
+
+    if (_subscribed is not null)
+    {
+        _subscribed.PropertyChanged -= OnIntervalChanged;
+    }
+
+    _subscribed = Interval;
+    _subscribed.PropertyChanged += OnIntervalChanged;
+}
+
+private void OnIntervalChanged(object? sender, PropertyChangedEventArgs e) => InvokeAsync(StateHasChanged);
+
+public void Dispose()
+{
+    if (_subscribed is not null)
+    {
+        _subscribed.PropertyChanged -= OnIntervalChanged;
+    }
+}
+```
+<sup><a href='/src/Design/Design.App/Components/IntervalRow.razor#L36-L69' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-row-subscription' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-mud-summary-component -->
+<a id='snippet-skill-mud-summary-component'></a>
+```razor
+@* The plan's own facts, in the one component that displays them. It
+   re-renders when the plan's own properties or meta flags change; an
+   interval's edit reaches it only through the facts the rules wrote here. *@
+<MudText Typo="Typo.subtitle1">Planned @Plan.PlannedMinutes of @Plan.ApprovedMinutes minutes · @Plan.Status</MudText>
+<MudButton Variant="Variant.Filled" Disabled="@(!Plan.CanApprove)" OnClick="@OnApprove">Approve</MudButton>
+```
+<sup><a href='/src/Design/Design.App/Components/PlanSummary.razor#L5-L11' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-summary-component' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The ViewModel holds the plan and forwards the two gestures that are not a control's:
+
+<!-- snippet: skill-mud-training-plan-viewmodel -->
+<a id='snippet-skill-mud-training-plan-viewmodel'></a>
+```cs
+/// <summary>
+/// ViewModel for the TrainingPlan screen: holds the plan and forwards its two gestures.
+/// </summary>
+internal sealed class TrainingPlanViewModel
+{
+    private readonly ITrainingPlanFactory _factory;
+
+    public TrainingPlanViewModel(ITrainingPlanFactory factory)
+    {
+        _factory = factory;
+    }
+
+    /// <summary>The aggregate the page and its components bind to. Null until created.</summary>
+    public ITrainingPlan? Plan { get; private set; }
+
+    public async Task New()
+    {
+        Plan = await _factory.Create();
+    }
+
+    /// <summary>A new interval joins the plan; the fit shares the minutes again.</summary>
+    public async Task AddInterval(string name)
+    {
+        if (Plan is not null)
+        {
+            await Plan.AddInterval(name, 5);
+        }
+    }
+
+    /// <summary>Calls the verb. The Approve button is enabled by the plan's own CanApprove.</summary>
+    public async Task Approve(string approver)
+    {
+        if (Plan is not null)
+        {
+            await Plan.Approve(approver);
+        }
+    }
+}
+```
+<sup><a href='/src/Design/Design.App/ViewModels/TrainingPlanViewModel.cs#L17-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-training-plan-viewmodel' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+Subscribing a whole page to the root's `NeatooPropertyChanged` redraws everything for every change anywhere in the graph. That is acceptable for a small form like the one below, whose page displays the Save button. On a large screen it redraws on every notification, so move each displayed region into its own component and subscribe there to the narrowest object: a property wrapper, an entity's `PropertyChanged`, or a child entity's.
+
 ## Page Structure Pattern
 
-A complete edit page: the ViewModel holds the aggregate and saves it; the page binds the entity's property wrappers and owns the subscription that re-renders it.
+A complete edit page: the ViewModel holds the aggregate and saves it; the page binds the entity's property wrappers and, because it displays the Save button, subscribes to re-render for it. A screen with more regions follows [The Component Is the Unit of Refresh](#the-component-is-the-unit-of-refresh).
 
 <!-- snippet: skill-mud-page -->
 <a id='snippet-skill-mud-page'></a>
@@ -457,7 +645,7 @@ internal sealed class EmployeeEditViewModel
 
 1. **Inject the ViewModel; the ViewModel takes the factory interface** — never the concrete class.
 2. **Bind the Save button to `IsSavable`** (through the ViewModel's `CanSave`) — it combines `IsValid && (IsModified || IsNew) && !IsBusy`, so a freshly created entity enables the button without reporting unsaved changes.
-3. **The page owns the subscription.** Input components subscribe to their own property wrappers; the Save button and any display binding read the entity, so the page subscribes to the entity and calls `StateHasChanged`. `NeatooPropertyChanged` carries every change in the graph; `PropertyChanged` alone is enough when only root-level flags (`IsSavable`, `IsValid`, `IsBusy`) are read, because they bubble through it. See `references/property-change-events.md`.
+3. **Subscribe only for what this component displays.** Input components subscribe to their own property wrappers. This page displays the Save button, so it subscribes to the entity and calls `StateHasChanged`; a page that displays nothing outside its inputs and components subscribes to nothing.
 4. **`WaitForTasks()` before save** — the ViewModel's save handler waits for async rules, then asks `IsSavable`.
 5. **Replace the entity reference after save** — `Save()` returns a new instance. The ViewModel reassigns; the page moves its subscription to the new instance, and `@key` rebuilds the bound components so each subscribes to the new instance's wrappers.
 6. **Implement `IDisposable`** — unsubscribe on dispose.

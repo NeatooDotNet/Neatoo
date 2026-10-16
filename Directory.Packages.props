@@ -42,5 +42,6 @@
     <PackageVersion Include="Moq.EntityFrameworkCore" Version="10.0.0" />
     <!-- Testing - Coverage -->
     <PackageVersion Include="coverlet.collector" Version="8.0.0" />
+    <PackageVersion Include="bunit" Version="2.11.3" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,70 @@
+@using System.ComponentModel
+@using Design.Domain.Aggregates.TrainingPlanAggregate
+@implements IDisposable
+
+@* begin-snippet: skill-mud-verb-bound-control *@
+@* One interval's row. Every input refreshes itself from its own property.
+   The row re-renders for its own interval's changes (its own properties and
+   meta flags), never for the rest of the plan; the minutes text needs it. *@
+<MudGrid Spacing="2" Class="mb-2">
+    <MudItem xs="12" sm="3">
+        <MudNeatooTextField T="string" EntityProperty="@Interval[nameof(IInterval.Name)]" />
+    </MudItem>
+    <MudItem xs="12" sm="4">
+        @* A fact: the slider writes Effort, and the fit follows whoever wrote it. *@
+        <MudNeatooSlider T="int" EntityProperty="@Interval[nameof(IInterval.Effort)]" Min="1" Max="10" Step="1" />
+        @* A nudge is the same fact: the domain publishes the next mark, the button writes it. *@
+        <MudIconButton Icon="@Icons.Material.Filled.Remove" OnClick="@(() => Interval.SetEffort(Interval.NextEffortDown))" />
+        <MudIconButton Icon="@Icons.Material.Filled.Add" OnClick="@(() => Interval.SetEffort(Interval.NextEffortUp))" />
+    </MudItem>
+    <MudItem xs="12" sm="4">
+        @* An intent: the slider reads Minutes and writes through SlideMinutes,
+           which fits the other intervals around this one for one cascade. *@
+        <MudNeatooSlider T="int" EntityProperty="@Interval[nameof(IInterval.Minutes)]"
+                         Setter="@Interval.SlideMinutes"
+                         Min="0" Max="240" Step="1" />
+        <MudText Typo="Typo.caption">@Interval.Minutes min</MudText>
+    </MudItem>
+    <MudItem xs="12" sm="1">
+        @* Locking and unlocking are plain writes of a fact. *@
+        <MudNeatooSwitch T="bool" EntityProperty="@Interval[nameof(IInterval.MinutesLocked)]" />
+    </MudItem>
+</MudGrid>
+@* end-snippet *@
+
+@code {
+    @* begin-snippet: skill-mud-row-subscription *@
+    [Parameter, EditorRequired]
+    public IInterval Interval { get; set; } = default!;
+
+    private IInterval? _subscribed;
+
+    // The row subscribes to its own interval's PropertyChanged (its own
+    // properties and meta flags), not to the plan's graph.
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_subscribed, Interval))
+        {
+            return;
+        }
+
+        if (_subscribed is not null)
+        {
+            _subscribed.PropertyChanged -= OnIntervalChanged;
+        }
+
+        _subscribed = Interval;
+        _subscribed.PropertyChanged += OnIntervalChanged;
+    }
+
+    private void OnIntervalChanged(object? sender, PropertyChangedEventArgs e) => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.PropertyChanged -= OnIntervalChanged;
+        }
+    }
+    @* end-snippet *@
+}
