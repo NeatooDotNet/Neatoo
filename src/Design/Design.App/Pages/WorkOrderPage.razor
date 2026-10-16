@@ -1,5 +1,7 @@
 @page "/workorders/new"
 @page "/workorders/{Id:guid}"
+@using System.ComponentModel
+@using Design.App.Components
 @using Design.App.ViewModels
 @using Design.Domain.Aggregates.WorkOrderAggregate
 @inject WorkOrderViewModel Vm
@@ -52,20 +54,8 @@
             {
                 @foreach (var task in Vm.WorkOrder.Tasks)
                 {
-                    <MudGrid Class="mb-2" Spacing="2">
-                        <MudItem xs="12" sm="5">
-                            <MudNeatooTextField T="string" EntityProperty="@task[nameof(IWorkOrderTask.Name)]" />
-                        </MudItem>
-                        <MudItem xs="6" sm="2">
-                            <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Hours)]" />
-                        </MudItem>
-                        <MudItem xs="6" sm="2">
-                            <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Rate)]" />
-                        </MudItem>
-                        <MudItem xs="12" sm="3" Class="d-flex align-center">
-                            <MudText>@task.Cost.ToString("C")</MudText>
-                        </MudItem>
-                    </MudGrid>
+                    @* Each row is a component that refreshes for its own task. *@
+                    <WorkOrderTaskEditor @key="task" Item="@task" />
                 }
             }
 
@@ -113,18 +103,21 @@
         Resubscribe();
     }
 
+    // The page shows the work order's own facts (IsHeld, IsOverBudget, TotalCost,
+    // CanApprove), so it re-renders on the work order's own PropertyChanged. A
+    // task's facts are its row's to show.
     private void Resubscribe()
     {
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+            _subscribed.PropertyChanged -= OnEntityChanged;
         }
 
         _subscribed = Vm.WorkOrder;
 
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged += OnEntityChanged;
+            _subscribed.PropertyChanged += OnEntityChanged;
         }
     }
 
@@ -137,16 +130,13 @@
         StateHasChanged();
     }
 
-    private Task OnEntityChanged(NeatooPropertyChangedEventArgs e)
-    {
-        return InvokeAsync(StateHasChanged);
-    }
+    private void OnEntityChanged(object? sender, PropertyChangedEventArgs e) => InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+            _subscribed.PropertyChanged -= OnEntityChanged;
         }
     }
 }

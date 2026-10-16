@@ -45,7 +45,7 @@ Every MudNeatoo component takes an `EntityProperty` parameter — the `IEntityPr
 <MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.LastName)]" Variant="Variant.Outlined" Class="mb-3" />
 <MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.Email)]" Variant="Variant.Outlined" Class="mb-3" />
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L32-L36' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-text-field' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L34-L38' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-text-field' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The component automatically:
@@ -143,7 +143,7 @@ In Razor, a component's `T` cannot carry a nullable reference annotation (`T="Pa
                     UserAttributes="@(new() { ["spellcheck"] = "true" })"
                     Class="mb-3" />
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L75-L86' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-multiline' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L77-L88' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-multiline' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Multi-line text: `Lines`, `Sizing`, `MaxLines`
@@ -167,7 +167,7 @@ In Razor, a component's `T` cannot carry a nullable reference annotation (`T="Pa
                        AdornmentText="$"
                        Class="mb-3" />
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L46-L52' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-numeric-field' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-numeric-field' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Select with Options
@@ -192,7 +192,7 @@ The options are values of the property's type; selecting one assigns it. Here th
     }
 </MudNeatooSelect>
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L58-L73' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-select' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L60-L75' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-select' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Date Picker
@@ -206,7 +206,7 @@ The options are values of the property's type; selecting one assigns it. Here th
                      Editable="true"
                      Class="mb-3" />
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L38-L44' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-date-picker' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L40-L46' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-date-picker' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### CheckBox
@@ -216,7 +216,7 @@ The options are values of the property's type; selecting one assigns it. Here th
 ```razor
 <MudNeatooCheckBox T="bool" EntityProperty="@Vm.Employee[nameof(IEmployee.IsActive)]" Label="Active" Class="mb-3" />
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L54-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-checkbox' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L56-L58' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-checkbox' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Validation Summary
@@ -228,7 +228,7 @@ Display all entity-level validation errors in a `MudAlert`:
 ```razor
 <NeatooValidationSummary Entity="@Vm.Employee" ShowHeader="false" Dense="true" Class="mb-4" />
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L28-L30' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-validation-summary' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L30-L32' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-validation-summary' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Parameters: `Entity` (required, `IValidateMetaProperties`), `ShowHeader`, `HeaderText`, `Dense`, `IncludePropertyNames`, `Variant`, `Elevation`, `Class`.
@@ -403,11 +403,11 @@ internal sealed class TrainingPlanViewModel
 <sup><a href='/src/Design/Design.App/ViewModels/TrainingPlanViewModel.cs#L17-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-training-plan-viewmodel' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Subscribing a whole page to the root's `NeatooPropertyChanged` redraws everything for every change anywhere in the graph. That is acceptable for a small form like the one below, whose page displays the Save button. On a large screen it redraws on every notification, so move each displayed region into its own component and subscribe there to the narrowest object: a property wrapper, an entity's `PropertyChanged`, or a child entity's.
+**A page never subscribes to the root's `NeatooPropertyChanged`.** That event carries every change anywhere in the graph, so a page subscribed to it redraws everything for each one. A page subscribes to its root's own `PropertyChanged` (the root's own properties and meta flags) for what it shows of the root: a total, a status, the Save button. Every child row that shows a child's fact is a component that subscribes to that child. The Employee, Order and WorkOrder pages below follow this rule, as the TrainingPlan page does.
 
 ## Page Structure Pattern
 
-A complete edit page: the ViewModel holds the aggregate and saves it; the page binds the entity's property wrappers and, because it displays the Save button, subscribes to re-render for it. A screen with more regions follows [The Component Is the Unit of Refresh](#the-component-is-the-unit-of-refresh).
+A complete edit page: the ViewModel holds the aggregate and saves it; the page binds the entity's property wrappers and, because it displays the Save button and the view-mode text, subscribes to the employee's own `PropertyChanged`. A screen with more regions follows [The Component Is the Unit of Refresh](#the-component-is-the-unit-of-refresh).
 
 <!-- snippet: skill-mud-page -->
 <a id='snippet-skill-mud-page'></a>
@@ -482,7 +482,7 @@ else
 }
 </div>
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L20-L104' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-page' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L22-L106' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-page' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-mud-page-code -->
@@ -507,21 +507,22 @@ else
         Resubscribe();
     }
 
-    // The page owns the subscription: the input components subscribe to their
-    // own property wrappers, but the Save button and the view-mode text read
-    // the entity, so the page re-renders on the graph-wide event.
+    // The input components subscribe to their own property wrappers. The Save
+    // button and the view-mode text read the employee itself, so the page
+    // re-renders on the employee's own PropertyChanged: its own properties and
+    // meta flags. It has no child list, so nothing else is needed.
     private void Resubscribe()
     {
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+            _subscribed.PropertyChanged -= OnEntityChanged;
         }
 
         _subscribed = Vm.Employee;
 
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged += OnEntityChanged;
+            _subscribed.PropertyChanged += OnEntityChanged;
         }
     }
 
@@ -540,21 +541,18 @@ else
         StateHasChanged();
     }
 
-    private Task OnEntityChanged(NeatooPropertyChangedEventArgs e)
-    {
-        return InvokeAsync(StateHasChanged);
-    }
+    private void OnEntityChanged(object? sender, PropertyChangedEventArgs e) => InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+            _subscribed.PropertyChanged -= OnEntityChanged;
         }
     }
 }
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L109-L175' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-page-code' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L111-L175' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-page-code' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The ViewModel it injects:
@@ -645,7 +643,7 @@ internal sealed class EmployeeEditViewModel
 
 1. **Inject the ViewModel; the ViewModel takes the factory interface** — never the concrete class.
 2. **Bind the Save button to `IsSavable`** (through the ViewModel's `CanSave`) — it combines `IsValid && (IsModified || IsNew) && !IsBusy`, so a freshly created entity enables the button without reporting unsaved changes.
-3. **Subscribe only for what this component displays.** Input components subscribe to their own property wrappers. This page displays the Save button, so it subscribes to the entity and calls `StateHasChanged`; a page that displays nothing outside its inputs and components subscribes to nothing.
+3. **Subscribe only for what this component displays.** Input components subscribe to their own property wrappers. This page displays the Save button and the view-mode text, so it subscribes to the employee's own `PropertyChanged` and calls `StateHasChanged`. It never subscribes to `NeatooPropertyChanged`; a child's facts belong to the child's row component.
 4. **`WaitForTasks()` before save** — the ViewModel's save handler waits for async rules, then asks `IsSavable`.
 5. **Replace the entity reference after save** — `Save()` returns a new instance. The ViewModel reassigns; the page moves its subscription to the new instance, and `@key` rebuilds the bound components so each subscribes to the new instance's wrappers.
 6. **Implement `IDisposable`** — unsubscribe on dispose.
@@ -655,7 +653,7 @@ internal sealed class EmployeeEditViewModel
 
 ### Child Entity Collections
 
-Iterate over the child list and bind each child's properties; removing a child is a gesture the ViewModel forwards to the list:
+Each row is a component keyed on its child, and the page forwards the remove gesture to the ViewModel:
 
 <!-- snippet: skill-mud-child-collection -->
 <a id='snippet-skill-mud-child-collection'></a>
@@ -664,28 +662,41 @@ Iterate over the child list and bind each child's properties; removing a child i
 {
     @foreach (var item in Vm.Order.Items)
     {
-        <MudGrid Class="mb-2" Spacing="2">
-            <MudItem xs="11" sm="5">
-                <MudNeatooTextField T="string" EntityProperty="@item[nameof(IOrderItem.ProductName)]" />
-            </MudItem>
-            <MudItem xs="1" Class="d-flex align-center">
-                @* A gesture: the list moves a fetched item to DeletedList *@
-                <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => Vm.RemoveItem(item))" />
-            </MudItem>
-            <MudItem xs="6" sm="2">
-                <MudNeatooNumericField T="int" EntityProperty="@item[nameof(IOrderItem.Quantity)]" />
-            </MudItem>
-            <MudItem xs="6" sm="2">
-                <MudNeatooNumericField T="decimal" EntityProperty="@item[nameof(IOrderItem.UnitPrice)]" />
-            </MudItem>
-            <MudItem xs="12" sm="2" Class="d-flex align-center">
-                <MudText>@item.LineTotal.ToString("C")</MudText>
-            </MudItem>
-        </MudGrid>
+        @* Each row is a component that refreshes for its own item. *@
+        <OrderItemEditor @key="item" Item="@item" OnRemove="@(() => Vm.RemoveItem(item))" />
     }
 }
 ```
-<sup><a href='/src/Design/Design.App/Pages/OrderEdit.razor#L35-L60' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-child-collection' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/OrderEdit.razor#L37-L46' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-child-collection' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+The row binds the child's inputs and shows its line total. It subscribes to its own item, so it re-renders when the total changes, and the page does not:
+
+<!-- snippet: skill-mud-child-row -->
+<a id='snippet-skill-mud-child-row'></a>
+```razor
+@* One order item. The inputs refresh themselves; the row re-renders for its
+   own item's changes, which is what keeps the line total current. *@
+<MudGrid Class="mb-2" Spacing="2">
+    <MudItem xs="11" sm="5">
+        <MudNeatooTextField T="string" EntityProperty="@Item[nameof(IOrderItem.ProductName)]" />
+    </MudItem>
+    <MudItem xs="1" Class="d-flex align-center">
+        @* A gesture: the page forwards it to the ViewModel, which removes the item from the list *@
+        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@OnRemove" />
+    </MudItem>
+    <MudItem xs="6" sm="2">
+        <MudNeatooNumericField T="int" EntityProperty="@Item[nameof(IOrderItem.Quantity)]" />
+    </MudItem>
+    <MudItem xs="6" sm="2">
+        <MudNeatooNumericField T="decimal" EntityProperty="@Item[nameof(IOrderItem.UnitPrice)]" />
+    </MudItem>
+    <MudItem xs="12" sm="2" Class="d-flex align-center">
+        <MudText>@Item.LineTotal.ToString("C")</MudText>
+    </MudItem>
+</MudGrid>
+```
+<sup><a href='/src/Design/Design.App/Components/OrderItemEditor.razor#L5-L26' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-child-row' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## IEntityProperty Metadata

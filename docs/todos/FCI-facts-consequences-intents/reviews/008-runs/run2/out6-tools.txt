@@ -1,0 +1,17 @@
+# tools available: CronDelete, CronList, DesignSync, ExitWorktree, Glob, Grep, Read, ReportFindings, ScheduleWakeup, Skill, TaskStop, ToolSearch
+ok    Skill neatoo
+ok    Skill RemoteFactory
+ok    Skill mudneatoo
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references\domain-logic-placement.md pattern=TrainingPlan|Interval|AnchorFit|ITrainingPlanFit
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\domain-logic-placement.md
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=ApplyFit|Share\(|IIntervalFit|AnchorScope|IntervalList|EntityListBase<
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\base-classes.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\collections.md
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\setup.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references\blazor.md pattern=AddNeatooServices|AddNeatooRemoteFactory|AddNeatooAspNetCore|UseNeatoo|MudServices|AddScoped
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\blazor.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references\validation.md pattern=RuleBase<|protected override IRuleMessages Execute|RuleMessages\.If|AsRuleMessages|return None
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references pattern=DisplayName\(|Required\(|Range\(
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=DisplayName
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=^using (Neatoo|MudBlazor|Microsoft\.AspNetCore)[^;]*;|@using (Neatoo|MudBlazor)[^\r\n]*
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=Neatoo\.(Rules|RemoteFactory|Core)\b[\w.]*

@@ -1,0 +1,62 @@
+@using System.ComponentModel
+@using Design.Domain.Aggregates.OrderAggregate
+@implements IDisposable
+
+@* begin-snippet: skill-mud-child-row *@
+@* One order item. The inputs refresh themselves; the row re-renders for its
+   own item's changes, which is what keeps the line total current. *@
+<MudGrid Class="mb-2" Spacing="2">
+    <MudItem xs="11" sm="5">
+        <MudNeatooTextField T="string" EntityProperty="@Item[nameof(IOrderItem.ProductName)]" />
+    </MudItem>
+    <MudItem xs="1" Class="d-flex align-center">
+        @* A gesture: the page forwards it to the ViewModel, which removes the item from the list *@
+        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@OnRemove" />
+    </MudItem>
+    <MudItem xs="6" sm="2">
+        <MudNeatooNumericField T="int" EntityProperty="@Item[nameof(IOrderItem.Quantity)]" />
+    </MudItem>
+    <MudItem xs="6" sm="2">
+        <MudNeatooNumericField T="decimal" EntityProperty="@Item[nameof(IOrderItem.UnitPrice)]" />
+    </MudItem>
+    <MudItem xs="12" sm="2" Class="d-flex align-center">
+        <MudText>@Item.LineTotal.ToString("C")</MudText>
+    </MudItem>
+</MudGrid>
+@* end-snippet *@
+
+@code {
+    [Parameter, EditorRequired]
+    public IOrderItem Item { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRemove { get; set; }
+
+    private IOrderItem? _subscribed;
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_subscribed, Item))
+        {
+            return;
+        }
+
+        if (_subscribed is not null)
+        {
+            _subscribed.PropertyChanged -= OnItemChanged;
+        }
+
+        _subscribed = Item;
+        _subscribed.PropertyChanged += OnItemChanged;
+    }
+
+    private void OnItemChanged(object? sender, PropertyChangedEventArgs e) => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.PropertyChanged -= OnItemChanged;
+        }
+    }
+}

@@ -69,7 +69,7 @@ Bind each field to the entity's property wrapper; there is no copy to sync:
 <MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.LastName)]" Variant="Variant.Outlined" Class="mb-3" />
 <MudNeatooTextField T="string" EntityProperty="@Vm.Employee[nameof(IEmployee.Email)]" Variant="Variant.Outlined" Class="mb-3" />
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L32-L36' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-text-field' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L34-L38' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-text-field' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The Save button binds `IsSavable`, and the ViewModel's save handler waits, asks `IsSavable`, saves and reassigns (SKILL.md → Page Structure Pattern).
@@ -139,7 +139,7 @@ Using standard MudBlazor components with `ValueChanged` callbacks that manually 
     }
 </MudNeatooSelect>
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L58-L73' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-select' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L60-L75' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-select' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Zero handlers. The component calls `SetValue()` internally, which triggers the async rule pipeline.
@@ -186,7 +186,7 @@ Using Blazor's `@bind-Value` two-way binding directly to entity properties.
                      Editable="true"
                      Class="mb-3" />
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L38-L44' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-date-picker' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L40-L46' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-date-picker' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The text fields, select and checkbox bind the same way (SKILL.md → Page Structure Pattern).
@@ -229,7 +229,7 @@ No form wrapper and no validator: the summary and each field show the entity's o
 ```razor
 <NeatooValidationSummary Entity="@Vm.Employee" ShowHeader="false" Dense="true" Class="mb-4" />
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L28-L30' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-validation-summary' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L30-L32' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-validation-summary' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ---
@@ -287,7 +287,7 @@ Bind directly to entity properties. If the entity needs these fields, they shoul
                        AdornmentText="$"
                        Class="mb-3" />
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L46-L52' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-numeric-field' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-numeric-field' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Validation lives in the domain model:

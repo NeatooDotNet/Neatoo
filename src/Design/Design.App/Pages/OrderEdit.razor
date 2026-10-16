@@ -1,5 +1,7 @@
 @page "/orders/new"
 @page "/orders/{Id:guid}"
+@using System.ComponentModel
+@using Design.App.Components
 @using Design.App.ViewModels
 @using Design.Domain.Aggregates.OrderAggregate
 @inject OrderEditViewModel Vm
@@ -37,24 +39,8 @@
             {
                 @foreach (var item in Vm.Order.Items)
                 {
-                    <MudGrid Class="mb-2" Spacing="2">
-                        <MudItem xs="11" sm="5">
-                            <MudNeatooTextField T="string" EntityProperty="@item[nameof(IOrderItem.ProductName)]" />
-                        </MudItem>
-                        <MudItem xs="1" Class="d-flex align-center">
-                            @* A gesture: the list moves a fetched item to DeletedList *@
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => Vm.RemoveItem(item))" />
-                        </MudItem>
-                        <MudItem xs="6" sm="2">
-                            <MudNeatooNumericField T="int" EntityProperty="@item[nameof(IOrderItem.Quantity)]" />
-                        </MudItem>
-                        <MudItem xs="6" sm="2">
-                            <MudNeatooNumericField T="decimal" EntityProperty="@item[nameof(IOrderItem.UnitPrice)]" />
-                        </MudItem>
-                        <MudItem xs="12" sm="2" Class="d-flex align-center">
-                            <MudText>@item.LineTotal.ToString("C")</MudText>
-                        </MudItem>
-                    </MudGrid>
+                    @* Each row is a component that refreshes for its own item. *@
+                    <OrderItemEditor @key="item" Item="@item" OnRemove="@(() => Vm.RemoveItem(item))" />
                 }
             }
             @* end-snippet *@
@@ -95,21 +81,21 @@
         Resubscribe();
     }
 
-    // The aggregate's rules change properties the page shows outside any input
-    // component (TotalAmount, IsSavable), so the page re-renders on the
-    // graph-wide event. Input components subscribe to their own wrappers.
+    // The page shows the order's own facts outside any input (TotalAmount, the
+    // Save button's IsSavable), so it re-renders on the order's own PropertyChanged:
+    // its own properties and meta flags. An item's facts are its row's to show.
     private void Resubscribe()
     {
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+            _subscribed.PropertyChanged -= OnEntityChanged;
         }
 
         _subscribed = Vm.Order;
 
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged += OnEntityChanged;
+            _subscribed.PropertyChanged += OnEntityChanged;
         }
     }
 
@@ -122,16 +108,13 @@
         StateHasChanged();
     }
 
-    private Task OnEntityChanged(NeatooPropertyChangedEventArgs e)
-    {
-        return InvokeAsync(StateHasChanged);
-    }
+    private void OnEntityChanged(object? sender, PropertyChangedEventArgs e) => InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+            _subscribed.PropertyChanged -= OnEntityChanged;
         }
     }
 }

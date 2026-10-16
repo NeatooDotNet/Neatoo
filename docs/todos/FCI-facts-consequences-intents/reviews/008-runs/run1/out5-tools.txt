@@ -1,0 +1,21 @@
+# tools available: CronCreate, CronDelete, CronList, DesignSync, EnterWorktree, ExitWorktree, Glob, Grep, ListAgents, LSP, Monitor, PushNotification, Read, RemoteTrigger, ReportFindings, ScheduleWakeup, SendMessage, Skill, TaskStop, ToolSearch, Workflow
+ok    Skill neatoo
+ok    Skill RemoteFactory
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references\base-classes.md pattern=job
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\base-classes.md
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\static-factory.md
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\setup.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references\validation.md pattern=gate
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\validation.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\validation.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references\entities.md pattern=SaveOperationException|IsSavable|\[Update\]|EntityBaseServices|IEntityRoot
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\entities.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\entities.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\RemoteFactory\references pattern=DbContext|EntityFramework|EF Core
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\trimming.md
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\service-injection.md
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=AddNeatooServices|AddNeatooAspNetCore
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\blazor.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\validation.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\RemoteFactory\references pattern=AspAuthorize|HttpContext|background|hosted
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references pattern=partial interface
