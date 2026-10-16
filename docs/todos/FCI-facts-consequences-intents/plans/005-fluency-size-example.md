@@ -9,7 +9,7 @@
 **Plan-review opt-in:** No (the shape is the architecture page's; no public framework API changes)
 **Code-review opt-in:** Yes (the example every skill quotes; doctrine must be exact)
 **Branch:** fci-005-fluency-size-example
-**PR:** —
+**PR:** #119
 
 ---
 
