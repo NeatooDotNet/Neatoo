@@ -46,7 +46,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 | # | File | Title (≤ 8 words) | Serves | Status | PR |
 |---|------|-------|--------|--------|----|
 | 001 | [001-architecture-page](./plans/001-architecture-page.md) | The architecture page in VisionAlignment | AC-1, AC-8 | Done | #115 |
-| 002 | [002-generated-setx](./plans/002-generated-setx.md) | Generated awaitable SetX on class and interface | AC-2 | Draft | — |
+| 002 | [002-generated-setx](./plans/002-generated-setx.md) | Generated awaitable SetX on class and interface | AC-2 | Done | — |
 | 003 | [003-assignment-analyzer](./plans/003-assignment-analyzer.md) | Assignment analyzer, code fix, Design sweep | AC-3 | Draft | — |
 | 004 | [004-meta-state-triggers](./plans/004-meta-state-triggers.md) | Meta-state triggers and the IsBusy analyzer | AC-4 | Draft | — |
 | 005 | [005-fluency-size-example](./plans/005-fluency-size-example.md) | Compiled fluency-size aggregate in Design.Domain | AC-5, AC-11 | Draft | — |
@@ -59,14 +59,18 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 
 ## Punchlist
 
-- [ ] Send the "where does business logic go" wording to desktopRemoteFactory · RemoteFactory#173 · done when FCI-001 has merged into the arc and the message is sent · AC-8
+- [x] Send the "where does business logic go" wording to desktopRemoteFactory · RemoteFactory#173 · done when FCI-001 has merged into the arc and the message is sent · AC-8 · sent 2026-10-16, applied as RemoteFactory#178
 - [ ] Confirm the wording landed in both #173 sites and the installed RF skill · `~/.claude/skills/RemoteFactory` · done when the RF PR has merged and the installed copy shows it · AC-8
 
 ## Recommendations Taken
 
 Every reviewer recommendation taken under the standing orders, one line each, for Keith's review at the end: plan · source review · what was recommended · what was done.
 
+- FCI-002 · code review · skip SetX on an interface that declares the property get-only · done, with a generator test
+
 ## Dismissed
+
+- FCI-002 · Neatoo.UnitTest.Demo reports no tests · pre-existing, serves no criterion
 
 ## Parked
 

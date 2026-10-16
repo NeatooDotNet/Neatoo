@@ -16,13 +16,24 @@ namespace DomainModel
     {
         Guid? Id { get; set; }
 
+        /// <summary>Sets Id and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
+        global::System.Threading.Tasks.Task SetId(Guid? value);
         string? FirstName { get; set; }
 
+        /// <summary>Sets FirstName and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
+        global::System.Threading.Tasks.Task SetFirstName(string? value);
         string? LastName { get; set; }
 
+        /// <summary>Sets LastName and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
+        global::System.Threading.Tasks.Task SetLastName(string? value);
         string? Email { get; set; }
 
+        /// <summary>Sets Email and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
+        global::System.Threading.Tasks.Task SetEmail(string? value);
         string? Notes { get; set; }
+
+        /// <summary>Sets Notes and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
+        global::System.Threading.Tasks.Task SetNotes(string? value);
     }
 
     internal partial class Person
@@ -48,6 +59,19 @@ namespace DomainModel
             }
         }
 
+        /// <summary>Sets Id and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
+        public global::System.Threading.Tasks.Task SetId(Guid? value)
+        {
+            var task = IdProperty.SetValue(value);
+            if (!task.IsCompleted)
+            {
+                Parent?.AddChildTask(task);
+                RunningTasks.AddTask(task);
+            }
+
+            return task;
+        }
+
         public partial string? FirstName
         {
             get => FirstNameProperty.Value;
@@ -60,6 +84,19 @@ namespace DomainModel
                     RunningTasks.AddTask(FirstNameProperty.Task);
                 }
             }
+        }
+
+        /// <summary>Sets FirstName and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
+        public global::System.Threading.Tasks.Task SetFirstName(string? value)
+        {
+            var task = FirstNameProperty.SetValue(value);
+            if (!task.IsCompleted)
+            {
+                Parent?.AddChildTask(task);
+                RunningTasks.AddTask(task);
+            }
+
+            return task;
         }
 
         public partial string? LastName
@@ -76,6 +113,19 @@ namespace DomainModel
             }
         }
 
+        /// <summary>Sets LastName and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
+        public global::System.Threading.Tasks.Task SetLastName(string? value)
+        {
+            var task = LastNameProperty.SetValue(value);
+            if (!task.IsCompleted)
+            {
+                Parent?.AddChildTask(task);
+                RunningTasks.AddTask(task);
+            }
+
+            return task;
+        }
+
         public partial string? Email
         {
             get => EmailProperty.Value;
@@ -90,6 +140,19 @@ namespace DomainModel
             }
         }
 
+        /// <summary>Sets Email and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
+        public global::System.Threading.Tasks.Task SetEmail(string? value)
+        {
+            var task = EmailProperty.SetValue(value);
+            if (!task.IsCompleted)
+            {
+                Parent?.AddChildTask(task);
+                RunningTasks.AddTask(task);
+            }
+
+            return task;
+        }
+
         public partial string? Notes
         {
             get => NotesProperty.Value;
@@ -102,6 +165,19 @@ namespace DomainModel
                     RunningTasks.AddTask(NotesProperty.Task);
                 }
             }
+        }
+
+        /// <summary>Sets Notes and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
+        public global::System.Threading.Tasks.Task SetNotes(string? value)
+        {
+            var task = NotesProperty.SetValue(value);
+            if (!task.IsCompleted)
+            {
+                Parent?.AddChildTask(task);
+                RunningTasks.AddTask(task);
+            }
+
+            return task;
         }
 
         public partial EntityLazyLoad<IPersonPhoneList> PersonPhoneList

@@ -64,9 +64,44 @@ internal static class PropertyGenerator
                 {
                     sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; }}");
                 }
+
+                GenerateAwaitableSetter(sb, property);
             }
         }
     }
+
+    /// <summary>
+    /// True when the property gets a generated <c>Set{Name}</c> on the class.
+    /// </summary>
+    private static bool HasAwaitableSetter(PartialPropertyInfo property)
+        => property.HasSetter && !property.IsInit && !property.IsLazyLoad && !property.HasSetMethodConflict;
+
+    /// <summary>
+    /// Generates <c>Task Set{Name}(T value)</c>: the same write as the setter, returning the Task of the
+    /// property's whole rule cascade so domain code can await the write's consequences. The setter cannot
+    /// await, so a rule or verb that assigns returns before an async consequence lands.
+    /// </summary>
+    private static void GenerateAwaitableSetter(StringBuilder sb, PartialPropertyInfo property)
+    {
+        if (!HasAwaitableSetter(property))
+        {
+            return;
+        }
+
+        var accessibility = AccessModifier(property.SetterAccessibility ?? property.Accessibility);
+        var write = property.SetterAccessibility == "private"
+            ? $"{property.Name}Property.SetPrivateValue(value)"
+            : $"{property.Name}Property.SetValue(value)";
+
+        sb.AppendLine($"/// <summary>Sets {property.Name} and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>");
+        sb.AppendLine($"{accessibility}global::System.Threading.Tasks.Task Set{property.Name}({property.Type} value) {{ var task = {write}; if (!task.IsCompleted) {{ Parent?.AddChildTask(task); RunningTasks.AddTask(task); }} return task; }}");
+    }
+
+    /// <summary>
+    /// The modifier text for a generated member: an access keyword followed by a space, or nothing (private).
+    /// </summary>
+    private static string AccessModifier(string accessibility)
+        => accessibility is "public" or "protected" or "internal" or "private" ? $"{accessibility} " : string.Empty;
 
     /// <summary>
     /// Generates partial interface declaration.
@@ -81,6 +116,17 @@ internal static class PropertyGenerator
             {
                 var accessors = property.HasSetter && property.SetterAccessibility == null ? "get; set;" : "get;";
                 sb.AppendLine($"{property.Type} {property.Name} {{ {accessors} }}");
+            }
+
+            // The awaitable setter reaches other types only through the interface; only a public write goes there.
+            if (HasAwaitableSetter(property)
+                && property.Accessibility == "public"
+                && property.SetterAccessibility == null
+                && !property.InterfaceDeclaresSetMethod
+                && !property.InterfaceDeclaresReadOnly)
+            {
+                sb.AppendLine($"/// <summary>Sets {property.Name} and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>");
+                sb.AppendLine($"global::System.Threading.Tasks.Task Set{property.Name}({property.Type} value);");
             }
         }
 
