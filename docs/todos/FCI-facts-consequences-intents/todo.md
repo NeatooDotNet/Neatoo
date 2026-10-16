@@ -45,7 +45,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 
 | # | File | Title (≤ 8 words) | Serves | Status | PR |
 |---|------|-------|--------|--------|----|
-| 001 | [001-architecture-page](./plans/001-architecture-page.md) | The architecture page in VisionAlignment | AC-1, AC-8 | Draft | — |
+| 001 | [001-architecture-page](./plans/001-architecture-page.md) | The architecture page in VisionAlignment | AC-1, AC-8 | Done | — |
 | 002 | [002-generated-setx](./plans/002-generated-setx.md) | Generated awaitable SetX on class and interface | AC-2 | Draft | — |
 | 003 | [003-assignment-analyzer](./plans/003-assignment-analyzer.md) | Assignment analyzer, code fix, Design sweep | AC-3 | Draft | — |
 | 004 | [004-meta-state-triggers](./plans/004-meta-state-triggers.md) | Meta-state triggers and the IsBusy analyzer | AC-4 | Draft | — |
@@ -78,6 +78,7 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 
 ## Skipped Steps
 
+- FCI-001 test review: prose-only plan, no behaviour to pin.
 - Step 1 Explore fan-out: the design session of 2026-10-15/16 read every load-bearing seam this todo touches; the recon is recorded in each stub's Scope and is re-walked at each plan's Step 3.
 
 ---
