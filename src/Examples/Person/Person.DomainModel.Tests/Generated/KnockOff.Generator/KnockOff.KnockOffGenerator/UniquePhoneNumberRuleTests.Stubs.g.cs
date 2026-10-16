@@ -11,6 +11,1486 @@ partial class UniquePhoneNumberRuleTests
 	/// <summary>Contains stub implementations for inline stub pattern.</summary>
 	public static class Stubs
 	{
+		/// <summary>Tracks and configures behavior for SetId(System.Guid? value) -> System.Threading.Tasks.Task.</summary>
+		public sealed class IPerson_SetIdInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::DomainModel.IPerson? _source;
+
+			/// <summary>Callback delegate for SetId(System.Guid? value) -> System.Threading.Tasks.Task.</summary>
+			public delegate global::System.Threading.Tasks.Task SetIdDelegate(global::System.Guid? @value);
+
+			public IPerson_SetIdInterceptor() : base("SetId") { }
+			public IPerson_SetIdInterceptor(global::System.Func<object> smartDefaultFactory) : base("SetId", smartDefaultFactory) { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (global::System.Guid?)args!;
+				((SetIdDelegate)del)(typedArgs);
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (global::System.Guid?)args!;
+				return ((SetIdDelegate)del)(typedArgs);
+			}
+			protected override global::System.Delegate CreateValueDelegate(object? value) => (SetIdDelegate)((_) => (global::System.Threading.Tasks.Task)value!);
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
+			{
+				if (tracking is SetIdImpl impl) impl.RecordArg((global::System.Guid?)args!);
+			}
+			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (global::System.Guid?)args!;
+
+			private global::System.Guid? _unconfiguredLastArg;
+
+			/// <summary>Last argument from the most recently called registration.</summary>
+			public global::System.Guid? LastArg
+			{
+				get
+				{
+					if ((_returnValueTracking?._callCount ?? 0) > 0 && _returnValueTracking is SetIdImpl rvb) return rvb.LastArg;
+					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is SetIdImpl cb) return cb.LastArg;
+					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is SetIdImpl sb) return sb.LastArg;
+					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
+				}
+			}
+
+			/// <summary>Configures callback for SetId(System.Guid? value) -> System.Threading.Tasks.Task.</summary>
+			public SetIdImpl Call(SetIdDelegate callback)
+			{
+				var builder = new SetIdImpl(this);
+				SetupReturnCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Configures callback for SetId(System.Guid? value). Task.CompletedTask auto-returned.</summary>
+			public SetIdImpl Call(global::System.Action<global::System.Guid?> callback)
+			{
+				var builder = new SetIdImpl(this);
+				SetupReturnCallback((SetIdDelegate)((global::System.Guid? @value) => { callback(@value); return global::System.Threading.Tasks.Task.CompletedTask; }), builder);
+				return builder;
+			}
+
+			/// <summary>Sets return value for SetId(System.Guid? value) -> System.Threading.Tasks.Task.</summary>
+			/// <param name="value">The value to return.</param>
+			public SetIdImpl Return(global::System.Threading.Tasks.Task value)
+			{
+				var builder = new SetIdImpl(this);
+				SetupReturnValue(value, builder);
+				return builder;
+			}
+
+			/// <summary>Configures sequence of return values. Each value returned once, last repeats.</summary>
+			public SetIdSequence Return(global::System.Threading.Tasks.Task first, params global::System.Threading.Tasks.Task[] rest)
+			{
+				var builder = Return(first);
+				if (rest.Length == 0)
+				{
+					return builder.ThenReturn(first);
+				}
+				var seq = builder.ThenReturn(rest[0]);
+				for (int i = 1; i < rest.Length; i++)
+				{
+					seq.ThenReturn(rest[i]);
+				}
+				return seq;
+			}
+
+			/// <summary>Configures parameter matching for SetId(System.Guid? value) -> System.Threading.Tasks.Task. Matches exact values using Object.Equals. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Guid? @value)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, (_arg0) => global::System.Object.Equals(_arg0, @value));
+			}
+
+			/// <summary>Configures parameter matching for SetId(System.Guid? value) -> System.Threading.Tasks.Task. Matches using predicate. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Func<global::System.Guid?, bool> predicate)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, predicate);
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal global::System.Threading.Tasks.Task Invoke(bool strict, global::System.Guid? @value)
+			{
+				object? __args = @value;
+				var (__handled, __result) = RunPriorityChain(__args);
+				if (__handled) return (global::System.Threading.Tasks.Task)__result!;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(__args);
+				var (__seqHandled, __seqResult) = HandleNonVoidSequenceExhaustedRepeat(strict, __args);
+				if (__seqHandled) return __seqResult is null ? global::System.Threading.Tasks.Task.CompletedTask : (global::System.Threading.Tasks.Task)__seqResult;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) return src.SetId(@value);
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "SetId");
+				return global::System.Threading.Tasks.Task.CompletedTask;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_unconfiguredLastArg = default;
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class SetIdImpl : ReturnMethodCallBuilderBase, global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?>
+			{
+				private readonly IPerson_SetIdInterceptor _typedInterceptor;
+				private global::System.Guid? _lastArg = default!;
+
+				public SetIdImpl(IPerson_SetIdInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				public global::System.Guid? LastArg => _lastArg;
+				public void RecordArg(global::System.Guid? args) => _lastArg = args;
+
+				public override void Reset() { base.Reset(); _lastArg = default!; }
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public SetIdSequence ThenReturn(SetIdDelegate callback)
+				{
+					ThenReturnCallbackBase(callback);
+					return new SetIdSequence(_typedInterceptor);
+				}
+
+				/// <summary>Elevates to sequence mode and adds a value. Returns sequence for further chaining.</summary>
+				public SetIdSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetIdSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					if (values.Length == 0) { ElevateToSequenceBase(); return new SetIdSequence(_typedInterceptor); }
+					var seq = ThenReturn(values[0]);
+					for (int i = 1; i < values.Length; i++) seq.ThenReturn(values[i]);
+					return seq;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetIdImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public SetIdImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetIdImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodTracking<global::System.Guid?> global::KnockOff.IMethodTracking<global::System.Guid?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking<global::System.Guid?> global::KnockOff.IMethodTracking<global::System.Guid?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?> global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?> global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<SetIdDelegate> global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?>.ThenReturn(SetIdDelegate callback) => ThenReturn(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
+			public sealed class SetIdSequence : ReturnMethodSequenceBase, global::KnockOff.IMethodReturnSequence<SetIdDelegate>
+			{
+				private readonly IPerson_SetIdInterceptor _typedInterceptor;
+
+				public SetIdSequence(IPerson_SetIdInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public SetIdSequence ThenReturn(SetIdDelegate callback) { ThenReturnCallbackBase(callback); return this; }
+
+				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
+				public SetIdSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetIdSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					foreach (var value in values) ThenReturn(value);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetIdSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetIdImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodReturnSequence<SetIdDelegate> global::KnockOff.IMethodReturnSequence<SetIdDelegate>.ThenReturn(SetIdDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<SetIdDelegate> global::KnockOff.IMethodReturnSequence<SetIdDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+			/// <summary>Predicate-based When matcher that returns a stored value.</summary>
+			private sealed class WhenMatcherPredicateValueBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<global::System.Guid?, bool> _predicate;
+				private readonly object? _value;
+
+				public WhenMatcherPredicateValueBase(global::System.Func<global::System.Guid?, bool> predicate, object? value) { _predicate = predicate; _value = value; }
+
+				public override bool Matches(object? args) => _predicate((global::System.Guid?)args!);
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _value;
+				public override bool IsTerminal => false;
+			}
+
+			/// <summary>Terminal always-matching callback matcher for non-void When chains.</summary>
+			private sealed class WhenMatcherTerminalCallbackBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<object?, object?> _callback;
+
+				public WhenMatcherTerminalCallbackBase(global::System.Func<object?, object?> callback) { _callback = callback; }
+
+				public override bool Matches(object? args) => true;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _callback(args);
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Terminal no-op matcher for ThenNone() on non-void When chains.</summary>
+			private sealed class WhenMatcherNoneBase : WhenMatcherBase
+			{
+				public override bool Matches(object? args) => false;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => null;
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
+			public sealed class WhenBuilder : WhenBuilderBase
+			{
+				private readonly global::System.Func<global::System.Guid?, bool> _predicate;
+
+				public WhenBuilder(IPerson_SetIdInterceptor interceptor, global::System.Func<global::System.Guid?, bool> predicate) : base(interceptor)
+				{
+					_predicate = predicate;
+				}
+
+				/// <summary>Configures the return value when predicate matches.</summary>
+				public WhenChain Return(global::System.Threading.Tasks.Task value)
+				{
+					AddValueMatcher(new WhenMatcherPredicateValueBase(_predicate, value));
+					return new WhenChain((IPerson_SetIdInterceptor)_interceptor);
+				}
+			}
+
+			/// <summary>When chain implementation with ThenWhen, ThenCall, ThenNone, verification support.</summary>
+			public sealed class WhenChain : WhenChainBase
+			{
+				private readonly IPerson_SetIdInterceptor _typedInterceptor;
+
+				public WhenChain(IPerson_SetIdInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another matcher with exact value matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Guid? @value)
+				{
+					return new WhenBuilder(_typedInterceptor, (_arg0) => global::System.Object.Equals(_arg0, @value));
+				}
+
+				/// <summary>Adds another matcher with predicate matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Func<global::System.Guid?, bool> predicate) => new WhenBuilder(_typedInterceptor, predicate);
+
+				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
+				public WhenChain ThenCall(SetIdDelegate callback)
+				{
+					AddTerminalCallbackMatcher(new WhenMatcherTerminalCallbackBase((object? args) => (object?)callback((global::System.Guid?)args!)));
+					return this;
+				}
+
+				/// <summary>Closes chain with no matcher.</summary>
+				public WhenChain ThenNone() { AddNoneMatcher(new WhenMatcherNoneBase()); return this; }
+
+				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
+				public WhenChain Verifiable() { VerifiableBase(); return this; }
+			}
+
+		}
+
+		/// <summary>Tracks and configures behavior for SetFirstName(string? value) -> System.Threading.Tasks.Task.</summary>
+		public sealed class IPerson_SetFirstNameInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::DomainModel.IPerson? _source;
+
+			/// <summary>Callback delegate for SetFirstName(string? value) -> System.Threading.Tasks.Task.</summary>
+			public delegate global::System.Threading.Tasks.Task SetFirstNameDelegate(string? @value);
+
+			public IPerson_SetFirstNameInterceptor() : base("SetFirstName") { }
+			public IPerson_SetFirstNameInterceptor(global::System.Func<object> smartDefaultFactory) : base("SetFirstName", smartDefaultFactory) { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (string?)args!;
+				((SetFirstNameDelegate)del)(typedArgs);
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (string?)args!;
+				return ((SetFirstNameDelegate)del)(typedArgs);
+			}
+			protected override global::System.Delegate CreateValueDelegate(object? value) => (SetFirstNameDelegate)((_) => (global::System.Threading.Tasks.Task)value!);
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
+			{
+				if (tracking is SetFirstNameImpl impl) impl.RecordArg((string?)args!);
+			}
+			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (string?)args!;
+
+			private string? _unconfiguredLastArg;
+
+			/// <summary>Last argument from the most recently called registration.</summary>
+			public string? LastArg
+			{
+				get
+				{
+					if ((_returnValueTracking?._callCount ?? 0) > 0 && _returnValueTracking is SetFirstNameImpl rvb) return rvb.LastArg;
+					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is SetFirstNameImpl cb) return cb.LastArg;
+					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is SetFirstNameImpl sb) return sb.LastArg;
+					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
+				}
+			}
+
+			/// <summary>Configures callback for SetFirstName(string? value) -> System.Threading.Tasks.Task.</summary>
+			public SetFirstNameImpl Call(SetFirstNameDelegate callback)
+			{
+				var builder = new SetFirstNameImpl(this);
+				SetupReturnCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Configures callback for SetFirstName(string? value). Task.CompletedTask auto-returned.</summary>
+			public SetFirstNameImpl Call(global::System.Action<string?> callback)
+			{
+				var builder = new SetFirstNameImpl(this);
+				SetupReturnCallback((SetFirstNameDelegate)((string? @value) => { callback(@value); return global::System.Threading.Tasks.Task.CompletedTask; }), builder);
+				return builder;
+			}
+
+			/// <summary>Sets return value for SetFirstName(string? value) -> System.Threading.Tasks.Task.</summary>
+			/// <param name="value">The value to return.</param>
+			public SetFirstNameImpl Return(global::System.Threading.Tasks.Task value)
+			{
+				var builder = new SetFirstNameImpl(this);
+				SetupReturnValue(value, builder);
+				return builder;
+			}
+
+			/// <summary>Configures sequence of return values. Each value returned once, last repeats.</summary>
+			public SetFirstNameSequence Return(global::System.Threading.Tasks.Task first, params global::System.Threading.Tasks.Task[] rest)
+			{
+				var builder = Return(first);
+				if (rest.Length == 0)
+				{
+					return builder.ThenReturn(first);
+				}
+				var seq = builder.ThenReturn(rest[0]);
+				for (int i = 1; i < rest.Length; i++)
+				{
+					seq.ThenReturn(rest[i]);
+				}
+				return seq;
+			}
+
+			/// <summary>Configures parameter matching for SetFirstName(string? value) -> System.Threading.Tasks.Task. Matches exact values using Object.Equals. Returns builder for Return().</summary>
+			public WhenBuilder When(string? @value)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, (_arg0) => global::System.Object.Equals(_arg0, @value));
+			}
+
+			/// <summary>Configures parameter matching for SetFirstName(string? value) -> System.Threading.Tasks.Task. Matches using predicate. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Func<string?, bool> predicate)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, predicate);
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal global::System.Threading.Tasks.Task Invoke(bool strict, string? @value)
+			{
+				object? __args = @value;
+				var (__handled, __result) = RunPriorityChain(__args);
+				if (__handled) return (global::System.Threading.Tasks.Task)__result!;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(__args);
+				var (__seqHandled, __seqResult) = HandleNonVoidSequenceExhaustedRepeat(strict, __args);
+				if (__seqHandled) return __seqResult is null ? global::System.Threading.Tasks.Task.CompletedTask : (global::System.Threading.Tasks.Task)__seqResult;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) return src.SetFirstName(@value);
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "SetFirstName");
+				return global::System.Threading.Tasks.Task.CompletedTask;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_unconfiguredLastArg = default;
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class SetFirstNameImpl : ReturnMethodCallBuilderBase, global::KnockOff.IMethodReturnBuilder<SetFirstNameDelegate, string?>
+			{
+				private readonly IPerson_SetFirstNameInterceptor _typedInterceptor;
+				private string? _lastArg = default!;
+
+				public SetFirstNameImpl(IPerson_SetFirstNameInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				public string? LastArg => _lastArg;
+				public void RecordArg(string? args) => _lastArg = args;
+
+				public override void Reset() { base.Reset(); _lastArg = default!; }
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public SetFirstNameSequence ThenReturn(SetFirstNameDelegate callback)
+				{
+					ThenReturnCallbackBase(callback);
+					return new SetFirstNameSequence(_typedInterceptor);
+				}
+
+				/// <summary>Elevates to sequence mode and adds a value. Returns sequence for further chaining.</summary>
+				public SetFirstNameSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetFirstNameSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					if (values.Length == 0) { ElevateToSequenceBase(); return new SetFirstNameSequence(_typedInterceptor); }
+					var seq = ThenReturn(values[0]);
+					for (int i = 1; i < values.Length; i++) seq.ThenReturn(values[i]);
+					return seq;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetFirstNameImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public SetFirstNameImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetFirstNameImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodTracking<string?> global::KnockOff.IMethodTracking<string?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking<string?> global::KnockOff.IMethodTracking<string?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnBuilder<SetFirstNameDelegate, string?> global::KnockOff.IMethodReturnBuilder<SetFirstNameDelegate, string?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodReturnBuilder<SetFirstNameDelegate, string?> global::KnockOff.IMethodReturnBuilder<SetFirstNameDelegate, string?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<SetFirstNameDelegate> global::KnockOff.IMethodReturnBuilder<SetFirstNameDelegate, string?>.ThenReturn(SetFirstNameDelegate callback) => ThenReturn(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
+			public sealed class SetFirstNameSequence : ReturnMethodSequenceBase, global::KnockOff.IMethodReturnSequence<SetFirstNameDelegate>
+			{
+				private readonly IPerson_SetFirstNameInterceptor _typedInterceptor;
+
+				public SetFirstNameSequence(IPerson_SetFirstNameInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public SetFirstNameSequence ThenReturn(SetFirstNameDelegate callback) { ThenReturnCallbackBase(callback); return this; }
+
+				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
+				public SetFirstNameSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetFirstNameSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					foreach (var value in values) ThenReturn(value);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetFirstNameSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetFirstNameImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodReturnSequence<SetFirstNameDelegate> global::KnockOff.IMethodReturnSequence<SetFirstNameDelegate>.ThenReturn(SetFirstNameDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<SetFirstNameDelegate> global::KnockOff.IMethodReturnSequence<SetFirstNameDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+			/// <summary>Predicate-based When matcher that returns a stored value.</summary>
+			private sealed class WhenMatcherPredicateValueBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<string?, bool> _predicate;
+				private readonly object? _value;
+
+				public WhenMatcherPredicateValueBase(global::System.Func<string?, bool> predicate, object? value) { _predicate = predicate; _value = value; }
+
+				public override bool Matches(object? args) => _predicate((string?)args!);
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _value;
+				public override bool IsTerminal => false;
+			}
+
+			/// <summary>Terminal always-matching callback matcher for non-void When chains.</summary>
+			private sealed class WhenMatcherTerminalCallbackBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<object?, object?> _callback;
+
+				public WhenMatcherTerminalCallbackBase(global::System.Func<object?, object?> callback) { _callback = callback; }
+
+				public override bool Matches(object? args) => true;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _callback(args);
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Terminal no-op matcher for ThenNone() on non-void When chains.</summary>
+			private sealed class WhenMatcherNoneBase : WhenMatcherBase
+			{
+				public override bool Matches(object? args) => false;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => null;
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
+			public sealed class WhenBuilder : WhenBuilderBase
+			{
+				private readonly global::System.Func<string?, bool> _predicate;
+
+				public WhenBuilder(IPerson_SetFirstNameInterceptor interceptor, global::System.Func<string?, bool> predicate) : base(interceptor)
+				{
+					_predicate = predicate;
+				}
+
+				/// <summary>Configures the return value when predicate matches.</summary>
+				public WhenChain Return(global::System.Threading.Tasks.Task value)
+				{
+					AddValueMatcher(new WhenMatcherPredicateValueBase(_predicate, value));
+					return new WhenChain((IPerson_SetFirstNameInterceptor)_interceptor);
+				}
+			}
+
+			/// <summary>When chain implementation with ThenWhen, ThenCall, ThenNone, verification support.</summary>
+			public sealed class WhenChain : WhenChainBase
+			{
+				private readonly IPerson_SetFirstNameInterceptor _typedInterceptor;
+
+				public WhenChain(IPerson_SetFirstNameInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another matcher with exact value matching.</summary>
+				public WhenBuilder ThenWhen(string? @value)
+				{
+					return new WhenBuilder(_typedInterceptor, (_arg0) => global::System.Object.Equals(_arg0, @value));
+				}
+
+				/// <summary>Adds another matcher with predicate matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Func<string?, bool> predicate) => new WhenBuilder(_typedInterceptor, predicate);
+
+				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
+				public WhenChain ThenCall(SetFirstNameDelegate callback)
+				{
+					AddTerminalCallbackMatcher(new WhenMatcherTerminalCallbackBase((object? args) => (object?)callback((string?)args!)));
+					return this;
+				}
+
+				/// <summary>Closes chain with no matcher.</summary>
+				public WhenChain ThenNone() { AddNoneMatcher(new WhenMatcherNoneBase()); return this; }
+
+				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
+				public WhenChain Verifiable() { VerifiableBase(); return this; }
+			}
+
+		}
+
+		/// <summary>Tracks and configures behavior for SetLastName(string? value) -> System.Threading.Tasks.Task.</summary>
+		public sealed class IPerson_SetLastNameInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::DomainModel.IPerson? _source;
+
+			/// <summary>Callback delegate for SetLastName(string? value) -> System.Threading.Tasks.Task.</summary>
+			public delegate global::System.Threading.Tasks.Task SetLastNameDelegate(string? @value);
+
+			public IPerson_SetLastNameInterceptor() : base("SetLastName") { }
+			public IPerson_SetLastNameInterceptor(global::System.Func<object> smartDefaultFactory) : base("SetLastName", smartDefaultFactory) { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (string?)args!;
+				((SetLastNameDelegate)del)(typedArgs);
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (string?)args!;
+				return ((SetLastNameDelegate)del)(typedArgs);
+			}
+			protected override global::System.Delegate CreateValueDelegate(object? value) => (SetLastNameDelegate)((_) => (global::System.Threading.Tasks.Task)value!);
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
+			{
+				if (tracking is SetLastNameImpl impl) impl.RecordArg((string?)args!);
+			}
+			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (string?)args!;
+
+			private string? _unconfiguredLastArg;
+
+			/// <summary>Last argument from the most recently called registration.</summary>
+			public string? LastArg
+			{
+				get
+				{
+					if ((_returnValueTracking?._callCount ?? 0) > 0 && _returnValueTracking is SetLastNameImpl rvb) return rvb.LastArg;
+					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is SetLastNameImpl cb) return cb.LastArg;
+					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is SetLastNameImpl sb) return sb.LastArg;
+					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
+				}
+			}
+
+			/// <summary>Configures callback for SetLastName(string? value) -> System.Threading.Tasks.Task.</summary>
+			public SetLastNameImpl Call(SetLastNameDelegate callback)
+			{
+				var builder = new SetLastNameImpl(this);
+				SetupReturnCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Configures callback for SetLastName(string? value). Task.CompletedTask auto-returned.</summary>
+			public SetLastNameImpl Call(global::System.Action<string?> callback)
+			{
+				var builder = new SetLastNameImpl(this);
+				SetupReturnCallback((SetLastNameDelegate)((string? @value) => { callback(@value); return global::System.Threading.Tasks.Task.CompletedTask; }), builder);
+				return builder;
+			}
+
+			/// <summary>Sets return value for SetLastName(string? value) -> System.Threading.Tasks.Task.</summary>
+			/// <param name="value">The value to return.</param>
+			public SetLastNameImpl Return(global::System.Threading.Tasks.Task value)
+			{
+				var builder = new SetLastNameImpl(this);
+				SetupReturnValue(value, builder);
+				return builder;
+			}
+
+			/// <summary>Configures sequence of return values. Each value returned once, last repeats.</summary>
+			public SetLastNameSequence Return(global::System.Threading.Tasks.Task first, params global::System.Threading.Tasks.Task[] rest)
+			{
+				var builder = Return(first);
+				if (rest.Length == 0)
+				{
+					return builder.ThenReturn(first);
+				}
+				var seq = builder.ThenReturn(rest[0]);
+				for (int i = 1; i < rest.Length; i++)
+				{
+					seq.ThenReturn(rest[i]);
+				}
+				return seq;
+			}
+
+			/// <summary>Configures parameter matching for SetLastName(string? value) -> System.Threading.Tasks.Task. Matches exact values using Object.Equals. Returns builder for Return().</summary>
+			public WhenBuilder When(string? @value)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, (_arg0) => global::System.Object.Equals(_arg0, @value));
+			}
+
+			/// <summary>Configures parameter matching for SetLastName(string? value) -> System.Threading.Tasks.Task. Matches using predicate. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Func<string?, bool> predicate)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, predicate);
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal global::System.Threading.Tasks.Task Invoke(bool strict, string? @value)
+			{
+				object? __args = @value;
+				var (__handled, __result) = RunPriorityChain(__args);
+				if (__handled) return (global::System.Threading.Tasks.Task)__result!;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(__args);
+				var (__seqHandled, __seqResult) = HandleNonVoidSequenceExhaustedRepeat(strict, __args);
+				if (__seqHandled) return __seqResult is null ? global::System.Threading.Tasks.Task.CompletedTask : (global::System.Threading.Tasks.Task)__seqResult;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) return src.SetLastName(@value);
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "SetLastName");
+				return global::System.Threading.Tasks.Task.CompletedTask;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_unconfiguredLastArg = default;
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class SetLastNameImpl : ReturnMethodCallBuilderBase, global::KnockOff.IMethodReturnBuilder<SetLastNameDelegate, string?>
+			{
+				private readonly IPerson_SetLastNameInterceptor _typedInterceptor;
+				private string? _lastArg = default!;
+
+				public SetLastNameImpl(IPerson_SetLastNameInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				public string? LastArg => _lastArg;
+				public void RecordArg(string? args) => _lastArg = args;
+
+				public override void Reset() { base.Reset(); _lastArg = default!; }
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public SetLastNameSequence ThenReturn(SetLastNameDelegate callback)
+				{
+					ThenReturnCallbackBase(callback);
+					return new SetLastNameSequence(_typedInterceptor);
+				}
+
+				/// <summary>Elevates to sequence mode and adds a value. Returns sequence for further chaining.</summary>
+				public SetLastNameSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetLastNameSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					if (values.Length == 0) { ElevateToSequenceBase(); return new SetLastNameSequence(_typedInterceptor); }
+					var seq = ThenReturn(values[0]);
+					for (int i = 1; i < values.Length; i++) seq.ThenReturn(values[i]);
+					return seq;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetLastNameImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public SetLastNameImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetLastNameImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodTracking<string?> global::KnockOff.IMethodTracking<string?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking<string?> global::KnockOff.IMethodTracking<string?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnBuilder<SetLastNameDelegate, string?> global::KnockOff.IMethodReturnBuilder<SetLastNameDelegate, string?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodReturnBuilder<SetLastNameDelegate, string?> global::KnockOff.IMethodReturnBuilder<SetLastNameDelegate, string?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<SetLastNameDelegate> global::KnockOff.IMethodReturnBuilder<SetLastNameDelegate, string?>.ThenReturn(SetLastNameDelegate callback) => ThenReturn(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
+			public sealed class SetLastNameSequence : ReturnMethodSequenceBase, global::KnockOff.IMethodReturnSequence<SetLastNameDelegate>
+			{
+				private readonly IPerson_SetLastNameInterceptor _typedInterceptor;
+
+				public SetLastNameSequence(IPerson_SetLastNameInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public SetLastNameSequence ThenReturn(SetLastNameDelegate callback) { ThenReturnCallbackBase(callback); return this; }
+
+				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
+				public SetLastNameSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetLastNameSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					foreach (var value in values) ThenReturn(value);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetLastNameSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetLastNameImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodReturnSequence<SetLastNameDelegate> global::KnockOff.IMethodReturnSequence<SetLastNameDelegate>.ThenReturn(SetLastNameDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<SetLastNameDelegate> global::KnockOff.IMethodReturnSequence<SetLastNameDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+			/// <summary>Predicate-based When matcher that returns a stored value.</summary>
+			private sealed class WhenMatcherPredicateValueBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<string?, bool> _predicate;
+				private readonly object? _value;
+
+				public WhenMatcherPredicateValueBase(global::System.Func<string?, bool> predicate, object? value) { _predicate = predicate; _value = value; }
+
+				public override bool Matches(object? args) => _predicate((string?)args!);
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _value;
+				public override bool IsTerminal => false;
+			}
+
+			/// <summary>Terminal always-matching callback matcher for non-void When chains.</summary>
+			private sealed class WhenMatcherTerminalCallbackBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<object?, object?> _callback;
+
+				public WhenMatcherTerminalCallbackBase(global::System.Func<object?, object?> callback) { _callback = callback; }
+
+				public override bool Matches(object? args) => true;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _callback(args);
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Terminal no-op matcher for ThenNone() on non-void When chains.</summary>
+			private sealed class WhenMatcherNoneBase : WhenMatcherBase
+			{
+				public override bool Matches(object? args) => false;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => null;
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
+			public sealed class WhenBuilder : WhenBuilderBase
+			{
+				private readonly global::System.Func<string?, bool> _predicate;
+
+				public WhenBuilder(IPerson_SetLastNameInterceptor interceptor, global::System.Func<string?, bool> predicate) : base(interceptor)
+				{
+					_predicate = predicate;
+				}
+
+				/// <summary>Configures the return value when predicate matches.</summary>
+				public WhenChain Return(global::System.Threading.Tasks.Task value)
+				{
+					AddValueMatcher(new WhenMatcherPredicateValueBase(_predicate, value));
+					return new WhenChain((IPerson_SetLastNameInterceptor)_interceptor);
+				}
+			}
+
+			/// <summary>When chain implementation with ThenWhen, ThenCall, ThenNone, verification support.</summary>
+			public sealed class WhenChain : WhenChainBase
+			{
+				private readonly IPerson_SetLastNameInterceptor _typedInterceptor;
+
+				public WhenChain(IPerson_SetLastNameInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another matcher with exact value matching.</summary>
+				public WhenBuilder ThenWhen(string? @value)
+				{
+					return new WhenBuilder(_typedInterceptor, (_arg0) => global::System.Object.Equals(_arg0, @value));
+				}
+
+				/// <summary>Adds another matcher with predicate matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Func<string?, bool> predicate) => new WhenBuilder(_typedInterceptor, predicate);
+
+				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
+				public WhenChain ThenCall(SetLastNameDelegate callback)
+				{
+					AddTerminalCallbackMatcher(new WhenMatcherTerminalCallbackBase((object? args) => (object?)callback((string?)args!)));
+					return this;
+				}
+
+				/// <summary>Closes chain with no matcher.</summary>
+				public WhenChain ThenNone() { AddNoneMatcher(new WhenMatcherNoneBase()); return this; }
+
+				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
+				public WhenChain Verifiable() { VerifiableBase(); return this; }
+			}
+
+		}
+
+		/// <summary>Tracks and configures behavior for SetEmail(string? value) -> System.Threading.Tasks.Task.</summary>
+		public sealed class IPerson_SetEmailInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::DomainModel.IPerson? _source;
+
+			/// <summary>Callback delegate for SetEmail(string? value) -> System.Threading.Tasks.Task.</summary>
+			public delegate global::System.Threading.Tasks.Task SetEmailDelegate(string? @value);
+
+			public IPerson_SetEmailInterceptor() : base("SetEmail") { }
+			public IPerson_SetEmailInterceptor(global::System.Func<object> smartDefaultFactory) : base("SetEmail", smartDefaultFactory) { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (string?)args!;
+				((SetEmailDelegate)del)(typedArgs);
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (string?)args!;
+				return ((SetEmailDelegate)del)(typedArgs);
+			}
+			protected override global::System.Delegate CreateValueDelegate(object? value) => (SetEmailDelegate)((_) => (global::System.Threading.Tasks.Task)value!);
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
+			{
+				if (tracking is SetEmailImpl impl) impl.RecordArg((string?)args!);
+			}
+			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (string?)args!;
+
+			private string? _unconfiguredLastArg;
+
+			/// <summary>Last argument from the most recently called registration.</summary>
+			public string? LastArg
+			{
+				get
+				{
+					if ((_returnValueTracking?._callCount ?? 0) > 0 && _returnValueTracking is SetEmailImpl rvb) return rvb.LastArg;
+					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is SetEmailImpl cb) return cb.LastArg;
+					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is SetEmailImpl sb) return sb.LastArg;
+					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
+				}
+			}
+
+			/// <summary>Configures callback for SetEmail(string? value) -> System.Threading.Tasks.Task.</summary>
+			public SetEmailImpl Call(SetEmailDelegate callback)
+			{
+				var builder = new SetEmailImpl(this);
+				SetupReturnCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Configures callback for SetEmail(string? value). Task.CompletedTask auto-returned.</summary>
+			public SetEmailImpl Call(global::System.Action<string?> callback)
+			{
+				var builder = new SetEmailImpl(this);
+				SetupReturnCallback((SetEmailDelegate)((string? @value) => { callback(@value); return global::System.Threading.Tasks.Task.CompletedTask; }), builder);
+				return builder;
+			}
+
+			/// <summary>Sets return value for SetEmail(string? value) -> System.Threading.Tasks.Task.</summary>
+			/// <param name="value">The value to return.</param>
+			public SetEmailImpl Return(global::System.Threading.Tasks.Task value)
+			{
+				var builder = new SetEmailImpl(this);
+				SetupReturnValue(value, builder);
+				return builder;
+			}
+
+			/// <summary>Configures sequence of return values. Each value returned once, last repeats.</summary>
+			public SetEmailSequence Return(global::System.Threading.Tasks.Task first, params global::System.Threading.Tasks.Task[] rest)
+			{
+				var builder = Return(first);
+				if (rest.Length == 0)
+				{
+					return builder.ThenReturn(first);
+				}
+				var seq = builder.ThenReturn(rest[0]);
+				for (int i = 1; i < rest.Length; i++)
+				{
+					seq.ThenReturn(rest[i]);
+				}
+				return seq;
+			}
+
+			/// <summary>Configures parameter matching for SetEmail(string? value) -> System.Threading.Tasks.Task. Matches exact values using Object.Equals. Returns builder for Return().</summary>
+			public WhenBuilder When(string? @value)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, (_arg0) => global::System.Object.Equals(_arg0, @value));
+			}
+
+			/// <summary>Configures parameter matching for SetEmail(string? value) -> System.Threading.Tasks.Task. Matches using predicate. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Func<string?, bool> predicate)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, predicate);
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal global::System.Threading.Tasks.Task Invoke(bool strict, string? @value)
+			{
+				object? __args = @value;
+				var (__handled, __result) = RunPriorityChain(__args);
+				if (__handled) return (global::System.Threading.Tasks.Task)__result!;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(__args);
+				var (__seqHandled, __seqResult) = HandleNonVoidSequenceExhaustedRepeat(strict, __args);
+				if (__seqHandled) return __seqResult is null ? global::System.Threading.Tasks.Task.CompletedTask : (global::System.Threading.Tasks.Task)__seqResult;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) return src.SetEmail(@value);
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "SetEmail");
+				return global::System.Threading.Tasks.Task.CompletedTask;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_unconfiguredLastArg = default;
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class SetEmailImpl : ReturnMethodCallBuilderBase, global::KnockOff.IMethodReturnBuilder<SetEmailDelegate, string?>
+			{
+				private readonly IPerson_SetEmailInterceptor _typedInterceptor;
+				private string? _lastArg = default!;
+
+				public SetEmailImpl(IPerson_SetEmailInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				public string? LastArg => _lastArg;
+				public void RecordArg(string? args) => _lastArg = args;
+
+				public override void Reset() { base.Reset(); _lastArg = default!; }
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public SetEmailSequence ThenReturn(SetEmailDelegate callback)
+				{
+					ThenReturnCallbackBase(callback);
+					return new SetEmailSequence(_typedInterceptor);
+				}
+
+				/// <summary>Elevates to sequence mode and adds a value. Returns sequence for further chaining.</summary>
+				public SetEmailSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetEmailSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					if (values.Length == 0) { ElevateToSequenceBase(); return new SetEmailSequence(_typedInterceptor); }
+					var seq = ThenReturn(values[0]);
+					for (int i = 1; i < values.Length; i++) seq.ThenReturn(values[i]);
+					return seq;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetEmailImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public SetEmailImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetEmailImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodTracking<string?> global::KnockOff.IMethodTracking<string?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking<string?> global::KnockOff.IMethodTracking<string?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnBuilder<SetEmailDelegate, string?> global::KnockOff.IMethodReturnBuilder<SetEmailDelegate, string?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodReturnBuilder<SetEmailDelegate, string?> global::KnockOff.IMethodReturnBuilder<SetEmailDelegate, string?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<SetEmailDelegate> global::KnockOff.IMethodReturnBuilder<SetEmailDelegate, string?>.ThenReturn(SetEmailDelegate callback) => ThenReturn(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
+			public sealed class SetEmailSequence : ReturnMethodSequenceBase, global::KnockOff.IMethodReturnSequence<SetEmailDelegate>
+			{
+				private readonly IPerson_SetEmailInterceptor _typedInterceptor;
+
+				public SetEmailSequence(IPerson_SetEmailInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public SetEmailSequence ThenReturn(SetEmailDelegate callback) { ThenReturnCallbackBase(callback); return this; }
+
+				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
+				public SetEmailSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetEmailSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					foreach (var value in values) ThenReturn(value);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetEmailSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetEmailImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodReturnSequence<SetEmailDelegate> global::KnockOff.IMethodReturnSequence<SetEmailDelegate>.ThenReturn(SetEmailDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<SetEmailDelegate> global::KnockOff.IMethodReturnSequence<SetEmailDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+			/// <summary>Predicate-based When matcher that returns a stored value.</summary>
+			private sealed class WhenMatcherPredicateValueBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<string?, bool> _predicate;
+				private readonly object? _value;
+
+				public WhenMatcherPredicateValueBase(global::System.Func<string?, bool> predicate, object? value) { _predicate = predicate; _value = value; }
+
+				public override bool Matches(object? args) => _predicate((string?)args!);
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _value;
+				public override bool IsTerminal => false;
+			}
+
+			/// <summary>Terminal always-matching callback matcher for non-void When chains.</summary>
+			private sealed class WhenMatcherTerminalCallbackBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<object?, object?> _callback;
+
+				public WhenMatcherTerminalCallbackBase(global::System.Func<object?, object?> callback) { _callback = callback; }
+
+				public override bool Matches(object? args) => true;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _callback(args);
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Terminal no-op matcher for ThenNone() on non-void When chains.</summary>
+			private sealed class WhenMatcherNoneBase : WhenMatcherBase
+			{
+				public override bool Matches(object? args) => false;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => null;
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
+			public sealed class WhenBuilder : WhenBuilderBase
+			{
+				private readonly global::System.Func<string?, bool> _predicate;
+
+				public WhenBuilder(IPerson_SetEmailInterceptor interceptor, global::System.Func<string?, bool> predicate) : base(interceptor)
+				{
+					_predicate = predicate;
+				}
+
+				/// <summary>Configures the return value when predicate matches.</summary>
+				public WhenChain Return(global::System.Threading.Tasks.Task value)
+				{
+					AddValueMatcher(new WhenMatcherPredicateValueBase(_predicate, value));
+					return new WhenChain((IPerson_SetEmailInterceptor)_interceptor);
+				}
+			}
+
+			/// <summary>When chain implementation with ThenWhen, ThenCall, ThenNone, verification support.</summary>
+			public sealed class WhenChain : WhenChainBase
+			{
+				private readonly IPerson_SetEmailInterceptor _typedInterceptor;
+
+				public WhenChain(IPerson_SetEmailInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another matcher with exact value matching.</summary>
+				public WhenBuilder ThenWhen(string? @value)
+				{
+					return new WhenBuilder(_typedInterceptor, (_arg0) => global::System.Object.Equals(_arg0, @value));
+				}
+
+				/// <summary>Adds another matcher with predicate matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Func<string?, bool> predicate) => new WhenBuilder(_typedInterceptor, predicate);
+
+				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
+				public WhenChain ThenCall(SetEmailDelegate callback)
+				{
+					AddTerminalCallbackMatcher(new WhenMatcherTerminalCallbackBase((object? args) => (object?)callback((string?)args!)));
+					return this;
+				}
+
+				/// <summary>Closes chain with no matcher.</summary>
+				public WhenChain ThenNone() { AddNoneMatcher(new WhenMatcherNoneBase()); return this; }
+
+				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
+				public WhenChain Verifiable() { VerifiableBase(); return this; }
+			}
+
+		}
+
+		/// <summary>Tracks and configures behavior for SetNotes(string? value) -> System.Threading.Tasks.Task.</summary>
+		public sealed class IPerson_SetNotesInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::DomainModel.IPerson? _source;
+
+			/// <summary>Callback delegate for SetNotes(string? value) -> System.Threading.Tasks.Task.</summary>
+			public delegate global::System.Threading.Tasks.Task SetNotesDelegate(string? @value);
+
+			public IPerson_SetNotesInterceptor() : base("SetNotes") { }
+			public IPerson_SetNotesInterceptor(global::System.Func<object> smartDefaultFactory) : base("SetNotes", smartDefaultFactory) { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (string?)args!;
+				((SetNotesDelegate)del)(typedArgs);
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (string?)args!;
+				return ((SetNotesDelegate)del)(typedArgs);
+			}
+			protected override global::System.Delegate CreateValueDelegate(object? value) => (SetNotesDelegate)((_) => (global::System.Threading.Tasks.Task)value!);
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
+			{
+				if (tracking is SetNotesImpl impl) impl.RecordArg((string?)args!);
+			}
+			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (string?)args!;
+
+			private string? _unconfiguredLastArg;
+
+			/// <summary>Last argument from the most recently called registration.</summary>
+			public string? LastArg
+			{
+				get
+				{
+					if ((_returnValueTracking?._callCount ?? 0) > 0 && _returnValueTracking is SetNotesImpl rvb) return rvb.LastArg;
+					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is SetNotesImpl cb) return cb.LastArg;
+					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is SetNotesImpl sb) return sb.LastArg;
+					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
+				}
+			}
+
+			/// <summary>Configures callback for SetNotes(string? value) -> System.Threading.Tasks.Task.</summary>
+			public SetNotesImpl Call(SetNotesDelegate callback)
+			{
+				var builder = new SetNotesImpl(this);
+				SetupReturnCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Configures callback for SetNotes(string? value). Task.CompletedTask auto-returned.</summary>
+			public SetNotesImpl Call(global::System.Action<string?> callback)
+			{
+				var builder = new SetNotesImpl(this);
+				SetupReturnCallback((SetNotesDelegate)((string? @value) => { callback(@value); return global::System.Threading.Tasks.Task.CompletedTask; }), builder);
+				return builder;
+			}
+
+			/// <summary>Sets return value for SetNotes(string? value) -> System.Threading.Tasks.Task.</summary>
+			/// <param name="value">The value to return.</param>
+			public SetNotesImpl Return(global::System.Threading.Tasks.Task value)
+			{
+				var builder = new SetNotesImpl(this);
+				SetupReturnValue(value, builder);
+				return builder;
+			}
+
+			/// <summary>Configures sequence of return values. Each value returned once, last repeats.</summary>
+			public SetNotesSequence Return(global::System.Threading.Tasks.Task first, params global::System.Threading.Tasks.Task[] rest)
+			{
+				var builder = Return(first);
+				if (rest.Length == 0)
+				{
+					return builder.ThenReturn(first);
+				}
+				var seq = builder.ThenReturn(rest[0]);
+				for (int i = 1; i < rest.Length; i++)
+				{
+					seq.ThenReturn(rest[i]);
+				}
+				return seq;
+			}
+
+			/// <summary>Configures parameter matching for SetNotes(string? value) -> System.Threading.Tasks.Task. Matches exact values using Object.Equals. Returns builder for Return().</summary>
+			public WhenBuilder When(string? @value)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, (_arg0) => global::System.Object.Equals(_arg0, @value));
+			}
+
+			/// <summary>Configures parameter matching for SetNotes(string? value) -> System.Threading.Tasks.Task. Matches using predicate. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Func<string?, bool> predicate)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, predicate);
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal global::System.Threading.Tasks.Task Invoke(bool strict, string? @value)
+			{
+				object? __args = @value;
+				var (__handled, __result) = RunPriorityChain(__args);
+				if (__handled) return (global::System.Threading.Tasks.Task)__result!;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(__args);
+				var (__seqHandled, __seqResult) = HandleNonVoidSequenceExhaustedRepeat(strict, __args);
+				if (__seqHandled) return __seqResult is null ? global::System.Threading.Tasks.Task.CompletedTask : (global::System.Threading.Tasks.Task)__seqResult;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) return src.SetNotes(@value);
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "SetNotes");
+				return global::System.Threading.Tasks.Task.CompletedTask;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_unconfiguredLastArg = default;
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class SetNotesImpl : ReturnMethodCallBuilderBase, global::KnockOff.IMethodReturnBuilder<SetNotesDelegate, string?>
+			{
+				private readonly IPerson_SetNotesInterceptor _typedInterceptor;
+				private string? _lastArg = default!;
+
+				public SetNotesImpl(IPerson_SetNotesInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				public string? LastArg => _lastArg;
+				public void RecordArg(string? args) => _lastArg = args;
+
+				public override void Reset() { base.Reset(); _lastArg = default!; }
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public SetNotesSequence ThenReturn(SetNotesDelegate callback)
+				{
+					ThenReturnCallbackBase(callback);
+					return new SetNotesSequence(_typedInterceptor);
+				}
+
+				/// <summary>Elevates to sequence mode and adds a value. Returns sequence for further chaining.</summary>
+				public SetNotesSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetNotesSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					if (values.Length == 0) { ElevateToSequenceBase(); return new SetNotesSequence(_typedInterceptor); }
+					var seq = ThenReturn(values[0]);
+					for (int i = 1; i < values.Length; i++) seq.ThenReturn(values[i]);
+					return seq;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetNotesImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public SetNotesImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetNotesImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodTracking<string?> global::KnockOff.IMethodTracking<string?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking<string?> global::KnockOff.IMethodTracking<string?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnBuilder<SetNotesDelegate, string?> global::KnockOff.IMethodReturnBuilder<SetNotesDelegate, string?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodReturnBuilder<SetNotesDelegate, string?> global::KnockOff.IMethodReturnBuilder<SetNotesDelegate, string?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<SetNotesDelegate> global::KnockOff.IMethodReturnBuilder<SetNotesDelegate, string?>.ThenReturn(SetNotesDelegate callback) => ThenReturn(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
+			public sealed class SetNotesSequence : ReturnMethodSequenceBase, global::KnockOff.IMethodReturnSequence<SetNotesDelegate>
+			{
+				private readonly IPerson_SetNotesInterceptor _typedInterceptor;
+
+				public SetNotesSequence(IPerson_SetNotesInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public SetNotesSequence ThenReturn(SetNotesDelegate callback) { ThenReturnCallbackBase(callback); return this; }
+
+				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
+				public SetNotesSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetNotesSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					foreach (var value in values) ThenReturn(value);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetNotesSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetNotesImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodReturnSequence<SetNotesDelegate> global::KnockOff.IMethodReturnSequence<SetNotesDelegate>.ThenReturn(SetNotesDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<SetNotesDelegate> global::KnockOff.IMethodReturnSequence<SetNotesDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+			/// <summary>Predicate-based When matcher that returns a stored value.</summary>
+			private sealed class WhenMatcherPredicateValueBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<string?, bool> _predicate;
+				private readonly object? _value;
+
+				public WhenMatcherPredicateValueBase(global::System.Func<string?, bool> predicate, object? value) { _predicate = predicate; _value = value; }
+
+				public override bool Matches(object? args) => _predicate((string?)args!);
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _value;
+				public override bool IsTerminal => false;
+			}
+
+			/// <summary>Terminal always-matching callback matcher for non-void When chains.</summary>
+			private sealed class WhenMatcherTerminalCallbackBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<object?, object?> _callback;
+
+				public WhenMatcherTerminalCallbackBase(global::System.Func<object?, object?> callback) { _callback = callback; }
+
+				public override bool Matches(object? args) => true;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _callback(args);
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Terminal no-op matcher for ThenNone() on non-void When chains.</summary>
+			private sealed class WhenMatcherNoneBase : WhenMatcherBase
+			{
+				public override bool Matches(object? args) => false;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => null;
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
+			public sealed class WhenBuilder : WhenBuilderBase
+			{
+				private readonly global::System.Func<string?, bool> _predicate;
+
+				public WhenBuilder(IPerson_SetNotesInterceptor interceptor, global::System.Func<string?, bool> predicate) : base(interceptor)
+				{
+					_predicate = predicate;
+				}
+
+				/// <summary>Configures the return value when predicate matches.</summary>
+				public WhenChain Return(global::System.Threading.Tasks.Task value)
+				{
+					AddValueMatcher(new WhenMatcherPredicateValueBase(_predicate, value));
+					return new WhenChain((IPerson_SetNotesInterceptor)_interceptor);
+				}
+			}
+
+			/// <summary>When chain implementation with ThenWhen, ThenCall, ThenNone, verification support.</summary>
+			public sealed class WhenChain : WhenChainBase
+			{
+				private readonly IPerson_SetNotesInterceptor _typedInterceptor;
+
+				public WhenChain(IPerson_SetNotesInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another matcher with exact value matching.</summary>
+				public WhenBuilder ThenWhen(string? @value)
+				{
+					return new WhenBuilder(_typedInterceptor, (_arg0) => global::System.Object.Equals(_arg0, @value));
+				}
+
+				/// <summary>Adds another matcher with predicate matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Func<string?, bool> predicate) => new WhenBuilder(_typedInterceptor, predicate);
+
+				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
+				public WhenChain ThenCall(SetNotesDelegate callback)
+				{
+					AddTerminalCallbackMatcher(new WhenMatcherTerminalCallbackBase((object? args) => (object?)callback((string?)args!)));
+					return this;
+				}
+
+				/// <summary>Closes chain with no matcher.</summary>
+				public WhenChain ThenNone() { AddNoneMatcher(new WhenMatcherNoneBase()); return this; }
+
+				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
+				public WhenChain Verifiable() { VerifiableBase(); return this; }
+			}
+
+		}
+
 		/// <summary>Tracks and configures behavior for Save (overloaded).</summary>
 		public sealed class IPerson_SaveInterceptor
 		{
@@ -4246,6 +5726,21 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for indexer.</summary>
 			public global::KnockOff.Interceptors.IndexerGetSetInterceptor<string, global::Neatoo.IEntityProperty> Indexer { get; } = new("Indexer");
 
+			/// <summary>Interceptor for SetId.</summary>
+			public IPerson_SetIdInterceptor SetId { get; } = new();
+
+			/// <summary>Interceptor for SetFirstName.</summary>
+			public IPerson_SetFirstNameInterceptor SetFirstName { get; } = new();
+
+			/// <summary>Interceptor for SetLastName.</summary>
+			public IPerson_SetLastNameInterceptor SetLastName { get; } = new();
+
+			/// <summary>Interceptor for SetEmail.</summary>
+			public IPerson_SetEmailInterceptor SetEmail { get; } = new();
+
+			/// <summary>Interceptor for SetNotes.</summary>
+			public IPerson_SetNotesInterceptor SetNotes { get; } = new();
+
 			/// <summary>Interceptor for Save.</summary>
 			public IPerson_SaveInterceptor Save { get; } = new();
 
@@ -4281,6 +5776,31 @@ partial class UniquePhoneNumberRuleTests
 
 			/// <summary>Interceptor for NeatooPropertyChanged event.</summary>
 			public IPerson_NeatooPropertyChangedInterceptor NeatooPropertyChanged { get; } = new();
+
+			global::System.Threading.Tasks.Task global::DomainModel.IPerson.SetId(global::System.Guid? value)
+			{
+				return SetId.Invoke(Strict, value);
+			}
+
+			global::System.Threading.Tasks.Task global::DomainModel.IPerson.SetFirstName(string? value)
+			{
+				return SetFirstName.Invoke(Strict, value);
+			}
+
+			global::System.Threading.Tasks.Task global::DomainModel.IPerson.SetLastName(string? value)
+			{
+				return SetLastName.Invoke(Strict, value);
+			}
+
+			global::System.Threading.Tasks.Task global::DomainModel.IPerson.SetEmail(string? value)
+			{
+				return SetEmail.Invoke(Strict, value);
+			}
+
+			global::System.Threading.Tasks.Task global::DomainModel.IPerson.SetNotes(string? value)
+			{
+				return SetNotes.Invoke(Strict, value);
+			}
 
 			global::Neatoo.EntityLazyLoad<global::DomainModel.IPersonPhoneList> global::DomainModel.IPerson.PersonPhoneList
 			{
@@ -4511,6 +6031,11 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
+				SetId._source = source;
+				SetFirstName._source = source;
+				SetLastName._source = source;
+				SetEmail._source = source;
+				SetNotes._source = source;
 				Save._source = source;
 				Delete._source = source;
 				UnDelete._source = source;
@@ -4547,6 +6072,11 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
+				SetId._source = null;
+				SetFirstName._source = null;
+				SetLastName._source = null;
+				SetEmail._source = null;
+				SetNotes._source = null;
 				Save._source = source;
 				Delete._source = source;
 				UnDelete._source = source;
@@ -4583,6 +6113,11 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
+				SetId._source = null;
+				SetFirstName._source = null;
+				SetLastName._source = null;
+				SetEmail._source = null;
+				SetNotes._source = null;
 				Save._source = null;
 				Delete._source = source;
 				UnDelete._source = source;
@@ -4619,6 +6154,11 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetFirstName._source = null;
+				SetLastName._source = null;
+				SetEmail._source = null;
+				SetNotes._source = null;
 				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
@@ -4655,6 +6195,11 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetFirstName._source = null;
+				SetLastName._source = null;
+				SetEmail._source = null;
+				SetNotes._source = null;
 				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
@@ -4691,6 +6236,11 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetFirstName._source = null;
+				SetLastName._source = null;
+				SetEmail._source = null;
+				SetNotes._source = null;
 				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
@@ -4727,6 +6277,11 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetFirstName._source = null;
+				SetLastName._source = null;
+				SetEmail._source = null;
+				SetNotes._source = null;
 				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
@@ -4763,6 +6318,11 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetFirstName._source = null;
+				SetLastName._source = null;
+				SetEmail._source = null;
+				SetNotes._source = null;
 				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
@@ -4799,6 +6359,11 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetFirstName._source = null;
+				SetLastName._source = null;
+				SetEmail._source = null;
+				SetNotes._source = null;
 				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
@@ -4835,6 +6400,11 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetFirstName._source = null;
+				SetLastName._source = null;
+				SetEmail._source = null;
+				SetNotes._source = null;
 				Save._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
@@ -4873,6 +6443,11 @@ partial class UniquePhoneNumberRuleTests
 				if (IsDeleted.CheckVerification() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerification() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerification() is { } indexerFailure) failures.Add(indexerFailure);
+				if (SetId.CheckVerification() is { } setidFailure) failures.Add(setidFailure);
+				if (SetFirstName.CheckVerification() is { } setfirstnameFailure) failures.Add(setfirstnameFailure);
+				if (SetLastName.CheckVerification() is { } setlastnameFailure) failures.Add(setlastnameFailure);
+				if (SetEmail.CheckVerification() is { } setemailFailure) failures.Add(setemailFailure);
+				if (SetNotes.CheckVerification() is { } setnotesFailure) failures.Add(setnotesFailure);
 				if (Save.CheckVerification() is { } saveFailure) failures.Add(saveFailure);
 				if (Delete.CheckVerification() is { } deleteFailure) failures.Add(deleteFailure);
 				if (UnDelete.CheckVerification() is { } undeleteFailure) failures.Add(undeleteFailure);
@@ -4916,6 +6491,11 @@ partial class UniquePhoneNumberRuleTests
 				if (IsDeleted.CheckVerificationAll() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerificationAll() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerificationAll() is { } indexerFailure) failures.Add(indexerFailure);
+				if (SetId.CheckVerificationAll() is { } setidFailure) failures.Add(setidFailure);
+				if (SetFirstName.CheckVerificationAll() is { } setfirstnameFailure) failures.Add(setfirstnameFailure);
+				if (SetLastName.CheckVerificationAll() is { } setlastnameFailure) failures.Add(setlastnameFailure);
+				if (SetEmail.CheckVerificationAll() is { } setemailFailure) failures.Add(setemailFailure);
+				if (SetNotes.CheckVerificationAll() is { } setnotesFailure) failures.Add(setnotesFailure);
 				if (Save.CheckVerificationAll() is { } saveFailure) failures.Add(saveFailure);
 				if (Delete.CheckVerificationAll() is { } deleteFailure) failures.Add(deleteFailure);
 				if (UnDelete.CheckVerificationAll() is { } undeleteFailure) failures.Add(undeleteFailure);
@@ -10818,6 +12398,894 @@ partial class UniquePhoneNumberRuleTests
 
 		}
 
+		/// <summary>Tracks and configures behavior for SetId(System.Guid? value) -> System.Threading.Tasks.Task.</summary>
+		public sealed class IPersonPhone_SetIdInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::DomainModel.IPersonPhone? _source;
+
+			/// <summary>Callback delegate for SetId(System.Guid? value) -> System.Threading.Tasks.Task.</summary>
+			public delegate global::System.Threading.Tasks.Task SetIdDelegate(global::System.Guid? @value);
+
+			public IPersonPhone_SetIdInterceptor() : base("SetId") { }
+			public IPersonPhone_SetIdInterceptor(global::System.Func<object> smartDefaultFactory) : base("SetId", smartDefaultFactory) { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (global::System.Guid?)args!;
+				((SetIdDelegate)del)(typedArgs);
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (global::System.Guid?)args!;
+				return ((SetIdDelegate)del)(typedArgs);
+			}
+			protected override global::System.Delegate CreateValueDelegate(object? value) => (SetIdDelegate)((_) => (global::System.Threading.Tasks.Task)value!);
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
+			{
+				if (tracking is SetIdImpl impl) impl.RecordArg((global::System.Guid?)args!);
+			}
+			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (global::System.Guid?)args!;
+
+			private global::System.Guid? _unconfiguredLastArg;
+
+			/// <summary>Last argument from the most recently called registration.</summary>
+			public global::System.Guid? LastArg
+			{
+				get
+				{
+					if ((_returnValueTracking?._callCount ?? 0) > 0 && _returnValueTracking is SetIdImpl rvb) return rvb.LastArg;
+					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is SetIdImpl cb) return cb.LastArg;
+					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is SetIdImpl sb) return sb.LastArg;
+					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
+				}
+			}
+
+			/// <summary>Configures callback for SetId(System.Guid? value) -> System.Threading.Tasks.Task.</summary>
+			public SetIdImpl Call(SetIdDelegate callback)
+			{
+				var builder = new SetIdImpl(this);
+				SetupReturnCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Configures callback for SetId(System.Guid? value). Task.CompletedTask auto-returned.</summary>
+			public SetIdImpl Call(global::System.Action<global::System.Guid?> callback)
+			{
+				var builder = new SetIdImpl(this);
+				SetupReturnCallback((SetIdDelegate)((global::System.Guid? @value) => { callback(@value); return global::System.Threading.Tasks.Task.CompletedTask; }), builder);
+				return builder;
+			}
+
+			/// <summary>Sets return value for SetId(System.Guid? value) -> System.Threading.Tasks.Task.</summary>
+			/// <param name="value">The value to return.</param>
+			public SetIdImpl Return(global::System.Threading.Tasks.Task value)
+			{
+				var builder = new SetIdImpl(this);
+				SetupReturnValue(value, builder);
+				return builder;
+			}
+
+			/// <summary>Configures sequence of return values. Each value returned once, last repeats.</summary>
+			public SetIdSequence Return(global::System.Threading.Tasks.Task first, params global::System.Threading.Tasks.Task[] rest)
+			{
+				var builder = Return(first);
+				if (rest.Length == 0)
+				{
+					return builder.ThenReturn(first);
+				}
+				var seq = builder.ThenReturn(rest[0]);
+				for (int i = 1; i < rest.Length; i++)
+				{
+					seq.ThenReturn(rest[i]);
+				}
+				return seq;
+			}
+
+			/// <summary>Configures parameter matching for SetId(System.Guid? value) -> System.Threading.Tasks.Task. Matches exact values using Object.Equals. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Guid? @value)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, (_arg0) => global::System.Object.Equals(_arg0, @value));
+			}
+
+			/// <summary>Configures parameter matching for SetId(System.Guid? value) -> System.Threading.Tasks.Task. Matches using predicate. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Func<global::System.Guid?, bool> predicate)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, predicate);
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal global::System.Threading.Tasks.Task Invoke(bool strict, global::System.Guid? @value)
+			{
+				object? __args = @value;
+				var (__handled, __result) = RunPriorityChain(__args);
+				if (__handled) return (global::System.Threading.Tasks.Task)__result!;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(__args);
+				var (__seqHandled, __seqResult) = HandleNonVoidSequenceExhaustedRepeat(strict, __args);
+				if (__seqHandled) return __seqResult is null ? global::System.Threading.Tasks.Task.CompletedTask : (global::System.Threading.Tasks.Task)__seqResult;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) return src.SetId(@value);
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "SetId");
+				return global::System.Threading.Tasks.Task.CompletedTask;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_unconfiguredLastArg = default;
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class SetIdImpl : ReturnMethodCallBuilderBase, global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?>
+			{
+				private readonly IPersonPhone_SetIdInterceptor _typedInterceptor;
+				private global::System.Guid? _lastArg = default!;
+
+				public SetIdImpl(IPersonPhone_SetIdInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				public global::System.Guid? LastArg => _lastArg;
+				public void RecordArg(global::System.Guid? args) => _lastArg = args;
+
+				public override void Reset() { base.Reset(); _lastArg = default!; }
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public SetIdSequence ThenReturn(SetIdDelegate callback)
+				{
+					ThenReturnCallbackBase(callback);
+					return new SetIdSequence(_typedInterceptor);
+				}
+
+				/// <summary>Elevates to sequence mode and adds a value. Returns sequence for further chaining.</summary>
+				public SetIdSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetIdSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					if (values.Length == 0) { ElevateToSequenceBase(); return new SetIdSequence(_typedInterceptor); }
+					var seq = ThenReturn(values[0]);
+					for (int i = 1; i < values.Length; i++) seq.ThenReturn(values[i]);
+					return seq;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetIdImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public SetIdImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetIdImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodTracking<global::System.Guid?> global::KnockOff.IMethodTracking<global::System.Guid?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking<global::System.Guid?> global::KnockOff.IMethodTracking<global::System.Guid?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?> global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?> global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<SetIdDelegate> global::KnockOff.IMethodReturnBuilder<SetIdDelegate, global::System.Guid?>.ThenReturn(SetIdDelegate callback) => ThenReturn(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
+			public sealed class SetIdSequence : ReturnMethodSequenceBase, global::KnockOff.IMethodReturnSequence<SetIdDelegate>
+			{
+				private readonly IPersonPhone_SetIdInterceptor _typedInterceptor;
+
+				public SetIdSequence(IPersonPhone_SetIdInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public SetIdSequence ThenReturn(SetIdDelegate callback) { ThenReturnCallbackBase(callback); return this; }
+
+				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
+				public SetIdSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetIdSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					foreach (var value in values) ThenReturn(value);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetIdSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetIdImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodReturnSequence<SetIdDelegate> global::KnockOff.IMethodReturnSequence<SetIdDelegate>.ThenReturn(SetIdDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<SetIdDelegate> global::KnockOff.IMethodReturnSequence<SetIdDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+			/// <summary>Predicate-based When matcher that returns a stored value.</summary>
+			private sealed class WhenMatcherPredicateValueBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<global::System.Guid?, bool> _predicate;
+				private readonly object? _value;
+
+				public WhenMatcherPredicateValueBase(global::System.Func<global::System.Guid?, bool> predicate, object? value) { _predicate = predicate; _value = value; }
+
+				public override bool Matches(object? args) => _predicate((global::System.Guid?)args!);
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _value;
+				public override bool IsTerminal => false;
+			}
+
+			/// <summary>Terminal always-matching callback matcher for non-void When chains.</summary>
+			private sealed class WhenMatcherTerminalCallbackBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<object?, object?> _callback;
+
+				public WhenMatcherTerminalCallbackBase(global::System.Func<object?, object?> callback) { _callback = callback; }
+
+				public override bool Matches(object? args) => true;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _callback(args);
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Terminal no-op matcher for ThenNone() on non-void When chains.</summary>
+			private sealed class WhenMatcherNoneBase : WhenMatcherBase
+			{
+				public override bool Matches(object? args) => false;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => null;
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
+			public sealed class WhenBuilder : WhenBuilderBase
+			{
+				private readonly global::System.Func<global::System.Guid?, bool> _predicate;
+
+				public WhenBuilder(IPersonPhone_SetIdInterceptor interceptor, global::System.Func<global::System.Guid?, bool> predicate) : base(interceptor)
+				{
+					_predicate = predicate;
+				}
+
+				/// <summary>Configures the return value when predicate matches.</summary>
+				public WhenChain Return(global::System.Threading.Tasks.Task value)
+				{
+					AddValueMatcher(new WhenMatcherPredicateValueBase(_predicate, value));
+					return new WhenChain((IPersonPhone_SetIdInterceptor)_interceptor);
+				}
+			}
+
+			/// <summary>When chain implementation with ThenWhen, ThenCall, ThenNone, verification support.</summary>
+			public sealed class WhenChain : WhenChainBase
+			{
+				private readonly IPersonPhone_SetIdInterceptor _typedInterceptor;
+
+				public WhenChain(IPersonPhone_SetIdInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another matcher with exact value matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Guid? @value)
+				{
+					return new WhenBuilder(_typedInterceptor, (_arg0) => global::System.Object.Equals(_arg0, @value));
+				}
+
+				/// <summary>Adds another matcher with predicate matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Func<global::System.Guid?, bool> predicate) => new WhenBuilder(_typedInterceptor, predicate);
+
+				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
+				public WhenChain ThenCall(SetIdDelegate callback)
+				{
+					AddTerminalCallbackMatcher(new WhenMatcherTerminalCallbackBase((object? args) => (object?)callback((global::System.Guid?)args!)));
+					return this;
+				}
+
+				/// <summary>Closes chain with no matcher.</summary>
+				public WhenChain ThenNone() { AddNoneMatcher(new WhenMatcherNoneBase()); return this; }
+
+				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
+				public WhenChain Verifiable() { VerifiableBase(); return this; }
+			}
+
+		}
+
+		/// <summary>Tracks and configures behavior for SetPhoneType(DomainModel.PhoneType? value) -> System.Threading.Tasks.Task.</summary>
+		public sealed class IPersonPhone_SetPhoneTypeInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::DomainModel.IPersonPhone? _source;
+
+			/// <summary>Callback delegate for SetPhoneType(DomainModel.PhoneType? value) -> System.Threading.Tasks.Task.</summary>
+			public delegate global::System.Threading.Tasks.Task SetPhoneTypeDelegate(global::DomainModel.PhoneType? @value);
+
+			public IPersonPhone_SetPhoneTypeInterceptor() : base("SetPhoneType") { }
+			public IPersonPhone_SetPhoneTypeInterceptor(global::System.Func<object> smartDefaultFactory) : base("SetPhoneType", smartDefaultFactory) { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (global::DomainModel.PhoneType?)args!;
+				((SetPhoneTypeDelegate)del)(typedArgs);
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (global::DomainModel.PhoneType?)args!;
+				return ((SetPhoneTypeDelegate)del)(typedArgs);
+			}
+			protected override global::System.Delegate CreateValueDelegate(object? value) => (SetPhoneTypeDelegate)((_) => (global::System.Threading.Tasks.Task)value!);
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
+			{
+				if (tracking is SetPhoneTypeImpl impl) impl.RecordArg((global::DomainModel.PhoneType?)args!);
+			}
+			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (global::DomainModel.PhoneType?)args!;
+
+			private global::DomainModel.PhoneType? _unconfiguredLastArg;
+
+			/// <summary>Last argument from the most recently called registration.</summary>
+			public global::DomainModel.PhoneType? LastArg
+			{
+				get
+				{
+					if ((_returnValueTracking?._callCount ?? 0) > 0 && _returnValueTracking is SetPhoneTypeImpl rvb) return rvb.LastArg;
+					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is SetPhoneTypeImpl cb) return cb.LastArg;
+					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is SetPhoneTypeImpl sb) return sb.LastArg;
+					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
+				}
+			}
+
+			/// <summary>Configures callback for SetPhoneType(DomainModel.PhoneType? value) -> System.Threading.Tasks.Task.</summary>
+			public SetPhoneTypeImpl Call(SetPhoneTypeDelegate callback)
+			{
+				var builder = new SetPhoneTypeImpl(this);
+				SetupReturnCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Configures callback for SetPhoneType(DomainModel.PhoneType? value). Task.CompletedTask auto-returned.</summary>
+			public SetPhoneTypeImpl Call(global::System.Action<global::DomainModel.PhoneType?> callback)
+			{
+				var builder = new SetPhoneTypeImpl(this);
+				SetupReturnCallback((SetPhoneTypeDelegate)((global::DomainModel.PhoneType? @value) => { callback(@value); return global::System.Threading.Tasks.Task.CompletedTask; }), builder);
+				return builder;
+			}
+
+			/// <summary>Sets return value for SetPhoneType(DomainModel.PhoneType? value) -> System.Threading.Tasks.Task.</summary>
+			/// <param name="value">The value to return.</param>
+			public SetPhoneTypeImpl Return(global::System.Threading.Tasks.Task value)
+			{
+				var builder = new SetPhoneTypeImpl(this);
+				SetupReturnValue(value, builder);
+				return builder;
+			}
+
+			/// <summary>Configures sequence of return values. Each value returned once, last repeats.</summary>
+			public SetPhoneTypeSequence Return(global::System.Threading.Tasks.Task first, params global::System.Threading.Tasks.Task[] rest)
+			{
+				var builder = Return(first);
+				if (rest.Length == 0)
+				{
+					return builder.ThenReturn(first);
+				}
+				var seq = builder.ThenReturn(rest[0]);
+				for (int i = 1; i < rest.Length; i++)
+				{
+					seq.ThenReturn(rest[i]);
+				}
+				return seq;
+			}
+
+			/// <summary>Configures parameter matching for SetPhoneType(DomainModel.PhoneType? value) -> System.Threading.Tasks.Task. Matches exact values using Object.Equals. Returns builder for Return().</summary>
+			public WhenBuilder When(global::DomainModel.PhoneType? @value)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, (_arg0) => global::System.Object.Equals(_arg0, @value));
+			}
+
+			/// <summary>Configures parameter matching for SetPhoneType(DomainModel.PhoneType? value) -> System.Threading.Tasks.Task. Matches using predicate. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Func<global::DomainModel.PhoneType?, bool> predicate)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, predicate);
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal global::System.Threading.Tasks.Task Invoke(bool strict, global::DomainModel.PhoneType? @value)
+			{
+				object? __args = @value;
+				var (__handled, __result) = RunPriorityChain(__args);
+				if (__handled) return (global::System.Threading.Tasks.Task)__result!;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(__args);
+				var (__seqHandled, __seqResult) = HandleNonVoidSequenceExhaustedRepeat(strict, __args);
+				if (__seqHandled) return __seqResult is null ? global::System.Threading.Tasks.Task.CompletedTask : (global::System.Threading.Tasks.Task)__seqResult;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) return src.SetPhoneType(@value);
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "SetPhoneType");
+				return global::System.Threading.Tasks.Task.CompletedTask;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_unconfiguredLastArg = default;
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class SetPhoneTypeImpl : ReturnMethodCallBuilderBase, global::KnockOff.IMethodReturnBuilder<SetPhoneTypeDelegate, global::DomainModel.PhoneType?>
+			{
+				private readonly IPersonPhone_SetPhoneTypeInterceptor _typedInterceptor;
+				private global::DomainModel.PhoneType? _lastArg = default!;
+
+				public SetPhoneTypeImpl(IPersonPhone_SetPhoneTypeInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				public global::DomainModel.PhoneType? LastArg => _lastArg;
+				public void RecordArg(global::DomainModel.PhoneType? args) => _lastArg = args;
+
+				public override void Reset() { base.Reset(); _lastArg = default!; }
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public SetPhoneTypeSequence ThenReturn(SetPhoneTypeDelegate callback)
+				{
+					ThenReturnCallbackBase(callback);
+					return new SetPhoneTypeSequence(_typedInterceptor);
+				}
+
+				/// <summary>Elevates to sequence mode and adds a value. Returns sequence for further chaining.</summary>
+				public SetPhoneTypeSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetPhoneTypeSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					if (values.Length == 0) { ElevateToSequenceBase(); return new SetPhoneTypeSequence(_typedInterceptor); }
+					var seq = ThenReturn(values[0]);
+					for (int i = 1; i < values.Length; i++) seq.ThenReturn(values[i]);
+					return seq;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetPhoneTypeImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public SetPhoneTypeImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetPhoneTypeImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodTracking<global::DomainModel.PhoneType?> global::KnockOff.IMethodTracking<global::DomainModel.PhoneType?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking<global::DomainModel.PhoneType?> global::KnockOff.IMethodTracking<global::DomainModel.PhoneType?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnBuilder<SetPhoneTypeDelegate, global::DomainModel.PhoneType?> global::KnockOff.IMethodReturnBuilder<SetPhoneTypeDelegate, global::DomainModel.PhoneType?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodReturnBuilder<SetPhoneTypeDelegate, global::DomainModel.PhoneType?> global::KnockOff.IMethodReturnBuilder<SetPhoneTypeDelegate, global::DomainModel.PhoneType?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<SetPhoneTypeDelegate> global::KnockOff.IMethodReturnBuilder<SetPhoneTypeDelegate, global::DomainModel.PhoneType?>.ThenReturn(SetPhoneTypeDelegate callback) => ThenReturn(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
+			public sealed class SetPhoneTypeSequence : ReturnMethodSequenceBase, global::KnockOff.IMethodReturnSequence<SetPhoneTypeDelegate>
+			{
+				private readonly IPersonPhone_SetPhoneTypeInterceptor _typedInterceptor;
+
+				public SetPhoneTypeSequence(IPersonPhone_SetPhoneTypeInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public SetPhoneTypeSequence ThenReturn(SetPhoneTypeDelegate callback) { ThenReturnCallbackBase(callback); return this; }
+
+				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
+				public SetPhoneTypeSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetPhoneTypeSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					foreach (var value in values) ThenReturn(value);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetPhoneTypeSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetPhoneTypeImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodReturnSequence<SetPhoneTypeDelegate> global::KnockOff.IMethodReturnSequence<SetPhoneTypeDelegate>.ThenReturn(SetPhoneTypeDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<SetPhoneTypeDelegate> global::KnockOff.IMethodReturnSequence<SetPhoneTypeDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+			/// <summary>Predicate-based When matcher that returns a stored value.</summary>
+			private sealed class WhenMatcherPredicateValueBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<global::DomainModel.PhoneType?, bool> _predicate;
+				private readonly object? _value;
+
+				public WhenMatcherPredicateValueBase(global::System.Func<global::DomainModel.PhoneType?, bool> predicate, object? value) { _predicate = predicate; _value = value; }
+
+				public override bool Matches(object? args) => _predicate((global::DomainModel.PhoneType?)args!);
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _value;
+				public override bool IsTerminal => false;
+			}
+
+			/// <summary>Terminal always-matching callback matcher for non-void When chains.</summary>
+			private sealed class WhenMatcherTerminalCallbackBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<object?, object?> _callback;
+
+				public WhenMatcherTerminalCallbackBase(global::System.Func<object?, object?> callback) { _callback = callback; }
+
+				public override bool Matches(object? args) => true;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _callback(args);
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Terminal no-op matcher for ThenNone() on non-void When chains.</summary>
+			private sealed class WhenMatcherNoneBase : WhenMatcherBase
+			{
+				public override bool Matches(object? args) => false;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => null;
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
+			public sealed class WhenBuilder : WhenBuilderBase
+			{
+				private readonly global::System.Func<global::DomainModel.PhoneType?, bool> _predicate;
+
+				public WhenBuilder(IPersonPhone_SetPhoneTypeInterceptor interceptor, global::System.Func<global::DomainModel.PhoneType?, bool> predicate) : base(interceptor)
+				{
+					_predicate = predicate;
+				}
+
+				/// <summary>Configures the return value when predicate matches.</summary>
+				public WhenChain Return(global::System.Threading.Tasks.Task value)
+				{
+					AddValueMatcher(new WhenMatcherPredicateValueBase(_predicate, value));
+					return new WhenChain((IPersonPhone_SetPhoneTypeInterceptor)_interceptor);
+				}
+			}
+
+			/// <summary>When chain implementation with ThenWhen, ThenCall, ThenNone, verification support.</summary>
+			public sealed class WhenChain : WhenChainBase
+			{
+				private readonly IPersonPhone_SetPhoneTypeInterceptor _typedInterceptor;
+
+				public WhenChain(IPersonPhone_SetPhoneTypeInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another matcher with exact value matching.</summary>
+				public WhenBuilder ThenWhen(global::DomainModel.PhoneType? @value)
+				{
+					return new WhenBuilder(_typedInterceptor, (_arg0) => global::System.Object.Equals(_arg0, @value));
+				}
+
+				/// <summary>Adds another matcher with predicate matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Func<global::DomainModel.PhoneType?, bool> predicate) => new WhenBuilder(_typedInterceptor, predicate);
+
+				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
+				public WhenChain ThenCall(SetPhoneTypeDelegate callback)
+				{
+					AddTerminalCallbackMatcher(new WhenMatcherTerminalCallbackBase((object? args) => (object?)callback((global::DomainModel.PhoneType?)args!)));
+					return this;
+				}
+
+				/// <summary>Closes chain with no matcher.</summary>
+				public WhenChain ThenNone() { AddNoneMatcher(new WhenMatcherNoneBase()); return this; }
+
+				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
+				public WhenChain Verifiable() { VerifiableBase(); return this; }
+			}
+
+		}
+
+		/// <summary>Tracks and configures behavior for SetPhoneNumber(string? value) -> System.Threading.Tasks.Task.</summary>
+		public sealed class IPersonPhone_SetPhoneNumberInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
+		{
+			/// <summary>Source object to delegate to when no callback is configured.</summary>
+			internal global::DomainModel.IPersonPhone? _source;
+
+			/// <summary>Callback delegate for SetPhoneNumber(string? value) -> System.Threading.Tasks.Task.</summary>
+			public delegate global::System.Threading.Tasks.Task SetPhoneNumberDelegate(string? @value);
+
+			public IPersonPhone_SetPhoneNumberInterceptor() : base("SetPhoneNumber") { }
+			public IPersonPhone_SetPhoneNumberInterceptor(global::System.Func<object> smartDefaultFactory) : base("SetPhoneNumber", smartDefaultFactory) { }
+
+			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (string?)args!;
+				((SetPhoneNumberDelegate)del)(typedArgs);
+			}
+			protected override object? InvokeDelegate(global::System.Delegate del, object? args)
+			{
+				var typedArgs = (string?)args!;
+				return ((SetPhoneNumberDelegate)del)(typedArgs);
+			}
+			protected override global::System.Delegate CreateValueDelegate(object? value) => (SetPhoneNumberDelegate)((_) => (global::System.Threading.Tasks.Task)value!);
+			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
+			{
+				if (tracking is SetPhoneNumberImpl impl) impl.RecordArg((string?)args!);
+			}
+			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (string?)args!;
+
+			private string? _unconfiguredLastArg;
+
+			/// <summary>Last argument from the most recently called registration.</summary>
+			public string? LastArg
+			{
+				get
+				{
+					if ((_returnValueTracking?._callCount ?? 0) > 0 && _returnValueTracking is SetPhoneNumberImpl rvb) return rvb.LastArg;
+					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is SetPhoneNumberImpl cb) return cb.LastArg;
+					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is SetPhoneNumberImpl sb) return sb.LastArg;
+					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
+				}
+			}
+
+			/// <summary>Configures callback for SetPhoneNumber(string? value) -> System.Threading.Tasks.Task.</summary>
+			public SetPhoneNumberImpl Call(SetPhoneNumberDelegate callback)
+			{
+				var builder = new SetPhoneNumberImpl(this);
+				SetupReturnCallback(callback, builder);
+				return builder;
+			}
+
+			/// <summary>Configures callback for SetPhoneNumber(string? value). Task.CompletedTask auto-returned.</summary>
+			public SetPhoneNumberImpl Call(global::System.Action<string?> callback)
+			{
+				var builder = new SetPhoneNumberImpl(this);
+				SetupReturnCallback((SetPhoneNumberDelegate)((string? @value) => { callback(@value); return global::System.Threading.Tasks.Task.CompletedTask; }), builder);
+				return builder;
+			}
+
+			/// <summary>Sets return value for SetPhoneNumber(string? value) -> System.Threading.Tasks.Task.</summary>
+			/// <param name="value">The value to return.</param>
+			public SetPhoneNumberImpl Return(global::System.Threading.Tasks.Task value)
+			{
+				var builder = new SetPhoneNumberImpl(this);
+				SetupReturnValue(value, builder);
+				return builder;
+			}
+
+			/// <summary>Configures sequence of return values. Each value returned once, last repeats.</summary>
+			public SetPhoneNumberSequence Return(global::System.Threading.Tasks.Task first, params global::System.Threading.Tasks.Task[] rest)
+			{
+				var builder = Return(first);
+				if (rest.Length == 0)
+				{
+					return builder.ThenReturn(first);
+				}
+				var seq = builder.ThenReturn(rest[0]);
+				for (int i = 1; i < rest.Length; i++)
+				{
+					seq.ThenReturn(rest[i]);
+				}
+				return seq;
+			}
+
+			/// <summary>Configures parameter matching for SetPhoneNumber(string? value) -> System.Threading.Tasks.Task. Matches exact values using Object.Equals. Returns builder for Return().</summary>
+			public WhenBuilder When(string? @value)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, (_arg0) => global::System.Object.Equals(_arg0, @value));
+			}
+
+			/// <summary>Configures parameter matching for SetPhoneNumber(string? value) -> System.Threading.Tasks.Task. Matches using predicate. Returns builder for Return().</summary>
+			public WhenBuilder When(global::System.Func<string?, bool> predicate)
+			{
+				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
+				return new WhenBuilder(this, predicate);
+			}
+
+			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
+			internal global::System.Threading.Tasks.Task Invoke(bool strict, string? @value)
+			{
+				object? __args = @value;
+				var (__handled, __result) = RunPriorityChain(__args);
+				if (__handled) return (global::System.Threading.Tasks.Task)__result!;
+				_unconfiguredCallCount++;
+				RecordUnconfiguredArgs(__args);
+				var (__seqHandled, __seqResult) = HandleNonVoidSequenceExhaustedRepeat(strict, __args);
+				if (__seqHandled) return __seqResult is null ? global::System.Threading.Tasks.Task.CompletedTask : (global::System.Threading.Tasks.Task)__seqResult;
+				#pragma warning disable CS8601, SYSLIB0050
+				if (_source is { } src) return src.SetPhoneNumber(@value);
+				#pragma warning restore CS8601, SYSLIB0050
+				if (strict) throw global::KnockOff.StubException.NotConfigured("", "SetPhoneNumber");
+				return global::System.Threading.Tasks.Task.CompletedTask;
+			}
+
+			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
+			public override void Reset()
+			{
+				base.Reset();
+				_unconfiguredLastArg = default;
+				_source = null;
+			}
+
+			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
+			public sealed class SetPhoneNumberImpl : ReturnMethodCallBuilderBase, global::KnockOff.IMethodReturnBuilder<SetPhoneNumberDelegate, string?>
+			{
+				private readonly IPersonPhone_SetPhoneNumberInterceptor _typedInterceptor;
+				private string? _lastArg = default!;
+
+				public SetPhoneNumberImpl(IPersonPhone_SetPhoneNumberInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				public string? LastArg => _lastArg;
+				public void RecordArg(string? args) => _lastArg = args;
+
+				public override void Reset() { base.Reset(); _lastArg = default!; }
+
+				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
+				public SetPhoneNumberSequence ThenReturn(SetPhoneNumberDelegate callback)
+				{
+					ThenReturnCallbackBase(callback);
+					return new SetPhoneNumberSequence(_typedInterceptor);
+				}
+
+				/// <summary>Elevates to sequence mode and adds a value. Returns sequence for further chaining.</summary>
+				public SetPhoneNumberSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetPhoneNumberSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					if (values.Length == 0) { ElevateToSequenceBase(); return new SetPhoneNumberSequence(_typedInterceptor); }
+					var seq = ThenReturn(values[0]);
+					for (int i = 1; i < values.Length; i++) seq.ThenReturn(values[i]);
+					return seq;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetPhoneNumberImpl Verifiable() { VerifiableBase(); return this; }
+				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
+				public SetPhoneNumberImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetPhoneNumberImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodTracking<string?> global::KnockOff.IMethodTracking<string?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodTracking<string?> global::KnockOff.IMethodTracking<string?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnBuilder<SetPhoneNumberDelegate, string?> global::KnockOff.IMethodReturnBuilder<SetPhoneNumberDelegate, string?>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodReturnBuilder<SetPhoneNumberDelegate, string?> global::KnockOff.IMethodReturnBuilder<SetPhoneNumberDelegate, string?>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
+				global::KnockOff.IMethodReturnSequence<SetPhoneNumberDelegate> global::KnockOff.IMethodReturnBuilder<SetPhoneNumberDelegate, string?>.ThenReturn(SetPhoneNumberDelegate callback) => ThenReturn(callback);
+			}
+
+			/// <summary>Sequence implementation for ThenReturn chaining.</summary>
+			public sealed class SetPhoneNumberSequence : ReturnMethodSequenceBase, global::KnockOff.IMethodReturnSequence<SetPhoneNumberDelegate>
+			{
+				private readonly IPersonPhone_SetPhoneNumberInterceptor _typedInterceptor;
+
+				public SetPhoneNumberSequence(IPersonPhone_SetPhoneNumberInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
+				public SetPhoneNumberSequence ThenReturn(SetPhoneNumberDelegate callback) { ThenReturnCallbackBase(callback); return this; }
+
+				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
+				public SetPhoneNumberSequence ThenReturn(global::System.Threading.Tasks.Task value) => ThenReturn((_) => value);
+
+				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
+				public SetPhoneNumberSequence ThenReturn(params global::System.Threading.Tasks.Task[] values)
+				{
+					foreach (var value in values) ThenReturn(value);
+					return this;
+				}
+
+				/// <summary>Marks for verification by Stub.Verify().</summary>
+				public SetPhoneNumberSequence Verifiable() { VerifiableBase(); return this; }
+
+				protected override ReturnMethodCallBuilderBase CreateNextReturnBuilder() => new SetPhoneNumberImpl(_typedInterceptor);
+
+				global::KnockOff.IMethodReturnSequence<SetPhoneNumberDelegate> global::KnockOff.IMethodReturnSequence<SetPhoneNumberDelegate>.ThenReturn(SetPhoneNumberDelegate callback) => ThenReturn(callback);
+				global::KnockOff.IMethodReturnSequence<SetPhoneNumberDelegate> global::KnockOff.IMethodReturnSequence<SetPhoneNumberDelegate>.Verifiable() => Verifiable();
+				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
+			}
+
+			/// <summary>Predicate-based When matcher that returns a stored value.</summary>
+			private sealed class WhenMatcherPredicateValueBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<string?, bool> _predicate;
+				private readonly object? _value;
+
+				public WhenMatcherPredicateValueBase(global::System.Func<string?, bool> predicate, object? value) { _predicate = predicate; _value = value; }
+
+				public override bool Matches(object? args) => _predicate((string?)args!);
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _value;
+				public override bool IsTerminal => false;
+			}
+
+			/// <summary>Terminal always-matching callback matcher for non-void When chains.</summary>
+			private sealed class WhenMatcherTerminalCallbackBase : WhenMatcherBase
+			{
+				private readonly global::System.Func<object?, object?> _callback;
+
+				public WhenMatcherTerminalCallbackBase(global::System.Func<object?, object?> callback) { _callback = callback; }
+
+				public override bool Matches(object? args) => true;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => _callback(args);
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Terminal no-op matcher for ThenNone() on non-void When chains.</summary>
+			private sealed class WhenMatcherNoneBase : WhenMatcherBase
+			{
+				public override bool Matches(object? args) => false;
+				public override void Execute(object? args) { }
+				public override object? ExecuteReturn(object? args) => null;
+				public override bool IsTerminal => true;
+			}
+
+			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
+			public sealed class WhenBuilder : WhenBuilderBase
+			{
+				private readonly global::System.Func<string?, bool> _predicate;
+
+				public WhenBuilder(IPersonPhone_SetPhoneNumberInterceptor interceptor, global::System.Func<string?, bool> predicate) : base(interceptor)
+				{
+					_predicate = predicate;
+				}
+
+				/// <summary>Configures the return value when predicate matches.</summary>
+				public WhenChain Return(global::System.Threading.Tasks.Task value)
+				{
+					AddValueMatcher(new WhenMatcherPredicateValueBase(_predicate, value));
+					return new WhenChain((IPersonPhone_SetPhoneNumberInterceptor)_interceptor);
+				}
+			}
+
+			/// <summary>When chain implementation with ThenWhen, ThenCall, ThenNone, verification support.</summary>
+			public sealed class WhenChain : WhenChainBase
+			{
+				private readonly IPersonPhone_SetPhoneNumberInterceptor _typedInterceptor;
+
+				public WhenChain(IPersonPhone_SetPhoneNumberInterceptor interceptor) : base(interceptor)
+				{
+					_typedInterceptor = interceptor;
+				}
+
+				/// <summary>Adds another matcher with exact value matching.</summary>
+				public WhenBuilder ThenWhen(string? @value)
+				{
+					return new WhenBuilder(_typedInterceptor, (_arg0) => global::System.Object.Equals(_arg0, @value));
+				}
+
+				/// <summary>Adds another matcher with predicate matching.</summary>
+				public WhenBuilder ThenWhen(global::System.Func<string?, bool> predicate) => new WhenBuilder(_typedInterceptor, predicate);
+
+				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
+				public WhenChain ThenCall(SetPhoneNumberDelegate callback)
+				{
+					AddTerminalCallbackMatcher(new WhenMatcherTerminalCallbackBase((object? args) => (object?)callback((string?)args!)));
+					return this;
+				}
+
+				/// <summary>Closes chain with no matcher.</summary>
+				public WhenChain ThenNone() { AddNoneMatcher(new WhenMatcherNoneBase()); return this; }
+
+				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
+				public WhenChain Verifiable() { VerifiableBase(); return this; }
+			}
+
+		}
+
 		/// <summary>Tracks and configures behavior for Delete().</summary>
 		public sealed class IPersonPhone_DeleteInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
 		{
@@ -14166,6 +16634,15 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for indexer.</summary>
 			public global::KnockOff.Interceptors.IndexerGetSetInterceptor<string, global::Neatoo.IEntityProperty> Indexer { get; } = new("Indexer");
 
+			/// <summary>Interceptor for SetId.</summary>
+			public IPersonPhone_SetIdInterceptor SetId { get; } = new();
+
+			/// <summary>Interceptor for SetPhoneType.</summary>
+			public IPersonPhone_SetPhoneTypeInterceptor SetPhoneType { get; } = new();
+
+			/// <summary>Interceptor for SetPhoneNumber.</summary>
+			public IPersonPhone_SetPhoneNumberInterceptor SetPhoneNumber { get; } = new();
+
 			/// <summary>Interceptor for Delete.</summary>
 			public IPersonPhone_DeleteInterceptor Delete { get; } = new();
 
@@ -14198,6 +16675,21 @@ partial class UniquePhoneNumberRuleTests
 
 			/// <summary>Interceptor for NeatooPropertyChanged event.</summary>
 			public IPersonPhone_NeatooPropertyChangedInterceptor NeatooPropertyChanged { get; } = new();
+
+			global::System.Threading.Tasks.Task global::DomainModel.IPersonPhone.SetId(global::System.Guid? value)
+			{
+				return SetId.Invoke(Strict, value);
+			}
+
+			global::System.Threading.Tasks.Task global::DomainModel.IPersonPhone.SetPhoneType(global::DomainModel.PhoneType? value)
+			{
+				return SetPhoneType.Invoke(Strict, value);
+			}
+
+			global::System.Threading.Tasks.Task global::DomainModel.IPersonPhone.SetPhoneNumber(string? value)
+			{
+				return SetPhoneNumber.Invoke(Strict, value);
+			}
 
 			global::DomainModel.IPerson? global::DomainModel.IPersonPhone.ParentPerson
 			{
@@ -14398,6 +16890,9 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
+				SetId._source = source;
+				SetPhoneType._source = source;
+				SetPhoneNumber._source = source;
 				Delete._source = source;
 				UnDelete._source = source;
 				GetProperty._source = source;
@@ -14430,6 +16925,9 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(source != null ? (a) => ((global::Neatoo.IEntityBase)source)[a] : null);
+				SetId._source = null;
+				SetPhoneType._source = null;
+				SetPhoneNumber._source = null;
 				Delete._source = source;
 				UnDelete._source = source;
 				GetProperty._source = source;
@@ -14462,6 +16960,9 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetPhoneType._source = null;
+				SetPhoneNumber._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
 				GetProperty._source = source;
@@ -14494,6 +16995,9 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetPhoneType._source = null;
+				SetPhoneNumber._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
 				GetProperty._source = null;
@@ -14526,6 +17030,9 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetPhoneType._source = null;
+				SetPhoneNumber._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
 				GetProperty._source = null;
@@ -14558,6 +17065,9 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetPhoneType._source = null;
+				SetPhoneNumber._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
 				GetProperty._source = null;
@@ -14590,6 +17100,9 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(null);
 				IsNew.SetSourceFallback(null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetPhoneType._source = null;
+				SetPhoneNumber._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
 				GetProperty._source = null;
@@ -14622,6 +17135,9 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetPhoneType._source = null;
+				SetPhoneNumber._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
 				GetProperty._source = null;
@@ -14654,6 +17170,9 @@ partial class UniquePhoneNumberRuleTests
 				IsDeleted.SetSourceFallback(source != null ? () => source.IsDeleted : null);
 				IsNew.SetSourceFallback(source != null ? () => source.IsNew : null);
 				Indexer.SetGetSourceFallback(null);
+				SetId._source = null;
+				SetPhoneType._source = null;
+				SetPhoneNumber._source = null;
 				Delete._source = null;
 				UnDelete._source = null;
 				GetProperty._source = null;
@@ -14688,6 +17207,9 @@ partial class UniquePhoneNumberRuleTests
 				if (IsDeleted.CheckVerification() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerification() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerification() is { } indexerFailure) failures.Add(indexerFailure);
+				if (SetId.CheckVerification() is { } setidFailure) failures.Add(setidFailure);
+				if (SetPhoneType.CheckVerification() is { } setphonetypeFailure) failures.Add(setphonetypeFailure);
+				if (SetPhoneNumber.CheckVerification() is { } setphonenumberFailure) failures.Add(setphonenumberFailure);
 				if (Delete.CheckVerification() is { } deleteFailure) failures.Add(deleteFailure);
 				if (UnDelete.CheckVerification() is { } undeleteFailure) failures.Add(undeleteFailure);
 				if (GetProperty.CheckVerification() is { } getpropertyFailure) failures.Add(getpropertyFailure);
@@ -14727,6 +17249,9 @@ partial class UniquePhoneNumberRuleTests
 				if (IsDeleted.CheckVerificationAll() is { } isdeletedFailure) failures.Add(isdeletedFailure);
 				if (IsNew.CheckVerificationAll() is { } isnewFailure) failures.Add(isnewFailure);
 				if (Indexer.CheckVerificationAll() is { } indexerFailure) failures.Add(indexerFailure);
+				if (SetId.CheckVerificationAll() is { } setidFailure) failures.Add(setidFailure);
+				if (SetPhoneType.CheckVerificationAll() is { } setphonetypeFailure) failures.Add(setphonetypeFailure);
+				if (SetPhoneNumber.CheckVerificationAll() is { } setphonenumberFailure) failures.Add(setphonenumberFailure);
 				if (Delete.CheckVerificationAll() is { } deleteFailure) failures.Add(deleteFailure);
 				if (UnDelete.CheckVerificationAll() is { } undeleteFailure) failures.Add(undeleteFailure);
 				if (GetProperty.CheckVerificationAll() is { } getpropertyFailure) failures.Add(getpropertyFailure);
