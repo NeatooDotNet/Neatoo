@@ -58,7 +58,7 @@ public class WorkOrderViewModelTests
         Assert.AreEqual("Pending", workOrder.Status);
         Assert.IsTrue(_vm.CanApprove);
 
-        _vm.Approve("reviewer");
+        await _vm.Approve("reviewer");
         await workOrder.WaitForTasks();
 
         Assert.AreEqual("Approved", workOrder.Status);

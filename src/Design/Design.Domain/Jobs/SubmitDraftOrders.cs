@@ -72,7 +72,7 @@ public static partial class SubmitDraftOrders
                 ?? throw new InvalidOperationException($"Order {id} not found");
 
             // The verb sets Status; the rule triggered by Status runs now.
-            order.Submit();
+            await order.Submit();
 
             // Async rules, if any, finish here. Nothing else is run.
             await order.WaitForTasks();

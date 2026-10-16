@@ -27,15 +27,15 @@ The rules on `WorkOrder` write its facts into `private set` properties:
 // A business fact derived from two others. The UI binds to it (for
 // example @if (workOrder.IsHeld) around a banner) and decides nothing;
 // the entity never names a screen element (no "ShowHoldBanner").
-RuleManager.AddAction(
-    t => t.IsHeld = t.IsOnHold && t.Status != "Closed",
+RuleManager.AddActionAsync(
+    async t => await t.SetIsHeld(t.IsOnHold && t.Status != "Closed"),
     t => t.IsOnHold,
     t => t.Status);
 
 // A flag derived from a child property. The trigger is the child's
 // property path, so any task's IsSchedulable change recomputes it.
-RuleManager.AddAction(
-    t => t.HasUnschedulableTasks = t.Tasks?.Any(task => !task.IsSchedulable) ?? false,
+RuleManager.AddActionAsync(
+    async t => await t.SetHasUnschedulableTasks(t.Tasks?.Any(task => !task.IsSchedulable) ?? false),
     t => t.Tasks![0].IsSchedulable);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L56-L70' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-derived-facts' title='Start of snippet'>anchor</a></sup>
@@ -179,9 +179,12 @@ internal sealed class WorkOrderViewModel
     public bool CanApprove => WorkOrder?.CanApprove ?? false;
 
     /// <summary>Calls the verb; the entity's rules update CanApprove and Status.</summary>
-    public void Approve(string approver)
+    public async Task Approve(string approver)
     {
-        WorkOrder?.Approve(approver);
+        if (WorkOrder != null)
+        {
+            await WorkOrder.Approve(approver);
+        }
     }
 
     public bool CanSave => WorkOrder?.IsSavable ?? false;
@@ -204,7 +207,7 @@ internal sealed class WorkOrderViewModel
     }
 }
 ```
-<sup><a href='/src/Design/Design.App/ViewModels/WorkOrderViewModel.cs#L28-L102' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-viewmodel-over-aggregate' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ViewModels/WorkOrderViewModel.cs#L28-L105' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-viewmodel-over-aggregate' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Key Points

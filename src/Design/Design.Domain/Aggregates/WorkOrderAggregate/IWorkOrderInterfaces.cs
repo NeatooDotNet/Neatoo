@@ -29,7 +29,7 @@ public interface IWorkOrder : IEntityRoot
     string? Summary { get; }
     IWorkOrderTaskList? Tasks { get; }
 
-    void Approve(string approver);
+    Task Approve(string approver);
 }
 
 /// <summary>
@@ -46,7 +46,7 @@ public interface IWorkOrderTask : IEntityBase
     decimal Cost { get; }
     bool IsSchedulable { get; }
 
-    void ApplyParentDiscount();
+    Task ApplyParentDiscount();
 }
 
 public interface IWorkOrderTaskList : IEntityListBase<IWorkOrderTask>

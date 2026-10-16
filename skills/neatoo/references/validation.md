@@ -128,7 +128,7 @@ internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L201-L218' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L203-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A rule with no dependencies is constructed in the entity's constructor:
@@ -194,8 +194,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public TriggerPatternsDemo(IValidateBaseServices<TriggerPatternsDemo> services) : base(services)
     {
         // Rule that depends on multiple properties
-        RuleManager.AddAction(
-            t => t.Sum = t.A + t.B + t.C,
+        RuleManager.AddActionAsync(
+            async t => await t.SetSum(t.A + t.B + t.C),
             t => t.A,
             t => t.B,
             t => t.C);
@@ -207,8 +207,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
             t => t.Sum);
 
         // Action triggered by computed property
-        RuleManager.AddAction(
-            t => t.IsOverLimit = t.Sum > 100,
+        RuleManager.AddActionAsync(
+            async t => await t.SetIsOverLimit(t.Sum > 100),
             t => t.Sum);
     }
 
@@ -298,13 +298,13 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     {
         if (string.IsNullOrWhiteSpace(target.Username))
         {
-            target.IsUsernameAvailable = false;
+            await target.SetIsUsernameAvailable(false);
             return None;  // Don't check empty usernames - None is inherited from AsyncRuleBase
         }
 
         var available = await _isAvailable(target.Username);
 
-        target.IsUsernameAvailable = available;
+        await target.SetIsUsernameAvailable(available);
 
         if (!available)
         {
@@ -579,7 +579,7 @@ public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(servi
         {
             // Simulate async work
             await Task.Delay(100);
-            t.ComputedValue = $"Processed: {t.Name}";
+            await t.SetComputedValue($"Processed: {t.Name}");
         },
         t => t.Name);
 }
@@ -596,8 +596,8 @@ public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(servi
 ```cs
 // Four or more triggers take an explicit array: params is incompatible
 // with the CallerArgumentExpression that gives the rule its id.
-RuleManager.AddAction(
-    t => t.Summary = $"{t.Status}; on hold: {t.IsOnHold}; budget {t.Budget}; discount {t.Discount}",
+RuleManager.AddActionAsync(
+    async t => await t.SetSummary($"{t.Status}; on hold: {t.IsOnHold}; budget {t.Budget}; discount {t.Discount}"),
     new Expression<Func<WorkOrder, object?>>[]
     {
         t => t.Status, t => t.IsOnHold, t => t.Budget, t => t.Discount
@@ -723,17 +723,17 @@ internal class ShippingQuoteRule : AsyncRuleBase<ShipmentRequest>, IShippingQuot
     {
         if (string.IsNullOrWhiteSpace(target.Destination) || target.WeightKg <= 0)
         {
-            target.Quote = 0m;
+            await target.SetQuote(0m);
             return None;
         }
 
         if (!await _rates.ShipsTo(target.Destination))
         {
-            target.Quote = 0m;
+            await target.SetQuote(0m);
             return (nameof(ShipmentRequest.Destination), $"We do not ship to {target.Destination}").AsRuleMessages();
         }
 
-        target.Quote = await _rates.Quote(target.Destination, target.WeightKg);
+        await target.SetQuote(await _rates.Quote(target.Destination, target.WeightKg));
         return None;
     }
 }

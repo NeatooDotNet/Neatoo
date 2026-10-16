@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Test projects target single framework -->
+    <TargetFrameworks></TargetFrameworks>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="MSTest.TestAdapter" />
+    <PackageReference Include="MSTest.TestFramework" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reference the analyzer and code fix directly (not as analyzers) so the tests can run them -->
+    <ProjectReference Include="..\Neatoo.Analyzers\Neatoo.Analyzers.csproj" OutputItemType="None" ReferenceOutputAssembly="true" />
+    <ProjectReference Include="..\Neatoo.CodeFixes\Neatoo.CodeFixes.csproj" OutputItemType="None" ReferenceOutputAssembly="true" />
+  </ItemGroup>
+
+</Project>

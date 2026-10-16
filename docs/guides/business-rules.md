@@ -17,8 +17,8 @@ A derived value is a `private set` partial property written by an `AddAction` ru
 ```cs
 // A derived value is a private-set partial property written by a rule.
 // It notifies, it serializes, and the UI sees it read-only.
-RuleManager.AddAction(
-    t => t.Cost = t.Hours * t.Rate * (1 - t.Discount),
+RuleManager.AddActionAsync(
+    async t => await t.SetCost(t.Hours * t.Rate * (1 - t.Discount)),
     t => t.Hours,
     t => t.Rate,
     t => t.Discount);
@@ -41,7 +41,7 @@ public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(servi
         {
             // Simulate async work
             await Task.Delay(100);
-            t.ComputedValue = $"Processed: {t.Name}";
+            await t.SetComputedValue($"Processed: {t.Name}");
         },
         t => t.Name);
 }
@@ -144,8 +144,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public TriggerPatternsDemo(IValidateBaseServices<TriggerPatternsDemo> services) : base(services)
     {
         // Rule that depends on multiple properties
-        RuleManager.AddAction(
-            t => t.Sum = t.A + t.B + t.C,
+        RuleManager.AddActionAsync(
+            async t => await t.SetSum(t.A + t.B + t.C),
             t => t.A,
             t => t.B,
             t => t.C);
@@ -157,8 +157,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
             t => t.Sum);
 
         // Action triggered by computed property
-        RuleManager.AddAction(
-            t => t.IsOverLimit = t.Sum > 100,
+        RuleManager.AddActionAsync(
+            async t => await t.SetIsOverLimit(t.Sum > 100),
             t => t.Sum);
     }
 
@@ -283,13 +283,13 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     {
         if (string.IsNullOrWhiteSpace(target.Username))
         {
-            target.IsUsernameAvailable = false;
+            await target.SetIsUsernameAvailable(false);
             return None;  // Don't check empty usernames - None is inherited from AsyncRuleBase
         }
 
         var available = await _isAvailable(target.Username);
 
-        target.IsUsernameAvailable = available;
+        await target.SetIsUsernameAvailable(available);
 
         if (!available)
         {
@@ -385,8 +385,8 @@ Some invariants cannot be checked by a single entity. "Total cost must not excee
 <a id='snippet-skill-child-aggregation'></a>
 ```cs
 // Aggregation over the children, recomputed when any task's Cost changes
-RuleManager.AddAction(
-    t => t.TotalCost = t.Tasks?.Sum(task => task.Cost) ?? 0,
+RuleManager.AddActionAsync(
+    async t => await t.SetTotalCost(t.Tasks?.Sum(task => task.Cost) ?? 0),
     t => t.Tasks![0].Cost);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L72-L77' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-aggregation' title='Start of snippet'>anchor</a></sup>
@@ -399,8 +399,8 @@ The aggregation writes `TotalCost`, which triggers the budget rule — a chain, 
 ```cs
 // Chained: the rule above sets TotalCost, which triggers this one.
 // Hours -> Cost (on the task) -> TotalCost -> IsOverBudget, no handler code.
-RuleManager.AddAction(
-    t => t.IsOverBudget = t.TotalCost > t.Budget,
+RuleManager.AddActionAsync(
+    async t => await t.SetIsOverBudget(t.TotalCost > t.Budget),
     t => t.TotalCost,
     t => t.Budget);
 ```
@@ -437,8 +437,8 @@ Four or more triggers take an explicit `Expression<Func<T, object?>>[]` (the ove
 ```cs
 // Four or more triggers take an explicit array: params is incompatible
 // with the CallerArgumentExpression that gives the rule its id.
-RuleManager.AddAction(
-    t => t.Summary = $"{t.Status}; on hold: {t.IsOnHold}; budget {t.Budget}; discount {t.Discount}",
+RuleManager.AddActionAsync(
+    async t => await t.SetSummary($"{t.Status}; on hold: {t.IsOnHold}; budget {t.Budget}; discount {t.Discount}"),
     new Expression<Func<WorkOrder, object?>>[]
     {
         t => t.Status, t => t.IsOnHold, t => t.Budget, t => t.Discount
@@ -457,16 +457,16 @@ When a property changes, the framework identifies the rules with that property a
 <a id='snippet-docs-rule-order'></a>
 ```cs
 /// <summary>Runs before rules with the default RuleOrder (1).</summary>
-internal class EarlyTraceRule : RuleBase<RuleBasicsDemo>
+internal class EarlyTraceRule : AsyncRuleBase<RuleBasicsDemo>
 {
     public EarlyTraceRule() : base(t => t.Name)
     {
         RuleOrder = -10;   // lower runs first; the default is 1
     }
 
-    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    protected override async Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
     {
-        target.RuleTrace += "early;";
+        await target.SetRuleTrace(target.RuleTrace + "early;");
         return None;
     }
 }
@@ -474,18 +474,18 @@ internal class EarlyTraceRule : RuleBase<RuleBasicsDemo>
 /// <summary>
 /// Default RuleOrder: runs after EarlyTraceRule although it is registered first.
 /// </summary>
-internal class LateTraceRule : RuleBase<RuleBasicsDemo>
+internal class LateTraceRule : AsyncRuleBase<RuleBasicsDemo>
 {
     public LateTraceRule() : base(t => t.Name) { }
 
-    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    protected override async Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
     {
-        target.RuleTrace += "late;";
+        await target.SetRuleTrace(target.RuleTrace + "late;");
         return None;
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L245-L274' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-rule-order' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L247-L276' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-rule-order' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: docs-rule-order-test -->
@@ -656,8 +656,8 @@ A root's state can also be read by a child's rule through `Parent`. `Parent` is 
 ```cs
 // A child rule reads ambient root state through Parent. Parent is null
 // until the task is attached, so pattern-match instead of casting.
-RuleManager.AddAction(
-    t => t.IsSchedulable = t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold,
+RuleManager.AddActionAsync(
+    async t => await t.SetIsSchedulable(t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold),
     t => t.Hours);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L47-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-rule' title='Start of snippet'>anchor</a></sup>
@@ -742,7 +742,7 @@ internal partial class LoadPropertyDemo : ValidateBase<LoadPropertyDemo>, ILoadP
         RuleManager.AddRule(new LoadPropertyTotalRule());
 
         // A rule on Total: it does NOT run when Total is written by LoadProperty
-        RuleManager.AddAction(t => t.TotalRuleRan = true, t => t.Total);
+        RuleManager.AddActionAsync(async t => await t.SetTotalRuleRan(true), t => t.Total);
     }
 
     [Create]
@@ -761,7 +761,7 @@ internal class LoadPropertyTotalRule : RuleBase<LoadPropertyDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L446-L482' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-load-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L448-L484' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-load-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: docs-load-property-test -->
@@ -796,8 +796,8 @@ Fluent rules for simple, entity-specific logic — the `WorkOrder` root register
 ```cs
 // Admission for the Approve verb. The UI binds the button to it; the
 // verb itself does not check and throw.
-RuleManager.AddAction(
-    t => t.CanApprove = t.Status == "Pending",
+RuleManager.AddActionAsync(
+    async t => await t.SetCanApprove(t.Status == "Pending"),
     t => t.Status);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-can-x-rule' title='Start of snippet'>anchor</a></sup>
@@ -809,15 +809,15 @@ RuleManager.AddAction(
 // A business fact derived from two others. The UI binds to it (for
 // example @if (workOrder.IsHeld) around a banner) and decides nothing;
 // the entity never names a screen element (no "ShowHoldBanner").
-RuleManager.AddAction(
-    t => t.IsHeld = t.IsOnHold && t.Status != "Closed",
+RuleManager.AddActionAsync(
+    async t => await t.SetIsHeld(t.IsOnHold && t.Status != "Closed"),
     t => t.IsOnHold,
     t => t.Status);
 
 // A flag derived from a child property. The trigger is the child's
 // property path, so any task's IsSchedulable change recomputes it.
-RuleManager.AddAction(
-    t => t.HasUnschedulableTasks = t.Tasks?.Any(task => !task.IsSchedulable) ?? false,
+RuleManager.AddActionAsync(
+    async t => await t.SetHasUnschedulableTasks(t.Tasks?.Any(task => !task.IsSchedulable) ?? false),
     t => t.Tasks![0].IsSchedulable);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L56-L70' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-derived-facts' title='Start of snippet'>anchor</a></sup>
@@ -832,8 +832,8 @@ Rules declare which properties trigger their execution. When any trigger propert
 <!-- snippet: skill-child-property-trigger -->
 <a id='snippet-skill-child-property-trigger'></a>
 ```cs
-RuleManager.AddAction(
-    t => t.TotalAmount = t.Items?.Sum(i => i.LineTotal) ?? 0,
+RuleManager.AddActionAsync(
+    async t => await t.SetTotalAmount(t.Items?.Sum(i => i.LineTotal) ?? 0),
     t => t.Items![0].LineTotal);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L98-L102' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-property-trigger' title='Start of snippet'>anchor</a></sup>
@@ -867,7 +867,7 @@ internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L201-L218' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L203-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Messages attach to the named property and display through the validation UI; the entity's `PropertyMessages` aggregates them across the graph.

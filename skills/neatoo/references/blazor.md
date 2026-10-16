@@ -99,8 +99,8 @@ Do NOT subscribe to `PropertyChanged` in Blazor code to recompute derived values
 ```cs
 // A derived value is a private-set partial property written by a rule.
 // It notifies, it serializes, and the UI sees it read-only.
-RuleManager.AddAction(
-    t => t.Cost = t.Hours * t.Rate * (1 - t.Discount),
+RuleManager.AddActionAsync(
+    async t => await t.SetCost(t.Hours * t.Rate * (1 - t.Discount)),
     t => t.Hours,
     t => t.Rate,
     t => t.Discount);
@@ -415,9 +415,12 @@ internal sealed class WorkOrderViewModel
     public bool CanApprove => WorkOrder?.CanApprove ?? false;
 
     /// <summary>Calls the verb; the entity's rules update CanApprove and Status.</summary>
-    public void Approve(string approver)
+    public async Task Approve(string approver)
     {
-        WorkOrder?.Approve(approver);
+        if (WorkOrder != null)
+        {
+            await WorkOrder.Approve(approver);
+        }
     }
 
     public bool CanSave => WorkOrder?.IsSavable ?? false;
@@ -440,7 +443,7 @@ internal sealed class WorkOrderViewModel
     }
 }
 ```
-<sup><a href='/src/Design/Design.App/ViewModels/WorkOrderViewModel.cs#L28-L102' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-viewmodel-over-aggregate' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ViewModels/WorkOrderViewModel.cs#L28-L105' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-viewmodel-over-aggregate' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-page-binds-facts -->

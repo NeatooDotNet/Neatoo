@@ -154,9 +154,11 @@ internal class NameRequiredRule : RuleBase<RuleBasicsDemo>
 #endregion
 
 /// <summary>
-/// Demonstrates: Action rule that computes derived values.
+/// Demonstrates: Action rule that computes derived values. A rule that writes a property awaits
+/// the write, so its consequences land before the rule finishes; that makes it an AsyncRuleBase.
+/// A rule that only returns messages stays a RuleBase.
 /// </summary>
-internal class CalculateTotalRule : RuleBase<RuleBasicsDemo>
+internal class CalculateTotalRule : AsyncRuleBase<RuleBasicsDemo>
 {
     // =========================================================================
     // Multiple Trigger Properties
@@ -167,10 +169,10 @@ internal class CalculateTotalRule : RuleBase<RuleBasicsDemo>
     // =========================================================================
     public CalculateTotalRule() : base(t => t.Quantity, t => t.Price) { }
 
-    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    protected override async Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
     {
         // Calculate derived value
-        target.Total = target.Quantity * target.Price;
+        await target.SetTotal(target.Quantity * target.Price);
 
         // Action rules typically return None (no validation message)
         return None;
@@ -244,16 +246,16 @@ internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
 
 #region docs-rule-order
 /// <summary>Runs before rules with the default RuleOrder (1).</summary>
-internal class EarlyTraceRule : RuleBase<RuleBasicsDemo>
+internal class EarlyTraceRule : AsyncRuleBase<RuleBasicsDemo>
 {
     public EarlyTraceRule() : base(t => t.Name)
     {
         RuleOrder = -10;   // lower runs first; the default is 1
     }
 
-    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    protected override async Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
     {
-        target.RuleTrace += "early;";
+        await target.SetRuleTrace(target.RuleTrace + "early;");
         return None;
     }
 }
@@ -261,13 +263,13 @@ internal class EarlyTraceRule : RuleBase<RuleBasicsDemo>
 /// <summary>
 /// Default RuleOrder: runs after EarlyTraceRule although it is registered first.
 /// </summary>
-internal class LateTraceRule : RuleBase<RuleBasicsDemo>
+internal class LateTraceRule : AsyncRuleBase<RuleBasicsDemo>
 {
     public LateTraceRule() : base(t => t.Name) { }
 
-    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    protected override async Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
     {
-        target.RuleTrace += "late;";
+        await target.SetRuleTrace(target.RuleTrace + "late;");
         return None;
     }
 }
@@ -461,7 +463,7 @@ internal partial class LoadPropertyDemo : ValidateBase<LoadPropertyDemo>, ILoadP
         RuleManager.AddRule(new LoadPropertyTotalRule());
 
         // A rule on Total: it does NOT run when Total is written by LoadProperty
-        RuleManager.AddAction(t => t.TotalRuleRan = true, t => t.Total);
+        RuleManager.AddActionAsync(async t => await t.SetTotalRuleRan(true), t => t.Total);
     }
 
     [Create]

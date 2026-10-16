@@ -83,13 +83,13 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
         // =====================================================================
 
         // Single trigger property
-        RuleManager.AddAction(
-            t => t.Status = $"Name set to: {t.Name}",
+        RuleManager.AddActionAsync(
+            async t => await t.SetStatus($"Name set to: {t.Name}"),
             t => t.Name);
 
         // Two trigger properties
-        RuleManager.AddAction(
-            t => t.Total = t.Quantity * t.UnitPrice,
+        RuleManager.AddActionAsync(
+            async t => await t.SetTotal(t.Quantity * t.UnitPrice),
             t => t.Quantity,
             t => t.UnitPrice);
 
@@ -147,7 +147,7 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
             {
                 // Simulate fetching related data
                 await Task.Delay(10);
-                t.Status = $"Validated: {t.Email}";
+                await t.SetStatus($"Validated: {t.Email}");
             },
             t => t.Email);
     }
@@ -230,8 +230,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public TriggerPatternsDemo(IValidateBaseServices<TriggerPatternsDemo> services) : base(services)
     {
         // Rule that depends on multiple properties
-        RuleManager.AddAction(
-            t => t.Sum = t.A + t.B + t.C,
+        RuleManager.AddActionAsync(
+            async t => await t.SetSum(t.A + t.B + t.C),
             t => t.A,
             t => t.B,
             t => t.C);
@@ -243,8 +243,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
             t => t.Sum);
 
         // Action triggered by computed property
-        RuleManager.AddAction(
-            t => t.IsOverLimit = t.Sum > 100,
+        RuleManager.AddActionAsync(
+            async t => await t.SetIsOverLimit(t.Sum > 100),
             t => t.Sum);
     }
 

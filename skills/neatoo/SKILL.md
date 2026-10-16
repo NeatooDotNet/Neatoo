@@ -115,8 +115,8 @@ The admission rule is the shape most often put in the wrong place. It is domain 
 ```cs
 // Admission for the Approve verb. The UI binds the button to it; the
 // verb itself does not check and throw.
-RuleManager.AddAction(
-    t => t.CanApprove = t.Status == "Pending",
+RuleManager.AddActionAsync(
+    async t => await t.SetCanApprove(t.Status == "Pending"),
     t => t.Status);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-can-x-rule' title='Start of snippet'>anchor</a></sup>

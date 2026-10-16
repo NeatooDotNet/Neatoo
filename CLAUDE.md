@@ -27,6 +27,7 @@ The Neatoo Solution is at src/Neatoo.sln
 | `Neatoo.BaseGenerator.Tests` | Tests for the source generator |
 | `Neatoo.Analyzers` | Roslyn analyzers for compile-time Neatoo pattern validation |
 | `Neatoo.CodeFixes` | Code fixes paired with analyzers |
+| `Neatoo.Analyzers.Tests` | Tests for the analyzers and code fixes, run over Neatoo stubs |
 | `Neatoo.Blazor.MudNeatoo` | MudBlazor integration for Neatoo entities |
 | `Neatoo.Console` | Console app for testing/debugging |
 | `Neatoo.UnitTest` | Main test project (Unit/, Integration/) |
