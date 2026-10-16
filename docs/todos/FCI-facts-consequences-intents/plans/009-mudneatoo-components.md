@@ -4,7 +4,7 @@
 **Date:** 2026-10-16
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-10
-**Status:** Draft
+**Status:** Parked (proposed row in the todo; every Required criterion closed first)
 **Last Updated:** 2026-10-16
 **Plan-review opt-in:** —
 **Code-review opt-in:** —

@@ -19,17 +19,17 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 
 ## Acceptance Criteria
 
-- [ ] **AC-1** · Required — VisionAlignment, the Neatoo skill and the MudNeatoo skill state facts, consequences and intents in place of "logic is placed by who is driving it".
-- [ ] **AC-2** · Required — The generator emits an awaitable `SetX` for every settable partial property on the class, and on its partial interface for every public-set one.
-- [ ] **AC-3** · Required — An analyzer with a code fix warns on assignment to a Neatoo partial property inside a rule or a verb and stays silent inside factory operations.
-- [ ] **AC-4** · Required — A rule can trigger on `IsValid`, `IsSelfValid`, `IsBusy` and `IsModified`, and an analyzer refuses an async rule triggered on `IsBusy`.
-- [ ] **AC-5** · Required — Design.Domain holds a tested aggregate at fluency-tab size that every rules-first example in the three skills quotes.
-- [ ] **AC-6** · Required — `skills/neatoo` teaches facts first from compiled regions and closes #112, #114, #87 and #88.
-- [ ] **AC-7** · Required — `skills/mudneatoo` teaches the component as the unit of refresh and the verb-bound control from compiled regions, and closes #94.
-- [ ] **AC-8** · Required — The RemoteFactory skill carries the "where does business logic go" wording this todo sends, closing RemoteFactory#173.
-- [ ] **AC-9** · Required — An isolated fresh-session run falls into no trap row, new fact-versus-verb scenarios included.
-- [ ] **AC-10** · Optional — MudNeatoo ships #113's boundary components, render throttle and slider gaps, and closes #93 and #95.
-- [ ] **AC-11** · Optional — Design.Domain compiles an open that finishes inside a non-remote seam, and the skill names `LoadValue` inside a rule as the smell it replaces.
+- [x] **AC-1** · Required — VisionAlignment, the Neatoo skill and the MudNeatoo skill state facts, consequences and intents in place of "logic is placed by who is driving it".
+- [x] **AC-2** · Required — The generator emits an awaitable `SetX` for every settable partial property on the class, and on its partial interface for every public-set one.
+- [x] **AC-3** · Required — An analyzer with a code fix warns on assignment to a Neatoo partial property inside a rule or a verb and stays silent inside factory operations.
+- [x] **AC-4** · Required — A rule can trigger on `IsValid`, `IsSelfValid`, `IsBusy` and `IsModified`, and an analyzer refuses an async rule triggered on `IsBusy`.
+- [x] **AC-5** · Required — Design.Domain holds a tested aggregate at fluency-tab size that every rules-first example in the three skills quotes.
+- [x] **AC-6** · Required — `skills/neatoo` teaches facts first from compiled regions and closes #112, #114, #87 and #88.
+- [x] **AC-7** · Required — `skills/mudneatoo` teaches the component as the unit of refresh and the verb-bound control from compiled regions, and closes #94.
+- [x] **AC-8** · Required — The RemoteFactory skill carries the "where does business logic go" wording this todo sends, closing RemoteFactory#173.
+- [x] **AC-9** · Required — An isolated fresh-session run falls into no trap row, new fact-versus-verb scenarios included.
+- [ ] **AC-10** · Optional — MudNeatoo ships #113's boundary components, render throttle and slider gaps, and closes #93 and #95. · parked: proposed row
+- [ ] **AC-11** · Optional — Design.Domain compiles an open that finishes inside a non-remote seam, and the skill names `LoadValue` inside a rule as the smell it replaces. · parked: proposed row
 
 ## Out of Scope
 
@@ -53,7 +53,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 | 006 | [006-neatoo-skill](./plans/006-neatoo-skill.md) | Neatoo skill: facts first | AC-1, AC-6 | Done | #120 |
 | 007 | [007-mudneatoo-skill](./plans/007-mudneatoo-skill.md) | MudNeatoo skill: components and verb-bound controls | AC-1, AC-7 | Done | #121 |
 | 008 | [008-fresh-session-and-sync](./plans/008-fresh-session-and-sync.md) | Isolated fresh-session test, then sync | AC-9 | Done | #122 |
-| 009 | [009-mudneatoo-components](./plans/009-mudneatoo-components.md) | MudNeatoo boundaries, throttle, slider, converter | AC-10 | Draft | — |
+| 009 | [009-mudneatoo-components](./plans/009-mudneatoo-components.md) | MudNeatoo boundaries, throttle, slider, converter | AC-10 | Parked | — |
 
 ---
 
@@ -122,6 +122,7 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - proposed · A validation triggered only on a meta name drops its messages; report it or route them · origin: reviews/004-code-review.md
 - proposed · decision · MetaState compare-and-reset races under concurrent multi-thread writes and can lose a meta-triggered rule run; a lock risks lock-order deadlock across the graph · origin: reviews/005-code-review.md callout 4
 - proposed · AC-11 (Optional) · Design.Domain compiles an open finishing inside a non-remote seam, and the skill names LoadValue inside a rule as its smell · origin: FCI-005 scope, not built
+- proposed · AC-10 (Optional) · FCI-009, not built: MudNeatoo boundary components and a render throttle (#113 item 2), the slider's ValueLabelFormat (#113 item 3), a text-field Converter (#93), and ValidateBase binding (#95) · origin: plans/009, Draft when every Required criterion closed
 - proposed · decision · AsyncFlowTests_Property_PropertyChangedEvents fails about 1 run in 30 on main and on the arc: a 5 ms delay races the falling IsBusy notification · origin: FCI-006 · reviews/006-asyncflow-main-60-runs.log
 - proposed · decision · A Setter does not lift read-only: IsReadOnly is one flag for a private setter and for MarkReadOnly, so a verb-bound text, numeric or picker field over a private-set property cannot be edited; separate the two, or let a Setter lift only the private-setter half · origin: FCI-007 · plans/007 Plan Amendments
 
