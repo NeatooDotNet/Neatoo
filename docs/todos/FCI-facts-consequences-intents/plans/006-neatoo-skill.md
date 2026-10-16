@@ -9,7 +9,7 @@
 **Plan-review opt-in:** No (prose over compiled regions; the doctrine is VisionAlignment's)
 **Code-review opt-in:** Yes (the skill is the doctrine Claude loads; every line must match D27–D30)
 **Branch:** fci-006-neatoo-skill
-**PR:** —
+**PR:** #120
 
 ---
 

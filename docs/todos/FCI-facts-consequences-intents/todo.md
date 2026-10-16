@@ -50,7 +50,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 | 003 | [003-assignment-analyzer](./plans/003-assignment-analyzer.md) | Assignment analyzer, code fix, Design sweep | AC-3 | Done | #117 |
 | 004 | [004-meta-state-triggers](./plans/004-meta-state-triggers.md) | Meta-state triggers and the IsBusy analyzer | AC-4 | Done | #118 |
 | 005 | [005-fluency-size-example](./plans/005-fluency-size-example.md) | Compiled fluency-size aggregate in Design.Domain | AC-5, AC-11 | Done | #119 |
-| 006 | [006-neatoo-skill](./plans/006-neatoo-skill.md) | Neatoo skill: facts first | AC-1, AC-6 | Done | — |
+| 006 | [006-neatoo-skill](./plans/006-neatoo-skill.md) | Neatoo skill: facts first | AC-1, AC-6 | Done | #120 |
 | 007 | [007-mudneatoo-skill](./plans/007-mudneatoo-skill.md) | MudNeatoo skill: components and verb-bound controls | AC-1, AC-7 | Draft | — |
 | 008 | [008-fresh-session-and-sync](./plans/008-fresh-session-and-sync.md) | Isolated fresh-session test, then sync | AC-9 | Draft | — |
 | 009 | [009-mudneatoo-components](./plans/009-mudneatoo-components.md) | MudNeatoo boundaries, throttle, slider, converter | AC-10 | Draft | — |
