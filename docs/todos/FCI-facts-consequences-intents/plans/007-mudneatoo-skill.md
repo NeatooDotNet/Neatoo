@@ -9,7 +9,7 @@
 **Plan-review opt-in:** No (the shape is #113's item 1 and the architecture page's)
 **Code-review opt-in:** Yes (a public component parameter, a new test project, and the skill Claude loads)
 **Branch:** fci-007-mudneatoo-skill
-**PR:** —
+**PR:** #121
 
 ---
 
