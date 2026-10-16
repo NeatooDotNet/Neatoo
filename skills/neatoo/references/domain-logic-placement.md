@@ -47,8 +47,8 @@ A derived value is a `private set` partial property written by an `AddAction` ru
 ```cs
 // A derived value is a private-set partial property written by a rule.
 // It notifies, it serializes, and the UI sees it read-only.
-RuleManager.AddAction(
-    t => t.Cost = t.Hours * t.Rate * (1 - t.Discount),
+RuleManager.AddActionAsync(
+    async t => await t.SetCost(t.Hours * t.Rate * (1 - t.Discount)),
     t => t.Hours,
     t => t.Rate,
     t => t.Discount);
@@ -93,15 +93,15 @@ The fact is a `bool` the domain computes. When it depends on a child's property,
 // A business fact derived from two others. The UI binds to it (for
 // example @if (workOrder.IsHeld) around a banner) and decides nothing;
 // the entity never names a screen element (no "ShowHoldBanner").
-RuleManager.AddAction(
-    t => t.IsHeld = t.IsOnHold && t.Status != "Closed",
+RuleManager.AddActionAsync(
+    async t => await t.SetIsHeld(t.IsOnHold && t.Status != "Closed"),
     t => t.IsOnHold,
     t => t.Status);
 
 // A flag derived from a child property. The trigger is the child's
 // property path, so any task's IsSchedulable change recomputes it.
-RuleManager.AddAction(
-    t => t.HasUnschedulableTasks = t.Tasks?.Any(task => !task.IsSchedulable) ?? false,
+RuleManager.AddActionAsync(
+    async t => await t.SetHasUnschedulableTasks(t.Tasks?.Any(task => !task.IsSchedulable) ?? false),
     t => t.Tasks![0].IsSchedulable);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L56-L70' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-derived-facts' title='Start of snippet'>anchor</a></sup>
@@ -118,8 +118,8 @@ When one property change should trigger a cascade of updates, use chained rules.
 ```cs
 // Chained: the rule above sets TotalCost, which triggers this one.
 // Hours -> Cost (on the task) -> TotalCost -> IsOverBudget, no handler code.
-RuleManager.AddAction(
-    t => t.IsOverBudget = t.TotalCost > t.Budget,
+RuleManager.AddActionAsync(
+    async t => await t.SetIsOverBudget(t.TotalCost > t.Budget),
     t => t.TotalCost,
     t => t.Budget);
 ```
@@ -207,13 +207,13 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     {
         if (string.IsNullOrWhiteSpace(target.Username))
         {
-            target.IsUsernameAvailable = false;
+            await target.SetIsUsernameAvailable(false);
             return None;  // Don't check empty usernames - None is inherited from AsyncRuleBase
         }
 
         var available = await _isAvailable(target.Username);
 
-        target.IsUsernameAvailable = available;
+        await target.SetIsUsernameAvailable(available);
 
         if (!available)
         {
@@ -337,8 +337,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public TriggerPatternsDemo(IValidateBaseServices<TriggerPatternsDemo> services) : base(services)
     {
         // Rule that depends on multiple properties
-        RuleManager.AddAction(
-            t => t.Sum = t.A + t.B + t.C,
+        RuleManager.AddActionAsync(
+            async t => await t.SetSum(t.A + t.B + t.C),
             t => t.A,
             t => t.B,
             t => t.C);
@@ -350,8 +350,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
             t => t.Sum);
 
         // Action triggered by computed property
-        RuleManager.AddAction(
-            t => t.IsOverLimit = t.Sum > 100,
+        RuleManager.AddActionAsync(
+            async t => await t.SetIsOverLimit(t.Sum > 100),
             t => t.Sum);
     }
 
@@ -375,8 +375,8 @@ The `[0]` indexer is a syntactic placeholder — it does NOT mean "only the firs
 <!-- snippet: skill-child-property-trigger -->
 <a id='snippet-skill-child-property-trigger'></a>
 ```cs
-RuleManager.AddAction(
-    t => t.TotalAmount = t.Items?.Sum(i => i.LineTotal) ?? 0,
+RuleManager.AddActionAsync(
+    async t => await t.SetTotalAmount(t.Items?.Sum(i => i.LineTotal) ?? 0),
     t => t.Items![0].LineTotal);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L98-L102' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-property-trigger' title='Start of snippet'>anchor</a></sup>
@@ -498,10 +498,10 @@ The verb sets state; it does not check and throw. Admission is the `CanApprove` 
 /// The verb sets state. Admission is the CanApprove rule, which the UI binds;
 /// the verb does not check and throw.
 /// </summary>
-public void Approve(string approver)
+public async Task Approve(string approver)
 {
-    ApprovedBy = approver;
-    Status = "Approved";
+    await SetApprovedBy(approver);
+    await SetStatus("Approved");
 }
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L126-L136' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-entity-verb' title='Start of snippet'>anchor</a></sup>
@@ -512,8 +512,8 @@ public void Approve(string approver)
 ```cs
 // Admission for the Approve verb. The UI binds the button to it; the
 // verb itself does not check and throw.
-RuleManager.AddAction(
-    t => t.CanApprove = t.Status == "Pending",
+RuleManager.AddActionAsync(
+    async t => await t.SetCanApprove(t.Status == "Pending"),
     t => t.Status);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-can-x-rule' title='Start of snippet'>anchor</a></sup>
@@ -550,7 +550,7 @@ public async Task Approve_SetsState_AndTheCanApproveRuleRecomputesAdmission()
     Assert.AreEqual("Pending", order.Status);
     Assert.IsTrue(order.CanApprove, "Create ran the rules, so the admission flag is already right");
 
-    order.Approve("ada");
+    await order.Approve("ada");
     await order.WaitForTasks();
 
     Assert.AreEqual("Approved", order.Status);
@@ -584,8 +584,8 @@ When computing aggregate values from child collections (sums, counts, any/all), 
 <a id='snippet-skill-child-aggregation'></a>
 ```cs
 // Aggregation over the children, recomputed when any task's Cost changes
-RuleManager.AddAction(
-    t => t.TotalCost = t.Tasks?.Sum(task => task.Cost) ?? 0,
+RuleManager.AddActionAsync(
+    async t => await t.SetTotalCost(t.Tasks?.Sum(task => task.Cost) ?? 0),
     t => t.Tasks![0].Cost);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L72-L77' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-aggregation' title='Start of snippet'>anchor</a></sup>
@@ -622,12 +622,12 @@ Parents write children through the children's business methods — here `ApplyPa
 ```cs
 // Parent writes children: when the discount changes, every task
 // re-applies it through its own business method.
-RuleManager.AddAction(
-    t =>
+RuleManager.AddActionAsync(
+    async t =>
     {
         foreach (var task in t.Tasks ?? Enumerable.Empty<IWorkOrderTask>())
         {
-            task.ApplyParentDiscount();
+            await task.ApplyParentDiscount();
         }
     },
     t => t.Discount);
@@ -654,9 +654,9 @@ RuleManager.AddActionAsync(
 /// Child business method reading root state through Parent. Called by the
 /// root's orchestrator rule whenever the discount changes.
 /// </summary>
-public void ApplyParentDiscount()
+public async Task ApplyParentDiscount()
 {
-    Discount = ((IWorkOrder)this.Parent!).Discount;
+    await SetDiscount(((IWorkOrder)this.Parent!).Discount);
 }
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L74-L83' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-method' title='Start of snippet'>anchor</a></sup>
@@ -765,13 +765,13 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     {
         if (string.IsNullOrWhiteSpace(target.Username))
         {
-            target.IsUsernameAvailable = false;
+            await target.SetIsUsernameAvailable(false);
             return None;  // Don't check empty usernames - None is inherited from AsyncRuleBase
         }
 
         var available = await _isAvailable(target.Username);
 
-        target.IsUsernameAvailable = available;
+        await target.SetIsUsernameAvailable(available);
 
         if (!available)
         {
@@ -827,9 +827,9 @@ A verb sets state and never persists; the rule its trigger names runs at once. N
 <!-- snippet: skill-verb-submit -->
 <a id='snippet-skill-verb-submit'></a>
 ```cs
-public void Submit()
+public async Task Submit()
 {
-    Status = "Submitted";
+    await SetStatus("Submitted");
 }
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L309-L314' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-verb-submit' title='Start of snippet'>anchor</a></sup>
@@ -863,8 +863,8 @@ Every child has a `Parent`, set when it is assigned to a parent's partial proper
 ```cs
 // A child rule reads ambient root state through Parent. Parent is null
 // until the task is attached, so pattern-match instead of casting.
-RuleManager.AddAction(
-    t => t.IsSchedulable = t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold,
+RuleManager.AddActionAsync(
+    async t => await t.SetIsSchedulable(t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold),
     t => t.Hours);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L47-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-rule' title='Start of snippet'>anchor</a></sup>
@@ -915,7 +915,7 @@ public async Task Save_TaskMapsRootStateIntoItsRow_ThroughParent()
     Assert.IsTrue(order.CanApprove, "Fetch re-ran the root's own rules for its derived values");
 
     order.Tasks![0].Hours = 3m;   // a modified child: the list hands it its row
-    order.Approve("ada");
+    await order.Approve("ada");
     await order.WaitForTasks();
     Assert.IsTrue(order.IsSavable);
 

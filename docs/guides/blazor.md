@@ -258,8 +258,8 @@ internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDem
     {
         // Rule: when Quantity or UnitPrice changes, recompute Total
         // The lambda sets the private setter, which calls SetPrivateValue internally
-        RuleManager.AddAction(
-            t => t.ComputedTotal = t.Quantity * t.UnitPrice,
+        RuleManager.AddActionAsync(
+            async t => await t.SetComputedTotal(t.Quantity * t.UnitPrice),
             t => t.Quantity,
             t => t.UnitPrice);
     }

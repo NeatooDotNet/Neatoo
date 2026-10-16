@@ -273,8 +273,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public TriggerPatternsDemo(IValidateBaseServices<TriggerPatternsDemo> services) : base(services)
     {
         // Rule that depends on multiple properties
-        RuleManager.AddAction(
-            t => t.Sum = t.A + t.B + t.C,
+        RuleManager.AddActionAsync(
+            async t => await t.SetSum(t.A + t.B + t.C),
             t => t.A,
             t => t.B,
             t => t.C);
@@ -286,8 +286,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
             t => t.Sum);
 
         // Action triggered by computed property
-        RuleManager.AddAction(
-            t => t.IsOverLimit = t.Sum > 100,
+        RuleManager.AddActionAsync(
+            async t => await t.SetIsOverLimit(t.Sum > 100),
             t => t.Sum);
     }
 
@@ -362,13 +362,13 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     {
         if (string.IsNullOrWhiteSpace(target.Username))
         {
-            target.IsUsernameAvailable = false;
+            await target.SetIsUsernameAvailable(false);
             return None;  // Don't check empty usernames - None is inherited from AsyncRuleBase
         }
 
         var available = await _isAvailable(target.Username);
 
-        target.IsUsernameAvailable = available;
+        await target.SetIsUsernameAvailable(available);
 
         if (!available)
         {
@@ -844,7 +844,7 @@ internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L201-L218' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L203-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Message collection operations:

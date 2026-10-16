@@ -43,10 +43,10 @@ This is the most common bug. An `AddAction` rule computes a derived value, but i
 <a id='snippet-skill-computed-gap-rule'></a>
 ```cs
 // This rule calculates Total when Quantity or Price changes
-RuleManager.AddAction(
-    t =>
+RuleManager.AddActionAsync(
+    async t =>
     {
-        t.Total = t.Quantity * t.Price;
+        await t.SetTotal(t.Quantity * t.Price);
         t.RuleHasRun = true;
     },
     t => t.Quantity,

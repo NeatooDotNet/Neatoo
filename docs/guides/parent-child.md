@@ -314,8 +314,8 @@ Navigation patterns:
 ```cs
 // A child rule reads ambient root state through Parent. Parent is null
 // until the task is attached, so pattern-match instead of casting.
-RuleManager.AddAction(
-    t => t.IsSchedulable = t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold,
+RuleManager.AddActionAsync(
+    async t => await t.SetIsSchedulable(t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold),
     t => t.Hours);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L47-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-rule' title='Start of snippet'>anchor</a></sup>
@@ -330,9 +330,9 @@ In a business method the child is always attached, so a cast is safe:
 /// Child business method reading root state through Parent. Called by the
 /// root's orchestrator rule whenever the discount changes.
 /// </summary>
-public void ApplyParentDiscount()
+public async Task ApplyParentDiscount()
 {
-    Discount = ((IWorkOrder)this.Parent!).Discount;
+    await SetDiscount(((IWorkOrder)this.Parent!).Discount);
 }
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L74-L83' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-method' title='Start of snippet'>anchor</a></sup>

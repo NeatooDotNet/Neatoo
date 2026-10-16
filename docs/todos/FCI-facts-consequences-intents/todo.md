@@ -47,7 +47,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 |---|------|-------|--------|--------|----|
 | 001 | [001-architecture-page](./plans/001-architecture-page.md) | The architecture page in VisionAlignment | AC-1, AC-8 | Done | #115 |
 | 002 | [002-generated-setx](./plans/002-generated-setx.md) | Generated awaitable SetX on class and interface | AC-2 | Done | #116 |
-| 003 | [003-assignment-analyzer](./plans/003-assignment-analyzer.md) | Assignment analyzer, code fix, Design sweep | AC-3 | Draft | — |
+| 003 | [003-assignment-analyzer](./plans/003-assignment-analyzer.md) | Assignment analyzer, code fix, Design sweep | AC-3 | Done | — |
 | 004 | [004-meta-state-triggers](./plans/004-meta-state-triggers.md) | Meta-state triggers and the IsBusy analyzer | AC-4 | Draft | — |
 | 005 | [005-fluency-size-example](./plans/005-fluency-size-example.md) | Compiled fluency-size aggregate in Design.Domain | AC-5, AC-11 | Draft | — |
 | 006 | [006-neatoo-skill](./plans/006-neatoo-skill.md) | Neatoo skill: facts first | AC-1, AC-6 | Draft | — |
@@ -61,16 +61,26 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 
 - [x] Send the "where does business logic go" wording to desktopRemoteFactory · RemoteFactory#173 · done when FCI-001 has merged into the arc and the message is sent · AC-8 · sent 2026-10-16, applied as RemoteFactory#178
 - [ ] Confirm the wording landed in both #173 sites and the installed RF skill · `~/.claude/skills/RemoteFactory` · done when the RF PR has merged and the installed copy shows it · AC-8
+- [ ] Prose beside the swept snippets teaches the awaited form, not sync `AddAction` or `void` verbs · docs/guides, docs/reference, skills · done when no prose shows an assigning `AddAction` or a sync multi-write verb · AC-6
 
 ## Recommendations Taken
 
 Every reviewer recommendation taken under the standing orders, one line each, for Keith's review at the end: plan · source review · what was recommended · what was done.
 
 - FCI-002 · code review · skip SetX on an interface that declares the property get-only · done, with a generator test
+- FCI-003 · test review · pin the object-initializer exemption in a reporting context · done, flip-checked
+- FCI-003 · test review · test the block-bodied AddAction fix and Fix All over two writes in one lambda · done
+- FCI-003 · test review · assert the inputs of the no-fix test are reported, and the async-lambda messages' context · done
+- FCI-003 · code review · report compound assignments and increments, fix them as SetX(X op v) · done; two RuleBasics trace rules became AsyncRuleBase
+- FCI-003 · code review · report writes in a non-public helper a rule or verb calls · done, same-file call graph
+- FCI-003 · code review · stop reporting overrides of Neatoo lifecycle virtuals as verbs · done
+- FCI-003 · code review · fix three over-indented swept lines rendered into the guides and skill · done
+- FCI-003 · test review round 2 · make the flip-check line honest for all 18 tests · done
 
 ## Dismissed
 
 - FCI-002 · Neatoo.UnitTest.Demo reports no tests · pre-existing, serves no criterion
+- FCI-003 · 104 CS4014 warnings in the full build · pre-existing, not this plan's
 
 ## Parked
 

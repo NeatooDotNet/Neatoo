@@ -75,9 +75,12 @@ internal sealed class WorkOrderViewModel
     public bool CanApprove => WorkOrder?.CanApprove ?? false;
 
     /// <summary>Calls the verb; the entity's rules update CanApprove and Status.</summary>
-    public void Approve(string approver)
+    public async Task Approve(string approver)
     {
-        WorkOrder?.Approve(approver);
+        if (WorkOrder != null)
+        {
+            await WorkOrder.Approve(approver);
+        }
     }
 
     public bool CanSave => WorkOrder?.IsSavable ?? false;

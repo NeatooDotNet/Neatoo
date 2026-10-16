@@ -8,6 +8,8 @@
 		<IsTestProject>true</IsTestProject>
 		<AnalysisMode>default</AnalysisMode>
 		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+		<!-- NEATOO011 (await the write in a rule or verb) is off here: these tests exercise the forking setter on purpose, and existing tests are not rewritten to the awaited form. -->
+		<NoWarn>$(NoWarn);NEATOO011</NoWarn>
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 	</PropertyGroup>
