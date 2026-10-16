@@ -49,7 +49,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 | 002 | [002-generated-setx](./plans/002-generated-setx.md) | Generated awaitable SetX on class and interface | AC-2 | Done | #116 |
 | 003 | [003-assignment-analyzer](./plans/003-assignment-analyzer.md) | Assignment analyzer, code fix, Design sweep | AC-3 | Done | #117 |
 | 004 | [004-meta-state-triggers](./plans/004-meta-state-triggers.md) | Meta-state triggers and the IsBusy analyzer | AC-4 | Done | #118 |
-| 005 | [005-fluency-size-example](./plans/005-fluency-size-example.md) | Compiled fluency-size aggregate in Design.Domain | AC-5, AC-11 | Draft | — |
+| 005 | [005-fluency-size-example](./plans/005-fluency-size-example.md) | Compiled fluency-size aggregate in Design.Domain | AC-5, AC-11 | In Progress | — |
 | 006 | [006-neatoo-skill](./plans/006-neatoo-skill.md) | Neatoo skill: facts first | AC-1, AC-6 | Draft | — |
 | 007 | [007-mudneatoo-skill](./plans/007-mudneatoo-skill.md) | MudNeatoo skill: components and verb-bound controls | AC-1, AC-7 | Draft | — |
 | 008 | [008-fresh-session-and-sync](./plans/008-fresh-session-and-sync.md) | Isolated fresh-session test, then sync | AC-9 | Draft | — |
@@ -59,6 +59,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 
 ## Punchlist
 
+- [x] The changed-meta-property list is safe under concurrent property writes · ValidateBase · locked; 0 of 25 concurrent runs fail (1 of 25 before) · AC-4
 - [x] Send the "where does business logic go" wording to desktopRemoteFactory · RemoteFactory#173 · done when FCI-001 has merged into the arc and the message is sent · AC-8 · sent 2026-10-16, applied as RemoteFactory#178
 - [ ] Confirm the wording landed in both #173 sites and the installed RF skill · `~/.claude/skills/RemoteFactory` · done when the RF PR has merged and the installed copy shows it · AC-8
 - [ ] Prose beside the swept snippets teaches the awaited form, not sync `AddAction` or `void` verbs · docs/guides, docs/reference, skills · done when no prose shows an assigning `AddAction` or a sync multi-write verb · AC-6
@@ -84,6 +85,13 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - FCI-004 · code review · extend the NEATOO011 IsBusy exemption to RuleBase classes and method groups · done
 - FCI-004 · own finding · NEATOO012 also refuses async rules on IsSavable, which carries !IsBusy · done, after a test written that way hung the suite
 - FCI-004 · test review round 2 · find the IsSavable diagnostic by message; assert the zero-count test compiles · done
+- FCI-005 · test review · pin the add path through Count with an effort that changes nothing else · done; the interval is built with its effort, flip logged
+- FCI-005 · test review · test approved minutes positive, the effort range and next-mark ends, every interval locked · done
+- FCI-005 · test review · assert the refit shares and NextEffortDown after a nudge; log the flips and the race runs · done
+- FCI-005 · code review · make AddInterval one change and one fit · done; Interval.Create takes the effort
+- FCI-005 · code review · run a created interval's Name validation · done; Interval.Create runs its own rules, flip logged
+- FCI-005 · code review · pin anchor nesting and the scope ending on a throw · done, flip logged
+- FCI-005 · test review round 2 · make the all-locked test leave minutes unshared so it pins the guard · done, flip logged
 
 ## Dismissed
 
@@ -94,6 +102,8 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 
 - proposed · Test runs default to a hang timeout (.runsettings or CLAUDE.md ritual) so a loop names its test · origin: FCI-004 · the 10-minute hang
 - proposed · A validation triggered only on a meta name drops its messages; report it or route them · origin: reviews/004-code-review.md
+- proposed · decision · MetaState compare-and-reset races under concurrent multi-thread writes and can lose a meta-triggered rule run; a lock risks lock-order deadlock across the graph · origin: reviews/005-code-review.md callout 4
+- proposed · AC-11 (Optional) · Design.Domain compiles an open finishing inside a non-remote seam, and the skill names LoadValue inside a rule as its smell · origin: FCI-005 scope, not built
 
 ---
 
