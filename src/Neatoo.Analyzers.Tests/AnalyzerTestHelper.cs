@@ -36,9 +36,11 @@ public static class AnalyzerTestHelper
             {
                 protected Neatoo.Rules.RuleManager<T> RuleManager => null!;
                 public virtual void FactoryComplete(int operation) { }
+                public bool IsBusy => false;
+                public bool IsValid => true;
             }
 
-            public class EntityBase<T> : ValidateBase<T> where T : EntityBase<T> { }
+            public class EntityBase<T> : ValidateBase<T> where T : EntityBase<T> { public bool IsSavable => false; }
         }
 
         namespace Neatoo.Rules
@@ -50,15 +52,23 @@ public static class AnalyzerTestHelper
                 public void AddAction(System.Action<T> action, System.Linq.Expressions.Expression<System.Func<T, object?>> trigger) { }
                 public void AddActionAsync(System.Func<T, System.Threading.Tasks.Task> action, System.Linq.Expressions.Expression<System.Func<T, object?>> trigger) { }
                 public void AddValidation(System.Func<T, string> rule, System.Linq.Expressions.Expression<System.Func<T, object?>> trigger) { }
+                public void AddActionAsync(System.Func<T, System.Threading.Tasks.Task> action, params System.Linq.Expressions.Expression<System.Func<T, object?>>[] triggers) { }
+                public void AddAction(System.Action<T> action, params System.Linq.Expressions.Expression<System.Func<T, object?>>[] triggers) { }
             }
 
-            public abstract class RuleBase<T>
+            // As in Neatoo: the sync RuleBase derives from AsyncRuleBase and runs its Execute synchronously.
+            public abstract class RuleBase<T> : AsyncRuleBase<T>
             {
+                protected RuleBase(params System.Linq.Expressions.Expression<System.Func<T, object?>>[] triggers) : base(triggers) { }
                 protected abstract IRuleMessages Execute(T target);
+                protected sealed override System.Threading.Tasks.Task<IRuleMessages> Execute(T target, System.Threading.CancellationToken? token = null)
+                    => System.Threading.Tasks.Task.FromResult(Execute(target));
             }
 
             public abstract class AsyncRuleBase<T>
             {
+                protected AsyncRuleBase(params System.Linq.Expressions.Expression<System.Func<T, object?>>[] triggers) { }
+                protected void AddTriggerProperties(params System.Linq.Expressions.Expression<System.Func<T, object?>>[] triggers) { }
                 protected abstract System.Threading.Tasks.Task<IRuleMessages> Execute(T target, System.Threading.CancellationToken? token = null);
             }
         }

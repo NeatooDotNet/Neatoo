@@ -1,0 +1,5 @@
+# FCI-004 test review
+
+**Round 1 (2026-10-16): APPROVED.** Every Required bullet pinned; exact run counts from a post-Create baseline distinguish once from more than once; no existing test changed. Callout fixed: the meta-rule runner's async-tracking and synchronous-fault branches are now tested (`AsyncMetaRuleOnAChild_IsTracked_SoTheParentIsBusyUntilItFinishes`, `SynchronouslyFaultingMetaRule_SurfacesFromTheWrite`), each flip-checked. Tech-debt fixed: NEATOO012 tests assert the id; `OtherEntityMetaProperties_TriggerRules` covers IsSavable.
+
+**Round 2 (2026-10-16): APPROVED.** The callout is closed; the AsyncTasks fix is pinned by `AsyncTasksCompletionCallbackTests` (fails against the old code); the evidence says honestly that the integration idle test does not discriminate it; the reshaped analyzer stub leaves the 18 NEATOO011 tests meaning what they meant; every assembly finished under the hang detector. Tech-debt fixed: the IsSavable diagnostic is found by message, not position; the zero-count NEATOO012 test asserts its source compiles. Theoretical: IsSavable through AsyncRuleBase and the IsSavable NEATOO011 exemption share the tested predicate.

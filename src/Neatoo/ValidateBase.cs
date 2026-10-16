@@ -317,15 +317,24 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 		{
 			this.RaisePropertyChanged(propertyName);
 			this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(propertyName, this));
+			(this.changedMetaProperties ??= new List<string>()).Add(propertyName);
 		}
 	}
+
+	/// <summary>
+	/// Meta properties announced as changed since the last <see cref="CheckIfMetaPropertiesChanged"/>,
+	/// whose rules have not run yet.
+	/// </summary>
+	private List<string>? changedMetaProperties;
 
 	/// <summary>
 	/// Checks if validation-related meta properties have changed and raises notifications.
 	/// </summary>
 	/// <remarks>
-	/// This method tracks changes to IsValid, IsSelfValid, and IsBusy.
-	/// It automatically raises PropertyChanged events when these values change.
+	/// This method tracks changes to IsValid, IsSelfValid, and IsBusy (and, in derived classes, the
+	/// entity's meta properties). It raises PropertyChanged when they change, resets the baseline,
+	/// and then runs the rules triggered by each changed name, so a rule can trigger on meta state:
+	/// <c>t => t.IsValid</c>. Nothing runs while the object is paused.
 	/// </remarks>
 	protected virtual void CheckIfMetaPropertiesChanged()
 	{
@@ -334,6 +343,55 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 		RaiseIfChanged(this.MetaState.IsBusy, this.IsBusy, nameof(this.IsBusy));
 
 		this.ResetMetaState();
+		this.RunMetaPropertyRules();
+	}
+
+	/// <summary>
+	/// Runs the rules triggered by each meta property that changed. The baseline is reset first, so a
+	/// change a meta rule causes is seen and handled once by the nested check, not again here.
+	/// </summary>
+	/// <remarks>
+	/// DESIGN DECISION: a meta rule's task is tracked like a forked setter's, so IsBusy and WaitForTasks
+	/// cover it, and a synchronous fault surfaces the way a setter's does. Termination is the rule
+	/// author's, as with any two-way rule; the one loop that exists by construction, an async rule
+	/// triggered on IsBusy, is refused at compile time by NEATOO012.
+	/// </remarks>
+	private void RunMetaPropertyRules()
+	{
+		var changed = this.changedMetaProperties;
+		if (changed == null)
+		{
+			return;
+		}
+
+		this.changedMetaProperties = null;
+		if (this.IsPaused)
+		{
+			return;
+		}
+
+		foreach (var propertyName in changed)
+		{
+			if (!this.RuleManager.Rules.Any(r => r.TriggerProperties.Any(t => t.IsMatch(propertyName))))
+			{
+				continue;
+			}
+
+			var task = this.RunRules(propertyName);
+			if (!task.IsCompleted)
+			{
+				if (this.Parent is IValidateBaseInternal parentInternal)
+				{
+					parentInternal.AddChildTask(task);
+				}
+
+				this.RunningTasks.AddTask(task);
+			}
+			else if (task.Exception != null)
+			{
+				throw task.Exception;
+			}
+		}
 	}
 
 	/// <summary>
