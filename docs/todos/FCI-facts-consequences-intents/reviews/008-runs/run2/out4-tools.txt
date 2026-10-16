@@ -1,0 +1,11 @@
+# tools available: CronDelete, CronList, DesignSync, ExitWorktree, Glob, Grep, Read, ReportFindings, ScheduleWakeup, Skill, TaskStop, ToolSearch
+ok    Skill RemoteFactory
+ok    Skill neatoo
+ok    Skill mudneatoo
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\class-factory.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\entities.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\collections.md
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\setup.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references pattern=EntityListBase<|IEntityBaseServices|\[Required|\[DisplayName|AddNeatooServices|RegisterMatchingName|Neatoo.Blazor|AddMudServices
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\blazor.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\base-classes.md

@@ -483,20 +483,8 @@ internal sealed class WorkOrderViewModel
 {
     @foreach (var task in Vm.WorkOrder.Tasks)
     {
-        <MudGrid Class="mb-2" Spacing="2">
-            <MudItem xs="12" sm="5">
-                <MudNeatooTextField T="string" EntityProperty="@task[nameof(IWorkOrderTask.Name)]" />
-            </MudItem>
-            <MudItem xs="6" sm="2">
-                <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Hours)]" />
-            </MudItem>
-            <MudItem xs="6" sm="2">
-                <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Rate)]" />
-            </MudItem>
-            <MudItem xs="12" sm="3" Class="d-flex align-center">
-                <MudText>@task.Cost.ToString("C")</MudText>
-            </MudItem>
-        </MudGrid>
+        @* Each row is a component that refreshes for its own task. *@
+        <WorkOrderTaskEditor @key="task" Item="@task" />
     }
 }
 
@@ -521,7 +509,7 @@ internal sealed class WorkOrderViewModel
 </MudButton>
 </div>
 ```
-<sup><a href='/src/Design/Design.App/Pages/WorkOrderPage.razor#L20-L92' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-page-binds-facts' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/WorkOrderPage.razor#L22-L82' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-page-binds-facts' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Neatoo on Each Tier

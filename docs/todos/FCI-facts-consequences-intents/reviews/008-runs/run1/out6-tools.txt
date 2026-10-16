@@ -1,0 +1,17 @@
+# tools available: CronCreate, CronDelete, CronList, DesignSync, EnterWorktree, ExitWorktree, Glob, Grep, ListAgents, LSP, Monitor, PushNotification, Read, RemoteTrigger, ReportFindings, ScheduleWakeup, SendMessage, Skill, TaskStop, ToolSearch, Workflow
+ok    Skill neatoo
+ok    Skill RemoteFactory
+ok    Skill mudneatoo
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=TrainingPlan|Interval|AnchorFit|ITrainingPlanFit
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\domain-logic-placement.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\blazor.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\collections.md
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\setup.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references pattern=PlannedMinutes|ApplyFit|IIntervalFit|AnchorScope|Share\(|NEATOO011|RunRulesFlag
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references\entities.md pattern=class \w+ : (EntityBase|EntityListBase)|IEntityBaseServices|\[Create\]|partial .* \{ get; (private )?set; \}
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references pattern=EntityListBase<I\w+>, I\w+List|EntityListBase<\w+>\s*$|ListBase.*constructor
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\base-classes.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo pattern=\[DisplayName|\[Display\(
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references\properties.md pattern=DisplayName
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references pattern=: RuleBase<
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=^using Neatoo|@using Neatoo|AddAuthorizationCore|AuthenticationStateProvider

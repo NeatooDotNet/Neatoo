@@ -49,7 +49,7 @@ If you're building a Blazor component that takes a root entity as a parameter an
 3. **Use `PropertyChanged` alone if you only care about root-level flags** like `IsSavable`, `IsValid`, `IsBusy`.
 4. **Move the subscription when the instance changes.** `Save()` returns a new instance; the old one raises nothing afterwards.
 
-The Employee page does all four (it subscribes to `NeatooPropertyChanged` because its view branch reads entity properties as well as flags):
+The Employee page does all four. It subscribes to the employee's own `PropertyChanged`, because everything it shows outside its inputs is the employee's own: the Save button and the view-mode text.
 
 <!-- snippet: skill-mud-page-code -->
 <a id='snippet-skill-mud-page-code'></a>
@@ -73,21 +73,22 @@ The Employee page does all four (it subscribes to `NeatooPropertyChanged` becaus
         Resubscribe();
     }
 
-    // The page owns the subscription: the input components subscribe to their
-    // own property wrappers, but the Save button and the view-mode text read
-    // the entity, so the page re-renders on the graph-wide event.
+    // The input components subscribe to their own property wrappers. The Save
+    // button and the view-mode text read the employee itself, so the page
+    // re-renders on the employee's own PropertyChanged: its own properties and
+    // meta flags. It has no child list, so nothing else is needed.
     private void Resubscribe()
     {
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+            _subscribed.PropertyChanged -= OnEntityChanged;
         }
 
         _subscribed = Vm.Employee;
 
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged += OnEntityChanged;
+            _subscribed.PropertyChanged += OnEntityChanged;
         }
     }
 
@@ -106,21 +107,18 @@ The Employee page does all four (it subscribes to `NeatooPropertyChanged` becaus
         StateHasChanged();
     }
 
-    private Task OnEntityChanged(NeatooPropertyChangedEventArgs e)
-    {
-        return InvokeAsync(StateHasChanged);
-    }
+    private void OnEntityChanged(object? sender, PropertyChangedEventArgs e) => InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+            _subscribed.PropertyChanged -= OnEntityChanged;
         }
     }
 }
 ```
-<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L109-L175' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-page-code' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/EmployeeEdit.razor#L111-L175' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-mud-page-code' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Common Misconception: Blazor Does Not Auto-Subscribe

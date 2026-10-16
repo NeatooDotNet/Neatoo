@@ -1,5 +1,7 @@
 @page "/employees/new"
 @page "/employees/{Id:guid}"
+@using System.ComponentModel
+@using Design.App.Components
 @using Design.App.ViewModels
 @using Design.Domain.Entities
 @inject EmployeeEditViewModel Vm
@@ -126,21 +128,22 @@
         Resubscribe();
     }
 
-    // The page owns the subscription: the input components subscribe to their
-    // own property wrappers, but the Save button and the view-mode text read
-    // the entity, so the page re-renders on the graph-wide event.
+    // The input components subscribe to their own property wrappers. The Save
+    // button and the view-mode text read the employee itself, so the page
+    // re-renders on the employee's own PropertyChanged: its own properties and
+    // meta flags. It has no child list, so nothing else is needed.
     private void Resubscribe()
     {
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+            _subscribed.PropertyChanged -= OnEntityChanged;
         }
 
         _subscribed = Vm.Employee;
 
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged += OnEntityChanged;
+            _subscribed.PropertyChanged += OnEntityChanged;
         }
     }
 
@@ -159,16 +162,13 @@
         StateHasChanged();
     }
 
-    private Task OnEntityChanged(NeatooPropertyChangedEventArgs e)
-    {
-        return InvokeAsync(StateHasChanged);
-    }
+    private void OnEntityChanged(object? sender, PropertyChangedEventArgs e) => InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {
         if (_subscribed is not null)
         {
-            _subscribed.NeatooPropertyChanged -= OnEntityChanged;
+            _subscribed.PropertyChanged -= OnEntityChanged;
         }
     }
 }

@@ -1,0 +1,10 @@
+# tools available: CronCreate, CronDelete, CronList, DesignSync, EnterWorktree, ExitWorktree, Glob, Grep, ListAgents, LSP, Monitor, PushNotification, Read, RemoteTrigger, ReportFindings, ScheduleWakeup, SendMessage, Skill, TaskStop, ToolSearch, Workflow
+ok    Skill neatoo
+ok    Skill RemoteFactory
+ok    Skill mudneatoo
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\base-classes.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\validation.md
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\setup.md
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=AddNeatoo|IsServerRuntime|RegisterMatchingName
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\blazor.md
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\trimming.md

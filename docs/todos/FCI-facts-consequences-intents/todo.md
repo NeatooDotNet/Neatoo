@@ -52,7 +52,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 | 005 | [005-fluency-size-example](./plans/005-fluency-size-example.md) | Compiled fluency-size aggregate in Design.Domain | AC-5, AC-11 | Done | #119 |
 | 006 | [006-neatoo-skill](./plans/006-neatoo-skill.md) | Neatoo skill: facts first | AC-1, AC-6 | Done | #120 |
 | 007 | [007-mudneatoo-skill](./plans/007-mudneatoo-skill.md) | MudNeatoo skill: components and verb-bound controls | AC-1, AC-7 | Done | #121 |
-| 008 | [008-fresh-session-and-sync](./plans/008-fresh-session-and-sync.md) | Isolated fresh-session test, then sync | AC-9 | Draft | — |
+| 008 | [008-fresh-session-and-sync](./plans/008-fresh-session-and-sync.md) | Isolated fresh-session test, then sync | AC-9 | Done | — |
 | 009 | [009-mudneatoo-components](./plans/009-mudneatoo-components.md) | MudNeatoo boundaries, throttle, slider, converter | AC-10 | Draft | — |
 
 ---
@@ -105,6 +105,10 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - FCI-007 · test review · render the row and summary with bUnit to pin that they refresh themselves · done; Design.Tests takes bunit; three flips logged
 - FCI-007 · code review · quote the row's subscription code; say what the row re-renders for; fix the stale blazor.md phrase; link the screen from Home · done
 - FCI-007 · code review theoretical · the slider has no read-only binding; key rows on their item · done
+- FCI-008 · test review · score run 1 honestly: S7 (and S1, S3, S4) fell into F6 · done; the skill and the Order, WorkOrder and Employee pages fixed, row editors with bUnit tests, all seven re-run
+- FCI-008 · test review · give S6 and S7 T-row evidence; score S1–S5 row by row with lines · done
+- FCI-008 · test review · deny the other tools the sessions listed; keep the command line · done, `run.sh` committed
+- FCI-008 · test review round 2 · correct the isolation wording; test `OnRemove`; fix loose references and run 1's mojibake · done, flip logged
 
 ## Dismissed
 
