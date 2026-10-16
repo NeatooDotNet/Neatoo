@@ -9,7 +9,7 @@
 **Plan-review opt-in:** No (decided by Keith in the design session, D29)
 **Code-review opt-in:** Yes (framework behaviour every rule sees; a new error-severity analyzer)
 **Branch:** fci-004-meta-state-triggers
-**PR:** —
+**PR:** #118
 
 ---
 
