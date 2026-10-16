@@ -48,7 +48,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 | 001 | [001-architecture-page](./plans/001-architecture-page.md) | The architecture page in VisionAlignment | AC-1, AC-8 | Done | #115 |
 | 002 | [002-generated-setx](./plans/002-generated-setx.md) | Generated awaitable SetX on class and interface | AC-2 | Done | #116 |
 | 003 | [003-assignment-analyzer](./plans/003-assignment-analyzer.md) | Assignment analyzer, code fix, Design sweep | AC-3 | Done | #117 |
-| 004 | [004-meta-state-triggers](./plans/004-meta-state-triggers.md) | Meta-state triggers and the IsBusy analyzer | AC-4 | Draft | — |
+| 004 | [004-meta-state-triggers](./plans/004-meta-state-triggers.md) | Meta-state triggers and the IsBusy analyzer | AC-4 | Done | — |
 | 005 | [005-fluency-size-example](./plans/005-fluency-size-example.md) | Compiled fluency-size aggregate in Design.Domain | AC-5, AC-11 | Draft | — |
 | 006 | [006-neatoo-skill](./plans/006-neatoo-skill.md) | Neatoo skill: facts first | AC-1, AC-6 | Draft | — |
 | 007 | [007-mudneatoo-skill](./plans/007-mudneatoo-skill.md) | MudNeatoo skill: components and verb-bound controls | AC-1, AC-7 | Draft | — |
@@ -62,6 +62,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 - [x] Send the "where does business logic go" wording to desktopRemoteFactory · RemoteFactory#173 · done when FCI-001 has merged into the arc and the message is sent · AC-8 · sent 2026-10-16, applied as RemoteFactory#178
 - [ ] Confirm the wording landed in both #173 sites and the installed RF skill · `~/.claude/skills/RemoteFactory` · done when the RF PR has merged and the installed copy shows it · AC-8
 - [ ] Prose beside the swept snippets teaches the awaited form, not sync `AddAction` or `void` verbs · docs/guides, docs/reference, skills · done when no prose shows an assigning `AddAction` or a sync multi-write verb · AC-6
+- [ ] The skill names which meta triggers are safe for an async rule and which are sync-only, and the symptom of a loop: WaitForTasks never returns · skills/neatoo rules-lifecycle and pitfalls · done when both pages say it · AC-6
 
 ## Recommendations Taken
 
@@ -76,6 +77,13 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - FCI-003 · code review · stop reporting overrides of Neatoo lifecycle virtuals as verbs · done
 - FCI-003 · code review · fix three over-indented swept lines rendered into the guides and skill · done
 - FCI-003 · test review round 2 · make the flip-check line honest for all 18 tests · done
+- FCI-004 · test review · test the async-tracking and synchronous-fault branches of the meta-rule runner · done, both flip-checked
+- FCI-004 · test review · assert the NEATOO012 id; test the other entity meta triggers · done (IsSavable)
+- FCI-004 · code review · stop NEATOO012 erroring on a sync RuleBase; model RuleBase : AsyncRuleBase in the stub · done
+- FCI-004 · code review · keep AsyncTasks' finishing sequence open for work its completion callback adds · done; pre-existing bug; Keith approved on a green suite
+- FCI-004 · code review · extend the NEATOO011 IsBusy exemption to RuleBase classes and method groups · done
+- FCI-004 · own finding · NEATOO012 also refuses async rules on IsSavable, which carries !IsBusy · done, after a test written that way hung the suite
+- FCI-004 · test review round 2 · find the IsSavable diagnostic by message; assert the zero-count test compiles · done
 
 ## Dismissed
 
@@ -84,9 +92,17 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 
 ## Parked
 
+- proposed · Test runs default to a hang timeout (.runsettings or CLAUDE.md ritual) so a loop names its test · origin: FCI-004 · the 10-minute hang
+- proposed · A validation triggered only on a meta name drops its messages; report it or route them · origin: reviews/004-code-review.md
+
 ---
 
 ## Discovery Log
+
+### 2026-10-16 — FCI-004 · serves AC-4
+- **Finding:** AsyncTasks lost work started by its own completion callback, and an async rule on IsSavable loops by construction like one on IsBusy.
+- **Decision:** Amend
+- **Follow-up:** n/a
 
 ---
 

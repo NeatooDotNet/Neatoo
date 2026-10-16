@@ -133,7 +133,8 @@ public class AwaitPropertyWriteAnalyzer : DiagnosticAnalyzer
             switch (ancestor)
             {
                 case AnonymousFunctionExpressionSyntax lambda when IsRuleRegistrationArgument(lambda, model, token):
-                    return RuleContext;
+                    // A rule triggered on IsBusy must be synchronous (NEATOO012), so its write cannot be awaited.
+                    return TriggersOnIsBusy(lambda, model, token) ? null : RuleContext;
 
                 case MethodDeclarationSyntax method:
                     return model.GetDeclaredSymbol(method, token) is IMethodSymbol symbol
@@ -160,7 +161,9 @@ public class AwaitPropertyWriteAnalyzer : DiagnosticAnalyzer
 
         if (method.Name == "Execute" && method.IsOverride && DerivesFromNeatooRule(method.ContainingType))
         {
-            return RuleContext;
+            // A rule class triggered on IsBusy must be synchronous (NEATOO012), so its write cannot be awaited.
+            var ruleClass = declaration.FirstAncestorOrSelf<TypeDeclarationSyntax>();
+            return ruleClass != null && AsyncRuleOnIsBusyAnalyzer.RuleClassTriggersOnIsBusy(ruleClass, model, token) ? null : RuleContext;
         }
 
         if (!IsNeatooClass(method.ContainingType) || IsFactoryOperation(method) || OverridesNeatooMember(method))
@@ -195,9 +198,15 @@ public class AwaitPropertyWriteAnalyzer : DiagnosticAnalyzer
 
             // A method group handed to a rule registration is a rule.
             var expression = reference.Parent is MemberAccessExpressionSyntax access && access.Name == reference ? (ExpressionSyntax)access : reference;
-            if (expression.Parent is ArgumentSyntax { Parent: ArgumentListSyntax { Parent: InvocationExpressionSyntax registration } }
+            if (expression.Parent is ArgumentSyntax { Parent: ArgumentListSyntax { Parent: InvocationExpressionSyntax registration } arguments }
                 && IsRuleRegistration(registration, model, token))
             {
+                // A method group registered with an IsBusy trigger is a sync IsBusy rule (NEATOO012): exempt.
+                if (arguments.DescendantNodes().OfType<LambdaExpressionSyntax>().Any(l => AsyncRuleOnIsBusyAnalyzer.IsIsBusyTrigger(l, model, token)))
+                {
+                    continue;
+                }
+
                 return HelperContext;
             }
 
@@ -216,6 +225,14 @@ public class AwaitPropertyWriteAnalyzer : DiagnosticAnalyzer
     private static bool IsRuleRegistrationArgument(AnonymousFunctionExpressionSyntax lambda, SemanticModel model, CancellationToken token)
         => lambda.Parent is ArgumentSyntax { Parent: ArgumentListSyntax { Parent: InvocationExpressionSyntax invocation } }
             && IsRuleRegistration(invocation, model, token);
+
+    /// <summary>
+    /// The registration this rule lambda is passed to also passes an IsBusy trigger.
+    /// </summary>
+    private static bool TriggersOnIsBusy(AnonymousFunctionExpressionSyntax lambda, SemanticModel model, CancellationToken token)
+        => lambda.Parent?.Parent is ArgumentListSyntax arguments
+            && arguments.DescendantNodes().OfType<LambdaExpressionSyntax>()
+                .Any(trigger => trigger != lambda && AsyncRuleOnIsBusyAnalyzer.IsIsBusyTrigger(trigger, model, token));
 
     private static bool IsRuleRegistration(InvocationExpressionSyntax invocation, SemanticModel model, CancellationToken token)
     {
