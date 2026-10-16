@@ -189,7 +189,8 @@ internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDem
     public PrivateSetPropertyDemo(IEntityBaseServices<PrivateSetPropertyDemo> services) : base(services)
     {
         // Rule: when Quantity or UnitPrice changes, recompute Total
-        // The lambda sets the private setter, which calls SetPrivateValue internally
+        // The rule awaits the generated SetComputedTotal, which writes through
+        // SetPrivateValue and returns once the write's own cascade has settled
         RuleManager.AddActionAsync(
             async t => await t.SetComputedTotal(t.Quantity * t.UnitPrice),
             t => t.Quantity,

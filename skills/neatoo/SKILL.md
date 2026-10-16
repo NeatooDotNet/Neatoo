@@ -1,7 +1,7 @@
 ---
 name: Neatoo
-description: Use when building or reviewing a Neatoo domain model, Blazor page or ViewModel, or when asking the questions a mainstream .NET habit asks of it - where do I validate before Save, where do I throw on bad input, is this a value object so ValidateBase, nobody edits this so plain EF, where do the screen's derived values and visibility go, how do I get computed values after Fetch, can I call Save on a child, can a rule call the server, who saves the children. Also triggers on EntityBase, ValidateBase, EntityListBase, ValidateListBase, IEntityRoot, IEntityBase, partial properties, RuleManager, AddAction, AddValidation, IsValid, IsSavable, IsModified, IsNew, IsBusy, WaitForTasks, RunRules, PropertyMessages, MudNeatoo. Neatoo is the editing session over a domain graph; factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [Execute]) and tier composition are the RemoteFactory skill's, which is loaded beside this one.
-version: 2.0.0
+description: Use when building or reviewing a Neatoo domain model, Blazor page or ViewModel, or when asking the questions a mainstream .NET habit asks of it - where do I validate before Save, where do I throw on bad input, is this a value object so ValidateBase, nobody edits this so plain EF, where do the screen's derived values and visibility go, how do I get computed values after Fetch, can I call Save on a child, can a rule call the server, who saves the children, is this gesture a fact or a verb, does my rule await its writes, can a rule trigger on IsValid or IsBusy, does writing a value back clear IsModified. Also triggers on EntityBase, ValidateBase, EntityListBase, ValidateListBase, IEntityRoot, IEntityBase, partial properties, RuleManager, AddAction, AddActionAsync, Set{Name}, NEATOO011, NEATOO012, AddValidation, IsValid, IsSavable, IsModified, IsNew, IsBusy, WaitForTasks, RunRules, PropertyMessages, MudNeatoo. Neatoo is the editing session over a domain graph; factory attributes ([Factory], [Create], [Fetch], [Remote], [Service], [Execute]) and tier composition are the RemoteFactory skill's, which is loaded beside this one.
+version: 2.1.0
 ---
 
 # Neatoo
@@ -16,7 +16,7 @@ Every C# block in this skill and its references is compiled and tested in the Ne
 
 2. **Neatoo is the editing session.** A type is a Neatoo entity when it carries rules or change tracking that something relies on to decide validity, modification or savability - a person over many edits, or a job over many rows. It is plain RemoteFactory when nothing is tracked or validated: a read model, a command, a context that holds an aggregate, a `record`.
 
-3. **Logic is placed by who is driving it.** A property change drives a rule on the entity. A person's gesture on one aggregate drives a verb on that entity. A load, another aggregate, or anything that needs server services drives a seam - an `[Execute]` or a `[Fetch]`. A screen's need for server truth drives a read model.
+3. **A fact is a property, a consequence is a rule, an intent is a verb.** What a person states about the aggregate - a slider, a nudge, a lock, a typed number - is a property they write. What follows from it is a rule that runs inside the cascade, whoever wrote it. A verb survives only for intent the state cannot hold: an ordered write, a who-stamp, several facts that land together, a scope that ends with the gesture, a change the framework cannot track. A load, another aggregate, or anything that needs server services is a seam - an `[Execute]` or a `[Fetch]`. A screen's need for server truth is a read model.
 
 4. **The UI binds and adapts gestures. It decides nothing.** A ViewModel turns a gesture into a call on the domain and reads the domain's answers. It never originates a mutation, re-derives a gate, chooses what to load, or holds a transaction.
 
@@ -28,6 +28,7 @@ A mainstream .NET developer reaches for these under load. Each row is the questi
 
 | The habit asks | Neatoo's answer | Copy this |
 |---|---|---|
+| This gesture needs a method on the entity? | First ask whether it is a fact. If a later reader needs the value, it is a property the control writes, and what follows from it is a rule. A verb only for intent the state cannot hold. | The TrainingPlan below |
 | Where do I validate before Save? | Nowhere. The rules ran when the property was set. `await WaitForTasks()` for async rules, read `IsSavable`, save, hold the returned instance. There is no validate step - and `RunRules(All)` before Save is not one. | The save handler below; [blazor.md](references/blazor.md#the-save-handler) |
 | Where do I throw when input is bad? | In a rule, as a message. An exception is an application failure. A verb sets state and never checks-and-throws; the admission rule (`CanApprove`) says whether the verb applies and the UI binds the button to it. | [domain-logic-placement.md](references/domain-logic-placement.md) - `Approve` and `CanApprove`; [validation.md](references/validation.md) - attributes and rules |
 | Nobody edits this, so plain EF? | An entity is right with no person involved. A job reuses the aggregate, its verb and its rules: verb, `WaitForTasks()`, then `IsSavable` decides - saved, reported with its messages, or skipped. | [base-classes.md](references/base-classes.md#a-job-over-entities) |
@@ -38,6 +39,9 @@ A mainstream .NET developer reaches for these under load. Each row is the questi
 | A rule can't call the server? | It can. Inject the delegate of a `[Remote, Execute]` command, or an interface-factory domain service; on the client both are a wrapped server call. Never a server-only service. No preference between the two. | [domain-logic-placement.md](references/domain-logic-placement.md) - rule with a command; [validation.md](references/validation.md#a-rule-that-takes-a-domain-service) |
 | Value object, so `ValidateBase`? | A `record`: immutable, by-value, no rules; its constructor may throw because code assigns it. `ValidateBase` is an input model - something a person edits. If a value needs rules it is not a value object. | [base-classes.md](references/base-classes.md#a-value-object-is-a-record) |
 | Can I call `Save()` on a child? | Not through a child interface: `IEntityBase` has no `Save()` or `IsSavable`; only `IEntityRoot` does. A type that plays both roles is saved as a root only when it was fetched as one. | [collections.md](references/collections.md) - the aggregate interfaces; [entities.md](references/entities.md#one-class-in-both-roles) |
+| My rule assigns a property; is that enough? | Await the generated `Set{Name}`: `AddActionAsync(async t => await t.SetCost(...))`, and a verb is `async Task` that awaits each write. An assignment returns before its consequences land. NEATOO011 warns; inside an async method or an `AddAction` lambda its code fix rewrites the write, and a sync `void` verb is made `async Task` first. Factory operations still assign. | The fit below |
+| Can a rule react to `IsValid` or `IsBusy`? | Yes: meta state is a trigger like any property. On `IsBusy` or `IsSavable` the rule must be synchronous, or it re-triggers itself and `WaitForTasks()` never returns; NEATOO012 refuses it. | `CanApprove` below; [rules-lifecycle.md](references/rules-lifecycle.md#rules-on-meta-state) |
+| Writing the loaded value back undoes the edit? | No. Modified is sticky: a write-back is one more change, and Neatoo keeps no original value to compare with. Discard by fetching again, or keep the pre-edit instance. | [entities.md](references/entities.md#state-properties) |
 
 **RemoteFactory's questions.** The RemoteFactory skill, loaded beside this one, answers these; they are listed here so the two skills read as one list. How do I load-or-create? Can I `[Create]` from loaded data? How does the client call the repository? Where does my application service go? Who writes a child's row? `Save()` updates my object? Which services can a constructor take? Should the child's `[Insert]` be `[Remote]`? Does `[Remote]` mean "runs on the server"? My command needs the server, so plain `[Execute]`? I'll return a DTO from a controller for this screen?
 
@@ -99,30 +103,103 @@ internal async Task<bool> Fetch(Guid id,
 
 `LoadValue` is for the rare write that must be baseline after the operation has ended; `MarkModified()` in a `[Create]` is for the rare created object that *is* the user's work. Both in [entities.md](references/entities.md).
 
-### Logic is placed by who drives it
+### A fact, a consequence, an intent
 
-| Who drives | Where it goes | Example |
+The first question about a gesture is whether it is a fact. If a later reader needs the value - a binding, a rule, a row, a job, a test - it is a property, and the control writes it, whatever the control looks like. A slider, a nudge button, a checkbox and a typed number are facts. The test: *intent that survives as state is a property; only intent that evaporates needs a verb.*
+
+| What it is | Where it goes | In the TrainingPlan |
 |---|---|---|
-| A property change | A rule on the entity (`AddAction` for a derived value, `AddValidation` for a message) | the admission rule below |
-| A person's gesture on one aggregate | A verb on the entity: sets state, never persists, never checks-and-throws | `Approve`, `Submit` in [domain-logic-placement.md](references/domain-logic-placement.md) |
+| A fact: something a later reader needs | A property with a public setter; the control writes it | `Effort`, `MinutesLocked`, `ApprovedMinutes` |
+| A consequence: what follows from a fact, whoever wrote it | A rule on the entity: `AddActionAsync` for a value or a fact the UI binds, `AddValidation` or `RuleBase<T>` for a message | the fit, `PlannedMinutes`, `NextEffortUp`, `CanApprove` |
+| An intent the state cannot hold: an ordered write, a who-stamp, several facts that land together, a scope that ends with the gesture, a change the framework cannot track, a seam call | A verb on the entity: `async Task`, awaited writes, never persists, never checks and throws | `SlideMinutes`, `LockMinutes`, `AddInterval`, `Approve` |
 | A load, another aggregate, server services | A seam: an `[Execute]` or `[Fetch]` operation | the job in [base-classes.md](references/base-classes.md#a-job-over-entities) |
 | A screen's need for server truth | A read model: `[Factory]` with `[Fetch]` only, no base class | `EmployeeDirectory` in [base-classes.md](references/base-classes.md) |
 
-The admission rule is the shape most often put in the wrong place. It is domain state, bound by the button, not re-derived by the page:
+Two intents on one fact are two verbs on one property, never a second property. A property nobody reads once the rules settle is a verb in disguise. Admission is a consequence, not a check inside the verb: the button binds `CanApprove`.
 
-<!-- snippet: skill-can-x-rule -->
-<a id='snippet-skill-can-x-rule'></a>
+A consequence is triggered by every fact it reads, including a child's property and the list's `Count`:
+
+<!-- snippet: skill-consequence-fit -->
+<a id='snippet-skill-consequence-fit'></a>
 ```cs
-// Admission for the Approve verb. The UI binds the button to it; the
-// verb itself does not check and throw.
+// Consequence: share the approved minutes across the free intervals by
+// effort. Triggered by every fact it reads, including the intervals'
+// own Minutes (a slide, a lock) and the list's Count (an add, a remove).
 RuleManager.AddActionAsync(
-    async t => await t.SetCanApprove(t.Status == "Pending"),
-    t => t.Status);
+    async t => await t.Fit(),
+    new Expression<Func<TrainingPlan, object?>>[]
+    {
+        t => t.ApprovedMinutes,
+        t => t.Intervals!.Count,
+        t => t.Intervals![0].Effort,
+        t => t.Intervals![0].MinutesLocked,
+        t => t.Intervals![0].Minutes,
+    });
 ```
-<sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-can-x-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Aggregates/TrainingPlanAggregate/TrainingPlan.cs#L52-L66' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-consequence-fit' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-A root reads its children and writes derived facts; a child reads the root through `Parent`. The chained rules, child-property triggers and cross-sibling validation that make an aggregate behave as one are in [domain-logic-placement.md](references/domain-logic-placement.md).
+**Rules are code running inside the cascade.** An awaited write inside a rule runs the rules it triggers before the rule's next statement. A child settles before its parent hears, and a write of an equal value raises nothing. That is how the fit converges: it writes each free interval, each write re-triggers the fit, and the nested fit computes the same shares and writes nothing new. A rule may call methods on its target, its `Parent` and its children. It is never told which write triggered it, and must not need to be: a rule that branches on its caller is the caller-knowledge the property model removes.
+
+When one gesture must parameterize one cascade - "fit the others around the interval I moved" - the verb sets a scoped value the rule reads, and the scope clears it. That anchor is the canonical intent that is not a property: no later reader needs it, and the next gesture must not inherit it. A verb may land several facts together; what it must not do is suspend a rule while it writes them. The rule reads state instead: here a locked interval is held and a free one is shared.
+
+<!-- snippet: skill-intent-slide-with-anchor -->
+<a id='snippet-skill-intent-slide-with-anchor'></a>
+```cs
+/// <summary>
+/// Intent: set the minutes and fit the others around this interval. The anchor lives for this
+/// one cascade (every nested fit sees it) and evaporates when the gesture ends.
+/// </summary>
+public async Task SlideMinutes(int minutes)
+{
+    using (((ITrainingPlanFit)Parent!).AnchorFit(this))
+    {
+        await SetMinutes(minutes);
+    }
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/TrainingPlanAggregate/Interval.cs#L53-L65' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-intent-slide-with-anchor' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+An ordered write is an intent because the order is the meaning. Each write is awaited, so the lock's consequences are in place before the minutes land:
+
+<!-- snippet: skill-intent-ordered-write -->
+<a id='snippet-skill-intent-ordered-write'></a>
+```cs
+/// <summary>
+/// Intent: lock, then the minutes. Each write is awaited, so the lock's consequences (the fit
+/// holding this interval) are in place before the minutes land.
+/// </summary>
+public async Task LockMinutes(int minutes)
+{
+    await SetMinutesLocked(true);
+    await SetMinutes(minutes);
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/TrainingPlanAggregate/Interval.cs#L67-L77' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-intent-ordered-write' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+**Domain code awaits its writes.** The generator emits `Task Set{Name}(T value)` for every settable partial property, on the class and, for a public setter, on the partial interface. A plain assignment inside a rule or a verb returns before that write's consequences land, so rules use `AddActionAsync` with `await t.SetX(...)` and verbs are `async Task`. NEATOO011 warns on an assignment in a rule, a verb or a helper they call. Inside an async method or an `AddAction` lambda its code fix rewrites the write; a sync `void` verb or `RuleBase<T>.Execute` is made async by hand first. Factory operations assign, because the object is paused there and assignment is baseline. MudNeatoo inputs already await the property.
+
+**A rule may trigger on meta state.** `IsValid`, `IsSelfValid`, `IsModified`, `IsBusy` and `IsSavable` are triggers like any property, so admission that reads validity is a rule:
+
+<!-- snippet: skill-admission-on-meta-state -->
+<a id='snippet-skill-admission-on-meta-state'></a>
+```cs
+// Consequence: admission for Approve. It reads IsValid, so IsValid is a
+// trigger: when validity flips, the fact follows. The Approve button
+// binds CanApprove; the verb never checks and throws.
+RuleManager.AddActionAsync(
+    async t => await t.SetCanApprove(t.Status == "Draft" && t.IsValid),
+    t => t.Status,
+    t => t.IsValid);
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/TrainingPlanAggregate/TrainingPlan.cs#L80-L88' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-admission-on-meta-state' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+A rule triggered on `IsBusy` or `IsSavable` must be synchronous: an async rule there makes the object busy, which re-triggers it, and `WaitForTasks()` never returns. NEATOO012 refuses it at compile time. [rules-lifecycle.md](references/rules-lifecycle.md#rules-on-meta-state) has the safe and sync-only triggers.
+
+This is not the aggregate of the DDD books. Mutation is open at the property, invariants are reactive relationships rather than guards, and invalid state is admitted and reported rather than refused. The aggregate is still the consistency boundary: one `Save`, one transaction, `IsValid` over the whole graph. Rules hold it, not a façade of methods. A child may write its parent's properties or call a parent method, as `SlideMinutes` does; writing a sibling through the parent is the shape to avoid; reading siblings through `Parent` is fine. The worked aggregate, its tests, and the chained rules and child triggers that make an aggregate behave as one are in [domain-logic-placement.md](references/domain-logic-placement.md).
 
 ### The UI binds and adapts gestures
 
@@ -291,6 +368,10 @@ Every entity and list gets a matched public interface; concretes are `internal`;
 
 Two shapes, no preference: the rule takes the delegate of a `[Remote, Execute]` command, or an interface-factory domain service. On the client either one is a wrapped server call; a server-only service in a rule's constructor makes the entity impossible to build on the client. Both in [validation.md](references/validation.md) and [domain-logic-placement.md](references/domain-logic-placement.md). Bind the property on field commit, not per keystroke.
 
+### `[Remote]` is per call
+
+`[Remote]` applies at each call, not to a call stack. A non-remote method on the client that calls a `[Remote]` factory method crosses the wire at that call, gets the result and continues locally; every ViewModel already works this way. So where a seam runs follows from where its work must run: a seam whose work is partly client-only is a non-remote `[Execute]` that makes the remote calls it needs. Which tier a step runs on and how many round trips it costs are separate questions. Where `[Remote]` goes is the RemoteFactory skill's answer.
+
 ### One class, two roles
 
 An entity type is a root, child-only, or both. Both: root operations take services and are `[Remote]`; child operations take the child's row from its parent and are `internal`. The factory method signature is the whole distinction, and an instance fetched as a child is saved by its list - calling `Save()` on it would route to the root `[Update]` and bypass the parent. [entities.md](references/entities.md#one-class-in-both-roles).
@@ -319,12 +400,12 @@ The ones a new aggregate meets first; [pains.md](references/pains.md) has all of
 Each file is a mechanism reference under the decisions above. Every block in them is compiled.
 
 - [base-classes.md](references/base-classes.md) - the four base classes, the input model, the read model, the command, the job over entities, the value object record
-- [entities.md](references/entities.md) - the entity lifecycle: Create/Fetch/Insert/Update/Delete, IsNew vs IsModified, the child that cannot be saved, the list update, one class in both roles
+- [entities.md](references/entities.md) - the entity lifecycle: Create/Fetch/Insert/Update/Delete, IsNew vs IsModified, modified is sticky, the child that cannot be saved, the list update, one class in both roles
 - [collections.md](references/collections.md) - lists, the aggregate interfaces, DeletedList, validity aggregation
 - [properties.md](references/properties.md) - partial properties, the property object, LoadValue, MarkReadOnly, pause
 - [validation.md](references/validation.md) - rule types, attributes and rules, the server gate, rules that reach the server
-- [rules-lifecycle.md](references/rules-lifecycle.md) - when rules fire and when they don't, the Fetch that computes what it needs, RunRulesFlag
-- [domain-logic-placement.md](references/domain-logic-placement.md) - rule, verb, seam, read model with the WorkOrder aggregate: admission, derived facts, chained rules, child triggers, Parent
+- [rules-lifecycle.md](references/rules-lifecycle.md) - when rules fire and when they don't, the Fetch that computes what it needs, RunRulesFlag, rules on meta state, rules that await their writes
+- [domain-logic-placement.md](references/domain-logic-placement.md) - facts first with the TrainingPlan aggregate; rule, verb, seam, read model with the WorkOrder aggregate: admission, derived facts, chained rules, child triggers, Parent
 - [shared-rules.md](references/shared-rules.md) - one rule across several entity types
 - [blazor.md](references/blazor.md) - the save handler, the ViewModel over an aggregate, the page that binds facts, Neatoo on each tier, MudNeatoo
 - [testing.md](references/testing.md) - real Neatoo objects, the test host, the client/server pair

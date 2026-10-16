@@ -1,6 +1,6 @@
 # Domain Logic Placement
 
-The main `/neatoo` skill decides where logic goes ("Logic is placed by who drives it"): a property change drives a rule, a person's gesture on one aggregate drives a verb, a load or another aggregate drives a seam, and a screen's need for server truth drives a read model. This reference is the mechanism for the first two — which rule shape for which trigger, the patterns that make an aggregate behave as one, and the verb. The seam's and the read model's attributes are the RemoteFactory skill's.
+The main `/neatoo` skill places logic by asking first whether a gesture is a fact ("A fact, a consequence, an intent"): a fact is a property, what follows from it is a rule, intent the state cannot hold is a verb, a load or another aggregate is a seam, and a screen's need for server truth is a read model. This reference is the mechanism for rules and verbs: which rule shape for which trigger, the patterns that make an aggregate behave as one, the verb, and a worked rules-first aggregate. The seam's and the read model's attributes are the RemoteFactory skill's.
 
 > **Design assumption: open mutation.** Neatoo aggregates are graphs, not façades — any consumer (ViewModel, Razor binding, service) can call business methods on children or bind directly to deep properties. Design rules so that mutating any descendant leaves the root's `IsValid` / `IsModified` correct after all rules settle. The ViewModel adapts gestures into those calls and decides nothing (the main `/neatoo` skill's fourth model statement); the rules below are what make that safe.
 
@@ -12,13 +12,13 @@ A property change drives a rule; what the rule reacts to decides its shape.
 
 | The rule reacts to | Shape | Pattern |
 |---|---|---|
-| The entity's own properties, producing a value | `AddAction` writing a `private set` partial property | 1 |
-| The entity's own properties, producing a fact the UI shows or gates on | `AddAction` writing a `bool` named for the business fact (`IsHeld`, `CanApprove`) | 2, 7 |
-| A value another rule wrote | A second `AddAction` triggered by that value — rules chain | 3 |
+| The entity's own properties, producing a value | `AddActionAsync` writing a `private set` partial property | 1 |
+| The entity's own properties, producing a fact the UI shows or gates on | `AddActionAsync` writing a `bool` named for the business fact (`IsHeld`, `CanApprove`) | 2, 7 |
+| A value another rule wrote | A second `AddActionAsync` triggered by that value — rules chain | 3 |
 | A question only the server can answer, once per change | An async rule that takes a `[Remote, Execute]` command delegate or an interface-factory domain service | 4 |
 | Several of the entity's properties together | `AddValidation` or `RuleBase<T>`, returning every message at once | 5 |
-| A child's property | `AddAction` on the parent with a child-property trigger (`t => t.Items![0].LineTotal`) | 6, 8 |
-| A parent's property every child must follow | `AddAction` on the parent that calls a business method on each child | 9 |
+| A child's property | `AddActionAsync` on the parent with a child-property trigger (`t => t.Items![0].LineTotal`) | 6, 8 |
+| A parent's property every child must follow | `AddActionAsync` on the parent that calls a business method on each child | 9 |
 | A sibling's property in the same list | A rule on the child that reads its siblings through `Parent`; the list re-runs the siblings' rules (`HandleNeatooPropertyChanged`) | 6 |
 
 Not a rule: work a person starts on purpose — several server calls, or a result they review before it applies. That is a verb or a seam the ViewModel calls on a named gesture. Presentational choices (CSS class, layout, which component) are the UI's own.
@@ -40,7 +40,7 @@ When a property's value depends on other properties, compute it in the domain mo
 
 ### Correct: Domain Model Computes, UI Binds
 
-A derived value is a `private set` partial property written by an `AddAction` rule: it notifies, it serializes, and the UI sees it read-only.
+A derived value is a `private set` partial property written by an `AddActionAsync` rule that awaits its generated `Set{Name}`: it notifies, it serializes, and the UI sees it read-only.
 
 <!-- snippet: skill-computed-properties -->
 <a id='snippet-skill-computed-properties'></a>
@@ -289,7 +289,7 @@ Business rules that span multiple properties belong in the domain model, not in 
 
 ### Correct: Domain Validates, UI Displays
 
-`AddValidation` takes exactly one trigger property, because the message attaches to that property. A validation over two properties is either a `RuleBase<T>` with two triggers that attaches the message where it belongs, or a validation on a computed property an `AddAction` recomputes from both inputs:
+`AddValidation` takes exactly one trigger property, because the message attaches to that property. A validation over two properties is either a `RuleBase<T>` with two triggers that attaches the message where it belongs, or a validation on a computed property an `AddActionAsync` recomputes from both inputs:
 
 <!-- snippet: skill-cross-property-validation-options -->
 <a id='snippet-skill-cross-property-validation-options'></a>
@@ -305,7 +305,7 @@ Business rules that span multiple properties belong in the domain model, not in 
 // properties, either:
 //
 // RIGHT (validate a computed property - the shape used below):
-//   RuleManager.AddAction(t => t.Sum = t.A + t.B, t => t.A, t => t.B);
+//   RuleManager.AddActionAsync(async t => await t.SetSum(t.A + t.B), t => t.A, t => t.B);
 //   RuleManager.AddValidation(t => t.Sum > 100 ? "Too high" : "", t => t.Sum);
 //
 // RIGHT (a rule class, which takes any number of triggers):
@@ -316,7 +316,7 @@ Business rules that span multiple properties belong in the domain model, not in 
 //           => RuleMessages.If(t.A + t.B > 100, nameof(t.A), "Too high");
 //   }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L192-L214' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation-options' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L195-L217' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation-options' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-cross-property-validation -->
@@ -359,14 +359,14 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L217-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L220-L257' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The UI just binds the inputs. Validation runs when either input commits and shows through `PropertyMessages`.
 
 ## Pattern 6: Child Property Triggers — Parent-Child Reactivity via AddAction
 
-When a parent needs to react to child property changes, use `AddAction` with a **child property trigger expression**. This is the same type-safe, expression-based mechanism used for same-object reactivity.
+When a parent needs to react to child property changes, use `AddActionAsync` with a **child property trigger expression**. This is the same type-safe, expression-based mechanism used for same-object reactivity.
 
 ### The Key Syntax: `t => t.ChildCollection![0].ChildProperty`
 
@@ -388,7 +388,7 @@ To react to several child properties, pass several trigger expressions: `t => t.
 
 ### Common Mistake: Using the Collection Reference as the Trigger
 
-`RuleManager.AddAction(..., t => t.Items)` fires only when the `Items` property is reassigned to a new list — never when an item inside it changes a property. `TriggerProperty.IsMatch` uses exact string equality: `"Items" != "Items.LineTotal"`. Trigger on the specific child property, as above.
+`RuleManager.AddActionAsync(..., t => t.Items)` fires only when the `Items` property is reassigned to a new list — never when an item inside it changes a property. `TriggerProperty.IsMatch` uses exact string equality: `"Items" != "Items.LineTotal"`. Trigger on the specific child property, as above.
 
 ### When to Use NeatooPropertyChanged Instead
 
@@ -597,7 +597,7 @@ Each aggregation targets the specific child property it depends on (`HasUnschedu
 
 ## Pattern 9: Parent-as-Orchestrator — Cross-Child Coordination
 
-When one child changes and a different child needs updating, the parent orchestrates via `AddAction`. The action body receives the parent (`t`), which can reach any child. This is the same child property trigger mechanism — the only difference is the action pushes changes DOWN to the children instead of computing a parent property.
+When one child changes and a different child needs updating, the parent orchestrates via `AddActionAsync`. The action body receives the parent (`t`), which can reach any child. This is the same child property trigger mechanism — the only difference is the action pushes changes DOWN to the children instead of computing a parent property.
 
 ### Anti-Pattern: UI Bridges Between Entities
 
@@ -822,7 +822,7 @@ If the logic lived in a `.razor` file, this test would be impossible.
 
 ## A Verb
 
-A verb sets state and never persists; the rule its trigger names runs at once. No `RunRules`, no guard, no throw.
+A verb is one meaning of writing a fact, kept only for intent the state cannot hold. It is `async Task` and awaits each write, so the rules its writes trigger have run when it returns. It never persists: no `RunRules`, no guard, no throw.
 
 <!-- snippet: skill-verb-submit -->
 <a id='snippet-skill-verb-submit'></a>
@@ -833,6 +833,261 @@ public async Task Submit()
 }
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L309-L314' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-verb-submit' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+## Facts First: The TrainingPlan
+
+A rules-first aggregate at the size of a real editing screen. A `TrainingPlan` root holds the approved minutes and a list of `Interval` children; each interval has an effort slider, a minutes value and a lock. Nearly everything a person does is a fact they write; the fit, the planned total, the next marks and the admission are consequences; four verbs carry the intent the state cannot hold.
+
+The interfaces name each member for what it is:
+
+<!-- snippet: skill-training-plan-interface -->
+<a id='snippet-skill-training-plan-interface'></a>
+```cs
+/// <summary>
+/// Training plan aggregate root.
+/// </summary>
+public partial interface ITrainingPlan : IEntityRoot
+{
+    /// <summary>Fact: the minutes the session is approved for. The fit shares them out.</summary>
+    int ApprovedMinutes { get; set; }
+
+    /// <summary>Consequence: the sum of the intervals' minutes.</summary>
+    int PlannedMinutes { get; }
+
+    string Status { get; }
+    string? ApprovedBy { get; }
+
+    /// <summary>Consequence: admission for Approve, maintained by a rule that reads IsValid.</summary>
+    bool CanApprove { get; }
+
+    IIntervalList? Intervals { get; }
+
+    /// <summary>Intent: a new interval and its effort land together.</summary>
+    Task<IInterval> AddInterval(string name, int effort);
+
+    /// <summary>Intent: a stamp and a status, in that order.</summary>
+    Task Approve(string approver);
+}
+
+/// <summary>
+/// One interval of the plan.
+/// </summary>
+public partial interface IInterval : IEntityBase
+{
+    string Name { get; set; }
+
+    /// <summary>Fact: the slider. Writing it re-weights the fit.</summary>
+    int Effort { get; set; }
+
+    /// <summary>Fact: a locked interval keeps its minutes; the fit shares the rest.</summary>
+    bool MinutesLocked { get; set; }
+
+    /// <summary>Consequence of the fit, or the value a gesture below set.</summary>
+    int Minutes { get; }
+
+    /// <summary>Consequences the UI writes into Effort to nudge it: a nudge is a plain write.</summary>
+    int NextEffortUp { get; }
+    int NextEffortDown { get; }
+
+    /// <summary>Intent: set the minutes and fit the others around this interval, for this one fit.</summary>
+    Task SlideMinutes(int minutes);
+
+    /// <summary>Intent: lock, then set the minutes. The order is the meaning.</summary>
+    Task LockMinutes(int minutes);
+}
+
+public interface IIntervalList : IEntityListBase<IInterval> { }
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/TrainingPlanAggregate/ITrainingPlanInterfaces.cs#L26-L81' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-training-plan-interface' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+**The slider is a fact.** `Effort` has a public setter and no verb; the binding writes it, and every rule that follows runs whoever wrote it. A nudge button is the same write: the domain publishes the next mark as a fact, and the button writes it into `Effort`.
+
+<!-- snippet: skill-next-mark-facts -->
+<a id='snippet-skill-next-mark-facts'></a>
+```cs
+// Consequences the UI writes back: a nudge is a plain write of Effort.
+RuleManager.AddActionAsync(
+    async t =>
+    {
+        await t.SetNextEffortUp(Math.Min(t.Effort + 1, 10));
+        await t.SetNextEffortDown(Math.Max(t.Effort - 1, 1));
+    },
+    t => t.Effort);
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/TrainingPlanAggregate/Interval.cs#L41-L50' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-next-mark-facts' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-test-slider-is-a-fact -->
+<a id='snippet-skill-test-slider-is-a-fact'></a>
+```cs
+[TestMethod]
+public async Task EffortSlider_IsAFact_TheFitFollowsWhoeverWroteIt()
+{
+    var (plan, warmUp, main, coolDown) = await ThreeIntervals();
+
+    await main.SetEffort(8);   // what a slider binding does: a plain, awaited write
+
+    CollectionAssert.AreEqual(new[] { 10, 40, 10 }, Minutes(warmUp, main, coolDown));
+    Assert.AreEqual(60, plan.PlannedMinutes);
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/TrainingPlanTests.cs#L56-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-test-slider-is-a-fact' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+**The fit reads the anchor.** The fit cannot know which interval moved, and must not. `SlideMinutes` sets the anchor for one cascade; every nested fit sees it, and the outermost scope clears it. Scopes nest and end on a throw.
+
+<!-- snippet: skill-fit-reads-the-anchor -->
+<a id='snippet-skill-fit-reads-the-anchor'></a>
+```cs
+/// <summary>
+/// The fit: locked intervals and the anchored one keep their minutes; the rest share what is
+/// left of the approved minutes in proportion to effort.
+/// </summary>
+private async Task Fit()
+{
+    if (Intervals == null || Intervals.Count == 0)
+    {
+        return;
+    }
+
+    var held = Intervals.Where(i => i.MinutesLocked || ReferenceEquals(i, _anchor)).ToList();
+    var free = Intervals.Except(held).ToList();
+    if (free.Count == 0)
+    {
+        return;
+    }
+
+    var remaining = Math.Max(ApprovedMinutes - held.Sum(i => i.Minutes), 0);
+    var shares = Share(remaining, free.Select(i => Math.Max(i.Effort, 1)).ToList());
+
+    for (var index = 0; index < free.Count; index++)
+    {
+        // Parent writes child through the child's own method. Each write re-enters
+        // this rule; the nested fit computes the same shares and writes nothing new.
+        await ((IIntervalFit)free[index]).ApplyFit(shares[index]);
+    }
+}
+
+/// <summary>
+/// The anchor for one gesture. Scopes nest: the previous anchor comes back when this one ends.
+/// </summary>
+IDisposable ITrainingPlanFit.AnchorFit(IInterval interval)
+{
+    var previous = _anchor;
+    _anchor = interval;
+    return new AnchorScope(() => _anchor = previous);
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/TrainingPlanAggregate/TrainingPlan.cs#L91-L130' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fit-reads-the-anchor' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-test-anchor-evaporates -->
+<a id='snippet-skill-test-anchor-evaporates'></a>
+```cs
+[TestMethod]
+public async Task SlideMinutes_FitsTheOthersAroundIt_AndTheAnchorEvaporates()
+{
+    var (plan, warmUp, main, coolDown) = await ThreeIntervals();
+
+    await warmUp.SlideMinutes(20);
+    CollectionAssert.AreEqual(new[] { 20, 30, 10 }, Minutes(warmUp, main, coolDown),
+        "the slid interval held for its fit; the others shared the remaining 40 by effort");
+
+    await coolDown.SetEffort(6);
+    CollectionAssert.AreEqual(new[] { 9, 26, 25 }, Minutes(warmUp, main, coolDown),
+        "the next fact refit everything: the anchor did not outlive its gesture");
+    Assert.AreEqual(60, plan.PlannedMinutes);
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/TrainingPlanTests.cs#L69-L84' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-test-anchor-evaporates' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+**Two intents on one fact are two verbs on one property.** `Minutes` is written with two meanings: `SlideMinutes` means "this many, and fit the others around me, this once"; `LockMinutes` means "this many, and keep them". The lock is an ordered write, and unlocking is a plain write of `MinutesLocked`:
+
+<!-- snippet: skill-test-ordered-write -->
+<a id='snippet-skill-test-ordered-write'></a>
+```cs
+[TestMethod]
+public async Task LockMinutes_LocksThenSets_AndTheFitSharesTheRest()
+{
+    var (plan, warmUp, main, coolDown) = await ThreeIntervals();
+
+    await main.LockMinutes(30);
+    CollectionAssert.AreEqual(new[] { 15, 30, 15 }, Minutes(warmUp, main, coolDown));
+
+    await plan.SetApprovedMinutes(90);
+    CollectionAssert.AreEqual(new[] { 30, 30, 30 }, Minutes(warmUp, main, coolDown),
+        "the locked interval kept its minutes; the free ones shared the new total");
+
+    await main.SetMinutesLocked(false);   // unlocking is a plain write of a fact
+    CollectionAssert.AreEqual(new[] { 18, 54, 18 }, Minutes(warmUp, main, coolDown));
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/TrainingPlanTests.cs#L86-L102' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-test-ordered-write' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+**Adding an interval is a `Count` change.** The interval is built with its name and effort, so the add is the one change the fit hears:
+
+<!-- snippet: skill-intent-add-interval -->
+<a id='snippet-skill-intent-add-interval'></a>
+```cs
+/// <summary>
+/// Intent: a new interval, built with its effort, joins the plan. The interval's Create makes
+/// name and effort its baseline, so the add is the one change: the list's Count, which the fit
+/// triggers on. One fit runs, with the right effort.
+/// </summary>
+public async Task<IInterval> AddInterval(string name, int effort)
+{
+    var interval = await _intervalFactory.Create(name, effort);
+    Intervals!.Add(interval);
+    await WaitForTasks();
+    return interval;
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/TrainingPlanAggregate/TrainingPlan.cs#L148-L161' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-intent-add-interval' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+**Admission follows validity.** `CanApprove` triggers on `IsValid` (the rule is in the main skill), so it follows every fact that changes validity, and the verb never checks:
+
+<!-- snippet: skill-test-admission-on-meta-state -->
+<a id='snippet-skill-test-admission-on-meta-state'></a>
+```cs
+[TestMethod]
+public async Task CanApprove_FollowsValidity()
+{
+    var (plan, _, main, _) = await ThreeIntervals();
+    Assert.IsTrue(plan.CanApprove);
+
+    await main.LockMinutes(80);   // more than the 60 approved
+
+    Assert.IsFalse(plan.IsValid);
+    Assert.IsFalse(plan.CanApprove, "validity went false, so the admission fact followed");
+
+    await plan.SetApprovedMinutes(100);
+
+    Assert.IsTrue(plan.IsValid);
+    Assert.IsTrue(plan.CanApprove);
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/TrainingPlanTests.cs#L230-L247' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-test-admission-on-meta-state' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+<!-- snippet: skill-intent-approve -->
+<a id='snippet-skill-intent-approve'></a>
+```cs
+/// <summary>
+/// Intent: who approved, then the status. Each write is awaited, so the status's
+/// consequences (CanApprove) have landed when the verb returns.
+/// </summary>
+public async Task Approve(string approver)
+{
+    await SetApprovedBy(approver);
+    await SetStatus("Approved");
+}
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/TrainingPlanAggregate/TrainingPlan.cs#L163-L173' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-intent-approve' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## The Aggregate Is a Graph
@@ -849,7 +1104,7 @@ Because any consumer can call a child's verb, the rule graph must converge after
 |---|---|---|
 | The child's own state | The child | Its own property |
 | Root state that depends on a child | The root | A child-property trigger (Pattern 6) |
-| A summary of the children exposed on the root | The root (`AddAction`) | A child-property trigger (Pattern 8) |
+| A summary of the children exposed on the root | The root (`AddActionAsync`) | A child-property trigger (Pattern 8) |
 | Consistency between siblings | The child, reading siblings through `Parent` | Its own property; the list re-runs the siblings |
 
 ## Parent
@@ -937,7 +1192,7 @@ public async Task Save_TaskMapsRootStateIntoItsRow_ThroughParent()
 
 Rules of use:
 
-- `Parent` is typed `IValidateBase?`. Cast to the root's interface (`(IWorkOrder)Parent!`) where the child is always attached; pattern-match (`Parent is IWorkOrder root`) where it may not be, or where the same child type can sit under different roots.
-- Children read `Parent`; parents write children. A child never mutates through `Parent`.
+- `Parent` is typed `IValidateBase?`. Cast to the root's interface (`(IWorkOrder)Parent!`) where the child is always attached; pattern-match (`Parent is IWorkOrder root`) where it may not be, or where the same child type can sit under different roots. Inside a factory operation the parent may still be paused, so a child's write to it there is baseline and runs none of its rules.
+- A child may write its parent's properties or call a parent method; `SlideMinutes` above calls its root to anchor the fit. What a child does not do is write a sibling through the parent (`Parent.Items[1].Hours = ...`); reading siblings through `Parent` is fine. Agreement between siblings is the parent's job, so the child writes the parent or calls it, and the parent, or a rule on it, writes the siblings.
 - `Parent` stays inside the aggregate. A child that needs another aggregate through `Parent` has its boundary drawn wrong.
 - A child rule that reads `Parent` has no trigger for the parent's property. When that state changes, the parent re-runs the children's rules — the orchestrator rule in Pattern 9.

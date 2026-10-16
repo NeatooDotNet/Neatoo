@@ -37,7 +37,7 @@ It does **NOT**:
 
 ## The Computed Property Gap
 
-This is the most common bug. An `AddAction` rule computes a derived value, but it never fires during a factory method. The rule:
+This is the most common bug. An `AddActionAsync` rule computes a derived value, but it never fires during a factory method. The rule:
 
 <!-- snippet: skill-computed-gap-rule -->
 <a id='snippet-skill-computed-gap-rule'></a>
@@ -236,6 +236,37 @@ internal async Task<bool> Fetch(Guid id,
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L153-L193' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-fetch-computes-derived' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+## Rules on Meta State
+
+A rule may trigger on the object's meta state as on any property. `IsValid`, `IsSelfValid` and `IsBusy` fire on every Neatoo object; an entity adds `IsModified`, `IsSelfModified`, `IsSavable` and `IsDeleted`. When one of them changes outside a pause, the rules triggered by that name run, after the change has been raised. Nothing runs while the object is paused, so a factory operation computes what it needs itself. Admission that reads validity is the common case:
+
+<!-- snippet: skill-admission-on-meta-state -->
+<a id='snippet-skill-admission-on-meta-state'></a>
+```cs
+// Consequence: admission for Approve. It reads IsValid, so IsValid is a
+// trigger: when validity flips, the fact follows. The Approve button
+// binds CanApprove; the verb never checks and throws.
+RuleManager.AddActionAsync(
+    async t => await t.SetCanApprove(t.Status == "Draft" && t.IsValid),
+    t => t.Status,
+    t => t.IsValid);
+```
+<sup><a href='/src/Design/Design.Domain/Aggregates/TrainingPlanAggregate/TrainingPlan.cs#L80-L88' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-admission-on-meta-state' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
+
+| Trigger | An async rule | A synchronous rule |
+|---|---|---|
+| `IsValid`, `IsSelfValid`, `IsModified`, `IsSelfModified`, `IsDeleted` | Safe | Safe |
+| `IsBusy`, `IsSavable` | **Never.** The rule runs, which makes the object busy, which triggers the rule again | Safe: `RuleBase<T>`, or `AddAction`, which may assign directly here |
+
+`IsSavable` carries `!IsBusy`, so it loops the same way. NEATOO012 refuses an async rule on either at compile time. The symptom, where it slips past, is that `WaitForTasks()` never returns: the test or the page hangs with no exception. Run tests with `--blame-hang-timeout`, so a loop names the test it hangs instead of stalling the run.
+
+Termination is otherwise the author's, as with any two rules that write each other's triggers: an equal write raises nothing, so a cascade converges when its writes reach a fixed point. Keep meta triggers on actions that compute a fact; a validation whose only trigger is a meta name does not show its messages today.
+
+## Rules Write Through Awaited Setters
+
+A rule that writes a property awaits the generated `Set{Name}`, so the write's own consequences have landed before the rule's next statement. A plain assignment forks that cascade and returns at once. NEATOO011 warns on an assignment inside a rule lambda, a rule class's `Execute`, a public verb, or a helper they call in the same file, Inside an async method or an `AddAction` lambda its code fix rewrites the write to `await SetX(...)`, turning `AddAction` into `AddActionAsync`; a sync `void` verb or a sync `RuleBase<T>.Execute` is made async by hand first. It flags assignments and increments, not an un-awaited `SetX(...)` call. Factory operations, constructors, initializers, the lifecycle overrides and synchronous rules triggered on `IsBusy` or `IsSavable` assign, because nothing is awaited there.
 
 ## Related
 

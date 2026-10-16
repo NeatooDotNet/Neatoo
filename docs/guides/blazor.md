@@ -234,7 +234,7 @@ public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 
 ## Read-Only Properties
 
-`ReadOnly` is not a parameter you pass: every MudNeatoo input hard-binds it to `EntityProperty.IsReadOnly`, so read-only state is owned by the domain model. There are two sources. A `private set` partial property is read-only on every instance — the recipe for a derived value written by an `AddAction` rule:
+`ReadOnly` is not a parameter you pass: every MudNeatoo input hard-binds it to `EntityProperty.IsReadOnly`, so read-only state is owned by the domain model. There are two sources. A `private set` partial property is read-only on every instance — the recipe for a derived value written by an `AddActionAsync` rule:
 
 <!-- snippet: skill-private-set-property -->
 <a id='snippet-skill-private-set-property'></a>
@@ -257,7 +257,8 @@ internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDem
     public PrivateSetPropertyDemo(IEntityBaseServices<PrivateSetPropertyDemo> services) : base(services)
     {
         // Rule: when Quantity or UnitPrice changes, recompute Total
-        // The lambda sets the private setter, which calls SetPrivateValue internally
+        // The rule awaits the generated SetComputedTotal, which writes through
+        // SetPrivateValue and returns once the write's own cascade has settled
         RuleManager.AddActionAsync(
             async t => await t.SetComputedTotal(t.Quantity * t.UnitPrice),
             t => t.Quantity,
@@ -268,7 +269,7 @@ internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDem
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L173-L202' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-private-set-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L173-L203' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-private-set-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `IValidateProperty.MarkReadOnly()` locks one property on one instance, permanently. The entity calls it during `[Fetch]` from a server-side permission service, so the same field is editable for one user and read-only for another, and the component renders accordingly without configuration:

@@ -17,8 +17,9 @@ namespace Design.Domain.Rules;
 //
 // AddValidation(): Synchronous validation returning error message
 // AddValidationAsync(): Async validation returning error message
-// AddAction(): Synchronous side-effect (compute values)
-// AddActionAsync(): Async side-effect
+// AddAction(): Synchronous side-effect that writes no Neatoo property
+// AddActionAsync(): Async side-effect; the shape for a rule that writes, since
+//   it awaits the generated Set{Name} (NEATOO011 warns on a plain assignment)
 //
 // DESIGN DECISION: Separate methods for validation vs action.
 // - Validation returns string (error message or empty)
@@ -72,7 +73,9 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
         // =====================================================================
         // Signature: AddAction(Action<T> func, Expression<Func<T, object?>> triggerProperty)
         //
-        // func: Action to perform (typically compute derived values)
+        // func: Action to perform. A rule that writes a property awaits its
+        //   generated Set{Name}, so it is AddActionAsync, as below; a synchronous
+        //   AddAction writes only when triggered on IsBusy or IsSavable.
         // triggerProperty: Property that triggers this rule
         //
         // Action rules don't return validation messages - they just do work.
@@ -201,7 +204,7 @@ internal partial class FluentRulesDemo : EntityBase<FluentRulesDemo>, IFluentRul
 // properties, either:
 //
 // RIGHT (validate a computed property - the shape used below):
-//   RuleManager.AddAction(t => t.Sum = t.A + t.B, t => t.A, t => t.B);
+//   RuleManager.AddActionAsync(async t => await t.SetSum(t.A + t.B), t => t.A, t => t.B);
 //   RuleManager.AddValidation(t => t.Sum > 100 ? "Too high" : "", t => t.Sum);
 //
 // RIGHT (a rule class, which takes any number of triggers):

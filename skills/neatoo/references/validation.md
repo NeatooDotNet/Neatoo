@@ -146,7 +146,7 @@ RuleManager.AddRule(new CalculateTotalRule());
 
 ## Cross-Property Validation
 
-`AddValidation` takes exactly one trigger property, because the message is attached to that property. For a validation over several properties, either validate a computed property (an `AddAction` recomputes it from every input, which triggers the validation), or write a `RuleBase<T>` with several triggers:
+`AddValidation` takes exactly one trigger property, because the message is attached to that property. For a validation over several properties, either validate a computed property (an `AddActionAsync` recomputes it from every input, which triggers the validation), or write a `RuleBase<T>` with several triggers:
 
 <!-- snippet: skill-cross-property-validation-options -->
 <a id='snippet-skill-cross-property-validation-options'></a>
@@ -162,7 +162,7 @@ RuleManager.AddRule(new CalculateTotalRule());
 // properties, either:
 //
 // RIGHT (validate a computed property - the shape used below):
-//   RuleManager.AddAction(t => t.Sum = t.A + t.B, t => t.A, t => t.B);
+//   RuleManager.AddActionAsync(async t => await t.SetSum(t.A + t.B), t => t.A, t => t.B);
 //   RuleManager.AddValidation(t => t.Sum > 100 ? "Too high" : "", t => t.Sum);
 //
 // RIGHT (a rule class, which takes any number of triggers):
@@ -173,7 +173,7 @@ RuleManager.AddRule(new CalculateTotalRule());
 //           => RuleMessages.If(t.A + t.B > 100, nameof(t.A), "Too high");
 //   }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L192-L214' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation-options' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L195-L217' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation-options' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-cross-property-validation -->
@@ -216,7 +216,7 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L217-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L220-L257' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A rule that sets a property triggers the rules on that property, so chains run on their own:
@@ -374,7 +374,7 @@ For a rule shared by several entity types, see [shared-rules.md](shared-rules.md
 
 ### Fluent vs Class-Based Rules
 
-| Aspect | Fluent (`AddValidation`/`AddAction`) | Class-Based (`RuleBase<T>`/`AsyncRuleBase<T>`) |
+| Aspect | Fluent (`AddValidation`/`AddActionAsync`) | Class-Based (`RuleBase<T>`/`AsyncRuleBase<T>`) |
 |--------|--------------------------------------|-----------------------------------------------|
 | Best for | Simple single-expression rules | Complex rules, rules that take a command delegate |
 | Dependencies | Only via closure over constructor parameters | Constructor injection |
