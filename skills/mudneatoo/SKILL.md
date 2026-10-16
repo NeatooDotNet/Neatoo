@@ -790,5 +790,5 @@ MudBlazor 9.x renamed `ShowMessageBox` to `ShowMessageBoxAsync` on `IDialogServi
 ## Reference Documentation
 
 - **`references/anti-patterns.md`** — Complete catalog of anti-patterns with correct alternatives
-- **`references/property-change-events.md`** — `PropertyChanged` vs `NeatooPropertyChanged`: which to use, why MudNeatoo components only need `PropertyChanged`, and how a page or container component subscribes to deep-graph changes
+- **`references/property-change-events.md`** — `PropertyChanged` vs `NeatooPropertyChanged`: which to use, why MudNeatoo components only need `PropertyChanged`, how a page subscribes to its root's own changes, and how a container component that spans the graph, such as the validation summary, subscribes to deep-graph changes
 - **`references/aggregate-reactive-vm.md`** — A ViewModel over a live aggregate: derived values are entity rules the component binds to; the ViewModel holds the aggregate and forwards gestures

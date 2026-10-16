@@ -53,17 +53,17 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 | 006 | [006-neatoo-skill](./plans/006-neatoo-skill.md) | Neatoo skill: facts first | AC-1, AC-6 | Done | #120 |
 | 007 | [007-mudneatoo-skill](./plans/007-mudneatoo-skill.md) | MudNeatoo skill: components and verb-bound controls | AC-1, AC-7 | Done | #121 |
 | 008 | [008-fresh-session-and-sync](./plans/008-fresh-session-and-sync.md) | Isolated fresh-session test, then sync | AC-9 | Done | #122 |
-| 009 | [009-mudneatoo-components](./plans/009-mudneatoo-components.md) | MudNeatoo boundaries, throttle, slider, converter | AC-10 | Parked | — |
+| 009 | [009-mudneatoo-components](./plans/009-mudneatoo-components.md) | MudNeatoo boundaries, throttle, slider, converter | AC-10 | Retired | — |
 
 ---
 
 ## Punchlist
 
-- [x] The changed-meta-property list is safe under concurrent property writes · ValidateBase · locked; 0 of 25 concurrent runs fail (1 of 25 before) · AC-4
+- [x] The changed-meta-property list is safe under concurrent property writes · ValidateBase · locked; 0 of 25 concurrent runs fail (1 of 25 before) · AC-4 · 128142f, merged in #119
 - [x] Send the "where does business logic go" wording to desktopRemoteFactory · RemoteFactory#173 · done when FCI-001 has merged into the arc and the message is sent · AC-8 · sent 2026-10-16, applied as RemoteFactory#178
 - [x] Confirm the wording landed in both #173 sites and the installed RF skill · `~/.claude/skills/RemoteFactory` · done when the RF PR has merged and the installed copy shows it · AC-8 · RemoteFactory#178 merged 2026-10-16, #173 closed; installed SKILL.md quick-reference row, class-factory.md rule 6 and the pointer all carry it
-- [x] Prose beside the swept snippets teaches the awaited form, not sync `AddAction` or `void` verbs · docs/guides, docs/reference, skills · done when no prose shows an assigning `AddAction` or a sync multi-write verb · AC-6 · reviews/006-prose-grep.log
-- [x] The skill names which meta triggers are safe for an async rule and which are sync-only, and the symptom of a loop: WaitForTasks never returns · skills/neatoo rules-lifecycle and pitfalls · done when both pages say it · AC-6 · rules-lifecycle "Rules on Meta State", pitfalls
+- [x] Prose beside the swept snippets teaches the awaited form, not sync `AddAction` or `void` verbs · docs/guides, docs/reference, skills · done when no prose shows an assigning `AddAction` or a sync multi-write verb · AC-6 · reviews/006-prose-grep.log · #120
+- [x] The skill names which meta triggers are safe for an async rule and which are sync-only, and the symptom of a loop: WaitForTasks never returns · skills/neatoo rules-lifecycle and pitfalls · done when both pages say it · AC-6 · rules-lifecycle "Rules on Meta State", pitfalls · #120
 
 ## Recommendations Taken
 
@@ -109,11 +109,26 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - FCI-008 · test review · give S6 and S7 T-row evidence; score S1–S5 row by row with lines · done
 - FCI-008 · test review · deny the other tools the sessions listed; keep the command line · done, `run.sh` committed
 - FCI-008 · test review round 2 · correct the isolation wording; test `OnRemove`; fix loose references and run 1's mojibake · done, flip logged
+- FCI-005 · test review round 2 · correct the Count-flip evidence line (the flip failed the add and the remove tests) · done
+- FCI-006 · test review · log the mdsnippets render · done, reviews/006-mdsnippets.log
+- FCI-007 · code review · name the new public `Setter` parameter for Keith's end review · done, below and in the arc PR
+- FCI-008 · test review · S6's F3 cell names the RuleBase and validations; the T2 note says S2's Fetch re-codes the checks · done
+- FCI-008 · test review round 2 · two loose S5 references, run 1's probe ledger into run1/, run 1's answers as UTF-8, the transcripts' impermanence, the honest test count · done
+- Close-out audit · a MudNeatoo reference still told a page to subscribe to NeatooPropertyChanged; complete this list; cite commits on the punchlist; retire FCI-009; record the missed stop · done in the close-out fixes PR
+
+## For Keith's End Review
+
+- **The loop missed one stop.** FCI-006's DECISION NEEDED on a pre-existing flake should have stopped it (Discovery Log, 2026-10-16). It continued; the flake is the first proposed row below.
+- **A public API beyond the three decided:** every MudNeatoo input gained an optional `Setter` (`Func<T, Task>`), FCI-007. The opening stub and #113 item 1 propose it.
+- **Two new test dependencies:** bunit 2.11.3 in `Neatoo.Blazor.MudNeatoo.Tests` (new project) and in Design.Tests.
+- **Design.App's pages changed shape:** Order and WorkOrder render child rows as components, and every page subscribes only to its root's own `PropertyChanged` (FCI-008, after run 1 fell into F6).
+- **Recommendations Taken** lists every reviewer recommendation the loop took.
+- **Proposed Parked rows** wait for approval to be filed as issues; none is filed.
 
 ## Dismissed
 
 - FCI-002 · Neatoo.UnitTest.Demo reports no tests · pre-existing, serves no criterion
-- FCI-003 · 104 CS4014 warnings in the full build · pre-existing, not this plan's
+- FCI-003 · 104 CS4014 warnings in the full build (106 after FCI-004's new test file) · pre-existing, not this plan's
 - FCI-007 · the MudNeatoo test project targets net9.0 only · every test project in the repo is single-target
 
 ## Parked
@@ -123,12 +138,18 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - proposed · decision · MetaState compare-and-reset races under concurrent multi-thread writes and can lose a meta-triggered rule run; a lock risks lock-order deadlock across the graph · origin: reviews/005-code-review.md callout 4
 - proposed · AC-11 (Optional) · Design.Domain compiles an open finishing inside a non-remote seam, and the skill names LoadValue inside a rule as its smell · origin: FCI-005 scope, not built
 - proposed · AC-10 (Optional) · FCI-009, not built: MudNeatoo boundary components and a render throttle (#113 item 2), the slider's ValueLabelFormat (#113 item 3), a text-field Converter (#93), and ValidateBase binding (#95) · origin: plans/009, Draft when every Required criterion closed
+- proposed · decision · SKR-007 observation 2, again in FCI-008: every form's [Create] runs RunRules(All), each with its per-operation reason, though the skill calls validating a created object the rare case. Change the word, or the sessions? · origin: reviews/008-fresh-session.md observation 3
 - proposed · decision · AsyncFlowTests_Property_PropertyChangedEvents fails about 1 run in 30 on main and on the arc: a 5 ms delay races the falling IsBusy notification · origin: FCI-006 · reviews/006-asyncflow-main-60-runs.log
 - proposed · decision · A Setter does not lift read-only: IsReadOnly is one flag for a private setter and for MarkReadOnly, so a verb-bound text, numeric or picker field over a private-set property cannot be edited; separate the two, or let a Setter lift only the private-setter half · origin: FCI-007 · plans/007 Plan Amendments
 
 ---
 
 ## Discovery Log
+
+### 2026-10-16 — FCI-006 · serves AC-6
+- **Finding:** FCI-006's test review returned DECISION NEEDED on `AsyncFlowTests_Property_PropertyChangedEvents`, a flake that fails about 1 run in 30 on main and on the arc. The standing orders make an out-of-scope failure a stop, and DECISION NEEDED on a Required plan is a stop condition. The loop parked the flake as a `proposed` decision row and continued through FCI-008 and the close-out. It should have stopped there. The close-out audit caught it.
+- **Decision:** Keith's, still open. The test is untouched; nothing built since depends on how he rules.
+- **Follow-up:** presented first at the stop.
 
 ### 2026-10-16 — FCI-004 · serves AC-4
 - **Finding:** AsyncTasks lost work started by its own completion callback, and an async rule on IsSavable loops by construction like one on IsBusy.
@@ -149,6 +170,8 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 ---
 
 ## Close-Out Audit
+
+- 2026-10-16 · grade **B** · `reviews/close-out-audit.md`. Its callouts are fixed in the close-out fixes PR: the MudNeatoo reference that still sent pages to `NeatooPropertyChanged`, the incomplete Recommendations Taken list, the punchlist rows without commits, FCI-009's status (Retired), and the `Setter` and the missed stop recorded for Keith's end review. The theoretical `RunRules(All)` wording point is a proposed decision row.
 
 ---
 

@@ -30,7 +30,7 @@ Pick the event by looking at **what object you subscribe to**:
 |---|---|---|
 | A leaf `IEntityProperty` (from `entity["Name"]`) | `PropertyChanged` | Property wrapper raises its own meta events (`PropertyMessages`, `IsValid`, `IsBusy`, `IsReadOnly`). Nothing below it to bubble. |
 | An entity, caring only about its own fields + meta flags | `PropertyChanged` | Meta flags already bubble through this event. |
-| An entity, caring about anything in the graph | `NeatooPropertyChanged` | The only event that carries property names from descendants. |
+| An entity, caring about anything in the graph | `NeatooPropertyChanged` | The only event that carries property names from descendants. For a container component whose display spans the graph, such as the validation summary; never for a page (SKILL.md → The Component Is the Unit of Refresh). |
 
 ## How MudNeatoo Applies the Rule
 
@@ -45,7 +45,7 @@ Because the summary displays `entity.PropertyMessages` across the whole aggregat
 If you're building a Blazor component that takes a root entity as a parameter and renders state that depends on descendants:
 
 1. **Subscribe when the entity arrives, unsubscribe in `Dispose`.** Neither event is auto-managed by Blazor. A component whose entity is a parameter subscribes in `OnParametersSet` and moves the subscription when the parameter changes (the TrainingPlan row in SKILL.md); one that loads its own entity can subscribe in `OnInitialized`.
-2. **Use `NeatooPropertyChanged` for graph-wide awareness.** Marshal `StateHasChanged` via `InvokeAsync` — the delegate is async and may run off the UI thread.
+2. **Use `NeatooPropertyChanged` only when the component's own display spans the graph,** as the validation summary's does. Marshal `StateHasChanged` via `InvokeAsync` — the delegate is async and may run off the UI thread. A component that shows a child's facts subscribes to that child instead.
 3. **Use `PropertyChanged` alone if you only care about root-level flags** like `IsSavable`, `IsValid`, `IsBusy`.
 4. **Move the subscription when the instance changes.** `Save()` returns a new instance; the old one raises nothing afterwards.
 
@@ -125,4 +125,4 @@ The Employee page does all four. It subscribes to the employee's own `PropertyCh
 
 Blazor does **not** observe `INotifyPropertyChanged` automatically. A binding like `<MudText>@entity.Total</MudText>` only re-renders when the containing component calls `StateHasChanged`. In practice that call happens because the component displaying it is subscribed to the entity: a row component to its child, a summary to the root, or a small page to its entity (SKILL.md → The Component Is the Unit of Refresh). It is not automatic.
 
-If you render a view-only page with no form subscription, you must subscribe to `PropertyChanged` (for root-level state) or `NeatooPropertyChanged` (for any descendant state) yourself.
+A view-only page subscribes the same way an edit page does: to its root's own `PropertyChanged` for the root's facts, with each child row that shows a child's facts rendered as a component subscribed to that child.
