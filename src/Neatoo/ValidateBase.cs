@@ -317,7 +317,10 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 		{
 			this.RaisePropertyChanged(propertyName);
 			this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(propertyName, this));
-			(this.changedMetaProperties ??= new List<string>()).Add(propertyName);
+			lock (this.changedMetaPropertiesLock)
+			{
+				(this.changedMetaProperties ??= new List<string>()).Add(propertyName);
+			}
 		}
 	}
 
@@ -325,7 +328,13 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// Meta properties announced as changed since the last <see cref="CheckIfMetaPropertiesChanged"/>,
 	/// whose rules have not run yet.
 	/// </summary>
+	/// <remarks>
+	/// Guarded by <see cref="changedMetaPropertiesLock"/>: the check runs on whichever thread changed a
+	/// property or finished a task, so two can record and take the list at once. The runner takes the
+	/// whole list under the lock and enumerates its own copy; later changes start a new list.
+	/// </remarks>
 	private List<string>? changedMetaProperties;
+	private readonly object changedMetaPropertiesLock = new();
 
 	/// <summary>
 	/// Checks if validation-related meta properties have changed and raises notifications.
@@ -358,14 +367,14 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </remarks>
 	private void RunMetaPropertyRules()
 	{
-		var changed = this.changedMetaProperties;
-		if (changed == null)
+		List<string>? changed;
+		lock (this.changedMetaPropertiesLock)
 		{
-			return;
+			changed = this.changedMetaProperties;
+			this.changedMetaProperties = null;
 		}
 
-		this.changedMetaProperties = null;
-		if (this.IsPaused)
+		if (changed == null || this.IsPaused)
 		{
 			return;
 		}

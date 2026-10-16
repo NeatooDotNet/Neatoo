@@ -1,0 +1,16 @@
+# FCI-005 test review
+
+**Round 1 (2026-10-16): CONCERNS.** The asserted shares were re-derived from `Share` for every test, so none is circular; no existing test changed.
+- **Veto, fixed.** The add half of "add or remove refits through Count" was unpinned: `AddInterval` wrote the effort after the add, so every add refit through the Effort trigger. The interval is now built with its effort, and `AddingAnInterval_IsACountChange_TheFitFollowsEvenWhenNoOtherFactChanges` fails without the Count trigger (`005-flip-count-trigger.log`).
+- **Callouts, fixed.** `ApprovedMinutesMustBePositive_AndAdmissionFollows`; `NextMark_StopsAtTheEnds_AndEffortOutsideTheRangeIsInvalid`; `EveryIntervalLocked_TheFitHasNothingToShare`.
+- **Tech-debt, fixed.** The nudge test asserts the refit shares instead of a total that holds either way, and asserts `NextEffortDown`.
+- **Could not verify, fixed.** The flips are logged in `reviews/`; the 25-run race evidence is `005-race-25-runs.log`.
+- **Theoretical.** The stamp-then-status order in `Approve` is unobservable, since no consequence reads `ApprovedBy`.
+
+**Round 2 (2026-10-16): APPROVED, one callout.** The round-1 veto is closed: `AddingAnInterval_IsACountChange_TheFitFollowsEvenWhenNoOtherFactChanges` builds the third interval with effort 5, so the add changes only the list's Count, and 10/27/23 re-derives from `Share(60, [2, 6, 5])`. Every Required bullet is pinned at `[integration]` (Design.Tests over `DesignTestServices.GetScope()`), and the 15 tests' expected shares re-derive from `Share`. No existing test changed: the only diff from fci-arc is `src/Neatoo/ValidateBase.cs` (128142f), and the TrainingPlan files are new. Logs green: 0 NEATOO011/012 in either build log, 0 errors; `005-test.log` shows every assembly passed, Design.Tests 221 of 221; the three flip logs fail the tests the plan names.
+- **Callouts, closed:** approved minutes positive, effort range and next-mark ends, the nudge asserting refit shares and `NextEffortDown`, blank name, anchor nesting, anchor on a throw.
+- **Callout, not closed.** `EveryIntervalLocked_TheFitHasNothingToShare` still passes with the `free.Count == 0` guard in `TrainingPlan.Fit` deleted. The locks sum to exactly the approved 60, so `remaining` is 0 and `Share(0, [])` returns an empty array without failing. With locks summing below the approved minutes (10, 20, 20 of 60), the unguarded path calls `Share(10, [])`, which indexes an empty array. Shape: lock every interval below the total, then assert the minutes hold and `PlannedMinutes` is 50. Affects: AC-5. Reachable by: `IInterval.LockMinutes` on every interval.
+- **Could not verify.** `005-flip-count-trigger.log` ran the 12-test suite, before `Interval.Create` ran its own rules. Reading the code, the add still changes only Count, so the flip holds. That log fails the add test and the remove test, but the plan says "only the add test".
+- **Theoretical.** The stamp-then-status order in `Approve` is still unobservable.
+
+**After round 2.** The callout is fixed: the all-locked test holds 50 of 60 minutes, so it fails without the every-interval-held guard (`005-flip-all-locked.log`). The plan's Count-flip line now says the add and the remove tests failed.
