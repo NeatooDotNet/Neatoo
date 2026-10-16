@@ -50,7 +50,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 | 003 | [003-assignment-analyzer](./plans/003-assignment-analyzer.md) | Assignment analyzer, code fix, Design sweep | AC-3 | Done | #117 |
 | 004 | [004-meta-state-triggers](./plans/004-meta-state-triggers.md) | Meta-state triggers and the IsBusy analyzer | AC-4 | Done | #118 |
 | 005 | [005-fluency-size-example](./plans/005-fluency-size-example.md) | Compiled fluency-size aggregate in Design.Domain | AC-5, AC-11 | Done | #119 |
-| 006 | [006-neatoo-skill](./plans/006-neatoo-skill.md) | Neatoo skill: facts first | AC-1, AC-6 | Draft | — |
+| 006 | [006-neatoo-skill](./plans/006-neatoo-skill.md) | Neatoo skill: facts first | AC-1, AC-6 | Done | — |
 | 007 | [007-mudneatoo-skill](./plans/007-mudneatoo-skill.md) | MudNeatoo skill: components and verb-bound controls | AC-1, AC-7 | Draft | — |
 | 008 | [008-fresh-session-and-sync](./plans/008-fresh-session-and-sync.md) | Isolated fresh-session test, then sync | AC-9 | Draft | — |
 | 009 | [009-mudneatoo-components](./plans/009-mudneatoo-components.md) | MudNeatoo boundaries, throttle, slider, converter | AC-10 | Draft | — |
@@ -62,8 +62,8 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 - [x] The changed-meta-property list is safe under concurrent property writes · ValidateBase · locked; 0 of 25 concurrent runs fail (1 of 25 before) · AC-4
 - [x] Send the "where does business logic go" wording to desktopRemoteFactory · RemoteFactory#173 · done when FCI-001 has merged into the arc and the message is sent · AC-8 · sent 2026-10-16, applied as RemoteFactory#178
 - [ ] Confirm the wording landed in both #173 sites and the installed RF skill · `~/.claude/skills/RemoteFactory` · done when the RF PR has merged and the installed copy shows it · AC-8
-- [ ] Prose beside the swept snippets teaches the awaited form, not sync `AddAction` or `void` verbs · docs/guides, docs/reference, skills · done when no prose shows an assigning `AddAction` or a sync multi-write verb · AC-6
-- [ ] The skill names which meta triggers are safe for an async rule and which are sync-only, and the symptom of a loop: WaitForTasks never returns · skills/neatoo rules-lifecycle and pitfalls · done when both pages say it · AC-6
+- [x] Prose beside the swept snippets teaches the awaited form, not sync `AddAction` or `void` verbs · docs/guides, docs/reference, skills · done when no prose shows an assigning `AddAction` or a sync multi-write verb · AC-6 · reviews/006-prose-grep.log
+- [x] The skill names which meta triggers are safe for an async rule and which are sync-only, and the symptom of a loop: WaitForTasks never returns · skills/neatoo rules-lifecycle and pitfalls · done when both pages say it · AC-6 · rules-lifecycle "Rules on Meta State", pitfalls
 
 ## Recommendations Taken
 
@@ -92,6 +92,15 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - FCI-005 · code review · run a created interval's Name validation · done; Interval.Create runs its own rules, flip logged
 - FCI-005 · code review · pin anchor nesting and the scope ending on a throw · done, flip logged
 - FCI-005 · test review round 2 · make the all-locked test leave minutes unshared so it pins the guard · done, flip logged
+- FCI-006 · test review · close the IsSavable table row the sticky prose split · done
+- FCI-006 · test review · grep prose for sync void verbs too · done, only API table rows
+- FCI-006 · test review and code review · the sibling anti-pattern is a write through the parent; reading siblings through Parent is fine · done
+- FCI-006 · code review · name all the verb cases statement 8 names: several facts landing together, a change the framework cannot track · done; four TrainingPlan verbs
+- FCI-006 · code review · scope the NEATOO011 code-fix claim to async methods and AddAction lambdas · done in SKILL.md, pitfalls, rules-lifecycle
+- FCI-006 · code review · restore AddAction in the validation.md trigger-count sentence · done
+- FCI-006 · code review · sticky modified: an equal write raises nothing; the missing comparison is with the loaded value · done
+- FCI-006 · code review · reframe LoadProperty in business-rules.md as the rare write without consequences · done
+- FCI-006 · code review theoretical · IsSavable in the NEATOO011 exemption list; pains wording; paused parent note; references index · done
 
 ## Dismissed
 
@@ -104,6 +113,7 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - proposed · A validation triggered only on a meta name drops its messages; report it or route them · origin: reviews/004-code-review.md
 - proposed · decision · MetaState compare-and-reset races under concurrent multi-thread writes and can lose a meta-triggered rule run; a lock risks lock-order deadlock across the graph · origin: reviews/005-code-review.md callout 4
 - proposed · AC-11 (Optional) · Design.Domain compiles an open finishing inside a non-remote seam, and the skill names LoadValue inside a rule as its smell · origin: FCI-005 scope, not built
+- proposed · decision · AsyncFlowTests_Property_PropertyChangedEvents fails about 1 run in 30 on main and on the arc: a 5 ms delay races the falling IsBusy notification · origin: FCI-006 · reviews/006-asyncflow-main-60-runs.log
 
 ---
 

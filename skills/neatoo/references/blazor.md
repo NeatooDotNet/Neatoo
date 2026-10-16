@@ -18,11 +18,11 @@ The Blazor UI should be a **thin binding layer** over the domain model. It binds
 - Calling domain methods on button click (`OnClick="@(() => entity.Approve())"`)
 
 **What does NOT belong in .razor files:**
-- Arithmetic (`@(a * b)`) -- use an `AddAction` computed property
+- Arithmetic (`@(a * b)`) -- use an `AddActionAsync` computed property
 - Conditional business logic (`@if (status == "X" && count > 0)`) -- use a domain `bool` property
 - LINQ expressions (`@items.Where(...).Count()`) -- use a domain computed property
 - Multi-property validation in event handlers -- use a rule
-- Setting multiple properties in response to an event -- use a domain method or `AddAction`
+- Setting multiple properties in response to an event -- use a domain method or `AddActionAsync`
 
 ### Anti-Pattern: Logic-Heavy Razor Files
 
@@ -38,7 +38,7 @@ A `.razor` file with 20+ conditional/LINQ expressions indicates business logic h
 { <ExtensionWarning /> }
 ```
 
-Each of those conditions is a business fact the aggregate computes with an `AddAction` rule into a `private set` property, named for the fact (`IsHeld`, `HasUnschedulableTasks`, `CanApprove`), never for the panel it shows. The page binds the facts and has no condition of its own: [A ViewModel Over a Live Aggregate](#a-viewmodel-over-a-live-aggregate). The rules are in [domain-logic-placement.md](domain-logic-placement.md), Patterns 2 and 7.
+Each of those conditions is a business fact the aggregate computes with an `AddActionAsync` rule into a `private set` property, named for the fact (`IsHeld`, `HasUnschedulableTasks`, `CanApprove`), never for the panel it shows. The page binds the facts and has no condition of its own: [A ViewModel Over a Live Aggregate](#a-viewmodel-over-a-live-aggregate). The rules are in [domain-logic-placement.md](domain-logic-placement.md), Patterns 2 and 7.
 
 ## Two Binding Modes
 
@@ -92,7 +92,7 @@ MudNeatoo components (`MudNeatooTextField`, etc.) bind an entity property's valu
 
 ### Anti-Pattern: Manual PropertyChanged Handlers for Computed Values
 
-Do NOT subscribe to `PropertyChanged` in Blazor code to recompute derived values (a handler that sets `totalPay = employee.Hours * employee.Rate` when `Hours` or `Rate` changes is domain logic in the UI). Use an `AddAction` rule in the domain model instead — it sets a `private set` partial property, which raises `PropertyChanged`, and the page re-renders. Blazor just binds `@task.Cost`:
+Do NOT subscribe to `PropertyChanged` in Blazor code to recompute derived values (a handler that sets `totalPay = employee.Hours * employee.Rate` when `Hours` or `Rate` changes is domain logic in the UI). Use an `AddActionAsync` rule in the domain model instead — it sets a `private set` partial property, which raises `PropertyChanged`, and the page re-renders. Blazor just binds `@task.Cost`:
 
 <!-- snippet: skill-computed-properties -->
 <a id='snippet-skill-computed-properties'></a>

@@ -269,7 +269,7 @@ LoadValue behavior:
 
 ## Computed Properties: `private set` Plus a Rule
 
-A derived value is a partial property with a `private set`, computed by an `AddAction` rule. The generator emits `private set` on the implementation and `get;` only on the interface, so consumers read it and cannot write it; the rule sets it through the private setter, which routes through `SetPrivateValue()`. `IsReadOnly` is `true`, so MudNeatoo renders it read-only without configuration. (A rule may also write a value with `LoadProperty`, which sets it without running the rules registered on that property.)
+A derived value is a partial property with a `private set`, computed by an `AddActionAsync` rule. The generator emits `private set` on the implementation and `get;` only on the interface, so consumers read it and cannot write it; the rule awaits the generated `Set{Name}`, which writes through the private setter and `SetPrivateValue()`. `IsReadOnly` is `true`, so MudNeatoo renders it read-only without configuration.
 
 <!-- snippet: skill-private-set-property -->
 <a id='snippet-skill-private-set-property'></a>
@@ -292,7 +292,8 @@ internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDem
     public PrivateSetPropertyDemo(IEntityBaseServices<PrivateSetPropertyDemo> services) : base(services)
     {
         // Rule: when Quantity or UnitPrice changes, recompute Total
-        // The lambda sets the private setter, which calls SetPrivateValue internally
+        // The rule awaits the generated SetComputedTotal, which writes through
+        // SetPrivateValue and returns once the write's own cascade has settled
         RuleManager.AddActionAsync(
             async t => await t.SetComputedTotal(t.Quantity * t.UnitPrice),
             t => t.Quantity,
@@ -303,7 +304,7 @@ internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDem
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L173-L202' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-private-set-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L173-L203' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-private-set-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The rule recomputes the value whenever an input changes, and `PropertyChanged` fires for the computed property, so a bound UI refreshes:

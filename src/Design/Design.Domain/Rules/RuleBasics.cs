@@ -334,8 +334,8 @@ internal class LateTraceRule : AsyncRuleBase<RuleBasicsDemo>
 //       t => t.Name);  // Triggers on Name only
 //
 // MULTIPLE TRIGGERS:
-//   RuleManager.AddAction(
-//       t => t.Total = t.Quantity * t.Price,
+//   RuleManager.AddActionAsync(
+//       async t => await t.SetTotal(t.Quantity * t.Price),
 //       t => t.Quantity,
 //       t => t.Price);  // Triggers on Quantity OR Price
 //
@@ -351,14 +351,14 @@ internal class LateTraceRule : AsyncRuleBase<RuleBasicsDemo>
 // COMMON MISTAKE: Not triggering on all input properties.
 //
 // WRONG:
-//   RuleManager.AddAction(
-//       t => t.Total = t.Quantity * t.Price,
+//   RuleManager.AddActionAsync(
+//       async t => await t.SetTotal(t.Quantity * t.Price),
 //       t => t.Quantity);  // Forgot Price!
 //   // Changing Price doesn't recalculate Total
 //
 // RIGHT:
-//   RuleManager.AddAction(
-//       t => t.Total = t.Quantity * t.Price,
+//   RuleManager.AddActionAsync(
+//       async t => await t.SetTotal(t.Quantity * t.Price),
 //       t => t.Quantity,
 //       t => t.Price);  // Both inputs trigger
 // =============================================================================

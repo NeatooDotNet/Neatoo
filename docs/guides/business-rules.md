@@ -10,7 +10,7 @@ The compiled examples on this page come from the Design.Domain reference set: th
 
 Neatoo separates rules into two types that mirror C#'s `Action` vs `Func` distinction. Action rules perform side effects — computing a derived value, updating a related property — without returning anything. They produce no validation messages and do not affect `IsValid`.
 
-A derived value is a `private set` partial property written by an `AddAction` rule; the rule's trigger list names every input:
+A derived value is a `private set` partial property written by an `AddActionAsync` rule; the rule's trigger list names every input:
 
 <!-- snippet: skill-computed-properties -->
 <a id='snippet-skill-computed-properties'></a>
@@ -26,9 +26,9 @@ RuleManager.AddActionAsync(
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L37-L45' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-computed-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The action executes whenever `Hours`, `Rate` or `Discount` changes. `AddAction` creates an `ActionFluentRule<T>` that executes the lambda when a trigger property changes; the lambda may write other properties on the entity without creating validation messages.
+The action executes whenever `Hours`, `Rate` or `Discount` changes. `AddActionAsync` creates an `ActionAsyncFluentRule<T>` that runs the lambda when a trigger property changes. The lambda awaits the generated `Set{Name}`, so the write's own consequences have landed before the rule finishes, and it produces no validation messages. A synchronous `AddAction` that writes is for a rule triggered on `IsBusy` or `IsSavable`, which must stay synchronous; NEATOO011 warns on an assignment in any other rule.
 
-Async actions use `AddActionAsync`. While the action runs, the trigger property and the entity report `IsBusy`:
+While an async action runs, the trigger property and the entity report `IsBusy`:
 
 <!-- snippet: skill-async-action -->
 <a id='snippet-skill-async-action'></a>
@@ -96,7 +96,7 @@ public Address(IEntityBaseServices<Address> services) : base(services)
 
 ## Cross-Property Validation
 
-"End date must be after start date" — but which property change should trigger that check? Both. `AddValidation` takes one trigger, so a constraint over several properties takes one of two shapes: validate a computed property that an `AddAction` recomputes from every input, or write a `RuleBase<T>` with several triggers so the message lands where it belongs:
+"End date must be after start date" — but which property change should trigger that check? Both. `AddValidation` takes one trigger, so a constraint over several properties takes one of two shapes: validate a computed property that an `AddActionAsync` recomputes from every input, or write a `RuleBase<T>` with several triggers so the message lands where it belongs:
 
 <!-- snippet: skill-cross-property-validation-options -->
 <a id='snippet-skill-cross-property-validation-options'></a>
@@ -112,7 +112,7 @@ public Address(IEntityBaseServices<Address> services) : base(services)
 // properties, either:
 //
 // RIGHT (validate a computed property - the shape used below):
-//   RuleManager.AddAction(t => t.Sum = t.A + t.B, t => t.A, t => t.B);
+//   RuleManager.AddActionAsync(async t => await t.SetSum(t.A + t.B), t => t.A, t => t.B);
 //   RuleManager.AddValidation(t => t.Sum > 100 ? "Too high" : "", t => t.Sum);
 //
 // RIGHT (a rule class, which takes any number of triggers):
@@ -123,7 +123,7 @@ public Address(IEntityBaseServices<Address> services) : base(services)
 //           => RuleMessages.If(t.A + t.B > 100, nameof(t.A), "Too high");
 //   }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L192-L214' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation-options' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L195-L217' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation-options' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-cross-property-validation -->
@@ -166,7 +166,7 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L217-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L220-L257' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Custom Rule Classes
@@ -718,9 +718,9 @@ public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 <sup><a href='/src/Design/Design.Tests/PropertyTests/ValidationStateTests.cs#L52-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-busy' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-## LoadProperty - Writing a Property Without Triggering Rules
+## LoadProperty - The Rare Write Without Consequences
 
-Rules trigger when properties change — but what if a rule *itself* changes a property? If Rule A triggers on `Quantity` and sets `Total`, and Rule B triggers on `Total` and sets `Quantity`, you get an infinite loop. `LoadProperty` breaks the cycle by writing to the property through its wrapper's `LoadValue`, without firing triggers.
+A rule that writes a property runs the rules on that property, and that is the normal shape. Two rules that write each other's triggers converge when their writes reach a fixed point, because a write of an equal value raises nothing. `LoadProperty` is the exception: it writes a property through its wrapper's `LoadValue` without firing triggers.
 
 <!-- snippet: docs-load-property -->
 <a id='snippet-docs-load-property'></a>
@@ -783,7 +783,7 @@ public async Task LoadProperty_WritesTheValue_WithoutRunningTheRulesOnThatProper
 <sup><a href='/src/Design/Design.Tests/RuleTests/SyncRuleTests.cs#L118-L131' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-load-property-test' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-`LoadProperty` is a protected method on `RuleBase<T>`/`AsyncRuleBase<T>`. It calls the property wrapper's `LoadValue`, so no rules registered on that property run. On an entity, a value written this way is also not marked modified. Use it when a rule must update a property without triggering the rules registered on that property; the default for a computed property is the setter of a `private set` partial, as in the first section.
+`LoadProperty` is a protected method on `RuleBase<T>`/`AsyncRuleBase<T>`. It calls the property wrapper's `LoadValue`, so no rules registered on that property run, and on an entity the value is not marked modified. That is why it is rarely right inside a rule: a value a rule computes from the user's work is the user's work, and should run its consequences and dirty the entity. A value that must be baseline is produced inside the factory operation that loads the object. The default for a computed property is an awaited `Set{Name}` on a `private set` partial, as in the first section.
 
 ## Rule Registration Patterns
 

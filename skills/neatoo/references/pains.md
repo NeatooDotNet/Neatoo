@@ -24,4 +24,6 @@ Each of these compiles and fails at run time. An analyzer for each is planned; u
 | A rule triggers on a collection reference (`t => t.Items`) | It fires only when the list is reassigned, never when an item's property changes | Trigger on the child property path (`t => t.Items![0].LineTotal`) — [domain-logic-placement.md, Pattern 6](domain-logic-placement.md#pattern-6-child-property-triggers--parent-child-reactivity-via-addaction) |
 | `LoadValue` inside a factory operation | Nothing it does is needed: the operation is already paused, and plain assignment is the baseline | Assign the property — [properties.md](properties.md#assignment-inside-and-outside-a-factory-operation) |
 
+Two guards are no longer review: NEATOO011 warns on a property assignment in a rule or a verb, and NEATOO012 refuses an async rule on `IsBusy` or `IsSavable` ([pitfalls.md](pitfalls.md)).
+
 `LazyLoad<T>` / `EntityLazyLoad` are being removed from RemoteFactory and Neatoo rather than fixed; build nothing new on them ([lazy-loading.md](lazy-loading.md) is kept until the removal ships).

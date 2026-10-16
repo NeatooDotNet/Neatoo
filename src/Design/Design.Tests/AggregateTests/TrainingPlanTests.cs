@@ -269,4 +269,19 @@ public class TrainingPlanTests
         CollectionAssert.AreEqual(new[] { 15, 45 }, Minutes(warmUp, main));
         Assert.AreEqual(60, plan.PlannedMinutes);
     }
+
+    #region skill-test-modified-is-sticky
+    [TestMethod]
+    public async Task WritingTheOriginalValueBack_LeavesThePlanModified()
+    {
+        var plan = await _factory.Create();
+        Assert.IsFalse(plan.IsModified);
+
+        await plan.SetApprovedMinutes(90);
+        await plan.SetApprovedMinutes(60);   // the value Create left
+
+        Assert.AreEqual(60, plan.ApprovedMinutes);
+        Assert.IsTrue(plan.IsModified, "a write-back is one more change, not an undo: discard by fetching again");
+    }
+    #endregion
 }
