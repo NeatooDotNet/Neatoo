@@ -9,7 +9,7 @@
 **Plan-review opt-in:** No (the shape was decided by Keith in the design session; public API change already ruled, D28)
 **Code-review opt-in:** Yes (generator change that every consumer compiles)
 **Branch:** fci-002-generated-setx
-**PR:** —
+**PR:** #116
 
 ---
 
