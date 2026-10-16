@@ -9,7 +9,7 @@
 **Plan-review opt-in:** No (prose; every sentence was approved by Keith in the design session of 2026-10-15/16)
 **Code-review opt-in:** No (no code)
 **Branch:** fci-001-architecture-page
-**PR:** —
+**PR:** #115
 
 ---
 

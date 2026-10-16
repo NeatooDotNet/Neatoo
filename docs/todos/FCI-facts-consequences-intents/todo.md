@@ -45,7 +45,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 
 | # | File | Title (≤ 8 words) | Serves | Status | PR |
 |---|------|-------|--------|--------|----|
-| 001 | [001-architecture-page](./plans/001-architecture-page.md) | The architecture page in VisionAlignment | AC-1, AC-8 | Done | — |
+| 001 | [001-architecture-page](./plans/001-architecture-page.md) | The architecture page in VisionAlignment | AC-1, AC-8 | Done | #115 |
 | 002 | [002-generated-setx](./plans/002-generated-setx.md) | Generated awaitable SetX on class and interface | AC-2 | Draft | — |
 | 003 | [003-assignment-analyzer](./plans/003-assignment-analyzer.md) | Assignment analyzer, code fix, Design sweep | AC-3 | Draft | — |
 | 004 | [004-meta-state-triggers](./plans/004-meta-state-triggers.md) | Meta-state triggers and the IsBusy analyzer | AC-4 | Draft | — |
