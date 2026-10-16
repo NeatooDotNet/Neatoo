@@ -9,7 +9,7 @@
 **Plan-review opt-in:** No (the mechanism is RFSK-006's, already proven)
 **Code-review opt-in:** No (no code; the test review reads the scoring)
 **Branch:** fci-008-fresh-session-and-sync
-**PR:** —
+**PR:** #122
 
 ---
 
