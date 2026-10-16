@@ -51,7 +51,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 | 004 | [004-meta-state-triggers](./plans/004-meta-state-triggers.md) | Meta-state triggers and the IsBusy analyzer | AC-4 | Done | #118 |
 | 005 | [005-fluency-size-example](./plans/005-fluency-size-example.md) | Compiled fluency-size aggregate in Design.Domain | AC-5, AC-11 | Done | #119 |
 | 006 | [006-neatoo-skill](./plans/006-neatoo-skill.md) | Neatoo skill: facts first | AC-1, AC-6 | Done | #120 |
-| 007 | [007-mudneatoo-skill](./plans/007-mudneatoo-skill.md) | MudNeatoo skill: components and verb-bound controls | AC-1, AC-7 | Draft | — |
+| 007 | [007-mudneatoo-skill](./plans/007-mudneatoo-skill.md) | MudNeatoo skill: components and verb-bound controls | AC-1, AC-7 | Done | — |
 | 008 | [008-fresh-session-and-sync](./plans/008-fresh-session-and-sync.md) | Isolated fresh-session test, then sync | AC-9 | Draft | — |
 | 009 | [009-mudneatoo-components](./plans/009-mudneatoo-components.md) | MudNeatoo boundaries, throttle, slider, converter | AC-10 | Draft | — |
 
@@ -61,7 +61,7 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 
 - [x] The changed-meta-property list is safe under concurrent property writes · ValidateBase · locked; 0 of 25 concurrent runs fail (1 of 25 before) · AC-4
 - [x] Send the "where does business logic go" wording to desktopRemoteFactory · RemoteFactory#173 · done when FCI-001 has merged into the arc and the message is sent · AC-8 · sent 2026-10-16, applied as RemoteFactory#178
-- [ ] Confirm the wording landed in both #173 sites and the installed RF skill · `~/.claude/skills/RemoteFactory` · done when the RF PR has merged and the installed copy shows it · AC-8
+- [x] Confirm the wording landed in both #173 sites and the installed RF skill · `~/.claude/skills/RemoteFactory` · done when the RF PR has merged and the installed copy shows it · AC-8 · RemoteFactory#178 merged 2026-10-16, #173 closed; installed SKILL.md quick-reference row, class-factory.md rule 6 and the pointer all carry it
 - [x] Prose beside the swept snippets teaches the awaited form, not sync `AddAction` or `void` verbs · docs/guides, docs/reference, skills · done when no prose shows an assigning `AddAction` or a sync multi-write verb · AC-6 · reviews/006-prose-grep.log
 - [x] The skill names which meta triggers are safe for an async rule and which are sync-only, and the symptom of a loop: WaitForTasks never returns · skills/neatoo rules-lifecycle and pitfalls · done when both pages say it · AC-6 · rules-lifecycle "Rules on Meta State", pitfalls
 
@@ -101,11 +101,16 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - FCI-006 · code review · sticky modified: an equal write raises nothing; the missing comparison is with the loaded value · done
 - FCI-006 · code review · reframe LoadProperty in business-rules.md as the rare write without consequences · done
 - FCI-006 · code review theoretical · IsSavable in the NEATOO011 exemption list; pains wording; paused parent note; references index · done
+- FCI-007 · test review · test that every input awaits its Setter · done, flip logged
+- FCI-007 · test review · render the row and summary with bUnit to pin that they refresh themselves · done; Design.Tests takes bunit; three flips logged
+- FCI-007 · code review · quote the row's subscription code; say what the row re-renders for; fix the stale blazor.md phrase; link the screen from Home · done
+- FCI-007 · code review theoretical · the slider has no read-only binding; key rows on their item · done
 
 ## Dismissed
 
 - FCI-002 · Neatoo.UnitTest.Demo reports no tests · pre-existing, serves no criterion
 - FCI-003 · 104 CS4014 warnings in the full build · pre-existing, not this plan's
+- FCI-007 · the MudNeatoo test project targets net9.0 only · every test project in the repo is single-target
 
 ## Parked
 
@@ -114,6 +119,7 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - proposed · decision · MetaState compare-and-reset races under concurrent multi-thread writes and can lose a meta-triggered rule run; a lock risks lock-order deadlock across the graph · origin: reviews/005-code-review.md callout 4
 - proposed · AC-11 (Optional) · Design.Domain compiles an open finishing inside a non-remote seam, and the skill names LoadValue inside a rule as its smell · origin: FCI-005 scope, not built
 - proposed · decision · AsyncFlowTests_Property_PropertyChangedEvents fails about 1 run in 30 on main and on the arc: a 5 ms delay races the falling IsBusy notification · origin: FCI-006 · reviews/006-asyncflow-main-60-runs.log
+- proposed · decision · A Setter does not lift read-only: IsReadOnly is one flag for a private setter and for MarkReadOnly, so a verb-bound text, numeric or picker field over a private-set property cannot be edited; separate the two, or let a Setter lift only the private-setter half · origin: FCI-007 · plans/007 Plan Amendments
 
 ---
 

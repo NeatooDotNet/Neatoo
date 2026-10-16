@@ -48,7 +48,7 @@ Neatoo entities support two distinct binding modes in Blazor.
 
 Bind directly to entity properties to display values. The work-order page does this for `@Vm.WorkOrder.Status`, `@task.Cost` and `@Vm.WorkOrder.TotalCost`: [A ViewModel Over a Live Aggregate](#a-viewmodel-over-a-live-aggregate).
 
-The entity implements `INotifyPropertyChanged`, but **Blazor does not subscribe on its own**. The page subscribes to the entity's `PropertyChanged` (the mudneatoo skill's Page Structure Pattern does this for `IsSavable`) and calls `StateHasChanged`; display bindings re-render on that cycle. When a rule updates `Total` in response to `Quantity`, the entity raises `PropertyChanged("Total")`, the page's handler re-renders, and the binding shows the new value. A view-only page with no form must subscribe itself.
+The entity implements `INotifyPropertyChanged`, but **Blazor does not subscribe on its own**. The component that displays the entity's state subscribes to its `PropertyChanged` and calls `StateHasChanged`: a small page for its Save button (the mudneatoo skill's Page Structure Pattern), or, on a larger screen, each region's own component (the mudneatoo skill's The Component Is the Unit of Refresh). Display bindings re-render on that cycle. When a rule updates `Total` in response to `Quantity`, the entity raises `PropertyChanged("Total")`, the subscribing component's handler re-renders it, and the binding shows the new value. A view-only page with no form must subscribe itself.
 
 ### Mode 2: Property Metadata Binding
 
@@ -555,12 +555,13 @@ internal static IServiceCollection AddDesignClient(this IServiceCollection servi
     // The screens' ViewModels: plain classes over a live aggregate.
     services.AddTransient<OrderEditViewModel>();
     services.AddTransient<WorkOrderViewModel>();
+    services.AddTransient<TrainingPlanViewModel>();
     services.AddTransient<EmployeeEditViewModel>();
 
     return services;
 }
 ```
-<sup><a href='/src/Design/Design.App/ClientServices.cs#L27-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-client-composition' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ClientServices.cs#L27-L57' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-client-composition' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-server-composition -->

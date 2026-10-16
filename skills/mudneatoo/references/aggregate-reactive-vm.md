@@ -214,5 +214,5 @@ internal sealed class WorkOrderViewModel
 
 1. **Derived values are entity rules.** If the ViewModel has a `=>` that combines entity values, move it into an `AddAction` on the entity and bind to the resulting `private set` property. A one-to-one rename of a fact is the only `=>` it keeps.
 2. **The ViewModel is a plain class.** It raises nothing and subscribes to nothing: the entity's own `PropertyChanged` has already fired for the derived property.
-3. **The page subscribes.** Blazor does not observe `INotifyPropertyChanged` on its own, so the page subscribes to the entity the ViewModel holds and calls `StateHasChanged` — once, in the page, and moved to the new instance after a save (SKILL.md → Page Structure Pattern).
+3. **The component that displays a fact subscribes.** Blazor does not observe `INotifyPropertyChanged` on its own, so whatever displays the entity's state subscribes to it and calls `StateHasChanged`. This page displays the Save button, so the page subscribes, once, and moves to the new instance after a save (SKILL.md → Page Structure Pattern). A larger screen gives each displayed region its own component (SKILL.md → The Component Is the Unit of Refresh).
 4. **Save through the root, after `WaitForTasks()`, guarded by `IsSavable`.** `Save()` returns a new instance; the ViewModel reassigns it.

@@ -1,0 +1,47 @@
+@using System.ComponentModel
+@using Design.Domain.Aggregates.TrainingPlanAggregate
+@implements IDisposable
+
+@* begin-snippet: skill-mud-summary-component *@
+@* The plan's own facts, in the one component that displays them. It
+   re-renders when the plan's own properties or meta flags change; an
+   interval's edit reaches it only through the facts the rules wrote here. *@
+<MudText Typo="Typo.subtitle1">Planned @Plan.PlannedMinutes of @Plan.ApprovedMinutes minutes · @Plan.Status</MudText>
+<MudButton Variant="Variant.Filled" Disabled="@(!Plan.CanApprove)" OnClick="@OnApprove">Approve</MudButton>
+@* end-snippet *@
+
+@code {
+    [Parameter, EditorRequired]
+    public ITrainingPlan Plan { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnApprove { get; set; }
+
+    private ITrainingPlan? _subscribed;
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_subscribed, Plan))
+        {
+            return;
+        }
+
+        if (_subscribed is not null)
+        {
+            _subscribed.PropertyChanged -= OnPlanChanged;
+        }
+
+        _subscribed = Plan;
+        _subscribed.PropertyChanged += OnPlanChanged;
+    }
+
+    private void OnPlanChanged(object? sender, PropertyChangedEventArgs e) => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.PropertyChanged -= OnPlanChanged;
+        }
+    }
+}

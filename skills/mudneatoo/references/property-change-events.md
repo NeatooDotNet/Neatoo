@@ -44,7 +44,7 @@ Because the summary displays `entity.PropertyMessages` across the whole aggregat
 
 If you're building a Blazor component that takes a root entity as a parameter and renders state that depends on descendants:
 
-1. **Subscribe in `OnInitialized`, unsubscribe in `Dispose`.** Neither event is auto-managed by Blazor.
+1. **Subscribe when the entity arrives, unsubscribe in `Dispose`.** Neither event is auto-managed by Blazor. A component whose entity is a parameter subscribes in `OnParametersSet` and moves the subscription when the parameter changes (the TrainingPlan row in SKILL.md); one that loads its own entity can subscribe in `OnInitialized`.
 2. **Use `NeatooPropertyChanged` for graph-wide awareness.** Marshal `StateHasChanged` via `InvokeAsync` — the delegate is async and may run off the UI thread.
 3. **Use `PropertyChanged` alone if you only care about root-level flags** like `IsSavable`, `IsValid`, `IsBusy`.
 4. **Move the subscription when the instance changes.** `Save()` returns a new instance; the old one raises nothing afterwards.
@@ -125,6 +125,6 @@ The Employee page does all four (it subscribes to `NeatooPropertyChanged` becaus
 
 ## Common Misconception: Blazor Does Not Auto-Subscribe
 
-Blazor does **not** observe `INotifyPropertyChanged` automatically. A binding like `<MudText>@entity.Total</MudText>` only re-renders when the containing component calls `StateHasChanged`. In practice that call happens because the page is already subscribed to the entity (see the Page Structure Pattern in SKILL.md) — the display binding piggybacks on the form's re-render cycle. It is not automatic.
+Blazor does **not** observe `INotifyPropertyChanged` automatically. A binding like `<MudText>@entity.Total</MudText>` only re-renders when the containing component calls `StateHasChanged`. In practice that call happens because the component displaying it is subscribed to the entity: a row component to its child, a summary to the root, or a small page to its entity (SKILL.md → The Component Is the Unit of Refresh). It is not automatic.
 
 If you render a view-only page with no form subscription, you must subscribe to `PropertyChanged` (for root-level state) or `NeatooPropertyChanged` (for any descendant state) yourself.

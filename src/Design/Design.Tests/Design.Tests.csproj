@@ -15,6 +15,9 @@
     <PackageReference Include="MSTest.TestAdapter" />
     <PackageReference Include="MSTest.TestFramework" />
     <PackageReference Include="coverlet.collector" />
+    <!-- Renders Design.App's components (the TrainingPlan row and summary) to pin that they refresh themselves -->
+    <PackageReference Include="bunit" />
+    <PackageReference Include="MudBlazor" />
   </ItemGroup>
 
   <ItemGroup>
