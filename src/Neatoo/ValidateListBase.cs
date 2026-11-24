@@ -299,14 +299,16 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
 
     /// <summary>
     /// Called when JSON deserialization is complete.
-    /// Resubscribes to property change events for all items and sets parent references.
+    /// Sets parent references for all items and resumes.
     /// </summary>
+    /// <remarks>
+    /// It does not subscribe to the items. <see cref="InsertItem"/> did when the serializer added
+    /// each one: a second subscription here made the list handle every item change twice.
+    /// </remarks>
     public virtual void OnDeserialized()
     {
         foreach (var item in this)
         {
-            item.PropertyChanged += this._PropertyChanged;
-            item.NeatooPropertyChanged += this._NeatooPropertyChanged;
             if (item is ISetParent setParent)
             {
                 setParent.SetParent(this.Parent);

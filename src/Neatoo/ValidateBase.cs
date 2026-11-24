@@ -592,17 +592,20 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	}
 
 	/// <summary>
-	/// Called after JSON deserialization to restore event subscriptions and parent-child relationships.
+	/// Called after JSON deserialization to restore parent-child relationships.
 	/// </summary>
 	/// <remarks>
-	/// This method reattaches event handlers to the property manager and re-establishes
-	/// parent references for all child objects.
+	/// <para>
+	/// This method re-establishes parent references for all child objects.
+	/// </para>
+	/// <para>
+	/// It does not subscribe to the property manager. The constructor did, the serializer builds
+	/// this object through that constructor, and the property manager is never replaced: a second
+	/// subscription here made every property change run its rules twice.
+	/// </para>
 	/// </remarks>
 	public virtual void OnDeserialized()
 	{
-		this.PropertyManager.NeatooPropertyChanged += this._PropertyManager_NeatooPropertyChanged;
-		this.PropertyManager.PropertyChanged += this._PropertyManager_PropertyChanged;
-
 		// Cast to internal interface to access GetProperties
 		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> pmInternal)
 		{

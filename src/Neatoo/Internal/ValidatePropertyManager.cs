@@ -196,11 +196,37 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
         get => this.GetProperty(propertyName);
     }
 
+    /// <summary>
+    /// Replaces properties with the ones the serializer built, moving this manager's subscription
+    /// from each outgoing property to the one that takes its place.
+    /// </summary>
+    /// <remarks>
+    /// A subscription is made where a property enters the bag: here, in <see cref="Register"/> and
+    /// in <see cref="GetProperty"/>. <see cref="OnDeserialized"/> subscribes to nothing, because a
+    /// property the serializer did not replace (a lazy-load one) is already subscribed.
+    /// </remarks>
     void IValidatePropertyManager<P>.SetProperties(IEnumerable<IValidateProperty> properties)
     {
-        foreach (var p in properties.Cast<P>())
+        lock (this._propertyBagLock)
         {
-            this.PropertyBag[p.Name] = p;
+            foreach (var p in properties.Cast<P>())
+            {
+                if (this.PropertyBag.TryGetValue(p.Name, out var outgoing))
+                {
+                    if (ReferenceEquals(outgoing, p))
+                    {
+                        continue;
+                    }
+
+                    outgoing.NeatooPropertyChanged -= this._Property_NeatooPropertyChanged;
+                    outgoing.PropertyChanged -= this._Property_PropertyChanged;
+                }
+
+                p.NeatooPropertyChanged += this._Property_NeatooPropertyChanged;
+                p.PropertyChanged += this._Property_PropertyChanged;
+
+                this.PropertyBag[p.Name] = p;
+            }
         }
     }
 
@@ -234,13 +260,12 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
         }
     }
 
+    /// <summary>
+    /// Recalculates validity from the deserialized properties. The subscriptions were made when
+    /// each property entered the bag, so none is made here.
+    /// </summary>
     public virtual void OnDeserialized()
     {
-        foreach (var p in this.PropertyBag)
-        {
-            p.Value.NeatooPropertyChanged += this._Property_NeatooPropertyChanged;
-            p.Value.PropertyChanged += this._Property_PropertyChanged;
-        }
         RecalculateValidity();
     }
 
