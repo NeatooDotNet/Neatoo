@@ -151,6 +151,7 @@ jobs:
 
     permissions:
       contents: write  # Required to create GitHub releases
+      id-token: write  # Required for NuGet trusted publishing (GitHub OIDC token)
 
     environment:
       name: nuget
@@ -173,12 +174,22 @@ jobs:
           echo "Packages to publish:"
           ls -la ./artifacts/*.nupkg ./artifacts/*.snupkg
 
+      # Trusted publishing: nuget.org trades this job's GitHub OIDC token for an
+      # API key that lives one hour. The policy on nuget.org names this repository,
+      # build.yml and the nuget environment. NUGET_USER is a nuget.org profile
+      # name, not an email address.
+      - name: NuGet login (OIDC to temporary API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Publish to NuGet.org
         run: |
           for package in ./artifacts/*.nupkg; do
             echo "Publishing $package..."
             dotnet nuget push "$package" \
-              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --api-key ${{ steps.login.outputs.NUGET_API_KEY }} \
               --source https://api.nuget.org/v3/index.json \
               --skip-duplicate
           done
