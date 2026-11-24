@@ -772,7 +772,19 @@ public class RuleManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTy
                     if (targetProperty is IValidatePropertyInternal vpInternal)
                     {
                         // Allow children to be trigger properties
-                        vpInternal.SetMessagesForRule(triggerProperty.PropertyName.RuleMessages(ex.Message).AsReadOnly());
+                        var exceptionMessages = triggerProperty.PropertyName.RuleMessages(ex.Message);
+
+                        // The message belongs to this rule, so that the rule's next clean run
+                        // clears it. Without the id it stayed until every message was cleared.
+                        foreach (var exceptionMessage in exceptionMessages)
+                        {
+                            if (exceptionMessage is IRuleMessageInternal rmInternal)
+                            {
+                                rmInternal.RuleId = rule.RuleId;
+                            }
+                        }
+
+                        vpInternal.SetMessagesForRule(exceptionMessages.AsReadOnly());
                     }
                 }
             }

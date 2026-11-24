@@ -120,9 +120,10 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </summary>
 	/// <remarks>
 	/// Used internally to track property setter tasks and ensure all async operations complete
-	/// before marking the object as not busy.
+	/// before marking the object as not busy. The services supply it, so a tracker registered
+	/// in DI replaces the framework's.
 	/// </remarks>
-	protected AsyncTasks RunningTasks { get; private set; } = new AsyncTasks();
+	protected IAsyncTasks RunningTasks { get; private set; }
 
 	/// <summary>
 	/// Gets or sets the property manager responsible for managing all properties on this object.
@@ -209,6 +210,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 		this.PropertyManager.NeatooPropertyChanged += this._PropertyManager_NeatooPropertyChanged;
 		this.PropertyManager.PropertyChanged += this._PropertyManager_PropertyChanged;
 
+		this.RunningTasks = services.CreateAsyncTasks() ?? throw new ArgumentNullException("CreateAsyncTasks");
 		this.RunningTasks.OnFullSequenceComplete = () =>
 		{
 			this.CheckIfMetaPropertiesChanged();

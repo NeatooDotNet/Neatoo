@@ -470,6 +470,7 @@ internal sealed class PlausibleEntityServices<[DynamicallyAccessedMembers(Dynami
     public IEntityPropertyManager EntityPropertyManager => _inner.EntityPropertyManager;
     public IFactorySave<T>? Factory => _inner.Factory;
     public IRuleManager<T> CreateRuleManager(T target) => _inner.CreateRuleManager(target);
+    public IAsyncTasks CreateAsyncTasks() => _inner.CreateAsyncTasks();
 }
 
 /// <summary>
@@ -491,7 +492,7 @@ internal partial class MeasurementDemo : EntityBase<MeasurementDemo>, IMeasureme
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/CustomPropertyType.cs#L135-L178' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-custom-property-services' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/CustomPropertyType.cs#L135-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-custom-property-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The custom `IPropertyFactory<T>.Create<TProperty>` returns the subclass for the properties it cares about and defers the rest to the wrapped factory. (`ValidateBaseServices<T>` does resolve `IPropertyFactory<T>` from DI, so a closed registration works for `ValidateBase`.)

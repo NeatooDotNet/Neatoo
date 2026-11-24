@@ -48,7 +48,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 | # | File | Title (≤ 8 words) | Serves | Status | PR |
 |---|------|-------|--------|--------|----|
 | 001 | [001-decision-record](./plans/001-decision-record.md) | The rulings in VisionAlignment | AC-9 | Done | #143 |
-| 002 | [002-tracker-faults](./plans/002-tracker-faults.md) | The tracker faults once, then recovers | AC-7 | Draft | — |
+| 002 | [002-tracker-faults](./plans/002-tracker-faults.md) | The tracker faults once, then recovers | AC-7 | In Progress | — |
 | 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | Draft | — |
 | 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Draft | — |
 | 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Draft | — |
@@ -75,6 +75,16 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 ---
 
 ## Discovery Log
+
+### 2026-11-24 — WAIT-002 · serves AC-7
+- **Finding:** DI fell back to a constructor without the tracker factory when no logging was registered.
+- **Decision:** Amend
+- **Follow-up:** n/a
+
+### 2026-11-24 — WAIT-002 · serves AC-7
+- **Finding:** The message recorded when a rule throws carried no rule id, so the rule's next clean run never cleared it.
+- **Decision:** Amend
+- **Follow-up:** n/a
 
 ---
 
