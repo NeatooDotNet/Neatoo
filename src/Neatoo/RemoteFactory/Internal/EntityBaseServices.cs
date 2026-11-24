@@ -95,4 +95,21 @@ public class EntityBaseServices<[DynamicallyAccessedMembers(DynamicallyAccessedM
         this.Logger = loggerFactory?.CreateLogger<T>()
             ?? new NullLogger<T>();
     }
+
+    /// <summary>
+    /// The constructor DI uses: every other constructor's parameters are a subset of this one's,
+    /// and the save factory and the logger factory are optional, so it is chosen whichever of
+    /// them is registered.
+    /// </summary>
+    public EntityBaseServices(
+        CreateEntityPropertyManager propertyManager,
+        IPropertyInfoList<T> propertyInfoList,
+        RuleManagerFactory<T> ruleManager,
+        CreateAsyncTasks createAsyncTasks,
+        IFactorySave<T>? factory = null,
+        ILoggerFactory? loggerFactory = null)
+        : this(propertyManager, propertyInfoList, ruleManager, factory, loggerFactory)
+    {
+        this.asyncTasksFactory = createAsyncTasks;
+    }
 }

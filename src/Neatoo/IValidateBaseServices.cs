@@ -46,4 +46,13 @@ public interface IValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAc
     /// <param name="target">The target object for which to create the rule manager.</param>
     /// <returns>A new <see cref="IRuleManager{T}"/> instance configured for the target.</returns>
     IRuleManager<T> CreateRuleManager(T target);
+
+    /// <summary>
+    /// Creates a task tracker. The base class takes the one that holds its running tasks from here.
+    /// </summary>
+    /// <returns>A new <see cref="IAsyncTasks"/>.</returns>
+    /// <remarks>
+    /// A services wrapper forwards this to the services it wraps.
+    /// </remarks>
+    IAsyncTasks CreateAsyncTasks();
 }

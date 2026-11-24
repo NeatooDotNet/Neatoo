@@ -100,6 +100,14 @@ public static class AddNeatooServicesExtension
             };
         });
 
+        // The task tracker each entity takes from its services. Register IAsyncTasks, or
+        // CreateAsyncTasks itself, after this call to replace the framework's tracker.
+        services.AddTransient<IAsyncTasks, AsyncTasks>();
+        services.AddTransient<CreateAsyncTasks>(services =>
+        {
+            return () => services.GetRequiredService<IAsyncTasks>();
+        });
+
         // Property factory for generated backing fields (open generic registration)
         services.AddTransient(typeof(IPropertyFactory<>), typeof(DefaultPropertyFactory<>));
 
