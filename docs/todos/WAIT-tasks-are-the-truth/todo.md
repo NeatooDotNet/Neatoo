@@ -8,7 +8,7 @@
 **Initial split:** 8 plans
 **Plan cap:** 12 — counts plan numbers issued, including Abandoned and Retired. Issuing a number above the cap is a stop-and-ask.
 **Arc branch:** wait-arc — cut from main at Step 1; every plan and punchlist branch PRs into it; it PRs into main at Step 8.
-**Related:** Closes #141. Adopts #129 under AC-11, #103 under AC-12, and the legacy todo `docs/todos/waitfortasks-cancellation-missing-propertymanager.md` under AC-5. Follows 0.36.1, which fixed #140. No other arc is open; LIST is not started and touches EntityListBase's state machinery, not its waiting. Decided by Keith, 2026-11-24: the redesign, in place of a point fix on the property, which he rejected as a patch; an async rule that throws surfaces from `WaitForTasks()` once and the object then recovers; the redesign is free to remove public members that are documented as framework use; the twelve criteria and their words; the whole redesign is done here, with no stopgap release.
+**Related:** Closes #141. Adopts #129 under AC-11, #103 under AC-12, and the legacy todo `docs/todos/waitfortasks-cancellation-missing-propertymanager.md` under AC-5. Follows 0.36.1, which fixed #140. No other arc is open; LIST is not started and touches EntityListBase's state machinery, not its waiting. Decided by Keith, 2026-11-24: the redesign, in place of a point fix on the property, which he rejected as a patch; an async rule that throws surfaces from `WaitForTasks()` once and the object then recovers; the redesign is free to remove public members that are documented as framework use; the twelve criteria and their words; the whole redesign is done here, with no stopgap release. Also decided by Keith, 2026-11-24, after reading the old and new architecture side by side: the architecture "looks good"; "Code in the 'Internal' namespace is meant to be framework only, use at your own risk"; and "please use the existing DI heavy approach of Neatoo. It's extra work, not obviously useful, but it lets consumers expand the framework in major ways." The rulings are D31 to D36 in `docs/VisionAlignment.md`.
 **Standing orders:** Unattended, like FCI (Keith, 2026-11-24). Claude merges every plan and punchlist PR into the arc and takes every reviewer recommendation that does not contradict a decision above, listing each under Recommendations Taken for Keith's end review. Keith reviews and merges the arc PR into main and owns the release tag. Claude stops for Keith, never decides: a DECISION NEEDED verdict, an out-of-scope test failure, a test-versus-code disagreement no documented intent covers, a red full suite after one fix attempt, a priority change, a Goal or Out of Scope edit, a plan number beyond the cap, and anything that touches a decision above. A parked finding is a `proposed` row, never an issue, until Keith approves it. A test change the documented intent justifies is made and reported in the PR.
 
 ---
@@ -47,7 +47,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 | # | File | Title (≤ 8 words) | Serves | Status | PR |
 |---|------|-------|--------|--------|----|
-| 001 | [001-decision-record](./plans/001-decision-record.md) | The rulings in VisionAlignment | AC-9 | Draft | — |
+| 001 | [001-decision-record](./plans/001-decision-record.md) | The rulings in VisionAlignment | AC-9 | Done | #143 |
 | 002 | [002-tracker-faults](./plans/002-tracker-faults.md) | The tracker faults once, then recovers | AC-7 | Draft | — |
 | 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | Draft | — |
 | 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Draft | — |
@@ -81,6 +81,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 ## Skipped Steps
 
 - Step 1 reconnaissance agents · the analysis for #140 and #141 on 2026-11-24 already mapped these seams, the documented intent and the test inventory; it is `reviews/000-analysis.md`.
+- WAIT-001 Step 5 gate · a prose-only plan with no behavior to test.
 
 ---
 
