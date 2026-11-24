@@ -11,3 +11,4 @@ stay reserved for their files but new todos use this registry.
 | LIST | EntityListBase state machinery — notification, replacement, paused-path defects | Not Started | [LIST-entitylist-state-machinery](./LIST-entitylist-state-machinery/todo.md) |
 | SKR | Rebuild the Neatoo skill around the model and placement decisions | Complete | [completed/SKR-neatoo-skill-rebuild](./completed/SKR-neatoo-skill-rebuild/todo.md) |
 | FCI | Facts, Consequences, Intents: Rules-First Across the Three Skills | Complete | [completed/FCI-facts-consequences-intents](./completed/FCI-facts-consequences-intents/todo.md) |
+| WAIT | Tasks are the truth: one way to track, wait and read busy | In Progress | [WAIT-tasks-are-the-truth](./WAIT-tasks-are-the-truth/todo.md) |
