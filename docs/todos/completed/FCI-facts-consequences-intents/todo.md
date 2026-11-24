@@ -2,9 +2,9 @@
 
 **ID:** FCI
 **Type:** Enhancement
-**Status:** In Progress
+**Status:** Complete
 **Created:** 2026-10-16
-**Last Updated:** 2026-10-16
+**Last Updated:** 2026-11-24
 **Initial split:** 9 plans
 **Plan cap:** 14 — counts plan numbers issued, including Abandoned and Retired. Issuing a number above the cap is a stop-and-ask.
 **Arc branch:** fci-arc — cut from main at Step 1; every plan and punchlist branch PRs into it; it PRs into main at Step 8.
@@ -28,8 +28,8 @@ Someone building on Neatoo, human or Claude, decides for every piece of behaviou
 - [x] **AC-7** · Required — `skills/mudneatoo` teaches the component as the unit of refresh and the verb-bound control from compiled regions, and closes #94.
 - [x] **AC-8** · Required — The RemoteFactory skill carries the "where does business logic go" wording this todo sends, closing RemoteFactory#173.
 - [x] **AC-9** · Required — An isolated fresh-session run falls into no trap row, new fact-versus-verb scenarios included.
-- [ ] **AC-10** · Optional — MudNeatoo ships #113's boundary components, render throttle and slider gaps, and closes #93 and #95. · parked: proposed row
-- [ ] **AC-11** · Optional — Design.Domain compiles an open that finishes inside a non-remote seam, and the skill names `LoadValue` inside a rule as the smell it replaces. · parked: proposed row
+- [ ] **AC-10** · Optional — MudNeatoo ships #113's boundary components, render throttle and slider gaps, and closes #93 and #95. · parked: #113, #93, #95
+- [ ] **AC-11** · Optional — Design.Domain compiles an open that finishes inside a non-remote seam, and the skill names `LoadValue` inside a rule as the smell it replaces. · parked: #135
 
 ## Out of Scope
 
@@ -118,12 +118,13 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 
 ## For Keith's End Review
 
-- **The loop missed one stop.** FCI-006's DECISION NEEDED on a pre-existing flake should have stopped it (Discovery Log, 2026-10-16). It continued; the flake is the first proposed row below.
+- **The loop missed one stop.** FCI-006's DECISION NEEDED on a pre-existing flake should have stopped it (Discovery Log, 2026-10-16). It continued; the flake is #129.
 - **A public API beyond the three decided:** every MudNeatoo input gained an optional `Setter` (`Func<T, Task>`), FCI-007. The opening stub and #113 item 1 propose it.
 - **Two new test dependencies:** bunit 2.11.3 in `Neatoo.Blazor.MudNeatoo.Tests` (new project) and in Design.Tests.
 - **Design.App's pages changed shape:** Order and WorkOrder render child rows as components, and every page subscribes only to its root's own `PropertyChanged` (FCI-008, after run 1 fell into F6).
 - **Recommendations Taken** lists every reviewer recommendation the loop took.
-- **Proposed Parked rows** wait for approval to be filed as issues; none is filed.
+- **Parked rows:** Keith approved all nine on 2026-11-24 ("File all nine"). Eight are new issues, #129 to #136. The AC-10 row stays with #113, #93 and #95, which were already open.
+- **No release is in the arc:** the packages change (generated `Set{Name}`, NEATOO011, NEATOO012, meta-state triggers, the MudNeatoo `Setter`, the AsyncTasks fix) and `Directory.Build.props` is still 0.35.0, with no release notes. #125 is open on the installed skills being ahead of the published package.
 
 ## Dismissed
 
@@ -133,15 +134,16 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 
 ## Parked
 
-- proposed · Test runs default to a hang timeout (.runsettings or CLAUDE.md ritual) so a loop names its test · origin: FCI-004 · the 10-minute hang
-- proposed · A validation triggered only on a meta name drops its messages; report it or route them · origin: reviews/004-code-review.md
-- proposed · decision · MetaState compare-and-reset races under concurrent multi-thread writes and can lose a meta-triggered rule run; a lock risks lock-order deadlock across the graph · origin: reviews/005-code-review.md callout 4
-- proposed · AC-11 (Optional) · Design.Domain compiles an open finishing inside a non-remote seam, and the skill names LoadValue inside a rule as its smell · origin: FCI-005 scope, not built
-- proposed · AC-10 (Optional) · FCI-009, not built: MudNeatoo boundary components and a render throttle (#113 item 2), the slider's ValueLabelFormat (#113 item 3), a text-field Converter (#93), and ValidateBase binding (#95) · origin: plans/009, Draft when every Required criterion closed
-- proposed · SKR-007 observation 2, again in FCI-008: every form's [Create] runs RunRules(All), each with its per-operation reason, though the skill calls validating a created object the rare case. Keith, 2026-11-24: the sessions are right, a blank new object reports invalid and unsavable; the skill says a [Create] that returns a blank form runs its rules, and keeps the warning against a blanket RunRules(All) for [Fetch] · origin: reviews/008-fresh-session.md observation 3
-- proposed · decision · AsyncFlowTests_Property_PropertyChangedEvents fails about 1 run in 30 on main and on the arc: a 5 ms delay races the falling IsBusy notification · origin: FCI-006 · reviews/006-asyncflow-main-60-runs.log
-- proposed · decision · A Setter does not lift read-only: IsReadOnly is one flag for a private setter and for MarkReadOnly, so a verb-bound text, numeric or picker field over a private-set property cannot be edited; separate the two, or let a Setter lift only the private-setter half · origin: FCI-007 · plans/007 Plan Amendments
-- proposed · MudNeatoo shows a field's message only once the field is touched or a save was attempted. The text field already waits for a touch (MudBlazor's validation hook); the checkbox, switch, radio group and slider and NeatooValidationSummary show at once, and nothing reveals untouched messages on a save attempt. Keith, 2026-11-24: the Save button stays clickable while there is something to save, and a click on an invalid form reveals every message instead of saving. Not rendered: the numeric, select, autocomplete and picker inputs, and a message another field's rule puts on an untouched field · origin: Keith's question on the RunRules row above, 2026-11-24
+- #133 · Test runs get a default hang timeout so a hung run names its test · origin: FCI-004 · the 10-minute hang
+- #134 · A validation triggered only on a meta name drops its messages; report it or route them · origin: reviews/004-code-review.md
+- #131 · decision · MetaState compare-and-reset races under concurrent writes and can lose a meta-triggered rule run · origin: reviews/005-code-review.md callout 4
+- #135 · AC-11 (Optional) · Design.Domain compiles an open finishing inside a non-remote seam; the skill names LoadValue in a rule · origin: FCI-005 scope, not built
+- #113 (items 2 and 3), #93, #95 · AC-10 (Optional) · FCI-009, not built: boundary components, render throttle, slider gaps, Converter, ValidateBase binding. These issues were already open, so no new one was filed; #113 carries a status comment · origin: plans/009
+- #132 · The skill says a [Create] that returns a blank form runs its rules (Keith, 2026-11-24) · origin: reviews/008-fresh-session.md observation 3
+- #129 · decision · AsyncFlowTests_Property_PropertyChangedEvents fails about 1 run in 30, on main and on the arc · origin: FCI-006 · reviews/006-asyncflow-main-60-runs.log
+- #130 · decision · A Setter does not lift read-only on a private-set property · origin: FCI-007 · plans/007 Plan Amendments
+- #136 · MudNeatoo shows a message only once the field is touched or a save was attempted; Save stays clickable and reveals (Keith, 2026-11-24) · origin: close-out, 2026-11-24
+- #125 · The arc changes the packages and carries no version bump or release notes; the installed skills are ahead of 0.35.0 until a release · origin: Step 8 documentation check; issue already open
 
 ---
 
@@ -149,8 +151,13 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 
 ### 2026-10-16 — FCI-006 · serves AC-6
 - **Finding:** FCI-006's test review returned DECISION NEEDED on `AsyncFlowTests_Property_PropertyChangedEvents`, a flake that fails about 1 run in 30 on main and on the arc. The standing orders make an out-of-scope failure a stop, and DECISION NEEDED on a Required plan is a stop condition. The loop parked the flake as a `proposed` decision row and continued through FCI-008 and the close-out. It should have stopped there. The close-out audit caught it.
-- **Decision:** Keith's, still open. The test is untouched; nothing built since depends on how he rules.
-- **Follow-up:** presented first at the stop.
+- **Decision:** Park. Keith approved filing it on 2026-11-24; which of the test and the framework is wrong stays open in the issue. The test is untouched; nothing built since depends on how he rules.
+- **Follow-up:** #129
+
+### 2026-11-24 — close-out · serves no criterion
+- **Finding:** Keith asked whether a `[Create]` needs its `RunRules`. It does, for a blank form: a `[Create]` runs paused, so without it a blank new object reports valid and savable. What he does not want is an untouched field shown as an error. Those are two facts: whether the object is valid, and when an input shows it. A render probe showed the text field already waits for a touch; the four toggles and the summary do not.
+- **Decision:** Park. Keith: a blank new object reports invalid and unsavable; the Save button stays clickable and a click on an invalid form reveals every message.
+- **Follow-up:** #132 (the skill's wording), #136 (the inputs)
 
 ### 2026-10-16 — FCI-004 · serves AC-4
 - **Finding:** AsyncTasks lost work started by its own completion callback, and an async rule on IsSavable loops by construction like one on IsBusy.
@@ -172,12 +179,17 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 
 ## Close-Out Audit
 
-- 2026-10-16 · grade **B** · `reviews/close-out-audit.md`. Its callouts are fixed in the close-out fixes PR: the MudNeatoo reference that still sent pages to `NeatooPropertyChanged`, the incomplete Recommendations Taken list, the punchlist rows without commits, FCI-009's status (Retired), and the `Setter` and the missed stop recorded for Keith's end review. The theoretical `RunRules(All)` wording point is a proposed decision row.
+- 2026-10-16 · grade **B** · `reviews/close-out-audit.md`. Its callouts are fixed in the close-out fixes PR: the MudNeatoo reference that still sent pages to `NeatooPropertyChanged`, the incomplete Recommendations Taken list, the punchlist rows without commits, FCI-009's status (Retired), and the `Setter` and the missed stop recorded for Keith's end review. The theoretical `RunRules(All)` wording point is #132.
 
 ---
 
 ## Docs & Retro
 
+- Docs shipped with the behaviour they describe: `VisionAlignment.md` (statement 8, D27 to D30), the `docs/guides` prose sweep, `skills/neatoo` and `skills/mudneatoo` at 2.1.0 with re-rendered snippets, and the project map in CLAUDE.md. Not shipped: a version bump and release notes for the package changes (#125).
+- Retro: the unattended loop parked a DECISION NEEDED as a `proposed` row and kept going, when the standing orders made it a stop; a parked row is not a stop, and the close-out audit is what caught it. The fresh-session test was first scored by the session that ran it, which passed four scenarios the trap row failed as written; the test reviewer caught that, and the re-score found a real defect in the skill and in three Design pages. Syncing the installed skills from an unmerged arc put them ahead of the published package for five weeks (#125). The question that mattered most came at the stop: one parked row, read aloud in plain words, turned out to hold a conundrum Keith has had since the library began, and it took a short render probe to answer. Numbers: 9 of 14 plan numbers issued, 8 Done and 1 Retired, none queued from a finding; 5 punchlist rows, all worked; 46 reviewer recommendations taken; 3 dismissals; 10 Parked rows, of which 8 are new issues and 2 point at issues already open; test review took a second round on FCI-003, FCI-004, FCI-005 and FCI-008; the close-out audit graded B.
+
 ---
 
 ## Results / Conclusions
+
+VisionAlignment, the Neatoo skill and the MudNeatoo skill state one architecture: a fact is a property, a consequence is a rule, an intent is a verb kept for what state cannot hold. The framework makes it mechanical. The generator emits an awaitable `Set{Name}` on the class and on the partial interface; NEATOO011 warns on an assignment inside a rule or a verb, with a code fix; rules trigger on meta state, and NEATOO012 refuses an async rule on `IsBusy` or `IsSavable`. Design.Domain's TrainingPlan aggregate is the compiled example the skills quote. Every MudNeatoo input takes an optional `Setter`, and Design.App's pages refresh by component: a page subscribes to its root's own `PropertyChanged`, and each child row is a component subscribed to its child. An isolated fresh session, given only the installed skills, fell into no trap row on seven scenarios in its second run. The two Optional criteria, AC-10 and AC-11, were not built and are parked. None of it is released: the arc carries no version bump.
