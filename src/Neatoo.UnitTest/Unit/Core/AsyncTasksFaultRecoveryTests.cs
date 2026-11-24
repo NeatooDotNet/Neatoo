@@ -12,13 +12,24 @@ public class AsyncTasksFaultRecoveryTests
 {
     private static readonly TimeSpan Limit = TimeSpan.FromSeconds(5);
 
-    private static async Task UntilIdle(AsyncTasks tracker)
+    /// <summary>
+    /// Waits until the running sequence has finished, without reading AllDone, which would make
+    /// this caller an observer of its fault. The completion callback runs just before the
+    /// sequence closes; the short delay after it lets the sequence close and complete its task.
+    /// </summary>
+    private static async Task UntilTheSequenceHasClosed(AsyncTasks tracker, Action complete)
     {
-        using var limit = new CancellationTokenSource(Limit);
-        while (tracker.IsRunning)
+        var callbackRan = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        tracker.OnFullSequenceComplete = () =>
         {
-            await Task.Delay(5, limit.Token);
-        }
+            callbackRan.TrySetResult();
+            return Task.CompletedTask;
+        };
+
+        complete();
+
+        await callbackRan.Task.WaitAsync(Limit);
+        await Task.Delay(50);
     }
 
     [TestMethod]
@@ -63,8 +74,7 @@ public class AsyncTasksFaultRecoveryTests
         var tracker = new AsyncTasks();
         var work = new TaskCompletionSource();
         tracker.AddTask(work.Task);
-        work.SetException(new InvalidOperationException("unobserved"));
-        await UntilIdle(tracker);
+        await UntilTheSequenceHasClosed(tracker, () => work.SetException(new InvalidOperationException("unobserved")));
 
         var thrown = await Assert.ThrowsExactlyAsync<AggregateException>(() => tracker.AllDone.WaitAsync(Limit));
         Assert.AreEqual("unobserved", thrown.InnerExceptions.Single().Message);
@@ -78,8 +88,7 @@ public class AsyncTasksFaultRecoveryTests
         var tracker = new AsyncTasks();
         var first = new TaskCompletionSource();
         tracker.AddTask(first.Task);
-        first.SetException(new InvalidOperationException("carried"));
-        await UntilIdle(tracker);
+        await UntilTheSequenceHasClosed(tracker, () => first.SetException(new InvalidOperationException("carried")));
 
         var second = new TaskCompletionSource();
         tracker.AddTask(second.Task);
@@ -89,6 +98,26 @@ public class AsyncTasksFaultRecoveryTests
 
         var thrown = await Assert.ThrowsExactlyAsync<AggregateException>(() => wait.WaitAsync(Limit));
         Assert.AreEqual("carried", thrown.InnerExceptions.Single().Message);
+
+        await tracker.AllDone.WaitAsync(Limit);
+    }
+
+    [TestMethod]
+    public async Task CancelledWait_DoesNotTakeTheFault_TheNextWaitReportsIt()
+    {
+        var tracker = new AsyncTasks();
+        var work = new TaskCompletionSource();
+        tracker.AddTask(work.Task);
+
+        using var cancel = new CancellationTokenSource();
+        var cancelledWait = tracker.WaitForCompletion(cancel.Token);
+        cancel.Cancel();
+        await Assert.ThrowsAsync<OperationCanceledException>(() => cancelledWait.WaitAsync(Limit));
+
+        await UntilTheSequenceHasClosed(tracker, () => work.SetException(new InvalidOperationException("after the cancel")));
+
+        var thrown = await Assert.ThrowsExactlyAsync<AggregateException>(() => tracker.AllDone.WaitAsync(Limit));
+        Assert.AreEqual("after the cancel", thrown.InnerExceptions.Single().Message);
 
         await tracker.AllDone.WaitAsync(Limit);
     }

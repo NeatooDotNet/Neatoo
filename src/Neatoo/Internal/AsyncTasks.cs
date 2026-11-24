@@ -18,9 +18,9 @@ public sealed class AsyncTasks : IAsyncTasks
     private readonly object _lockObject = new object();
     private TaskCompletionSource<bool>? _allDoneCompletionSource;
 
-    // True once the current sequence's task has been handed to a caller while the sequence ran:
-    // its outcome has an observer.
-    private bool _allDoneObserved;
+    // How many callers were handed the current sequence's task while it ran and still wait on it.
+    // Above zero, its outcome has an observer. A cancelled wait gives its place back.
+    private int _allDoneObservers;
 
     // True once the current sequence has decided its outcome. Its task completes right after,
     // outside the lock, so a task added from here on starts a new sequence.
@@ -68,7 +68,7 @@ public sealed class AsyncTasks : IAsyncTasks
                 }
 
                 this._allDoneCompletionSource = new TaskCompletionSource<bool>();
-                this._allDoneObserved = false;
+                this._allDoneObservers = 0;
                 this._allDoneClosed = false;
             }
 
@@ -109,7 +109,7 @@ public sealed class AsyncTasks : IAsyncTasks
 
                 if (!this._allDoneClosed)
                 {
-                    this._allDoneObserved = true;
+                    this._allDoneObservers++;
                 }
                 else if (this._unobservedFault != null)
                 {
@@ -148,13 +148,32 @@ public sealed class AsyncTasks : IAsyncTasks
 
         var completedTask = await Task.WhenAny(allDone, tcs.Task);
 
-        if (completedTask == tcs.Task)
+        if (completedTask == tcs.Task && this.TryLeaveWait(allDone))
         {
             token.Value.ThrowIfCancellationRequested();
         }
 
         // Propagate any exceptions from AllDone
         await allDone;
+    }
+
+    /// <summary>
+    /// A cancelled wait stops observing the sequence, so that a fault it would have seen is kept
+    /// for the next wait. Returns false when the sequence's outcome is already decided: the
+    /// caller is then the wait that reports it, and must not leave.
+    /// </summary>
+    private bool TryLeaveWait(Task allDone)
+    {
+        lock (this._lockObject)
+        {
+            if (this._allDoneClosed || !ReferenceEquals(this._allDoneCompletionSource?.Task, allDone))
+            {
+                return false;
+            }
+
+            this._allDoneObservers--;
+            return true;
+        }
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
@@ -219,7 +238,7 @@ public sealed class AsyncTasks : IAsyncTasks
 
             if (exceptionsToReport.Count > 0)
             {
-                if (this._allDoneObserved)
+                if (this._allDoneObservers > 0)
                 {
                     // A wait holds this sequence's task and will see the fault. Let go of it, so
                     // that no later wait is handed the same fault.

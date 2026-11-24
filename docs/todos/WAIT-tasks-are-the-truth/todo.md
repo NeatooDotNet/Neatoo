@@ -25,7 +25,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - [ ] **AC-4** · Required — When `WaitForTasks()` completes, `IsBusy` is false on the object and its descendants.
 - [ ] **AC-5** · Required — `WaitForTasks(token)` waits for exactly what `WaitForTasks()` waits for.
 - [ ] **AC-6** · Required — A property is busy exactly while a write or an async rule that involves it is in flight.
-- [ ] **AC-7** · Required — An async rule that throws surfaces from `WaitForTasks()` once, and the object then tracks and waits for later work.
+- [x] **AC-7** · Required — An async rule that throws surfaces from `WaitForTasks()` once, and the object then tracks and waits for later work.
 - [ ] **AC-8** · Required — A write through a MudNeatoo input followed by `WaitForTasks()` on the entity completes when the rule does.
 - [ ] **AC-9** · Required — The guides, the skills and Design.Domain describe tracking, waiting, busy and faults as the code behaves.
 - [ ] **AC-10** · Optional — Raising `NeatooPropertyChanged` awaits every subscriber's task.
@@ -48,7 +48,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 | # | File | Title (≤ 8 words) | Serves | Status | PR |
 |---|------|-------|--------|--------|----|
 | 001 | [001-decision-record](./plans/001-decision-record.md) | The rulings in VisionAlignment | AC-9 | Done | #143 |
-| 002 | [002-tracker-faults](./plans/002-tracker-faults.md) | The tracker faults once, then recovers | AC-7 | In Progress | — |
+| 002 | [002-tracker-faults](./plans/002-tracker-faults.md) | The tracker faults once, then recovers | AC-7 | Done | PRNUM002 |
 | 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | Draft | — |
 | 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Draft | — |
 | 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Draft | — |
@@ -59,6 +59,8 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 ---
 
 ## Punchlist
+
+- [ ] The migration notes name three compile breaks from WAIT-002: forward `IValidateBaseServices.CreateAsyncTasks` in a services wrapper; `AsyncTasks.AddTask(Task, bool)` is now `AddTask(Task)`; `RunningTasks` is typed `IAsyncTasks` · the release notes (WAIT-008) · done when the migration section lists all three · AC-9
 
 ## Dismissed
 
@@ -71,6 +73,10 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 ## Recommendations Taken
 
 [Every reviewer recommendation the loop took, for Keith's end review. One line each: plan, reviewer, what was recommended, what was done.]
+
+- WAIT-002 · code-reviewer · a wait cancelled by its token could swallow a rule's fault, so it surfaced zero times · fixed in the tracker, with a test seen red first.
+- WAIT-002 · code-reviewer · three compile breaks for consumers were recorded nowhere for the migration notes · punched to the Punchlist for WAIT-008.
+- WAIT-002 · test-reviewer · a test named for an entity tested a ValidateBase object, and two tests could pass through a different path in a narrow window · renamed; the two tests now wait for the sequence to close.
 
 ---
 

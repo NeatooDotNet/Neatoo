@@ -132,7 +132,7 @@ public class AsyncRuleFaultTests : IntegrationTestBase
     }
 
     [TestMethod]
-    public void Entity_TakesItsTrackerFromTheRegisteredFactory()
+    public void ValidateBase_TakesItsTrackerFromTheRegisteredFactory()
     {
         var supplied = new List<IAsyncTasks>();
         var services = new ServiceCollection();

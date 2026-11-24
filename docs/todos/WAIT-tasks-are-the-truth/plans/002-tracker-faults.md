@@ -4,7 +4,7 @@
 **Date:** 2026-11-24
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-7
-**Status:** In Progress
+**Status:** Done
 **Last Updated:** 2026-11-24
 **Plan-review opt-in:** No (the two decisions it implements, D34 and D36, are Keith's; the rest is contained in one class)
 **Code-review opt-in:** Yes (it changes what every wait observes after a fault, and adds a member to a public services interface)
@@ -95,8 +95,9 @@ Red run before the tracker change, with the DI plumbing in: 8 of the 11 new test
 | An unobserved fault is thrown by the next wait, once | Required | `[unit]` | `AsyncTasksFaultRecoveryTests.Fault_NobodyWasWaitingFor_IsThrownByTheNextWait_Once` | ✓ |
 | An unobserved fault is reported with the next sequence | Required | `[unit]` | `AsyncTasksFaultRecoveryTests.Fault_NotObservedBeforeTheNextSequence_IsReportedWithThatSequence` | ✓ |
 | A callback that throws any exception faults the wait | Required | `[unit]` | `AsyncTasksFaultRecoveryTests.CompletionCallback_ThatThrowsAnyException_FaultsTheWait` | ✓ |
+| A cancelled wait does not take the fault (added at the gate) | Required | `[unit]` | `AsyncTasksFaultRecoveryTests.CancelledWait_DoesNotTakeTheFault_TheNextWaitReportsIt`, red before its fix | ✓ |
 | A thrown async rule surfaces once; property invalid; later write tracked | Required | `[integration]` | `ValidateBase.AsyncRuleFaultTests`: `AsyncRuleThatThrows_SurfacesFromWaitForTasks`, `_LeavesTheTriggerPropertyInvalidWithTheMessage`, `_IsNotThrownByASecondWait`, `AfterAFault_ALaterWriteIsTrackedAndWaitedFor`, `AfterAFault_TheObjectIsValidOnceTheRuleRunsClean` | ✓ |
-| An entity takes its tracker from the registered factory | Required | `[integration]` | `ValidateBase.AsyncRuleFaultTests.Entity_TakesItsTrackerFromTheRegisteredFactory`; `EntityBase.TrackerFromServicesTests.EntityBase_TakesItsTrackerFromTheRegisteredFactory`, `_WithNothingRegisteredOverIt_TakesTheFrameworkTracker` | ✓ |
+| An entity takes its tracker from the registered factory | Required | `[integration]` | `ValidateBase.AsyncRuleFaultTests.ValidateBase_TakesItsTrackerFromTheRegisteredFactory`; `EntityBase.TrackerFromServicesTests.EntityBase_TakesItsTrackerFromTheRegisteredFactory`, `_WithNothingRegisteredOverIt_TakesTheFrameworkTracker` | ✓ |
 | Build and tests green | Required | `[explicit-skip]` | `reviews/002-build.log`, `002-test.log`, `002-design-build.log`, `002-design-test.log` | n/a |
 
 Two of the integration tests passed before the tracker change, because the behavior they pin already held: `AsyncRuleThatThrows_SurfacesFromWaitForTasks` and `_LeavesTheTriggerPropertyInvalidWithTheMessage`. They replace the commented-out `ValidateBaseAsync_AsyncRuleThrowsException`. The three tracker-from-DI tests could not be run red: before the plumbing they did not compile.
@@ -104,6 +105,7 @@ Two of the integration tests passed before the tracker change, because the behav
 
 ## Gate Record
 
+- Round 1 (2026-11-24): test review APPROVED, no veto, no callout; both tech-debt lines fixed (the misnamed test renamed; the two unobserved-fault tests now wait for the sequence to close) — `reviews/002-test-review.md`. Code review APPROVED, no veto; callout 1 fixed (a wait cancelled by its token no longer takes the fault: the next wait reports it, pinned by a new test seen red), callout 2 punched to the todo (the three compile breaks for the migration notes) — `reviews/002-code-review.md`. Could not verify, both reviewers: the full-run logs do not name tests; resolved by the filtered runs, which listed the new tests by name. Two Theoretical lines not triaged. No round 2: nothing veto-tier was open. Done.
 ---
 
 ## Plan Amendments
