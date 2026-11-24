@@ -124,7 +124,7 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - **Design.App's pages changed shape:** Order and WorkOrder render child rows as components, and every page subscribes only to its root's own `PropertyChanged` (FCI-008, after run 1 fell into F6).
 - **Recommendations Taken** lists every reviewer recommendation the loop took.
 - **Parked rows:** Keith approved all nine on 2026-11-24 ("File all nine"). Eight are new issues, #129 to #136. The AC-10 row stays with #113, #93 and #95, which were already open.
-- **No release is in the arc:** the packages change (generated `Set{Name}`, NEATOO011, NEATOO012, meta-state triggers, the MudNeatoo `Setter`, the AsyncTasks fix) and `Directory.Build.props` is still 0.35.0, with no release notes. #125 is open on the installed skills being ahead of the published package.
+- **The release is 0.36.0** (Keith, 2026-11-24: "Release as 0.36.0"). The arc carries the version bump and `docs/release-notes/v0.36.0.md`. The packages change: generated `Set{Name}`, NEATOO011, NEATOO012, meta-state triggers, the MudNeatoo `Setter`, the AsyncTasks fix. Tagging and publishing are Keith's. #125 is open on the installed skills being ahead of the published package, until 0.36.0 is on NuGet.
 
 ## Dismissed
 
@@ -143,7 +143,7 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 - #129 · decision · AsyncFlowTests_Property_PropertyChangedEvents fails about 1 run in 30, on main and on the arc · origin: FCI-006 · reviews/006-asyncflow-main-60-runs.log
 - #130 · decision · A Setter does not lift read-only on a private-set property · origin: FCI-007 · plans/007 Plan Amendments
 - #136 · MudNeatoo shows a message only once the field is touched or a save was attempted; Save stays clickable and reveals (Keith, 2026-11-24) · origin: close-out, 2026-11-24
-- #125 · The arc changes the packages and carries no version bump or release notes; the installed skills are ahead of 0.35.0 until a release · origin: Step 8 documentation check; issue already open
+- #125 · The installed skills are ahead of the published package until 0.36.0 is tagged and published · origin: Step 8 documentation check; issue already open
 
 ---
 
@@ -185,11 +185,11 @@ Every reviewer recommendation taken under the standing orders, one line each, fo
 
 ## Docs & Retro
 
-- Docs shipped with the behaviour they describe: `VisionAlignment.md` (statement 8, D27 to D30), the `docs/guides` prose sweep, `skills/neatoo` and `skills/mudneatoo` at 2.1.0 with re-rendered snippets, and the project map in CLAUDE.md. Not shipped: a version bump and release notes for the package changes (#125).
+- Docs shipped with the behaviour they describe: `VisionAlignment.md` (statement 8, D27 to D30), the `docs/guides` prose sweep, `skills/neatoo` and `skills/mudneatoo` at 2.1.0 with re-rendered snippets, and the project map in CLAUDE.md. The version bump to 0.36.0 and `docs/release-notes/v0.36.0.md` were added on 2026-11-24, after Keith named the version.
 - Retro: the unattended loop parked a DECISION NEEDED as a `proposed` row and kept going, when the standing orders made it a stop; a parked row is not a stop, and the close-out audit is what caught it. The fresh-session test was first scored by the session that ran it, which passed four scenarios the trap row failed as written; the test reviewer caught that, and the re-score found a real defect in the skill and in three Design pages. Syncing the installed skills from an unmerged arc put them ahead of the published package for five weeks (#125). The question that mattered most came at the stop: one parked row, read aloud in plain words, turned out to hold a conundrum Keith has had since the library began, and it took a short render probe to answer. Numbers: 9 of 14 plan numbers issued, 8 Done and 1 Retired, none queued from a finding; 5 punchlist rows, all worked; 46 reviewer recommendations taken; 3 dismissals; 10 Parked rows, of which 8 are new issues and 2 point at issues already open; test review took a second round on FCI-003, FCI-004, FCI-005 and FCI-008; the close-out audit graded B.
 
 ---
 
 ## Results / Conclusions
 
-VisionAlignment, the Neatoo skill and the MudNeatoo skill state one architecture: a fact is a property, a consequence is a rule, an intent is a verb kept for what state cannot hold. The framework makes it mechanical. The generator emits an awaitable `Set{Name}` on the class and on the partial interface; NEATOO011 warns on an assignment inside a rule or a verb, with a code fix; rules trigger on meta state, and NEATOO012 refuses an async rule on `IsBusy` or `IsSavable`. Design.Domain's TrainingPlan aggregate is the compiled example the skills quote. Every MudNeatoo input takes an optional `Setter`, and Design.App's pages refresh by component: a page subscribes to its root's own `PropertyChanged`, and each child row is a component subscribed to its child. An isolated fresh session, given only the installed skills, fell into no trap row on seven scenarios in its second run. The two Optional criteria, AC-10 and AC-11, were not built and are parked. None of it is released: the arc carries no version bump.
+VisionAlignment, the Neatoo skill and the MudNeatoo skill state one architecture: a fact is a property, a consequence is a rule, an intent is a verb kept for what state cannot hold. The framework makes it mechanical. The generator emits an awaitable `Set{Name}` on the class and on the partial interface; NEATOO011 warns on an assignment inside a rule or a verb, with a code fix; rules trigger on meta state, and NEATOO012 refuses an async rule on `IsBusy` or `IsSavable`. Design.Domain's TrainingPlan aggregate is the compiled example the skills quote. Every MudNeatoo input takes an optional `Setter`, and Design.App's pages refresh by component: a page subscribes to its root's own `PropertyChanged`, and each child row is a component subscribed to its child. An isolated fresh session, given only the installed skills, fell into no trap row on seven scenarios in its second run. The two Optional criteria, AC-10 and AC-11, were not built and are parked. It ships as 0.36.0 once Keith tags it.

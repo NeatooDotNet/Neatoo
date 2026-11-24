@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.35.0** (2026-09-29)
+**Neatoo 0.36.0** (2026-11-24)
 
 ---
 
@@ -17,6 +17,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.36.0](v0.36.0.md) | 2026-11-24 | Feature + Fix | Generated awaitable `Set{Name}`; NEATOO011 flags a rule or verb that assigns; rules trigger on meta state (NEATOO012 guards `IsBusy`); MudNeatoo `Setter` |
 | [0.35.0](v0.35.0.md) | 2026-09-29 | Feature + Fix | Custom `EntityProperty<T>` subclasses survive the client round trip: `IsSelfModified` preserved, `ApplyPropertyInfo` is `virtual` |
 | [0.34.0](v0.34.0.md) | 2026-09-04 | **Breaking** | `EntityListBase` state machinery: a save carrying deletions no longer swallows the next edit's notification; `list[i] = x` deletes the displaced row instead of orphaning it |
 | [0.33.0](v0.33.0.md) | — | **Breaking** | `IsChild` flag removed; root-versus-child is declared in the type system alone. Shipped inside 0.34.0 |
@@ -73,6 +74,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [0.36.0](v0.36.0.md) | 2026-11-24 |
 | [0.35.0](v0.35.0.md) | 2026-09-29 |
 | [0.34.0](v0.34.0.md) | 2026-09-04 |
 | [0.33.0](v0.33.0.md) | — |
