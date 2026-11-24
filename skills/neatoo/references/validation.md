@@ -128,7 +128,7 @@ internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L201-L218' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L203-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A rule with no dependencies is constructed in the entity's constructor:
@@ -146,7 +146,7 @@ RuleManager.AddRule(new CalculateTotalRule());
 
 ## Cross-Property Validation
 
-`AddValidation` takes exactly one trigger property, because the message is attached to that property. For a validation over several properties, either validate a computed property (an `AddAction` recomputes it from every input, which triggers the validation), or write a `RuleBase<T>` with several triggers:
+`AddValidation` takes exactly one trigger property, because the message is attached to that property. For a validation over several properties, either validate a computed property (an `AddActionAsync` recomputes it from every input, which triggers the validation), or write a `RuleBase<T>` with several triggers:
 
 <!-- snippet: skill-cross-property-validation-options -->
 <a id='snippet-skill-cross-property-validation-options'></a>
@@ -162,7 +162,7 @@ RuleManager.AddRule(new CalculateTotalRule());
 // properties, either:
 //
 // RIGHT (validate a computed property - the shape used below):
-//   RuleManager.AddAction(t => t.Sum = t.A + t.B, t => t.A, t => t.B);
+//   RuleManager.AddActionAsync(async t => await t.SetSum(t.A + t.B), t => t.A, t => t.B);
 //   RuleManager.AddValidation(t => t.Sum > 100 ? "Too high" : "", t => t.Sum);
 //
 // RIGHT (a rule class, which takes any number of triggers):
@@ -173,7 +173,7 @@ RuleManager.AddRule(new CalculateTotalRule());
 //           => RuleMessages.If(t.A + t.B > 100, nameof(t.A), "Too high");
 //   }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L192-L214' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation-options' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L195-L217' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation-options' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-cross-property-validation -->
@@ -194,8 +194,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public TriggerPatternsDemo(IValidateBaseServices<TriggerPatternsDemo> services) : base(services)
     {
         // Rule that depends on multiple properties
-        RuleManager.AddAction(
-            t => t.Sum = t.A + t.B + t.C,
+        RuleManager.AddActionAsync(
+            async t => await t.SetSum(t.A + t.B + t.C),
             t => t.A,
             t => t.B,
             t => t.C);
@@ -207,8 +207,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
             t => t.Sum);
 
         // Action triggered by computed property
-        RuleManager.AddAction(
-            t => t.IsOverLimit = t.Sum > 100,
+        RuleManager.AddActionAsync(
+            async t => await t.SetIsOverLimit(t.Sum > 100),
             t => t.Sum);
     }
 
@@ -216,7 +216,7 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L217-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L220-L257' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 A rule that sets a property triggers the rules on that property, so chains run on their own:
@@ -298,13 +298,13 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     {
         if (string.IsNullOrWhiteSpace(target.Username))
         {
-            target.IsUsernameAvailable = false;
+            await target.SetIsUsernameAvailable(false);
             return None;  // Don't check empty usernames - None is inherited from AsyncRuleBase
         }
 
         var available = await _isAvailable(target.Username);
 
-        target.IsUsernameAvailable = available;
+        await target.SetIsUsernameAvailable(available);
 
         if (!available)
         {
@@ -374,7 +374,7 @@ For a rule shared by several entity types, see [shared-rules.md](shared-rules.md
 
 ### Fluent vs Class-Based Rules
 
-| Aspect | Fluent (`AddValidation`/`AddAction`) | Class-Based (`RuleBase<T>`/`AsyncRuleBase<T>`) |
+| Aspect | Fluent (`AddValidation`/`AddActionAsync`) | Class-Based (`RuleBase<T>`/`AsyncRuleBase<T>`) |
 |--------|--------------------------------------|-----------------------------------------------|
 | Best for | Simple single-expression rules | Complex rules, rules that take a command delegate |
 | Dependencies | Only via closure over constructor parameters | Constructor injection |
@@ -579,7 +579,7 @@ public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(servi
         {
             // Simulate async work
             await Task.Delay(100);
-            t.ComputedValue = $"Processed: {t.Name}";
+            await t.SetComputedValue($"Processed: {t.Name}");
         },
         t => t.Name);
 }
@@ -596,8 +596,8 @@ public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(servi
 ```cs
 // Four or more triggers take an explicit array: params is incompatible
 // with the CallerArgumentExpression that gives the rule its id.
-RuleManager.AddAction(
-    t => t.Summary = $"{t.Status}; on hold: {t.IsOnHold}; budget {t.Budget}; discount {t.Discount}",
+RuleManager.AddActionAsync(
+    async t => await t.SetSummary($"{t.Status}; on hold: {t.IsOnHold}; budget {t.Budget}; discount {t.Discount}"),
     new Expression<Func<WorkOrder, object?>>[]
     {
         t => t.Status, t => t.IsOnHold, t => t.Budget, t => t.Discount
@@ -723,17 +723,17 @@ internal class ShippingQuoteRule : AsyncRuleBase<ShipmentRequest>, IShippingQuot
     {
         if (string.IsNullOrWhiteSpace(target.Destination) || target.WeightKg <= 0)
         {
-            target.Quote = 0m;
+            await target.SetQuote(0m);
             return None;
         }
 
         if (!await _rates.ShipsTo(target.Destination))
         {
-            target.Quote = 0m;
+            await target.SetQuote(0m);
             return (nameof(ShipmentRequest.Destination), $"We do not ship to {target.Destination}").AsRuleMessages();
         }
 
-        target.Quote = await _rates.Quote(target.Destination, target.WeightKg);
+        await target.SetQuote(await _rates.Quote(target.Destination, target.WeightKg));
         return None;
     }
 }

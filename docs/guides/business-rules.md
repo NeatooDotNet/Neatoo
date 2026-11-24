@@ -10,15 +10,15 @@ The compiled examples on this page come from the Design.Domain reference set: th
 
 Neatoo separates rules into two types that mirror C#'s `Action` vs `Func` distinction. Action rules perform side effects — computing a derived value, updating a related property — without returning anything. They produce no validation messages and do not affect `IsValid`.
 
-A derived value is a `private set` partial property written by an `AddAction` rule; the rule's trigger list names every input:
+A derived value is a `private set` partial property written by an `AddActionAsync` rule; the rule's trigger list names every input:
 
 <!-- snippet: skill-computed-properties -->
 <a id='snippet-skill-computed-properties'></a>
 ```cs
 // A derived value is a private-set partial property written by a rule.
 // It notifies, it serializes, and the UI sees it read-only.
-RuleManager.AddAction(
-    t => t.Cost = t.Hours * t.Rate * (1 - t.Discount),
+RuleManager.AddActionAsync(
+    async t => await t.SetCost(t.Hours * t.Rate * (1 - t.Discount)),
     t => t.Hours,
     t => t.Rate,
     t => t.Discount);
@@ -26,9 +26,9 @@ RuleManager.AddAction(
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L37-L45' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-computed-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The action executes whenever `Hours`, `Rate` or `Discount` changes. `AddAction` creates an `ActionFluentRule<T>` that executes the lambda when a trigger property changes; the lambda may write other properties on the entity without creating validation messages.
+The action executes whenever `Hours`, `Rate` or `Discount` changes. `AddActionAsync` creates an `ActionAsyncFluentRule<T>` that runs the lambda when a trigger property changes. The lambda awaits the generated `Set{Name}`, so the write's own consequences have landed before the rule finishes, and it produces no validation messages. A synchronous `AddAction` that writes is for a rule triggered on `IsBusy` or `IsSavable`, which must stay synchronous; NEATOO011 warns on an assignment in any other rule.
 
-Async actions use `AddActionAsync`. While the action runs, the trigger property and the entity report `IsBusy`:
+While an async action runs, the trigger property and the entity report `IsBusy`:
 
 <!-- snippet: skill-async-action -->
 <a id='snippet-skill-async-action'></a>
@@ -41,7 +41,7 @@ public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(servi
         {
             // Simulate async work
             await Task.Delay(100);
-            t.ComputedValue = $"Processed: {t.Name}";
+            await t.SetComputedValue($"Processed: {t.Name}");
         },
         t => t.Name);
 }
@@ -96,7 +96,7 @@ public Address(IEntityBaseServices<Address> services) : base(services)
 
 ## Cross-Property Validation
 
-"End date must be after start date" — but which property change should trigger that check? Both. `AddValidation` takes one trigger, so a constraint over several properties takes one of two shapes: validate a computed property that an `AddAction` recomputes from every input, or write a `RuleBase<T>` with several triggers so the message lands where it belongs:
+"End date must be after start date" — but which property change should trigger that check? Both. `AddValidation` takes one trigger, so a constraint over several properties takes one of two shapes: validate a computed property that an `AddActionAsync` recomputes from every input, or write a `RuleBase<T>` with several triggers so the message lands where it belongs:
 
 <!-- snippet: skill-cross-property-validation-options -->
 <a id='snippet-skill-cross-property-validation-options'></a>
@@ -112,7 +112,7 @@ public Address(IEntityBaseServices<Address> services) : base(services)
 // properties, either:
 //
 // RIGHT (validate a computed property - the shape used below):
-//   RuleManager.AddAction(t => t.Sum = t.A + t.B, t => t.A, t => t.B);
+//   RuleManager.AddActionAsync(async t => await t.SetSum(t.A + t.B), t => t.A, t => t.B);
 //   RuleManager.AddValidation(t => t.Sum > 100 ? "Too high" : "", t => t.Sum);
 //
 // RIGHT (a rule class, which takes any number of triggers):
@@ -123,7 +123,7 @@ public Address(IEntityBaseServices<Address> services) : base(services)
 //           => RuleMessages.If(t.A + t.B > 100, nameof(t.A), "Too high");
 //   }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L192-L214' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation-options' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L195-L217' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation-options' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-cross-property-validation -->
@@ -144,8 +144,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public TriggerPatternsDemo(IValidateBaseServices<TriggerPatternsDemo> services) : base(services)
     {
         // Rule that depends on multiple properties
-        RuleManager.AddAction(
-            t => t.Sum = t.A + t.B + t.C,
+        RuleManager.AddActionAsync(
+            async t => await t.SetSum(t.A + t.B + t.C),
             t => t.A,
             t => t.B,
             t => t.C);
@@ -157,8 +157,8 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
             t => t.Sum);
 
         // Action triggered by computed property
-        RuleManager.AddAction(
-            t => t.IsOverLimit = t.Sum > 100,
+        RuleManager.AddActionAsync(
+            async t => await t.SetIsOverLimit(t.Sum > 100),
             t => t.Sum);
     }
 
@@ -166,7 +166,7 @@ internal partial class TriggerPatternsDemo : ValidateBase<TriggerPatternsDemo>, 
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L217-L254' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/FluentRules.cs#L220-L257' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-cross-property-validation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Custom Rule Classes
@@ -283,13 +283,13 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     {
         if (string.IsNullOrWhiteSpace(target.Username))
         {
-            target.IsUsernameAvailable = false;
+            await target.SetIsUsernameAvailable(false);
             return None;  // Don't check empty usernames - None is inherited from AsyncRuleBase
         }
 
         var available = await _isAvailable(target.Username);
 
-        target.IsUsernameAvailable = available;
+        await target.SetIsUsernameAvailable(available);
 
         if (!available)
         {
@@ -385,8 +385,8 @@ Some invariants cannot be checked by a single entity. "Total cost must not excee
 <a id='snippet-skill-child-aggregation'></a>
 ```cs
 // Aggregation over the children, recomputed when any task's Cost changes
-RuleManager.AddAction(
-    t => t.TotalCost = t.Tasks?.Sum(task => task.Cost) ?? 0,
+RuleManager.AddActionAsync(
+    async t => await t.SetTotalCost(t.Tasks?.Sum(task => task.Cost) ?? 0),
     t => t.Tasks![0].Cost);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L72-L77' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-aggregation' title='Start of snippet'>anchor</a></sup>
@@ -399,8 +399,8 @@ The aggregation writes `TotalCost`, which triggers the budget rule — a chain, 
 ```cs
 // Chained: the rule above sets TotalCost, which triggers this one.
 // Hours -> Cost (on the task) -> TotalCost -> IsOverBudget, no handler code.
-RuleManager.AddAction(
-    t => t.IsOverBudget = t.TotalCost > t.Budget,
+RuleManager.AddActionAsync(
+    async t => await t.SetIsOverBudget(t.TotalCost > t.Budget),
     t => t.TotalCost,
     t => t.Budget);
 ```
@@ -437,8 +437,8 @@ Four or more triggers take an explicit `Expression<Func<T, object?>>[]` (the ove
 ```cs
 // Four or more triggers take an explicit array: params is incompatible
 // with the CallerArgumentExpression that gives the rule its id.
-RuleManager.AddAction(
-    t => t.Summary = $"{t.Status}; on hold: {t.IsOnHold}; budget {t.Budget}; discount {t.Discount}",
+RuleManager.AddActionAsync(
+    async t => await t.SetSummary($"{t.Status}; on hold: {t.IsOnHold}; budget {t.Budget}; discount {t.Discount}"),
     new Expression<Func<WorkOrder, object?>>[]
     {
         t => t.Status, t => t.IsOnHold, t => t.Budget, t => t.Discount
@@ -457,16 +457,16 @@ When a property changes, the framework identifies the rules with that property a
 <a id='snippet-docs-rule-order'></a>
 ```cs
 /// <summary>Runs before rules with the default RuleOrder (1).</summary>
-internal class EarlyTraceRule : RuleBase<RuleBasicsDemo>
+internal class EarlyTraceRule : AsyncRuleBase<RuleBasicsDemo>
 {
     public EarlyTraceRule() : base(t => t.Name)
     {
         RuleOrder = -10;   // lower runs first; the default is 1
     }
 
-    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    protected override async Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
     {
-        target.RuleTrace += "early;";
+        await target.SetRuleTrace(target.RuleTrace + "early;");
         return None;
     }
 }
@@ -474,18 +474,18 @@ internal class EarlyTraceRule : RuleBase<RuleBasicsDemo>
 /// <summary>
 /// Default RuleOrder: runs after EarlyTraceRule although it is registered first.
 /// </summary>
-internal class LateTraceRule : RuleBase<RuleBasicsDemo>
+internal class LateTraceRule : AsyncRuleBase<RuleBasicsDemo>
 {
     public LateTraceRule() : base(t => t.Name) { }
 
-    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    protected override async Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
     {
-        target.RuleTrace += "late;";
+        await target.SetRuleTrace(target.RuleTrace + "late;");
         return None;
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L245-L274' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-rule-order' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L247-L276' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-rule-order' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: docs-rule-order-test -->
@@ -656,8 +656,8 @@ A root's state can also be read by a child's rule through `Parent`. `Parent` is 
 ```cs
 // A child rule reads ambient root state through Parent. Parent is null
 // until the task is attached, so pattern-match instead of casting.
-RuleManager.AddAction(
-    t => t.IsSchedulable = t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold,
+RuleManager.AddActionAsync(
+    async t => await t.SetIsSchedulable(t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold),
     t => t.Hours);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrderTask.cs#L47-L53' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-parent-in-child-rule' title='Start of snippet'>anchor</a></sup>
@@ -718,9 +718,9 @@ public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 <sup><a href='/src/Design/Design.Tests/PropertyTests/ValidationStateTests.cs#L52-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-busy' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-## LoadProperty - Writing a Property Without Triggering Rules
+## LoadProperty - The Rare Write Without Consequences
 
-Rules trigger when properties change — but what if a rule *itself* changes a property? If Rule A triggers on `Quantity` and sets `Total`, and Rule B triggers on `Total` and sets `Quantity`, you get an infinite loop. `LoadProperty` breaks the cycle by writing to the property through its wrapper's `LoadValue`, without firing triggers.
+A rule that writes a property runs the rules on that property, and that is the normal shape. Two rules that write each other's triggers converge when their writes reach a fixed point, because a write of an equal value raises nothing. `LoadProperty` is the exception: it writes a property through its wrapper's `LoadValue` without firing triggers.
 
 <!-- snippet: docs-load-property -->
 <a id='snippet-docs-load-property'></a>
@@ -742,7 +742,7 @@ internal partial class LoadPropertyDemo : ValidateBase<LoadPropertyDemo>, ILoadP
         RuleManager.AddRule(new LoadPropertyTotalRule());
 
         // A rule on Total: it does NOT run when Total is written by LoadProperty
-        RuleManager.AddAction(t => t.TotalRuleRan = true, t => t.Total);
+        RuleManager.AddActionAsync(async t => await t.SetTotalRuleRan(true), t => t.Total);
     }
 
     [Create]
@@ -761,7 +761,7 @@ internal class LoadPropertyTotalRule : RuleBase<LoadPropertyDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L446-L482' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-load-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L448-L484' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-load-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: docs-load-property-test -->
@@ -783,7 +783,7 @@ public async Task LoadProperty_WritesTheValue_WithoutRunningTheRulesOnThatProper
 <sup><a href='/src/Design/Design.Tests/RuleTests/SyncRuleTests.cs#L118-L131' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-load-property-test' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-`LoadProperty` is a protected method on `RuleBase<T>`/`AsyncRuleBase<T>`. It calls the property wrapper's `LoadValue`, so no rules registered on that property run. On an entity, a value written this way is also not marked modified. Use it when a rule must update a property without triggering the rules registered on that property; the default for a computed property is the setter of a `private set` partial, as in the first section.
+`LoadProperty` is a protected method on `RuleBase<T>`/`AsyncRuleBase<T>`. It calls the property wrapper's `LoadValue`, so no rules registered on that property run, and on an entity the value is not marked modified. That is why it is rarely right inside a rule: a value a rule computes from the user's work is the user's work, and should run its consequences and dirty the entity. A value that must be baseline is produced inside the factory operation that loads the object. The default for a computed property is an awaited `Set{Name}` on a `private set` partial, as in the first section.
 
 ## Rule Registration Patterns
 
@@ -796,8 +796,8 @@ Fluent rules for simple, entity-specific logic — the `WorkOrder` root register
 ```cs
 // Admission for the Approve verb. The UI binds the button to it; the
 // verb itself does not check and throw.
-RuleManager.AddAction(
-    t => t.CanApprove = t.Status == "Pending",
+RuleManager.AddActionAsync(
+    async t => await t.SetCanApprove(t.Status == "Pending"),
     t => t.Status);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L48-L54' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-can-x-rule' title='Start of snippet'>anchor</a></sup>
@@ -809,15 +809,15 @@ RuleManager.AddAction(
 // A business fact derived from two others. The UI binds to it (for
 // example @if (workOrder.IsHeld) around a banner) and decides nothing;
 // the entity never names a screen element (no "ShowHoldBanner").
-RuleManager.AddAction(
-    t => t.IsHeld = t.IsOnHold && t.Status != "Closed",
+RuleManager.AddActionAsync(
+    async t => await t.SetIsHeld(t.IsOnHold && t.Status != "Closed"),
     t => t.IsOnHold,
     t => t.Status);
 
 // A flag derived from a child property. The trigger is the child's
 // property path, so any task's IsSchedulable change recomputes it.
-RuleManager.AddAction(
-    t => t.HasUnschedulableTasks = t.Tasks?.Any(task => !task.IsSchedulable) ?? false,
+RuleManager.AddActionAsync(
+    async t => await t.SetHasUnschedulableTasks(t.Tasks?.Any(task => !task.IsSchedulable) ?? false),
     t => t.Tasks![0].IsSchedulable);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/WorkOrderAggregate/WorkOrder.cs#L56-L70' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-derived-facts' title='Start of snippet'>anchor</a></sup>
@@ -832,8 +832,8 @@ Rules declare which properties trigger their execution. When any trigger propert
 <!-- snippet: skill-child-property-trigger -->
 <a id='snippet-skill-child-property-trigger'></a>
 ```cs
-RuleManager.AddAction(
-    t => t.TotalAmount = t.Items?.Sum(i => i.LineTotal) ?? 0,
+RuleManager.AddActionAsync(
+    async t => await t.SetTotalAmount(t.Items?.Sum(i => i.LineTotal) ?? 0),
     t => t.Items![0].LineTotal);
 ```
 <sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/Order.cs#L98-L102' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-child-property-trigger' title='Start of snippet'>anchor</a></sup>
@@ -867,7 +867,7 @@ internal class MultiMessageRule : RuleBase<RuleBasicsDemo>
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L201-L218' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L203-L220' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-multi-message-rule' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Messages attach to the named property and display through the validation UI; the entity's `PropertyMessages` aggregates them across the graph.

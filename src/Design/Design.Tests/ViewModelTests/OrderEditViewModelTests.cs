@@ -96,7 +96,7 @@ public class OrderEditViewModelTests
     {
         await _vm.New();
         var order = _vm.Order!;
-        order.Submit();  // no items: "Order must have at least one item"
+        await order.Submit();  // no items: "Order must have at least one item"
         await order.WaitForTasks();
 
         Assert.IsFalse(order.IsValid);

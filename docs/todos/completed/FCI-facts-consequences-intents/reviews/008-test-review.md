@@ -1,0 +1,101 @@
+# FCI-008 test review
+
+**Round 1 (2026-10-16): CONCERNS, two vetoes.** The isolation is proven for these runs. The probe and scenario ledgers match their transcripts call for call, and the line references are right. Two things are wrong. S7's page does what F6's question assumes, but the record scores it a pass. The T-row half of the S6/S7 bullet has no evidence.
+- **Logs.** No build or test applies to a plan with no code. The evidence is the transcripts. I re-extracted every `tool_use` and its `tool_result.is_error` from `probe.jsonl` and `out1.jsonl`–`out7.jsonl`. The result equals `probe-tools.txt` and `out1-tools.txt`–`out7-tools.txt` line for line. The probe has five `permission_denied` errors and one successful skill read. Its `init` lists no Bash, PowerShell, Agent, Write, Edit or web tool, so (6) could not be attempted, as recorded. The scenarios make 102 calls, all `ok`, all under `~/.claude/skills`. Each `.md` answer has the same line count as its transcript's `result` and the same ASCII text. The installed `neatoo` and `mudneatoo` are byte-identical to `skills/` at 2cb9b8b, and the newest installed file is from 16:58, before the first run at 17:01. RemoteFactory's SKILL.md:371 carries the #173 wording. The auto-memory directory for the empty cwd is empty.
+- **Veto: S7 does what F6 assumes, and is scored a pass.** F6 asks whether "the page redraws on the root's every change". S7's page subscribes to the sprint's `NeatooPropertyChanged` and re-renders on any change in the graph (out7:663, 762–776). The record's only reason for the pass is the session's own words, "fine for a screen this small". The F row has no small-screen exception. The skill does (mudneatoo SKILL.md:406), but only for "a small form … whose page displays the Save button". S7's page shows more than that outside its inputs: per-row completion details (716–721), the percent (701–702) and the Close button. SKILL.md:282 puts those regions in components that subscribe for what they show, as S6 did. As F6 is written, S7 falls. The record must either score F6 as fallen for S7, or name the exception it applies and show why S7 qualifies. Narrowing F6 after the run is a scorer change and should be reported as one.
+- **Veto: the T-row half of "S6 and S7 fall into no F row and no T row" has no evidence.** The Test Evidence row cites "The fact-versus-verb rows", which scores F1–F7 only. "The SKR rows" covers S1–S5 only. My reading finds no T fall, so closing this means adding rows, not re-reading:
+  - **S7:** T1 save handler 622–632. T2 server gate 216–220, 237–241. T8 rules 144–164. T9 Fetch assigns 200–203, 342–346. T10 `RunRules` by name, not `All`, 205–207. T11 list walks `DeletedList` 402–421. T13 Save reassigned 632. T14 `TimeProvider` registered on both tiers 296, 502, 537. T15 child operations internal 339–360. T17 `ISprintTask : IEntityBase` 91.
+  - **S6:** T8 `CanApprove` 164–167. T17 `IInterval : IEntityBase` 70. T2: the only throw, 454, is the application failure of having no signed-in coach. No save, Fetch or command.
+- **Callouts.**
+  - **S1–S5 F6 is "—", but S1, S3 and S4 have the occasion.** Each page subscribes to the root's `NeatooPropertyChanged` (out1:653, out3:451, out4:716) for its Save button. That is the skill's Page Structure Pattern, but F6 as written catches it. So the Verdict line "no scenario falls into any … F row" is stronger than the evidence until F6 says how it treats that pattern. No Acceptance bullet scores F rows for S1–S5.
+  - **S1–S5 T evidence is a list of shapes with no line references,** where SKR-007 gave line references row by row. My spot-check confirms the passes:
+    - T1: out1:526–533, out2:286–290, out3:360–367, out4:597–604, out5:208–213.
+    - T2: attributes or rules at out1:190–207 and out3:150–160; S5's `RuleBase` message at out5:46–58.
+    - T8: S2's `CanSearch` rule at out2:128–135, bound at 366.
+    - T9: out1:240–244, out3:184–187, out4:138–143, out5:115–118.
+    - T10: no computed value after any Fetch.
+    - T11: out1:416, out4:312.
+    - T12: out3:99–118.
+    - T16: out2:77, 162; out5:230–236.
+    - T17: out1:157, out4:34.
+  - **The Isolation section says less than the session had.** The `init` tool list has 21 tools. Besides Skill, Read, Glob and Grep there are LSP, SendMessage, ListAgents, Workflow, RemoteTrigger, ToolSearch, Monitor, DesignSync and the Cron tools. The probe tested none of them, and no session called one, so the Acceptance bullet holds. The user-global `~/.claude/CLAUDE.md` also loads in every session. SKR-007 recorded that; this record does not.
+  - **S6 F3 cell: "Every rule is `AddActionAsync`" is too strong.** `MinutesBalanceRule` is a `RuleBase` (out6:288), and there are three `AddValidation`s. Every rule that writes is `AddActionAsync` with an awaited `Set{Name}`, so the pass holds.
+  - **T2 note: "the server gate's shape" is too strong.** S2's `[Fetch]` re-implements the criteria's checks by hand, and the answer says so: "This duplicates the rule logic" (out2:492). The skill's gate re-runs the rules instead. The pass holds on the application-failure reading the comment gives (out2:202–204).
+- **Tech-debt.**
+  - out1, out2, out3, out5 and out6.md are mojibake (`â€”` for `—`), from a cp1252 round trip. Only the non-ASCII characters differ, so line references hold.
+  - The record says the jsonl transcripts "are not committed". They sit untracked in `008-runs/` and are not gitignored. Without them the ledgers cannot be re-derived, so the record should say where they are kept.
+  - The record does not give the `claude -p` command line or the permission rules. The mechanism can be inferred from `init`, but not reproduced from the record.
+- **Could not verify.**
+  - The exact allow and deny rules given to the sessions. `init` shows only `dontAsk`, no MCP servers and the tool list.
+  - Whether LSP, SendMessage, Workflow or RemoteTrigger could have reached the repositories under those rules.
+- **Theoretical.**
+  - S7's ViewModel picks `Complete(user)` for a tick and `SetIsDone(false)` for an untick (out7:598–608), and calls that translating the click. Both paths are domain calls through the checkbox's `Setter`, so F1 is not fallen.
+  - `~/.nuget` was not denied. It holds compiled packages, not a repository.
+- **Line references.** All are correct:
+  - out6: 96, 167, 271, 462, 539, 572, 632.
+  - out7: 164, 326, 710, 775, and the quote at 663.
+  - out5:208; out2:204–214; out2:340–359; out5:102.
+
+**Round 2 (2026-10-16): APPROVED. Both round-1 vetoes are closed.** Run 2 is scored honestly against T1–T20 and F1–F7. No run-2 answer falls into a row the record calls a pass. The two row editors are real pins, and no existing test changed. Two callouts remain, neither blocking.
+- **Logs.** All green.
+  - `008-build.log`: Build succeeded, 0 errors, 89 warnings, the same count as `007-build.log`.
+  - `008-design-build.log`: 0 warnings, 0 errors.
+  - `008-test.log`, every project passes:
+    - Neatoo.UnitTest: 1869 passed, 2 skipped.
+    - Design.Tests: 234 passed, which is 007's 230 plus the four new tests.
+    - MudNeatoo.Tests 33, BaseGenerator.Tests 50, Analyzers.Tests 23, Person 55.
+    - Demo reports no tests (dismissed, FCI-002).
+  - `008-row-test.log`: 4 of 4 pass.
+  - `008-flip-editors.log`: with the subscriptions removed, both editor tests fail at their `WaitForAssertion` (RowComponentTests.cs:76 and :89), and the two root tests still pass.
+  - `008-mdsnippets.log`: no errors and no missing snippets. `skill-mud-child-row` is extracted from `OrderItemEditor.razor` and placed at mudneatoo SKILL.md:675.
+- **Isolation, re-derived for run 2.** I re-extracted every `tool_use` and its `is_error` from `run2/probe.jsonl` and `out1`–`out7.jsonl`.
+  - The calls are the same as the ledgers'. In out3 and out7, the order differs inside one parallel batch; the sets are equal.
+  - Every `init` has the ledgers' twelve tools, `dontAsk`, no MCP servers and cwd `fci008-empty`.
+  - The probe has five refusals and one successful skill read, as in run 1.
+  - The one call outside the skills is S1's grep of `Neatoo\src`, refused with "Permission to read … has been denied". It is the only `permission_denials` entry in any scenario `result`.
+  - Each `run2/outN.md` equals its transcript's `result` once CRs are stripped, and none has mojibake.
+  - The installed neatoo and mudneatoo equal the branch's working tree (`diff -r` is clean). The newest installed file is from 17:24, and the run-2 probe from 17:25.
+- **Veto 1 closed: S7 and F6.** The record now scores run 1's S7 as fallen into F6, with S1, S3 and S4 beside it (run1 out7:775, out1:653, out3:451, out4:716). A grep finds no other `NeatooPropertyChanged +=` in run 1. F6 was not narrowed, and the plan's amendment says so. The fix went into the skill and Design.
+- **Veto 2 closed: the S6 and S7 T rows.** The SKR table now has S6 and S7 columns with line references, and every one I checked is correct:
+  - S7: T1 706–713; T2 158–219 and 281–284; T5 242 and 254; T8 195–211; T9 389; T10 273; T11 449; T13 713; T14 346, with registrations at 539 and 585; T15 400; T16 136; T17 108.
+  - S6: T2 126 and 460; T8 154; T17 69.
+- **Run 2 is scored honestly.** I read every page, row component, ViewModel and aggregate in run 2. No answer falls into a T row or an F row.
+  - F6: no run-2 page subscribes to `NeatooPropertyChanged`; the one hit is a comment at out7:881.
+    - Each page subscribes to its root's own `PropertyChanged` at the cited line: S1 603, S2 402, S3 488, S4 740, S5 492, S6 537, S7 898.
+    - Child rows that show a child's facts are components that subscribe to their child: S6's `IntervalRow` at 623 and S7's `SprintTaskRow` at 776. S1's phone rows and S4's `ActionItemEditor` (669) hold only inputs.
+    - The verb-bound controls use `Setter` (out6:588, out7:733).
+  - F1–F5 and F7: every cell holds.
+    - S7's `MarkDone` (367) is the who-stamp exception F1 names.
+    - S7's progress rule awaits its writes (199–200).
+    - S7's `CanClose` triggers on `IsValid` (210), and `Close` only sets state (236).
+    - S6's `RuleBase` (284) is a validation and writes nothing.
+  - Round 1's callouts are answered:
+    - S1–S5 now have F6 scores.
+    - The S1–S5 T cells carry line references.
+    - The S6 F3 wording is corrected.
+    - The tool list and the user-global CLAUDE.md are recorded.
+- **The new pins are real, and no test was weakened.**
+  - `git diff fci-arc` touches no test file. Its 11 changed files are the todo, the plan, the skills and the three pages. `RowComponentTests.cs` is new and untracked.
+  - The two editor tests render a row, change the child (or the root's discount), and wait for the new currency text. The flip log proves they fail without the subscriptions.
+  - The two root tests assert that the root raises its own `PropertyChanged` for `TotalAmount` and `TotalCost` after a child edit. The pages now depend on that.
+  - The pages' other dependency is that a child edit raises the root's own `PropertyChanged` for `IsSavable`. That was already pinned by EntityBaseTests.cs:160 and EntityListBaseTests.cs:142.
+- **Callouts.**
+  - **The Isolation section misstates what the denies did.**
+    - The record says "Denying the scheduler and sync tools did not remove them". In fact, `run.sh` does not deny CronDelete, CronList, DesignSync, ScheduleWakeup, ExitWorktree, TaskStop, ReportFindings or ToolSearch, which are the eight tools left beyond Skill, Read, Glob and Grep.
+    - Every tool that `run.sh` denies and run 1 listed is gone from run 2's `init`: CronCreate, EnterWorktree, LSP, ListAgents, Monitor, PushNotification, RemoteTrigger, SendMessage and Workflow.
+    - The Mechanism bullet names five of run 2's added denies. `run.sh` also denies CronCreate, Monitor, EnterWorktree, PushNotification, SendUserFile and NotebookEdit.
+    - The Acceptance bullet still holds, because no session called any of these tools.
+  - **`OrderItemEditor.OnRemove` has no test.** The path is `src/Design/Design.App/Components/OrderItemEditor.razor:OnRemove`. `Affects: AC-9`. `Reachable by:` the delete icon in OrderEdit.razor, through `OnRemove="@(() => Vm.RemoveItem(item))"`. `RemoveItem` is tested at the ViewModel, but the forwarding the plan moved into the component is not. Suggested pin: a bUnit test that clicks the row's delete button and asserts the callback ran.
+- **Tech-debt.**
+  - The transcripts sit in the session scratchpad, which does not outlive the session. After that the ledgers cannot be re-derived.
+  - Run 1's probe ledger is `008-runs/probe-tools.txt`, not in `run1/`, and the record does not name it.
+  - Run 1's out1, out2, out3, out5 and out6 still carry mojibake. Run 2's answers are clean.
+  - `run.sh` is run 2's script. Run 1's command line, with fewer denies, is not kept.
+  - The plan's Test Evidence says "4 tests, bUnit", but two of the four are domain assertions inside the bUnit class.
+- **Could not verify.** That run 2 was given the committed prompts. The stream-json does not echo the prompt; `s1.txt`–`s7.txt` are dated 17:00, before both runs.
+- **Theoretical.**
+  - S2 binds its `MudTextField` and `MudCheckBox` by hand, with `ValueChanged` calling `SetValue` (out2:342, 353, 364). The handler writes a fact, not a verb, and the skill prescribes this for an input model (#95; mudneatoo SKILL.md:39 and 722). So F6 does not fall, but the record's F6 cell does not mention it.
+  - S7's Fetch runs `RunRules(nameof(AllTasksDone))` (273). That also runs `ClosedSprintHasNoOpenTasksRule`, a validation triggered on `AllTasksDone` (160). T10 asks about `All`, and this call exists for `CanClose`.
+- **Line references.** All correct except two loose ones in S5:
+  - F1 cites 194–198 for the job's write, which is at 193.
+  - T6 cites 141–161, but the command is at 156–167.

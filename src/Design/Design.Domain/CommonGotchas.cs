@@ -81,10 +81,10 @@ internal partial class Gotcha1Demo : ValidateBase<Gotcha1Demo>, IGotcha1Demo
     {
         #region skill-computed-gap-rule
         // This rule calculates Total when Quantity or Price changes
-        RuleManager.AddAction(
-            t =>
+        RuleManager.AddActionAsync(
+            async t =>
             {
-                t.Total = t.Quantity * t.Price;
+                await t.SetTotal(t.Quantity * t.Price);
                 t.RuleHasRun = true;
             },
             t => t.Quantity,
@@ -388,8 +388,8 @@ internal partial class Gotcha4Demo : ValidateBase<Gotcha4Demo>, IGotcha4Demo
 
     public Gotcha4Demo(IValidateBaseServices<Gotcha4Demo> services) : base(services)
     {
-        RuleManager.AddAction(
-            t => t.Total = t.Quantity * t.Price,
+        RuleManager.AddActionAsync(
+            async t => await t.SetTotal(t.Quantity * t.Price),
             t => t.Quantity,
             t => t.Price);
     }

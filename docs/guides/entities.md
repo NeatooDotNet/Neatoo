@@ -153,7 +153,7 @@ public interface IOrder : IEntityRoot
     /// <summary>
     /// Verb: moves the order to Submitted. Sets state; never persists.
     /// </summary>
-    void Submit();
+    Task Submit();
 }
 
 /// <summary>

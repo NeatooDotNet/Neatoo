@@ -237,7 +237,7 @@ There is no `IsDirty`; use `IsModified` / `IsSelfModified`.
 
 | Property | Meaning |
 |---|---|
-| `IsModified` | The graph differs from the baseline its last factory operation left — would discarding it lose work? Does **not** include `IsNew`: false after Create, false after Fetch. |
+| `IsModified` | Something in the graph was written since its last factory operation — would discarding it lose work? Does **not** include `IsNew`: false after Create, false after Fetch. **Sticky:** an equal write raises nothing, but any other write marks its property modified, and Neatoo keeps no loaded value to compare with, so writing the loaded value back is one more change and leaves it modified. |
 | `IsSelfModified` | This object's own properties changed (children excluded). |
 | `IsValid` | This object and every descendant pass their rules. |
 | `IsSelfValid` | This object's own rules pass. |
@@ -245,6 +245,27 @@ There is no `IsDirty`; use `IsModified` / `IsSelfModified`.
 | `IsNew` | Not yet persisted: true after Create, false after Fetch and Insert. Routing state only — it never makes an object modified and never aggregates upward. |
 | `IsDeleted` | Marked for deletion; routes the next save to `[Delete]`. |
 | `IsSavable` | `(IsModified \|\| IsNew) && IsValid && !IsBusy`. Says nothing about aggregate position; only `IEntityRoot` exposes it. |
+
+A write-back is one more change, not an undo. Anything that branches on `IsModified` - an unsaved-changes guard, an audit row, save routing - sees it as changed. To discard edits, fetch again or keep the pre-edit instance:
+
+<!-- snippet: skill-test-modified-is-sticky -->
+<a id='snippet-skill-test-modified-is-sticky'></a>
+```cs
+[TestMethod]
+public async Task WritingTheOriginalValueBack_LeavesThePlanModified()
+{
+    var plan = await _factory.Create();
+    Assert.IsFalse(plan.IsModified);
+
+    await plan.SetApprovedMinutes(90);
+    await plan.SetApprovedMinutes(60);   // the value Create left
+
+    Assert.AreEqual(60, plan.ApprovedMinutes);
+    Assert.IsTrue(plan.IsModified, "a write-back is one more change, not an undo: discard by fetching again");
+}
+```
+<sup><a href='/src/Design/Design.Tests/AggregateTests/TrainingPlanTests.cs#L273-L286' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-test-modified-is-sticky' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## Edit, Then Save
 

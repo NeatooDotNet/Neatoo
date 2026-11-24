@@ -362,7 +362,7 @@ internal partial class BusyStateDemo : ValidateBase<BusyStateDemo>, IBusyStateDe
             {
                 // Simulate async work
                 await Task.Delay(100);
-                t.ComputedValue = $"Processed: {t.Name}";
+                await t.SetComputedValue($"Processed: {t.Name}");
             },
             t => t.Name);
     }

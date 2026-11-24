@@ -47,8 +47,8 @@ internal partial class OrderItem : EntityBase<OrderItem>, IOrderItem
     public OrderItem(IEntityBaseServices<OrderItem> services) : base(services)
     {
         // Action rule to calculate line total
-        RuleManager.AddAction(
-            t => t.LineTotal = t.Quantity * t.UnitPrice,
+        RuleManager.AddActionAsync(
+            async t => await t.SetLineTotal(t.Quantity * t.UnitPrice),
             t => t.Quantity,
             t => t.UnitPrice);
     }

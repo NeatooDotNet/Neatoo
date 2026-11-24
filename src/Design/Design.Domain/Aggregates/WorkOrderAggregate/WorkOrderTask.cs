@@ -37,8 +37,8 @@ internal partial class WorkOrderTask : EntityBase<WorkOrderTask>, IWorkOrderTask
         #region skill-computed-properties
         // A derived value is a private-set partial property written by a rule.
         // It notifies, it serializes, and the UI sees it read-only.
-        RuleManager.AddAction(
-            t => t.Cost = t.Hours * t.Rate * (1 - t.Discount),
+        RuleManager.AddActionAsync(
+            async t => await t.SetCost(t.Hours * t.Rate * (1 - t.Discount)),
             t => t.Hours,
             t => t.Rate,
             t => t.Discount);
@@ -47,8 +47,8 @@ internal partial class WorkOrderTask : EntityBase<WorkOrderTask>, IWorkOrderTask
         #region skill-parent-in-child-rule
         // A child rule reads ambient root state through Parent. Parent is null
         // until the task is attached, so pattern-match instead of casting.
-        RuleManager.AddAction(
-            t => t.IsSchedulable = t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold,
+        RuleManager.AddActionAsync(
+            async t => await t.SetIsSchedulable(t.Hours > 0 && t.Parent is IWorkOrder root && !root.IsOnHold),
             t => t.Hours);
         #endregion
 
@@ -76,9 +76,9 @@ internal partial class WorkOrderTask : EntityBase<WorkOrderTask>, IWorkOrderTask
     /// Child business method reading root state through Parent. Called by the
     /// root's orchestrator rule whenever the discount changes.
     /// </summary>
-    public void ApplyParentDiscount()
+    public async Task ApplyParentDiscount()
     {
-        Discount = ((IWorkOrder)this.Parent!).Discount;
+        await SetDiscount(((IWorkOrder)this.Parent!).Discount);
     }
     #endregion
 

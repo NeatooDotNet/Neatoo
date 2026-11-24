@@ -60,13 +60,13 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     {
         if (string.IsNullOrWhiteSpace(target.Username))
         {
-            target.IsUsernameAvailable = false;
+            await target.SetIsUsernameAvailable(false);
             return None;  // Don't check empty usernames - None is inherited from AsyncRuleBase
         }
 
         var available = await _isAvailable(target.Username);
 
-        target.IsUsernameAvailable = available;
+        await target.SetIsUsernameAvailable(available);
 
         if (!available)
         {
@@ -118,7 +118,7 @@ public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(servi
         {
             // Simulate async work
             await Task.Delay(100);
-            t.ComputedValue = $"Processed: {t.Name}";
+            await t.SetComputedValue($"Processed: {t.Name}");
         },
         t => t.Name);
 }
@@ -256,16 +256,16 @@ When a property changes, the framework identifies the rules with that property a
 <a id='snippet-docs-rule-order'></a>
 ```cs
 /// <summary>Runs before rules with the default RuleOrder (1).</summary>
-internal class EarlyTraceRule : RuleBase<RuleBasicsDemo>
+internal class EarlyTraceRule : AsyncRuleBase<RuleBasicsDemo>
 {
     public EarlyTraceRule() : base(t => t.Name)
     {
         RuleOrder = -10;   // lower runs first; the default is 1
     }
 
-    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    protected override async Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
     {
-        target.RuleTrace += "early;";
+        await target.SetRuleTrace(target.RuleTrace + "early;");
         return None;
     }
 }
@@ -273,18 +273,18 @@ internal class EarlyTraceRule : RuleBase<RuleBasicsDemo>
 /// <summary>
 /// Default RuleOrder: runs after EarlyTraceRule although it is registered first.
 /// </summary>
-internal class LateTraceRule : RuleBase<RuleBasicsDemo>
+internal class LateTraceRule : AsyncRuleBase<RuleBasicsDemo>
 {
     public LateTraceRule() : base(t => t.Name) { }
 
-    protected override IRuleMessages Execute(RuleBasicsDemo target)
+    protected override async Task<IRuleMessages> Execute(RuleBasicsDemo target, CancellationToken? token = null)
     {
-        target.RuleTrace += "late;";
+        await target.SetRuleTrace(target.RuleTrace + "late;");
         return None;
     }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L245-L274' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-rule-order' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Rules/RuleBasics.cs#L247-L276' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-rule-order' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: docs-rule-order-test -->

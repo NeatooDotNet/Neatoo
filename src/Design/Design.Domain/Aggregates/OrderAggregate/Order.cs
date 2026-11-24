@@ -96,8 +96,8 @@ internal partial class Order : EntityBase<Order>, IOrder
         //   // child change regardless of which property.
         // =====================================================================
         #region skill-child-property-trigger
-        RuleManager.AddAction(
-            t => t.TotalAmount = t.Items?.Sum(i => i.LineTotal) ?? 0,
+        RuleManager.AddActionAsync(
+            async t => await t.SetTotalAmount(t.Items?.Sum(i => i.LineTotal) ?? 0),
             t => t.Items![0].LineTotal);
         #endregion
     }
@@ -307,9 +307,9 @@ internal partial class Order : EntityBase<Order>, IOrder
     // Whoever holds the order (a page, a job) reads IsSavable and decides.
     // =========================================================================
     #region skill-verb-submit
-    public void Submit()
+    public async Task Submit()
     {
-        Status = "Submitted";
+        await SetStatus("Submitted");
     }
     #endregion
 

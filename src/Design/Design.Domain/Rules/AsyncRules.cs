@@ -163,13 +163,13 @@ internal class CheckUsernameAvailabilityRule : AsyncRuleBase<AsyncRulesDemo>, IC
     {
         if (string.IsNullOrWhiteSpace(target.Username))
         {
-            target.IsUsernameAvailable = false;
+            await target.SetIsUsernameAvailable(false);
             return None;  // Don't check empty usernames - None is inherited from AsyncRuleBase
         }
 
         var available = await _isAvailable(target.Username);
 
-        target.IsUsernameAvailable = available;
+        await target.SetIsUsernameAvailable(available);
 
         if (!available)
         {
@@ -232,13 +232,13 @@ internal class FetchExternalDataRule : AsyncRuleBase<AsyncRulesDemo>
     {
         if (string.IsNullOrWhiteSpace(target.Email))
         {
-            target.ExternalData = null;
+            await target.SetExternalData(null);
             return None;
         }
 
         // Simulate fetching data from external service
         await Task.Delay(50);  // Simulated I/O
-        target.ExternalData = $"Data for {target.Email}";
+        await target.SetExternalData($"Data for {target.Email}");
 
         return None;  // Action rules typically return None (no validation messages)
     }

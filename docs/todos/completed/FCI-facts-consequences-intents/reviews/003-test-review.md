@@ -1,0 +1,5 @@
+# FCI-003 test review
+
+**Round 1 (2026-10-16): CONCERNS.** One veto: bullet 2's object-initializer clause was unpinned (the only initializer sat in a constructor and wrote a non-Neatoo property). Fixed: `ObjectInitializer_InsideVerb_IsNotReported`, flip-checked. Callouts fixed: `Fix_BlockBodiedAddActionLambda_BecomesAsync`, `FixAll_TwoWritesInOneAddActionLambda_BothAwaited` (with an `ApplyFixAll` helper over the real BatchFixer). Tech-debt fixed: the no-fix test asserts its inputs are reported; the async-lambda test asserts the message context. Dismissed: 104 pre-existing CS4014 warnings (not this plan's). Theoretical: Design.App never runs the analyzer (no Neatoo classes there).
+
+**Round 2 (2026-10-16): APPROVED.** The veto is closed; the code-review additions (compound and increment writes, helpers, lifecycle overrides, the compound fix) are each pinned by a test that can fail; the only Design test edits are four added `await`s; logs green. Tech-debt fixed: the Test Evidence flip line now covers all 18 tests honestly.

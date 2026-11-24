@@ -60,17 +60,17 @@ internal class ShippingQuoteRule : AsyncRuleBase<ShipmentRequest>, IShippingQuot
     {
         if (string.IsNullOrWhiteSpace(target.Destination) || target.WeightKg <= 0)
         {
-            target.Quote = 0m;
+            await target.SetQuote(0m);
             return None;
         }
 
         if (!await _rates.ShipsTo(target.Destination))
         {
-            target.Quote = 0m;
+            await target.SetQuote(0m);
             return (nameof(ShipmentRequest.Destination), $"We do not ship to {target.Destination}").AsRuleMessages();
         }
 
-        target.Quote = await _rates.Quote(target.Destination, target.WeightKg);
+        await target.SetQuote(await _rates.Quote(target.Destination, target.WeightKg));
         return None;
     }
 }

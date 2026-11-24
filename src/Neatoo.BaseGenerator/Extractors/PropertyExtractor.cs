@@ -34,6 +34,9 @@ internal static class PropertyExtractor
                     .Any(a => a.IsKind(SyntaxKind.SetAccessorDeclaration) ||
                               a.IsKind(SyntaxKind.InitAccessorDeclaration)) ?? false;
 
+                var isInit = property.AccessorList?.Accessors
+                    .Any(a => a.IsKind(SyntaxKind.InitAccessorDeclaration)) ?? false;
+
                 string? setterAccessibility = null;
                 if (hasSetter)
                 {
@@ -78,7 +81,11 @@ internal static class PropertyExtractor
                     SetterAccessibility: setterAccessibility,
                     NeedsInterfaceDeclaration: needsInterfaceDeclaration,
                     IsLazyLoad: isLazyLoad,
-                    LazyLoadInnerType: lazyLoadInnerType
+                    LazyLoadInnerType: lazyLoadInnerType,
+                    IsInit: isInit,
+                    HasSetMethodConflict: HasMemberInHierarchy(classSymbol, $"Set{propertyName}"),
+                    InterfaceDeclaresSetMethod: InterfaceDeclaresMember(classSymbol, $"Set{propertyName}"),
+                    InterfaceDeclaresReadOnly: InterfaceDeclaresReadOnlyProperty(classSymbol, propertyName)
                 );
             })
             .ToList();
@@ -102,6 +109,47 @@ internal static class PropertyExtractor
 
         return interfaceDeclaration?.Modifiers
             .Any(m => m.IsKind(SyntaxKind.PartialKeyword)) ?? false;
+    }
+
+    /// <summary>
+    /// True when the class or any base class declares a member with the given name.
+    /// A generated awaitable setter never collides with or hides a hand-written member.
+    /// </summary>
+    private static bool HasMemberInHierarchy(INamedTypeSymbol classSymbol, string memberName)
+    {
+        for (var type = classSymbol; type != null; type = type.BaseType)
+        {
+            if (!type.GetMembers(memberName).IsEmpty)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// True when the class's I{ClassName} interface already declares a member with the given name.
+    /// </summary>
+    private static bool InterfaceDeclaresMember(INamedTypeSymbol classSymbol, string memberName)
+    {
+        var interfaceSymbol = classSymbol.Interfaces
+            .FirstOrDefault(i => i.Name == $"I{classSymbol.Name}");
+
+        return interfaceSymbol != null && !interfaceSymbol.GetMembers(memberName).IsEmpty;
+    }
+
+    /// <summary>
+    /// True when the class's I{ClassName} interface declares the property with no setter.
+    /// </summary>
+    private static bool InterfaceDeclaresReadOnlyProperty(INamedTypeSymbol classSymbol, string propertyName)
+    {
+        var interfaceSymbol = classSymbol.Interfaces
+            .FirstOrDefault(i => i.Name == $"I{classSymbol.Name}");
+
+        return interfaceSymbol?.GetMembers(propertyName)
+            .OfType<IPropertySymbol>()
+            .Any(p => p.SetMethod == null) ?? false;
     }
 
     /// <summary>

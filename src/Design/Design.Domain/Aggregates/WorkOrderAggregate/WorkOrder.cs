@@ -48,8 +48,8 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
         #region skill-can-x-rule
         // Admission for the Approve verb. The UI binds the button to it; the
         // verb itself does not check and throw.
-        RuleManager.AddAction(
-            t => t.CanApprove = t.Status == "Pending",
+        RuleManager.AddActionAsync(
+            async t => await t.SetCanApprove(t.Status == "Pending"),
             t => t.Status);
         #endregion
 
@@ -57,30 +57,30 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
         // A business fact derived from two others. The UI binds to it (for
         // example @if (workOrder.IsHeld) around a banner) and decides nothing;
         // the entity never names a screen element (no "ShowHoldBanner").
-        RuleManager.AddAction(
-            t => t.IsHeld = t.IsOnHold && t.Status != "Closed",
+        RuleManager.AddActionAsync(
+            async t => await t.SetIsHeld(t.IsOnHold && t.Status != "Closed"),
             t => t.IsOnHold,
             t => t.Status);
 
         // A flag derived from a child property. The trigger is the child's
         // property path, so any task's IsSchedulable change recomputes it.
-        RuleManager.AddAction(
-            t => t.HasUnschedulableTasks = t.Tasks?.Any(task => !task.IsSchedulable) ?? false,
+        RuleManager.AddActionAsync(
+            async t => await t.SetHasUnschedulableTasks(t.Tasks?.Any(task => !task.IsSchedulable) ?? false),
             t => t.Tasks![0].IsSchedulable);
         #endregion
 
         #region skill-child-aggregation
         // Aggregation over the children, recomputed when any task's Cost changes
-        RuleManager.AddAction(
-            t => t.TotalCost = t.Tasks?.Sum(task => task.Cost) ?? 0,
+        RuleManager.AddActionAsync(
+            async t => await t.SetTotalCost(t.Tasks?.Sum(task => task.Cost) ?? 0),
             t => t.Tasks![0].Cost);
         #endregion
 
         #region skill-chained-rule
         // Chained: the rule above sets TotalCost, which triggers this one.
         // Hours -> Cost (on the task) -> TotalCost -> IsOverBudget, no handler code.
-        RuleManager.AddAction(
-            t => t.IsOverBudget = t.TotalCost > t.Budget,
+        RuleManager.AddActionAsync(
+            async t => await t.SetIsOverBudget(t.TotalCost > t.Budget),
             t => t.TotalCost,
             t => t.Budget);
         #endregion
@@ -88,12 +88,12 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
         #region skill-parent-orchestrator
         // Parent writes children: when the discount changes, every task
         // re-applies it through its own business method.
-        RuleManager.AddAction(
-            t =>
+        RuleManager.AddActionAsync(
+            async t =>
             {
                 foreach (var task in t.Tasks ?? Enumerable.Empty<IWorkOrderTask>())
                 {
-                    task.ApplyParentDiscount();
+                    await task.ApplyParentDiscount();
                 }
             },
             t => t.Discount);
@@ -114,8 +114,8 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
         #region skill-four-trigger-array
         // Four or more triggers take an explicit array: params is incompatible
         // with the CallerArgumentExpression that gives the rule its id.
-        RuleManager.AddAction(
-            t => t.Summary = $"{t.Status}; on hold: {t.IsOnHold}; budget {t.Budget}; discount {t.Discount}",
+        RuleManager.AddActionAsync(
+            async t => await t.SetSummary($"{t.Status}; on hold: {t.IsOnHold}; budget {t.Budget}; discount {t.Discount}"),
             new Expression<Func<WorkOrder, object?>>[]
             {
                 t => t.Status, t => t.IsOnHold, t => t.Budget, t => t.Discount
@@ -128,10 +128,10 @@ internal partial class WorkOrder : EntityBase<WorkOrder>, IWorkOrder
     /// The verb sets state. Admission is the CanApprove rule, which the UI binds;
     /// the verb does not check and throw.
     /// </summary>
-    public void Approve(string approver)
+    public async Task Approve(string approver)
     {
-        ApprovedBy = approver;
-        Status = "Approved";
+        await SetApprovedBy(approver);
+        await SetStatus("Approved");
     }
     #endregion
 

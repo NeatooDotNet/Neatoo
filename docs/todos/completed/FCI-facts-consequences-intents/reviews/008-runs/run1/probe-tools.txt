@@ -1,0 +1,7 @@
+# tools available: CronCreate, CronDelete, CronList, DesignSync, EnterWorktree, ExitWorktree, Glob, Grep, ListAgents, LSP, Monitor, PushNotification, Read, RemoteTrigger, ReportFindings, ScheduleWakeup, SendMessage, Skill, TaskStop, ToolSearch, Workflow
+ERROR Read C:\Users\KeithVoels\source\repos\neatoodotnet\Neatoo\CLAUDE.md
+ERROR Read C:\Users\KeithVoels\source\repos\neatoodotnet\Neatoo\src\Design\Design.Domain\Aggregates\TrainingPlanAggregate\TrainingPlan.cs
+ERROR Glob C:\Users\KeithVoels\source pattern=**/TrainingPlan.cs
+ERROR Grep C:\Users\KeithVoels\source pattern=SlideMinutes
+ERROR Glob C:\Users\KeithVoels\.claude\projects pattern=*
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\SKILL.md

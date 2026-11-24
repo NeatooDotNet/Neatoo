@@ -1,0 +1,18 @@
+# tools available: CronCreate, CronDelete, CronList, DesignSync, EnterWorktree, ExitWorktree, Glob, Grep, ListAgents, LSP, Monitor, PushNotification, Read, RemoteTrigger, ReportFindings, ScheduleWakeup, SendMessage, Skill, TaskStop, ToolSearch, Workflow
+ok    Skill neatoo
+ok    Skill RemoteFactory
+ok    Skill mudneatoo
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references pattern=AsyncRuleBase|a-rule-that-takes-a-domain-service|rule with a command|AddMessage|RuleMessages|Execute\(
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\validation.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\validation.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references\entities.md pattern=gate|RunRules\(RunRulesFlag\.All\)|\[Insert\]|\[Update\]|IEntityBaseServices|IEntityRoot
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\setup.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\entities.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\entities.md
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=AddNeatooServices|AddNeatooAspNetCore
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\blazor.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references pattern=\[Required|\[EmailAddress|\[DisplayName|\[StringLength|\[MaxLength|\[RegularExpression
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\validation.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\neatoo\references pattern=partial interface I\w+|public interface I\w+ : IEntityRoot
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\base-classes.md
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=^using Neatoo|@using Neatoo|SaveOperationException|SaveFailureReason

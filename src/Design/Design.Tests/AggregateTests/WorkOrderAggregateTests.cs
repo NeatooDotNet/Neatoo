@@ -54,7 +54,7 @@ public class WorkOrderAggregateTests
         Assert.AreEqual("Pending", order.Status);
         Assert.IsTrue(order.CanApprove, "Create ran the rules, so the admission flag is already right");
 
-        order.Approve("ada");
+        await order.Approve("ada");
         await order.WaitForTasks();
 
         Assert.AreEqual("Approved", order.Status);
@@ -162,7 +162,7 @@ public class WorkOrderAggregateTests
         Assert.IsTrue(order.CanApprove, "Fetch re-ran the root's own rules for its derived values");
 
         order.Tasks![0].Hours = 3m;   // a modified child: the list hands it its row
-        order.Approve("ada");
+        await order.Approve("ada");
         await order.WaitForTasks();
         Assert.IsTrue(order.IsSavable);
 

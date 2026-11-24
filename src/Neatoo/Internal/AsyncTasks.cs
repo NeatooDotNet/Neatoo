@@ -45,8 +45,11 @@ public sealed class AsyncTasks
             if (this._allDoneCompletionSource == null || this._allDoneCompletionSource.Task.IsCompleted)
             {
                 this._allDoneCompletionSource = new TaskCompletionSource<bool>();
-                this.IsRunning = true;
             }
+
+            // Also true for a task added while OnFullSequenceComplete runs (a rule reacting to the
+            // object going idle): the finishing sequence stays open for it, see SequenceCompleted.
+            this.IsRunning = true;
 
             var id = Guid.NewGuid();
 
@@ -148,6 +151,18 @@ public sealed class AsyncTasks
         catch (AggregateException ex)
         {
             exceptionsToReport.AddRange(ex.InnerExceptions);
+        }
+
+        lock (this._lockObject)
+        {
+            // The completion callback started more work (a meta-state rule triggered by the object
+            // going idle). The sequence is not done: it completes when that work does, carrying the
+            // exceptions gathered so far.
+            if (this._tasks.Count > 0)
+            {
+                this._exceptions.AddRange(exceptionsToReport);
+                return;
+            }
         }
 
         if (exceptionsToReport.Count > 0)

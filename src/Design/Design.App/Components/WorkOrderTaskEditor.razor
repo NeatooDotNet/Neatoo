@@ -1,0 +1,54 @@
+@using System.ComponentModel
+@using Design.Domain.Aggregates.WorkOrderAggregate
+@implements IDisposable
+
+@* One task. The inputs refresh themselves; the row re-renders for its own
+   task's changes, which keeps the cost current, including when the root
+   pushes a discount down into the task. *@
+<MudGrid Class="mb-2" Spacing="2">
+    <MudItem xs="12" sm="5">
+        <MudNeatooTextField T="string" EntityProperty="@Item[nameof(IWorkOrderTask.Name)]" />
+    </MudItem>
+    <MudItem xs="6" sm="2">
+        <MudNeatooNumericField T="decimal" EntityProperty="@Item[nameof(IWorkOrderTask.Hours)]" />
+    </MudItem>
+    <MudItem xs="6" sm="2">
+        <MudNeatooNumericField T="decimal" EntityProperty="@Item[nameof(IWorkOrderTask.Rate)]" />
+    </MudItem>
+    <MudItem xs="12" sm="3" Class="d-flex align-center">
+        <MudText>@Item.Cost.ToString("C")</MudText>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter, EditorRequired]
+    public IWorkOrderTask Item { get; set; } = default!;
+
+    private IWorkOrderTask? _subscribed;
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_subscribed, Item))
+        {
+            return;
+        }
+
+        if (_subscribed is not null)
+        {
+            _subscribed.PropertyChanged -= OnTaskChanged;
+        }
+
+        _subscribed = Item;
+        _subscribed.PropertyChanged += OnTaskChanged;
+    }
+
+    private void OnTaskChanged(object? sender, PropertyChangedEventArgs e) => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        if (_subscribed is not null)
+        {
+            _subscribed.PropertyChanged -= OnTaskChanged;
+        }
+    }
+}

@@ -18,11 +18,11 @@ The Blazor UI should be a **thin binding layer** over the domain model. It binds
 - Calling domain methods on button click (`OnClick="@(() => entity.Approve())"`)
 
 **What does NOT belong in .razor files:**
-- Arithmetic (`@(a * b)`) -- use an `AddAction` computed property
+- Arithmetic (`@(a * b)`) -- use an `AddActionAsync` computed property
 - Conditional business logic (`@if (status == "X" && count > 0)`) -- use a domain `bool` property
 - LINQ expressions (`@items.Where(...).Count()`) -- use a domain computed property
 - Multi-property validation in event handlers -- use a rule
-- Setting multiple properties in response to an event -- use a domain method or `AddAction`
+- Setting multiple properties in response to an event -- use a domain method or `AddActionAsync`
 
 ### Anti-Pattern: Logic-Heavy Razor Files
 
@@ -38,7 +38,7 @@ A `.razor` file with 20+ conditional/LINQ expressions indicates business logic h
 { <ExtensionWarning /> }
 ```
 
-Each of those conditions is a business fact the aggregate computes with an `AddAction` rule into a `private set` property, named for the fact (`IsHeld`, `HasUnschedulableTasks`, `CanApprove`), never for the panel it shows. The page binds the facts and has no condition of its own: [A ViewModel Over a Live Aggregate](#a-viewmodel-over-a-live-aggregate). The rules are in [domain-logic-placement.md](domain-logic-placement.md), Patterns 2 and 7.
+Each of those conditions is a business fact the aggregate computes with an `AddActionAsync` rule into a `private set` property, named for the fact (`IsHeld`, `HasUnschedulableTasks`, `CanApprove`), never for the panel it shows. The page binds the facts and has no condition of its own: [A ViewModel Over a Live Aggregate](#a-viewmodel-over-a-live-aggregate). The rules are in [domain-logic-placement.md](domain-logic-placement.md), Patterns 2 and 7.
 
 ## Two Binding Modes
 
@@ -48,7 +48,7 @@ Neatoo entities support two distinct binding modes in Blazor.
 
 Bind directly to entity properties to display values. The work-order page does this for `@Vm.WorkOrder.Status`, `@task.Cost` and `@Vm.WorkOrder.TotalCost`: [A ViewModel Over a Live Aggregate](#a-viewmodel-over-a-live-aggregate).
 
-The entity implements `INotifyPropertyChanged`, but **Blazor does not subscribe on its own**. The page subscribes to the entity's `PropertyChanged` (the mudneatoo skill's Page Structure Pattern does this for `IsSavable`) and calls `StateHasChanged`; display bindings re-render on that cycle. When a rule updates `Total` in response to `Quantity`, the entity raises `PropertyChanged("Total")`, the page's handler re-renders, and the binding shows the new value. A view-only page with no form must subscribe itself.
+The entity implements `INotifyPropertyChanged`, but **Blazor does not subscribe on its own**. The component that displays the entity's state subscribes to its `PropertyChanged` and calls `StateHasChanged`: a small page for its Save button (the mudneatoo skill's Page Structure Pattern), or, on a larger screen, each region's own component (the mudneatoo skill's The Component Is the Unit of Refresh). Display bindings re-render on that cycle. When a rule updates `Total` in response to `Quantity`, the entity raises `PropertyChanged("Total")`, the subscribing component's handler re-renders it, and the binding shows the new value. A view-only page with no form must subscribe itself.
 
 ### Mode 2: Property Metadata Binding
 
@@ -92,15 +92,15 @@ MudNeatoo components (`MudNeatooTextField`, etc.) bind an entity property's valu
 
 ### Anti-Pattern: Manual PropertyChanged Handlers for Computed Values
 
-Do NOT subscribe to `PropertyChanged` in Blazor code to recompute derived values (a handler that sets `totalPay = employee.Hours * employee.Rate` when `Hours` or `Rate` changes is domain logic in the UI). Use an `AddAction` rule in the domain model instead — it sets a `private set` partial property, which raises `PropertyChanged`, and the page re-renders. Blazor just binds `@task.Cost`:
+Do NOT subscribe to `PropertyChanged` in Blazor code to recompute derived values (a handler that sets `totalPay = employee.Hours * employee.Rate` when `Hours` or `Rate` changes is domain logic in the UI). Use an `AddActionAsync` rule in the domain model instead — it sets a `private set` partial property, which raises `PropertyChanged`, and the page re-renders. Blazor just binds `@task.Cost`:
 
 <!-- snippet: skill-computed-properties -->
 <a id='snippet-skill-computed-properties'></a>
 ```cs
 // A derived value is a private-set partial property written by a rule.
 // It notifies, it serializes, and the UI sees it read-only.
-RuleManager.AddAction(
-    t => t.Cost = t.Hours * t.Rate * (1 - t.Discount),
+RuleManager.AddActionAsync(
+    async t => await t.SetCost(t.Hours * t.Rate * (1 - t.Discount)),
     t => t.Hours,
     t => t.Rate,
     t => t.Discount);
@@ -415,9 +415,12 @@ internal sealed class WorkOrderViewModel
     public bool CanApprove => WorkOrder?.CanApprove ?? false;
 
     /// <summary>Calls the verb; the entity's rules update CanApprove and Status.</summary>
-    public void Approve(string approver)
+    public async Task Approve(string approver)
     {
-        WorkOrder?.Approve(approver);
+        if (WorkOrder != null)
+        {
+            await WorkOrder.Approve(approver);
+        }
     }
 
     public bool CanSave => WorkOrder?.IsSavable ?? false;
@@ -440,7 +443,7 @@ internal sealed class WorkOrderViewModel
     }
 }
 ```
-<sup><a href='/src/Design/Design.App/ViewModels/WorkOrderViewModel.cs#L28-L102' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-viewmodel-over-aggregate' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ViewModels/WorkOrderViewModel.cs#L28-L105' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-viewmodel-over-aggregate' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-page-binds-facts -->
@@ -480,20 +483,8 @@ internal sealed class WorkOrderViewModel
 {
     @foreach (var task in Vm.WorkOrder.Tasks)
     {
-        <MudGrid Class="mb-2" Spacing="2">
-            <MudItem xs="12" sm="5">
-                <MudNeatooTextField T="string" EntityProperty="@task[nameof(IWorkOrderTask.Name)]" />
-            </MudItem>
-            <MudItem xs="6" sm="2">
-                <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Hours)]" />
-            </MudItem>
-            <MudItem xs="6" sm="2">
-                <MudNeatooNumericField T="decimal" EntityProperty="@task[nameof(IWorkOrderTask.Rate)]" />
-            </MudItem>
-            <MudItem xs="12" sm="3" Class="d-flex align-center">
-                <MudText>@task.Cost.ToString("C")</MudText>
-            </MudItem>
-        </MudGrid>
+        @* Each row is a component that refreshes for its own task. *@
+        <WorkOrderTaskEditor @key="task" Item="@task" />
     }
 }
 
@@ -518,7 +509,7 @@ internal sealed class WorkOrderViewModel
 </MudButton>
 </div>
 ```
-<sup><a href='/src/Design/Design.App/Pages/WorkOrderPage.razor#L20-L92' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-page-binds-facts' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/Pages/WorkOrderPage.razor#L22-L82' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-page-binds-facts' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Neatoo on Each Tier
@@ -552,12 +543,13 @@ internal static IServiceCollection AddDesignClient(this IServiceCollection servi
     // The screens' ViewModels: plain classes over a live aggregate.
     services.AddTransient<OrderEditViewModel>();
     services.AddTransient<WorkOrderViewModel>();
+    services.AddTransient<TrainingPlanViewModel>();
     services.AddTransient<EmployeeEditViewModel>();
 
     return services;
 }
 ```
-<sup><a href='/src/Design/Design.App/ClientServices.cs#L27-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-client-composition' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ClientServices.cs#L27-L57' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-client-composition' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-server-composition -->

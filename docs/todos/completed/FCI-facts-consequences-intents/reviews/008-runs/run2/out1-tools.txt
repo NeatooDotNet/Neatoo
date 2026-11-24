@@ -1,0 +1,16 @@
+# tools available: CronDelete, CronList, DesignSync, ExitWorktree, Glob, Grep, Read, ReportFindings, ScheduleWakeup, Skill, TaskStop, ToolSearch
+ok    Skill neatoo
+ok    Skill RemoteFactory
+ok    Skill mudneatoo
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\entities.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\collections.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\base-classes.md
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\validation.md
+ok    Grep C:\Users\KeithVoels\.claude\skills\RemoteFactory\references pattern=IOrderDbContext|OrderRow|DbContext
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=partial Guid Id|DisplayName\(|EmailAddress|enum 
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\class-factory.md
+ok    Read C:\Users\KeithVoels\.claude\skills\RemoteFactory\references\setup.md
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=AddNeatooServices|AddNeatooAspNetCore|RegisterMatchingName
+ok    Read C:\Users\KeithVoels\.claude\skills\neatoo\references\blazor.md
+ok    Grep C:\Users\KeithVoels\.claude\skills pattern=AddPhoneNumber|AddPhone|ListBase<.*>\(|public \w+List\(
+ERROR Grep C:\Users\KeithVoels\source\repos\neatoodotnet\Neatoo\src pattern=EmailAddressAttribute
