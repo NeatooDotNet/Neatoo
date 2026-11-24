@@ -9,7 +9,7 @@
 **Plan-review opt-in:** No (prose; every ruling was decided by Keith in the session of 2026-11-24)
 **Code-review opt-in:** No (no code)
 **Branch:** wait-001-decision-record
-**PR:** —
+**PR:** #143
 
 ---
 

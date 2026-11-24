@@ -47,7 +47,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 | # | File | Title (≤ 8 words) | Serves | Status | PR |
 |---|------|-------|--------|--------|----|
-| 001 | [001-decision-record](./plans/001-decision-record.md) | The rulings in VisionAlignment | AC-9 | Done | PRNUM001 |
+| 001 | [001-decision-record](./plans/001-decision-record.md) | The rulings in VisionAlignment | AC-9 | Done | #143 |
 | 002 | [002-tracker-faults](./plans/002-tracker-faults.md) | The tracker faults once, then recovers | AC-7 | Draft | — |
 | 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | Draft | — |
 | 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Draft | — |
