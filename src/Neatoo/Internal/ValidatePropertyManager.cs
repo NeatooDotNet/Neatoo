@@ -136,7 +136,7 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
 
     private Task _Property_NeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        return this.NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
+        return this.NeatooPropertyChanged.InvokeAll(eventArgs);
     }
 
     public ValidatePropertyManager(IPropertyInfoList propertyInfoList, IFactory factory)
