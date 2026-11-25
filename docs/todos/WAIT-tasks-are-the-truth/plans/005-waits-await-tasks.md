@@ -4,12 +4,12 @@
 **Date:** 2026-11-24
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-2, AC-3, AC-4, AC-5
-**Status:** In Progress
+**Status:** Done
 **Last Updated:** 2026-11-24
 **Plan-review opt-in:** No (the design is D33, approved by Keith on 2026-11-24)
 **Code-review opt-in:** Yes (it changes what every wait and every busy read means)
 **Branch:** wait-005-waits-await-tasks
-**PR:** —
+**PR:** #147
 
 ---
 
