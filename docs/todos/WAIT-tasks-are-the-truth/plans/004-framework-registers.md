@@ -4,12 +4,12 @@
 **Date:** 2026-11-24
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-1
-**Status:** In Progress
+**Status:** Done
 **Last Updated:** 2026-11-24
 **Plan-review opt-in:** No (the design is D32, approved by Keith on 2026-11-24)
 **Code-review opt-in:** Yes (it changes what every entity registers, the generated code and a public member)
 **Branch:** wait-004-framework-registers
-**PR:** —
+**PR:** #146
 
 ---
 
