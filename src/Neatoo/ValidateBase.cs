@@ -161,8 +161,15 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// <summary>
 	/// Gets a value indicating whether the object has asynchronous operations in progress.
 	/// </summary>
-	/// <value><c>true</c> if async tasks are running or any property is busy; otherwise, <c>false</c>.</value>
-	public bool IsBusy => this.RunningTasks.IsRunning || this.PropertyManager.IsBusy;
+	/// <value><c>true</c> while this object's running tasks are running; otherwise, <c>false</c>.</value>
+	/// <remarks>
+	/// DESIGN DECISION: busy is read from the tasks. Everything in flight on this object, its
+	/// properties and the objects below it is registered in <see cref="RunningTasks"/>, so when
+	/// <see cref="WaitForTasks()"/> completes this is false, by construction.
+	/// DID NOT DO THIS: also read a busy flag the property manager kept up to date from property
+	/// notifications. A flag kept by notifications goes stale when one is missed.
+	/// </remarks>
+	public bool IsBusy => this.RunningTasks.IsRunning;
 
 	/// <summary>
 	/// Gets the rule manager responsible for executing business rules on this object.
@@ -265,7 +272,18 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </remarks>
 	protected virtual void SetParent(IValidateBase? parent)
 	{
+		var previous = this.Parent;
 		this.Parent = parent;
+
+		// An object handed to a parent while it has work in flight started that work when it had
+		// no parent to pass it to. The new parent takes it up here, so its wait and its busy cover
+		// it. A property and an entity list refuse a busy child; a ValidateListBase does not.
+		if (!ReferenceEquals(previous, parent)
+			&& parent is IValidateBaseInternal parentInternal
+			&& this.RunningTasks.IsRunning)
+		{
+			parentInternal.AddChildTask(this.RunningTasks.AllDone);
+		}
 	}
 
 	/// <summary>
@@ -538,11 +556,20 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </remarks>
 	protected virtual void AddChildTask(Task task)
 	{
+		var wasRunning = this.RunningTasks.IsRunning;
+
 		this.RunningTasks.AddTask(task);
 
 		if (this.Parent is IValidateBaseInternal parentInternal)
 		{
 			parentInternal.AddChildTask(task);
+		}
+
+		// Busy is read from the running tasks, so this is where the object goes busy. The
+		// matching "idle" check is the tracker's completion callback.
+		if (!wasRunning && this.RunningTasks.IsRunning)
+		{
+			this.CheckIfMetaPropertiesChanged();
 		}
 	}
 
@@ -624,12 +651,17 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// This method should be called after setting properties to ensure all asynchronous
 	/// operations (such as validation rules and lazy property loads) have completed before proceeding.
 	/// </para>
+	/// <para>
+	/// DESIGN DECISION: the wait is this object's running tasks and nothing else. Everything in
+	/// flight on the object, its properties and the objects below it is registered there by the
+	/// framework, so there is one thing to await, and on one thread the wait always suspends.
+	/// DID NOT DO THIS: also loop over the properties while one reported busy. A busy flag gives
+	/// nothing to await; where a write had not been registered, that loop never returned (#141).
+	/// </para>
 	/// </remarks>
 	public virtual async Task WaitForTasks()
 	{
 		await this.RunningTasks.AllDone;
-		// Also wait for property-level tasks (e.g., lazy loading via LazyLoad subclass properties)
-		await this.PropertyManager.WaitForTasks();
 	}
 
 	/// <summary>
@@ -643,9 +675,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// Cancellation only affects waiting - running tasks will complete to avoid leaving the entity in an inconsistent state.
 	/// </para>
 	/// <para>
-	/// Note: This method does NOT call PropertyManager.WaitForTasks(). This is a pre-existing gap
-	/// that predates the LazyLoad unification. LazyLoad children are now waited for by the
-	/// non-cancellable overload via PropertyManager.WaitForTasks().
+	/// It waits for exactly what <see cref="WaitForTasks()"/> waits for: this object's running tasks.
 	/// </para>
 	/// </remarks>
 	public virtual async Task WaitForTasks(CancellationToken token)
@@ -945,13 +975,17 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 
 		try
 		{
-			// Run child property rules unless only Self flag is set
-			if (runRules != RunRulesFlag.Self)
+			// The rules are this object's work in flight whether or not the caller awaits this
+			// method, so they are registered like any other. The wait on the running tasks that
+			// follows is not part of what is registered: it would be waiting for itself.
+			var rules = this.RunRulesFor(runRules, token);
+
+			if (!rules.IsCompleted)
 			{
-				await this.PropertyManager.RunRules(runRules, token);
+				this.AddChildTask(rules);
 			}
 
-			await this.RuleManager.RunRules(runRules, token);
+			await rules;
 			await this.RunningTasks.AllDone;
 		}
 		catch (OperationCanceledException)
@@ -966,6 +1000,17 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 			// skips recalculation, leaving the cache stale.
 			this.PropertyManager.RecalculateValidity();
 		}
+	}
+
+	private async Task RunRulesFor(RunRulesFlag runRules, CancellationToken? token)
+	{
+		// Run child property rules unless only Self flag is set
+		if (runRules != RunRulesFlag.Self)
+		{
+			await this.PropertyManager.RunRules(runRules, token);
+		}
+
+		await this.RuleManager.RunRules(runRules, token);
 	}
 
 	/// <summary>

@@ -47,7 +47,11 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
 
     IPropertyInfoList IValidatePropertyManagerInternal<P>.PropertyInfoList => this.PropertyInfoList;
 
-    public bool IsBusy { get; protected set; }
+    /// <summary>
+    /// True while one of the properties is busy. Read from the properties, each of which reads
+    /// its own tasks; nothing is cached, so nothing can go stale.
+    /// </summary>
+    public bool IsBusy => this.PropertyBag.Values.Any(property => property.IsBusy);
     public bool HasProperty(string propertyName)
     {
         return this.PropertyInfoList.HasProperty(propertyName);
@@ -197,11 +201,6 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
         if (this.IsPaused)
         {
             return;
-        }
-
-        if (e.PropertyName == nameof(IValidateProperty.IsBusy))
-        {
-            this.IsBusy = this.PropertyBag.Any(p => p.Value.IsBusy);
         }
 
         if (sender is IValidateProperty property)
@@ -406,8 +405,6 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
             {
                 RaisePropertyChanged(nameof(IsSelfValid));
             }
-
-            this.IsBusy = this.PropertyBag.Any(p => p.Value.IsBusy);
         }
     }
 

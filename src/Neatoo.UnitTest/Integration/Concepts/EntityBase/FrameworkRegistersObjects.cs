@@ -79,6 +79,9 @@ internal partial class RegisteredRoot : EntityBase<RegisteredRoot>, IRegisteredR
 
             return string.Empty;
         }, t => t.Value);
+
+        // A rule that is still to run when the one above is held, for cancelling between rules.
+        RuleManager.AddValidation(t => string.Empty, t => t.Value);
     }
 
     public partial string? Value { get; set; }
@@ -106,5 +109,35 @@ internal partial class RegisteredRoot : EntityBase<RegisteredRoot>, IRegisteredR
     public void Insert()
     {
         this.Inserts++;
+    }
+}
+
+// A ValidateBase owner with a ValidateListBase. Unlike an entity list, this list takes an item
+// that is already busy.
+
+public interface IValidateItemList : IValidateListBase<Neatoo.UnitTest.Integration.Concepts.ValidateBase.IAsyncRuleFaultObject>
+{
+}
+
+internal class ValidateItemList : ValidateListBase<Neatoo.UnitTest.Integration.Concepts.ValidateBase.IAsyncRuleFaultObject>, IValidateItemList
+{
+}
+
+public interface IValidateOwner : IValidateBase
+{
+    IValidateItemList? Items { get; }
+}
+
+[Factory]
+internal partial class ValidateOwner : ValidateBase<ValidateOwner>, IValidateOwner
+{
+    public ValidateOwner(IValidateBaseServices<ValidateOwner> services) : base(services) { }
+
+    public partial IValidateItemList? Items { get; set; }
+
+    [Create]
+    public void Create([Service] IValidateItemList items)
+    {
+        this.Items = items;
     }
 }

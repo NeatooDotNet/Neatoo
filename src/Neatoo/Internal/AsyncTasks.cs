@@ -210,7 +210,9 @@ public sealed class AsyncTasks : IAsyncTasks
                 // One exception is reported once, however many tracked tasks carried it: a write
                 // and the rule run inside it are both tracked, and both fault with the same
                 // exception object.
-                foreach (var exception in task.Exception.InnerExceptions)
+                // Flattened, because a tracked task can be another tracker's wait, whose fault is
+                // itself an aggregate.
+                foreach (var exception in task.Exception.Flatten().InnerExceptions)
                 {
                     if (!this._exceptions.Any(reported => ReferenceEquals(reported, exception)))
                     {

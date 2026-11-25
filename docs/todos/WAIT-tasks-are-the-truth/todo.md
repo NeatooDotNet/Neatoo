@@ -51,7 +51,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 | 002 | [002-tracker-faults](./plans/002-tracker-faults.md) | The tracker faults once, then recovers | AC-7 | Done | #144 |
 | 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | Done | #145 |
 | 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Done | #146 |
-| 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Draft | — |
+| 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Done | #147 |
 | 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order, save in flight | AC-10, AC-11, AC-12 | Draft | — |
 | 007 | [007-mudneatoo-and-design-app](./plans/007-mudneatoo-and-design-app.md) | MudNeatoo and Design.App on the new tracking | AC-8 | Draft | — |
 | 008 | [008-docs-and-release-notes](./plans/008-docs-and-release-notes.md) | Guides, skills and release notes | AC-9 | Draft | — |
@@ -64,7 +64,8 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - [ ] The migration notes name the breaks from WAIT-003: `IValidateProperty.AddMarkedBusy` and `RemoveMarkedBusy` are removed, with `IsSelfBusy` and `IsMarkedBusy` on `ValidateProperty`; `IFactory` gains `CreateAsyncTasks()`; `DefaultFactory` is registered transient · the release notes (WAIT-008) · done when the migration section lists them · AC-9
 - [x] (#146) A write to a child registers with the parent chain before the child's own tracker, so with no synchronization context the root's waits complete before the child has accounted, and `Save(token)` on the root then throws `SaveOperationException` (IsBusy). Since WAIT-003 this happens every time, where it was a race before (traced by the code reviewer, not run) · the generated setter and `Set{Name}`, and `ValidateBase.AddChildTask`, `Setter`, `ObjectInvalid` and the meta-rule registration · done when an object accounts before its parent and a test saves a root with a token after a child write with an async rule · AC-4 · for WAIT-004, which rebuilds registration
 - [ ] The migration notes name the breaks from WAIT-004: `AddChildTask` is off `IValidateBase` and `protected` on `ValidateBase`; generated setters and `Set{Name}` no longer register, so consumers rebuild; an awaited `RunRules(propertyName)` that throws is now also reported by the next `WaitForTasks()`, as an awaited `Set{Name}` already was · the release notes (WAIT-008) · done when the migration section lists them · AC-9
-- [ ] `RunRules(RunRulesFlag)` called and not awaited: its rule runs are busy on their trigger properties but not in the object's running tasks, so a wait on running tasks alone would not wait for them. It cannot register itself, because it awaits the running tasks inside · `ValidateBase.RunRules(RunRulesFlag)` and `RuleManager.RunRules(RunRulesFlag)` · done when the wait in WAIT-005 covers it, with a test, or it is ruled awaited-only · AC-1 · for WAIT-005
+- [x] (#147) `RunRules(RunRulesFlag)` called and not awaited: its rule runs are busy on their trigger properties but not in the object's running tasks, so a wait on running tasks alone would not wait for them. It cannot register itself, because it awaits the running tasks inside · `ValidateBase.RunRules(RunRulesFlag)` and `RuleManager.RunRules(RunRulesFlag)` · done when the wait in WAIT-005 covers it, with a test, or it is ruled awaited-only · AC-1 · for WAIT-005
+- [ ] The migration notes name the changes from WAIT-005: an object's `IsBusy` and `WaitForTasks()` are its running tasks alone, so a custom property that reports busy without tracking a task no longer makes its object busy; `ValidatePropertyManager.IsBusy` has no setter; an awaited `RunRules()` that throws is also reported by the next `WaitForTasks()` · the release notes (WAIT-008) · done when the migration section lists them · AC-9
 
 ## Dismissed
 
@@ -73,6 +74,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 ## Parked
 
 - proposed · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice · 0.36.1 design critique, 2026-11-24
+- proposed · a list item whose busy changes while the item itself is paused does not raise the list's `IsBusy` notification; the list's `IsBusy` value is right and its owner is unaffected. Reached by an awaited `RunRules` with an async rule inside a factory operation on an item already in a list · WAIT-005 · `reviews/005-code-review.md` Round 2, Theoretical
 
 ---
 
@@ -92,6 +94,10 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-004 · test-reviewer · the protected generated setter and the ValidateBase lazy-load report had no test, and the "once" tests had never been seen red · the generator test covers the protected setter, the lazy-load report has its own test, and the "once" tests were run red with de-duplication disabled.
 - WAIT-004 · code-reviewer · a lazy value replaced while it loaded left its owner busy for good, and a lazy value already loading when assigned was never reported · the report now follows the value the property holds; two tests seen red first.
 - WAIT-004 · code-reviewer (could not verify) · an un-awaited `RunRules(RunRulesFlag)` is busy on its properties but not in the object's running tasks · punched to the Punchlist for WAIT-005.
+- WAIT-005 · test-reviewer (veto) · a bullet claimed "their properties" and the test checked two of four · two assertions added; its three callouts taken as tests, and the rising check in `AddChildTask` seen red.
+- WAIT-005 · code-reviewer · a `ValidateListBase` takes an item that is already busy and its owner never heard of the work · a parent now takes up the work of an object that is busy when attached; test seen red first. This corrects WAIT-004's "a list refuses a busy item".
+- WAIT-005 · code-reviewer · list `IsBusy` read every item on every notification · measured (an edit cost up to 137 times more at 20,000 items), then fixed: the value is still read from the items, but the notification check reads them only when busy may have changed.
+- WAIT-005 · test-reviewer (round 2) · three paths had no test: a cancellation between rules, a busy item whose rule throws, and the list's own `IsBusy` notification · three tests added, two seen red with the code they pin disabled; loose exception assertions tightened.
 
 ---
 
@@ -119,6 +125,11 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 ### 2026-11-24 — WAIT-004 · serves AC-1
 - **Finding:** A property refuses a busy child and a list refuses a busy item, so a parent is never handed work already in flight; the planned adoption step had nothing to do.
+- **Decision:** Amend
+- **Follow-up:** n/a
+
+### 2026-11-24 — WAIT-005 · serves AC-4
+- **Finding:** A `ValidateListBase` takes an item that is already busy, so WAIT-004's reason for dropping adoption held for entity lists only; and list `IsBusy` read from the items on every notification cost up to 137 times more per edit.
 - **Decision:** Amend
 - **Follow-up:** n/a
 
