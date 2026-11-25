@@ -71,3 +71,62 @@ None.
   - `reviews/005-test-review.md`, so as not to repeat its findings.
   - The Scope line of plan 008.
 - Named but unused: `plans/003-property-tasks.md` and `reviews/003-code-review.md`. The WAIT-004 review and the code were enough for the cases I traced.
+
+---
+
+## Code Review — WAIT-005 — Round 2 — [2026-11-24]
+
+**Verdict: APPROVED**
+**Logs:** rerun on fddfdbd's code. Build PASSED, 0 errors, 97 warnings, the same count as round 1 (`reviews/005-build.log`). Design build PASSED, 0 warnings (`reviews/005-design-build.log`). Tests: 2,096 passed, 2 skipped, 0 failed (`reviews/005-test.log`: Neatoo.UnitTest 1,934 + 2 skipped, BaseGenerator 51, MudNeatoo 33, Analyzers 23, Person 55). Design.Tests: 235 passed (`reviews/005-design-test.log`). Neatoo.UnitTest moves from 1,928 to 1,934, which matches the six tests the commit adds. The skipped tests are the same two as before. `reviews/005-red-busy-item.log` shows `AnItemAlreadyBusyWhenItIsAddedToAList_HasItsWorkTakenUpByTheListsOwner` failing at `owner.IsBusy` before the fix.
+
+### Round 1 callouts, verified
+
+1. **A busy item taken by a `ValidateListBase`: addressed.** `ValidateBase.SetParent` (`src/Neatoo/ValidateBase.cs:273-287`) now has the new parent register `RunningTasks.AllDone` when the object is running and the parent changed. Through `AddChildTask`, the registration reaches every ancestor.
+   - **Every attach path goes through `SetParent`.** These are `ValidateListBase.InsertItem`/`SetItem` (`ValidateListBase.cs:137`, `:213`), the list's own `ISetParent.SetParent` (`:114-126`), and `_PropertyManager_NeatooPropertyChanged` (`ValidateBase.cs:479-481`). The last one covers `LoadValue`, so my round 1 theoretical line about `LoadValue` handed a busy child is closed too, along with a paused `EntityListBase` add.
+   - **The parent accounts after the child.** `AllDone` completes only after the child's `OnFullSequenceComplete` has run (`AsyncTasks.cs:243`, then `:285`/`:289`), so the child's idle notification comes first.
+   - **`Flatten()` (`AsyncTasks.cs:215`) is what makes one exception surface once.** The registered wait faults with the child's `AggregateException`. Flattened, its inner exceptions are the same objects as those of any task the parent also holds, so the de-duplication by reference still matches them.
+   - **Test.** The new test fails before the fix on `owner.IsBusy`.
+2. **List `IsBusy` cost: addressed.** `IsBusy` still reads the items on every read (`ValidateListBase.cs:77`), so its value cannot go stale, which is what D31 asks. Only the notification check (`BusyForChangeDetection`, `:437-440`, used at `:417` and `:448`) falls back to its last reading.
+   - **When the items are read again.** `_busyMayHaveChanged` is set by an item's `IsBusy` `PropertyChanged` (`:360-363`), by inserting or replacing with a busy item (`:144-147`, `:222-224`), by any remove, replace or clear (`:171`, `:204`, `:251`), and by resume (`:560`). It starts true.
+   - **`EntityListBase` goes through the base correctly.** Its `CheckIfMetaPropertiesChanged`, `ResetMetaState` and `HandlePropertyChanged` all call the base (`EntityListBase.cs:180`, `:197`, `:206`).
+   - **Its overrides that send notifications before calling the base.** These are `RemoveItem`, where `MarkDeleted` runs first, and `SetItem`. Those notifications can reset the flag, but the base sets it again on its first line, so nothing is lost.
+   - **The numbers and the record.** The plan's second amendment gives the measured cost and says this replaces v0.7.1's cache, which answers the gap in the record. I did not re-measure.
+
+### Direction & shape
+
+The two fixes go where the problems are: adoption at the one place an object gets its parent, and the cost cut only in the notification check. The value read is untouched.
+
+The questions in the brief:
+- **The child's own first wait and the `IAsyncTasks` contract.** Reading `AllDone` makes the parent's registration a wait that holds the child's sequence. By `IAsyncTasks.cs:13-16` ("reports its exceptions once, to the waits that held `AllDone` while it ran, or else to the first wait after it"), the parent's tracker is therefore the place the fault is reported. The child's own later wait is then clean. That follows the contract's letter. It differs from a child that goes busy after it is attached, whose fault both the child and the parent hold (see Theoretical).
+- **Registering the same wait twice.** This happens if an object running one sequence is handed to the same parent twice with a different parent in between, for example `SetParent(A)`, `SetParent(null)`, `SetParent(A)`. It is harmless: the tracker keys tasks by `Guid`, and the flattened exceptions are de-duplicated by reference.
+- **Calls that do not register.** `SetParent` with the same parent is skipped, and that covers `_PropertyManager_NeatooPropertyChanged` calling it on every write to a child-holding property. Deserialization (`OnDeserialized`, the list's `OnDeserialized`) hands parents to objects whose trackers are new and idle, so nothing is registered. `SetParent(null)` registers nothing, and nothing is taken off the old parent (see Theoretical).
+
+### Veto-tier
+None.
+
+### Callouts
+None.
+
+### Could not verify
+- The Release measurements in the plan's second amendment. No benchmark is committed, and I did not run one.
+- The working tree has uncommitted test changes on top of fddfdbd, in `WaitsAwaitTasksTests.cs` and `FrameworkRegistersObjects.cs`. They add `AnAwaitedRunRules_CancelledBetweenRules_...`, `AList_AnnouncesBusyOnceAndIdleOnce_ForAWriteOnItsItem` and `ABusyItemAddedToAList_WhoseRuleThenThrows_IsReportedByTheOwnersWaitOnce`, and they tighten the throw test. Some of them do not exist in the committed `WaitsAwaitTasksTests.cs` at all, so the committed test count (1,934) cannot include them: they have not been through a full run. The third one is the only test that pins `Flatten()`. In fddfdbd as committed, nothing drives a fault through the adopted wait.
+
+### Theoretical (not triaged)
+- **A list item that changes busy while the item itself is paused.** For example, a child's factory operation awaits an async rule run while the child sits in a list. The item's `RaisePropertyChanged` is gated by `IsPaused` (`ValidateBase.cs:432`), so only its `NeatooPropertyChanged("IsBusy")` reaches the list. `HandleNeatooPropertyChanged` (`ValidateListBase.cs:340`) does not set `_busyMayHaveChanged`, so the list never announces the change.
+  - The value of `list.IsBusy` stays right, and the owner's busy is its tracker, so it is unaffected.
+  - Round 1's code did announce it, through the same handler. The v0.7.1 cache did not.
+  - One option is to set the flag there when `PropertyName` is `IsBusy`.
+- **A parent the object leaves while busy keeps waiting.** It keeps the adopted `AllDone` until the object's whole sequence ends, including work the object starts after leaving. Before this, only tasks registered while attached held the old parent. This needs an object that was busy when attached and then detached while still busy, and no caller in the repo does that.
+- **The asymmetry in where a child's fault is reported.** A child busy when attached reports its fault through the parent only. A child that goes busy after attaching reports it to both its own first wait and the parent's.
+- **A rule that throws an `AggregateException` itself.** With `Flatten()`, the tracker now records that exception's inner exceptions instead. An `await` on the wait then throws the first inner exception, not the rule's aggregate.
+- **Unchanged from round 1.** These still stand: `RuleManager.RunRule`/`RunRules` called directly and not awaited, a paused object raising `NeatooPropertyChanged`, which now also covers `SetParent`'s registration under a paused owner, the order of the rising notifications, an un-awaited `RunRules(flag)` that observes `AllDone` taking another task's fault, and WAIT-008's Scope line.
+
+### Read report
+- Read beyond the brief:
+  - `git diff eb22bd8..fddfdbd` in full, including the plan, the todo and the test diffs.
+  - `src/Neatoo/IAsyncTasks.cs`.
+  - The `SetParent` call sites across `src/Neatoo`.
+  - The `EntityListBase` overrides: `HandlePropertyChanged`, `CheckIfMetaPropertiesChanged`, `ResetMetaState`, `RemoveItem`, `FactoryComplete`.
+  - `reviews/005-red-busy-item.log`.
+  - The uncommitted working-tree diff, `git diff HEAD -- src`, read only.
+- Named but unused: none.

@@ -74,6 +74,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 ## Parked
 
 - proposed · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice · 0.36.1 design critique, 2026-11-24
+- proposed · a list item whose busy changes while the item itself is paused does not raise the list's `IsBusy` notification; the list's `IsBusy` value is right and its owner is unaffected. Reached by an awaited `RunRules` with an async rule inside a factory operation on an item already in a list · WAIT-005 · `reviews/005-code-review.md` Round 2, Theoretical
 
 ---
 
@@ -96,6 +97,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-005 · test-reviewer (veto) · a bullet claimed "their properties" and the test checked two of four · two assertions added; its three callouts taken as tests, and the rising check in `AddChildTask` seen red.
 - WAIT-005 · code-reviewer · a `ValidateListBase` takes an item that is already busy and its owner never heard of the work · a parent now takes up the work of an object that is busy when attached; test seen red first. This corrects WAIT-004's "a list refuses a busy item".
 - WAIT-005 · code-reviewer · list `IsBusy` read every item on every notification · measured (an edit cost up to 137 times more at 20,000 items), then fixed: the value is still read from the items, but the notification check reads them only when busy may have changed.
+- WAIT-005 · test-reviewer (round 2) · three paths had no test: a cancellation between rules, a busy item whose rule throws, and the list's own `IsBusy` notification · three tests added, two seen red with the code they pin disabled; loose exception assertions tightened.
 
 ---
 

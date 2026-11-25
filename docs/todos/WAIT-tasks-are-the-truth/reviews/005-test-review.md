@@ -50,3 +50,55 @@ On AC-3: `OnOneThread_WaitForTasks_ReturnsAnIncompleteTask_AndCompletesWhenTheWo
   - `AsyncFlowTests.cs` and `ValidateBaseAsyncTests.cs` greps: for existing `IsBusy` notification coverage.
   - `004-build.log`: to compare the warning count.
 - Named but unused: `docs/VisionAlignment.md` D33. No finding depended on its wording.
+
+---
+
+## Test Review — WAIT-005 — [2026-11-24] — Round 2
+
+**Verdict: APPROVED**
+**Logs:** build PASSED (0 errors, 97 warnings, unchanged) — `reviews/005-build.log`; design build PASSED — `reviews/005-design-build.log`; tests 2,096 passed, 0 failed, 2 skipped (the same two as round 1) — `reviews/005-test.log`. That is 23 + 33 + 51 + 55 + 1,934, and the UnitTest count rose by 6, the six new tests. Design tests 235 passed, 0 failed — `reviews/005-design-test.log`.
+
+The red runs match their claims:
+- `005-red-round1.log`: `AListsTokenWait_WaitsForItsBusyItem_AndCanBeCancelled` failed, with the token dropped from the list's wait.
+- `005-red-rising.log`: `AnObject_AnnouncesBusyOnceAndIdleOnce_ForRulesRunByPropertyName` failed, with the rising check disabled.
+- `005-red-busy-item.log`: `AnItemAlreadyBusyWhenItIsAddedToAList_HasItsWorkTakenUpByTheListsOwner` failed before its fix.
+
+Sacred tests: `git diff eb22bd8..fddfdbd` touches two test files. In `WaitsAwaitTasksTests.cs`, assertions were only added. In `FrameworkRegistersObjects.cs`, a fixture was appended at the end and the existing fixtures are untouched. No existing test was weakened.
+
+### Veto-tier
+
+None. The round 1 veto is closed: `WhenTheRootsWaitCompletes_NothingOnItOrBelowItIsBusy` now asserts `item[Value]` and `root[Children]` as well, so the "their properties" clause is pinned for every object in the bullet.
+
+The two new and widened Required bullets are pinned at `[integration]`:
+- **The busy item taken up by its owner.** The test asserts that the owner is busy, that its wait is incomplete and completes, and that the owner, item and list end idle. It was red before the fix.
+- **The three announcement cases.** Each asserts exactly `[true, false]`. The case with no write is red without the rising check, which answers my round 1 "could not verify".
+
+### Callouts (≤ 5 Optional)
+
+- **An awaited `RunRules(flag, token)` cancelled after its rules were registered.** Location: `src/Neatoo/ValidateBase.cs`, `RunRules` (the `AddChildTask(rules)` at line 974, then the `catch (OperationCanceledException)`).
+  - `AnAwaitedRunRules_Cancelled_Throws_AndLeavesNoFaultForTheNextWait` cancels the token before the call. `RuleManager.RunRules` checks the token first (`RuleManager.cs:622`), so `rules` is already complete, nothing is registered, and "leaves no fault for the next wait" is pinned only on the path that never touches the tracker.
+  - The registered-then-cancelled path has no test: a token cancelled while one rule is in flight and a later rule is still to run.
+  - `Affects: AC-2`. `Reachable by:` any consumer `RunRules(flag, token)` cancelled mid-run on an object with more than one rule (the token is checked between rules, `RuleManager.cs:622` and `:694`). Suggested tier: `[integration]`, two gated rules, cancel while the first is held.
+- **Fault reporting for an item busy when it is attached.** Location: `src/Neatoo/ValidateBase.cs`, `SetParent` (registers the item's `RunningTasks.AllDone`), and the new `Flatten()` in `src/Neatoo/Internal/AsyncTasks.cs`. The adoption test's rule succeeds. Nothing shows that the owner's wait reports the item's rule fault once, and that is the case the `Flatten()` was written for. `Affects: AC-2`. `Reachable by:` `ValidateListBase.Add` of a busy item whose async rule then throws. Suggested tier: `[integration]`, the adoption test's shape with a throwing value, asserting one inner exception and then a clean second wait.
+- **The list's `IsBusy` notification now runs through `BusyForChangeDetection`.** Location: `src/Neatoo/ValidateListBase.cs`, `CheckIfMetaPropertiesChanged`, `BusyForChangeDetection`, `_busyMayHaveChanged`. This answers the lead's question. The skip itself is a cost and needs no test. But its failure mode is behavioral: the list misses or repeats its `IsBusy` notification. My greps found no test that asserts the list raises `IsBusy` at all. Every list test reads the value, and the value is always read fresh, so they cannot see this. `Affects: AC-4`. `Reachable by:` a consumer bound to a list's `INotifyPropertyChanged` for `IsBusy`, and an item write under it. Suggested tier: `[integration]`, bullet 7's shape on `root.Children` for an item write, asserting `[true, false]`; a remove-busy-item or pause/resume case would cover the other flag sets.
+
+### Tech-debt (untiered, ≤ 5, one line each)
+
+- `AnAwaitedRunRules_WhoseRuleThrows_...` asserts the awaiter's exception as `ThrowsAsync<Exception>` plus `ToString()` contains, and the next wait as `AggregateException` without checking its inner exception or count. "The rules' own exception" and "once" are pinned loosely.
+- `docs/guides/collections.md` still describes the O(1) busy cache of v0.7.1 (plan amendment, WAIT-008's).
+- Carried from round 1: `AsyncFlowTests.cs:77` commented-out `IsBusy` assertion; `LazyLoadProperty.cs:24-25` stale wait comment.
+
+### Could not verify
+
+- None.
+
+### Theoretical (not triaged)
+
+- An override of `ValidateListBase.HandlePropertyChanged` that does not call base never sets `_busyMayHaveChanged`, so the list's `IsBusy` notification would stop. Before this plan such an override lost the cached flag just the same.
+
+### Read report
+
+- Read beyond the brief:
+  - `src/Neatoo/Rules/RuleManager.cs` token checks: to place the cancelled-`RunRules` test's path.
+  - MudNeatoo and Design.App `IsBusy` greps: to find live consumers of the list's notification.
+- Named but unused: none.

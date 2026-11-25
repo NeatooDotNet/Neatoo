@@ -212,15 +212,77 @@ public class WaitsAwaitTasksTests : IntegrationTestBase
 
         var running = root.RunRules();
         gate.SetResult();
-        var thrown = await Assert.ThrowsAsync<Exception>(() => running.WaitAsync(Limit));
-        StringAssert.Contains(thrown.ToString(), "Root rule failed");
+        var thrown = await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => running.WaitAsync(Limit));
+        Assert.AreEqual("Root rule failed", thrown.Message);
 
         // The rules were the object's registered work, so its running tasks hold the fault for
         // the first wait, as they do for an awaited Set{Name}.
-        await Assert.ThrowsExactlyAsync<AggregateException>(() => root.WaitForTasks().WaitAsync(Limit));
+        var reported = await Assert.ThrowsExactlyAsync<AggregateException>(() => root.WaitForTasks().WaitAsync(Limit));
+        Assert.AreSame(thrown, reported.InnerExceptions.Single(), "the same exception, once");
         await root.WaitForTasks().WaitAsync(Limit);
         Assert.IsFalse(root.IsBusy);
     }
+
+    [TestMethod]
+    public async Task AnAwaitedRunRules_CancelledBetweenRules_Throws_AndLeavesNoFaultForTheNextWait()
+    {
+        // The rules are registered and in flight when the token is cancelled; the next rule is
+        // never started.
+        var gate = HoldTheRootsRule();
+        using var cancelled = new CancellationTokenSource();
+
+        var running = root.RunRules(RunRulesFlag.All, cancelled.Token);
+        Assert.IsTrue(root.IsBusy);
+        cancelled.Cancel();
+        gate.SetResult();
+        await Assert.ThrowsAsync<OperationCanceledException>(() => running.WaitAsync(Limit));
+
+        await root.WaitForTasks().WaitAsync(Limit);
+        Assert.IsFalse(root.IsBusy);
+    }
+
+    [TestMethod]
+    public Task AList_AnnouncesBusyOnceAndIdleOnce_ForAWriteOnItsItem() => OneThreadAtATime.Run(async () =>
+    {
+        var item = root.Children![0];
+        var gate = NewGate();
+        item.Gate = () => gate.Task;
+        var busyAtEachNotification = new List<bool>();
+        ((INotifyPropertyChanged)root.Children).PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(IRegisteredChildList.IsBusy))
+            {
+                busyAtEachNotification.Add(root.Children.IsBusy);
+            }
+        };
+
+        _ = item[nameof(IRegisteredChild.Value)].SetValue("a");
+        gate.SetResult();
+        await root.WaitForTasks().WaitAsync(Limit);
+
+        CollectionAssert.AreEqual(new[] { true, false }, busyAtEachNotification);
+    });
+
+    [TestMethod]
+    public Task ABusyItemAddedToAList_WhoseRuleThenThrows_IsReportedByTheOwnersWaitOnce() => OneThreadAtATime.Run(async () =>
+    {
+        var owner = GetRequiredService<IValidateOwnerFactory>().Create();
+        var item = GetRequiredService<Neatoo.UnitTest.Integration.Concepts.ValidateBase.IAsyncRuleFaultObjectFactory>().Create();
+        var gate = NewGate();
+        item.Gate = () => gate.Task;
+        item.Value = "throw";
+
+        owner.Items!.Add(item);
+        var wait = owner.WaitForTasks();
+        gate.SetResult();
+        var reported = await Assert.ThrowsExactlyAsync<AggregateException>(() => wait.WaitAsync(Limit));
+
+        var only = reported.InnerExceptions.Single();
+        Assert.IsInstanceOfType<InvalidOperationException>(only, "the rule's exception itself, not the item's aggregate");
+        Assert.AreEqual("Rule failed", only.Message);
+        await owner.WaitForTasks().WaitAsync(Limit);
+        Assert.IsFalse(owner.IsBusy);
+    });
 
     [TestMethod]
     public async Task AnAwaitedRunRules_Cancelled_Throws_AndLeavesNoFaultForTheNextWait()

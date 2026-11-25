@@ -101,9 +101,13 @@ Red run before the change (`reviews/005-red.log`): 1 of the 7 tests failed, `Run
 | A list's wait suspends and completes | Required | `[integration]` | `AListsWait_ReturnsAnIncompleteTaskWhileAnItemIsBusy_AndCompletesWhenItIsNot`; `AListsTokenWait_WaitsForItsBusyItem_AndCanBeCancelled`, red with the token dropped (`reviews/005-red-round1.log`) | ✓ |
 | An object announces busy once and idle once | Required | `[integration]` | `AnObject_AnnouncesBusyOnceAndIdleOnce_ForAWriteThroughTheProperty`; `ARoot_AnnouncesBusyOnceAndIdleOnce_ForAWriteOnItsChild`; `AnObject_AnnouncesBusyOnceAndIdleOnce_ForRulesRunByPropertyName`, red with the new rising check disabled (`reviews/005-red-rising.log`); `MetaStateTriggerTests.SyncIsBusyTrigger_RunsOncePerFlip_AndSettles` (existing) | ✓ |
 | A busy item added to a `ValidateListBase` is taken up by the owner | Required | `[integration]` | `AnItemAlreadyBusyWhenItIsAddedToAList_HasItsWorkTakenUpByTheListsOwner`, red before the fix (`reviews/005-red-busy-item.log`) | ✓ |
-| Build and tests green | Required | `[explicit-skip]` | `reviews/005-build.log`, `005-test.log` (2,096 passed, 2 skipped, 0 failed), `005-design-build.log`, `005-design-test.log` (235 passed) | n/a |
+| Build and tests green | Required | `[explicit-skip]` | `reviews/005-build.log`, `005-test.log` (2,099 passed, 2 skipped, 0 failed), `005-design-build.log`, `005-design-test.log` (235 passed) | n/a |
 
-Two more tests pin what the Notes say about an awaited `RunRules()`: `AnAwaitedRunRules_WhoseRuleThrows_ThrowsToItsAwaiter_AndTheNextWaitReportsItOnce` and `AnAwaitedRunRules_Cancelled_Throws_AndLeavesNoFaultForTheNextWait`.
+More tests pin what the Notes and the amendments say, without a bullet of their own:
+
+- An awaited `RunRules()`: `AnAwaitedRunRules_WhoseRuleThrows_ThrowsToItsAwaiter_AndTheNextWaitReportsItOnce`, `AnAwaitedRunRules_Cancelled_Throws_AndLeavesNoFaultForTheNextWait`, `AnAwaitedRunRules_CancelledBetweenRules_Throws_AndLeavesNoFaultForTheNextWait`.
+- The list's own notification: `AList_AnnouncesBusyOnceAndIdleOnce_ForAWriteOnItsItem`, red with the list not told that an item's busy changed (`reviews/005-red-round2.log`).
+- A busy item whose rule then throws: `ABusyItemAddedToAList_WhoseRuleThenThrows_IsReportedByTheOwnersWaitOnce`, red without the tracker flattening the fault (`005-red-round2.log`).
 
 No existing test was changed.
 
@@ -114,6 +118,7 @@ No existing test was changed.
 - Round 1 (2026-11-24): test review CONCERNS, one veto: the bullet on "their properties" was checked for two properties of four. Fixed with two more assertions. Its three callouts were taken as tests (an awaited `RunRules()` that throws or is cancelled; the list's token wait; a root announcing for a write on its child), and its open question was answered by a red run (the rising check in `AddChildTask`) — `reviews/005-test-review.md`. Code review APPROVED, no veto, two callouts, both fixed — `reviews/005-code-review.md`:
   - A `ValidateListBase` takes an item that is already busy, and the owner never heard of its work. Fixed where an object is given its parent, with a test seen red first.
   - List `IsBusy`, read from the items, was read on every notification from every item. Measured, then fixed: see Plan Amendments.
+- Round 2 (2026-11-24): test review APPROVED, the veto closed; its three callouts taken as tests (a cancellation between rules; a busy item whose rule throws; the list's own `IsBusy` notification) and its loose assertions tightened. Code review APPROVED, both round 1 callouts verified, no callout. It could not verify the Release measurements, which were taken with a throwaway benchmark that is not committed. One line it listed as theoretical is parked on the todo: a list item whose busy changes while the item is paused does not raise the list's `IsBusy` notification (the value is right). The gate is closed.
 
 ---
 
