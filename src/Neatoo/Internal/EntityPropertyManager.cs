@@ -195,7 +195,7 @@ public class EntityPropertyManager : ValidatePropertyManager<IEntityProperty>, I
     {
         if (this.IsPaused)
         {
-            base.ResumeAllActions();  // Sets VPM.IsPaused = false, recalculates IsValid/IsSelfValid/IsBusy
+            base.ResumeAllActions();  // Sets VPM.IsPaused = false, recalculates IsValid/IsSelfValid
 
             foreach (var fd in this.PropertyBag)
             {

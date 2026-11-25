@@ -644,7 +644,7 @@ internal sealed class EmployeeEditViewModel
 1. **Inject the ViewModel; the ViewModel takes the factory interface** — never the concrete class.
 2. **Bind the Save button to `IsSavable`** (through the ViewModel's `CanSave`) — it combines `IsValid && (IsModified || IsNew) && !IsBusy`, so a freshly created entity enables the button without reporting unsaved changes.
 3. **Subscribe only for what this component displays.** Input components subscribe to their own property wrappers. This page displays the Save button and the view-mode text, so it subscribes to the employee's own `PropertyChanged` and calls `StateHasChanged`. It never subscribes to `NeatooPropertyChanged`; a child's facts belong to the child's row component.
-4. **`WaitForTasks()` before save** — the ViewModel's save handler waits for async rules, then asks `IsSavable`.
+4. **`WaitForTasks()` before save** — the ViewModel's save handler waits for async rules, then asks `IsSavable`. A change made through an input is one of the entity's running tasks whether or not anything awaited it, and so is the write a `Setter` makes with `Set{Name}`. The wait on the root therefore covers what the user has just committed, on the root or on a child.
 5. **Replace the entity reference after save** — `Save()` returns a new instance. The ViewModel reassigns; the page moves its subscription to the new instance, and `@key` rebuilds the bound components so each subscribes to the new instance's wrappers.
 6. **Implement `IDisposable`** — unsubscribe on dispose.
 7. **No `EditForm`, no `DataAnnotationsValidator`, no `MudForm` validation** — MudNeatoo components show the entity's own messages; nothing wraps them.
@@ -709,11 +709,11 @@ The `EntityProperty` parameter exposes these metadata properties, all automatica
 | `DisplayName` | `string` | Label text (from `[DisplayName]` attribute) |
 | `IsValid` | `bool` | No validation errors on this property |
 | `PropertyMessages` | `IReadOnlyCollection<IPropertyMessage>` | Validation error messages |
-| `IsBusy` | `bool` | Async rules running (shows disabled/spinner) |
+| `IsBusy` | `bool` | This property has work in flight: a write to it, or an async rule on it (shows disabled/spinner) |
 | `IsReadOnly` | `bool` | Property cannot be edited |
 | `IsModified` | `bool` | Property has unsaved changes |
 | `SetValue(object?)` | `Task` | Async value assignment (triggers rules) |
-| `WaitForTasks()` | `Task` | Wait for async rules to complete |
+| `WaitForTasks()` | `Task` | Wait for this property's work in flight. A save handler waits on the entity instead |
 
 `DisplayName` and `IsModified` are `IEntityProperty` members; the rest are on `IValidateProperty`, which every Neatoo property implements.
 

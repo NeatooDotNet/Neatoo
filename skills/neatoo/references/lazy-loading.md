@@ -165,7 +165,7 @@ public void Create_PreloadsDetails_SoThereIsNothingToLoad()
 
 ### WaitForTasks Integration
 
-`ValidateBase.WaitForTasks()` awaits in-progress LazyLoad children. This means `await entity.WaitForTasks()` before Save ensures any explicitly triggered loads have completed:
+A load in progress is one of its owner's running tasks: the lazy-load property reports it, and the owner registers it and passes it up through `Parent`. So `ValidateBase.WaitForTasks()` awaits in-progress LazyLoad children, the owner is busy while one loads, and `await entity.WaitForTasks()` before Save ensures any explicitly triggered loads have completed:
 
 <!-- snippet: skill-lazy-load-wait-for-tasks -->
 <a id='snippet-skill-lazy-load-wait-for-tasks'></a>
@@ -238,7 +238,7 @@ public async Task LoadAsync_WhenTheLoaderThrows_RecordsTheErrorAndRethrows()
 <sup><a href='/src/Design/Design.Tests/PropertyTests/LazyLoadTests.cs#L86-L100' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-lazy-load-error' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-If the load was triggered fire-and-forget (`_ = lazy.LoadAsync()`) and the parent calls `WaitForTasks()` while the load is still in progress, a load failure exception propagates through `WaitForTasks()`.
+If the load was triggered fire-and-forget (`_ = lazy.LoadAsync()`), the parent's `WaitForTasks()` waits until the load is over and does not throw the load's failure. A failed load is reported through `HasLoadError` and `LoadError`, and the parent reads `IsValid == false` while the error stands.
 
 ## UI Binding (Blazor / WPF)
 

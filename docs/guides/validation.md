@@ -82,10 +82,10 @@ internal partial class DemoInputModel : ValidateBase<DemoInputModel>, IDemoInput
 ValidateBase provides:
 - **IsValid**: True if all properties and child objects pass validation
 - **IsSelfValid**: True if this object's properties pass validation (ignores children)
-- **IsBusy**: True while an async rule is running
+- **IsBusy**: True while async work is in flight on this object or below it
 - **PropertyMessages**: Collection of validation error messages
 - **RuleManager**: Add validation and business rules using the fluent API or rule classes
-- **WaitForTasks()**: Awaits in-flight async rules
+- **WaitForTasks()**: Awaits the object's work in flight: async rules, and everything else it tracks
 - **PauseAllActions**: Suspends rules, events and modification tracking (see below)
 
 ValidateBase classes must have a constructor accepting `IValidateBaseServices<T>` and pass it to the base constructor. Use `ValidateBase` only when the object needs rules; a read model or DTO is a plain `[Factory]` class with a `[Fetch]` and no Neatoo base class.
@@ -433,12 +433,12 @@ public static class DomainRegistration
 <!-- endSnippet -->
 
 Async validation behavior:
-- **IsBusy tracking**: RuleManager marks the trigger properties busy until the rule completes; the object's `IsBusy` aggregates them
+- **IsBusy tracking**: Each trigger property on the object holds the rule's run as a task and is busy until it finishes. The object is busy while its running tasks are running
 - **WaitForTasks()**: Await pending rules before reading `IsValid` or saving
-- **Parent cascade**: Child tasks propagate up so the aggregate root's `IsBusy` and `WaitForTasks()` cover the whole graph
+- **Parent cascade**: Each task is passed up through `Parent`, so the aggregate root's `IsBusy` and `WaitForTasks()` cover the whole graph
 - **Trigger on commit**: A rule runs every time its trigger property is set and contains no debouncing. MudNeatoo text and numeric fields commit on blur, so a rule behind them makes one server call per committed value
 
-When an async rule executes, RuleManager marks all trigger properties as busy using a unique execution id and clears it with the same id when the rule completes, so concurrent rules do not interfere with each other's tracking.
+When an async rule executes, RuleManager hands the run's task to each of the rule's trigger properties on the object. A property is busy while any task it holds is unfinished, so overlapping runs do not clear each other's busy state, and a rule that throws is a finished task that leaves nothing busy.
 
 ## Forcing a Re-run: RunRules
 
@@ -518,12 +518,12 @@ Property validation metadata:
 - **IsValid**: True if the property (and a child object it holds) is valid
 - **IsSelfValid**: True if the property itself is valid, ignoring a child object's validation
 - **PropertyMessages**: Messages for this property
-- **IsBusy**: True while an async rule is running for this property
-- **Task**: The pending rule task (`Task.CompletedTask` when not busy)
+- **IsBusy**: True while this property has work in flight (a write to it, or an async rule that names it as a trigger), or while a child object it holds is busy
+- **Task**: The task of the most recent write to the property (a completed task when that write started nothing async)
 
 ## Meta-Properties and IsBusy
 
-`IsValid`, `IsSelfValid`, `IsBusy` and `PropertyMessages` aggregate the property objects. While an async rule runs, the property and the object are busy and `IsSavable` is false; `WaitForTasks()` awaits the pending rules:
+`IsValid`, `IsSelfValid` and `PropertyMessages` aggregate the property objects. `IsBusy` is read from the object's running tasks, where everything in flight on the object and below it is registered. While an async rule runs, the property and the object are busy and `IsSavable` is false; `WaitForTasks()` awaits the running tasks, and when it completes nothing on the object or below it is busy:
 
 <!-- snippet: skill-is-busy -->
 <a id='snippet-skill-is-busy'></a>
@@ -549,7 +549,7 @@ public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 Meta-property definitions:
 - **IsValid**: True if this object and ALL child objects pass validation
 - **IsSelfValid**: True if this object's properties pass validation (ignores children)
-- **IsBusy**: True if any async rule is running
+- **IsBusy**: True while async work is in flight on this object or any child object
 - **PropertyMessages**: All validation messages (this object + children)
 - **IsSavable**: (`IEntityRoot` only) `(IsModified || IsNew) && IsValid && !IsBusy` — a created entity is savable without being modified. Not available on `IEntityBase` (child entity interface) or entity lists
 
@@ -818,7 +818,7 @@ Rule execution flow:
 8. `PropertyChanged` events fire for meta-properties
 9. Validation state cascades to parent via `NeatooPropertyChanged`
 
-Synchronous rules (`AddValidation`, `RuleBase`) complete immediately. Async rules (`AddValidationAsync`, `AsyncRuleBase`) mark properties as `IsBusy` during execution and complete when the Task resolves. A rule that throws is an application failure, not a validation result: the exception is rethrown to the caller and the exception message is added to each trigger property.
+Synchronous rules (`AddValidation`, `RuleBase`) complete immediately. Async rules (`AddValidationAsync`, `AsyncRuleBase`) keep their trigger properties and the object `IsBusy` during execution and complete when the Task resolves. A rule that throws is an application failure, not a validation result: the exception is rethrown to the caller, the exception message is added to each trigger property, and the object recovers. The [Async guide](async.md#error-handling) says who sees the exception and how often.
 
 ## Several Messages From One Rule
 
