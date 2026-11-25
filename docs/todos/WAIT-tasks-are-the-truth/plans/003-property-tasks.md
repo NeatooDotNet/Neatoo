@@ -4,12 +4,12 @@
 **Date:** 2026-11-24
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-6, AC-3
-**Status:** In Progress
+**Status:** Done
 **Last Updated:** 2026-11-24
 **Plan-review opt-in:** No (the design is D31, approved by Keith on 2026-11-24 with the old and new architecture side by side)
 **Code-review opt-in:** Yes (it replaces the property's busy state and removes public members)
 **Branch:** wait-003-property-tasks
-**PR:** —
+**PR:** #145
 
 ---
 
