@@ -53,7 +53,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 | 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Done | #146 |
 | 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Done | #147 |
 | 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order (save in flight parked as #103) | AC-10, AC-11 | Done | #148 |
-| 007 | [007-mudneatoo-and-design-app](./plans/007-mudneatoo-and-design-app.md) | MudNeatoo and Design.App on the new tracking | AC-8 | Draft | — |
+| 007 | [007-mudneatoo-and-design-app](./plans/007-mudneatoo-and-design-app.md) | MudNeatoo and Design.App on the new tracking | AC-8 | Done | #149 |
 | 008 | [008-docs-and-release-notes](./plans/008-docs-and-release-notes.md) | Guides, skills and release notes | AC-9 | Draft | — |
 
 ---
@@ -103,6 +103,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-006 · code-reviewer · a subscriber that returns null now faulted the write, where the old invocation absorbed it · null is treated as finished again; test seen red first.
 - WAIT-006 · code-reviewer · a handler that awaits its own object's wait now deadlocks whatever order it subscribed in, and a guide reads as allowing it · punched to the Punchlist for WAIT-008 (the guides and the migration notes).
 - WAIT-006 · test-reviewer (tech-debt) · the todo's plan row still listed AC-12 as served · the row now says it is parked.
+- WAIT-007 · test-reviewer (tech-debt) · a loose exception assertion and a fixture summary that said "no factory" on a `[Factory]` class · both fixed; the plan's Intent narrowed to what the tests show.
 
 ---
 
