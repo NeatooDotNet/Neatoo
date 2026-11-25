@@ -4,12 +4,12 @@
 **Date:** 2026-11-24
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-8
-**Status:** In Progress
+**Status:** Done
 **Last Updated:** 2026-11-24
 **Plan-review opt-in:** No (the criterion states the behavior; no design is added)
 **Code-review opt-in:** No (no product code changes; tests only)
 **Branch:** wait-007-mudneatoo-and-design-app
-**PR:** —
+**PR:** #149
 
 ---
 
