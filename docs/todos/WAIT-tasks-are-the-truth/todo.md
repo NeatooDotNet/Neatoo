@@ -72,6 +72,8 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 - `AsyncFlowTests_Property_PropertyChangedEvents` failing intermittently, proposed as a fix to `CheckIfMetaPropertiesChanged` · it is #131, already out of scope, and Keith ruled on 2026-11-24: "Neatoo is not multi-threaded capable. Like a UI application. Neatoo is not threadsafe." The test ran one object on several pool threads at once; it now runs one thing at a time (WAIT-003)
 - WAIT-008 · a fire-and-forget lazy load that fails while the parent's `WaitForTasks()` is waiting: `main` throws the loader's exception from that wait, the arc completes it cleanly. Waits started after the failure, and an awaited `LoadAsync`, behave the same on both. The skill documented the throw, and Out of Scope says LazyLoad's documented waiting keeps working. Introduced by WAIT-004; the one test on it accepts both outcomes · WAIT-008 · `reviews/008-lazy-failure-probe.log` · Keith ruled on 2026-11-24: "Keep the change"; it is behavior change 9 in the 0.37.0 notes
+- WAIT-003 · test-reviewer tidy-up: the lazily created fixture is a public concrete on the non-DI services · it mirrors the existing fixtures for that path (`reviews/003-test-review.md`, round 2)
+- WAIT-008 · test-reviewer tidy-up: no test in the plan names "an awaited `LoadAsync()` throws" · already pinned by `LoadAsync_WhenTheLoaderThrows_RecordsTheErrorAndRethrows` (Design.Tests) and `LoadAsync_OnFailure_PropagatesException` (unit)
 
 ## Parked
 
@@ -107,6 +109,11 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-007 · test-reviewer (tech-debt) · a loose exception assertion and a fixture summary that said "no factory" on a `[Factory]` class · both fixed; the plan's Intent narrowed to what the tests show.
 - WAIT-008 · docs-writer · the handler rule must name `RunRules(RunRulesFlag)`, because a list's handler awaits `RunRules(propertyName)` on siblings by design · taken in the guides, skills and release notes.
 - WAIT-008 · code-reviewer · four corrections to the prose (custom properties need `ReportToOwner`; the rule-message fix was missing from the notes; a throwing handler now faults the write; the self-wait rule missed the object written to) · all four taken; round 2 notes (numbering, a lazy load in behavior change 7) taken too.
+- WAIT-004 · test-reviewer (tech-debt) · `SaveWithAToken_OnARoot_...` assumed there is no synchronization context · it now asserts it. Dispositioned at close-out; the audit found it had none.
+- WAIT-004 · test-reviewer (tech-debt) · the generator test never asserted that `Set{Name}` was generated · it now asserts it for the public, private and protected setters. Dispositioned at close-out.
+- WAIT-005 · test-reviewer (tech-debt) · a commented-out `IsBusy` notification assertion in `AsyncFlowTests_NoAwait_IsBusy`, older than this arc · restored; it passes, and the guides now state the behavior. Dispositioned at close-out.
+- Close-out audit · Keith's two rulings made during the arc were not in `docs/VisionAlignment.md` · added as D37 and D38, in his words.
+- Close-out audit · WAIT-002's Acceptance bullets were unticked on a Done plan · ticked; each has its row in that plan's Test Evidence.
 
 ---
 

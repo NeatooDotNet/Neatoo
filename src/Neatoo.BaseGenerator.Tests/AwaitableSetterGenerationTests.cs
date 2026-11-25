@@ -58,6 +58,9 @@ public class AwaitableSetterGenerationTests
         Assert.IsTrue(cls.Contains("NameProperty.Value = value;"), "the setter writes");
         Assert.IsTrue(cls.Contains("TotalProperty.SetPrivateValue(value);"), "the private setter writes");
         Assert.IsTrue(cls.Contains("CountProperty.Value = value;"), "the protected setter writes");
+        Assert.IsTrue(cls.Contains("Task SetName(string? value)"), "Set{Name} is generated for the public setter");
+        Assert.IsTrue(cls.Contains("Task SetTotal(decimal value)"), "and for the private one");
+        Assert.IsTrue(cls.Contains("Task SetCount(int value)"), "and for the protected one");
         Assert.IsFalse(cls.Contains("AddChildTask"), "nothing is passed to the parent by generated code");
         Assert.IsFalse(cls.Contains("RunningTasks"), "nothing is registered by generated code");
     }

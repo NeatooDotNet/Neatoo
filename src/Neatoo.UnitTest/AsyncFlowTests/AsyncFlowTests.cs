@@ -74,7 +74,7 @@ public class AsyncFlowTests
         Assert.AreEqual(3, asyncValidateObject.AsyncDelayUpdateChildRule.RunCount);
         Assert.AreEqual(2, asyncValidateObject.Child.AsyncDelayUpdateChildRule.RunCount);
 
-        //CollectionAssert.Contains(propertyChangedCalls, "IsBusy");
+        CollectionAssert.Contains(propertyChangedCalls, "IsBusy");
     });
 
     [TestMethod]
