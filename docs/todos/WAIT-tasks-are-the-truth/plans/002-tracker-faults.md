@@ -58,14 +58,14 @@ Changes the task tracker so that a faulted sequence reports its exceptions to th
 
 ## Acceptance
 
-- [ ] A task added after a faulted sequence is tracked, and the wait for it completes cleanly `[unit]`
-- [ ] A fault observed by a wait in progress is not thrown again by a later wait `[unit]`
-- [ ] A fault nobody was waiting for is thrown by the next wait, once `[unit]`
-- [ ] A fault nobody observed before the next sequence began is reported with that sequence `[unit]`
-- [ ] A completion callback that throws an exception of any type faults the wait and does not hang it `[unit]`
-- [ ] An async rule that throws surfaces from the entity's `WaitForTasks()` once, leaves the trigger property invalid with the message, and a later write is tracked and waited for `[integration]`
-- [ ] An entity resolved from DI takes its tracker from the registered factory `[integration]`
-- [ ] Build and tests green `[explicit-skip: meta-bullet]`
+- [x] A task added after a faulted sequence is tracked, and the wait for it completes cleanly `[unit]`
+- [x] A fault observed by a wait in progress is not thrown again by a later wait `[unit]`
+- [x] A fault nobody was waiting for is thrown by the next wait, once `[unit]`
+- [x] A fault nobody observed before the next sequence began is reported with that sequence `[unit]`
+- [x] A completion callback that throws an exception of any type faults the wait and does not hang it `[unit]`
+- [x] An async rule that throws surfaces from the entity's `WaitForTasks()` once, leaves the trigger property invalid with the message, and a later write is tracked and waited for `[integration]`
+- [x] An entity resolved from DI takes its tracker from the registered factory `[integration]`
+- [x] Build and tests green `[explicit-skip: meta-bullet]`
 
 ---
 

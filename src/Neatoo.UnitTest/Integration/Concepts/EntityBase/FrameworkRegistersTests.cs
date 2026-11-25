@@ -147,6 +147,7 @@ public class FrameworkRegistersTests : IntegrationTestBase
         // No synchronization context here, so each tracker accounts for the finished write
         // inline. The child must account before the root does: when the root's running tasks
         // are done, nothing below it is still busy.
+        Assert.IsNull(SynchronizationContext.Current, "this test is about the case with no synchronization context");
         var child = root.Child!;
         var gate = NewGate();
         child.Gate = () => gate.Task;
