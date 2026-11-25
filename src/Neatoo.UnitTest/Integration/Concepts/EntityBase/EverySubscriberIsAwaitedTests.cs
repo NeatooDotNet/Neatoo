@@ -96,6 +96,21 @@ public class EverySubscriberIsAwaitedTests : IntegrationTestBase
     });
 
     [TestMethod]
+    public async Task ASubscriberThatReturnsNoTask_IsTreatedAsFinished()
+    {
+        // Code compiled without nullable checks can return null from a handler. It always could.
+        root.NeatooPropertyChanged += _ => null!;
+        var alone = root[nameof(IRegisteredRoot.Value)].SetValue("a");
+        await alone.WaitAsync(Limit);
+
+        root.NeatooPropertyChanged += _ => Task.CompletedTask;
+        var withAnother = root[nameof(IRegisteredRoot.Value)].SetValue("b");
+        await withAnother.WaitAsync(Limit);
+
+        Assert.AreEqual("b", root.Value);
+    }
+
+    [TestMethod]
     public Task TheIdleAnnouncement_IsRaisedBeforeTheWaitCompletes() => OneThreadAtATime.Run(async () =>
     {
         var rule = NewGate();

@@ -52,7 +52,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 | 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | Done | #145 |
 | 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Done | #146 |
 | 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Done | #147 |
-| 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order, save in flight | AC-10, AC-11, AC-12 | In Progress | — |
+| 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order (save in flight parked as #103) | AC-10, AC-11 | In Progress | — |
 | 007 | [007-mudneatoo-and-design-app](./plans/007-mudneatoo-and-design-app.md) | MudNeatoo and Design.App on the new tracking | AC-8 | Draft | — |
 | 008 | [008-docs-and-release-notes](./plans/008-docs-and-release-notes.md) | Guides, skills and release notes | AC-9 | Draft | — |
 
@@ -66,6 +66,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - [ ] The migration notes name the breaks from WAIT-004: `AddChildTask` is off `IValidateBase` and `protected` on `ValidateBase`; generated setters and `Set{Name}` no longer register, so consumers rebuild; an awaited `RunRules(propertyName)` that throws is now also reported by the next `WaitForTasks()`, as an awaited `Set{Name}` already was · the release notes (WAIT-008) · done when the migration section lists them · AC-9
 - [x] (#147) `RunRules(RunRulesFlag)` called and not awaited: its rule runs are busy on their trigger properties but not in the object's running tasks, so a wait on running tasks alone would not wait for them. It cannot register itself, because it awaits the running tasks inside · `ValidateBase.RunRules(RunRulesFlag)` and `RuleManager.RunRules(RunRulesFlag)` · done when the wait in WAIT-005 covers it, with a test, or it is ruled awaited-only · AC-1 · for WAIT-005
 - [ ] The migration notes name the changes from WAIT-005: an object's `IsBusy` and `WaitForTasks()` are its running tasks alone, so a custom property that reports busy without tracking a task no longer makes its object busy; `ValidatePropertyManager.IsBusy` has no setter; an awaited `RunRules()` that throws is also reported by the next `WaitForTasks()` · the release notes (WAIT-008) · done when the migration section lists them · AC-9
+- [ ] The guides say what a `NeatooPropertyChanged` handler must not do: await `WaitForTasks()`, `RunRules()` or `Save(token)` on its own object or a parent. Every handler's task is now part of the write, so such a handler waits for itself, whatever order it subscribed in (`docs/guides/blazor.md` near line 102 reads as allowing it) · the async and Blazor guides, and the migration notes · done when both say so · AC-9 · for WAIT-008 (from the WAIT-006 code review)
 
 ## Dismissed
 
@@ -99,6 +100,9 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-005 · code-reviewer · a `ValidateListBase` takes an item that is already busy and its owner never heard of the work · a parent now takes up the work of an object that is busy when attached; test seen red first. This corrects WAIT-004's "a list refuses a busy item".
 - WAIT-005 · code-reviewer · list `IsBusy` read every item on every notification · measured (an edit cost up to 137 times more at 20,000 items), then fixed: the value is still read from the items, but the notification check reads them only when busy may have changed.
 - WAIT-005 · test-reviewer (round 2) · three paths had no test: a cancellation between rules, a busy item whose rule throws, and the list's own `IsBusy` notification · three tests added, two seen red with the code they pin disabled; loose exception assertions tightened.
+- WAIT-006 · code-reviewer · a subscriber that returns null now faulted the write, where the old invocation absorbed it · null is treated as finished again; test seen red first.
+- WAIT-006 · code-reviewer · a handler that awaits its own object's wait now deadlocks whatever order it subscribed in, and a guide reads as allowing it · punched to the Punchlist for WAIT-008 (the guides and the migration notes).
+- WAIT-006 · test-reviewer (tech-debt) · the todo's plan row still listed AC-12 as served · the row now says it is parked.
 
 ---
 

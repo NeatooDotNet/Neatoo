@@ -21,16 +21,18 @@ internal static class NeatooPropertyChangedInvocation
             return Task.CompletedTask;
         }
 
+        // A subscriber compiled without nullable checks can return null. That is "nothing to
+        // wait for", as it was when the event was invoked as a delegate.
         if (subscribers.HasSingleTarget)
         {
-            return subscribers(eventArgs);
+            return subscribers(eventArgs) ?? Task.CompletedTask;
         }
 
         var tasks = new List<Task>();
 
         foreach (var subscriber in Delegate.EnumerateInvocationList(subscribers))
         {
-            tasks.Add(subscriber(eventArgs));
+            tasks.Add(subscriber(eventArgs) ?? Task.CompletedTask);
         }
 
         return Task.WhenAll(tasks);

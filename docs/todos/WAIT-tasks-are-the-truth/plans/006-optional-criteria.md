@@ -83,7 +83,9 @@ Red run before the change (`reviews/006-red.log`): 3 of the 4 tests failed, the 
 | Not over while its rules run, with a consumer on the property | Optional | `[integration]` | `AWrite_IsNotOver_WhileItsRulesRun_WhenSomeoneElseAlsoListensToTheProperty` | ✓ |
 | Reports what an earlier subscriber threw | Optional | `[integration]` | `AWrite_ReportsWhatAnEarlierSubscriberThrew` | ✓ |
 | Idle is announced before the wait completes | Optional | `[integration]` | `TheIdleAnnouncement_IsRaisedBeforeTheWaitCompletes` | ✓ |
-| Build and tests green | Required | `[explicit-skip]` | `reviews/006-build.log`, `006-test.log` (2,103 passed, 2 skipped, 0 failed), `006-design-build.log`, `006-design-test.log` (235 passed) | n/a |
+| Build and tests green | Required | `[explicit-skip]` | `reviews/006-build.log`, `006-test.log` (2,104 passed, 2 skipped, 0 failed), `006-design-build.log`, `006-design-test.log` (235 passed) | n/a |
+
+One more test holds a constraint rather than a bullet (a subscriber costs and behaves as before): `ASubscriberThatReturnsNoTask_IsTreatedAsFinished`, added at the gate and red before its fix (`reviews/006-red-null.log`).
 
 No existing test was changed.
 
@@ -92,6 +94,11 @@ No existing test was changed.
 ---
 
 ## Gate Record
+
+- Round 1 (2026-11-24): test review APPROVED, no veto, no callout; its bookkeeping note is fixed (the todo's plan row no longer lists AC-12 as served) — `reviews/006-test-review.md`. Code review APPROVED, no veto, two callouts — `reviews/006-code-review.md`:
+  - A subscriber that returns null faulted the write, where the old invocation absorbed it. Fixed, with a test seen red first.
+  - A handler that awaits its own object's wait now deadlocks whatever order it subscribed in; before, it escaped when a later subscriber's task replaced its own, which was the defect. Punched to the todo for WAIT-008: the guides and the migration notes say so.
+  - It checked the reason for parking AC-12 against the generated save path and found it holds (traced, not run), and agreed that enumerating a delegate's subscribers is not reflection. The gate is closed.
 
 ---
 
