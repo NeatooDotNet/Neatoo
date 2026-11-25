@@ -19,18 +19,18 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 ## Acceptance Criteria
 
-- [ ] **AC-1** · Required — Every async reaction an entity starts is registered in its `RunningTasks` by the framework, whoever started it.
-- [ ] **AC-2** · Required — `WaitForTasks()` awaits registered tasks only and polls no flag.
-- [ ] **AC-3** · Required — On a single thread, `WaitForTasks()` returns an incomplete task while work is in flight and completes when that work does.
-- [ ] **AC-4** · Required — When `WaitForTasks()` completes, `IsBusy` is false on the object and its descendants.
-- [ ] **AC-5** · Required — `WaitForTasks(token)` waits for exactly what `WaitForTasks()` waits for.
-- [ ] **AC-6** · Required — A property is busy exactly while a write or an async rule that involves it is in flight.
+- [x] **AC-1** · Required — Every async reaction an entity starts is registered in its `RunningTasks` by the framework, whoever started it.
+- [x] **AC-2** · Required — `WaitForTasks()` awaits registered tasks only and polls no flag.
+- [x] **AC-3** · Required — On a single thread, `WaitForTasks()` returns an incomplete task while work is in flight and completes when that work does.
+- [x] **AC-4** · Required — When `WaitForTasks()` completes, `IsBusy` is false on the object and its descendants.
+- [x] **AC-5** · Required — `WaitForTasks(token)` waits for exactly what `WaitForTasks()` waits for.
+- [x] **AC-6** · Required — A property is busy exactly while a write or an async rule that involves it is in flight.
 - [x] **AC-7** · Required — An async rule that throws surfaces from `WaitForTasks()` once, and the object then tracks and waits for later work.
-- [ ] **AC-8** · Required — A write through a MudNeatoo input followed by `WaitForTasks()` on the entity completes when the rule does.
-- [ ] **AC-9** · Required — The guides, the skills and Design.Domain describe tracking, waiting, busy and faults as the code behaves.
-- [ ] **AC-10** · Optional — Raising `NeatooPropertyChanged` awaits every subscriber's task.
-- [ ] **AC-11** · Optional — The falling `IsBusy` notification is raised before `WaitForTasks()` completes.
-- [ ] **AC-12** · Optional — A save in flight makes the entity busy.
+- [x] **AC-8** · Required — A write through a MudNeatoo input followed by `WaitForTasks()` on the entity completes when the rule does.
+- [x] **AC-9** · Required — The guides, the skills and Design.Domain describe tracking, waiting, busy and faults as the code behaves.
+- [x] **AC-10** · Optional — Raising `NeatooPropertyChanged` awaits every subscriber's task.
+- [x] **AC-11** · Optional — The falling `IsBusy` notification is raised before `WaitForTasks()` completes.
+- [ ] **AC-12** · Optional — A save in flight makes the entity busy. Not built: parked as #103 (see Parked).
 
 ## Out of Scope
 
@@ -71,13 +71,13 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 ## Dismissed
 
 - `AsyncFlowTests_Property_PropertyChangedEvents` failing intermittently, proposed as a fix to `CheckIfMetaPropertiesChanged` · it is #131, already out of scope, and Keith ruled on 2026-11-24: "Neatoo is not multi-threaded capable. Like a UI application. Neatoo is not threadsafe." The test ran one object on several pool threads at once; it now runs one thing at a time (WAIT-003)
+- WAIT-008 · a fire-and-forget lazy load that fails while the parent's `WaitForTasks()` is waiting: `main` throws the loader's exception from that wait, the arc completes it cleanly. Waits started after the failure, and an awaited `LoadAsync`, behave the same on both. The skill documented the throw, and Out of Scope says LazyLoad's documented waiting keeps working. Introduced by WAIT-004; the one test on it accepts both outcomes · WAIT-008 · `reviews/008-lazy-failure-probe.log` · Keith ruled on 2026-11-24: "Keep the change"; it is behavior change 9 in the 0.37.0 notes
 
 ## Parked
 
 - proposed · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice · 0.36.1 design critique, 2026-11-24
 - proposed · a list item whose busy changes while the item itself is paused does not raise the list's `IsBusy` notification; the list's `IsBusy` value is right and its owner is unaffected. Reached by an awaited `RunRules` with an async rule inside a factory operation on an item already in a list · WAIT-005 · `reviews/005-code-review.md` Round 2, Theoretical
 - #103 · AC-12 (Optional) not built: registering the save as the object's work makes `MarkUnmodified` refuse when a local save with an async `[Insert]` or `[Update]` completes, so it needs a ruling on that guard and on the sent instance's state after a remote save · WAIT-006 · `plans/006-optional-criteria.md` Plan Amendments
-- ruled (Keith, 2026-11-24: "Keep the change"; no issue) · a fire-and-forget lazy load that fails while the parent's `WaitForTasks()` is waiting: `main` throws the loader's exception from that wait, the arc completes it cleanly. Waits started after the failure, and an awaited `LoadAsync`, behave the same on both. The skill documented the throw, and Out of Scope says LazyLoad's documented waiting keeps working. Introduced by WAIT-004; the one test on it accepts both outcomes · WAIT-008 · `reviews/008-lazy-failure-probe.log`
 
 ---
 
