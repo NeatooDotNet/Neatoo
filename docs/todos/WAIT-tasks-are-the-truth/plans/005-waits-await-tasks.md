@@ -64,7 +64,8 @@ Makes `WaitForTasks()` on an object the object's running tasks and nothing else,
 - [x] A cancelled token wait throws, and the work still finishes `[integration]`
 - [x] When a root's `WaitForTasks()` completes, the root, its child, its list, the list's item and their properties are not busy `[integration]`
 - [x] A list's wait returns an incomplete task while an item is busy and completes when it is not `[integration]`
-- [x] An object announces busy once and idle once for a write through the property `[integration]`
+- [x] An object announces busy once and idle once for a write through the property, for a write on its child, and for rules run by property name `[integration]`
+- [x] An item that is already busy when it is added to a `ValidateListBase` has its work taken up by the list's owner (added at the gate) `[integration]`
 - [x] Build and tests green `[explicit-skip: meta-bullet]`
 
 ---
@@ -97,9 +98,12 @@ Red run before the change (`reviews/005-red.log`): 1 of the 7 tests failed, `Run
 | The two waits wait for the same work | Required | `[integration]` | `TheTwoWaits_WaitForTheSameWork`; and every test in `FrameworkRegistersTests`, which waits with a token | ✓ |
 | A cancelled token wait throws and the work finishes | Required | `[integration]` | `ATokenWait_Cancelled_Throws_AndTheWorkStillFinishes` | ✓ |
 | When the root's wait completes, nothing on or below it is busy | Required | `[integration]` | `WhenTheRootsWaitCompletes_NothingOnItOrBelowItIsBusy` | ✓ |
-| A list's wait suspends and completes | Required | `[integration]` | `AListsWait_ReturnsAnIncompleteTaskWhileAnItemIsBusy_AndCompletesWhenItIsNot` | ✓ |
-| An object announces busy once and idle once | Required | `[integration]` | `AnObject_AnnouncesBusyOnceAndIdleOnce_ForAWriteThroughTheProperty`; `MetaStateTriggerTests.SyncIsBusyTrigger_RunsOncePerFlip_AndSettles` (existing) | ✓ |
-| Build and tests green | Required | `[explicit-skip]` | `reviews/005-build.log`, `005-test.log` (2,090 passed, 2 skipped, 0 failed), `005-design-build.log`, `005-design-test.log` (235 passed) | n/a |
+| A list's wait suspends and completes | Required | `[integration]` | `AListsWait_ReturnsAnIncompleteTaskWhileAnItemIsBusy_AndCompletesWhenItIsNot`; `AListsTokenWait_WaitsForItsBusyItem_AndCanBeCancelled`, red with the token dropped (`reviews/005-red-round1.log`) | ✓ |
+| An object announces busy once and idle once | Required | `[integration]` | `AnObject_AnnouncesBusyOnceAndIdleOnce_ForAWriteThroughTheProperty`; `ARoot_AnnouncesBusyOnceAndIdleOnce_ForAWriteOnItsChild`; `AnObject_AnnouncesBusyOnceAndIdleOnce_ForRulesRunByPropertyName`, red with the new rising check disabled (`reviews/005-red-rising.log`); `MetaStateTriggerTests.SyncIsBusyTrigger_RunsOncePerFlip_AndSettles` (existing) | ✓ |
+| A busy item added to a `ValidateListBase` is taken up by the owner | Required | `[integration]` | `AnItemAlreadyBusyWhenItIsAddedToAList_HasItsWorkTakenUpByTheListsOwner`, red before the fix (`reviews/005-red-busy-item.log`) | ✓ |
+| Build and tests green | Required | `[explicit-skip]` | `reviews/005-build.log`, `005-test.log` (2,096 passed, 2 skipped, 0 failed), `005-design-build.log`, `005-design-test.log` (235 passed) | n/a |
+
+Two more tests pin what the Notes say about an awaited `RunRules()`: `AnAwaitedRunRules_WhoseRuleThrows_ThrowsToItsAwaiter_AndTheNextWaitReportsItOnce` and `AnAwaitedRunRules_Cancelled_Throws_AndLeavesNoFaultForTheNextWait`.
 
 No existing test was changed.
 
@@ -107,9 +111,29 @@ No existing test was changed.
 
 ## Gate Record
 
+- Round 1 (2026-11-24): test review CONCERNS, one veto: the bullet on "their properties" was checked for two properties of four. Fixed with two more assertions. Its three callouts were taken as tests (an awaited `RunRules()` that throws or is cancelled; the list's token wait; a root announcing for a write on its child), and its open question was answered by a red run (the rising check in `AddChildTask`) — `reviews/005-test-review.md`. Code review APPROVED, no veto, two callouts, both fixed — `reviews/005-code-review.md`:
+  - A `ValidateListBase` takes an item that is already busy, and the owner never heard of its work. Fixed where an object is given its parent, with a test seen red first.
+  - List `IsBusy`, read from the items, was read on every notification from every item. Measured, then fixed: see Plan Amendments.
+
 ---
 
 ## Plan Amendments
+
+### 2026-11-24 — A parent takes up the work of an object that is busy when it is attached
+
+- **Section affected:** Step 1, Acceptance (one bullet added); it also corrects WAIT-004's amendment "No adoption of a busy object"
+- **Original said:** WAIT-004 dropped adoption because "a property refuses a busy child and a list refuses a busy item".
+- **What changed:** when an object is given a new parent while its running tasks are running, the parent registers the object's wait. The tracker flattens the fault of a tracked wait.
+- **Why:** only `EntityListBase` refuses a busy item, and only when it is not paused. A `ValidateListBase` takes one. With the property scan gone from the object's wait, the owner's wait completed and its `IsBusy` was false while the item was still busy.
+- **Discovery Log:** 2026-11-24 / WAIT-005
+
+### 2026-11-24 — The list reads its items for `IsBusy`, but not on every notification
+
+- **Section affected:** Step 4
+- **Original said:** read list busy from its members; remove the cached flag.
+- **What changed:** `IsBusy` on a list still reads its items every time. The check that decides whether to raise the list's `IsBusy` notification, which runs on every notification from every item, reads the items only when an item has announced a busy change or the items themselves changed; otherwise it uses its last reading.
+- **Why:** measured in Release against the arc before this plan. Reading the items on every notification made one edit cost 69 µs against 20 µs at 1,000 items and 493 µs against 3.6 µs at 20,000, and filling 20,000 items took 2.65 s against 0.37 s. With the change the edit and fill costs are back to the arc's (19 µs and 3.6 µs per edit). What remains is the read itself: 13 µs at 1,000 items and 176 µs at 20,000, against a cached flag before. This replaces the O(1) cache of v0.7.1; `docs/guides/collections.md` still describes that cache and is WAIT-008's.
+- **Discovery Log:** 2026-11-24 / WAIT-005
 
 ---
 

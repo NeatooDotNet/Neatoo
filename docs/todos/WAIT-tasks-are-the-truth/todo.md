@@ -93,6 +93,9 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-004 · test-reviewer · the protected generated setter and the ValidateBase lazy-load report had no test, and the "once" tests had never been seen red · the generator test covers the protected setter, the lazy-load report has its own test, and the "once" tests were run red with de-duplication disabled.
 - WAIT-004 · code-reviewer · a lazy value replaced while it loaded left its owner busy for good, and a lazy value already loading when assigned was never reported · the report now follows the value the property holds; two tests seen red first.
 - WAIT-004 · code-reviewer (could not verify) · an un-awaited `RunRules(RunRulesFlag)` is busy on its properties but not in the object's running tasks · punched to the Punchlist for WAIT-005.
+- WAIT-005 · test-reviewer (veto) · a bullet claimed "their properties" and the test checked two of four · two assertions added; its three callouts taken as tests, and the rising check in `AddChildTask` seen red.
+- WAIT-005 · code-reviewer · a `ValidateListBase` takes an item that is already busy and its owner never heard of the work · a parent now takes up the work of an object that is busy when attached; test seen red first. This corrects WAIT-004's "a list refuses a busy item".
+- WAIT-005 · code-reviewer · list `IsBusy` read every item on every notification · measured (an edit cost up to 137 times more at 20,000 items), then fixed: the value is still read from the items, but the notification check reads them only when busy may have changed.
 
 ---
 
@@ -120,6 +123,11 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 ### 2026-11-24 — WAIT-004 · serves AC-1
 - **Finding:** A property refuses a busy child and a list refuses a busy item, so a parent is never handed work already in flight; the planned adoption step had nothing to do.
+- **Decision:** Amend
+- **Follow-up:** n/a
+
+### 2026-11-24 — WAIT-005 · serves AC-4
+- **Finding:** A `ValidateListBase` takes an item that is already busy, so WAIT-004's reason for dropping adoption held for entity lists only; and list `IsBusy` read from the items on every notification cost up to 137 times more per edit.
 - **Decision:** Amend
 - **Follow-up:** n/a
 

@@ -272,7 +272,18 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </remarks>
 	protected virtual void SetParent(IValidateBase? parent)
 	{
+		var previous = this.Parent;
 		this.Parent = parent;
+
+		// An object handed to a parent while it has work in flight started that work when it had
+		// no parent to pass it to. The new parent takes it up here, so its wait and its busy cover
+		// it. A property and an entity list refuse a busy child; a ValidateListBase does not.
+		if (!ReferenceEquals(previous, parent)
+			&& parent is IValidateBaseInternal parentInternal
+			&& this.RunningTasks.IsRunning)
+		{
+			parentInternal.AddChildTask(this.RunningTasks.AllDone);
+		}
 	}
 
 	/// <summary>
