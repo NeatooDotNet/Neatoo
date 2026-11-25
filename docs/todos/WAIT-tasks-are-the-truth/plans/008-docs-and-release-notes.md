@@ -4,12 +4,12 @@
 **Date:** 2026-11-24
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-9
-**Status:** In Progress
+**Status:** Done
 **Last Updated:** 2026-11-24
 **Plan-review opt-in:** No (the rulings D31 to D36 and the merged plans state what the docs must say)
 **Code-review opt-in:** Yes (an unanchored read of the prose against the code is the only check a docs plan gets)
 **Branch:** wait-008-docs-and-release-notes
-**PR:** —
+**PR:** #150
 
 ---
 
