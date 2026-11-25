@@ -64,26 +64,29 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
     /// child object.
     /// </summary>
     /// <remarks>
-    /// DESIGN DECISION: await the properties' own waits, and go round again only while one of
-    /// them was incomplete, because finishing work can start more.
+    /// DESIGN DECISION: await the waits of the properties that are busy, and go round again only
+    /// while one of those waits had something left to await, because finishing work can start
+    /// more. A wait that has already faulted is awaited too, so the fault comes through.
     /// DID NOT DO THIS: loop while a property reports IsBusy. A busy flag gives nothing to await,
     /// so the loop never suspended, and on one thread nothing could ever clear the flag (#141).
+    /// DID NOT DO THIS: ask every property for its wait. Asking an idle child object for its wait
+    /// takes the fault its tracker holds for its own first wait.
     /// </remarks>
     public async Task WaitForTasks()
     {
         while (true)
         {
-            var inFlight = this.PropertyBag.Values
+            var waits = this.PropertyBag.Values
+                .Where(property => property.IsBusy)
                 .Select(property => property.WaitForTasks())
-                .Where(wait => !wait.IsCompleted)
                 .ToList();
 
-            if (inFlight.Count == 0)
+            if (waits.All(wait => wait.IsCompletedSuccessfully))
             {
                 return;
             }
 
-            await Task.WhenAll(inFlight);
+            await Task.WhenAll(waits);
         }
     }
 

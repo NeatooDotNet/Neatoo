@@ -73,7 +73,8 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
     /// <summary>
     /// Completes when a child object held as the value has finished its work and this property
-    /// has none in flight. It never faults: a rule's exception surfaces from the entity's wait.
+    /// has none in flight. The property's own work never faults it: a rule's exception surfaces
+    /// from the entity's wait. A child object's wait can, and that fault comes through.
     /// </summary>
     public async Task WaitForTasks()
     {
@@ -113,11 +114,27 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
         // The tracker calls this when the last task finishes, before it completes the waits on
         // it. So whatever listens for IsBusy has heard "idle" by the time a wait returns.
-        tasks.OnFullSequenceComplete = () =>
+        tasks.OnFullSequenceComplete = this.AnnounceIdle;
+    }
+
+    // What a listener threw while this property announced that it is idle. The operation whose
+    // work ended the sequence reports it, see AccountedFor.
+    private Exception? _idleAnnouncementFault;
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Whatever a listener throws is handed to the operation that ended the work, which rethrows it. Left to the tracker, it would fault the property's wait.")]
+    private Task AnnounceIdle()
+    {
+        try
         {
             this.OnPropertyChanged(nameof(IsBusy));
-            return Task.CompletedTask;
-        };
+        }
+        catch (Exception ex)
+        {
+            this._idleAnnouncementFault = ex;
+        }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -126,13 +143,17 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
     /// </summary>
     /// <returns>
     /// A task that completes when the property has accounted for <paramref name="task"/>: if it
-    /// was the last in flight, the property is idle and has said so. It never faults.
+    /// was the last in flight, the property is idle and has said so. It faults only with what a
+    /// listener threw while the property said so, never with the work's own exception.
     /// </returns>
     /// <remarks>
-    /// DESIGN DECISION: whoever starts the work awaits this before its own task completes, so an
-    /// awaited write or rule run leaves the property idle. The tracker does its accounting in a
-    /// continuation; left unawaited, that continuation would still be running, on another thread,
-    /// after the caller had moved on to its next write.
+    /// DESIGN DECISION: whoever starts the work awaits this before its own task completes. An
+    /// awaited write or rule run therefore leaves the property idle, and an exception thrown
+    /// while the property goes idle (by a PropertyChanged listener, or by a rule triggered on the
+    /// object's IsBusy) surfaces from that write or run, as an exception thrown while it went
+    /// busy does.
+    /// DID NOT DO THIS: let the tracker keep that exception. It would fault the property's wait,
+    /// or surface later from unrelated work.
     /// </remarks>
     protected Task TrackTask(Task task)
     {
@@ -149,15 +170,27 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
         // Completion only. The tracker would otherwise report the task's exception from the
         // property's wait as well as from the entity's.
-        var accounted = tasks.AddTask(task.ContinueWith(
-            static _ => { }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
+        var accounting = tasks.AddTask(task.WhenFinished());
 
         if (!wasRunning)
         {
             this.OnPropertyChanged(nameof(IsBusy));
         }
 
-        return accounted;
+        return this.AccountedFor(accounting);
+    }
+
+    private async Task AccountedFor(Task accounting)
+    {
+        await accounting;
+
+        var fault = this._idleAnnouncementFault;
+
+        if (fault != null)
+        {
+            this._idleAnnouncementFault = null;
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(fault).Throw();
+        }
     }
 
     Task IValidatePropertyInternal.TrackTask(Task task) => this.TrackTask(task);
@@ -369,11 +402,15 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
         {
             await task;
         }
-        finally
+        catch
         {
-            // The write is not over until the property has accounted for it.
-            await accounted;
+            // The write is not over until the property has accounted for it. The write's own
+            // exception is the one to report, whatever a listener threw as the property went idle.
+            await accounted.WhenFinished();
+            throw;
         }
+
+        await accounted;
     }
 
     protected virtual bool AreSame<P>(P? oldValue, P? newValue)

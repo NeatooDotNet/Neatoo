@@ -66,6 +66,10 @@ Replaces the property's busy bool and its list of busy ids with a task tracker o
 - [x] The same for a write made through `IValidateProperty.SetValue` `[integration]`
 - [x] A property on a deserialized object is busy while its async rule runs `[integration]`
 - [x] When an awaited write or rule run completes, the property is already idle and has raised its busy notification twice, busy then idle (added at implementation, see Plan Amendments) `[integration]`
+- [x] A property the property manager creates on first use is busy while its async rule runs (added at the gate) `[integration]`
+- [x] The tracker's completion callback, and the busy notifications of a property and its object, run on the thread that owns the object when the reply arrives on another (added at the gate) `[unit]` `[integration]`
+- [x] An exception a listener throws as a property goes idle faults the awaited write or rule run, not the property's wait (added at the gate) `[integration]`
+- [x] A parent's wait reports its child's fault once and leaves an idle child's own wait to report it (added at the gate) `[integration]`
 - [x] Build and tests green `[explicit-skip: meta-bullet]`
 
 ---
@@ -101,7 +105,11 @@ Red run before the change (`reviews/003-red.log`): 6 of the first 8 tests failed
 | Entity wait returns control after `IValidateProperty.SetValue` | Required | `[integration]` | `WaitForTasks_ReturnsControlWhileAWriteThroughThePropertyIsInFlight_AndCompletesWhenItDoes` | ✓ |
 | A deserialized object's property is busy while its rule runs | Required | `[integration]` | `Property_OnADeserializedObject_IsBusyWhileItsAsyncRuleRuns` | ✓ |
 | An awaited write or rule run leaves the property idle, and it has said so | Required | `[integration]` | `WhenAnAwaitedRuleRunCompletes_ThePropertyIsAlreadyIdle_AndHasSaidSo`, `WhenAnAwaitedWriteCompletes_ThePropertyIsAlreadyIdle_AndHasSaidSo` | ✓ |
-| Build and tests green | Required | `[explicit-skip]` | `reviews/003-build.log`, `003-test.log` (2,062 passed, 2 skipped, 0 failed), `003-design-build.log`, `003-design-test.log` (235 passed) | n/a |
+| A lazily created property is busy while its rule runs | Required | `[integration]` | `Property_ThePropertyManagerCreatesOnFirstUse_IsBusyWhileItsAsyncRuleRuns`, red with the attach disabled on that path (`reviews/003-red-lazy.log`) | ✓ |
+| Callback and busy notifications run on the owning thread | Required | `[unit]` `[integration]` | `Unit.Core.AsyncTasksOwningThreadTests.CompletionCallback_RunsOnTheThreadThatAddedTheTask_WhenTheTaskFinishesOnAnother`; `BusyNotifications_AreRaisedOnTheThreadThatOwnsTheObject_WhenTheReplyArrivesOnAnother`; both red before the fix (`reviews/003-red-round1.log`) | ✓ |
+| A listener's exception as the property goes idle faults the operation | Required | `[integration]` | `AListenerThatThrowsAsThePropertyGoesIdle_FaultsTheAwaitedRuleRun_NotThePropertysWait`, `AListenerThatThrowsAsThePropertyGoesIdle_FaultsTheAwaitedWrite_NotThePropertysWait`; red before the fix (`003-red-round1.log`) | ✓ |
+| A parent's wait leaves an idle child's fault to the child's wait | Required | `[integration]` | `AParentsWait_ReportsItsChildsFaultOnce_AndLeavesTheIdleChildsOwnWaitToReportIt`; red before the fix (`003-red-round1.log`) | ✓ |
+| Build and tests green | Required | `[explicit-skip]` | `reviews/003-build.log`, `003-test.log` (2,068 passed, 2 skipped, 0 failed), `003-design-build.log`, `003-design-test.log` (235 passed) | n/a |
 
 Existing tests changed, each with its reason:
 
@@ -110,13 +118,17 @@ Existing tests changed, each with its reason:
 | `ValidatePropertyTests.IsSelfBusy_InitialState_ReturnsFalse` | A new property's `IsSelfBusy` is false | Removed | `IsSelfBusy` no longer exists (D31, D35). `IsBusy_InitialState_ReturnsFalse` beside it still pins the initial state. |
 | `AsyncRuleFaultTests.ValidateBase_TakesItsTrackerFromTheRegisteredFactory` | The registered factory was called once, and its one tracker is the object's | The object's tracker is one of those the registered factory supplied, and it supplied at least two | The same factory now supplies each property's tracker (D31, D36), so it is called more than once. |
 | `TrackerFromServicesTests.EntityBase_TakesItsTrackerFromTheRegisteredFactory` | The same, for `EntityBase` | The same change | The same reason. |
-| `AsyncFlowTests`, its six async tests | Each body ran on the test host's thread pool, so two async rules could resume on two threads over one object | The same assertions; each body runs inside `OneThreadAtATime.Run`, which queues every continuation to one exclusive scheduler | A graph is single-threaded ("Single-Threaded Object Model", `src/Design/CLAUDE-DESIGN.md`; Keith, 2026-11-24: "Neatoo is not multi-threaded capable. Like a UI application."). No assertion changed. `AsyncFlowTests_Property_PropertyChangedEvents` went from 2 failures in 15 full-suite runs to 0 in 30. |
+| `AsyncFlowTests`, its six async tests | Each body ran on the test host's thread pool, so two async rules could resume on two threads over one object | The same assertions; each body runs inside `OneThreadAtATime.Run`, on one thread that owns the object | A graph is single-threaded ("Single-Threaded Object Model", `src/Design/CLAUDE-DESIGN.md`; Keith, 2026-11-24: "Neatoo is not multi-threaded capable. Like a UI application."). No assertion changed. `AsyncFlowTests_Property_PropertyChangedEvents` went from 2 failures in 15 full-suite runs to 0 in 30. |
 
 ---
 
 ## Gate Record
 
 - Stop before the gate (2026-11-24): `AsyncFlowTests_Property_PropertyChangedEvents`, outside this plan, failed intermittently on the arc before this plan as well as after it. Keith ruled that Neatoo is not thread-safe, like a UI application. The finding is dismissed in the todo (it is #131) and the test class now runs one thing at a time. The loop resumed.
+- Round 1 (2026-11-24): test review APPROVED, no veto; its callout taken (a test for a property created on first use) and two tidy-up lines fixed — `reviews/003-test-review.md`. Code review CONCERNS, one veto and one callout, all fixed with tests seen red first — `reviews/003-code-review.md`:
+  - Veto: an exception thrown while a property went idle landed in the property's tracker, not in the awaited write or rule run. Fixed: the property hands it to the operation that ended the work.
+  - Callout: the manager's wait asked every property for its wait and dropped waits that had already faulted, so an idle child's held fault was taken and lost. Fixed: only busy properties are asked, and a faulted wait is awaited.
+  - A line the review listed as theoretical was taken as well, because it is a regression against the single-threaded model: this plan had moved the property's idle notification onto a pool-thread continuation. Fixed in the tracker, see Plan Amendments.
 
 ---
 
@@ -130,6 +142,22 @@ Existing tests changed, each with its reason:
 - **Why:** the tracker does its accounting in a continuation. Left unawaited, an awaited `RunRules` or write returned while the property was still busy, and the idle notification arrived later on another thread, where it raced the caller's next write. The old id list was cleared inside the rule run, so this ordering held before. `SyncIsBusyTrigger_RunsOncePerFlip_AndSettles` failed in 3 runs of 8 without it, and in none of 2,000 iterations of a throwaway probe with it.
 - **Discovery Log:** 2026-11-24 / WAIT-003
 
+### 2026-11-24 — The tracker accounts for a task on the thread that added it
+
+- **Section affected:** Step 3, Acceptance (bullets added at the gate)
+- **Original said:** the property raises its busy notification on both transitions.
+- **What changed:** `AsyncTasks` accounts for a finished task in an awaiting method, not in a `ContinueWith` continuation. The completion callback, and so the idle notification of a property and of an object, now run on the synchronization context that added the task. `OneThreadAtATime` in the test project became a thread with a synchronization context, so a test can assert it.
+- **Why:** a continuation runs on the task scheduler and ignores the synchronization context. The object's callback had always run on a pool thread on a host with a UI thread; this plan's first version put the property's idle notification there too, where it had been raised by the awaiting write before. "Neatoo relies on the synchronization context to ensure proper sequencing" (`src/Design/CLAUDE-DESIGN.md`), and Keith ruled on 2026-11-24 that Neatoo runs like a UI application. Measured before the fix: the callback ran on a different thread from the one that added the task.
+- **Discovery Log:** 2026-11-24 / WAIT-003
+
+### 2026-11-24 — What a listener throws as a property goes idle belongs to the operation
+
+- **Section affected:** Steps 3 and 4
+- **Original said:** nothing.
+- **What changed:** the property catches what a `PropertyChanged` listener, or a rule triggered on the object's `IsBusy`, throws during its idle notification, and the write or rule run that ended the work rethrows it. When that write or run failed on its own account, its own exception is the one reported.
+- **Why:** the tracker would otherwise keep the exception: it faulted the property's wait or surfaced later from unrelated work, where before this plan it faulted the awaited operation ("a synchronous fault surfaces the way a setter's does", `ValidateBase.RunMetaPropertyRules`).
+- **Discovery Log:** n/a (gate finding, fixed)
+
 ### 2026-11-24 — The property factory is registered transient
 
 - **Section affected:** Step 1
@@ -142,7 +170,7 @@ Existing tests changed, each with its reason:
 
 ## Notes
 
-- **Full-suite run for the gate:** taken after the `AsyncFlowTests` change, on the final code. Repeat runs of the unit suite afterwards: 0 failures in 30.
+- **Full-suite run for the gate:** taken after the round 1 fixes, on the final code. Repeat runs of the unit suite afterwards: 0 failures in 30.
 - **Tried and taken back out:** registering a busy property's work in the entity's tracker and reading entity `IsBusy` from the tracker alone. It reduced the first flake without removing it and broke `ParentIsBusy_AfterExplicitChildLoad`, because lazy loads are not registered yet. It is WAIT-004 and WAIT-005's work and was not the cause; the cause is in the first amendment above.
 - **The flaky test that stopped the loop.** `AsyncFlowTests.AsyncFlowTests_Property_PropertyChangedEvents` failed at its last entity-level assertion (the entity raised no `IsBusy` after its work finished) in 2 of 15 full-suite repeat runs on this branch. In isolation: 2 of 40 on `wait-arc` before this plan (aa174d2), 0 of 40 on this branch, 0 of 60 on v0.36.1. Likely mechanism, read and not measured: the compare and reset of the meta state is not atomic, which is #131. It needs two threads in one object at once, which the test host supplied and a UI application does not.
-- **`OneThreadAtATime.Run`** (`src/Neatoo.UnitTest/TestInfrastructure/`) is new test infrastructure for that: a test body, the rules it starts and the framework's tracking all continue on one exclusive scheduler.
+- **`OneThreadAtATime.Run`** (`src/Neatoo.UnitTest/TestInfrastructure/`) is new test infrastructure for that: it gives a test body a thread of its own with a synchronization context, so the body, the rules it starts and the framework's tracking all continue on that thread.

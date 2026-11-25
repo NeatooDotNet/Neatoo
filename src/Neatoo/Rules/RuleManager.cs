@@ -1,4 +1,5 @@
 ﻿using Neatoo.Rules.Rules;
+using Neatoo.Internal;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -719,18 +720,27 @@ public class RuleManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTy
             }
         }
 
+        // The run is not over until its trigger properties have accounted for it: an awaited
+        // RunRules leaves them idle.
         try
         {
             await run;
         }
-        finally
+        catch
         {
-            // The run is not over until its trigger properties have accounted for it: an awaited
-            // RunRules leaves them idle.
+            // The rule's own exception is the one to report, whatever a listener threw as a
+            // property went idle.
             if (accounted != null)
             {
-                await Task.WhenAll(accounted);
+                await Task.WhenAll(accounted).WhenFinished();
             }
+
+            throw;
+        }
+
+        if (accounted != null)
+        {
+            await Task.WhenAll(accounted);
         }
     }
 

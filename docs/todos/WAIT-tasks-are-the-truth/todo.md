@@ -70,7 +70,6 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 ## Parked
 
 - proposed · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice · 0.36.1 design critique, 2026-11-24
-- proposed · the tracker finishes a sequence in a `ContinueWith` continuation, which runs on the current task scheduler and not on the synchronization context that owns the object. On a host with a UI thread and a thread pool (WPF, Blazor Server) the falling `IsBusy` notification and any meta-state rule it triggers would run on a pool thread. Read, not measured; it predates this todo · WAIT-003, 2026-11-24
 
 ---
 
@@ -81,6 +80,10 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-002 · code-reviewer · a wait cancelled by its token could swallow a rule's fault, so it surfaced zero times · fixed in the tracker, with a test seen red first.
 - WAIT-002 · code-reviewer · three compile breaks for consumers were recorded nowhere for the migration notes · punched to the Punchlist for WAIT-008.
 - WAIT-002 · test-reviewer · a test named for an entity tested a ValidateBase object, and two tests could pass through a different path in a narrow window · renamed; the two tests now wait for the sequence to close.
+- WAIT-003 · test-reviewer · no test made a property created on first use go busy · test added, seen red with the attach disabled on that path.
+- WAIT-003 · code-reviewer (veto) · an exception thrown while a property went idle landed in the property's tracker, not in the awaited write or rule run · the property hands it to the operation that ended the work; two tests seen red first.
+- WAIT-003 · code-reviewer · the manager's wait took and dropped the fault an idle child held · only busy properties are asked for their wait, and a faulted wait is awaited; test seen red first.
+- WAIT-003 · code-reviewer (listed as theoretical) · this plan had moved the property's idle notification onto a pool-thread continuation · the tracker now accounts for a task on the thread that added it, for objects and properties alike, which also settles the row parked earlier the same day; two tests seen red first.
 
 ---
 
@@ -98,6 +101,11 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 ### 2026-11-24 — WAIT-003 · serves AC-6
 - **Finding:** The property's tracker finished its accounting on another thread after an awaited write or rule run had returned, so the idle notification raced the caller's next write.
+- **Decision:** Amend
+- **Follow-up:** n/a
+
+### 2026-11-24 — WAIT-003 · serves AC-6
+- **Finding:** The tracker accounted for a finished task in a `ContinueWith` continuation, which ignores the synchronization context, so completion callbacks and idle notifications ran on a pool thread.
 - **Decision:** Amend
 - **Follow-up:** n/a
 
