@@ -409,7 +409,7 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
     protected virtual Task PassThruValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        return this.NeatooPropertyChanged?.Invoke(new NeatooPropertyChangedEventArgs(this, this.Value!, eventArgs)) ?? Task.CompletedTask;
+        return this.NeatooPropertyChanged.InvokeAll(new NeatooPropertyChangedEventArgs(this, this.Value!, eventArgs));
     }
 
     protected virtual void PassThruValuePropertyChanged(object? source, PropertyChangedEventArgs eventArgs)
@@ -419,7 +419,7 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
     protected virtual async Task OnValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        var task = this.NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
+        var task = this.NeatooPropertyChanged.InvokeAll(eventArgs);
 
         // The task of the whole cascade this change started. While it runs, the write is in
         // flight and the property is busy.

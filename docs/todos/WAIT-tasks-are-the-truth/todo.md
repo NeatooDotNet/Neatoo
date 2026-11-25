@@ -52,7 +52,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 | 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | Done | #145 |
 | 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Done | #146 |
 | 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Done | #147 |
-| 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order, save in flight | AC-10, AC-11, AC-12 | Draft | — |
+| 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order, save in flight | AC-10, AC-11, AC-12 | In Progress | — |
 | 007 | [007-mudneatoo-and-design-app](./plans/007-mudneatoo-and-design-app.md) | MudNeatoo and Design.App on the new tracking | AC-8 | Draft | — |
 | 008 | [008-docs-and-release-notes](./plans/008-docs-and-release-notes.md) | Guides, skills and release notes | AC-9 | Draft | — |
 
@@ -75,6 +75,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 - proposed · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice · 0.36.1 design critique, 2026-11-24
 - proposed · a list item whose busy changes while the item itself is paused does not raise the list's `IsBusy` notification; the list's `IsBusy` value is right and its owner is unaffected. Reached by an awaited `RunRules` with an async rule inside a factory operation on an item already in a list · WAIT-005 · `reviews/005-code-review.md` Round 2, Theoretical
+- #103 · AC-12 (Optional) not built: registering the save as the object's work makes `MarkUnmodified` refuse when a local save with an async `[Insert]` or `[Update]` completes, so it needs a ruling on that guard and on the sent instance's state after a remote save · WAIT-006 · `plans/006-optional-criteria.md` Plan Amendments
 
 ---
 
@@ -132,6 +133,11 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - **Finding:** A `ValidateListBase` takes an item that is already busy, so WAIT-004's reason for dropping adoption held for entity lists only; and list `IsBusy` read from the items on every notification cost up to 137 times more per edit.
 - **Decision:** Amend
 - **Follow-up:** n/a
+
+### 2026-11-24 — WAIT-006 · serves AC-12
+- **Finding:** Making a save in flight busy means registering it, and `MarkUnmodified` then refuses when a local save with an async operation completes. It needs a ruling on saving, and the criterion is Optional.
+- **Decision:** Queue
+- **Follow-up:** parked as #103, on the todo's Parked list
 
 ---
 

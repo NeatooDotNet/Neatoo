@@ -442,7 +442,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// <returns>A task representing the asynchronous event handling operation.</returns>
 	protected virtual Task RaiseNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
 	{
-		return this.NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
+		return this.NeatooPropertyChanged.InvokeAll(eventArgs);
 	}
 
 	/// <summary>

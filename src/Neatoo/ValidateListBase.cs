@@ -328,7 +328,7 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// <returns>A task representing the asynchronous event invocation.</returns>
     protected virtual Task RaiseNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        return this.NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
+        return this.NeatooPropertyChanged.InvokeAll(eventArgs);
     }
 
     /// <summary>
