@@ -24,6 +24,9 @@ namespace Neatoo.Internal;
 internal class LazyLoadEntityProperty<T> : EntityProperty<EntityLazyLoad<T>>, IEntityProperty, ILazyLoadProperty
     where T : class?
 {
+    // The load in progress, as the task reported to the owner of this property.
+    private TaskCompletionSource? _loadInFlight;
+
     private object? _currentInnerChild;
 
     public LazyLoadEntityProperty(IPropertyInfo propertyInfo) : base(propertyInfo)
@@ -201,7 +204,27 @@ internal class LazyLoadEntityProperty<T> : EntityProperty<EntityLazyLoad<T>>, IE
         // PropertyManager-compatible names so parent recalculates cached state.
         if (eventArgs.PropertyName == "IsLoading")
         {
+            // A load in progress is work in flight on the object that owns this property. It is
+            // reported as a task that finishes when the load does, whatever the load's outcome:
+            // a failed load is reported through HasLoadError, not through a wait.
+            var loading = this._value?.IsLoading ?? false;
+
+            if (loading && this._loadInFlight == null)
+            {
+                this._loadInFlight = new TaskCompletionSource();
+                this.ReportToOwner(this._loadInFlight.Task);
+            }
+
             OnPropertyChanged(nameof(IsBusy));
+
+            if (!loading)
+            {
+                // After the notification, so the owner has heard "idle" before its running
+                // tasks are done.
+                var finished = this._loadInFlight;
+                this._loadInFlight = null;
+                finished?.TrySetResult();
+            }
         }
         else if (eventArgs.PropertyName == "HasLoadError" || eventArgs.PropertyName == "LoadError")
         {

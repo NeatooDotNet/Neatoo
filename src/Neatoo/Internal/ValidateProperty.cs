@@ -18,6 +18,10 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
     // names the property. The property manager supplies it when the property enters its bag.
     private IAsyncTasks? _tasks;
 
+    // How this property tells the object that owns it about a write it has started. The property
+    // manager supplies it with the tracker.
+    private Action<Task>? _reportToOwner;
+
     public ValidateProperty(IPropertyInfo propertyInfo)
     {
         this.Name = propertyInfo.Name;
@@ -95,13 +99,14 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
     /// <summary>
     /// Gives the property its task tracker. Called by the property manager when the property
-    /// enters its bag; a property keeps the first tracker it is given.
+    /// enters its bag, with the way to report a write to the object that owns the property. A
+    /// property keeps the first of each it is given.
     /// </summary>
     /// <remarks>
     /// A property that is in no property manager has no tracker and is never busy on its own
     /// account: nothing would wait for it or read its busy state.
     /// </remarks>
-    void IValidatePropertyInternal.UseTasks(IAsyncTasks tasks)
+    void IValidatePropertyInternal.UseTasks(IAsyncTasks tasks, Action<Task> reportToOwner)
     {
         ArgumentNullException.ThrowIfNull(tasks, nameof(tasks));
 
@@ -111,6 +116,7 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
         }
 
         this._tasks = tasks;
+        this._reportToOwner = reportToOwner;
 
         // The tracker calls this when the last task finishes, before it completes the waits on
         // it. So whatever listens for IsBusy has heard "idle" by the time a wait returns.
@@ -252,7 +258,28 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
             throw this.Task.Exception;
         }
 
+        this.ReportToOwner(this.Task);
+
         return this.Task;
+    }
+
+    /// <summary>
+    /// Tells the object that owns this property about work in flight, so that the object
+    /// registers it in its running tasks and its parents'. A finished task is not reported.
+    /// </summary>
+    /// <remarks>
+    /// DESIGN DECISION: the owner registers, not the caller. Every write comes through here,
+    /// whoever made it: the generated setter, Set{Name}, or SetValue on the property itself,
+    /// which is the write a UI input makes.
+    /// DID NOT DO THIS: have the generated setter register the task. A write that did not go
+    /// through the setter was then in nobody's running tasks, and a wait on them missed it.
+    /// </remarks>
+    protected void ReportToOwner(Task task)
+    {
+        if (!task.IsCompleted)
+        {
+            this._reportToOwner?.Invoke(task);
+        }
     }
 
     public virtual void LoadValue(object? value)

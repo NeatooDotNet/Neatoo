@@ -269,7 +269,7 @@ internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDem
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L173-L203' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-private-set-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L167-L197' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-private-set-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `IValidateProperty.MarkReadOnly()` locks one property on one instance, permanently. The entity calls it during `[Fetch]` from a server-side permission service, so the same field is editable for one user and read-only for another, and the component renders accordingly without configuration:

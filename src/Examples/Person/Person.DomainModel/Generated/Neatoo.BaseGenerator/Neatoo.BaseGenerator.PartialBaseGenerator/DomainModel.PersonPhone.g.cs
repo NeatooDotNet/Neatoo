@@ -40,25 +40,13 @@ namespace DomainModel
             set
             {
                 IdProperty.Value = value;
-                if (!IdProperty.Task.IsCompleted)
-                {
-                    Parent?.AddChildTask(IdProperty.Task);
-                    RunningTasks.AddTask(IdProperty.Task);
-                }
             }
         }
 
         /// <summary>Sets Id and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
         public global::System.Threading.Tasks.Task SetId(Guid? value)
         {
-            var task = IdProperty.SetValue(value);
-            if (!task.IsCompleted)
-            {
-                Parent?.AddChildTask(task);
-                RunningTasks.AddTask(task);
-            }
-
-            return task;
+            return IdProperty.SetValue(value);
         }
 
         public partial PhoneType? PhoneType
@@ -67,25 +55,13 @@ namespace DomainModel
             set
             {
                 PhoneTypeProperty.Value = value;
-                if (!PhoneTypeProperty.Task.IsCompleted)
-                {
-                    Parent?.AddChildTask(PhoneTypeProperty.Task);
-                    RunningTasks.AddTask(PhoneTypeProperty.Task);
-                }
             }
         }
 
         /// <summary>Sets PhoneType and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
         public global::System.Threading.Tasks.Task SetPhoneType(PhoneType? value)
         {
-            var task = PhoneTypeProperty.SetValue(value);
-            if (!task.IsCompleted)
-            {
-                Parent?.AddChildTask(task);
-                RunningTasks.AddTask(task);
-            }
-
-            return task;
+            return PhoneTypeProperty.SetValue(value);
         }
 
         public partial string? PhoneNumber
@@ -94,25 +70,13 @@ namespace DomainModel
             set
             {
                 PhoneNumberProperty.Value = value;
-                if (!PhoneNumberProperty.Task.IsCompleted)
-                {
-                    Parent?.AddChildTask(PhoneNumberProperty.Task);
-                    RunningTasks.AddTask(PhoneNumberProperty.Task);
-                }
             }
         }
 
         /// <summary>Sets PhoneNumber and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>
         public global::System.Threading.Tasks.Task SetPhoneNumber(string? value)
         {
-            var task = PhoneNumberProperty.SetValue(value);
-            if (!task.IsCompleted)
-            {
-                Parent?.AddChildTask(task);
-                RunningTasks.AddTask(task);
-            }
-
-            return task;
+            return PhoneNumberProperty.SetValue(value);
         }
 
         public partial void MapModifiedTo(PersonPhoneEntity personPhoneEntity)

@@ -1735,7 +1735,7 @@ public partial int Count { get; set; }
 
 public partial decimal Price { get; set; }
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L75-L81' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-partial-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L74-L80' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-partial-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-generated-property-shape -->
@@ -1756,13 +1756,12 @@ public partial decimal Price { get; set; }
 //       set
 //       {
 //           NameProperty.Value = value;
-//           if (!NameProperty.Task.IsCompleted)
-//           {
-//               Parent?.AddChildTask(NameProperty.Task);
-//               RunningTasks.AddTask(NameProperty.Task);
-//           }
 //       }
 //   }
+//
+// The setter only writes. The property reports the write to the object that owns it, which
+// registers it in its running tasks and its parents', so a write made any other way (SetName,
+// or SetValue on the property, which is what a UI input calls) is tracked the same.
 //
 //   protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
 //   {
@@ -1773,7 +1772,7 @@ public partial decimal Price { get; set; }
 // tracking); the accessor is still typed IValidateProperty<T>. The real output
 // is on disk under Generated/Neatoo.BaseGenerator/.
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L24-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-generated-property-shape' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L24-L55' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-generated-property-shape' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Setter accessibility is preserved: a `private set` setter calls `SetPrivateValue` and the property's `IsReadOnly` is `true`; the generated interface member for any non-public setter is get-only.

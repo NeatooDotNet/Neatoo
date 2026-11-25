@@ -59,15 +59,6 @@ public interface IValidateBase : INeatooObject, INotifyPropertyChanged, INotifyN
 	/// <returns><c>true</c> if the property was found; otherwise, <c>false</c>.</returns>
 	bool TryGetProperty(string propertyName, out IValidateProperty validateProperty);
 
-	/// <summary>
-	/// Adds a child task to be tracked for completion.
-	/// </summary>
-	/// <param name="task">The task to track.</param>
-	/// <remarks>
-	/// Tasks added through this method are propagated up the object graph hierarchy
-	/// to ensure the root object can await all pending operations via <see cref="INeatooObject.WaitForTasks"/>.
-	/// </remarks>
-	void AddChildTask(Task task);
 }
 
 /// <summary>
@@ -209,6 +200,13 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 
 		this.PropertyManager.NeatooPropertyChanged += this._PropertyManager_NeatooPropertyChanged;
 		this.PropertyManager.PropertyChanged += this._PropertyManager_PropertyChanged;
+
+		// The owner's end of the report path: each write one of this object's properties starts
+		// is registered here, whoever made it.
+		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> reportingManager)
+		{
+			reportingManager.TaskStarted = this.AddChildTask;
+		}
 
 		this.RunningTasks = services.CreateAsyncTasks() ?? throw new ArgumentNullException("CreateAsyncTasks");
 		this.RunningTasks.OnFullSequenceComplete = () =>
@@ -389,16 +387,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 			}
 
 			var task = this.RunRules(propertyName);
-			if (!task.IsCompleted)
-			{
-				if (this.Parent is IValidateBaseInternal parentInternal)
-				{
-					parentInternal.AddChildTask(task);
-				}
-
-				this.RunningTasks.AddTask(task);
-			}
-			else if (task.Exception != null)
+			if (task.Exception != null)
 			{
 				throw task.Exception;
 			}
@@ -530,17 +519,6 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 			task = property.SetValue(value);
 		}
 
-		if (!task.IsCompleted)
-		{
-			// Cast to internal interface to call AddChildTask
-			if (this.Parent is IValidateBaseInternal parentInternal)
-			{
-				parentInternal.AddChildTask(task);
-			}
-
-			this.RunningTasks.AddTask(task);
-		}
-
 		if (task.Exception != null)
 		{
 			throw task.Exception;
@@ -548,22 +526,24 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	}
 
 	/// <summary>
-	/// Adds a child task to be tracked for completion.
+	/// Registers a task as work in flight on this object and on its parents.
 	/// </summary>
 	/// <param name="task">The task to track.</param>
 	/// <remarks>
-	/// Tasks added through this method are propagated up the object graph hierarchy
-	/// to ensure the root object can await all pending operations.
+	/// DESIGN DECISION: this object registers the task first and then passes it up, so each
+	/// object accounts for a finished task before its parent does. When a parent's running
+	/// tasks are done, nothing below it is still accounting.
+	/// DID NOT DO THIS: pass the task up first. The root then completed its waits while the
+	/// child that did the work still read busy, and a save that followed the wait was refused.
 	/// </remarks>
-	public virtual void AddChildTask(Task task)
+	protected virtual void AddChildTask(Task task)
 	{
-		// Cast to internal interface to call AddChildTask on parent
+		this.RunningTasks.AddTask(task);
+
 		if (this.Parent is IValidateBaseInternal parentInternal)
 		{
 			parentInternal.AddChildTask(task);
 		}
-
-		this.RunningTasks.AddTask(task);
 	}
 
 	/// <summary>
@@ -731,12 +711,6 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 				else
 				{
 					task = property.SetValue(value);
-				}
-
-				if (!task.IsCompleted)
-				{
-					this.AddChildTask(task);
-					this.RunningTasks.AddTask(task);
 				}
 
 				if (task.Exception != null)
@@ -907,7 +881,21 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </para>
 	/// </remarks>
 	/// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
-	public virtual async Task RunRules(string propertyName, CancellationToken? token = null)
+	public virtual Task RunRules(string propertyName, CancellationToken? token = null)
+	{
+		// The owner registers, not the caller: whoever asked for the rules to run, and whether or
+		// not they await it, the run is in this object's running tasks and its parents'.
+		var running = this.RunRulesFor(propertyName, token);
+
+		if (!running.IsCompleted)
+		{
+			this.AddChildTask(running);
+		}
+
+		return running;
+	}
+
+	private async Task RunRulesFor(string propertyName, CancellationToken? token)
 	{
 		try
 		{
