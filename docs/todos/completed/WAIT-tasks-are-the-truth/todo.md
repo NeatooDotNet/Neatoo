@@ -2,9 +2,9 @@
 
 **ID:** WAIT
 **Type:** Bug-Exposes-Fallacy
-**Status:** In Progress
+**Status:** Complete
 **Created:** 2026-11-24
-**Last Updated:** 2026-11-24
+**Last Updated:** 2026-11-25
 **Initial split:** 8 plans
 **Plan cap:** 12 — counts plan numbers issued, including Abandoned and Retired. Issuing a number above the cap is a stop-and-ask.
 **Arc branch:** wait-arc — cut from main at Step 1; every plan and punchlist branch PRs into it; it PRs into main at Step 8.
@@ -77,8 +77,8 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 ## Parked
 
-- proposed · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice · 0.36.1 design critique, 2026-11-24
-- proposed · a list item whose busy changes while the item itself is paused does not raise the list's `IsBusy` notification; the list's `IsBusy` value is right and its owner is unaffected. Reached by an awaited `RunRules` with an async rule inside a factory operation on an item already in a list · WAIT-005 · `reviews/005-code-review.md` Round 2, Theoretical
+- #152 · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice · 0.36.1 design critique, 2026-11-24
+- #153 · a list item whose busy changes while the item itself is paused does not raise the list's `IsBusy` notification; the list's `IsBusy` value is right and its owner is unaffected. Reached by an awaited `RunRules` with an async rule inside a factory operation on an item already in a list · WAIT-005 · `reviews/005-code-review.md` Round 2, Theoretical
 - #103 · AC-12 (Optional) not built: registering the save as the object's work makes `MarkUnmodified` refuse when a local save with an async `[Insert]` or `[Update]` completes, so it needs a ruling on that guard and on the sent instance's state after a remote save · WAIT-006 · `plans/006-optional-criteria.md` Plan Amendments
 
 ---
@@ -174,10 +174,24 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 ## Close-Out Audit
 
+Grade **B** (2026-11-25) — `reviews/close-out-audit.md`. Every Required criterion (AC-1 to AC-9) and the two built Optional ones (AC-10, AC-11) trace to code and tests at the arc head. No veto-tier finding. It is B and not A because AC-12 (Optional) is not built; it is parked as #103.
+
+The first pass graded C, for one reason: four test-reviewer tidy-up lines had no recorded disposition. PR #151 gave each one (three fixed in the tests, one dismissed with the tests that already pin it), and the re-audit returned B. Keith's review of the arc PR is the acknowledgment, per the Standing orders.
+
+The auditor could not verify the microsecond figures in the release notes' behavior change 8, or the repeat-run counts quoted in the plans: the benchmark and the repeat runs were throwaway and left no log.
+
 ---
 
 ## Docs & Retro
 
+**Documentation.** The guides, the API reference, both skills, `CLAUDE-DESIGN.md` and the Design.Domain comments shipped in WAIT-008, checked against the code by a separate review. The release notes are `docs/release-notes/v0.37.0.md`. Both skills are copied to the user's skills folder. No doc debt is left open.
+
+**Retro.** Eight plans were issued against a cap of 12, with none abandoned. Reviewers' findings went: 27 recommendations taken, 4 dismissed, 7 punched (all closed), 3 parked as issues (#103, #152, #153), 1 queued (AC-12). The workflow taught four things. First, a test that accepts two outcomes hides the behavior it names: WAIT-004 changed what a failed lazy load does to a wait, two gates passed it, and it surfaced only when WAIT-008 wrote the docs from the code and a sentence in the skill disagreed. Docs written against the code by a second reader are a real check, and they belong before the last plan when a todo changes behavior. Second, a reviewer's tidy-up line needs a recorded disposition at the gate like any other finding; four did not have one and cost the first audit its grade. Third, before stopping an unattended loop on a flaky test, match it against the open issues and the owner's rulings: the one stop this todo did not need was #131. Fourth, measuring beat reading twice: the list `IsBusy` cost was a regression only a benchmark showed, and the MudNeatoo freeze the 0.36.1 notes called unmeasured hangs three tests on `main`. Routed to persistent memory: the disposition rule, and the single-threaded ruling (now D37).
+
 ---
 
 ## Results / Conclusions
+
+Neatoo keeps one record of async work. Every write and rule run is a task in its object's running tasks, registered by the object that owns it; `WaitForTasks()` awaits those tasks and `IsBusy` reads them; a rule that throws surfaces once and the object recovers; every `NeatooPropertyChanged` subscriber is awaited. The freeze in #141 is gone, measured through a MudNeatoo input against 0.36.1. It ships as 0.37.0, a breaking release for members documented as framework use; Keith owns the tag.
+
+Left open, each with an issue: a save in flight is not busy (#103, needs a ruling on `MarkUnmodified`'s guard); `LoadValue` twice with one instance subscribes twice (#152); a list misses its `IsBusy` notification for a paused item (#153).

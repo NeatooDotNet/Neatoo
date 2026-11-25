@@ -106,3 +106,124 @@ None.
   - `reviews/000-analysis.md`: no criterion's trace turned on it.
   - The per-plan design logs, beyond the counts in the plans.
   - Most of the release notes' "What's fixed" prose: the WAIT-008 code review read it against the code in two rounds, and no finding of mine turned on it.
+
+---
+
+## Close-Out Audit — Re-Audit — 2026-11-24
+
+**Grade: B**
+
+**What the grade rests on.** The first audit's C rested on one item: four test-reviewer tech-debt lines had no recorded disposition. Each now has one in the todo, and the cited changes are in the tree (verified below). Every criterion still holds:
+
+- AC-1 to AC-9 (Required) are traced to code and tests at 5b145c6.
+- AC-10 and AC-11 (Optional) are traced the same way.
+- AC-12 (Optional) is not built. It is parked as #103, with its number on the todo.
+
+No veto-tier finding is open. The grade is B, not A, because one criterion is parked rather than traced.
+
+### The C item, verified
+
+`git diff fae71f0..HEAD` is PR #151, merged into `wait-arc`, and the merge tree is identical to 3461cf7.
+
+1. **`reviews/004-test-review.md:18`.** Fixed. `FrameworkRegistersTests.SaveWithAToken_OnARoot_SucceedsAfterAWriteToAChildWithAnAsyncRule` now asserts `Assert.IsNull(SynchronizationContext.Current, …)` (`FrameworkRegistersTests.cs:150`). It is recorded under Recommendations Taken.
+2. **`reviews/004-test-review.md:19`.** Fixed. `AwaitableSetterGenerationTests.GeneratedSetterAndSetName_RegisterNothing_TheOwnerRegisters` now asserts that `Task SetName(string? value)`, `Task SetTotal(decimal value)` and `Task SetCount(int value)` are generated (`AwaitableSetterGenerationTests.cs:61-63`). It is recorded under Recommendations Taken.
+3. **`reviews/005-test-review.md:21` / `:89`.** Fixed. `CollectionAssert.Contains(propertyChangedCalls, "IsBusy")` is restored in `AsyncFlowTests_NoAwait_IsBusy` (`AsyncFlowTests.cs:77`). `propertyChangedCalls` is filled by the object's `PropertyChanged` handler (`:23`, `:45-47`), so the assertion is live. It is recorded under Recommendations Taken. The other half of `:89`, the stale `LazyLoadProperty.cs` comment, was rewritten in WAIT-008 (confirmed in the first audit).
+4. **`reviews/008-test-review.md:20`.** Dismissed in the todo (Dismissed, row 4). Both cited tests exist and assert the claim:
+   - `Design.Tests/PropertyTests/LazyLoadTests.cs:88` `LoadAsync_WhenTheLoaderThrows_RecordsTheErrorAndRethrows` (`ThrowsExactlyAsync<InvalidOperationException>` on `parent.Details.LoadAsync()`).
+   - `Neatoo.UnitTest/Unit/Core/LazyLoadTests.cs:355` `LoadAsync_OnFailure_PropagatesException`.
+
+   The probe's second half for P3 (the parent's wait after an awaited failed load completes) is not named by those two tests. It is the same case as the wait started after the failure, which `ParentIsValid_AfterExplicitChildLoadFailure` pins. I do not re-raise it.
+
+The three test changes are stricter, and none removes or loosens an assertion. Each is reported with before, now and justification in PR #151's body, as CLAUDE.md requires.
+
+### The first audit's other callouts, verified
+
+- **Callout 2 (WAIT-002 unticked bullets).** Addressed. `plans/002-tracker-faults.md:61-68` are all `[x]`. Each bullet has its Test Evidence row.
+- **Callout 3 (WAIT-003 dismissal only in the plan).** Addressed. It is now Dismissed row 3 in the todo, with its reason.
+- **Callout 4 (the two in-arc rulings not in VisionAlignment).** Addressed.
+  - `docs/VisionAlignment.md:68-69` adds D37 (single-threaded) and D38 (a failed lazy load does not fault a wait), each in Keith's words, with its date and what it supersedes.
+  - D37's "Supersedes" names the "What IS Thread-Safe" list. That list is on `origin/main` (`CLAUDE-DESIGN.md:359` there) and is gone from the arc's file. In its place are the ruling at `:352-354` and the "What a caller provides" and "Never … from two threads at once" lists.
+- **Callout 5 (#103 does not carry the finding; its link moves at Step 8).** Not addressed on the issue, by design. You asked whether that is sufficient for the grade. It is, for two reasons:
+  - The B condition is that AC-12 is parked as an issue with its number on the todo. It is: Parked row 3 is `#103`, and the finding is on disk in that row and in WAIT-006's Plan Amendments.
+  - A comment on #103 is outward-facing. The Standing orders route it to Keith, and holding it for the stop is consistent with how the two `proposed` rows are held.
+
+  The callout itself stays open until Keith rules at the stop. It is Optional and does not bear on the grade.
+
+### Acceptance Criteria Trace
+
+No product code changed since fae71f0 (`git diff --stat fae71f0..HEAD -- src` touches three test files only). The first audit's trace stands unchanged, with one addition to AC-4 and AC-1.
+
+| AC | Word | Evidence (file:method:line) | Holds? | If not: parked as? |
+|---|---|---|---|---|
+| AC-1 | Required | As in the first audit; the generator test now also pins that `Set{Name}` is generated for all three setter kinds (`AwaitableSetterGenerationTests.cs:61-63`) | Yes | — |
+| AC-2 | Required | As in the first audit | Yes | — |
+| AC-3 | Required | As in the first audit | Yes | — |
+| AC-4 | Required | As in the first audit; `SaveWithAToken_…` now checks its own no-context precondition (`FrameworkRegistersTests.cs:150`); `AsyncFlowTests_NoAwait_IsBusy` now asserts the object's `IsBusy` notification | Yes | — |
+| AC-5 | Required | As in the first audit | Yes | — |
+| AC-6 | Required | As in the first audit | Yes | — |
+| AC-7 | Required | As in the first audit | Yes | — |
+| AC-8 | Required | As in the first audit | Yes | — |
+| AC-9 | Required | As in the first audit; D37 and D38 added to `docs/VisionAlignment.md:68-69` | Yes | — |
+| AC-10 | Optional | As in the first audit | Yes | — |
+| AC-11 | Optional | As in the first audit | Yes | — |
+| AC-12 | Optional | Not built; reason in `plans/006-optional-criteria.md` Plan Amendments | No | #103 |
+
+### Veto-Tier Findings
+
+None.
+
+### Callouts (Required in full; ≤ 5 Optional)
+
+**Required-affecting:** None.
+
+**Optional-affecting**
+
+1. **#103 does not carry the finding it was parked with, and its WAIT link breaks when Step 8 moves the folder.** Carried over from the first audit (callout 5). The orchestrator holds it for Keith at the stop. Confidence High. `Affects: AC-12`. `Reachable by:` whoever picks up #103 starts from the issue.
+
+### Could not verify
+
+- The figures in behavior change 8 (an uncommitted benchmark), unchanged from the first audit.
+- The repeat-run claims, which have no logs: the first audit's list, plus PR #151's "15 of 15 repeat runs" of `AsyncFlowTests`.
+- The arc PR body (container item 12): not open until Step 8.
+- The final logs and the binaries they ran on:
+  - `final-build.log` reports 0 warnings because it was an up-to-date incremental build in which no project recompiled. It is not a change in the warning count.
+  - The binaries it lists predate the merge checkout's file times.
+  - I checked the UTF-16 string table of both binaries. `Neatoo.UnitTest.dll` contains the new assertion message "this test is about the case…", and `Neatoo.BaseGenerator.Tests.dll` contains "and for the protected one". A control string returned absent. The green run therefore covered the changed tests. It does not prove every line of the tree was compiled, but the merge tree is identical to 3461cf7, so nothing else differs.
+
+### Theoretical (not triaged)
+
+- Unchanged from the first audit: five raise sites discard `InvokeAll`'s task (`ValidateBase.cs:337`; `ValidateListBase.cs:158`, `:190`, `:264`, `:405`). No live caller in the repo does async work there.
+
+### Build & Test
+
+- Build: PASSED — `reviews/final-build.log` (0 errors; incremental, nothing recompiled), `reviews/final-design-build.log` (0 errors, 0 warnings).
+- Tests: 2,345 passed, 0 failed.
+  - `reviews/final-test.log`: 2,110 passed (Neatoo.UnitTest 1,943, Person.DomainModel.Tests 55, BaseGenerator.Tests 51, MudNeatoo.Tests 38, Analyzers.Tests 23), 2 skipped. The skipped tests are the same two that are `[Ignore]` on `origin/main`.
+  - `reviews/final-design-test.log`: 235 passed.
+- Sacred tests: none weakened. The three changes since the first audit add assertions.
+
+### Container
+
+- Plans issued / cap: 8 / 12; all Done. No new plan was issued; the close-out fixes went through PR #151, which is merged.
+- Status cells over budget: 0.
+- Untraced deferrals: None.
+- Prose over budget: None. The four rows added under Recommendations Taken and the two under Dismissed are one line each.
+- Open PRs into the arc: None (`gh pr list --state open --base wait-arc` is empty; #143 to #151 are MERGED).
+- Required parked without demotion: None.
+- Dispositions living only in a PR body: None. Every reviewer finding across the eight plans now has a disposition in a plan or the todo.
+- The two `proposed` Parked rows: unchanged, the designed state under the Standing orders. Keith rules on them at the stop, before Step 8.
+
+### Parked (as the todo lists them)
+
+- proposed · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice
+- proposed · a list item whose busy changes while the item is paused does not raise the list's `IsBusy` notification
+- #103 · AC-12 (Optional) not built: a save in flight is not made busy
+
+### Read report
+
+- Read beyond the brief:
+  - The two cited lazy-load tests, the `AsyncFlowTests` fixture setup (the `propertyChangedCalls` wiring), and `origin/main:src/Design/CLAUDE-DESIGN.md`, to check D37's "Supersedes".
+  - PR #151's body and state.
+  - The commit and file times, against the binaries' build times.
+  - The UTF-16 string table of the two changed test assemblies.
+- Named but unused: none.
