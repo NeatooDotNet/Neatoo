@@ -62,6 +62,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 - [ ] The migration notes name three compile breaks from WAIT-002: forward `IValidateBaseServices.CreateAsyncTasks` in a services wrapper; `AsyncTasks.AddTask(Task, bool)` is now `AddTask(Task)`; `RunningTasks` is typed `IAsyncTasks` · the release notes (WAIT-008) · done when the migration section lists all three · AC-9
 - [ ] The migration notes name the breaks from WAIT-003: `IValidateProperty.AddMarkedBusy` and `RemoveMarkedBusy` are removed, with `IsSelfBusy` and `IsMarkedBusy` on `ValidateProperty`; `IFactory` gains `CreateAsyncTasks()`; `DefaultFactory` is registered transient · the release notes (WAIT-008) · done when the migration section lists them · AC-9
+- [ ] A write to a child registers with the parent chain before the child's own tracker, so with no synchronization context the root's waits complete before the child has accounted, and `Save(token)` on the root then throws `SaveOperationException` (IsBusy). Since WAIT-003 this happens every time, where it was a race before (traced by the code reviewer, not run) · the generated setter and `Set{Name}`, and `ValidateBase.AddChildTask`, `Setter`, `ObjectInvalid` and the meta-rule registration · done when an object accounts before its parent and a test saves a root with a token after a child write with an async rule · AC-4 · for WAIT-004, which rebuilds registration
 
 ## Dismissed
 
@@ -84,6 +85,8 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-003 · code-reviewer (veto) · an exception thrown while a property went idle landed in the property's tracker, not in the awaited write or rule run · the property hands it to the operation that ended the work; two tests seen red first.
 - WAIT-003 · code-reviewer · the manager's wait took and dropped the fault an idle child held · only busy properties are asked for their wait, and a faulted wait is awaited; test seen red first.
 - WAIT-003 · code-reviewer (listed as theoretical) · this plan had moved the property's idle notification onto a pool-thread continuation · the tracker now accounts for a task on the thread that added it, for objects and properties alike, which also settles the row parked earlier the same day; two tests seen red first.
+- WAIT-003 · test-reviewer (round 2) · no test pinned that a rule's own exception is reported over a listener's · two tests added, seen red with that branch weakened; the unnamed deadline exit and the loose exception type it listed were tightened too.
+- WAIT-003 · code-reviewer (round 2) · with the tracker accounting inline, a root accounts before its child and `Save(token)` on the root throws while a child write is in flight · punched to the Punchlist for WAIT-004, which rebuilds registration; the arc is not released between plans.
 
 ---
 

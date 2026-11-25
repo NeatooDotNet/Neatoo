@@ -32,3 +32,60 @@ The deliverable landed as scoped and in the right layer. The busy bool, the id l
 ### Read report
 - Read beyond the brief: `AsyncTasks.cs` in full; `ValidateBase.cs` (constructor, `CheckIfMetaPropertiesChanged`, `RunMetaPropertyRules`, `Setter<P>`, `AddChildTask`, `TryGetProperty`, `ChildNeatooPropertyChanged`, `WaitForTasks`); `ValidateBaseServices.cs` and `EntityBaseServices.cs` constructors; `EntityLazyLoad.cs` waits; `MetaStateTriggerTests` / `MetaStateTriggerEntities` (`MetaFault`); MudNeatoo `PropertyChanged` handlers; `reviews/003-test-review.md`; the 516-line stub deletion (only `AddMarkedBusy` / `RemoveMarkedBusy` interceptors); the `002-build.log` warning count.
 - Named but unused: `reviews/000-analysis.md` and D31 to D33 beyond the rows; `CLAUDE-DESIGN.md` beyond "Threading Guarantees" (its stale `AddMarkedBusy` lines are WAIT-008's).
+
+---
+
+## Code Review — WAIT-003 — [2026-11-24] — Round 2
+
+**Verdict: APPROVED**
+**Logs:** build PASSED, 0 errors, 97 warnings, the same count and mix as round 1 (`reviews/003-build.log`); Design build PASSED, 0 errors, 0 warnings (`reviews/003-design-build.log`); tests 2,068 passed, 0 failed, 2 skipped (`reviews/003-test.log`: MudNeatoo 33, BaseGenerator 50, Analyzers 23, Person.DomainModel 55, Neatoo.UnitTest 1,907 + 2 skipped, the same two as round 1); Design tests 235 passed (`reviews/003-design-test.log`). `reviews/003-red-round1.log` shows the five new tests failing before the fixes: `CompletionCallback_RunsOnTheThreadThatAddedTheTask_WhenTheTaskFinishesOnAnother`, `BusyNotifications_AreRaisedOnTheThreadThatOwnsTheObject_WhenTheReplyArrivesOnAnother`, the two `AListenerThatThrowsAsThePropertyGoesIdle_...` tests and `AParentsWait_ReportsItsChildsFaultOnce_...`.
+
+### Round 1 items, verified against the code (`git diff 1fb0923..7bc4114`)
+- **Veto, an exception thrown as a property goes idle: addressed.**
+  - `AnnounceIdle` (`src/Neatoo/Internal/ValidateProperty.cs:126-138`) catches what the idle notification throws, so the tracker's `SequenceCompleted` never sees it and the property's `AllDone` no longer faults on its account. The plan's line 33 invariant holds again.
+  - `AccountedFor` (`:183-193`) awaits the accounting and then rethrows the stored exception into whichever write or run awaits it.
+  - Both awaiters report the work's own exception when both failed, and the listener's otherwise: `OnValueNeatooPropertyChanged` (`:401-413`) awaits `accounted.WhenFinished()` in the `catch` and `accounted` on success, and `RuleManager.RunRule` does the same (`src/Neatoo/Rules/RuleManager.cs:729-744`).
+  - That restores what `ValidateBase.cs:365-366` documents and what the code did before this plan. The two `AListenerThatThrowsAsThePropertyGoesIdle_...` tests pin it on both paths, through `SetValue` and through `RunRules(propertyName)`.
+  - Your question, whether the single `_idleAnnouncementFault` field can reach the wrong operation on one thread: on the normal path it cannot. The callback runs inside the `SequenceCompleted` of the accounting that closed the sequence. That accounting's `AccountedFor` continuation resumes inline, on the context its `TrackTask` captured, as soon as `AccountFor` returns. The `AllDone` waiters that run inline before it do not read the field, and any work they start is incomplete, so it cannot reach another `AccountedFor` first. When the callback itself starts more work on the property (`AsyncTasks.cs` "more work" branch), the sequence stays open and the closing accounting's `AccountedFor` still takes the exception, which is the right operation. The one way to orphan it is in Theoretical below.
+- **Callout, the manager's scan: addressed.** `ValidatePropertyManager.WaitForTasks` (`src/Neatoo/Internal/ValidatePropertyManager.cs:75-91`) now asks only busy properties (`:80`). It returns only when every wait it asked for completed successfully (`:84`) and otherwise awaits them all, faulted ones included (`:89`), so a fault comes through. An idle child is no longer asked, so its held fault stays for its own first wait, as before this plan. The doc comment on `ValidateProperty.WaitForTasks` now says a child object's wait can fault. Neither suspension nor termination regresses:
+  - A busy property whose wait has already completed successfully ends the loop instead of spinning, so a stale cached busy flag cannot bring back #141.
+  - The loop only goes round again after awaiting something incomplete.
+- **Theoretical line taken, the scheduler: correct as built.**
+  - `AsyncTasks.AddTask` now returns `AccountFor` (`src/Neatoo/Internal/AsyncTasks.cs:86`, `:102-106`), called outside the lock. It awaits `WhenFinished()` and then `SequenceCompleted`.
+  - With a synchronization context, the accounting continues on the context captured at `AddTask`. Without one, it runs inline on the completing thread.
+  - `WhenFinished` (`src/Neatoo/Internal/TaskFinishedExtensions.cs`) reads the exception, so the tracked task is not reported as unobserved.
+  - I found no sync-over-async (`.Wait()`, `.Result`, `GetAwaiter().GetResult()`) in `src/Neatoo`, MudNeatoo, Design.App or Design.Domain that a posted accounting could deadlock.
+  - The new `OneThreadAtATime` is a real single-thread synchronization context (`Post` queues to one pumping thread, `Send` inlines on that thread), so the owning-thread tests measure what they claim.
+  - The effect on the entity's tracker is the callout below.
+- **The first-use test: committed and in the logs.** `Property_ThePropertyManagerCreatesOnFirstUse_IsBusyWhileItsAsyncRuleRuns` is in 7bc4114. It passes in `003-test.log`, and `003-red-lazy.log` shows it red with the attach disabled on that path.
+
+### Direction & shape
+The fixes are in the right places. The listener exception is handled where the property raises its notification, and handed to the operation that already awaits the accounting, so no new mechanism was needed. The scan change narrows the wait to work that is in flight, which is where D33 is heading. The tracker change applies to the entity and the property alike: one mechanism (D31) that keeps its callback on the owning thread, as "Neatoo relies on the synchronization context to ensure proper sequencing" (`src/Design/CLAUDE-DESIGN.md`) requires. The plan's amendments and Gate Record describe all three accurately. The todo's removed Parked row is the one this change settles.
+
+### Veto-tier
+None.
+
+### Callouts
+- **`src/Neatoo/Internal/AsyncTasks.cs:102-106` with the generated setters' registration order · Medium (traced, not run) · `Affects: AC-4`, and AC-5 · `Reachable by:` `EntityBase.Save(CancellationToken)` (`src/Neatoo/EntityBase.cs:525`) called on a root while a write to a child entity's property, with an async rule, is in flight.** The cause is the order in which ancestors account for a child's write task.
+  - **Registration order.** A generated setter registers its write task with the parent chain first and then with its own object: `Parent?.AddChildTask(...)`, then `RunningTasks.AddTask(...)`. So the root's `WhenFinished` continuation sits ahead of the child's on that task.
+  - **What item 3 changed.** Accounting now runs inline, on the same context, so when the task finishes the root's whole chain runs before the child's tracker has accounted:
+    - `SequenceCompleted`, then `AllDone.SetResult`;
+    - then the waiter `WaitForCompletion(token)`, inline;
+    - then `Save()`, inline.
+  - **The result.** At that moment the root's `IsBusy` is `RunningTasks.IsRunning` (false) or the manager's cached flag. The cached flag is still true, because the child's `IsBusy` falls only in the child's own callback, which has not run. So `Save()` throws `SaveOperationException(IsBusy)` after a wait that was meant to cover the pending work. `WaitForTasks()` without a token is not affected: the property manager's loop finds the child property busy and awaits the child's wait.
+  - **Before item 3.** Both accountings were `ContinueWith` work items queued in the same order. On one exclusive scheduler that gave the same outcome; on the pool it was a race. Item 3 turns the race into a certain result on every host.
+  - **Ownership.** That `WaitForTasks(token)` covers less than `WaitForTasks()` is the documented pre-existing gap (`ValidateBase.cs:666-668`), and it is AC-5's work in WAIT-005. No test covers `Save(token)` with a child write in flight.
+
+### Could not verify
+- The working tree has uncommitted changes to `src/Neatoo.UnitTest/Integration/Concepts/ValidateBase/PropertyTasksTests.cs` and `reviews/003-test-review.md`, apparently from the test review's round 2. They narrow the two listener tests to `ThrowsExactlyAsync<InvalidOperationException>`, add two `WhenTheRuleThrowsToo_...` tests and add an idle assertion to the parent/child test. The logs predate them, so their results are not in them.
+- The `Save(token)` callout is from reading the code; I did not run it.
+
+### Theoretical (not triaged)
+- An orphaned `_idleAnnouncementFault`: if the busy-edge notification in `TrackTask` throws (`ValidateProperty.cs:177`), the accounting already exists (`:173`) but no `AccountedFor` is created for it. If that sequence's idle notification then throws too, the exception is stored with nobody to take it, and the next closing `AccountedFor` on that property rethrows it from unrelated work. This needs a listener that throws on the busy edge and then conditionally on later idle edges.
+- When the work and a listener both fail, the listener's exception is consumed by `WhenFinished` and reported nowhere. That is the amendment's stated choice. Before this plan, a faulted write raised no idle notification at all.
+- With no synchronization context, the entity's callback (meta check, meta rules, `IsBusy` notifications) now runs inside whatever completes the last task, for example inside a caller's `TaskCompletionSource.SetResult`. Before, it ran in a queued work item. On one thread this is only an ordering change, as the callout above describes.
+- `RuleManager.RunRule` (`:713-722`): if `TrackTask` throws for a later trigger property, the `AccountedFor` tasks already collected are never awaited. This is the same shape as round 1's line.
+
+### Read report
+- Read beyond the brief: `ValidateProperty.PassThruValuePropertyChanged` (whether a child's `IsBusy` reaches the parent's manager); the generated setter in `PropertyTasksObject.g.cs` (registration order); `EntityBase.Save` / `Save(token)`; a search for callers of `Save(token)` / `WaitForTasks(token)` and for sync-over-async in product code; `reviews/003-red-round1.log`, `003-red-lazy.log`; the plan and todo diffs in 7bc4114.
+- Named but unused: none.

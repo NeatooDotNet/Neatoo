@@ -431,7 +431,7 @@ public class PropertyTasksTests : IntegrationTestBase
 
         var running = target.RunRules(nameof(IPropertyTasksObject.Value));
         gate.SetResult();
-        var thrown = await Assert.ThrowsAsync<Exception>(() => running.WaitAsync(Limit));
+        var thrown = await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => running.WaitAsync(Limit));
 
         StringAssert.Contains(thrown.ToString(), "Listener failed");
         await ValueProperty.WaitForTasks().WaitAsync(Limit);
@@ -447,13 +447,46 @@ public class PropertyTasksTests : IntegrationTestBase
 
         var writing = ValueProperty.SetValue("a");
         gate.SetResult();
-        var thrown = await Assert.ThrowsAsync<Exception>(() => writing.WaitAsync(Limit));
+        var thrown = await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => writing.WaitAsync(Limit));
 
         StringAssert.Contains(thrown.ToString(), "Listener failed");
         await ValueProperty.WaitForTasks().WaitAsync(Limit);
         Assert.IsFalse(ValueProperty.IsBusy);
     }
 
+
+    [TestMethod]
+    public async Task WhenTheRuleThrowsToo_TheAwaitedRuleRunReportsTheRulesException_NotTheListeners()
+    {
+        var gate = NewGate();
+        target.Gate = () => gate.Task;
+        ValueProperty.LoadValue("throw");
+        ThrowWhenThePropertyGoesIdle();
+
+        var running = target.RunRules(nameof(IPropertyTasksObject.Value));
+        gate.SetResult();
+        var thrown = await Assert.ThrowsAsync<Exception>(() => running.WaitAsync(Limit));
+
+        StringAssert.Contains(thrown.ToString(), "Rule failed");
+        Assert.IsFalse(thrown.ToString().Contains("Listener failed"), "the rule's own exception is the one reported");
+        Assert.IsFalse(ValueProperty.IsBusy);
+    }
+
+    [TestMethod]
+    public async Task WhenTheRuleThrowsToo_TheAwaitedWriteReportsTheRulesException_NotTheListeners()
+    {
+        var gate = NewGate();
+        target.Gate = () => gate.Task;
+        ThrowWhenThePropertyGoesIdle();
+
+        var writing = ValueProperty.SetValue("throw");
+        gate.SetResult();
+        var thrown = await Assert.ThrowsAsync<Exception>(() => writing.WaitAsync(Limit));
+
+        StringAssert.Contains(thrown.ToString(), "Rule failed");
+        Assert.IsFalse(thrown.ToString().Contains("Listener failed"), "the rule's own exception is the one reported");
+        Assert.IsFalse(ValueProperty.IsBusy);
+    }
     [TestMethod]
     public Task AParentsWait_ReportsItsChildsFaultOnce_AndLeavesTheIdleChildsOwnWaitToReportIt() => OneThreadAtATime.Run(async () =>
     {
@@ -471,6 +504,8 @@ public class PropertyTasksTests : IntegrationTestBase
         {
             await Task.Delay(5);
         }
+
+        Assert.IsFalse(parent.IsBusy || child.IsBusy, "both objects went idle within the limit");
 
         await Assert.ThrowsExactlyAsync<AggregateException>(() => parent.WaitForTasks().WaitAsync(Limit));
         await parent.WaitForTasks().WaitAsync(Limit);

@@ -70,6 +70,7 @@ Replaces the property's busy bool and its list of busy ids with a task tracker o
 - [x] The tracker's completion callback, and the busy notifications of a property and its object, run on the thread that owns the object when the reply arrives on another (added at the gate) `[unit]` `[integration]`
 - [x] An exception a listener throws as a property goes idle faults the awaited write or rule run, not the property's wait (added at the gate) `[integration]`
 - [x] A parent's wait reports its child's fault once and leaves an idle child's own wait to report it (added at the gate) `[integration]`
+- [x] When a rule and a listener both throw, the awaited write or rule run reports the rule's exception (added at the gate) `[integration]`
 - [x] Build and tests green `[explicit-skip: meta-bullet]`
 
 ---
@@ -109,7 +110,8 @@ Red run before the change (`reviews/003-red.log`): 6 of the first 8 tests failed
 | Callback and busy notifications run on the owning thread | Required | `[unit]` `[integration]` | `Unit.Core.AsyncTasksOwningThreadTests.CompletionCallback_RunsOnTheThreadThatAddedTheTask_WhenTheTaskFinishesOnAnother`; `BusyNotifications_AreRaisedOnTheThreadThatOwnsTheObject_WhenTheReplyArrivesOnAnother`; both red before the fix (`reviews/003-red-round1.log`) | ✓ |
 | A listener's exception as the property goes idle faults the operation | Required | `[integration]` | `AListenerThatThrowsAsThePropertyGoesIdle_FaultsTheAwaitedRuleRun_NotThePropertysWait`, `AListenerThatThrowsAsThePropertyGoesIdle_FaultsTheAwaitedWrite_NotThePropertysWait`; red before the fix (`003-red-round1.log`) | ✓ |
 | A parent's wait leaves an idle child's fault to the child's wait | Required | `[integration]` | `AParentsWait_ReportsItsChildsFaultOnce_AndLeavesTheIdleChildsOwnWaitToReportIt`; red before the fix (`003-red-round1.log`) | ✓ |
-| Build and tests green | Required | `[explicit-skip]` | `reviews/003-build.log`, `003-test.log` (2,068 passed, 2 skipped, 0 failed), `003-design-build.log`, `003-design-test.log` (235 passed) | n/a |
+| The rule's own exception is reported over a listener's | Required | `[integration]` | `WhenTheRuleThrowsToo_TheAwaitedRuleRunReportsTheRulesException_NotTheListeners`, `WhenTheRuleThrowsToo_TheAwaitedWriteReportsTheRulesException_NotTheListeners`; red with the two catch branches weakened (`reviews/003-red-round2.log`) | ✓ |
+| Build and tests green | Required | `[explicit-skip]` | `reviews/003-build.log`, `003-test.log` (2,070 passed, 2 skipped, 0 failed), `003-design-build.log`, `003-design-test.log` (235 passed) | n/a |
 
 Existing tests changed, each with its reason:
 
@@ -129,6 +131,7 @@ Existing tests changed, each with its reason:
   - Veto: an exception thrown while a property went idle landed in the property's tracker, not in the awaited write or rule run. Fixed: the property hands it to the operation that ended the work.
   - Callout: the manager's wait asked every property for its wait and dropped waits that had already faulted, so an idle child's held fault was taken and lost. Fixed: only busy properties are asked, and a faulted wait is awaited.
   - A line the review listed as theoretical was taken as well, because it is a regression against the single-threaded model: this plan had moved the property's idle notification onto a pool-thread continuation. Fixed in the tracker, see Plan Amendments.
+- Round 2 (2026-11-24): test review APPROVED, no veto; its callout taken (two tests: the rule's own exception is reported over a listener's, seen red first) with two of its tidy-up lines; the third (the lazily created fixture is a public concrete on the non-DI services) is dismissed: it mirrors the existing fixtures for that path. Code review APPROVED, the veto resolved, one new callout: with the tracker accounting inline, a root accounts before its child, so `Save(token)` on a root throws while a child write is in flight. Punched to the todo's Punchlist for WAIT-004, which rebuilds registration. The gate is closed.
 
 ---
 
