@@ -181,8 +181,7 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<EntityLazyLoad<T>>
         {
             var lazyLoad = this._value;
             return (lazyLoad?.IsBusy ?? false)
-                || base.IsSelfBusy
-                || this.IsMarkedBusy.Count > 0;
+                || this.HasTasksInFlight;
         }
     }
 
@@ -197,6 +196,8 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<EntityLazyLoad<T>>
         {
             await lazyLoad.WaitForTasks();
         }
+
+        await this.WaitForOwnTasks();
     }
 
     // --- Lifecycle overrides ---

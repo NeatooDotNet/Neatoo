@@ -13,8 +13,10 @@ namespace Neatoo.Internal;
 public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyInternal, INotifyPropertyChanged, IJsonOnDeserialized
 {
     protected T? _value = default;
-    private readonly object _isMarkedBusyLock = new object();
-    private readonly List<long> _isMarkedBusy = new List<long>();
+
+    // This property's in-flight work, as tasks: each write's task and each async rule run that
+    // names the property. The property manager supplies it when the property enters its bag.
+    private IAsyncTasks? _tasks;
 
     public ValidateProperty(IPropertyInfo propertyInfo)
     {
@@ -55,69 +57,110 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
     [JsonIgnore]
     public virtual IValidateMetaProperties? ValueIsValidateBase => this.Value as IValidateMetaProperties;
 
-    public bool IsBusy
-    {
-        get
-        {
-            lock (this._isMarkedBusyLock)
-            {
-                return this.ValueAsBase?.IsBusy ?? false
-                    || this.IsSelfBusy
-                    || this._isMarkedBusy.Count > 0;
-            }
-        }
-    }
+    /// <summary>
+    /// True while a child object held as the value is busy, or while this property has work in
+    /// flight: a write to it, or an async rule that names it.
+    /// </summary>
+    /// <remarks>
+    /// DESIGN DECISION: busy is read from the property's tasks. Two overlapping writes are two
+    /// tasks, so the property stays busy until both finish, and a rule that throws is a finished
+    /// task, so the property is not left busy.
+    /// DID NOT DO THIS: a bool set around a write plus a list of ids the rule manager added and
+    /// removed. The bool was cleared by the first of two writes to finish, and cleared without a
+    /// notification when a rule threw, which left the entity reading busy for good.
+    /// </remarks>
+    public bool IsBusy => (this.ValueAsBase?.IsBusy ?? false) || this.HasTasksInFlight;
 
+    /// <summary>
+    /// Completes when a child object held as the value has finished its work and this property
+    /// has none in flight. It never faults: a rule's exception surfaces from the entity's wait.
+    /// </summary>
     public async Task WaitForTasks()
     {
         await (this.ValueAsBase?.WaitForTasks() ?? Task.CompletedTask);
+        await this.WaitForOwnTasks();
     }
-
-    [JsonIgnore]
-    public bool IsSelfBusy { get; private set; } = false;
 
     /// <summary>
-    /// Gets a thread-safe snapshot of the busy operation identifiers.
+    /// True while this property itself has a write or an async rule run in flight.
+    /// </summary>
+    protected bool HasTasksInFlight => this._tasks?.IsRunning ?? false;
+
+    /// <summary>
+    /// Completes when this property's own work in flight has finished. Awaiting it suspends
+    /// exactly while <see cref="HasTasksInFlight"/> is true.
+    /// </summary>
+    protected Task WaitForOwnTasks() => this._tasks?.AllDone ?? Task.CompletedTask;
+
+    /// <summary>
+    /// Gives the property its task tracker. Called by the property manager when the property
+    /// enters its bag; a property keeps the first tracker it is given.
     /// </summary>
     /// <remarks>
-    /// Returns a copy of the internal list to ensure thread safety. Each access
-    /// returns a new snapshot that is safe to enumerate without risk of
-    /// <see cref="InvalidOperationException"/> from concurrent modifications.
+    /// A property that is in no property manager has no tracker and is never busy on its own
+    /// account: nothing would wait for it or read its busy state.
     /// </remarks>
-    [JsonIgnore]
-    public IReadOnlyList<long> IsMarkedBusy
+    void IValidatePropertyInternal.UseTasks(IAsyncTasks tasks)
     {
-        get
+        ArgumentNullException.ThrowIfNull(tasks, nameof(tasks));
+
+        if (this._tasks != null)
         {
-            lock (this._isMarkedBusyLock)
-            {
-                return this._isMarkedBusy.ToList().AsReadOnly();
-            }
+            return;
         }
+
+        this._tasks = tasks;
+
+        // The tracker calls this when the last task finishes, before it completes the waits on
+        // it. So whatever listens for IsBusy has heard "idle" by the time a wait returns.
+        tasks.OnFullSequenceComplete = () =>
+        {
+            this.OnPropertyChanged(nameof(IsBusy));
+            return Task.CompletedTask;
+        };
     }
 
-    public void AddMarkedBusy(long id)
+    /// <summary>
+    /// Tracks a task as work in flight on this property: the property is busy until it finishes,
+    /// faulted or not.
+    /// </summary>
+    /// <returns>
+    /// A task that completes when the property has accounted for <paramref name="task"/>: if it
+    /// was the last in flight, the property is idle and has said so. It never faults.
+    /// </returns>
+    /// <remarks>
+    /// DESIGN DECISION: whoever starts the work awaits this before its own task completes, so an
+    /// awaited write or rule run leaves the property idle. The tracker does its accounting in a
+    /// continuation; left unawaited, that continuation would still be running, on another thread,
+    /// after the caller had moved on to its next write.
+    /// </remarks>
+    protected Task TrackTask(Task task)
     {
-        lock (this._isMarkedBusyLock)
+        ArgumentNullException.ThrowIfNull(task, nameof(task));
+
+        var tasks = this._tasks;
+
+        if (tasks == null || task.IsCompleted)
         {
-            if (!this._isMarkedBusy.Contains(id))
-            {
-                this._isMarkedBusy.Add(id);
-            }
+            return Task.CompletedTask;
         }
-        this.OnPropertyChanged(nameof(IsMarkedBusy));
-        this.OnPropertyChanged(nameof(IsBusy));
+
+        var wasRunning = tasks.IsRunning;
+
+        // Completion only. The tracker would otherwise report the task's exception from the
+        // property's wait as well as from the entity's.
+        var accounted = tasks.AddTask(task.ContinueWith(
+            static _ => { }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
+
+        if (!wasRunning)
+        {
+            this.OnPropertyChanged(nameof(IsBusy));
+        }
+
+        return accounted;
     }
 
-    public void RemoveMarkedBusy(long id)
-    {
-        lock (this._isMarkedBusyLock)
-        {
-            this._isMarkedBusy.Remove(id);
-        }
-        this.OnPropertyChanged(nameof(IsMarkedBusy));
-        this.OnPropertyChanged(nameof(IsBusy));
-    }
+    Task IValidatePropertyInternal.TrackTask(Task task) => this.TrackTask(task);
 
     private bool _isReadOnly = false;
 
@@ -316,34 +359,21 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
     protected virtual async Task OnValueNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        // ValidateBase sticks Task into AsyncTaskSequencer for us
-        // so that it will be awaited by WaitForTasks()
         var task = this.NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
 
-        if (!task.IsCompleted && !this.IsSelfBusy)
+        // The task of the whole cascade this change started. While it runs, the write is in
+        // flight and the property is busy.
+        var accounted = this.TrackTask(task);
+
+        try
         {
-            // Only track IsBusy if not already busy (prevents duplicate notifications)
-            this.IsSelfBusy = true;
-
-            try
-            {
-                this.OnPropertyChanged(nameof(IsBusy));
-
-                await task;
-
-                // Must set false BEFORE notification so listeners see correct IsBusy value
-                this.IsSelfBusy = false;
-                this.OnPropertyChanged(nameof(IsBusy));
-            }
-            finally
-            {
-                // Failsafe: ensure IsSelfBusy is reset even if exception thrown
-                this.IsSelfBusy = false;
-            }
+            await task;
         }
-
-        // Always await - handles case when IsSelfBusy was already true (skipped IsBusy tracking)
-        await task;
+        finally
+        {
+            // The write is not over until the property has accounted for it.
+            await accounted;
+        }
     }
 
     protected virtual bool AreSame<P>(P? oldValue, P? newValue)

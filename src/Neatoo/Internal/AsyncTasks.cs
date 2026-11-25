@@ -80,10 +80,12 @@ public sealed class AsyncTasks : IAsyncTasks
 
             this._tasks.Add(id, task);
 
+            // Unwrapped, so that the returned task covers the whole of the accounting: when this was
+            // the last task, OnFullSequenceComplete has run and AllDone has completed.
             return task.ContinueWith((completedTask) =>
             {
                 return this.SequenceCompleted(id, completedTask);
-            });
+            }).Unwrap();
         }
     }
 

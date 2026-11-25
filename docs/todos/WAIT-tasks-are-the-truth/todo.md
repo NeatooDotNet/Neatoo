@@ -49,7 +49,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 |---|------|-------|--------|--------|----|
 | 001 | [001-decision-record](./plans/001-decision-record.md) | The rulings in VisionAlignment | AC-9 | Done | #143 |
 | 002 | [002-tracker-faults](./plans/002-tracker-faults.md) | The tracker faults once, then recovers | AC-7 | Done | #144 |
-| 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | Draft | — |
+| 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | In Progress (built, stopped before the gate) | — |
 | 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Draft | — |
 | 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Draft | — |
 | 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order, save in flight | AC-10, AC-11, AC-12 | Draft | — |
@@ -61,12 +61,14 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 ## Punchlist
 
 - [ ] The migration notes name three compile breaks from WAIT-002: forward `IValidateBaseServices.CreateAsyncTasks` in a services wrapper; `AsyncTasks.AddTask(Task, bool)` is now `AddTask(Task)`; `RunningTasks` is typed `IAsyncTasks` · the release notes (WAIT-008) · done when the migration section lists all three · AC-9
+- [ ] The migration notes name the breaks from WAIT-003: `IValidateProperty.AddMarkedBusy` and `RemoveMarkedBusy` are removed, with `IsSelfBusy` and `IsMarkedBusy` on `ValidateProperty`; `IFactory` gains `CreateAsyncTasks()`; `DefaultFactory` is registered transient · the release notes (WAIT-008) · done when the migration section lists them · AC-9
 
 ## Dismissed
 
 ## Parked
 
 - proposed · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice · 0.36.1 design critique, 2026-11-24
+- proposed · `AsyncFlowTests_Property_PropertyChangedEvents` fails intermittently (2 of 40 isolated runs on `wait-arc` at aa174d2; 0 of 60 on v0.36.1): the entity raises no `IsBusy` after its work ends. Likely `CheckIfMetaPropertiesChanged` reading the state twice, so a change on another thread between the reads becomes the baseline unannounced · WAIT-003 · `plans/003-property-tasks.md` Notes, 2026-11-24 · stopped the loop for Keith
 
 ---
 
@@ -89,6 +91,11 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 ### 2026-11-24 — WAIT-002 · serves AC-7
 - **Finding:** The message recorded when a rule throws carried no rule id, so the rule's next clean run never cleared it.
+- **Decision:** Amend
+- **Follow-up:** n/a
+
+### 2026-11-24 — WAIT-003 · serves AC-6
+- **Finding:** The property's tracker finished its accounting on another thread after an awaited write or rule run had returned, so the idle notification raced the caller's next write.
 - **Decision:** Amend
 - **Follow-up:** n/a
 
