@@ -100,8 +100,7 @@ internal class LazyLoadEntityProperty<T> : EntityProperty<EntityLazyLoad<T>>, IE
         {
             var lazyLoad = this._value;
             return (lazyLoad?.IsBusy ?? false)
-                || base.IsSelfBusy
-                || this.IsMarkedBusy.Count > 0;
+                || this.HasTasksInFlight;
         }
     }
 
@@ -121,6 +120,8 @@ internal class LazyLoadEntityProperty<T> : EntityProperty<EntityLazyLoad<T>>, IE
         {
             await lazyLoad.WaitForTasks();
         }
+
+        await this.WaitForOwnTasks();
     }
 
     // --- Lifecycle overrides ---

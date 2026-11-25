@@ -1199,19 +1199,6 @@ public class ValidatePropertyTests
     }
 
     [TestMethod]
-    public void IsSelfBusy_InitialState_ReturnsFalse()
-    {
-        // Arrange
-        var wrapper = CreatePropertyInfoWrapper<string>("Name");
-
-        // Act
-        var property = new ValidateProperty<string>(wrapper);
-
-        // Assert
-        Assert.IsFalse(property.IsSelfBusy);
-    }
-
-    [TestMethod]
     public void LoadValue_SetsValueWithoutEvents()
     {
         // Arrange

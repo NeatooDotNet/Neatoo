@@ -45,6 +45,8 @@ public sealed class AsyncTasks : IAsyncTasks
     /// <returns>A task representing the added task.</returns>
     public Task AddTask(Task task)
     {
+        Guid id;
+
         lock (this._lockObject)
         {
             if (task.Exception != null)
@@ -76,15 +78,31 @@ public sealed class AsyncTasks : IAsyncTasks
             // object going idle): the finishing sequence stays open for it, see SequenceCompleted.
             this.IsRunning = true;
 
-            var id = Guid.NewGuid();
+            id = Guid.NewGuid();
 
             this._tasks.Add(id, task);
-
-            return task.ContinueWith((completedTask) =>
-            {
-                return this.SequenceCompleted(id, completedTask);
-            });
         }
+
+        return this.AccountFor(id, task);
+    }
+
+    /// <summary>
+    /// Waits for the task and then accounts for it. The returned task covers the whole of the
+    /// accounting: when this was the last task, <see cref="OnFullSequenceComplete"/> has run and
+    /// <see cref="AllDone"/> has completed.
+    /// </summary>
+    /// <remarks>
+    /// DESIGN DECISION: an awaiting method, so the accounting continues where the task was added:
+    /// on the thread that owns the object graph, in a UI application. A reply that arrives on
+    /// another thread does not move the completion callback, or the notifications raised from
+    /// it, off the owning thread.
+    /// DID NOT DO THIS: <c>task.ContinueWith(...)</c>. A continuation runs on the task scheduler,
+    /// which ignores the synchronization context, so the callback ran on a pool thread.
+    /// </remarks>
+    private async Task AccountFor(Guid id, Task task)
+    {
+        await task.WhenFinished();
+        await this.SequenceCompleted(id, task);
     }
 
     /// <summary>

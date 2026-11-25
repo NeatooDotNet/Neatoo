@@ -1,4 +1,5 @@
 ﻿using Neatoo.Rules.Rules;
+using Neatoo.Internal;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -363,12 +364,6 @@ public class RuleManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTy
     IEnumerable<IRule> IRuleManager.Rules => this.Rules.Values;
 
     /// <summary>
-    /// Global counter for generating unique execution IDs for busy tracking.
-    /// Each rule execution gets a unique ID to track which executions are in-flight.
-    /// </summary>
-    private static long _nextExecId = 0;
-
-    /// <summary>
     /// Gets the dictionary of rules indexed by their stable rule ID.
     /// </summary>
     private IDictionary<uint, IRule> Rules { get; } = new Dictionary<uint, IRule>();
@@ -706,28 +701,56 @@ public class RuleManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTy
             throw new RuleNotAddedException();
         }
 
-        // Create unique ID for this execution (for busy tracking, not serialized).
-        // Atomic increment guarantees no collisions between concurrent executions.
-        var uniqueExecIndex = Interlocked.Increment(ref _nextExecId);
+        // The run is the rule and the application of its messages. While it is in flight, each
+        // trigger property on the target tracks it as its own work, so the property is busy and
+        // a wait on it suspends. A trigger on a child path has no property here to track it.
+        var run = this.RunRuleAndApplyMessages(rule, token);
+
+        List<Task>? accounted = null;
+
+        if (!run.IsCompleted)
+        {
+            foreach (var triggerProperty in rule.TriggerProperties)
+            {
+                if (this.Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty)
+                    && targetProperty is IValidatePropertyInternal vpInternal)
+                {
+                    (accounted ??= new List<Task>()).Add(vpInternal.TrackTask(run));
+                }
+            }
+        }
+
+        // The run is not over until its trigger properties have accounted for it: an awaited
+        // RunRules leaves them idle.
+        try
+        {
+            await run;
+        }
+        catch
+        {
+            // The rule's own exception is the one to report, whatever a listener threw as a
+            // property went idle.
+            if (accounted != null)
+            {
+                await Task.WhenAll(accounted).WhenFinished();
+            }
+
+            throw;
+        }
+
+        if (accounted != null)
+        {
+            await Task.WhenAll(accounted);
+        }
+    }
+
+    private async Task RunRuleAndApplyMessages(IRule rule, CancellationToken? token)
+    {
         var triggerProperties = rule.TriggerProperties;
 
         try
         {
-            var ruleMessageTask = rule.RunRule(this.Target, token);
-
-            if (!ruleMessageTask.IsCompleted)
-            {
-                foreach (var triggerProperty in triggerProperties)
-                {
-                    if (this.Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty))
-                    {
-                        // Allowing null trigger properties that may be on a child target
-                        targetProperty.AddMarkedBusy(uniqueExecIndex);
-                    }
-                }
-            }
-
-            var ruleMessages = (await ruleMessageTask) ?? RuleMessages.None;
+            var ruleMessages = (await rule.RunRule(this.Target, token)) ?? RuleMessages.None;
 
             foreach (var propertyName in triggerProperties.Select(t => t.PropertyName).Except(ruleMessages.Select(p => p.PropertyName)))
             {
@@ -790,17 +813,6 @@ public class RuleManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTy
             }
 
             throw;
-        }
-        finally
-        {
-            foreach (var triggerProperty in triggerProperties)
-            {
-                if (this.Target.TryGetProperty(triggerProperty.PropertyName, out var targetProperty))
-                {
-                    // Allowing null trigger properties that may be on a child target
-                    targetProperty.RemoveMarkedBusy(uniqueExecIndex);
-                }
-            }
         }
     }
 }

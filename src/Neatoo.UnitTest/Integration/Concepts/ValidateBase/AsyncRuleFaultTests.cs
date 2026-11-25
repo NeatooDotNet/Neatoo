@@ -149,6 +149,8 @@ public class AsyncRuleFaultTests : IntegrationTestBase
 
         var created = (AsyncRuleFaultObject)scope.ServiceProvider.GetRequiredService<IAsyncRuleFaultObjectFactory>().Create();
 
-        Assert.AreSame(supplied.Single(), created.Tracker);
+        // The same factory supplies each property's tracker, so it is called more than once.
+        CollectionAssert.Contains(supplied, created.Tracker);
+        Assert.IsTrue(supplied.Count >= 2, "the entity's tracker and one for each of its properties");
     }
 }

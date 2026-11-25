@@ -54,8 +54,8 @@ public static class AddNeatooServicesExtension
         });
 
 
-        // SingleInstance as long it is isn't modified to accept dependencies
-        services.AddSingleton<IFactory, DefaultFactory>();
+        // Transient: it takes the task tracker factory, which resolves from the caller's scope
+        services.AddTransient<IFactory, DefaultFactory>();
 
         // Meta Data about the properties and methods of Classes
         // This will not change during runtime
@@ -100,7 +100,8 @@ public static class AddNeatooServicesExtension
             };
         });
 
-        // The task tracker each entity takes from its services. Register IAsyncTasks, or
+        // The task tracker each entity takes from its services, and each property from the
+        // property factory. Register IAsyncTasks, or
         // CreateAsyncTasks itself, after this call to replace the framework's tracker.
         services.AddTransient<IAsyncTasks, AsyncTasks>();
         services.AddTransient<CreateAsyncTasks>(services =>

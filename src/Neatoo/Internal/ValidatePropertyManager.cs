@@ -59,15 +59,49 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
         }
     }
 
+    /// <summary>
+    /// Completes when no property has work in flight: a write, an async rule, a load, or a busy
+    /// child object.
+    /// </summary>
+    /// <remarks>
+    /// DESIGN DECISION: await the waits of the properties that are busy, and go round again only
+    /// while one of those waits had something left to await, because finishing work can start
+    /// more. A wait that has already faulted is awaited too, so the fault comes through.
+    /// DID NOT DO THIS: loop while a property reports IsBusy. A busy flag gives nothing to await,
+    /// so the loop never suspended, and on one thread nothing could ever clear the flag (#141).
+    /// DID NOT DO THIS: ask every property for its wait. Asking an idle child object for its wait
+    /// takes the fault its tracker holds for its own first wait.
+    /// </remarks>
     public async Task WaitForTasks()
     {
-
-        var busyTask = this.PropertyBag.FirstOrDefault(x => x.Value.IsBusy);
-
-        while (busyTask.Value != null)
+        while (true)
         {
-            await busyTask.Value.WaitForTasks();
-            busyTask = this.PropertyBag.FirstOrDefault(x => x.Value.IsBusy);
+            var waits = this.PropertyBag.Values
+                .Where(property => property.IsBusy)
+                .Select(property => property.WaitForTasks())
+                .ToList();
+
+            if (waits.All(wait => wait.IsCompletedSuccessfully))
+            {
+                return;
+            }
+
+            await Task.WhenAll(waits);
+        }
+    }
+
+    /// <summary>
+    /// What a property gets when it enters the bag: this manager's subscription, and the task
+    /// tracker it holds its work in flight in.
+    /// </summary>
+    private void Attach(P property)
+    {
+        property.NeatooPropertyChanged += this._Property_NeatooPropertyChanged;
+        property.PropertyChanged += this._Property_PropertyChanged;
+
+        if (property is IValidatePropertyInternal propertyInternal)
+        {
+            propertyInternal.UseTasks(this.Factory.CreateAsyncTasks());
         }
     }
 
@@ -133,8 +167,7 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
 
             var newProperty = (P)method.Invoke(this, new object[] { propertyInfo })!;
 
-            newProperty.NeatooPropertyChanged += this._Property_NeatooPropertyChanged;
-            newProperty.PropertyChanged += this._Property_PropertyChanged;
+            this.Attach(newProperty);
 
             this.PropertyBag[propertyName] = newProperty;
 
@@ -222,8 +255,7 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
                     outgoing.PropertyChanged -= this._Property_PropertyChanged;
                 }
 
-                p.NeatooPropertyChanged += this._Property_NeatooPropertyChanged;
-                p.PropertyChanged += this._Property_PropertyChanged;
+                this.Attach(p);
 
                 this.PropertyBag[p.Name] = p;
             }
@@ -251,9 +283,7 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
                 return;
             }
 
-            // Subscribe to property events
-            property.NeatooPropertyChanged += this._Property_NeatooPropertyChanged;
-            property.PropertyChanged += this._Property_PropertyChanged;
+            this.Attach((P)property);
 
             // Add to property bag
             this.PropertyBag[property.Name] = (P)property;

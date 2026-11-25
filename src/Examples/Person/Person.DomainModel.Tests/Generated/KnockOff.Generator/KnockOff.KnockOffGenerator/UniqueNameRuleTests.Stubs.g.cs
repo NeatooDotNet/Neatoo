@@ -7279,494 +7279,6 @@ partial class UniqueNameRuleTests
 
 		}
 
-		/// <summary>Tracks and configures behavior for AddMarkedBusy(long id).</summary>
-		public sealed class IEntityProperty_AddMarkedBusyInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
-		{
-			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Neatoo.IValidateProperty? _source;
-
-			/// <summary>Callback delegate for AddMarkedBusy(long id).</summary>
-			public delegate void AddMarkedBusyDelegate(long id);
-
-			public IEntityProperty_AddMarkedBusyInterceptor() : base("AddMarkedBusy") { }
-
-			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
-			{
-				var typedArgs = (long)args!;
-				((AddMarkedBusyDelegate)del)(typedArgs);
-			}
-			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
-			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
-			{
-				if (tracking is AddMarkedBusyImpl impl) impl.RecordArg((long)args!);
-			}
-			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (long)args!;
-
-			private long? _unconfiguredLastArg;
-
-			/// <summary>Last argument from the most recently called registration.</summary>
-			public long? LastArg
-			{
-				get
-				{
-					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is AddMarkedBusyImpl cb) return cb.LastArg;
-					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is AddMarkedBusyImpl sb) return sb.LastArg;
-					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
-				}
-			}
-
-			/// <summary>Configures callback for AddMarkedBusy(long id).</summary>
-			public AddMarkedBusyImpl Call(AddMarkedBusyDelegate callback)
-			{
-				var builder = new AddMarkedBusyImpl(this);
-				SetupVoidCallback(callback, builder);
-				return builder;
-			}
-
-			/// <summary>Configures parameter matching for AddMarkedBusy(long id). Matches exact values using Object.Equals. Returns chain directly.</summary>
-			public VoidWhenChain When(long id)
-			{
-				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-				var matcher = new VoidWhenMatcherPredicateBase((_arg0) => global::System.Object.Equals(_arg0, id));
-				_whenChain.Add(matcher);
-				return new VoidWhenChain(this, matcher);
-			}
-
-			/// <summary>Configures parameter matching for AddMarkedBusy(long id). Matches using predicate. Returns chain directly.</summary>
-			public VoidWhenChain When(global::System.Func<long, bool> predicate)
-			{
-				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-				var matcher = new VoidWhenMatcherPredicateBase(predicate);
-				_whenChain.Add(matcher);
-				return new VoidWhenChain(this, matcher);
-			}
-
-			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal void Invoke(bool strict, long id)
-			{
-				object? __args = id;
-				if (RunVoidPriorityChain(__args)) return;
-				_unconfiguredCallCount++;
-				RecordUnconfiguredArgs(__args);
-				if (HandleVoidSequenceExhaustedRepeat(strict, __args)) return;
-				#pragma warning disable CS8601, SYSLIB0050
-				if (_source is { } src) { src.AddMarkedBusy(id); return; }
-				#pragma warning restore CS8601, SYSLIB0050
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "AddMarkedBusy");
-				return;
-			}
-
-			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
-			public override void Reset()
-			{
-				base.Reset();
-				_unconfiguredLastArg = default;
-				_source = null;
-			}
-
-			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class AddMarkedBusyImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<AddMarkedBusyDelegate, long>
-			{
-				private readonly IEntityProperty_AddMarkedBusyInterceptor _typedInterceptor;
-				private long _lastArg = default!;
-
-				public AddMarkedBusyImpl(IEntityProperty_AddMarkedBusyInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				public long LastArg => _lastArg;
-				public void RecordArg(long args) => _lastArg = args;
-
-				public override void Reset() { base.Reset(); _lastArg = default!; }
-
-				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
-				public AddMarkedBusySequence ThenCall(AddMarkedBusyDelegate callback)
-				{
-					ThenCallBase(callback);
-					return new AddMarkedBusySequence(_typedInterceptor);
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public AddMarkedBusyImpl Verifiable() { VerifiableBase(); return this; }
-				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
-				public AddMarkedBusyImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new AddMarkedBusyImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodTracking<long> global::KnockOff.IMethodTracking<long>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking<long> global::KnockOff.IMethodTracking<long>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallBuilder<AddMarkedBusyDelegate, long> global::KnockOff.IMethodCallBuilder<AddMarkedBusyDelegate, long>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodCallBuilder<AddMarkedBusyDelegate, long> global::KnockOff.IMethodCallBuilder<AddMarkedBusyDelegate, long>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallSequence<AddMarkedBusyDelegate> global::KnockOff.IMethodCallBuilder<AddMarkedBusyDelegate, long>.ThenCall(AddMarkedBusyDelegate callback) => ThenCall(callback);
-			}
-
-			/// <summary>Sequence implementation for ThenCall chaining.</summary>
-			public sealed class AddMarkedBusySequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<AddMarkedBusyDelegate>
-			{
-				private readonly IEntityProperty_AddMarkedBusyInterceptor _typedInterceptor;
-
-				public AddMarkedBusySequence(IEntityProperty_AddMarkedBusyInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public AddMarkedBusySequence ThenCall(AddMarkedBusyDelegate callback)
-				{
-					var tracking = new AddMarkedBusyImpl(_typedInterceptor);
-					AddToSequence(callback, tracking);
-					return this;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public AddMarkedBusySequence Verifiable() { VerifiableBase(); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new AddMarkedBusyImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodCallSequence<AddMarkedBusyDelegate> global::KnockOff.IMethodCallSequence<AddMarkedBusyDelegate>.ThenCall(AddMarkedBusyDelegate callback) => ThenCall(callback);
-				global::KnockOff.IMethodCallSequence<AddMarkedBusyDelegate> global::KnockOff.IMethodCallSequence<AddMarkedBusyDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
-			}
-
-			/// <summary>Predicate-based When matcher for void methods.</summary>
-			private sealed class VoidWhenMatcherPredicateBase : WhenMatcherBase
-			{
-				private readonly global::System.Func<long, bool> _predicate;
-				private global::System.Action<long>? _callback;
-
-				public VoidWhenMatcherPredicateBase(global::System.Func<long, bool> predicate) { _predicate = predicate; }
-
-				public void SetCallback(global::System.Action<long> callback) { _callback = callback; }
-
-				public override bool Matches(object? args) => _predicate((long)args!);
-				public override void Execute(object? args) { _callback?.Invoke((long)args!); }
-				public override object? ExecuteReturn(object? args) { Execute(args); return null; }
-				public override bool IsTerminal => false;
-			}
-
-			/// <summary>Terminal always-matching callback matcher for void methods.</summary>
-			private sealed class VoidWhenMatcherCallBase : WhenMatcherBase
-			{
-				private readonly global::System.Action<long> _callback;
-
-				public VoidWhenMatcherCallBase(global::System.Action<long> callback) { _callback = callback; }
-
-				public override bool Matches(object? args) => true;
-				public override void Execute(object? args) { _callback((long)args!); }
-				public override object? ExecuteReturn(object? args) { Execute(args); return null; }
-				public override bool IsTerminal => true;
-			}
-
-			/// <summary>Terminal no-op matcher for ThenNone() on void When chains.</summary>
-			private sealed class VoidWhenMatcherNoneBase : WhenMatcherBase
-			{
-				public override bool Matches(object? args) => false;
-				public override void Execute(object? args) { }
-				public override object? ExecuteReturn(object? args) => null;
-				public override bool IsTerminal => true;
-			}
-
-			/// <summary>Void When chain implementation with Call, ThenWhen, ThenCall, ThenNone, verification support.</summary>
-			public sealed class VoidWhenChain : VoidWhenChainBase
-			{
-				private readonly IEntityProperty_AddMarkedBusyInterceptor _typedInterceptor;
-				private readonly VoidWhenMatcherPredicateBase? _typedMatcher;
-
-				public VoidWhenChain(IEntityProperty_AddMarkedBusyInterceptor interceptor, WhenMatcherBase matcher) : base(interceptor, matcher)
-				{
-					_typedInterceptor = interceptor;
-					_typedMatcher = matcher as VoidWhenMatcherPredicateBase;
-				}
-
-				/// <summary>Sets an optional callback to invoke when this matcher matches.</summary>
-				public VoidWhenChain Call(AddMarkedBusyDelegate callback)
-				{
-					_typedMatcher?.SetCallback((_arg) => callback(_arg));
-					return this;
-				}
-
-				/// <summary>Adds another matcher with exact value matching.</summary>
-				public VoidWhenChain ThenWhen(long id)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					var matcher = new VoidWhenMatcherPredicateBase((_arg0) => global::System.Object.Equals(_arg0, id));
-					_typedInterceptor._whenChain.Add(matcher);
-					return new VoidWhenChain(_typedInterceptor, matcher);
-				}
-
-				/// <summary>Adds another matcher with predicate matching.</summary>
-				public VoidWhenChain ThenWhen(global::System.Func<long, bool> predicate)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					var matcher = new VoidWhenMatcherPredicateBase(predicate);
-					_typedInterceptor._whenChain.Add(matcher);
-					return new VoidWhenChain(_typedInterceptor, matcher);
-				}
-
-				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
-				public VoidWhenChain ThenCall(AddMarkedBusyDelegate callback)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					_typedInterceptor._whenChain.Add(new VoidWhenMatcherCallBase((_arg) => callback(_arg)));
-					return this;
-				}
-
-				/// <summary>Closes chain with no matcher.</summary>
-				public VoidWhenChain ThenNone() { AddTerminalMatcher(new VoidWhenMatcherNoneBase()); return this; }
-
-				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
-				public VoidWhenChain Verifiable() { VerifiableBase(); return this; }
-			}
-
-		}
-
-		/// <summary>Tracks and configures behavior for RemoveMarkedBusy(long id).</summary>
-		public sealed class IEntityProperty_RemoveMarkedBusyInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
-		{
-			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Neatoo.IValidateProperty? _source;
-
-			/// <summary>Callback delegate for RemoveMarkedBusy(long id).</summary>
-			public delegate void RemoveMarkedBusyDelegate(long id);
-
-			public IEntityProperty_RemoveMarkedBusyInterceptor() : base("RemoveMarkedBusy") { }
-
-			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
-			{
-				var typedArgs = (long)args!;
-				((RemoveMarkedBusyDelegate)del)(typedArgs);
-			}
-			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
-			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
-			{
-				if (tracking is RemoveMarkedBusyImpl impl) impl.RecordArg((long)args!);
-			}
-			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (long)args!;
-
-			private long? _unconfiguredLastArg;
-
-			/// <summary>Last argument from the most recently called registration.</summary>
-			public long? LastArg
-			{
-				get
-				{
-					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is RemoveMarkedBusyImpl cb) return cb.LastArg;
-					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is RemoveMarkedBusyImpl sb) return sb.LastArg;
-					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
-				}
-			}
-
-			/// <summary>Configures callback for RemoveMarkedBusy(long id).</summary>
-			public RemoveMarkedBusyImpl Call(RemoveMarkedBusyDelegate callback)
-			{
-				var builder = new RemoveMarkedBusyImpl(this);
-				SetupVoidCallback(callback, builder);
-				return builder;
-			}
-
-			/// <summary>Configures parameter matching for RemoveMarkedBusy(long id). Matches exact values using Object.Equals. Returns chain directly.</summary>
-			public VoidWhenChain When(long id)
-			{
-				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-				var matcher = new VoidWhenMatcherPredicateBase((_arg0) => global::System.Object.Equals(_arg0, id));
-				_whenChain.Add(matcher);
-				return new VoidWhenChain(this, matcher);
-			}
-
-			/// <summary>Configures parameter matching for RemoveMarkedBusy(long id). Matches using predicate. Returns chain directly.</summary>
-			public VoidWhenChain When(global::System.Func<long, bool> predicate)
-			{
-				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-				var matcher = new VoidWhenMatcherPredicateBase(predicate);
-				_whenChain.Add(matcher);
-				return new VoidWhenChain(this, matcher);
-			}
-
-			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal void Invoke(bool strict, long id)
-			{
-				object? __args = id;
-				if (RunVoidPriorityChain(__args)) return;
-				_unconfiguredCallCount++;
-				RecordUnconfiguredArgs(__args);
-				if (HandleVoidSequenceExhaustedRepeat(strict, __args)) return;
-				#pragma warning disable CS8601, SYSLIB0050
-				if (_source is { } src) { src.RemoveMarkedBusy(id); return; }
-				#pragma warning restore CS8601, SYSLIB0050
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "RemoveMarkedBusy");
-				return;
-			}
-
-			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
-			public override void Reset()
-			{
-				base.Reset();
-				_unconfiguredLastArg = default;
-				_source = null;
-			}
-
-			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class RemoveMarkedBusyImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<RemoveMarkedBusyDelegate, long>
-			{
-				private readonly IEntityProperty_RemoveMarkedBusyInterceptor _typedInterceptor;
-				private long _lastArg = default!;
-
-				public RemoveMarkedBusyImpl(IEntityProperty_RemoveMarkedBusyInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				public long LastArg => _lastArg;
-				public void RecordArg(long args) => _lastArg = args;
-
-				public override void Reset() { base.Reset(); _lastArg = default!; }
-
-				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
-				public RemoveMarkedBusySequence ThenCall(RemoveMarkedBusyDelegate callback)
-				{
-					ThenCallBase(callback);
-					return new RemoveMarkedBusySequence(_typedInterceptor);
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public RemoveMarkedBusyImpl Verifiable() { VerifiableBase(); return this; }
-				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
-				public RemoveMarkedBusyImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new RemoveMarkedBusyImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodTracking<long> global::KnockOff.IMethodTracking<long>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking<long> global::KnockOff.IMethodTracking<long>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallBuilder<RemoveMarkedBusyDelegate, long> global::KnockOff.IMethodCallBuilder<RemoveMarkedBusyDelegate, long>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodCallBuilder<RemoveMarkedBusyDelegate, long> global::KnockOff.IMethodCallBuilder<RemoveMarkedBusyDelegate, long>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallSequence<RemoveMarkedBusyDelegate> global::KnockOff.IMethodCallBuilder<RemoveMarkedBusyDelegate, long>.ThenCall(RemoveMarkedBusyDelegate callback) => ThenCall(callback);
-			}
-
-			/// <summary>Sequence implementation for ThenCall chaining.</summary>
-			public sealed class RemoveMarkedBusySequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<RemoveMarkedBusyDelegate>
-			{
-				private readonly IEntityProperty_RemoveMarkedBusyInterceptor _typedInterceptor;
-
-				public RemoveMarkedBusySequence(IEntityProperty_RemoveMarkedBusyInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public RemoveMarkedBusySequence ThenCall(RemoveMarkedBusyDelegate callback)
-				{
-					var tracking = new RemoveMarkedBusyImpl(_typedInterceptor);
-					AddToSequence(callback, tracking);
-					return this;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public RemoveMarkedBusySequence Verifiable() { VerifiableBase(); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new RemoveMarkedBusyImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodCallSequence<RemoveMarkedBusyDelegate> global::KnockOff.IMethodCallSequence<RemoveMarkedBusyDelegate>.ThenCall(RemoveMarkedBusyDelegate callback) => ThenCall(callback);
-				global::KnockOff.IMethodCallSequence<RemoveMarkedBusyDelegate> global::KnockOff.IMethodCallSequence<RemoveMarkedBusyDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
-			}
-
-			/// <summary>Predicate-based When matcher for void methods.</summary>
-			private sealed class VoidWhenMatcherPredicateBase : WhenMatcherBase
-			{
-				private readonly global::System.Func<long, bool> _predicate;
-				private global::System.Action<long>? _callback;
-
-				public VoidWhenMatcherPredicateBase(global::System.Func<long, bool> predicate) { _predicate = predicate; }
-
-				public void SetCallback(global::System.Action<long> callback) { _callback = callback; }
-
-				public override bool Matches(object? args) => _predicate((long)args!);
-				public override void Execute(object? args) { _callback?.Invoke((long)args!); }
-				public override object? ExecuteReturn(object? args) { Execute(args); return null; }
-				public override bool IsTerminal => false;
-			}
-
-			/// <summary>Terminal always-matching callback matcher for void methods.</summary>
-			private sealed class VoidWhenMatcherCallBase : WhenMatcherBase
-			{
-				private readonly global::System.Action<long> _callback;
-
-				public VoidWhenMatcherCallBase(global::System.Action<long> callback) { _callback = callback; }
-
-				public override bool Matches(object? args) => true;
-				public override void Execute(object? args) { _callback((long)args!); }
-				public override object? ExecuteReturn(object? args) { Execute(args); return null; }
-				public override bool IsTerminal => true;
-			}
-
-			/// <summary>Terminal no-op matcher for ThenNone() on void When chains.</summary>
-			private sealed class VoidWhenMatcherNoneBase : WhenMatcherBase
-			{
-				public override bool Matches(object? args) => false;
-				public override void Execute(object? args) { }
-				public override object? ExecuteReturn(object? args) => null;
-				public override bool IsTerminal => true;
-			}
-
-			/// <summary>Void When chain implementation with Call, ThenWhen, ThenCall, ThenNone, verification support.</summary>
-			public sealed class VoidWhenChain : VoidWhenChainBase
-			{
-				private readonly IEntityProperty_RemoveMarkedBusyInterceptor _typedInterceptor;
-				private readonly VoidWhenMatcherPredicateBase? _typedMatcher;
-
-				public VoidWhenChain(IEntityProperty_RemoveMarkedBusyInterceptor interceptor, WhenMatcherBase matcher) : base(interceptor, matcher)
-				{
-					_typedInterceptor = interceptor;
-					_typedMatcher = matcher as VoidWhenMatcherPredicateBase;
-				}
-
-				/// <summary>Sets an optional callback to invoke when this matcher matches.</summary>
-				public VoidWhenChain Call(RemoveMarkedBusyDelegate callback)
-				{
-					_typedMatcher?.SetCallback((_arg) => callback(_arg));
-					return this;
-				}
-
-				/// <summary>Adds another matcher with exact value matching.</summary>
-				public VoidWhenChain ThenWhen(long id)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					var matcher = new VoidWhenMatcherPredicateBase((_arg0) => global::System.Object.Equals(_arg0, id));
-					_typedInterceptor._whenChain.Add(matcher);
-					return new VoidWhenChain(_typedInterceptor, matcher);
-				}
-
-				/// <summary>Adds another matcher with predicate matching.</summary>
-				public VoidWhenChain ThenWhen(global::System.Func<long, bool> predicate)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					var matcher = new VoidWhenMatcherPredicateBase(predicate);
-					_typedInterceptor._whenChain.Add(matcher);
-					return new VoidWhenChain(_typedInterceptor, matcher);
-				}
-
-				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
-				public VoidWhenChain ThenCall(RemoveMarkedBusyDelegate callback)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					_typedInterceptor._whenChain.Add(new VoidWhenMatcherCallBase((_arg) => callback(_arg)));
-					return this;
-				}
-
-				/// <summary>Closes chain with no matcher.</summary>
-				public VoidWhenChain ThenNone() { AddTerminalMatcher(new VoidWhenMatcherNoneBase()); return this; }
-
-				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
-				public VoidWhenChain Verifiable() { VerifiableBase(); return this; }
-			}
-
-		}
-
 		/// <summary>Tracks and configures behavior for LoadValue(object? value).</summary>
 		public sealed class IEntityProperty_LoadValueInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
 		{
@@ -9201,12 +8713,6 @@ partial class UniqueNameRuleTests
 			/// <summary>Interceptor for MarkReadOnly.</summary>
 			public IEntityProperty_MarkReadOnlyInterceptor MarkReadOnly { get; } = new();
 
-			/// <summary>Interceptor for AddMarkedBusy.</summary>
-			public IEntityProperty_AddMarkedBusyInterceptor AddMarkedBusy { get; } = new();
-
-			/// <summary>Interceptor for RemoveMarkedBusy.</summary>
-			public IEntityProperty_RemoveMarkedBusyInterceptor RemoveMarkedBusy { get; } = new();
-
 			/// <summary>Interceptor for LoadValue.</summary>
 			public IEntityProperty_LoadValueInterceptor LoadValue { get; } = new();
 
@@ -9267,16 +8773,6 @@ partial class UniqueNameRuleTests
 			void global::Neatoo.IValidateProperty.MarkReadOnly()
 			{
 				MarkReadOnly.Invoke(Strict);
-			}
-
-			void global::Neatoo.IValidateProperty.AddMarkedBusy(long id)
-			{
-				AddMarkedBusy.Invoke(Strict, id);
-			}
-
-			void global::Neatoo.IValidateProperty.RemoveMarkedBusy(long id)
-			{
-				RemoveMarkedBusy.Invoke(Strict, id);
 			}
 
 			void global::Neatoo.IValidateProperty.LoadValue(object? value)
@@ -9401,8 +8897,6 @@ partial class UniqueNameRuleTests
 				ApplyPropertyInfo._source = source;
 				SetValue._source = source;
 				MarkReadOnly._source = source;
-				AddMarkedBusy._source = source;
-				RemoveMarkedBusy._source = source;
 				LoadValue._source = source;
 				WaitForTasks._source = source;
 				GetAwaiter._source = source;
@@ -9431,8 +8925,6 @@ partial class UniqueNameRuleTests
 				ApplyPropertyInfo._source = null;
 				SetValue._source = source;
 				MarkReadOnly._source = source;
-				AddMarkedBusy._source = source;
-				RemoveMarkedBusy._source = source;
 				LoadValue._source = source;
 				WaitForTasks._source = source;
 				GetAwaiter._source = source;
@@ -9461,8 +8953,6 @@ partial class UniqueNameRuleTests
 				ApplyPropertyInfo._source = null;
 				SetValue._source = null;
 				MarkReadOnly._source = null;
-				AddMarkedBusy._source = null;
-				RemoveMarkedBusy._source = null;
 				LoadValue._source = null;
 				WaitForTasks._source = null;
 				GetAwaiter._source = null;
@@ -9491,8 +8981,6 @@ partial class UniqueNameRuleTests
 				ApplyPropertyInfo._source = null;
 				SetValue._source = null;
 				MarkReadOnly._source = null;
-				AddMarkedBusy._source = null;
-				RemoveMarkedBusy._source = null;
 				LoadValue._source = null;
 				WaitForTasks._source = null;
 				GetAwaiter._source = null;
@@ -9523,8 +9011,6 @@ partial class UniqueNameRuleTests
 				if (ApplyPropertyInfo.CheckVerification() is { } applypropertyinfoFailure) failures.Add(applypropertyinfoFailure);
 				if (SetValue.CheckVerification() is { } setvalueFailure) failures.Add(setvalueFailure);
 				if (MarkReadOnly.CheckVerification() is { } markreadonlyFailure) failures.Add(markreadonlyFailure);
-				if (AddMarkedBusy.CheckVerification() is { } addmarkedbusyFailure) failures.Add(addmarkedbusyFailure);
-				if (RemoveMarkedBusy.CheckVerification() is { } removemarkedbusyFailure) failures.Add(removemarkedbusyFailure);
 				if (LoadValue.CheckVerification() is { } loadvalueFailure) failures.Add(loadvalueFailure);
 				if (WaitForTasks.CheckVerification() is { } waitfortasksFailure) failures.Add(waitfortasksFailure);
 				if (GetAwaiter.CheckVerification() is { } getawaiterFailure) failures.Add(getawaiterFailure);
@@ -9560,8 +9046,6 @@ partial class UniqueNameRuleTests
 				if (ApplyPropertyInfo.CheckVerificationAll() is { } applypropertyinfoFailure) failures.Add(applypropertyinfoFailure);
 				if (SetValue.CheckVerificationAll() is { } setvalueFailure) failures.Add(setvalueFailure);
 				if (MarkReadOnly.CheckVerificationAll() is { } markreadonlyFailure) failures.Add(markreadonlyFailure);
-				if (AddMarkedBusy.CheckVerificationAll() is { } addmarkedbusyFailure) failures.Add(addmarkedbusyFailure);
-				if (RemoveMarkedBusy.CheckVerificationAll() is { } removemarkedbusyFailure) failures.Add(removemarkedbusyFailure);
 				if (LoadValue.CheckVerificationAll() is { } loadvalueFailure) failures.Add(loadvalueFailure);
 				if (WaitForTasks.CheckVerificationAll() is { } waitfortasksFailure) failures.Add(waitfortasksFailure);
 				if (GetAwaiter.CheckVerificationAll() is { } getawaiterFailure) failures.Add(getawaiterFailure);
