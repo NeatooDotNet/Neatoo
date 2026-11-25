@@ -109,3 +109,81 @@ The amendment and the Parked row match `reviews/008-lazy-failure-probe.log`. In 
   - `WorkOrderTaskList.cs` (the sibling `RunRules(propertyName)` pattern).
   - The MudNeatoo components' `Disabled` bindings.
 - **Named but unused:** none. I read the VisionAlignment D31 to D36 rows. No finding turned on them beyond the note in callout 4.
+
+---
+
+## Code Review — WAIT-008 — Round 2 — 2026-11-24
+
+**Verdict: APPROVED** (all four Round 1 callouts addressed and verified against the code; no veto-tier finding; no new callout)
+**Logs:** build PASSED — `reviews/008-build.log` (0 errors), `reviews/008-design-build.log` (0 errors, 0 warnings). Tests: 2,110 passed, 0 failed, 2 skipped — `reviews/008-test.log` (MudNeatoo 38, BaseGenerator 51, Analyzers 23, Person 55, UnitTest 1,943 + 2 skipped; one more than Round 1, which is the new lazy-load test). Design.Tests 235 passed — `reviews/008-design-test.log`. No failures to name.
+
+A correction to Round 1's header: its "2,344 passed" was the main suite (2,109) plus Design.Tests (235). Nothing failed in either round.
+
+Object under review: `git diff 1792c82..000f448`.
+
+### Round 1 callouts, verified
+
+1. **`TrackTask` alone — addressed.** `v0.37.0.md:130` and Behavior change 5 (`:166-170`) now name both protected members. The code agrees:
+   - `TrackTask(task)` puts the task on the property's own tracker (`ValidateProperty.cs:164-188`).
+   - `ReportToOwner(task)` (`:277-283`) calls `_reportToOwner`. That is `ValidatePropertyManager.ReportTaskStarted`, which calls `TaskStarted`, which is `ValidateBase.AddChildTask`. The object registers the task and passes it up through its parents, so it is busy and its `WaitForTasks()` waits.
+   - This is the pair the framework's lazy-load properties use.
+
+2. **The rule's message — addressed.** The fault section (`:74-89`) now separates the wait from the message, and Behavior change 6 (`:172-174`) is new. The "before" is right:
+   - Main's catch block stored the exception message with `RuleId` 0.
+   - A registered rule's id is never 0: `RuleBase.cs:244-246` treats 0 as unassigned.
+   - So `ClearMessagesForRule(rule.RuleId)` on a clean run never removed the message. Only clearing all messages did, which `RunRules(All)` also does through `ClearAllMessages`.
+
+3. **A throwing handler — addressed.** It is now the third consequence under Behavior change 4 (`:163-165`). It matches `NeatooPropertyChangedInvocation.InvokeAll`, which returns `Task.WhenAll` of every subscriber's task, against main's `?.Invoke`, which returned only the last one's. The "after an `await`" qualifier is right too: a subscriber that throws before returning a task stops the subscribers after it, on both branches, and that throw is synchronous.
+
+4. **The self-wait rule — addressed.** Every place Round 1 listed now draws the rule over the object written to and everything above it:
+   - `async.md:160`, and `async.md:396-403` with the new paragraph naming the child
+   - `blazor.md:515-517` and `properties.md:235`
+   - both rows in `api.md`
+   - `pitfalls.md`, the skill's `properties.md` and mudneatoo's point 5
+   - `CLAUDE-DESIGN.md` and Behavior change 4
+
+   A search for the old wordings ("own object or a parent", "or on a parent of it", "object that raised the event", "on that entity or a parent") finds none left. The only hit is the unrelated `Source` definition at `properties.md:228`.
+
+   **Is it too wide?** I checked the cases the new wording forbids and the ones it leaves allowed:
+   - **Forbidden, rightly.** The write's task is registered on the object written to and every ancestor (`ValidateBase.AddChildTask`). The handler and the parent rule triggered by `t => t.Child.X` both run inside that task: the parent runs `ChildNeatooPropertyChanged`, then `RunRules("Child.X")`, then `RaiseNeatooPropertyChanged`, and all of it is awaited inside the child property's `OnValueNeatooPropertyChanged`. Every object the rule now names has the handler inside its running tasks.
+   - **Allowed, rightly.** The rule names no sibling and nothing below the written object. A sibling's tracker and a descendant's tracker do not hold the write, so waiting on them is safe. `RunRules(propertyName)` on a sibling stays allowed, as it should.
+   - **The `api.md` row.** It now reads from the waited object's side ("part of a write to this object or to anything below it, wherever that rule or handler lives"), which is the same rule.
+
+   One narrow over-reach is listed under Theoretical. It is not worth a change.
+
+### Behavior change 9 and the lazy-load tests
+
+Behavior change 9 (`v0.37.0.md:181-186`) matches `reviews/008-lazy-failure-probe.log` and the code:
+- **The wait in progress.** On `main` it threw the loader's exception (P1). On the arc it completes, because `ReportLoadInFlight` and `EndLoadReportIfNotLoading` report a `TaskCompletionSource` that only `TrySetResult` completes.
+- **A wait started after the failure.** It completed on both branches (P2).
+- **The parent.** It reads `IsValid == false` while the error stands (P1, both branches).
+- **An awaited `LoadAsync()`.** It still throws (P3).
+
+The test change matches the plan's Test Evidence table:
+- `ParentIsValid_AfterExplicitChildLoadFailure` drops its `catch (InvalidOperationException)`. It now claims one outcome where it accepted two, so it is stricter, not weakened.
+- `ParentWaitForTasks_InProgressWhenTheLoadFails_CompletesWithoutThrowing` drives the exact P1 case: the parent is busy, the wait is incomplete, the load fails, and the wait completes within a 5-second bound. On `main` its `await wait` would throw, so it pins the ruled behavior.
+
+**Should the notes mention that `WaitForTasks(token)` on `main` never waited for a lazy load?** It is not needed for change 9, which is about throwing, and `WaitForTasks(token)` on `main` never threw a load's failure. The consumer-visible part is that `WaitForTasks(token)` and `Save(token)` now wait for a load in flight. "What's fixed" already covers that: "`WaitForTasks(token)` skipped property-level work that `WaitForTasks()` covered", and the "lazy load in flight" row of the tracking table says the same. Behavior change 7 names only "a rule still running". Adding "or a load" there would make it explicit. That is one option, not a gap.
+
+### Veto-tier
+
+None.
+
+### Callouts
+
+None.
+
+### Could not verify
+
+- `LazyLoadStatePropagationTests.cs` has an uncommitted comment-only edit in the working tree, which is not in 000f448. It adds three lines to `ParentIsValid_AfterExplicitChildLoadFailure` saying the loader throws synchronously, which is accurate. The test logs were written at 22:09, so they may predate it. Because it is a comment, the result cannot differ.
+- Acceptance bullet 6, the copy of the skills to `~/.claude/skills/`, still stands as in Round 1. I did not re-check it.
+
+### Theoretical (not triaged)
+
+- **A narrow over-reach in the self-wait rule.** A `NeatooPropertyChanged` raised for a meta property (`ValidateBase.RaiseIfChanged`, `:337`) or for a list's `Count` (`ValidateListBase.cs:158`, `:190`, `:264`) is not awaited by whoever raises it. A handler on those events that awaits the wait would therefore not deadlock. The docs' "must not" covers them anyway. That errs on the safe side: the same handler's work is untracked, so it is not a pattern to invite.
+- **A stale change number in the tracking files.** The plan's first amendment (`plans/008-docs-and-release-notes.md:120`, "behavior change 8") and the todo's Discovery Log ("migration note 8") give the lazy-load note as number 8. In the release notes it is 9; 8 is the list `IsBusy` row.
+
+### Read report
+
+- **Read beyond the brief:** `src/Neatoo/Rules/RuleBase.cs` (rule id assignment); the working-tree diff of `LazyLoadStatePropagationTests.cs`.
+- **Named but unused:** none.

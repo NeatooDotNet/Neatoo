@@ -106,7 +106,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-006 · test-reviewer (tech-debt) · the todo's plan row still listed AC-12 as served · the row now says it is parked.
 - WAIT-007 · test-reviewer (tech-debt) · a loose exception assertion and a fixture summary that said "no factory" on a `[Factory]` class · both fixed; the plan's Intent narrowed to what the tests show.
 - WAIT-008 · docs-writer · the handler rule must name `RunRules(RunRulesFlag)`, because a list's handler awaits `RunRules(propertyName)` on siblings by design · taken in the guides, skills and release notes.
-- WAIT-008 · code-reviewer · four corrections to the prose (custom properties need `ReportToOwner`; the rule-message fix was missing from the notes; a throwing handler now faults the write; the self-wait rule missed the object written to) · all four taken.
+- WAIT-008 · code-reviewer · four corrections to the prose (custom properties need `ReportToOwner`; the rule-message fix was missing from the notes; a throwing handler now faults the write; the self-wait rule missed the object written to) · all four taken; round 2 notes (numbering, a lazy load in behavior change 7) taken too.
 
 ---
 
@@ -150,7 +150,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 ### 2026-11-24 — WAIT-008 · serves AC-9
 - **Finding:** WAIT-004 reports a load in flight as a task that finishes whatever the load's outcome, so a wait in progress no longer throws a failing load's exception. The skill documented that throw, and Out of Scope promises LazyLoad's documented waiting. Measured against `main`.
 - **Decision:** Amend (Keith ruled: keep the change)
-- **Follow-up:** migration note 8 in the 0.37.0 release notes; the test rewritten
+- **Follow-up:** behavior change 9 in the 0.37.0 release notes; the test rewritten
 
 ---
 

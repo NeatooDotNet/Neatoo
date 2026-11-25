@@ -60,12 +60,12 @@ What a reader must come away knowing, because the code now behaves this way:
 
 ## Acceptance
 
-- [ ] No guide, reference, skill or Design.Domain comment names a removed member or describes cached or flag-based busy `[explicit-skip: documentation; checked by search]`
-- [ ] The guides and skills state tracking, waiting, busy and faults as the Intent does `[explicit-skip: documentation; checked by the code review]`
-- [ ] The async and Blazor guides say what a `NeatooPropertyChanged` handler must not await `[explicit-skip: documentation]`
-- [ ] The release notes carry every migration row from the todo's Punchlist `[explicit-skip: documentation]`
-- [ ] `dotnet mdsnippets` leaves every placeholder filled; build and tests green `[explicit-skip: meta-bullet]`
-- [ ] `skills/neatoo` and `skills/mudneatoo` are copied to the user's skills folder `[explicit-skip: environment step]`
+- [x] No guide, reference, skill or Design.Domain comment names a removed member or describes cached or flag-based busy `[explicit-skip: documentation; checked by search]`
+- [x] The guides and skills state tracking, waiting, busy and faults as the Intent does `[explicit-skip: documentation; checked by the code review]`
+- [x] The async and Blazor guides say what a `NeatooPropertyChanged` handler must not await `[explicit-skip: documentation]`
+- [x] The release notes carry every migration row from the todo's Punchlist `[explicit-skip: documentation]`
+- [x] `dotnet mdsnippets` leaves every placeholder filled; build and tests green `[explicit-skip: meta-bullet]`
+- [x] `skills/neatoo` and `skills/mudneatoo` are copied to the user's skills folder `[explicit-skip: environment step]`
 
 ---
 
@@ -106,6 +106,10 @@ Full runs: `reviews/008-build.log`, `008-test.log` (2,110 passed, 2 skipped, 0 f
   - A handler that throws after an `await` now faults the write whichever position it subscribed in. Added to behavior change 4.
   - The self-wait rule named the handler's own object and its parents and missed the object written to: a root handler, or a parent's rule on a child's property, that awaits the child's wait also waits for itself. Reworded in the guides, the reference, both skills, `CLAUDE-DESIGN.md` and the notes.
   - It confirmed the compile-breaks table against the signature diff, that no C# was typed into a guide or skill, and the account of the lazy-load change.
+- Round 1, test review (2026-11-24): APPROVED, no veto, no callout — `reviews/008-test-review.md`. The changed test is stricter than before and pins the already-failed case; the new test pins the wait-in-progress case, the one that differs from `main`. Its note that the changed test's comment could make the new one look like a duplicate was taken.
+- Round 2 (2026-11-24): code review APPROVED, no veto, no callout. All four round 1 corrections hold against the code, and the widened self-wait rule is not too wide (siblings, descendants and `RunRules(propertyName)` stay allowed). Its three small notes were taken: the lazy-load note is behavior change 9, not 8; behavior change 7 now names a lazy load; the comment edit is committed. The gate is closed.
+- Skills: `skills/neatoo` and `skills/mudneatoo` copied to the user's skills folder; `diff -rq` reports no difference. Before the copy, only the nine files this arc changed differed.
+- Final runs on the merged tree: `reviews/008-build.log`, `008-test.log` (2,110 passed, 2 skipped, 0 failed), `008-design-build.log`, `008-design-test.log` (235 passed).
 
 ---
 
@@ -117,7 +121,7 @@ Full runs: `reviews/008-build.log`, `008-test.log` (2,110 passed, 2 skipped, 0 f
 - **Original said:** LazyLoad passages are corrected where they are wrong about waiting.
 - **What changed:** writing the docs showed that the code changed a documented behavior. On `main`, a fire-and-forget load that fails while the parent's `WaitForTasks()` is waiting throws the loader's exception from that wait. On the arc the wait completes cleanly and the failure is in `HasLoadError` only. `skills/neatoo/references/lazy-loading.md` documented the throw. The docs agent rewrote that sentence and the Design.Domain comment to match the code; those two edits stand in the branch as a description of the code as it is, and are not merged.
 - **Why:** WAIT-004 reports a load in flight to its owner as a task that finishes when the property stops loading, whatever the outcome. The only test on the case, `ParentIsValid_AfterExplicitChildLoadFailure`, accepts both outcomes, so no gate saw it. The todo's Out of Scope says LazyLoad's documented waiting keeps working, so which side is right is Keith's to rule: keep the change and note it in the migration, or restore the throw.
-- **Ruling:** Keith, 2026-11-24: "Keep the change". A failed load never faults a wait; `HasLoadError` is the one channel. The agent's two edits stand, the migration notes carry it as behavior change 8, and the test is rewritten to the ruling: `ParentIsValid_AfterExplicitChildLoadFailure` no longer accepts a throw, and `ParentWaitForTasks_InProgressWhenTheLoadFails_CompletesWithoutThrowing` is new.
+- **Ruling:** Keith, 2026-11-24: "Keep the change". A failed load never faults a wait; `HasLoadError` is the one channel. The agent's two edits stand, the migration notes carry it as behavior change 9, and the test is rewritten to the ruling: `ParentIsValid_AfterExplicitChildLoadFailure` no longer accepts a throw, and `ParentWaitForTasks_InProgressWhenTheLoadFails_CompletesWithoutThrowing` is new.
 - **Discovery Log:** 2026-11-24 / WAIT-008
 
 ### 2026-11-24 — The handler rule names `RunRules(RunRulesFlag)`

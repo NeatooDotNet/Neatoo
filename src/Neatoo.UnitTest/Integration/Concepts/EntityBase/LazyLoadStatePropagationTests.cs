@@ -139,7 +139,9 @@ public class LazyLoadExplicitLoadPropagationTests : IntegrationTestBase
         _ = parent.LazyChild.LoadAsync();
 
         // A failed load does not fault the parent's wait: HasLoadError is the one channel
-        // for a load's failure (ruled by Keith, 2026-11-24, with 0.37.0).
+        // for a load's failure (ruled by Keith, 2026-11-24, with 0.37.0). This loader throws
+        // synchronously, so the load has already failed when the wait starts; the test
+        // below is the other case, a wait that is in progress when the load fails.
         await parent.WaitForTasks();
 
         // Assert -- parent IsValid is false because LazyLoad child has load error
