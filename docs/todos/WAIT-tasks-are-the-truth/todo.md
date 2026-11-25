@@ -49,7 +49,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 |---|------|-------|--------|--------|----|
 | 001 | [001-decision-record](./plans/001-decision-record.md) | The rulings in VisionAlignment | AC-9 | Done | #143 |
 | 002 | [002-tracker-faults](./plans/002-tracker-faults.md) | The tracker faults once, then recovers | AC-7 | Done | #144 |
-| 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | In Progress (built, stopped before the gate) | — |
+| 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | In Progress | — |
 | 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Draft | — |
 | 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Draft | — |
 | 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order, save in flight | AC-10, AC-11, AC-12 | Draft | — |
@@ -65,10 +65,12 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 ## Dismissed
 
+- `AsyncFlowTests_Property_PropertyChangedEvents` failing intermittently, proposed as a fix to `CheckIfMetaPropertiesChanged` · it is #131, already out of scope, and Keith ruled on 2026-11-24: "Neatoo is not multi-threaded capable. Like a UI application. Neatoo is not threadsafe." The test ran one object on several pool threads at once; it now runs one thing at a time (WAIT-003)
+
 ## Parked
 
 - proposed · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice · 0.36.1 design critique, 2026-11-24
-- proposed · `AsyncFlowTests_Property_PropertyChangedEvents` fails intermittently (2 of 40 isolated runs on `wait-arc` at aa174d2; 0 of 60 on v0.36.1): the entity raises no `IsBusy` after its work ends. Likely `CheckIfMetaPropertiesChanged` reading the state twice, so a change on another thread between the reads becomes the baseline unannounced · WAIT-003 · `plans/003-property-tasks.md` Notes, 2026-11-24 · stopped the loop for Keith
+- proposed · the tracker finishes a sequence in a `ContinueWith` continuation, which runs on the current task scheduler and not on the synchronization context that owns the object. On a host with a UI thread and a thread pool (WPF, Blazor Server) the falling `IsBusy` notification and any meta-state rule it triggers would run on a pool thread. Read, not measured; it predates this todo · WAIT-003, 2026-11-24
 
 ---
 

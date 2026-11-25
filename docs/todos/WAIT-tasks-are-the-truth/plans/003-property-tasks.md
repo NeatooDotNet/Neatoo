@@ -110,12 +110,13 @@ Existing tests changed, each with its reason:
 | `ValidatePropertyTests.IsSelfBusy_InitialState_ReturnsFalse` | A new property's `IsSelfBusy` is false | Removed | `IsSelfBusy` no longer exists (D31, D35). `IsBusy_InitialState_ReturnsFalse` beside it still pins the initial state. |
 | `AsyncRuleFaultTests.ValidateBase_TakesItsTrackerFromTheRegisteredFactory` | The registered factory was called once, and its one tracker is the object's | The object's tracker is one of those the registered factory supplied, and it supplied at least two | The same factory now supplies each property's tracker (D31, D36), so it is called more than once. |
 | `TrackerFromServicesTests.EntityBase_TakesItsTrackerFromTheRegisteredFactory` | The same, for `EntityBase` | The same change | The same reason. |
+| `AsyncFlowTests`, its six async tests | Each body ran on the test host's thread pool, so two async rules could resume on two threads over one object | The same assertions; each body runs inside `OneThreadAtATime.Run`, which queues every continuation to one exclusive scheduler | A graph is single-threaded ("Single-Threaded Object Model", `src/Design/CLAUDE-DESIGN.md`; Keith, 2026-11-24: "Neatoo is not multi-threaded capable. Like a UI application."). No assertion changed. `AsyncFlowTests_Property_PropertyChangedEvents` went from 2 failures in 15 full-suite runs to 0 in 30. |
 
 ---
 
 ## Gate Record
 
-- Not run. The plan stopped before the gate on 2026-11-24 for Keith: an existing test outside this plan, `AsyncFlowTests_Property_PropertyChangedEvents`, fails intermittently, on the arc before this plan as well as after it. See Notes and the todo's Parked row.
+- Stop before the gate (2026-11-24): `AsyncFlowTests_Property_PropertyChangedEvents`, outside this plan, failed intermittently on the arc before this plan as well as after it. Keith ruled that Neatoo is not thread-safe, like a UI application. The finding is dismissed in the todo (it is #131) and the test class now runs one thing at a time. The loop resumed.
 
 ---
 
@@ -141,6 +142,7 @@ Existing tests changed, each with its reason:
 
 ## Notes
 
-- **Stopped before the gate, 2026-11-24.** The code and tests of this plan are complete and the one full-suite run is green. Nothing is merged.
+- **Full-suite run for the gate:** taken after the `AsyncFlowTests` change, on the final code. Repeat runs of the unit suite afterwards: 0 failures in 30.
 - **Tried and taken back out:** registering a busy property's work in the entity's tracker and reading entity `IsBusy` from the tracker alone. It reduced the first flake without removing it and broke `ParentIsBusy_AfterExplicitChildLoad`, because lazy loads are not registered yet. It is WAIT-004 and WAIT-005's work and was not the cause; the cause is in the first amendment above.
-- **The flaky test that stopped the loop.** `AsyncFlowTests.AsyncFlowTests_Property_PropertyChangedEvents` failed at its last entity-level assertion (the entity raised no `IsBusy` after its work finished) in 2 of 15 full-suite repeat runs on this branch. In isolation: 2 of 40 on `wait-arc` before this plan (aa174d2), 0 of 40 on this branch, 0 of 60 on v0.36.1. Likely mechanism, read and not measured: `ValidateBase.CheckIfMetaPropertiesChanged` compares the cached state with the current state, then `ResetMetaState` reads the current state a second time. When another thread ends the last work between the two reads, the baseline becomes "not busy" with no notification raised, and the thread that ended the work then finds nothing changed. The counts cannot say whether WAIT-002 changed the timing or the rate was always low.
+- **The flaky test that stopped the loop.** `AsyncFlowTests.AsyncFlowTests_Property_PropertyChangedEvents` failed at its last entity-level assertion (the entity raised no `IsBusy` after its work finished) in 2 of 15 full-suite repeat runs on this branch. In isolation: 2 of 40 on `wait-arc` before this plan (aa174d2), 0 of 40 on this branch, 0 of 60 on v0.36.1. Likely mechanism, read and not measured: the compare and reset of the meta state is not atomic, which is #131. It needs two threads in one object at once, which the test host supplied and a UI application does not.
+- **`OneThreadAtATime.Run`** (`src/Neatoo.UnitTest/TestInfrastructure/`) is new test infrastructure for that: a test body, the rules it starts and the framework's tracking all continue on one exclusive scheduler.

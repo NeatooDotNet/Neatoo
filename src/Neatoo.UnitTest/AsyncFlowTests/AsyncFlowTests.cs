@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using Neatoo.Internal;
+using Neatoo.UnitTest.TestInfrastructure;
 
 namespace Neatoo.UnitTest.AsyncFlowTests;
 
@@ -49,7 +50,7 @@ public class AsyncFlowTests
 
     [Ignore]
     [TestMethod]
-    public async Task AsyncFlowTests_CheckAllRules()
+    public Task AsyncFlowTests_CheckAllRules() => OneThreadAtATime.Run(async () =>
     {
         // Just ensure there's not a circular reference
         await asyncValidateObject.RunRules(); 
@@ -57,10 +58,10 @@ public class AsyncFlowTests
         Assert.AreEqual(5, asyncValidateObject.AsyncDelayUpdateChildRule.RunCount);
         Assert.AreEqual(4, asyncValidateObject.Child.AsyncDelayUpdateChildRule.RunCount);
 
-    }
+    });
 
     [TestMethod]
-    public async Task AsyncFlowTests_NoAwait_IsBusy()
+    public Task AsyncFlowTests_NoAwait_IsBusy() => OneThreadAtATime.Run(async () =>
     {
         // Need to implement PropertyManager.IsBusy
         // in the same way it is implemented for RulesManager
@@ -74,7 +75,7 @@ public class AsyncFlowTests
         Assert.AreEqual(2, asyncValidateObject.Child.AsyncDelayUpdateChildRule.RunCount);
 
         //CollectionAssert.Contains(propertyChangedCalls, "IsBusy");
-    }
+    });
 
     [TestMethod]
     public void AsyncFlowTests_SyncRulesOnly_NotIsBusy()
@@ -92,7 +93,7 @@ public class AsyncFlowTests
     }
 
     [TestMethod]
-    public async Task AsyncFlowTests_CallerCanWaitForPropertyUpdate_NotAllOnly()
+    public Task AsyncFlowTests_CallerCanWaitForPropertyUpdate_NotAllOnly() => OneThreadAtATime.Run(async () =>
     {
         asyncValidateObject.AsyncRuleCanWaitProperty.Value = "test";
 
@@ -106,10 +107,10 @@ public class AsyncFlowTests
 
         await asyncValidateObject.WaitForTasks();
         Assert.IsFalse(asyncValidateObject.IsBusy);
-    }
+    });
 
     [TestMethod]
-    public async Task AsyncFlowTests_RuleCanWaitForAnotherRule()
+    public Task AsyncFlowTests_RuleCanWaitForAnotherRule() => OneThreadAtATime.Run(async () =>
     {
         asyncValidateObject.AsyncRuleCanWaitProperty.Value = "Wait";
 
@@ -123,10 +124,10 @@ public class AsyncFlowTests
 
         await asyncValidateObject.WaitForTasks();
         Assert.IsFalse(asyncValidateObject.IsBusy);
-    }
+    });
 
     [TestMethod]
-    public async Task AsyncFlowTests_Property_PropertyChangedEvents()
+    public Task AsyncFlowTests_Property_PropertyChangedEvents() => OneThreadAtATime.Run(async () =>
     {
 
         PropertyChangedEventHandler propertyChanged = (s, e) =>
@@ -174,10 +175,10 @@ public class AsyncFlowTests
         }
 
 
-    }
+    });
 
     [TestMethod]
-    public async Task AsyncFlowTests_RuleCanWaitForChild()
+    public Task AsyncFlowTests_RuleCanWaitForChild() => OneThreadAtATime.Run(async () =>
     {
         asyncValidateObject.Child.AsyncDelayRuleValue = 5;
         asyncValidateObject.AsyncDelayRuleValue = 20;
@@ -192,5 +193,5 @@ public class AsyncFlowTests
 
         await asyncValidateObject.WaitForTasks();
         Assert.IsFalse(asyncValidateObject.IsBusy);
-    }
+    });
 }
