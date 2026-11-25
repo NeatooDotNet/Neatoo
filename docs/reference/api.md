@@ -286,7 +286,7 @@ public async Task AddItem_SetsParentAndRoot()
 | Member | Signature | Notes |
 |---|---|---|
 | RunningTasks | `protected IAsyncTasks RunningTasks { get; }` | The record of async work in flight on this object and below it. `IsBusy` and both `WaitForTasks` overloads read it. The services supply it (`CreateAsyncTasks`), so an `IAsyncTasks` registered in DI after `AddNeatooServices` replaces the framework's tracker. |
-| WaitForTasks | `public virtual Task WaitForTasks()` | Awaits this object's running tasks and nothing else. When it completes, nothing on the object or below it is busy and the `IsBusy` change has been raised. Throws an `AggregateException`, once, for a rule that threw while in flight. Call it before reading `IsValid` or saving when async rules may be in flight; never from a rule or a `NeatooPropertyChanged` handler on this object or a descendant, which would be waiting for itself. |
+| WaitForTasks | `public virtual Task WaitForTasks()` | Awaits this object's running tasks and nothing else. When it completes, nothing on the object or below it is busy and the `IsBusy` change has been raised. Throws an `AggregateException`, once, for a rule that threw while in flight. Call it before reading `IsValid` or saving when async rules may be in flight; never from a rule or a `NeatooPropertyChanged` handler that is part of a write to this object or to anything below it, wherever that rule or handler lives: it would be waiting for itself. |
 | WaitForTasks | `public virtual Task WaitForTasks(CancellationToken token)` | The same wait with cancellation. Cancelling the token stops the wait, not the work. |
 
 While an async rule runs, `IsBusy` is true and `IsSavable` is false:
@@ -352,7 +352,7 @@ public void Gotcha4_PausedPropertyChanges_DoNotTriggerRules()
 | Member | Signature | Notes |
 |---|---|---|
 | PropertyChanged | `public event PropertyChangedEventHandler? PropertyChanged` | Standard `INotifyPropertyChanged`: own properties and meta flags. Blazor does not subscribe on its own; the page does. |
-| NeatooPropertyChanged | `public event NeatooPropertyChanged? NeatooPropertyChanged` | Async (`Task NeatooPropertyChanged(NeatooPropertyChangedEventArgs)`); carries `PropertyName`, `Source`, a dotted `FullPropertyName` for descendant changes, and `Reason` (`UserEdit` or `Load`). Every subscriber's task is awaited as part of the write that raised the event, so a handler must not await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on this object or a parent. |
+| NeatooPropertyChanged | `public event NeatooPropertyChanged? NeatooPropertyChanged` | Async (`Task NeatooPropertyChanged(NeatooPropertyChangedEventArgs)`); carries `PropertyName`, `Source`, a dotted `FullPropertyName` for descendant changes, and `Reason` (`UserEdit` or `Load`). Every subscriber's task is awaited as part of the write that raised the event, so a handler must not await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on the object that was written to or on any parent of it up to the root. That includes this object, and a child whose change the handler is hearing. |
 
 ### Factory Lifecycle Hooks
 

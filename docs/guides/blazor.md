@@ -512,9 +512,9 @@ public async Task NeatooPropertyChanged_CarriesFullNameAndReason()
 
 ### Awaiting inside a NeatooPropertyChanged handler
 
-A `NeatooPropertyChanged` handler returns a `Task`, and the framework awaits every subscriber's task as part of the write that raised the event. A write is not over while any handler of it is still running. The write, with the handler inside it, is one of the running tasks of its object and of every parent.
+A `NeatooPropertyChanged` handler returns a `Task`, and the framework awaits every subscriber's task as part of the write that raised the event. A write is not over while any handler of it is still running. The write, with the handler inside it, is one of the running tasks of the object that was written to and of every parent up to the root.
 
-So a `NeatooPropertyChanged` handler must not await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on the object that raised the event, or on a parent of it. Each of them waits for the object's running tasks. Once the write is in flight, that wait includes the handler itself: it never completes, the object stays busy, and no exception is thrown. The order in which handlers subscribed makes no difference.
+So a `NeatooPropertyChanged` handler must not await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on any object the write is registered with: the object written to and everything above it. That covers the handler's own object and its parents, and it covers a child: a handler on the root that hears a child's change must not await that child's `WaitForTasks()` either. Each of these calls waits for the object's running tasks. Once the write is in flight, that wait includes the handler itself: it never completes, the object stays busy, and no exception is thrown. The order in which handlers subscribed makes no difference.
 
 The handler in the test above does its work and returns; the test awaits `WaitForTasks()` outside it. `NeatooValidationSummary`'s handler calls `InvokeAsync(StateHasChanged)` and returns a completed task. Code that needs settled state belongs in a UI event handler, which is not part of any write: a Save button's click handler awaits `WaitForTasks()` and then reads `IsSavable`.
 

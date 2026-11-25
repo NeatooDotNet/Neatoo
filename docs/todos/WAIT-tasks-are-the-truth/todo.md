@@ -77,7 +77,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - proposed · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice · 0.36.1 design critique, 2026-11-24
 - proposed · a list item whose busy changes while the item itself is paused does not raise the list's `IsBusy` notification; the list's `IsBusy` value is right and its owner is unaffected. Reached by an awaited `RunRules` with an async rule inside a factory operation on an item already in a list · WAIT-005 · `reviews/005-code-review.md` Round 2, Theoretical
 - #103 · AC-12 (Optional) not built: registering the save as the object's work makes `MarkUnmodified` refuse when a local save with an async `[Insert]` or `[Update]` completes, so it needs a ruling on that guard and on the sent instance's state after a remote save · WAIT-006 · `plans/006-optional-criteria.md` Plan Amendments
-- proposed (a decision for Keith, not an issue) · a fire-and-forget lazy load that fails while the parent's `WaitForTasks()` is waiting: `main` throws the loader's exception from that wait, the arc completes it cleanly. Waits started after the failure, and an awaited `LoadAsync`, behave the same on both. The skill documented the throw, and Out of Scope says LazyLoad's documented waiting keeps working. Introduced by WAIT-004; the one test on it accepts both outcomes · WAIT-008 · `reviews/008-lazy-failure-probe.log`
+- ruled (Keith, 2026-11-24: "Keep the change"; no issue) · a fire-and-forget lazy load that fails while the parent's `WaitForTasks()` is waiting: `main` throws the loader's exception from that wait, the arc completes it cleanly. Waits started after the failure, and an awaited `LoadAsync`, behave the same on both. The skill documented the throw, and Out of Scope says LazyLoad's documented waiting keeps working. Introduced by WAIT-004; the one test on it accepts both outcomes · WAIT-008 · `reviews/008-lazy-failure-probe.log`
 
 ---
 
@@ -105,6 +105,8 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-006 · code-reviewer · a handler that awaits its own object's wait now deadlocks whatever order it subscribed in, and a guide reads as allowing it · punched to the Punchlist for WAIT-008 (the guides and the migration notes).
 - WAIT-006 · test-reviewer (tech-debt) · the todo's plan row still listed AC-12 as served · the row now says it is parked.
 - WAIT-007 · test-reviewer (tech-debt) · a loose exception assertion and a fixture summary that said "no factory" on a `[Factory]` class · both fixed; the plan's Intent narrowed to what the tests show.
+- WAIT-008 · docs-writer · the handler rule must name `RunRules(RunRulesFlag)`, because a list's handler awaits `RunRules(propertyName)` on siblings by design · taken in the guides, skills and release notes.
+- WAIT-008 · code-reviewer · four corrections to the prose (custom properties need `ReportToOwner`; the rule-message fix was missing from the notes; a throwing handler now faults the write; the self-wait rule missed the object written to) · all four taken.
 
 ---
 
@@ -147,8 +149,8 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 ### 2026-11-24 — WAIT-008 · serves AC-9
 - **Finding:** WAIT-004 reports a load in flight as a task that finishes whatever the load's outcome, so a wait in progress no longer throws a failing load's exception. The skill documented that throw, and Out of Scope promises LazyLoad's documented waiting. Measured against `main`.
-- **Decision:** Stop for Keith (touches Out of Scope)
-- **Follow-up:** Parked row; WAIT-008 is not merged until he rules
+- **Decision:** Amend (Keith ruled: keep the change)
+- **Follow-up:** migration note 8 in the 0.37.0 release notes; the test rewritten
 
 ---
 

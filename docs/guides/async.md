@@ -157,7 +157,7 @@ public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 
 Because each task is passed up through `Parent`, `WaitForTasks()` on an aggregate root waits for the work of every child entity and collection as well.
 
-Do not await `WaitForTasks()` inside work the object is tracking. A rule's run is one of its target's running tasks, so a rule that awaits `WaitForTasks()` or `RunRules(RunRulesFlag)` on its own target, or on a parent, waits for itself. The same holds for a `NeatooPropertyChanged` handler; see [Awaiting inside a NeatooPropertyChanged handler](#awaiting-inside-a-neatoopropertychanged-handler).
+Do not await `WaitForTasks()` inside work that wait covers. A rule runs as part of a write, or of a `RunRules` call, and that work is one of the running tasks of the object it was made on and of every parent up to the root. So a rule must not await `WaitForTasks()` or `RunRules(RunRulesFlag)` on any of those objects: it would be waiting for itself. That covers the rule's own target and its parents. For a rule on a parent triggered by a child's property (`t => t.Child.X`), it also covers the child, because the write was made there. The same holds for a `NeatooPropertyChanged` handler; see [Awaiting inside a NeatooPropertyChanged handler](#awaiting-inside-a-neatoopropertychanged-handler).
 
 ## IsBusy State
 
@@ -393,11 +393,13 @@ Catch it where application failures are handled — an error boundary or a logge
 
 `NeatooPropertyChanged` handlers return a `Task`, and raising the event awaits every subscriber's task, not only the last one's. A write is not over while any handler of it is still running, and an exception a handler throws reaches the awaiter of the write.
 
-A handler's task is therefore part of the write, and the write is one of the running tasks of its object and of every parent. So a `NeatooPropertyChanged` handler must not await any of these on the object that raised the event, or on a parent of it:
+A handler's task is therefore part of the write. The write is one of the running tasks of the object that was written to and of every parent up to the root, and each of those objects raises the change to its own subscribers as part of the same write. So a `NeatooPropertyChanged` handler must not wait on any object the write is registered with: the object written to and everything above it. On those objects it must not await:
 
 - `WaitForTasks()` or `WaitForTasks(token)`
 - `RunRules(RunRulesFlag)`, which ends by waiting for the object's running tasks
 - `Save(token)`, which begins by waiting for them
+
+That covers the handler's own object and its parents. It also covers a child: a handler on the root that hears a child's change and awaits that child's `WaitForTasks()` is waiting on the object the write was made on.
 
 Once the write is in flight, that wait includes the handler itself. It never completes, the object stays busy, and no exception is thrown. It makes no difference in which order the handler subscribed.
 

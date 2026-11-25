@@ -138,21 +138,37 @@ public class LazyLoadExplicitLoadPropagationTests : IntegrationTestBase
         // Act -- trigger explicit load (fire-and-forget)
         _ = parent.LazyChild.LoadAsync();
 
-        // Wait for the load to complete (it will fail)
-        // WaitForTasks propagates the exception from the faulted _loadTask
-        try
-        {
-            await parent.WaitForTasks();
-        }
-        catch (InvalidOperationException)
-        {
-            // Expected -- exception propagates through WaitForTasks
-        }
+        // A failed load does not fault the parent's wait: HasLoadError is the one channel
+        // for a load's failure (ruled by Keith, 2026-11-24, with 0.37.0).
+        await parent.WaitForTasks();
 
         // Assert -- parent IsValid is false because LazyLoad child has load error
         Assert.IsTrue(parent.LazyChild.HasLoadError, "LazyChild should have load error");
         Assert.IsFalse(((IValidateMetaProperties)parent.LazyChild).IsValid, "LazyChild IsValid should be false");
         Assert.IsFalse(parent.IsValid, "Parent should be invalid when LazyLoad child has load error");
+    }
+
+    [TestMethod]
+    public async Task ParentWaitForTasks_InProgressWhenTheLoadFails_CompletesWithoutThrowing()
+    {
+        // The case that changed in 0.37.0. Before, a wait that was in progress when a
+        // fire-and-forget load failed threw the loader's exception. Now the wait completes and
+        // the failure is reported through HasLoadError only (ruled by Keith, 2026-11-24).
+        var failLoad = new TaskCompletionSource<ILazyLoadEntityObject?>();
+        parent.LazyChild = new EntityLazyLoad<ILazyLoadEntityObject>(async () => await failLoad.Task);
+
+        _ = parent.LazyChild.LoadAsync();
+        Assert.IsTrue(parent.IsBusy, "the parent is busy while the load is in progress");
+        var wait = parent.WaitForTasks();
+        Assert.IsFalse(wait.IsCompleted, "the parent's wait waits for the load");
+
+        failLoad.SetException(new InvalidOperationException("load failed"));
+        await wait.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.IsFalse(parent.IsBusy);
+        Assert.IsTrue(parent.LazyChild.HasLoadError);
+        Assert.IsFalse(parent.IsValid, "the parent is invalid while the load error stands");
+        await parent.WaitForTasks().WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     [TestMethod]

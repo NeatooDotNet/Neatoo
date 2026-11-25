@@ -27,7 +27,7 @@ What a reader must come away knowing, because the code now behaves this way:
 - **`WaitForTasks()` awaits those tasks and nothing else.** `WaitForTasks(token)` is the same wait with cancellation; cancelling stops the wait, not the work. When the wait completes, nothing on the object or below it is busy, and whoever listens for `IsBusy` has already been told.
 - **`IsBusy` reads tasks.** On an object it is "its running tasks are running". On a property it is "this property has work in flight, or the object it holds is busy", which is what an input binds for one field. On a list it is "an item is busy", read from the items.
 - **A rule that throws surfaces once, and the object recovers (D34).** The awaiter of the write or of `RunRules` gets the exception. The next `WaitForTasks()` on the object throws it once, in an `AggregateException`, to the waits that were waiting. After that the object tracks and waits as before. The trigger property keeps the message, so the object stays invalid and unsavable until the rule runs clean. A rule that throws before its first `await` still throws from the setter.
-- **Every `NeatooPropertyChanged` subscriber is awaited.** A write is not over while any handler of it is running. So a handler must not await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on its own object or a parent: it would wait for itself. `RunRules(propertyName)` does not wait on the running tasks, so a handler may await it.
+- **Every `NeatooPropertyChanged` subscriber is awaited.** A write is not over while any handler of it is running. So a handler must not await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on the object where the write was made or on any parent of it, which includes its own object: it would wait for itself. `RunRules(propertyName)` does not wait on the running tasks, so a handler may await it.
 - **Neatoo objects are single-threaded**, like a UI application. The tracker accounts for a finished task on the synchronization context that added it.
 - **What is gone or changed**, for the migration notes: every row the todo's Punchlist carries for WAIT-002 to WAIT-006, checked against the diff of public and protected signatures between `main` and the arc.
 
@@ -84,22 +84,40 @@ What a reader must come away knowing, because the code now behaves this way:
 
 ## Test Evidence
 
-No behavioral bullet. Evidence is recorded in the Gate Record: the searches, the snippet run, the suites and the code review.
+The Acceptance bullets are documentation checks; their evidence is in the Gate Record: the searches, the snippet run and the code review.
+
+One behavior is pinned here, because Keith's ruling on a failed lazy load (see Plan Amendments) changed what a test must claim. Both are in `Neatoo.UnitTest.Integration.Concepts.EntityBase.LazyLoadExplicitLoadPropagationTests`:
+
+| Test | Claimed before | Claims now | Justification |
+|---|---|---|---|
+| `ParentIsValid_AfterExplicitChildLoadFailure` | The parent's `WaitForTasks()` either completes or throws `InvalidOperationException`; either way the parent is invalid | The wait completes without throwing; the parent is invalid | Keith, 2026-11-24: "Keep the change" |
+| `ParentWaitForTasks_InProgressWhenTheLoadFails_CompletesWithoutThrowing` | (new) | A wait in progress when a fire-and-forget load fails completes without throwing; `HasLoadError` is set and the parent is invalid | The same ruling. On `main` this case throws: `reviews/008-lazy-failure-probe.log` |
+
+Full runs: `reviews/008-build.log`, `008-test.log` (2,110 passed, 2 skipped, 0 failed), `008-design-build.log`, `008-design-test.log` (235 passed).
 
 ---
 
 ## Gate Record
 
+- Searches (2026-11-24): the docs agent's search for removed members and cached busy over the in-scope paths left three hits, each correct (the `protected` `AddChildTask` row, "incremental caching" for `IsValid`, and a denial in `CLAUDE-DESIGN.md`). An independent search with no word boundaries over every `.md`, `.cs` and `.razor` file found, beyond history under `docs/plans` and `docs/completed`, three stale comments in product and test code, now corrected. `dotnet mdsnippets` leaves no placeholder unfilled and changes nothing on a second run.
+- Round 1 (2026-11-24): code review APPROVED, no veto, four callouts, all taken — `reviews/008-code-review.md`:
+  - The migration advice named `TrackTask(task)` alone, which makes the property busy and not its object. The notes now name `ReportToOwner(task)` beside it.
+  - The notes said the trigger property "still" keeps its message until the rule runs clean. On `main` a clean run did not clear it. That fix (WAIT-002) is now behavior change 6.
+  - A handler that throws after an `await` now faults the write whichever position it subscribed in. Added to behavior change 4.
+  - The self-wait rule named the handler's own object and its parents and missed the object written to: a root handler, or a parent's rule on a child's property, that awaits the child's wait also waits for itself. Reworded in the guides, the reference, both skills, `CLAUDE-DESIGN.md` and the notes.
+  - It confirmed the compile-breaks table against the signature diff, that no C# was typed into a guide or skill, and the account of the lazy-load change.
+
 ---
 
 ## Plan Amendments
 
-### 2026-11-24 — A failed lazy load and a wait in progress: pending Keith's ruling
+### 2026-11-24 — A failed lazy load and a wait in progress: ruled, the change is kept
 
 - **Section affected:** Intent, Acceptance (the guides and skills on lazy loading; the migration notes)
 - **Original said:** LazyLoad passages are corrected where they are wrong about waiting.
 - **What changed:** writing the docs showed that the code changed a documented behavior. On `main`, a fire-and-forget load that fails while the parent's `WaitForTasks()` is waiting throws the loader's exception from that wait. On the arc the wait completes cleanly and the failure is in `HasLoadError` only. `skills/neatoo/references/lazy-loading.md` documented the throw. The docs agent rewrote that sentence and the Design.Domain comment to match the code; those two edits stand in the branch as a description of the code as it is, and are not merged.
 - **Why:** WAIT-004 reports a load in flight to its owner as a task that finishes when the property stops loading, whatever the outcome. The only test on the case, `ParentIsValid_AfterExplicitChildLoadFailure`, accepts both outcomes, so no gate saw it. The todo's Out of Scope says LazyLoad's documented waiting keeps working, so which side is right is Keith's to rule: keep the change and note it in the migration, or restore the throw.
+- **Ruling:** Keith, 2026-11-24: "Keep the change". A failed load never faults a wait; `HasLoadError` is the one channel. The agent's two edits stand, the migration notes carry it as behavior change 8, and the test is rewritten to the ruling: `ParentIsValid_AfterExplicitChildLoadFailure` no longer accepts a throw, and `ParentWaitForTasks_InProgressWhenTheLoadFails_CompletesWithoutThrowing` is new.
 - **Discovery Log:** 2026-11-24 / WAIT-008
 
 ### 2026-11-24 — The handler rule names `RunRules(RunRulesFlag)`

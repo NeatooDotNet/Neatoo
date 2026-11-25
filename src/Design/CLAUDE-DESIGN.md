@@ -388,7 +388,7 @@ There is one record of async work, the task tracker (`IAsyncTasks`), at two leve
 
 **Faults:** an async rule that throws surfaces once and the object recovers. The awaiter of the write or of `RunRules` gets the exception; the next `WaitForTasks()` throws it once in an `AggregateException`; after that the object tracks and waits as before. The trigger property keeps the message until the rule runs clean.
 
-**Do not wait for yourself:** a rule's run and every `NeatooPropertyChanged` handler's task are part of the object's running tasks. Neither may await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on its own object or a parent; each of them waits for the running tasks. `RunRules(propertyName)` does not, which is why `WorkOrderTaskList.HandleNeatooPropertyChanged` may await it on siblings.
+**Do not wait for yourself:** a rule's run and every `NeatooPropertyChanged` handler's task are part of the write that started them, and the write is registered with the object written to and with every parent up to the root. Neither may await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on any of those objects; each of them waits for the running tasks. That covers its own object and its parents, and the child as well: a root handler hearing a child's change, or a parent's rule triggered by `t => t.Child.X`, must not await the child's `WaitForTasks()`. `RunRules(propertyName)` does not, which is why `WorkOrderTaskList.HandleNeatooPropertyChanged` may await it on siblings.
 
 **Best Practices:**
 ```csharp

@@ -232,7 +232,7 @@ NeatooPropertyChanged provides:
 
 The Reason distinguishes user edits (which trigger rules) from loads (which only establish structure).
 
-Every subscriber's task is awaited as part of the write that raised the event, so a write is not over while any handler of it is still running. A handler must therefore not await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on its own object or a parent: it would be waiting for itself. See [Awaiting inside a NeatooPropertyChanged handler](async.md#awaiting-inside-a-neatoopropertychanged-handler).
+Every subscriber's task is awaited as part of the write that raised the event, so a write is not over while any handler of it is still running. A handler must therefore not await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on any object the write is registered with, which is the object that was written to and every parent of it up to the root: it would be waiting for itself. That includes the handler's own object, and a child whose change it is hearing. See [Awaiting inside a NeatooPropertyChanged handler](async.md#awaiting-inside-a-neatoopropertychanged-handler).
 
 ## ChangeReason: UserEdit vs Load
 
