@@ -109,6 +109,40 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<EntityLazyLoad<T>>
     // The load in progress, as the task reported to the owner of this property.
     private TaskCompletionSource? _loadInFlight;
 
+    /// <summary>
+    /// A load in progress is work in flight on the object that owns this property. It is
+    /// reported as a task that finishes when this property is no longer loading, whatever the
+    /// load's outcome: a failed load is reported through HasLoadError, not through a wait.
+    /// </summary>
+    private void ReportLoadInFlight()
+    {
+        if ((this._value?.IsLoading ?? false) && this._loadInFlight == null)
+        {
+            this._loadInFlight = new TaskCompletionSource();
+            this.ReportToOwner(this._loadInFlight.Task);
+        }
+    }
+
+    private void EndLoadReportIfNotLoading()
+    {
+        if (!(this._value?.IsLoading ?? false))
+        {
+            var finished = this._loadInFlight;
+            this._loadInFlight = null;
+            finished?.TrySetResult();
+        }
+    }
+
+    /// <summary>
+    /// The property holds a different lazy value. One that is already loading is reported; a
+    /// load this property no longer holds stops being its owner's work.
+    /// </summary>
+    private void LazyValueChanged()
+    {
+        this.ReportLoadInFlight();
+        this.EndLoadReportIfNotLoading();
+    }
+
     private object? _currentInnerChild;
 
     public LazyLoadValidateProperty(IPropertyInfo propertyInfo) : base(propertyInfo)
@@ -232,6 +266,8 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<EntityLazyLoad<T>>
         // Connect to already-loaded inner child (e.g., Create path with pre-loaded value)
         var innerChild = ((ILazyLoadDeserializable)value).BoxedValue;
         _currentInnerChild = LazyLoadPropertyHelper.ConnectInnerChild(innerChild, this.PassThruValueNeatooPropertyChanged);
+
+        this.LazyValueChanged();
     }
 
     /// <summary>
@@ -241,6 +277,8 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<EntityLazyLoad<T>>
     {
         LazyLoadPropertyHelper.DisconnectInnerChild(ref _currentInnerChild, this.PassThruValueNeatooPropertyChanged);
         base.HandleNullValue(quietly);
+
+        this.LazyValueChanged();
     }
 
     /// <summary>
@@ -259,6 +297,8 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<EntityLazyLoad<T>>
             var innerChild = ((ILazyLoadDeserializable)lazyLoad).BoxedValue;
             _currentInnerChild = LazyLoadPropertyHelper.ConnectInnerChild(innerChild, this.PassThruValueNeatooPropertyChanged);
         }
+
+        this.LazyValueChanged();
     }
 
     /// <summary>
@@ -288,27 +328,13 @@ internal class LazyLoadValidateProperty<T> : ValidateProperty<EntityLazyLoad<T>>
         // PropertyManager-compatible names so parent recalculates cached state.
         if (eventArgs.PropertyName == "IsLoading")
         {
-            // A load in progress is work in flight on the object that owns this property. It is
-            // reported as a task that finishes when the load does, whatever the load's outcome:
-            // a failed load is reported through HasLoadError, not through a wait.
-            var loading = this._value?.IsLoading ?? false;
-
-            if (loading && this._loadInFlight == null)
-            {
-                this._loadInFlight = new TaskCompletionSource();
-                this.ReportToOwner(this._loadInFlight.Task);
-            }
+            this.ReportLoadInFlight();
 
             OnPropertyChanged(nameof(IsBusy));
 
-            if (!loading)
-            {
-                // After the notification, so the owner has heard "idle" before its running
-                // tasks are done.
-                var finished = this._loadInFlight;
-                this._loadInFlight = null;
-                finished?.TrySetResult();
-            }
+            // After the notification, so the owner has heard "idle" before its running tasks
+            // are done.
+            this.EndLoadReportIfNotLoading();
         }
         else if (eventArgs.PropertyName == "HasLoadError" || eventArgs.PropertyName == "LoadError")
         {

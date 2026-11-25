@@ -67,6 +67,7 @@ Moves registration from the caller to the owner: a property reports each write i
 - [x] A rule that throws after a setter write surfaces from `WaitForTasks()` once, carrying the exception once `[integration]`
 - [x] `Save(token)` on a root succeeds after a write to a child with an async rule, with no synchronization context `[integration]`
 - [x] A lazy load in progress is waited for by `WaitForTasks(token)` on the parent `[integration]`
+- [x] A lazy load that the property lets go of while it loads stops holding the parent's running tasks (added at the gate) `[integration]`
 - [x] The generated setter and `Set{Name}` register nothing `[unit]`
 - [x] Build and tests green `[explicit-skip: meta-bullet]`
 
@@ -94,7 +95,7 @@ Moves registration from the caller to the owner: a property reports each write i
 
 ## Test Evidence
 
-Red run before the change (`reviews/004-red.log`): 7 of the 9 tests in `FrameworkRegistersTests` failed. The four "is in the running tasks" tests and the lazy-load test failed because the token wait was already complete. `SaveWithAToken_OnARoot_SucceedsAfterAWriteToAChildWithAnAsyncRule` failed with `SaveOperationException` (busy), which measures the callout the WAIT-003 code review had traced. The two "carrying the exception once" tests passed before the change and guard the new duplicate registration: with the owner registering both the write and the rule run, they fail without the tracker's de-duplication. Integration tests are in `Neatoo.UnitTest.Integration.Concepts.EntityBase.FrameworkRegistersTests`.
+Red run before the change (`reviews/004-red.log`): 7 of the 9 tests then in `FrameworkRegistersTests` failed. The four "is in the running tasks" tests and the lazy-load test failed because the token wait was already complete. `SaveWithAToken_OnARoot_SucceedsAfterAWriteToAChildWithAnAsyncRule` failed with `SaveOperationException` (busy), which measures the callout the WAIT-003 code review had traced. The seventh was the adoption test, which failed with `ChildObjectBusyException`; it became the guard named below. The two "carrying the exception once" tests passed before the change, because only the write was registered then. With the tracker's de-duplication disabled they fail with two exceptions (`reviews/004-red-round1.log`, which also shows the ValidateBase lazy-load test red with its report disabled). The two lazy-load tests added at the gate were red before their fix (`reviews/004-red-lazy.log`). Integration tests are in `Neatoo.UnitTest.Integration.Concepts.EntityBase.FrameworkRegistersTests`.
 
 | Acceptance bullet (short) | Priority | Tier declared | Test method | Tier confirmed |
 |---|---|---|---|---|
@@ -103,9 +104,10 @@ Red run before the change (`reviews/004-red.log`): 7 of the 9 tests in `Framewor
 | A child's write is in the root's running tasks, by property and by list | Required | `[integration]` | `AWriteThroughAChildsProperty_IsInTheRootsRunningTasks`, `AWriteThroughAListItemsProperty_IsInTheRootsRunningTasks` | ✓ |
 | A thrown rule surfaces once, carrying the exception once | Required | `[integration]` | `ARuleThatThrowsAfterASetterWrite_SurfacesOnce_CarryingTheExceptionOnce`, `AChildsRuleThatThrows_SurfacesFromTheRoot_CarryingTheExceptionOnce` | ✓ |
 | `Save(token)` on a root after a child write | Required | `[integration]` | `SaveWithAToken_OnARoot_SucceedsAfterAWriteToAChildWithAnAsyncRule` | ✓ |
-| A lazy load in progress is in the parent's running tasks | Required | `[integration]` | `ALazyLoadInProgress_IsInTheParentsRunningTasks` | ✓ |
-| Generated code registers nothing | Required | `[unit]` | `Neatoo.BaseGenerator.Tests.AwaitableSetterGenerationTests.GeneratedSetterAndSetName_RegisterNothing_TheOwnerRegisters` | ✓ |
-| Build and tests green | Required | `[explicit-skip]` | `reviews/004-build.log`, `004-test.log` (2,080 passed, 2 skipped, 0 failed), `004-design-build.log`, `004-design-test.log` (235 passed) | n/a |
+| A lazy load in progress is in the parent's running tasks | Required | `[integration]` | `ALazyLoadInProgress_IsInTheParentsRunningTasks`, `ALazyLoadInProgress_OnAValidateObject_IsInItsRunningTasks`, `ALazyLoadAlreadyInProgressWhenItIsAssigned_IsInTheParentsRunningTasks` | ✓ |
+| A lazy load replaced while it loads stops holding the parent (added at the gate) | Required | `[integration]` | `ALazyLoadReplacedWhileItLoads_NoLongerHoldsTheParentsRunningTasks` | ✓ |
+| Generated code registers nothing | Required | `[unit]` | `Neatoo.BaseGenerator.Tests.AwaitableSetterGenerationTests.GeneratedSetterAndSetName_RegisterNothing_TheOwnerRegisters` (public, private and protected setters) | ✓ |
+| Build and tests green | Required | `[explicit-skip]` | `reviews/004-build.log`, `004-test.log` (2,083 passed, 2 skipped, 0 failed), `004-design-build.log`, `004-design-test.log` (235 passed) | n/a |
 
 One more test is a guard, not a bullet: `ABusyObject_CannotBeAssignedToAParent_SoAParentNeverHoldsWorkItWasNotToldOf` pins the existing refusal that makes Step 8 unnecessary. It passed before the change.
 
@@ -120,6 +122,11 @@ Checked-in generated files follow the change: the Person example's two generated
 ---
 
 ## Gate Record
+
+- Round 1 (2026-11-24): test review APPROVED, no veto; both callouts taken (the protected setter is in the generator test; the ValidateBase lazy-load report has its own test) and its open question answered by a run (the "once" tests fail with de-duplication disabled) — `reviews/004-test-review.md`. Code review APPROVED, no veto; both callouts fixed with tests seen red first — `reviews/004-code-review.md`:
+  - A lazy value replaced while it loaded left the owner busy for good, because the property had unsubscribed from it. Fixed: the report follows the value the property holds.
+  - A lazy value already loading when it was assigned was never reported. Fixed by the same change.
+  - Its note that an un-awaited `RunRules(RunRulesFlag)` is busy on its properties but not in the object's running tasks is punched to the todo for WAIT-005. The gate is closed.
 
 ---
 
@@ -154,5 +161,5 @@ Checked-in generated files follow the change: the Person example's two generated
 ## Notes
 
 - `AddChildTask` is now `protected virtual` on `ValidateBase` and stays on the internal interface. It registers with the object first and then passes the task up.
-- `RunRules(RunRulesFlag)` is not registered: it awaits the object's running tasks itself, and it runs its rules through the rule manager, not through `RunRules(propertyName)`. An un-awaited `RunRules()` is #89, out of scope.
+- `RunRules(RunRulesFlag)` is not registered: it awaits the object's running tasks itself, and it runs its rules through the rule manager, not through `RunRules(propertyName)`. Called and not awaited, its runs are busy on their properties but not in the object's running tasks; that is on the todo's Punchlist for WAIT-005.
 - Doc and skill snippets that show the generated setter were regenerated by `dotnet mdsnippets` from `PropertyBasics.cs`. The prose around them is WAIT-008's.

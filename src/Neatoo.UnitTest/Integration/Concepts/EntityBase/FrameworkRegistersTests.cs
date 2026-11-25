@@ -188,4 +188,55 @@ public class FrameworkRegistersTests : IntegrationTestBase
         continueLoad.SetResult(loaded);
         await waiting.WaitAsync(Limit);
     }
+
+    [TestMethod]
+    public async Task ALazyLoadReplacedWhileItLoads_NoLongerHoldsTheParentsRunningTasks()
+    {
+        var factory = GetRequiredService<ILazyLoadEntityObjectFactory>();
+        var parent = await factory.Fetch(Guid.NewGuid(), "Parent", "parent desc");
+        var loaded = await factory.Fetch(Guid.NewGuid(), "Child", "child desc");
+        var neverReplies = new TaskCompletionSource<ILazyLoadEntityObject?>();
+        parent.LazyChild = new EntityLazyLoad<ILazyLoadEntityObject>(async () => await neverReplies.Task);
+        _ = parent.LazyChild.LoadAsync();
+
+        // The property lets go of the loading wrapper: its load is no longer the parent's work.
+        parent.LazyChild = new EntityLazyLoad<ILazyLoadEntityObject>(loaded);
+
+        await parent.WaitForTasks(neverCancelled.Token).WaitAsync(Limit);
+        neverReplies.SetResult(null);
+    }
+
+    [TestMethod]
+    public async Task ALazyLoadAlreadyInProgressWhenItIsAssigned_IsInTheParentsRunningTasks()
+    {
+        var factory = GetRequiredService<ILazyLoadEntityObjectFactory>();
+        var parent = await factory.Fetch(Guid.NewGuid(), "Parent", "parent desc");
+        var loaded = await factory.Fetch(Guid.NewGuid(), "Child", "child desc");
+        var continueLoad = new TaskCompletionSource<ILazyLoadEntityObject?>();
+        var loading = new EntityLazyLoad<ILazyLoadEntityObject>(async () => await continueLoad.Task);
+        _ = loading.LoadAsync();
+
+        parent.LazyChild = loading;
+        var waiting = parent.WaitForTasks(neverCancelled.Token);
+        Assert.IsFalse(waiting.IsCompleted, "the parent's running tasks hold the load");
+
+        continueLoad.SetResult(loaded);
+        await waiting.WaitAsync(Limit);
+    }
+
+    [TestMethod]
+    public async Task ALazyLoadInProgress_OnAValidateObject_IsInItsRunningTasks()
+    {
+        // The same report from the ValidateBase lazy-load property, which is its own class.
+        var owner = await GetRequiredService<ILazyLoadValidateObjectFactory>().Fetch(Guid.NewGuid(), "Owner", "content");
+        var continueLoad = new TaskCompletionSource<string?>();
+        owner.LazyContent = new EntityLazyLoad<string>(async () => await continueLoad.Task);
+
+        _ = owner.LazyContent.LoadAsync();
+        var waiting = owner.WaitForTasks(neverCancelled.Token);
+        Assert.IsFalse(waiting.IsCompleted, "the object's running tasks hold the load");
+
+        continueLoad.SetResult("loaded");
+        await waiting.WaitAsync(Limit);
+    }
 }

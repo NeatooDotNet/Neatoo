@@ -53,10 +53,11 @@ public class AwaitableSetterGenerationTests
     [TestMethod]
     public void GeneratedSetterAndSetName_RegisterNothing_TheOwnerRegisters()
     {
-        var (_, cls) = Generate("public partial string? Name { get; set; } public partial decimal Total { get; private set; }");
+        var (_, cls) = Generate("public partial string? Name { get; set; } public partial decimal Total { get; private set; } public partial int Count { get; protected set; }");
 
         Assert.IsTrue(cls.Contains("NameProperty.Value = value;"), "the setter writes");
         Assert.IsTrue(cls.Contains("TotalProperty.SetPrivateValue(value);"), "the private setter writes");
+        Assert.IsTrue(cls.Contains("CountProperty.Value = value;"), "the protected setter writes");
         Assert.IsFalse(cls.Contains("AddChildTask"), "nothing is passed to the parent by generated code");
         Assert.IsFalse(cls.Contains("RunningTasks"), "nothing is registered by generated code");
     }
