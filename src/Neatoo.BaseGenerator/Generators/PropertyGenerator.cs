@@ -47,17 +47,17 @@ internal static class PropertyGenerator
                     if (property.SetterAccessibility == "private")
                     {
                         // Private setter: use SetPrivateValue to bypass IsReadOnly check
-                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; private set {{ {property.Name}Property.SetPrivateValue(value); if (!{property.Name}Property.Task.IsCompleted) {{ Parent?.AddChildTask({property.Name}Property.Task); RunningTasks.AddTask({property.Name}Property.Task); }} }} }}");
+                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; private set {{ {property.Name}Property.SetPrivateValue(value); }} }}");
                     }
                     else if (property.SetterAccessibility != null)
                     {
                         // Protected/internal setter: use .Value = (same as public, with accessor)
-                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; {property.SetterAccessibility} set {{ {property.Name}Property.Value = value; if (!{property.Name}Property.Task.IsCompleted) {{ Parent?.AddChildTask({property.Name}Property.Task); RunningTasks.AddTask({property.Name}Property.Task); }} }} }}");
+                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; {property.SetterAccessibility} set {{ {property.Name}Property.Value = value; }} }}");
                     }
                     else
                     {
                         // Public setter: unchanged
-                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; set {{ {property.Name}Property.Value = value; if (!{property.Name}Property.Task.IsCompleted) {{ Parent?.AddChildTask({property.Name}Property.Task); RunningTasks.AddTask({property.Name}Property.Task); }} }} }}");
+                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; set {{ {property.Name}Property.Value = value; }} }}");
                     }
                 }
                 else
@@ -94,7 +94,7 @@ internal static class PropertyGenerator
             : $"{property.Name}Property.SetValue(value)";
 
         sb.AppendLine($"/// <summary>Sets {property.Name} and returns the Task of its whole rule cascade. Await it in rules and verbs.</summary>");
-        sb.AppendLine($"{accessibility}global::System.Threading.Tasks.Task Set{property.Name}({property.Type} value) {{ var task = {write}; if (!task.IsCompleted) {{ Parent?.AddChildTask(task); RunningTasks.AddTask(task); }} return task; }}");
+        sb.AppendLine($"{accessibility}global::System.Threading.Tasks.Task Set{property.Name}({property.Type} value) {{ return {write}; }}");
     }
 
     /// <summary>

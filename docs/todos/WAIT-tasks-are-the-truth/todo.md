@@ -50,7 +50,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 | 001 | [001-decision-record](./plans/001-decision-record.md) | The rulings in VisionAlignment | AC-9 | Done | #143 |
 | 002 | [002-tracker-faults](./plans/002-tracker-faults.md) | The tracker faults once, then recovers | AC-7 | Done | #144 |
 | 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | Done | #145 |
-| 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Draft | — |
+| 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Done | #146 |
 | 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Draft | — |
 | 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order, save in flight | AC-10, AC-11, AC-12 | Draft | — |
 | 007 | [007-mudneatoo-and-design-app](./plans/007-mudneatoo-and-design-app.md) | MudNeatoo and Design.App on the new tracking | AC-8 | Draft | — |
@@ -62,7 +62,9 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 - [ ] The migration notes name three compile breaks from WAIT-002: forward `IValidateBaseServices.CreateAsyncTasks` in a services wrapper; `AsyncTasks.AddTask(Task, bool)` is now `AddTask(Task)`; `RunningTasks` is typed `IAsyncTasks` · the release notes (WAIT-008) · done when the migration section lists all three · AC-9
 - [ ] The migration notes name the breaks from WAIT-003: `IValidateProperty.AddMarkedBusy` and `RemoveMarkedBusy` are removed, with `IsSelfBusy` and `IsMarkedBusy` on `ValidateProperty`; `IFactory` gains `CreateAsyncTasks()`; `DefaultFactory` is registered transient · the release notes (WAIT-008) · done when the migration section lists them · AC-9
-- [ ] A write to a child registers with the parent chain before the child's own tracker, so with no synchronization context the root's waits complete before the child has accounted, and `Save(token)` on the root then throws `SaveOperationException` (IsBusy). Since WAIT-003 this happens every time, where it was a race before (traced by the code reviewer, not run) · the generated setter and `Set{Name}`, and `ValidateBase.AddChildTask`, `Setter`, `ObjectInvalid` and the meta-rule registration · done when an object accounts before its parent and a test saves a root with a token after a child write with an async rule · AC-4 · for WAIT-004, which rebuilds registration
+- [x] (#146) A write to a child registers with the parent chain before the child's own tracker, so with no synchronization context the root's waits complete before the child has accounted, and `Save(token)` on the root then throws `SaveOperationException` (IsBusy). Since WAIT-003 this happens every time, where it was a race before (traced by the code reviewer, not run) · the generated setter and `Set{Name}`, and `ValidateBase.AddChildTask`, `Setter`, `ObjectInvalid` and the meta-rule registration · done when an object accounts before its parent and a test saves a root with a token after a child write with an async rule · AC-4 · for WAIT-004, which rebuilds registration
+- [ ] The migration notes name the breaks from WAIT-004: `AddChildTask` is off `IValidateBase` and `protected` on `ValidateBase`; generated setters and `Set{Name}` no longer register, so consumers rebuild; an awaited `RunRules(propertyName)` that throws is now also reported by the next `WaitForTasks()`, as an awaited `Set{Name}` already was · the release notes (WAIT-008) · done when the migration section lists them · AC-9
+- [ ] `RunRules(RunRulesFlag)` called and not awaited: its rule runs are busy on their trigger properties but not in the object's running tasks, so a wait on running tasks alone would not wait for them. It cannot register itself, because it awaits the running tasks inside · `ValidateBase.RunRules(RunRulesFlag)` and `RuleManager.RunRules(RunRulesFlag)` · done when the wait in WAIT-005 covers it, with a test, or it is ruled awaited-only · AC-1 · for WAIT-005
 
 ## Dismissed
 
@@ -87,6 +89,9 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-003 · code-reviewer (listed as theoretical) · this plan had moved the property's idle notification onto a pool-thread continuation · the tracker now accounts for a task on the thread that added it, for objects and properties alike, which also settles the row parked earlier the same day; two tests seen red first.
 - WAIT-003 · test-reviewer (round 2) · no test pinned that a rule's own exception is reported over a listener's · two tests added, seen red with that branch weakened; the unnamed deadline exit and the loose exception type it listed were tightened too.
 - WAIT-003 · code-reviewer (round 2) · with the tracker accounting inline, a root accounts before its child and `Save(token)` on the root throws while a child write is in flight · punched to the Punchlist for WAIT-004, which rebuilds registration; the arc is not released between plans.
+- WAIT-004 · test-reviewer · the protected generated setter and the ValidateBase lazy-load report had no test, and the "once" tests had never been seen red · the generator test covers the protected setter, the lazy-load report has its own test, and the "once" tests were run red with de-duplication disabled.
+- WAIT-004 · code-reviewer · a lazy value replaced while it loaded left its owner busy for good, and a lazy value already loading when assigned was never reported · the report now follows the value the property holds; two tests seen red first.
+- WAIT-004 · code-reviewer (could not verify) · an un-awaited `RunRules(RunRulesFlag)` is busy on its properties but not in the object's running tasks · punched to the Punchlist for WAIT-005.
 
 ---
 
@@ -109,6 +114,11 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 
 ### 2026-11-24 — WAIT-003 · serves AC-6
 - **Finding:** The tracker accounted for a finished task in a `ContinueWith` continuation, which ignores the synchronization context, so completion callbacks and idle notifications ran on a pool thread.
+- **Decision:** Amend
+- **Follow-up:** n/a
+
+### 2026-11-24 — WAIT-004 · serves AC-1
+- **Finding:** A property refuses a busy child and a list refuses a busy item, so a parent is never handed work already in flight; the planned adoption step had nothing to do.
 - **Decision:** Amend
 - **Follow-up:** n/a
 

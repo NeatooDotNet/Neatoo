@@ -139,7 +139,8 @@ internal interface IValidatePropertyInternal
     /// Called by the property manager when the property enters its bag.
     /// </summary>
     /// <param name="tasks">The tracker. A property keeps the first one it is given.</param>
-    void UseTasks(IAsyncTasks tasks);
+    /// <param name="reportToOwner">Called with each write the property starts, while it is in flight, so that the object that owns the property registers it.</param>
+    void UseTasks(IAsyncTasks tasks, Action<Task> reportToOwner);
 
     /// <summary>
     /// Tracks a task as work in flight on the property, so that it is busy until the task finishes.

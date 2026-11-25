@@ -30,6 +30,12 @@ internal interface IValidatePropertyManagerInternal<out P> where P : IValidatePr
     /// Used during serialization and deserialization.
     /// </summary>
     IEnumerable<P> GetProperties { get; }
+
+    /// <summary>
+    /// Called with each write one of the manager's properties starts, while it is in flight.
+    /// The object that owns the manager sets it, and registers the task in its running tasks.
+    /// </summary>
+    Action<Task>? TaskStarted { get; set; }
 }
 
 public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidatePropertyManagerInternal<P>, IJsonOnDeserialized
@@ -91,8 +97,19 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
     }
 
     /// <summary>
-    /// What a property gets when it enters the bag: this manager's subscription, and the task
-    /// tracker it holds its work in flight in.
+    /// The owner's end of the report path. The object that owns this manager sets it where it
+    /// subscribes to the manager, and each property calls it with a write it has started.
+    /// </summary>
+    public Action<Task>? TaskStarted { get; set; }
+
+    private void ReportTaskStarted(Task task)
+    {
+        this.TaskStarted?.Invoke(task);
+    }
+
+    /// <summary>
+    /// What a property gets when it enters the bag: this manager's subscription, the task
+    /// tracker it holds its work in flight in, and the way to report a write to its owner.
     /// </summary>
     private void Attach(P property)
     {
@@ -101,7 +118,7 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
 
         if (property is IValidatePropertyInternal propertyInternal)
         {
-            propertyInternal.UseTasks(this.Factory.CreateAsyncTasks());
+            propertyInternal.UseTasks(this.Factory.CreateAsyncTasks(), this.ReportTaskStarted);
         }
     }
 

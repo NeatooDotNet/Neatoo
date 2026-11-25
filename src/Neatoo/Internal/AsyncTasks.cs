@@ -207,7 +207,16 @@ public sealed class AsyncTasks : IAsyncTasks
 
             if (task.Exception != null)
             {
-                this._exceptions.AddRange(task.Exception.InnerExceptions);
+                // One exception is reported once, however many tracked tasks carried it: a write
+                // and the rule run inside it are both tracked, and both fault with the same
+                // exception object.
+                foreach (var exception in task.Exception.InnerExceptions)
+                {
+                    if (!this._exceptions.Any(reported => ReferenceEquals(reported, exception)))
+                    {
+                        this._exceptions.Add(exception);
+                    }
+                }
             }
 
             if (!this._tasks.Remove(id))

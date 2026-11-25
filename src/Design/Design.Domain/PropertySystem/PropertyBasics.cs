@@ -37,13 +37,12 @@ namespace Design.Domain.PropertySystem;
 //       set
 //       {
 //           NameProperty.Value = value;
-//           if (!NameProperty.Task.IsCompleted)
-//           {
-//               Parent?.AddChildTask(NameProperty.Task);
-//               RunningTasks.AddTask(NameProperty.Task);
-//           }
 //       }
 //   }
+//
+// The setter only writes. The property reports the write to the object that owns it, which
+// registers it in its running tasks and its parents', so a write made any other way (SetName,
+// or SetValue on the property, which is what a UI input calls) is tracked the same.
 //
 //   protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
 //   {
@@ -153,11 +152,6 @@ internal partial class PropertyChildDemo : ValidateBase<PropertyChildDemo>, IPro
 //       private set
 //       {
 //           ComputedTotalProperty.SetPrivateValue(value);
-//           if (!ComputedTotalProperty.Task.IsCompleted)
-//           {
-//               Parent?.AddChildTask(ComputedTotalProperty.Task);
-//               RunningTasks.AddTask(ComputedTotalProperty.Task);
-//           }
 //       }
 //   }
 //
