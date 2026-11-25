@@ -4,12 +4,12 @@
 **Date:** 2026-11-24
 **Related Todo:** [../todo.md](../todo.md)
 **Serves:** AC-10, AC-11 (AC-12 is parked, see Plan Amendments)
-**Status:** In Progress
+**Status:** Done
 **Last Updated:** 2026-11-24
 **Plan-review opt-in:** No (two small behaviors, both stated by their criteria)
 **Code-review opt-in:** Yes (it changes how the framework raises its own event, everywhere)
 **Branch:** wait-006-optional-criteria
-**PR:** —
+**PR:** #148
 
 ---
 

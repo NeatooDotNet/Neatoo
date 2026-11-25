@@ -52,7 +52,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 | 003 | [003-property-tasks](./plans/003-property-tasks.md) | A property holds its work as tasks | AC-6, AC-3 | Done | #145 |
 | 004 | [004-framework-registers](./plans/004-framework-registers.md) | The framework registers every reaction | AC-1 | Done | #146 |
 | 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Done | #147 |
-| 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order (save in flight parked as #103) | AC-10, AC-11 | In Progress | — |
+| 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order (save in flight parked as #103) | AC-10, AC-11 | Done | #148 |
 | 007 | [007-mudneatoo-and-design-app](./plans/007-mudneatoo-and-design-app.md) | MudNeatoo and Design.App on the new tracking | AC-8 | Draft | — |
 | 008 | [008-docs-and-release-notes](./plans/008-docs-and-release-notes.md) | Guides, skills and release notes | AC-9 | Draft | — |
 
