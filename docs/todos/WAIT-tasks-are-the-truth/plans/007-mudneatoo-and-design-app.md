@@ -22,7 +22,7 @@ Proves the reported case at the component level: a MudNeatoo input writes a prop
 ## Intent
 
 - A page that binds MudNeatoo inputs to an entity and awaits `WaitForTasks()` in its save handler does not freeze, whether the input writes through `EntityProperty.SetValue` or through its `Setter`.
-- A rule that throws after a UI edit reaches the entity's wait once, and the page keeps working (D34).
+- A rule that throws after a UI edit reaches the entity's wait once, and the entity recovers: the next edit is waited for (D34).
 
 ---
 
@@ -94,6 +94,7 @@ The tests use the text field. The other ten inputs share its write path, and `Se
 
 ## Gate Record
 
+- Round 1 (2026-11-24): test review APPROVED, no veto, no callout — `reviews/007-test-review.md`. It confirmed that all eleven inputs share the text field's write path and busy display, that "not before" is asserted, and that the tier is `[integration]`. Its two tidy-up notes were taken: the throwing test now asserts the exact exception type and that the change and the wait report the same exception, and the fixture's summary no longer says "no factory". Its theoretical line also narrowed this plan's Intent: no test shows what the renderer does with a fault that leaves an input's handler, so the Intent now claims only that the entity recovers. Full suite rerun after those edits. The gate is closed.
 ---
 
 ## Plan Amendments

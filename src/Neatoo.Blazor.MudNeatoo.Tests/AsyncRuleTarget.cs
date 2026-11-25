@@ -5,7 +5,7 @@ namespace Neatoo.Blazor.MudNeatoo.Tests;
 
 /// <summary>
 /// An entity whose Name has an async rule that awaits a gate the test holds, standing in for
-/// a slow server reply. The rule throws when the name is "throw". Built directly (no factory).
+/// a slow server reply. The rule throws when the name is "throw". The tests construct it directly.
 /// </summary>
 [Factory]
 public partial class AsyncRuleTarget : EntityBase<AsyncRuleTarget>

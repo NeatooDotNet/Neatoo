@@ -163,7 +163,8 @@ public sealed class InputWriteIsWaitedForTests : IAsyncDisposable
 
         var reported = await Assert.ThrowsExactlyAsync<AggregateException>(() => wait.WaitAsync(Limit));
         Assert.AreEqual("Rule failed", reported.InnerExceptions.Single().Message);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => change.WaitAsync(Limit));
+        var thrown = await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => change.WaitAsync(Limit));
+        Assert.AreSame(reported.InnerExceptions.Single(), thrown, "the change and the wait report the same exception");
 
         // Once: the next wait is clean, the entity is idle, and the next change is waited for.
         await _target.WaitForTasks().WaitAsync(Limit);
