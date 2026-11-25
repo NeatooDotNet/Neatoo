@@ -48,8 +48,9 @@ If you're building a Blazor component that takes a root entity as a parameter an
 2. **Use `NeatooPropertyChanged` only when the component's own display spans the graph,** as the validation summary's does. Marshal `StateHasChanged` via `InvokeAsync` — the delegate is async and may run off the UI thread. A component that shows a child's facts subscribes to that child instead.
 3. **Use `PropertyChanged` alone if you only care about root-level flags** like `IsSavable`, `IsValid`, `IsBusy`.
 4. **Move the subscription when the instance changes.** `Save()` returns a new instance; the old one raises nothing afterwards.
+5. **A `NeatooPropertyChanged` handler returns; it never waits on the graph it is hearing from.** The framework awaits every subscriber's task as part of the write that raised the event, so the write is not over while a handler is running. The write is registered with the entity that was written to and with every parent up to the root. A handler that awaits `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on any of those waits for itself: the wait never completes and no exception is thrown. That covers the entity the handler subscribed to and its parents, and a child whose change it is hearing: a handler on the root must not await the child's `WaitForTasks()` either. The entity stays busy, so the Save button stays disabled, and so does the input that made the write. The validation summary's handler calls `InvokeAsync(StateHasChanged)` and returns a completed task. A UI event handler, such as the Save button's, is not part of a write and awaits `WaitForTasks()` as usual.
 
-The Employee page does all four. It subscribes to the employee's own `PropertyChanged`, because everything it shows outside its inputs is the employee's own: the Save button and the view-mode text.
+The Employee page does the four that apply to a page. It subscribes to the employee's own `PropertyChanged`, because everything it shows outside its inputs is the employee's own: the Save button and the view-mode text.
 
 <!-- snippet: skill-mud-page-code -->
 <a id='snippet-skill-mud-page-code'></a>

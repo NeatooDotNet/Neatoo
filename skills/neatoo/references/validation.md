@@ -453,7 +453,7 @@ public void Indexer_ExposesPropertyMetadata()
 
 ## Waiting for Async Rules
 
-While an async rule runs, `IsBusy` is true and `IsSavable` is false. Always `await WaitForTasks()` before reading `IsValid` or saving when async rules may be in flight:
+While an async rule runs, `IsBusy` is true and `IsSavable` is false. Always `await WaitForTasks()` before reading `IsValid` or saving when async rules may be in flight. It awaits the object's running tasks, where every write, rule run and lazy load on the object and below it is registered by the framework, so when it completes nothing on the object or below it is busy:
 
 <!-- snippet: skill-is-busy -->
 <a id='snippet-skill-is-busy'></a>
@@ -644,7 +644,7 @@ Properties set in a factory operation (`[Create]`, `[Fetch]`, ...) or during JSO
 
 ### Exception Propagation
 
-A rule that throws is a bug, not a validation failure. The exception is re-thrown to the caller — from the property setter when the rule throws before its first `await`, from `WaitForTasks()` otherwise — wrapped in an `AggregateException`, and the trigger property is marked invalid with the exception message:
+A rule that throws is a bug, not a validation failure. The exception surfaces once and the object recovers. A rule that throws before its first `await` throws from the property setter, wrapped in an `AggregateException`. A rule that throws after an `await` throws to the awaiter of the write (`Set{Name}`, `SetValue`) or of `RunRules`, and the next `WaitForTasks()` on the object throws it once, in an `AggregateException`; a wait already waiting when the rule threw is that wait. After that the object tracks and waits as before: the following `WaitForTasks()` completes normally and nothing is left busy. The trigger property keeps the exception message, so the object stays invalid and unsavable until the rule runs clean:
 
 <!-- snippet: skill-rule-that-throws -->
 <a id='snippet-skill-rule-that-throws'></a>

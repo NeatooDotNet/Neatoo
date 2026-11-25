@@ -78,7 +78,7 @@ Each partial property declared on a Neatoo class is backed by its own `IValidate
 | `Value` | `IValidateProperty` | The current property value |
 | `IsValid` | `IValidateProperty` | Whether this property passes its validation rules |
 | `PropertyMessages` | `IValidateProperty` | Validation error messages for this property |
-| `IsBusy` | `IValidateProperty` | Whether an async rule is currently running for this property |
+| `IsBusy` | `IValidateProperty` | Whether this property has work in flight (a write to it, or an async rule that names it as a trigger), or the child object it holds is busy. Per field: what an input binds |
 | `IsReadOnly` | `IValidateProperty` | Whether this property is read-only (true for `private set` properties, or after `MarkReadOnly()` is called at runtime) |
 | `IsModified` | `IEntityProperty` only | Whether this property has been changed (EntityBase properties only, not ValidateBase) |
 
@@ -331,6 +331,8 @@ public async Task NeatooPropertyChanged_CarriesFullNameAndReason()
 ```
 <sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L62-L81' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+Every subscriber's task is awaited as part of the write that raised the event: a write is not over while any handler of it is still running. The write is registered with the object that was written to and with every parent up to the root. So a `NeatooPropertyChanged` handler never awaits `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on any of those objects: its own object, a parent, or a child whose change it is hearing. Each of those calls waits for the object's running tasks. (`RunRules(propertyName)` does not, which is why a list's `HandleNeatooPropertyChanged` may await it on siblings.) The handler is part of the work that wait covers, so it would wait for itself: the wait never completes and the object stays busy, with no exception. The handler above returns; the test waits outside it. A UI event handler (a button click) is not part of a write and waits freely.
 
 ## Assignment Inside and Outside a Factory Operation
 

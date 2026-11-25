@@ -340,45 +340,55 @@ When updating Design projects:
 | `IsSavable` | EntityBase (IEntityRoot only) | (IsModified || IsNew) && IsValid && !IsBusy. Only on `IEntityRoot` interface -- not on `IEntityBase` or entity lists |
 | `IsValid` | ValidateBase | All rules pass (includes children) |
 | `IsSelfValid` | ValidateBase | This object's rules pass (excludes children) |
-| `IsBusy` | ValidateBase | Async operations pending |
+| `IsBusy` | ValidateBase | The object's running tasks are running: async work in flight on it or below it |
 | `IsPaused` | ValidateBase | Events/rules suppressed |
 | `Root` | EntityBase/List | Aggregate root reference |
 | `Parent` | All bases | Parent in object graph |
 
-## Threading Guarantees
+## Threading
 
 ### Single-Threaded Object Model
 
-Neatoo objects are designed for **single-threaded access per object graph**. The framework does not use locks or thread-safe collections internally.
+**Neatoo is not thread-safe and is not multi-threaded capable.** It works like a UI application: one thread at a time owns an object graph. The owner's ruling (2026-11-24): "Neatoo is not multi-threaded capable. Like a UI application. Neatoo is not threadsafe."
 
-**Core Assumptions:**
+Nothing in the framework is a thread-safety guarantee. The few locks inside it (the task tracker's, for one) guard their own bookkeeping; they do not make a graph safe to share. A race between two threads over one graph is a caller error, not a framework defect: do not propose locks or atomicity fixes for one.
+
+**What a caller provides:**
 - One thread owns an object graph at a time
-- UI thread binding in WPF/Blazor (automatic with data binding)
-- Request thread in ASP.NET Core (one request = one thread context)
+- The UI thread in WPF/Blazor (automatic with data binding)
+- One request's context in ASP.NET Core
 
-**What IS Thread-Safe:**
-- Rule ID generation uses `Interlocked.Increment` for unique execution IDs
-- Static factory registrations (happen once at startup)
-- Reading properties is generally safe if no writes are occurring
-
-**What IS NOT Thread-Safe:**
-- Concurrent property modifications on the same object
-- Adding/removing items from EntityListBase concurrently
-- Running rules while properties are being modified
-- Pausing/resuming while rules are executing
+**Never, on one object graph, from two threads at once:**
+- Set properties
+- Add or remove list items
+- Run rules while properties are being set
+- Pause or resume while rules are executing
+- Read state while another thread writes it
 
 ### Async Rules and the Synchronization Context
 
-Rules run asynchronously but Neatoo relies on the synchronization context to ensure proper sequencing.
+An async rule suspends at its `await` and resumes where its synchronization context puts it: on the owning thread in Blazor and WPF. The task tracker follows the same rule. It accounts for a finished task on the synchronization context that added it, so the idle `IsBusy` notification and the completion of `WaitForTasks()` happen on the thread that owns the graph, even when the awaited reply arrived on another thread.
+
+A host with no synchronization context (MSTest, a console app) has no owning thread: two async rules started without awaiting can resume on two pool threads over one object. That is the host's race, not Neatoo's. A test that shares an object across awaits runs one thing at a time.
 
 **Rule Execution Flow:**
 ```
-Property set → RuleManager.RunRules → Async rule starts → IsBusy=true
-                                    → Property.AddMarkedBusy(execId)
-                                    → Rule completes
-                                    → Property.RemoveMarkedBusy(execId)
-                                    → IsBusy recalculated
+Property set → the write starts; the property's rules run up to their first await
+             → RuleManager.RunRule: each trigger property holds the rule's run as a task
+             → the property holds the write's task (the whole cascade) and reports it to its entity
+             → the entity registers it in RunningTasks and passes it up through Parent
+             → IsBusy = true on the property, the entity and each parent
+             → the rule completes (or throws: a finished task either way)
+             → each tracker accounts for the finished task, child before parent
+             → IsBusy = false; PropertyChanged("IsBusy") is raised
+             → WaitForTasks() completes
 ```
+
+There is one record of async work, the task tracker (`IAsyncTasks`), at two levels: an entity holds the tasks of everything in flight in its subtree, and a property holds its own in-flight work. The owner registers, never the caller: generated setters, `Set{Name}`, `IValidateProperty.SetValue`, `RunRules` and lazy loads all end up in `RunningTasks` without the caller doing anything. `WaitForTasks()` awaits `RunningTasks` and nothing else, and `IsBusy` is "the tracker is running". Nothing is kept as a busy flag or an execution id.
+
+**Faults:** an async rule that throws surfaces once and the object recovers. The awaiter of the write or of `RunRules` gets the exception; the next `WaitForTasks()` throws it once in an `AggregateException`; after that the object tracks and waits as before. The trigger property keeps the message until the rule runs clean.
+
+**Do not wait for yourself:** a rule's run and every `NeatooPropertyChanged` handler's task are part of the write that started them, and the write is registered with the object written to and with every parent up to the root. Neither may await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on any of those objects; each of them waits for the running tasks. That covers its own object and its parents, and the child as well: a root handler hearing a child's change, or a parent's rule triggered by `t => t.Child.X`, must not await the child's `WaitForTasks()`. `RunRules(propertyName)` does not, which is why `WorkOrderTaskList.HandleNeatooPropertyChanged` may await it on siblings.
 
 **Best Practices:**
 ```csharp
@@ -392,7 +402,7 @@ entity.Name = "Test";
 Assert.IsTrue(entity.IsValid);  // May be stale - rule still running!
 ```
 
-### Setting Values and Thread Safety
+### Setting Values
 
 Set values from the owning thread. Whether the property setter tracks the change depends on pause state:
 
@@ -405,7 +415,7 @@ Set values from the owning thread. Whether the property setter tracks the change
 
 ### Factory Operation Threading
 
-Factory operations are designed for single-threaded execution:
+A factory operation runs on one thread at a time, like everything else on a graph:
 
 ```
 FactoryStart(operation)  → IsPaused = true

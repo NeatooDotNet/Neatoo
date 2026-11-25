@@ -99,7 +99,7 @@ A MudNeatoo component shows the property's `PropertyMessages` under the input. E
                     EntityProperty="@employee[nameof(IEmployee.Email)]" />
 ```
 
-When a property has async rules, `IsValid` is final only after they finish. Before reading validity in code — a test, a handler — `await entity.WaitForTasks()`; the component does not need to, because it re-renders when the rule completes.
+When a property has async rules, `IsValid` is final only after they finish. Before reading validity in code — a test, or a UI event handler such as a button's click handler — `await entity.WaitForTasks()`. A change made through a MudNeatoo input is waited for like any other write, whether or not the input's own change has been awaited. The component does not need to wait, because it re-renders when the rule completes. A `NeatooPropertyChanged` handler must not await it; see [Awaiting inside a NeatooPropertyChanged handler](#awaiting-inside-a-neatoopropertychanged-handler).
 
 ## Validation Summary
 
@@ -203,7 +203,7 @@ public async Task Address_InvalidAddressType_IsInvalid()
 
 ## Busy State Handling
 
-While an async rule runs, the property's `IsBusy` is true, the entity's `IsBusy` is true, and `IsSavable` is false. The component disables its input while `IsBusy`; it also accepts a `Disabled` parameter, OR'd with `IsBusy`, for a UI-driven condition. You cannot force a field enabled while a rule is running.
+While an async rule runs, the property's `IsBusy` is true, the entity's `IsBusy` is true, and `IsSavable` is false. The property object's `IsBusy` is per field: it is true while that property has a write or an async rule in flight, so one slow lookup disables one input, not the form. The component disables its input while `IsBusy`; it also accepts a `Disabled` parameter, OR'd with `IsBusy`, for a UI-driven condition. You cannot force a field enabled while a rule is running.
 
 ```razor
 <MudNeatooTextField T="string"
@@ -449,7 +449,7 @@ Each component forwards a curated set of its wrapped MudBlazor component's param
 MudNeatoo components use Blazor's two-way binding, but against the property object, so a change flows through the whole Neatoo pipeline:
 
 1. User commits a value (blur for text and numeric fields; change for the others)
-2. Component calls `IEntityProperty.SetValue(value)` with `ChangeReason.UserEdit`
+2. Component calls `IEntityProperty.SetValue(value)` with `ChangeReason.UserEdit`. The property reports the write to its entity, which registers it in its running tasks and passes it up through `Parent`, so `WaitForTasks()` on the entity or the root waits for it
 3. The property and the entity are marked modified; `PropertyChanged` fires on both
 4. RuleManager runs the rules whose trigger is this property (sync first, then async; the property is `IsBusy` meanwhile)
 5. Each rule stores its messages on the trigger property under its id
@@ -509,6 +509,14 @@ public async Task NeatooPropertyChanged_CarriesFullNameAndReason()
 ```
 <sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L62-L81' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+### Awaiting inside a NeatooPropertyChanged handler
+
+A `NeatooPropertyChanged` handler returns a `Task`, and the framework awaits every subscriber's task as part of the write that raised the event. A write is not over while any handler of it is still running. The write, with the handler inside it, is one of the running tasks of the object that was written to and of every parent up to the root.
+
+So a `NeatooPropertyChanged` handler must not await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on any object the write is registered with: the object written to and everything above it. That covers the handler's own object and its parents, and it covers a child: a handler on the root that hears a child's change must not await that child's `WaitForTasks()` either. Each of these calls waits for the object's running tasks. Once the write is in flight, that wait includes the handler itself: it never completes, the object stays busy, and no exception is thrown. The order in which handlers subscribed makes no difference.
+
+The handler in the test above does its work and returns; the test awaits `WaitForTasks()` outside it. `NeatooValidationSummary`'s handler calls `InvokeAsync(StateHasChanged)` and returns a completed task. Code that needs settled state belongs in a UI event handler, which is not part of any write: a Save button's click handler awaits `WaitForTasks()` and then reads `IsSavable`.
 
 ## Using Standard MudBlazor Components
 

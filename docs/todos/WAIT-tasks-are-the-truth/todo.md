@@ -54,19 +54,19 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 | 005 | [005-waits-await-tasks](./plans/005-waits-await-tasks.md) | Waits await tasks; busy reads tasks | AC-2, AC-3, AC-4, AC-5 | Done | #147 |
 | 006 | [006-optional-criteria](./plans/006-optional-criteria.md) | Subscribers, notification order (save in flight parked as #103) | AC-10, AC-11 | Done | #148 |
 | 007 | [007-mudneatoo-and-design-app](./plans/007-mudneatoo-and-design-app.md) | MudNeatoo and Design.App on the new tracking | AC-8 | Done | #149 |
-| 008 | [008-docs-and-release-notes](./plans/008-docs-and-release-notes.md) | Guides, skills and release notes | AC-9 | Draft | — |
+| 008 | [008-docs-and-release-notes](./plans/008-docs-and-release-notes.md) | Guides, skills and release notes | AC-9 | Done | #150 |
 
 ---
 
 ## Punchlist
 
-- [ ] The migration notes name three compile breaks from WAIT-002: forward `IValidateBaseServices.CreateAsyncTasks` in a services wrapper; `AsyncTasks.AddTask(Task, bool)` is now `AddTask(Task)`; `RunningTasks` is typed `IAsyncTasks` · the release notes (WAIT-008) · done when the migration section lists all three · AC-9
-- [ ] The migration notes name the breaks from WAIT-003: `IValidateProperty.AddMarkedBusy` and `RemoveMarkedBusy` are removed, with `IsSelfBusy` and `IsMarkedBusy` on `ValidateProperty`; `IFactory` gains `CreateAsyncTasks()`; `DefaultFactory` is registered transient · the release notes (WAIT-008) · done when the migration section lists them · AC-9
+- [x] (#150) The migration notes name three compile breaks from WAIT-002: forward `IValidateBaseServices.CreateAsyncTasks` in a services wrapper; `AsyncTasks.AddTask(Task, bool)` is now `AddTask(Task)`; `RunningTasks` is typed `IAsyncTasks` · the release notes (WAIT-008) · done when the migration section lists all three · AC-9
+- [x] (#150) The migration notes name the breaks from WAIT-003: `IValidateProperty.AddMarkedBusy` and `RemoveMarkedBusy` are removed, with `IsSelfBusy` and `IsMarkedBusy` on `ValidateProperty`; `IFactory` gains `CreateAsyncTasks()`; `DefaultFactory` is registered transient · the release notes (WAIT-008) · done when the migration section lists them · AC-9
 - [x] (#146) A write to a child registers with the parent chain before the child's own tracker, so with no synchronization context the root's waits complete before the child has accounted, and `Save(token)` on the root then throws `SaveOperationException` (IsBusy). Since WAIT-003 this happens every time, where it was a race before (traced by the code reviewer, not run) · the generated setter and `Set{Name}`, and `ValidateBase.AddChildTask`, `Setter`, `ObjectInvalid` and the meta-rule registration · done when an object accounts before its parent and a test saves a root with a token after a child write with an async rule · AC-4 · for WAIT-004, which rebuilds registration
-- [ ] The migration notes name the breaks from WAIT-004: `AddChildTask` is off `IValidateBase` and `protected` on `ValidateBase`; generated setters and `Set{Name}` no longer register, so consumers rebuild; an awaited `RunRules(propertyName)` that throws is now also reported by the next `WaitForTasks()`, as an awaited `Set{Name}` already was · the release notes (WAIT-008) · done when the migration section lists them · AC-9
+- [x] (#150) The migration notes name the breaks from WAIT-004: `AddChildTask` is off `IValidateBase` and `protected` on `ValidateBase`; generated setters and `Set{Name}` no longer register, so consumers rebuild; an awaited `RunRules(propertyName)` that throws is now also reported by the next `WaitForTasks()`, as an awaited `Set{Name}` already was · the release notes (WAIT-008) · done when the migration section lists them · AC-9
 - [x] (#147) `RunRules(RunRulesFlag)` called and not awaited: its rule runs are busy on their trigger properties but not in the object's running tasks, so a wait on running tasks alone would not wait for them. It cannot register itself, because it awaits the running tasks inside · `ValidateBase.RunRules(RunRulesFlag)` and `RuleManager.RunRules(RunRulesFlag)` · done when the wait in WAIT-005 covers it, with a test, or it is ruled awaited-only · AC-1 · for WAIT-005
-- [ ] The migration notes name the changes from WAIT-005: an object's `IsBusy` and `WaitForTasks()` are its running tasks alone, so a custom property that reports busy without tracking a task no longer makes its object busy; `ValidatePropertyManager.IsBusy` has no setter; an awaited `RunRules()` that throws is also reported by the next `WaitForTasks()` · the release notes (WAIT-008) · done when the migration section lists them · AC-9
-- [ ] The guides say what a `NeatooPropertyChanged` handler must not do: await `WaitForTasks()`, `RunRules()` or `Save(token)` on its own object or a parent. Every handler's task is now part of the write, so such a handler waits for itself, whatever order it subscribed in (`docs/guides/blazor.md` near line 102 reads as allowing it) · the async and Blazor guides, and the migration notes · done when both say so · AC-9 · for WAIT-008 (from the WAIT-006 code review)
+- [x] (#150) The migration notes name the changes from WAIT-005: an object's `IsBusy` and `WaitForTasks()` are its running tasks alone, so a custom property that reports busy without tracking a task no longer makes its object busy; `ValidatePropertyManager.IsBusy` has no setter; an awaited `RunRules()` that throws is also reported by the next `WaitForTasks()` · the release notes (WAIT-008) · done when the migration section lists them · AC-9
+- [x] (#150) The guides say what a `NeatooPropertyChanged` handler must not do: await `WaitForTasks()`, `RunRules()` or `Save(token)` on its own object or a parent. Every handler's task is now part of the write, so such a handler waits for itself, whatever order it subscribed in (`docs/guides/blazor.md` near line 102 reads as allowing it) · the async and Blazor guides, and the migration notes · done when both say so · AC-9 · for WAIT-008 (from the WAIT-006 code review)
 
 ## Dismissed
 
@@ -77,6 +77,7 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - proposed · `ValidateProperty.LoadValue` called twice with the same instance subscribes twice · 0.36.1 design critique, 2026-11-24
 - proposed · a list item whose busy changes while the item itself is paused does not raise the list's `IsBusy` notification; the list's `IsBusy` value is right and its owner is unaffected. Reached by an awaited `RunRules` with an async rule inside a factory operation on an item already in a list · WAIT-005 · `reviews/005-code-review.md` Round 2, Theoretical
 - #103 · AC-12 (Optional) not built: registering the save as the object's work makes `MarkUnmodified` refuse when a local save with an async `[Insert]` or `[Update]` completes, so it needs a ruling on that guard and on the sent instance's state after a remote save · WAIT-006 · `plans/006-optional-criteria.md` Plan Amendments
+- ruled (Keith, 2026-11-24: "Keep the change"; no issue) · a fire-and-forget lazy load that fails while the parent's `WaitForTasks()` is waiting: `main` throws the loader's exception from that wait, the arc completes it cleanly. Waits started after the failure, and an awaited `LoadAsync`, behave the same on both. The skill documented the throw, and Out of Scope says LazyLoad's documented waiting keeps working. Introduced by WAIT-004; the one test on it accepts both outcomes · WAIT-008 · `reviews/008-lazy-failure-probe.log`
 
 ---
 
@@ -104,6 +105,8 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - WAIT-006 · code-reviewer · a handler that awaits its own object's wait now deadlocks whatever order it subscribed in, and a guide reads as allowing it · punched to the Punchlist for WAIT-008 (the guides and the migration notes).
 - WAIT-006 · test-reviewer (tech-debt) · the todo's plan row still listed AC-12 as served · the row now says it is parked.
 - WAIT-007 · test-reviewer (tech-debt) · a loose exception assertion and a fixture summary that said "no factory" on a `[Factory]` class · both fixed; the plan's Intent narrowed to what the tests show.
+- WAIT-008 · docs-writer · the handler rule must name `RunRules(RunRulesFlag)`, because a list's handler awaits `RunRules(propertyName)` on siblings by design · taken in the guides, skills and release notes.
+- WAIT-008 · code-reviewer · four corrections to the prose (custom properties need `ReportToOwner`; the rule-message fix was missing from the notes; a throwing handler now faults the write; the self-wait rule missed the object written to) · all four taken; round 2 notes (numbering, a lazy load in behavior change 7) taken too.
 
 ---
 
@@ -143,6 +146,11 @@ Neatoo tracks async work twice: as tasks in each entity's `RunningTasks`, and as
 - **Finding:** Making a save in flight busy means registering it, and `MarkUnmodified` then refuses when a local save with an async operation completes. It needs a ruling on saving, and the criterion is Optional.
 - **Decision:** Queue
 - **Follow-up:** parked as #103, on the todo's Parked list
+
+### 2026-11-24 — WAIT-008 · serves AC-9
+- **Finding:** WAIT-004 reports a load in flight as a task that finishes whatever the load's outcome, so a wait in progress no longer throws a failing load's exception. The skill documented that throw, and Out of Scope promises LazyLoad's documented waiting. Measured against `main`.
+- **Decision:** Amend (Keith ruled: keep the change)
+- **Follow-up:** behavior change 9 in the 0.37.0 release notes; the test rewritten
 
 ---
 

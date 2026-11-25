@@ -101,7 +101,7 @@ public AsyncRulesDemo(
 <sup><a href='/src/Design/Design.Domain/Rules/AsyncRules.cs#L55-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-rule-injected' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-While the rule executes, `IsBusy` is `true` on the trigger property and on the entity. The framework tracks each execution with its own id, so concurrent rules do not clear each other's busy state. A rule runs on every set of its trigger property — bind the property so it is set on field commit (`MudNeatooTextField` and `MudNeatooNumericField` commit on blur), and one committed value means one server call.
+While the rule executes, `IsBusy` is `true` on the trigger property and on the entity. Each execution is a task the trigger property holds until it finishes, so overlapping runs do not clear each other's busy state: the property is busy until the last one completes. A rule runs on every set of its trigger property — bind the property so it is set on field commit (`MudNeatooTextField` and `MudNeatooNumericField` commit on blur), and one committed value means one server call.
 
 ## Async Business Rules
 
@@ -130,7 +130,9 @@ An overload takes `(target, token)` for actions that honor a `CancellationToken`
 
 ## WaitForTasks
 
-`WaitForTasks()` returns a `Task` that completes when every tracked async operation on the object and its descendants has finished. It is the step before saving, serializing, or reading validation state: `IsValid` and `IsSavable` reflect only the rules that have completed.
+There is one record of async work. Every async operation on an object is a task in that object's running tasks, whoever started it: a property setter, the generated `Set{Name}`, `SetValue` on the property object (the write every MudNeatoo input makes), `RunRules(propertyName)`, `RunRules(flag)` awaited or not, a rule triggered on meta state, a lazy load. The object registers the task itself and passes it up through `Parent` to the root. The caller registers nothing, so a write is waited for the same way whichever path made it.
+
+`WaitForTasks()` awaits those tasks and nothing else. When it completes, nothing on the object or below it is busy, and whoever listens for `IsBusy` has already been told. It is the step before saving, serializing, or reading validation state: `IsValid` and `IsSavable` reflect only the rules that have completed.
 
 <!-- snippet: skill-is-busy -->
 <a id='snippet-skill-is-busy'></a>
@@ -153,15 +155,23 @@ public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 <sup><a href='/src/Design/Design.Tests/PropertyTests/ValidationStateTests.cs#L52-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-busy' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Task tracking propagates up the graph through `Parent`. `WaitForTasks()` on an aggregate root waits for every child entity and collection as well.
+Because each task is passed up through `Parent`, `WaitForTasks()` on an aggregate root waits for the work of every child entity and collection as well.
+
+Do not await `WaitForTasks()` inside work that wait covers. A rule runs as part of a write, or of a `RunRules` call, and that work is one of the running tasks of the object it was made on and of every parent up to the root. So a rule must not await `WaitForTasks()` or `RunRules(RunRulesFlag)` on any of those objects: it would be waiting for itself. That covers the rule's own target and its parents. For a rule on a parent triggered by a child's property (`t => t.Child.X`), it also covers the child, because the write was made there. The same holds for a `NeatooPropertyChanged` handler; see [Awaiting inside a NeatooPropertyChanged handler](#awaiting-inside-a-neatoopropertychanged-handler).
 
 ## IsBusy State
 
-`IsBusy` is `true` while any async rule is executing on the object, and it cascades: a parent is busy while any child is busy, and a list is busy while any item is busy. An aggregate root therefore reflects the busy state of the whole aggregate, which is what lets a UI disable Save (`IsSavable` includes `!IsBusy`) or show a spinner for the graph as a whole. The test above shows the transition: busy right after the set, not busy after `WaitForTasks()`.
+`IsBusy` is read from tasks; nothing keeps it as a flag.
+
+- **On an object** it is "this object's running tasks are running". Work below the object is registered there too, so a parent is busy while a child is, and an aggregate root reflects the whole aggregate. That is what lets a UI disable Save (`IsSavable` includes `!IsBusy`) or show a spinner for the graph as a whole.
+- **On a property object** (`entity["Name"].IsBusy`) it is "this property has work in flight, or the object it holds is busy". The property's own work is a write to it and each async rule that names it as a trigger. This is what an input binds for one field.
+- **On a list** it is "an item is busy", read from the items.
+
+The test above shows the transition: busy right after the set, not busy after `WaitForTasks()`. An object raises `PropertyChanged` for `IsBusy` when it goes busy and when it goes idle, and the idle notification is raised before a wait on the object completes.
 
 ## CancellationToken Support
 
-`WaitForTasks(token)`, `RunRules(flag, token)` and `Save(token)` accept a `CancellationToken`. Cancelling a wait throws `OperationCanceledException` and stops only the wait — the running rules complete, and the object's state is left as those rules leave it. Cancelling `RunRules` is different: the object is marked invalid with "Validation cancelled", and `RunRules(RunRulesFlag.All)` re-validates.
+`WaitForTasks(token)`, `RunRules(flag, token)` and `Save(token)` accept a `CancellationToken`. `WaitForTasks(token)` is the same wait as `WaitForTasks()`, over the same tasks, with cancellation. Cancelling it throws `OperationCanceledException` and stops the wait, not the work: the running rules complete, the object stays busy until they do, and its state is left as those rules leave it. Cancelling `RunRules` is different: the object is marked invalid with "Validation cancelled", and `RunRules(RunRulesFlag.All)` re-validates. The cancellation is thrown to the awaiter of `RunRules` only; it leaves nothing for a later `WaitForTasks()` to report.
 
 A rule receives the token only from an explicit `RunRules(..., token)`; a setter-triggered run passes none. A long-running rule checks it:
 
@@ -220,11 +230,15 @@ public async Task Save_WithCancelledToken_ThrowsAndLeavesStateUnchanged()
 
 ## Task Coordination in Collections
 
-`ValidateListBase<I>` and `EntityListBase<I>` coordinate async operations across their items. `WaitForTasks()` on a list waits for every item; a list's `IsBusy` is `true` while any item is busy, and that state cascades to the list's parent. Nothing is needed on the list itself: because `IsBusy` and `WaitForTasks()` aggregate through `Parent`, calling them on the aggregate root covers every nested collection.
+A list holds no running tasks of its own. An item's `Parent` is the object that owns the list, so an item's work is registered with that object and passed up from there. Calling `WaitForTasks()` or reading `IsBusy` on the aggregate root therefore covers every nested collection, and nothing is needed on the list itself.
+
+On the list, `IsBusy` is `true` while any item is busy, read from the items each time, and `WaitForTasks()` awaits the items that are busy. `WaitForTasks(token)` is the same wait with cancellation.
+
+The two list types differ on an item that is busy when it is added. An `EntityListBase<I>` refuses it with an `InvalidOperationException`. A `ValidateListBase<I>` accepts it, and the object that owns the list takes up the item's in-flight work: it is busy, and its `WaitForTasks()` waits, until that work finishes.
 
 ## RunRules with Async
 
-`RunRules` forces a re-run of rules and returns a `Task` that completes when the async ones finish. It is not the routine step between setting a property and reading `IsValid` — the setter already ran the rules; `WaitForTasks()` is what you await. `RunRules` is for the cases where nothing ran: inside a factory operation, for the derived values that operation needs (the object is paused, so it runs the rules that compute them — a per-operation choice, not a step every operation ends with), or to re-validate after a cancelled `RunRules`.
+`RunRules` forces a re-run of rules and returns a `Task` that completes when the async ones finish. The run is one of the object's running tasks whether or not the caller awaits it, so an un-awaited `RunRules` holds `IsBusy` and is waited for by `WaitForTasks()` like any other work. It is not the routine step between setting a property and reading `IsValid` — the setter already ran the rules; `WaitForTasks()` is what you await. `RunRules` is for the cases where nothing ran: inside a factory operation, for the derived values that operation needs (the object is paused, so it runs the rules that compute them — a per-operation choice, not a step every operation ends with), or to re-validate after a cancelled `RunRules`.
 
 <!-- snippet: skill-create-computes-what-it-needs -->
 <a id='snippet-skill-create-computes-what-it-needs'></a>
@@ -309,7 +323,18 @@ Sequential execution per trigger keeps entity state consistent when several rule
 
 ## Error Handling
 
-A rule that throws is a bug, not a validation result. The framework adds the exception message to each trigger property's messages (so the property and the entity read `IsValid == false` and `IsSavable == false`) and re-throws: from the property setter, wrapped in an `AggregateException`, when the rule throws before its first `await`; from `WaitForTasks()` otherwise.
+A rule that throws is a bug, not a validation result. The framework adds the exception message to each trigger property's messages and re-throws. The fault surfaces once, and the object recovers.
+
+A rule that throws before its first `await` throws from the property setter, wrapped in an `AggregateException`. The tests below show that case.
+
+A rule that throws after an `await` was work in flight, and two callers see its exception:
+
+- **The awaiter of the write or of `RunRules`.** Awaiting the generated `Set{Name}`, `SetValue` on the property object, or `RunRules` throws the rule's exception.
+- **The next `WaitForTasks()` on the object, once**, in an `AggregateException` that carries the exception once. Every wait that was waiting when the rule threw gets it; if none was, the first wait afterwards does. The task was registered on the object and on each parent up to the root, and each of them reports it once from its own wait. An awaited write or `RunRules` that threw does not use this up: the next `WaitForTasks()` still reports it.
+
+After that the object tracks and waits as before. The following `WaitForTasks()` completes normally, neither the property nor the object is left busy, and later work is tracked and waited for.
+
+The trigger property keeps the exception message, so the property and the entity read `IsValid == false` and `IsSavable == false` until the rule runs clean. The message belongs to the rule, and its next clean run clears it.
 
 <!-- snippet: skill-rule-that-throws -->
 <a id='snippet-skill-rule-that-throws'></a>
@@ -363,6 +388,24 @@ public void RuleThatThrows_SurfacesToTheCaller_AndMarksPropertyInvalid()
 <!-- endSnippet -->
 
 Catch it where application failures are handled — an error boundary or a logger — not as a validation channel. Validation is a rule returning messages.
+
+## Awaiting inside a NeatooPropertyChanged handler
+
+`NeatooPropertyChanged` handlers return a `Task`, and raising the event awaits every subscriber's task, not only the last one's. A write is not over while any handler of it is still running, and an exception a handler throws reaches the awaiter of the write.
+
+A handler's task is therefore part of the write. The write is one of the running tasks of the object that was written to and of every parent up to the root, and each of those objects raises the change to its own subscribers as part of the same write. So a `NeatooPropertyChanged` handler must not wait on any object the write is registered with: the object written to and everything above it. On those objects it must not await:
+
+- `WaitForTasks()` or `WaitForTasks(token)`
+- `RunRules(RunRulesFlag)`, which ends by waiting for the object's running tasks
+- `Save(token)`, which begins by waiting for them
+
+That covers the handler's own object and its parents. It also covers a child: a handler on the root that hears a child's change and awaits that child's `WaitForTasks()` is waiting on the object the write was made on.
+
+Once the write is in flight, that wait includes the handler itself. It never completes, the object stays busy, and no exception is thrown. It makes no difference in which order the handler subscribed.
+
+`RunRules(propertyName)` is not on that list: it runs the named rules and returns without waiting for the object's running tasks. A list's `HandleNeatooPropertyChanged` override that re-runs its siblings' rules by name is the supported use.
+
+This applies to `NeatooPropertyChanged` handlers only. A UI event handler, such as a button's click handler, is not part of any write and awaits `WaitForTasks()` freely.
 
 ## Recursive Async Rules
 

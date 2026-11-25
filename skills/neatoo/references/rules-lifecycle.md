@@ -26,7 +26,8 @@ This is the most common source of confusion. `ResumeAllActions()` (called by `Fa
 - Sets `IsPaused = false`
 - Recalculates cached `IsValid` and `IsSelfValid`
 - Fires `PropertyChanged` for `IsValid`/`IsSelfValid` **only if they changed**
-- Recalculates `IsBusy`
+
+`IsBusy` needs no recalculation: it is not cached, it is read from the object's running tasks.
 
 It does **NOT**:
 

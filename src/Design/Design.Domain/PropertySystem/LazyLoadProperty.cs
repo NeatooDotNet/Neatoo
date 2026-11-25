@@ -21,11 +21,11 @@
 // when the load completes. Two patterns: LoadAsync() for imperative code
 // (tests, domain logic, OnInitializedAsync), .Value for binding.
 //
-// DESIGN DECISION: ValidateBase.WaitForTasks() awaits in-progress LazyLoad
-// children via PropertyManager.WaitForTasks(). This ensures that
-// "await entity.WaitForTasks()" before Save waits for any explicitly
-// triggered loads to complete. WaitForTasks does NOT trigger loads on
-// unaccessed LazyLoad children.
+// DESIGN DECISION: A load in progress is work in flight on the object that
+// owns the property. The lazy-load property reports it and the owner registers
+// it in its running tasks, so "await entity.WaitForTasks()" before Save waits
+// for any explicitly triggered load. A failed load does not fault that wait
+// (see HasLoadError). WaitForTasks does NOT trigger loads on unaccessed children.
 //
 // DESIGN DECISION: The generic constraint is `where T : class?` (not `where T : class`)
 // to support nullable reference types. This allows declarations like

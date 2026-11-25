@@ -241,7 +241,7 @@ There is no `IsDirty`; use `IsModified` / `IsSelfModified`.
 | `IsSelfModified` | This object's own properties changed (children excluded). |
 | `IsValid` | This object and every descendant pass their rules. |
 | `IsSelfValid` | This object's own rules pass. |
-| `IsBusy` | An async rule is running on this object or a descendant. |
+| `IsBusy` | Async work is in flight on this object or a descendant: the object's running tasks are running. `WaitForTasks()` awaits exactly those tasks, so it is false when the wait completes. |
 | `IsNew` | Not yet persisted: true after Create, false after Fetch and Insert. Routing state only — it never makes an object modified and never aggregates upward. |
 | `IsDeleted` | Marked for deletion; routes the next save to `[Delete]`. |
 | `IsSavable` | `(IsModified \|\| IsNew) && IsValid && !IsBusy`. Says nothing about aggregate position; only `IEntityRoot` exposes it. |
