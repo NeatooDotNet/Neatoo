@@ -451,7 +451,7 @@ public async Task Fetch_ThenModify_IsModified()
 
 | Member | Signature | Notes |
 |---|---|---|
-| IsSavable | `public virtual bool IsSavable { get; }` | `(IsModified \|\| IsNew) && IsValid && !IsBusy`. Exposed through `IEntityRoot` only. |
+| IsSavable | `public virtual bool IsSavable { get; }` | `(IsModified \|\| IsNew) && IsValid && !IsBusy`, with no save in flight. Exposed through `IEntityRoot` only. |
 
 The formula says nothing about position in an aggregate — a modified child *concrete* reports `true`. That is why `IsSavable` and `Save()` live on `IEntityRoot` and not on `IEntityBase`: a child interface never shows them, so the mistake is a compile error.
 
@@ -529,7 +529,7 @@ public interface IDemoEntity : IEntityRoot
 /// Key points:
 /// - Inherits all ValidateBase capabilities (validation, rules, busy tracking)
 /// - Adds IsNew/IsModified/IsDeleted for persistence state
-/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy
+/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy, with no save in flight
 /// - Save() routes to Insert/Update/Delete based on state
 /// - Child entities cannot save independently: their interface has no Save()
 /// </summary>
@@ -1090,7 +1090,7 @@ The interface for **child** entities. It carries persistence state, modification
 | Save | `Task<IEntityBase> Save()` |
 | Save | `Task<IEntityBase> Save(CancellationToken token)` |
 
-`IsSavable` on `EntityBase` is `(IsModified || IsNew) && IsValid && !IsBusy` — it knows nothing about aggregate position, so a modified child concrete reports `true` even though children are persisted by their root. Developers used it in save-cascade logic and reached for `Save()` on a child, which the framework does not support. The fix is to keep both off the child interface so the mistake is a compile error. `EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`; this does not matter because the concrete is `internal` and consumers see only the interface. The user signals root vs child by choosing which framework interface to extend:
+`IsSavable` on `EntityBase` is `(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight — it knows nothing about aggregate position, so a modified child concrete reports `true` even though children are persisted by their root. Developers used it in save-cascade logic and reached for `Save()` on a child, which the framework does not support. The fix is to keep both off the child interface so the mistake is a compile error. `EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`; this does not matter because the concrete is `internal` and consumers see only the interface. The user signals root vs child by choosing which framework interface to extend:
 
 <!-- snippet: skill-aggregate-interfaces -->
 <a id='snippet-skill-aggregate-interfaces'></a>
@@ -1325,7 +1325,7 @@ Metadata about a declared property, read once per type.
 | `ChangeReason` | `UserEdit`, `Load` |
 | `RunRulesFlag` | `None`, `NoMessages`, `Messages`, `NotExecuted`, `Executed`, `Self`, `All` (see [rules-lifecycle](../../skills/neatoo/references/rules-lifecycle.md) for the semantics of each) |
 | `FactoryOperation` (RemoteFactory) | `None`, `Execute`, `Create`, `Fetch`, `Insert`, `Update`, `Delete` |
-| `SaveOperationException` | `Reason`: `SaveFailureReason.IsBusy`, `IsInvalid`, `NotModified`, … |
+| `SaveOperationException` | `Reason`: `SaveFailureReason.IsBusy`, `IsInvalid`, `NotModified`, `NoFactoryMethod`, `SaveInProgress` |
 
 ---
 

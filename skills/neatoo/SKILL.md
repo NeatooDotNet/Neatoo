@@ -276,7 +276,7 @@ internal sealed class OrderEditViewModel
 <sup><a href='/src/Design/Design.App/ViewModels/OrderEditViewModel.cs#L31-L96' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-handler' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-**Pain:** `Save()` does not mark the entity busy during the remote call, so a second click sends a second Insert until the handler has reassigned the result ([Neatoo#103](https://github.com/NeatooDotNet/Neatoo/issues/103)). Disable the button while a save is in flight.
+While `Save()` runs, `IsSavable` is false, so the bound button disables for the length of the save; a second `Save()` on the same object throws `SaveOperationException` (`SaveFailureReason.SaveInProgress`). The handler needs no saving flag of its own. A save in flight is not busy: `IsBusy` and `WaitForTasks()` do not change.
 
 The page binds to facts; every show/hide and enable/disable is a value the aggregate computed:
 
@@ -376,7 +376,6 @@ The root's `[Insert]` and `[Update]` run `RunRules(All)` and throw on an invalid
 
 The ones a new aggregate meets first; [pains.md](references/pains.md) has all of them with today's workaround.
 
-- `Save()` does not mark the entity busy; double-click sends two Inserts - [Neatoo#103](https://github.com/NeatooDotNet/Neatoo/issues/103).
 - `Save()` returns a new instance; a discarded result leaves a stale object - an analyzer is pending; until then, reassign.
 - A rule trigger on a collection *reference* (`t => t.Items`) fires only when the list is reassigned; trigger on the child property path (`t => t.Items![0].LineTotal`) - an analyzer is pending.
 - `LoadValue` inside a factory operation is wrong (the object is already paused) - an analyzer is pending.

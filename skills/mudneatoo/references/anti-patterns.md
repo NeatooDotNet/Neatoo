@@ -218,7 +218,7 @@ Using Blazor's `EditForm` and `DataAnnotationsValidator` instead of `MudForm` wi
 - `ValidationSummary` shows annotation errors, not `PropertyMessages`
 - `OnValidSubmit` uses annotation validity, not `entity.IsValid`
 - The entity might appear "valid" to `EditForm` while failing Neatoo business rules
-- Completely bypasses `IsSavable` (`(IsModified || IsNew) && IsValid && !IsBusy`)
+- Completely bypasses `IsSavable` (`(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight)
 
 ### Correct
 

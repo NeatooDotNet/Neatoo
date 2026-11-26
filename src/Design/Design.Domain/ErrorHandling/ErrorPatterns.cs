@@ -341,8 +341,8 @@ internal class ExceptionThrowingRule : AsyncRuleBase<ValidationFailureDemo>
 //
 // SaveOperationException : EntityException
 //   - Save refused; Reason is a SaveFailureReason (IsInvalid, NotModified,
-//     IsBusy, NoFactoryMethod). Also the recommended server-side gate's
-//     exception when the rules fail in [Insert]/[Update].
+//     IsBusy, NoFactoryMethod, SaveInProgress). Also the recommended
+//     server-side gate's exception when the rules fail in [Insert]/[Update].
 // =============================================================================
 
 // =============================================================================

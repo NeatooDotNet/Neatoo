@@ -6,7 +6,6 @@ Framework defects and missing guards that are open today, each with what you see
 
 | You see | Tracked | Until it closes |
 |---|---|---|
-| A double-click on Save sends two `[Insert]`s: the sent instance stays `IsSavable` until the handler reassigns the result | [Neatoo#103](https://github.com/NeatooDotNet/Neatoo/issues/103) (critical) | Hold a saving flag in the save handler and disable the button while it is set; `IsSavable` alone cannot do it yet |
 | After a cancelled `RunRules`, the object stays invalid and unsavable; `RunRules(RunRulesFlag.All)` does not clear the `MarkInvalid` the cancellation set | [Neatoo#96](https://github.com/NeatooDotNet/Neatoo/issues/96) | There is no in-place recovery: fetch the object again (or create it again) |
 | `RunRules(RunRulesFlag.Self)` returns while a child's async rule is still running, so the root still reports busy | [Neatoo#89](https://github.com/NeatooDotNet/Neatoo/issues/89) (open question) | `await WaitForTasks()` after it when the caller reads `IsBusy` or `IsSavable` |
 | Reordering a child list is invisible to change tracking: `Move` marks nothing modified, so `IsModified` and `IsSavable` stay false after a reorder | [Neatoo#109](https://github.com/NeatooDotNet/Neatoo/issues/109) | The aggregate's move verb calls the list's `Move`, then `MarkModified()` on itself. Not `Remove` then `Insert`: the list is one child short in between, and a rule on its count fires |

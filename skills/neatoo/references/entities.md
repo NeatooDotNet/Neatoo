@@ -244,7 +244,7 @@ There is no `IsDirty`; use `IsModified` / `IsSelfModified`.
 | `IsBusy` | Async work is in flight on this object or a descendant: the object's running tasks are running. `WaitForTasks()` awaits exactly those tasks, so it is false when the wait completes. |
 | `IsNew` | Not yet persisted: true after Create, false after Fetch and Insert. Routing state only — it never makes an object modified and never aggregates upward. |
 | `IsDeleted` | Marked for deletion; routes the next save to `[Delete]`. |
-| `IsSavable` | `(IsModified \|\| IsNew) && IsValid && !IsBusy`. Says nothing about aggregate position; only `IEntityRoot` exposes it. |
+| `IsSavable` | `(IsModified \|\| IsNew) && IsValid && !IsBusy`, with no save in flight. Says nothing about aggregate position; only `IEntityRoot` exposes it. |
 
 A write-back is one more change, not an undo. Anything that branches on `IsModified` - an unsaved-changes guard, an audit row, save routing - sees it as changed. To discard edits, fetch again or keep the pre-edit instance:
 
@@ -360,7 +360,9 @@ public async Task Gotcha5_ChildModification_SetsParentIsModified()
 
 ## IsSavable
 
-`IsSavable` is `(IsModified || IsNew) && IsValid && !IsBusy`: a reason to persist, and nothing blocking it.
+`IsSavable` is `(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight: a reason to persist, and nothing blocking it.
+
+While `entity.Save()` runs, `IsSavable` is false until the save returns, so a bound Save button disables for the length of the save, and a second `Save()` on the same object throws `SaveOperationException` with `SaveFailureReason.SaveInProgress`. A save in flight is not busy: `IsBusy` and `WaitForTasks()` do not change. A direct `factory.Save(target)` is not covered.
 
 <!-- snippet: skill-is-savable -->
 <a id='snippet-skill-is-savable'></a>

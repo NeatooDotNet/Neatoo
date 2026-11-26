@@ -123,7 +123,7 @@ public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(servi
         t => t.Name);
 }
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/StateProperties.cs#L356-L369' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-async-action' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/StateProperties.cs#L358-L371' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-async-action' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 An overload takes `(target, token)` for actions that honor a `CancellationToken`. The same dependency rule applies as for validation: server data comes through an injected command delegate.
@@ -467,7 +467,7 @@ On an entity, a property set while paused is not marked modified, so edits made 
 
 ## Save with Async Validation
 
-`entity.Save()` on an aggregate root checks `IsSavable` — `(IsModified || IsNew) && IsValid && !IsBusy` — and throws `SaveOperationException` when it is false; the generated factory `Save` does not wait for rules or check savability itself. `Save(token)` waits for in-flight rules first. The caller's routine is therefore `await WaitForTasks()`, then save; a UI binds the Save button to `IsSavable` so the exception is never reached:
+`entity.Save()` on an aggregate root checks `IsSavable` — `(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight — and throws `SaveOperationException` when it is false; the generated factory `Save` does not wait for rules or check savability itself. `Save(token)` waits for in-flight rules first. The caller's routine is therefore `await WaitForTasks()`, then save; a UI binds the Save button to `IsSavable` so the exception is never reached:
 
 <!-- snippet: skill-is-savable -->
 <a id='snippet-skill-is-savable'></a>
@@ -504,6 +504,8 @@ public async Task FetchedEntity_IsSavableWhenModified()
 <!-- endSnippet -->
 
 On the server, the root's `[Insert]`/`[Update]` re-run every rule and refuse an invalid aggregate (`RunRules(RunRulesFlag.All)` then `throw new SaveOperationException(SaveFailureReason.IsInvalid)`) — see the Business Rules guide, "Manual Rule Execution".
+
+While `entity.Save()` runs, the object is not savable again. `IsSavable` is false until the save returns, so a Save button bound to it disables for the length of the save, and a second `Save()` on the same object throws `SaveOperationException` with `SaveFailureReason.SaveInProgress`. A save in flight is its own state, not busy: `IsBusy` and `WaitForTasks()` do not change. A direct `factory.Save(target)` does not come through `entity.Save()` and is not covered.
 
 ## Performance Considerations
 

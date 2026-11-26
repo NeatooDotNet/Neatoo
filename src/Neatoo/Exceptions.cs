@@ -68,7 +68,9 @@ public enum SaveFailureReason
 	/// <summary>The object is currently busy with an async operation.</summary>
 	IsBusy,
 	/// <summary>No factory save method is configured for this object type.</summary>
-	NoFactoryMethod
+	NoFactoryMethod,
+	/// <summary>A save of this object is already in flight.</summary>
+	SaveInProgress
 }
 
 /// <summary>
@@ -110,6 +112,7 @@ public class SaveOperationException : EntityException
 		SaveFailureReason.NotModified => "Object has not been modified. There are no changes to save.",
 		SaveFailureReason.IsBusy => "Object is busy with an async operation and cannot be saved. Call 'await entity.WaitForTasks()' before saving.",
 		SaveFailureReason.NoFactoryMethod => "No factory save method is configured. Ensure [Insert], [Update], and/or [Delete] methods with no non-service parameters are defined.",
+		SaveFailureReason.SaveInProgress => "A save of this object is already in flight. Wait for it to return, and save the instance it returns.",
 		_ => "Save operation failed."
 	};
 }
