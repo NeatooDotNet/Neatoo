@@ -163,8 +163,6 @@ public class AsyncFlowTests
 
             Assert.IsFalse(asyncValidateObject.IsBusy);
 
-            await Task.Delay(5);
-
             CollectionAssert.Contains(propertyChangedCalls, "IsBusy");
             CollectionAssert.Contains(propertyValuePropertyChangedCalls, "IsBusy");
 
