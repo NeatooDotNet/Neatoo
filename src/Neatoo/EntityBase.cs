@@ -63,7 +63,7 @@ public interface IEntityRoot : IEntityBase
     /// Gets a value indicating whether this entity can be saved.
     /// </summary>
     /// <value>
-    /// <c>true</c> if the entity is modified, valid, and not busy; otherwise, <c>false</c>.
+    /// <c>true</c> if the entity is modified or new, valid, not busy, and has no save in flight; otherwise, <c>false</c>.
     /// </value>
     bool IsSavable { get; }
 
@@ -188,7 +188,7 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// <summary>
     /// Gets a value indicating whether this entity can be saved.
     /// </summary>
-    /// <value><c>true</c> if the entity is modified <em>or</em> new, and is valid, not busy, and not a child entity; otherwise, <c>false</c>.</value>
+    /// <value><c>true</c> if the entity is modified <em>or</em> new, and is valid, not busy, has no save in flight, and is not a child entity; otherwise, <c>false</c>.</value>
     /// <remarks>
     /// <para>
     /// Savability needs <b>either</b> reason to persist: the object differs from its baseline
@@ -198,11 +198,19 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// a Save button enabled.
     /// </para>
     /// <para>
+    /// While a <see cref="Save()"/> of this object is in flight it is not savable again, so a
+    /// Save button bound to this disables for the length of the save. See <see cref="Save()"/>.
+    /// </para>
+    /// <para>
     /// Child entities cannot be saved independently; they must be saved through their parent
     /// aggregate root. This property is exposed only on IEntityRoot.
     /// </para>
     /// </remarks>
-    public virtual bool IsSavable => (this.IsModified || this.IsNew) && this.IsValid && !this.IsBusy;
+    public virtual bool IsSavable => (this.IsModified || this.IsNew) && this.IsValid && !this.IsBusy && !this._saveInFlight;
+
+    // True from the moment Save() hands this object to its factory until the factory has
+    // returned, whatever the outcome. See Save().
+    private bool _saveInFlight;
 
     /// <summary>
     /// Gets or sets a value indicating whether this is a new entity that has not been persisted.
@@ -472,9 +480,37 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// <para>
     /// Child entities cannot be saved directly; they must be saved through their parent aggregate root.
     /// </para>
+    /// <para>
+    /// DESIGN DECISION: a save in flight is its own state, not busy (D39). While it runs,
+    /// <see cref="IsSavable"/> is false and says so; <see cref="ValidateBase{T}.IsBusy"/> and
+    /// <see cref="ValidateBase{T}.WaitForTasks()"/> do not change. The object says it is not
+    /// savable before it calls the factory: a local operation pauses the object it runs on, and
+    /// a paused object raises nothing.
+    /// DID NOT DO THIS: register the save in the running tasks, so that the object reads busy.
+    /// A local save completes on this same instance while Save() is still running, and
+    /// completing marks it unmodified, which is refused while the object is busy. An operation
+    /// body that awaited WaitForTasks() on the object would also be waiting for the save it is
+    /// part of.
+    /// DESIGN DECISION: a second Save() while one is in flight is refused with
+    /// <see cref="SaveFailureReason.SaveInProgress"/> (D40), so one click sends one operation.
+    /// DID NOT DO THIS: have the second call await the first and return its result. Two callers
+    /// would then hold the same returned instance, and the double call would go unseen.
+    /// DESIGN DECISION: when the save returns, this instance is savable again if it still has
+    /// something to save (D41). After a remote save that is the instance that was sent: the
+    /// caller reassigns the returned one. After a save that failed it is what lets the user fix
+    /// the cause and try again.
+    /// DID NOT DO THIS: cover a save started by calling the factory's Save directly. That call
+    /// does not come through here.
+    /// </para>
     /// </remarks>
+    /// <exception cref="SaveOperationException">Thrown when the entity cannot be saved; see <see cref="SaveOperationException.Reason"/>.</exception>
     public virtual async Task<IEntityBase> Save()
     {
+        if (this._saveInFlight)
+        {
+            throw new SaveOperationException(SaveFailureReason.SaveInProgress);
+        }
+
         if (!this.IsSavable)
         {
             if (!this.IsValid)
@@ -499,7 +535,18 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
             throw new SaveOperationException(SaveFailureReason.NoFactoryMethod);
         }
 
-        return (IEntityBase)await this.Factory.Save((T)this);
+        this._saveInFlight = true;
+        this.CheckIfMetaPropertiesChanged();
+
+        try
+        {
+            return (IEntityBase)await this.Factory.Save((T)this);
+        }
+        finally
+        {
+            this._saveInFlight = false;
+            this.CheckIfMetaPropertiesChanged();
+        }
     }
 
     /// <summary>

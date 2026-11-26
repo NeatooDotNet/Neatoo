@@ -46,7 +46,7 @@ public BusyStateDemo(IValidateBaseServices<BusyStateDemo> services) : base(servi
         t => t.Name);
 }
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/StateProperties.cs#L356-L369' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-async-action' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/StateProperties.cs#L358-L371' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-async-action' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 An async action that needs the server does not take a repository or any other server-only service — it calls an injected `[Remote, Execute]` command delegate, exactly as the async validation rule under "Custom Rule Classes" does. Rule code runs on the client too.

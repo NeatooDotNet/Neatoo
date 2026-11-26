@@ -141,7 +141,7 @@ public async Task InvalidChild_MakesParentInvalid_ButNotSelfInvalid()
 
 ## Form Integration
 
-Use `MudForm` with MudNeatoo components, not `EditForm` with `DataAnnotationsValidator`: the annotations validator knows nothing about `AddValidation`, class-based rules or `PropertyMessages`. Bind the Save button to `IsSavable` — `(IsModified || IsNew) && IsValid && !IsBusy` — so it is enabled for a new entity and disabled while async rules run or while the entity is invalid.
+Use `MudForm` with MudNeatoo components, not `EditForm` with `DataAnnotationsValidator`: the annotations validator knows nothing about `AddValidation`, class-based rules or `PropertyMessages`. Bind the Save button to `IsSavable` — `(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight — so it is enabled for a new entity and disabled while async rules run, while the entity is invalid, and while a save is in flight.
 
 ```razor
 <MudForm>

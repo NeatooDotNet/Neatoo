@@ -53,7 +53,7 @@ public interface IDemoEntity : IEntityRoot
 /// Key points:
 /// - Inherits all ValidateBase capabilities (validation, rules, busy tracking)
 /// - Adds IsNew/IsModified/IsDeleted for persistence state
-/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy
+/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy, with no save in flight
 /// - Save() routes to Insert/Update/Delete based on state
 /// - Child entities cannot save independently: their interface has no Save()
 /// </summary>
@@ -184,7 +184,7 @@ public interface IOrderItemList : IEntityListBase<IOrderItem>
 <sup><a href='/src/Design/Design.Domain/Aggregates/OrderAggregate/IOrderInterfaces.cs#L68-L114' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-aggregate-interfaces' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-**Why this design exists:** `IsSavable` on `EntityBase` is `(IsModified || IsNew) && IsValid && !IsBusy` — it knows nothing about aggregate position, so a modified child *concrete* reports `true`. Developers used `IsSavable` in save cascade logic to decide whether children needed persisting, and reached for `Save()` on a child, which the framework does not support. This caused a real production bug. The fix is not to teach `IsSavable` about children — it is to remove it from the child interface entirely, so the mistake is a compile error. Child entity factory methods (`[Insert]`/`[Update]`) take the child's own row, which only the list's `[Update]` can supply, and entity classes are `internal`, so external callers cannot save children at all.
+**Why this design exists:** `IsSavable` on `EntityBase` is `(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight — it knows nothing about aggregate position, so a modified child *concrete* reports `true`. Developers used `IsSavable` in save cascade logic to decide whether children needed persisting, and reached for `Save()` on a child, which the framework does not support. This caused a real production bug. The fix is not to teach `IsSavable` about children — it is to remove it from the child interface entirely, so the mistake is a compile error. Child entity factory methods (`[Insert]`/`[Update]`) take the child's own row, which only the list's `[Update]` can supply, and entity classes are `internal`, so external callers cannot save children at all.
 
 The concrete `EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`, so it retains `IsSavable` and `Save()` as concrete members. This does not matter because entity classes are `internal` — consumers interact through the public interface, which is the access control mechanism.
 
@@ -414,7 +414,9 @@ Save routing, in order:
 - `IsNew == true` → `[Insert]`
 - otherwise → `[Update]`
 
-`IsModified` is not consulted by routing. `entity.Save()` refuses to call the factory unless `IsSavable` is true — `(IsModified || IsNew) && IsValid && !IsBusy` — and throws `SaveOperationException`; a direct `factory.Save(target)` does not check.
+`IsModified` is not consulted by routing. `entity.Save()` refuses to call the factory unless `IsSavable` is true — `(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight — and throws `SaveOperationException`; a direct `factory.Save(target)` does not check.
+
+While `entity.Save()` runs, the object is not savable again. `IsSavable` is false until the save returns, so a Save button bound to it disables for the length of the save, and a second `Save()` on the same object throws `SaveOperationException` with `SaveFailureReason.SaveInProgress`. A save in flight is its own state, not busy: `IsBusy` and `WaitForTasks()` do not change. A direct `factory.Save(target)` does not come through `entity.Save()` and is not covered.
 
 After successful Insert or Update:
 - `IsModified == false`

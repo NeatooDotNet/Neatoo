@@ -126,7 +126,7 @@ public async Task Fetch_ItemsAreOldAndClean_AggregateNotModified()
 
 ### Save Operations
 
-`IsSavable` is `(IsModified || IsNew) && IsValid && !IsBusy`, available on aggregate roots through `IEntityRoot`. A fetched, untouched entity is not savable; an edit makes it so:
+`IsSavable` is `(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight, available on aggregate roots through `IEntityRoot`. A fetched, untouched entity is not savable; an edit makes it so:
 
 <!-- snippet: skill-is-savable -->
 <a id='snippet-skill-is-savable'></a>

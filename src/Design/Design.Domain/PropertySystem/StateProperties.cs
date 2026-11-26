@@ -245,7 +245,7 @@ internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
     // =========================================================================
     // IsSavable - Can Save() Be Called?
     // =========================================================================
-    // IsSavable = (IsModified || IsNew) && IsValid && !IsBusy
+    // IsSavable = (IsModified || IsNew) && IsValid && !IsBusy, with no save in flight
     //
     // A REASON to persist, and nothing blocking it:
     // - IsModified || IsNew: either it differs from its baseline, or persistence
@@ -254,6 +254,8 @@ internal partial class SaveStateDemo : EntityBase<SaveStateDemo>, ISaveStateDemo
     //   not because it pretends to hold unsaved edits.
     // - IsValid: All validation must pass
     // - !IsBusy: No async operations in progress
+    // - No save in flight: while Save() runs, the object is not savable again, so
+    //   a bound Save button disables for the length of the save (D39)
     //
     // The formula says nothing about position in an aggregate. A modified child
     // CONCRETE reports IsSavable == true; what stops a consumer saving it is

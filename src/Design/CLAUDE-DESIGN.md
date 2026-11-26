@@ -57,7 +57,7 @@ public interface IOrderItem : IEntityBase { ... }
 
 The concrete `EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`, so it retains `IsSavable` and `Save()` as concrete members. This does not matter because entity classes should be `internal` -- consumers interact through the interface, which is the access control mechanism.
 
-**Why this design exists:** `IsSavable` on `EntityBase` is `(IsModified || IsNew) && IsValid && !IsBusy` -- it knows nothing about aggregate position, so a modified child *concrete* reports `IsSavable == true`. Exposing it on a child interface is a trap in both directions: developers used `IsSavable` in save cascade logic to decide whether children needed persisting, and reached for `Save()` on a child, which the framework does not support. This caused a real production bug (zTreatment). The right fix is not to teach `IsSavable` about children -- it is to remove it from the child interface entirely, so the mistake is a compile error. Child entity factory methods (`[Insert]`/`[Update]`) have signatures that outside consumers cannot fulfill (they often need the parent entity or parent ID). Combined with `internal` on entity classes, external callers cannot save children at all.
+**Why this design exists:** `IsSavable` on `EntityBase` is `(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight -- it knows nothing about aggregate position, so a modified child *concrete* reports `IsSavable == true`. Exposing it on a child interface is a trap in both directions: developers used `IsSavable` in save cascade logic to decide whether children needed persisting, and reached for `Save()` on a child, which the framework does not support. This caused a real production bug (zTreatment). The right fix is not to teach `IsSavable` about children -- it is to remove it from the child interface entirely, so the mistake is a compile error. Child entity factory methods (`[Insert]`/`[Update]`) have signatures that outside consumers cannot fulfill (they often need the parent entity or parent ID). Combined with `internal` on entity classes, external callers cannot save children at all.
 
 **EntityListBase does not expose IsSavable.** Entity lists are never saved on their own; their aggregate root is. Keeping `IsSavable` off `IEntityListBase` is not losing functionality.
 
@@ -337,7 +337,7 @@ When updating Design projects:
 | `IsModified` | EntityBase | Has unsaved changes (includes children) |
 | `IsSelfModified` | EntityBase | This object has changes (excludes children) |
 | `IsDeleted` | EntityBase | Marked for deletion |
-| `IsSavable` | EntityBase (IEntityRoot only) | (IsModified || IsNew) && IsValid && !IsBusy. Only on `IEntityRoot` interface -- not on `IEntityBase` or entity lists |
+| `IsSavable` | EntityBase (IEntityRoot only) | (IsModified || IsNew) && IsValid && !IsBusy, with no save in flight. Only on `IEntityRoot` interface -- not on `IEntityBase` or entity lists |
 | `IsValid` | ValidateBase | All rules pass (includes children) |
 | `IsSelfValid` | ValidateBase | This object's rules pass (excludes children) |
 | `IsBusy` | ValidateBase | The object's running tasks are running: async work in flight on it or below it |

@@ -136,7 +136,7 @@ public interface IDemoEntity : IEntityRoot
 /// Key points:
 /// - Inherits all ValidateBase capabilities (validation, rules, busy tracking)
 /// - Adds IsNew/IsModified/IsDeleted for persistence state
-/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy
+/// - IsSavable = (IsModified || IsNew) &amp;&amp; IsValid &amp;&amp; !IsBusy, with no save in flight
 /// - Save() routes to Insert/Update/Delete based on state
 /// - Child entities cannot save independently: their interface has no Save()
 /// </summary>

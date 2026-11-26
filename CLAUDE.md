@@ -108,7 +108,7 @@ public interface IOrderLine : IEntityBase { ... }
 - `IsNew` - True when object hasn't been persisted yet. Pure routing state (Insert vs Update) -- it does **not** make an object modified, and it never aggregates upward (lists are always `IsNew => false`; a parent ignores its children's `IsNew`).
 - `IsValid` - True when all validation rules pass
 - `IsSelfValid` - True when this object's rules pass (not children)
-- `IsSavable` - True when entity can be saved (`(IsModified || IsNew) && IsValid && !IsBusy`). Says nothing about aggregate position -- a modified child concrete reports `true`. **Only on `IEntityRoot`** -- not on `IEntityBase` or `IEntityListBase`. Child entities and entity lists never expose this property through their interfaces.
+- `IsSavable` - True when entity can be saved (`(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight). Says nothing about aggregate position -- a modified child concrete reports `true`. **Only on `IEntityRoot`** -- not on `IEntityBase` or `IEntityListBase`. Child entities and entity lists never expose this property through their interfaces.
 
 **IsNew vs IsModified (0.31.0).** After `[Create]`: `IsNew=true, IsModified=false, IsSavable=true`. A created object needs inserting but holds no user work, so unsaved-changes guards bound to `IsModified` stay quiet on it. A `[Create]` whose result *is* the user's work opts in with `MarkModified()` in its body -- **not** to make it savable (new objects already are), but to say a guard should speak. Because dirt (never `IsNew`) is what aggregates up a graph, attaching a child to a live parent -- adding to a list, or assigning a new child entity to a property -- marks the child modified so the parent becomes modified and savable.
 

@@ -267,6 +267,7 @@ An entity is savable when it has a reason to persist **and** nothing blocks pers
 - `IsModified || IsNew` — either it differs from its baseline, or persistence doesn't know it yet
 - `IsValid` — all validation rules pass
 - `!IsBusy` — no async operations are in progress
+- no `Save()` of it in flight — a save that has not returned yet cannot be started again
 
 `IsSavable` says nothing about position in an aggregate: a modified child *concrete* reports `true`. What keeps consumers from saving a child is that the child interface has no `IsSavable` and no `Save()`.
 
@@ -386,6 +387,7 @@ Common `SaveFailureReason` values:
 - `NotModified` - Neither modified nor new (nothing to persist)
 - `IsBusy` - Async operations still in progress
 - `NoFactoryMethod` - No Insert/Update/Delete factory method configured
+- `SaveInProgress` - A `Save()` of this object has not returned yet
 
 This design provides clear, actionable feedback when save preconditions are not met, rather than silently failing or persisting invalid state.
 

@@ -551,7 +551,7 @@ Meta-property definitions:
 - **IsSelfValid**: True if this object's properties pass validation (ignores children)
 - **IsBusy**: True while async work is in flight on this object or any child object
 - **PropertyMessages**: All validation messages (this object + children)
-- **IsSavable**: (`IEntityRoot` only) `(IsModified || IsNew) && IsValid && !IsBusy` — a created entity is savable without being modified. Not available on `IEntityBase` (child entity interface) or entity lists
+- **IsSavable**: (`IEntityRoot` only) `(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight — a created entity is savable without being modified. Not available on `IEntityBase` (child entity interface) or entity lists
 
 Meta-properties raise `PropertyChanged` when their values change; a page that subscribes re-renders its save button and validation indicators from them.
 
@@ -670,7 +670,7 @@ See [Parent-Child](parent-child.md) for details on parent-child relationship est
 
 ## Validation During Save
 
-`IsSavable` (on `IEntityRoot`, the aggregate root interface) is `(IsModified || IsNew) && IsValid && !IsBusy`. An invalid entity is not savable, and `entity.Save()` throws `SaveOperationException` when `IsSavable` is false — reaching that exception is a programming error, because the UI binds the Save button to `IsSavable`:
+`IsSavable` (on `IEntityRoot`, the aggregate root interface) is `(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight. An invalid entity is not savable, and `entity.Save()` throws `SaveOperationException` when `IsSavable` is false — reaching that exception is a programming error, because the UI binds the Save button to `IsSavable`:
 
 <!-- snippet: skill-invalid-not-savable -->
 <a id='snippet-skill-invalid-not-savable'></a>
