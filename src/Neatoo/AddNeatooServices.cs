@@ -26,7 +26,7 @@ public static class AddNeatooServicesExtension
                 // Need access to the DI container
                 return services
                         .Where(d => d.ServiceType == type && d.ImplementationType != null)
-                        .Select(d => d.ImplementationType);
+                        .Select(d => d.ImplementationType!);
             };
         });
 
@@ -137,7 +137,7 @@ public static class AddNeatooServicesExtension
     {
         services.AddTransient<I, T>();
         services.AddTransient(
-            provider => (T)provider.GetService<I>());
+            provider => (T)provider.GetRequiredService<I>());
         return services;
     }
 
@@ -145,7 +145,7 @@ public static class AddNeatooServicesExtension
     {
         services.AddScoped<I, T>();
         services.AddScoped(
-            provider => (T)provider.GetService<I>());
+            provider => (T)provider.GetRequiredService<I>());
         return services;
     }
 

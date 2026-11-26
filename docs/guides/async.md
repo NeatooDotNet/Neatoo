@@ -225,7 +225,7 @@ public async Task Save_WithCancelledToken_ThrowsAndLeavesStateUnchanged()
     Assert.IsTrue(entity.IsModified);
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L187-L204' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-cancellation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L209-L226' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Task Coordination in Collections

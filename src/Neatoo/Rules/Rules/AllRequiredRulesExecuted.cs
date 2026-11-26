@@ -6,7 +6,7 @@
 
     public class AllRequiredRulesExecuted : RuleBase<IValidateBase>, IAllRequiredRulesExecuted
     {
-        private IEnumerable<IRequiredRule> requiredRules;
+        private IEnumerable<IRequiredRule> requiredRules = [];
 
         public AllRequiredRulesExecuted()
         {

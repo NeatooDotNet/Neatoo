@@ -90,7 +90,7 @@ internal sealed class OrderEditViewModel
             return;  // invalid, or nothing changed; the summary shows why
         }
 
-        Order = (IOrder)await Order.Save();  // reassign: Save returns a new instance
+        Order = (IOrder?)await Order.Save();  // reassign: Save returns a new instance, or null when the factory returns none
     }
 }
 #endregion

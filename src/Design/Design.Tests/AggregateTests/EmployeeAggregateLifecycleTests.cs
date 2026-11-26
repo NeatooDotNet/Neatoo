@@ -109,7 +109,7 @@ public class EmployeeAggregateLifecycleTests
         Assert.IsTrue(employee.IsSavable, "Modified aggregate should be savable");
 
         // Act
-        employee = (IEmployee)await employee.Save();
+        employee = (IEmployee)(await employee.Save())!;
 
         // Assert - each path fires exactly once, and the untouched child
         // routes nowhere. The row read is the one stored under the employee's
@@ -164,7 +164,7 @@ public class EmployeeAggregateLifecycleTests
         Assert.IsTrue(employee.IsSavable, "Valid new aggregate should be savable");
 
         // Act
-        employee = (IEmployee)await employee.Save();
+        employee = (IEmployee)(await employee.Save())!;
 
         // Assert - routing
         Assert.AreEqual(1, _repository.AddedRows.Count, "The employee row is added exactly once");

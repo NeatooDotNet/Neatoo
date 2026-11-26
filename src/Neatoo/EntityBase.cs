@@ -68,14 +68,16 @@ public interface IEntityRoot : IEntityBase
     bool IsSavable { get; }
 
     /// <summary>
-    /// Persists the entity asynchronously using the configured factory.
+    /// Persists the entity asynchronously using the configured factory. Returns the saved
+    /// instance, or <c>null</c> when the factory returns none (an entity that is both new and deleted).
     /// </summary>
-    Task<IEntityBase> Save();
+    Task<IEntityBase?> Save();
 
     /// <summary>
-    /// Persists the entity asynchronously with cancellation support.
+    /// Persists the entity asynchronously with cancellation support. Returns the saved
+    /// instance, or <c>null</c> when the factory returns none.
     /// </summary>
-    Task<IEntityBase> Save(CancellationToken token);
+    Task<IEntityBase?> Save(CancellationToken token);
 }
 
 /// <summary>
@@ -455,7 +457,7 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// </remarks>
     protected override Task ChildNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        if (eventArgs.InnerEventArgs == null && eventArgs.Property.Value is IEntityBase child)
+        if (eventArgs.InnerEventArgs == null && eventArgs.Property?.Value is IEntityBase child)
         {
             child.UnDelete();
         }
@@ -466,7 +468,7 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// <summary>
     /// Persists this entity asynchronously using the configured factory.
     /// </summary>
-    /// <returns>A task that represents the asynchronous save operation. The task result contains the saved entity.</returns>
+    /// <returns>The saved instance, or <c>null</c> when the factory returns none: an entity that is both new and deleted runs no operation. On the client the saved instance is a new object; keep it in place of this one.</returns>
     /// <exception cref="Exception">Thrown when the entity is not savable, is a child entity, is invalid, not modified, or is busy.</exception>
     /// <remarks>
     /// <para>
@@ -501,10 +503,15 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// the cause and try again.
     /// DID NOT DO THIS: cover a save started by calling the factory's Save directly. That call
     /// does not come through here.
+    /// DESIGN DECISION: Save() returns what the factory returns, and says in its type that this
+    /// can be nothing (D42). An entity that is both new and deleted has nothing to persist, so
+    /// the factory runs no operation and returns no instance.
+    /// DID NOT DO THIS: declare the result non-null and throw when the factory returns nothing.
+    /// Deleting an entity that was never saved, then saving, is not an error.
     /// </para>
     /// </remarks>
     /// <exception cref="SaveOperationException">Thrown when the entity cannot be saved; see <see cref="SaveOperationException.Reason"/>.</exception>
-    public virtual async Task<IEntityBase> Save()
+    public virtual async Task<IEntityBase?> Save()
     {
         if (this._saveInFlight)
         {
@@ -540,7 +547,7 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
 
         try
         {
-            return (IEntityBase)await this.Factory.Save((T)this);
+            return (IEntityBase?)await this.Factory.Save((T)this);
         }
         finally
         {
@@ -553,7 +560,7 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// Saves the entity to persistence with cancellation support.
     /// </summary>
     /// <param name="token">Cancellation token to cancel the operation before persistence begins.</param>
-    /// <returns>A task that represents the asynchronous save operation. The task result is the saved entity.</returns>
+    /// <returns>The saved instance, or <c>null</c> when the factory returns none; see <see cref="Save()"/>.</returns>
     /// <remarks>
     /// <para>
     /// Cancellation is only checked before persistence operations begin. Once Insert, Update, or Delete
@@ -566,7 +573,7 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// </remarks>
     /// <exception cref="OperationCanceledException">Thrown when cancellation is requested before persistence begins.</exception>
     /// <exception cref="SaveOperationException">Thrown when the entity cannot be saved due to validation or state issues.</exception>
-    public virtual async Task<IEntityBase> Save(CancellationToken token)
+    public virtual async Task<IEntityBase?> Save(CancellationToken token)
     {
         // Wait for any pending async operations with cancellation support
         await this.WaitForTasks(token);

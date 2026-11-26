@@ -482,10 +482,11 @@ public class ValidateProperty<T> : IValidateProperty<T>, IValidatePropertyIntern
 
     public Task RunRules(RunRulesFlag runRules = Neatoo.RunRulesFlag.All, CancellationToken? token = null) { return this.ValueIsValidateBase?.RunRules(runRules, token) ?? Task.CompletedTask; }
 
+    // rm.Message!: SetMessagesForRule stores only messages that have text.
     [JsonIgnore]
     public IReadOnlyCollection<IPropertyMessage> PropertyMessages =>
                             this.ValueIsValidateBase != null ? this.ValueIsValidateBase.PropertyMessages :
-                                                                this.RuleMessages.Select(rm => new PropertyMessage(this, rm.Message)).ToList().AsReadOnly();
+                                                                this.RuleMessages.Select(rm => new PropertyMessage(this, rm.Message!)).ToList().AsReadOnly();
 
     [JsonIgnore]
     public List<IRuleMessage> RuleMessages { get; set; } = new List<IRuleMessage>();

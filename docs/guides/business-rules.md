@@ -595,7 +595,7 @@ public async Task Fetch_RecomputesTheRootsDerivedValues_LoadsTheChildAggregates_
     await order.WaitForTasks();
     Assert.IsTrue(order.HasUnschedulableTasks);
     Assert.IsTrue(order.IsOverBudget);
-    order = (IWorkOrder)await order.Save();
+    order = (IWorkOrder)(await order.Save())!;
 
     var fetched = (await _factory.Fetch(order.Id))!;
 

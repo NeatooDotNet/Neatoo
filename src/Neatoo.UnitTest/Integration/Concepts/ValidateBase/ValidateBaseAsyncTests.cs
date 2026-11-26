@@ -39,7 +39,7 @@ public class ValidateBaseAsyncTests
     }
 
     private List<(bool isValid, bool isBusy, string propertyName)> propertyChanged = new();
-    private void Validate_PropertyChanged(object sender, PropertyChangedEventArgs e)
+    private void Validate_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if(e.PropertyName == "IsBusy" && propertyChanged.Any(p => p.propertyName == "IsBusy"))
         {

@@ -1174,7 +1174,7 @@ public async Task Save_TaskMapsRootStateIntoItsRow_ThroughParent()
     await order.WaitForTasks();
     Assert.IsTrue(order.IsSavable);
 
-    order = (IWorkOrder)await order.Save();
+    order = (IWorkOrder)(await order.Save())!;
 
     var saved = _repository.Store[row.Id];
     Assert.AreEqual("Approved", saved.Status);

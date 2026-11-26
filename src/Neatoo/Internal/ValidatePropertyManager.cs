@@ -240,7 +240,7 @@ public class ValidatePropertyManager<P> : IValidatePropertyManager<P>, IValidate
         this.Property_PropertyChanged(sender, e);
     }
 
-    public P? this[string propertyName]
+    public P this[string propertyName]
     {
         get => this.GetProperty(propertyName);
     }

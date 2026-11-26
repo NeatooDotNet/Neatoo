@@ -19,7 +19,7 @@ Each of these compiles and fails at run time. An analyzer for each is planned; u
 
 | The mistake | What happens | Instead |
 |---|---|---|
-| The result of `Save()` is discarded | The caller keeps the instance it sent; on the client that is a stale copy | `order = (IOrder)await order.Save();` — the save handler in [blazor.md](blazor.md#the-save-handler) |
+| The result of `Save()` is discarded | The caller keeps the instance it sent; on the client that is a stale copy | `order = (IOrder)(await order.Save())!;` — the save handler in [blazor.md](blazor.md#the-save-handler) |
 | A rule triggers on a collection reference (`t => t.Items`) | It fires only when the list is reassigned, never when an item's property changes | Trigger on the child property path (`t => t.Items![0].LineTotal`) — [domain-logic-placement.md, Pattern 6](domain-logic-placement.md#pattern-6-child-property-triggers--parent-child-reactivity-via-addaction) |
 | `LoadValue` inside a factory operation | Nothing it does is needed: the operation is already paused, and plain assignment is the baseline | Assign the property — [properties.md](properties.md#assignment-inside-and-outside-a-factory-operation) |
 

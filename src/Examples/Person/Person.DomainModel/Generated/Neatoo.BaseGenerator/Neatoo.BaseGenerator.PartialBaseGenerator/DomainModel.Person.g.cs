@@ -47,7 +47,7 @@ namespace DomainModel
 
         public partial Guid? Id
         {
-            get => IdProperty.Value;
+            get => IdProperty.Value!;
             set
             {
                 IdProperty.Value = value;
@@ -62,7 +62,7 @@ namespace DomainModel
 
         public partial string? FirstName
         {
-            get => FirstNameProperty.Value;
+            get => FirstNameProperty.Value!;
             set
             {
                 FirstNameProperty.Value = value;
@@ -77,7 +77,7 @@ namespace DomainModel
 
         public partial string? LastName
         {
-            get => LastNameProperty.Value;
+            get => LastNameProperty.Value!;
             set
             {
                 LastNameProperty.Value = value;
@@ -92,7 +92,7 @@ namespace DomainModel
 
         public partial string? Email
         {
-            get => EmailProperty.Value;
+            get => EmailProperty.Value!;
             set
             {
                 EmailProperty.Value = value;
@@ -107,7 +107,7 @@ namespace DomainModel
 
         public partial string? Notes
         {
-            get => NotesProperty.Value;
+            get => NotesProperty.Value!;
             set
             {
                 NotesProperty.Value = value;
@@ -122,7 +122,7 @@ namespace DomainModel
 
         public partial EntityLazyLoad<IPersonPhoneList> PersonPhoneList
         {
-            get => PersonPhoneListProperty.Value;
+            get => PersonPhoneListProperty.Value!;
             set
             {
                 PersonPhoneListProperty.LoadValue(value);

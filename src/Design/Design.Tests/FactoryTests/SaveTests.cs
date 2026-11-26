@@ -112,7 +112,7 @@ public class SaveTests
         entity.Amount = 42m;
 
         // Act
-        entity = (ISaveDemo)await entity.Save();
+        entity = (ISaveDemo)(await entity.Save())!;
 
         // Assert - routed to Insert, and the generated Id landed on the entity
         Assert.AreEqual(1, _repository.InsertedIds.Count, "Should route to Insert");
@@ -135,7 +135,7 @@ public class SaveTests
         entity.Name = "Updated Name";
 
         // Act
-        entity = (ISaveDemo)await entity.Save();
+        entity = (ISaveDemo)(await entity.Save())!;
 
         // Assert
         CollectionAssert.AreEqual(new[] { 7 }, _repository.UpdatedIds, "Should route to Update");
@@ -164,6 +164,28 @@ public class SaveTests
     }
     #endregion
 
+    #region skill-save-new-and-deleted-returns-null
+    [TestMethod]
+    public async Task Save_WhenNewAndDeleted_RunsNoOperationAndReturnsNull()
+    {
+        // Created, never saved, then deleted: there is nothing to persist. The
+        // factory runs no operation and returns no instance, which is why Save()
+        // is declared to return a nullable instance.
+        var entity = _factory.Create();
+        entity.Name = "Never saved";
+        entity.Delete();
+
+        Assert.IsTrue(entity.IsNew);
+        Assert.IsTrue(entity.IsDeleted);
+
+        var saved = await entity.Save();
+
+        Assert.IsNull(saved);
+        Assert.AreEqual(0, _repository.InsertedIds.Count);
+        Assert.AreEqual(0, _repository.DeletedIds.Count);
+    }
+    #endregion
+
     #region skill-new-untouched-still-inserts
     [TestMethod]
     public async Task Save_WhenNewAndUntouched_StillInserts()
@@ -177,7 +199,7 @@ public class SaveTests
         Assert.IsTrue(entity.IsNew);
         Assert.IsTrue(entity.IsSavable);
 
-        entity = (ISaveDemo)await entity.Save();
+        entity = (ISaveDemo)(await entity.Save())!;
 
         Assert.AreEqual(1, _repository.InsertedIds.Count);
         Assert.IsFalse(entity.IsNew);

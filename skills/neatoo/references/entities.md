@@ -53,13 +53,13 @@ public async Task Save_WhenNewAndUntouched_StillInserts()
     Assert.IsTrue(entity.IsNew);
     Assert.IsTrue(entity.IsSavable);
 
-    entity = (ISaveDemo)await entity.Save();
+    entity = (ISaveDemo)(await entity.Save())!;
 
     Assert.AreEqual(1, _repository.InsertedIds.Count);
     Assert.IsFalse(entity.IsNew);
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L167-L185' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-new-untouched-still-inserts' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L189-L207' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-new-untouched-still-inserts' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Fetching Existing Entities
@@ -146,7 +146,7 @@ public async Task Save_WhenNew_RoutesToInsert_AndMarksOld()
     entity.Amount = 42m;
 
     // Act
-    entity = (ISaveDemo)await entity.Save();
+    entity = (ISaveDemo)(await entity.Save())!;
 
     // Assert - routed to Insert, and the generated Id landed on the entity
     Assert.AreEqual(1, _repository.InsertedIds.Count, "Should route to Insert");
@@ -482,7 +482,7 @@ public async Task Save_WithCancelledToken_ThrowsAndLeavesStateUnchanged()
     Assert.IsTrue(entity.IsModified);
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L187-L204' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-cancellation' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L209-L226' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-cancellation' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Parent and Root
@@ -713,7 +713,7 @@ public async Task AddChildToFetchedOrder_SaveTwice_InsertsOnce()
     order.Items!.Add(added);
     await order.WaitForTasks();
 
-    order = (IOrder)await order.Save();
+    order = (IOrder)(await order.Save())!;
     var stored = _orderRepo.Store[seeded.Id];
     Assert.AreEqual(3, stored.Items.Count, "The added child gets one new row");
 
@@ -736,7 +736,7 @@ public async Task AddChildToFetchedOrder_SaveTwice_InsertsOnce()
 1. **Only the aggregate root is saved externally** — external code calls `root.Save()` (or `factory.Save(root)`), never a child factory.
 2. **Each level delegates to the next factory** — root to list factory, list to child factory. The root never inspects or writes child rows.
 3. **One flush per root save** — the root calls `SaveChanges()` once, after the list is done.
-4. **Keep the returned instance** — on the client, `Save()` returns the saved instance; assign it back: `order = (IOrder)await order.Save();`.
+4. **Keep the returned instance** — on the client, `Save()` returns the saved instance; assign it back: `order = (IOrder)(await order.Save())!;`. The result is nullable: an entity that is both new and deleted is discarded without a call, and `Save()` returns `null`.
 
 ### Anti-Pattern: Parent Writes Child Rows Inline
 

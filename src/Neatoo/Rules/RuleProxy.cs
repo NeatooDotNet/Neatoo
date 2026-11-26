@@ -3,7 +3,7 @@
 public class RuleProxy
 {
 
-    public IValidateBase Target { get; set; }
+    public IValidateBase? Target { get; set; }
 
 
 }

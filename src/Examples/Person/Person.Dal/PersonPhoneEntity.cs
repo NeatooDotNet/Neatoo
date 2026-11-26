@@ -13,5 +13,5 @@ public class PersonPhoneEntity
     [Required]
     public int PhoneType { get; set; }
 
-    public virtual PersonEntity PersonEntity { get; set; }
+    public virtual PersonEntity PersonEntity { get; set; } = null!;
 }

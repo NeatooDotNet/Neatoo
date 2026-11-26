@@ -8,6 +8,8 @@
     <IsTestProject>true</IsTestProject>
     <AnalysisMode>default</AnalysisMode>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Nullable warnings in this test code are suppressed here, not in Directory.Build.props. -->
+    <NoWarn>$(NoWarn);CS8602</NoWarn>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>

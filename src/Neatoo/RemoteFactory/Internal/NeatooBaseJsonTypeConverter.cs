@@ -40,16 +40,16 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
     [UnconditionalSuppressMessage("Trimming", "IL2075",
         Justification = "GetProperties() on runtime concrete types for property discovery during deserialization. " +
         "Properties are preserved by [DynamicallyAccessedMembers] on entity type parameters.")]
-    public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.StartObject)
         {
             throw new JsonException();
         }
 
-        List<PropertyInfo> editProperties = null;
-        List<PropertyInfo> lazyLoadProperties = null;
-        var editBaseType = typeToConvert;
+        List<PropertyInfo>? editProperties = null;
+        List<PropertyInfo>? lazyLoadProperties = null;
+        Type? editBaseType = typeToConvert;
 
 
 
@@ -60,7 +60,8 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
         {
             if (reader.TokenType == JsonTokenType.EndObject)
             {
-                if (!string.IsNullOrEmpty(id))
+                // An object with no $type was never created; there is nothing to register.
+                if (!string.IsNullOrEmpty(id) && result != null)
                 {
                     NeatooReferenceResolver.Current?.AddReference(id, result);
                 }
@@ -81,7 +82,8 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
 
             if (propertyName == "$ref")
             {
-                var refId = reader.GetString();
+                var refId = reader.GetString()
+                    ?? throw new JsonException("$ref has no value.");
 
                 var resolver = NeatooReferenceResolver.Current
                     ?? throw new JsonException("Cannot resolve $ref: no NeatooReferenceResolver is active. Use NeatooJsonSerializer for deserialization.");
@@ -97,13 +99,15 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
             }
             else if (propertyName == "$type")
             {
-                var fullName = reader.GetString();
-                trace.EntityReadResolvingType(fullName ?? "null");
+                var fullName = reader.GetString()
+                    ?? throw new JsonException("$type has no value.");
+                trace.EntityReadResolvingType(fullName);
                 var typeSw = Stopwatch.StartNew();
-                var type = this.localAssemblies.FindType(fullName);
-                result = (T)this.scope.GetService(type);
+                var type = this.localAssemblies.FindType(fullName)
+                    ?? throw new JsonException($"Could not load {fullName}");
+                result = (T?)this.scope.GetService(type);
                 typeSw.Stop();
-                trace.EntityReadTypeResolved(fullName ?? "null", typeSw.ElapsedMilliseconds);
+                trace.EntityReadTypeResolved(fullName, typeSw.ElapsedMilliseconds);
 
                 if(result == null)
                 {
@@ -161,7 +165,7 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                     if (reader.TokenType == JsonTokenType.EndArray) { break; }
                     if (reader.TokenType != JsonTokenType.StartObject) { throw new JsonException(); }
 
-                    Type propertyType = default;
+                    Type? propertyType = null;
                     string? pName = null;
                     while (reader.Read())
                     {
@@ -175,21 +179,30 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
                         if (propertyName == "$name")
                         {
                             pName = reader.GetString();
-                            propertyType = result.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).First(p => p.Name == pName).PropertyType;
+                            var owner = result
+                                ?? throw new JsonException("PropertyManager appeared before the object's $type.");
+                            propertyType = owner.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).First(p => p.Name == pName).PropertyType;
                         }
                         else if (propertyName == "$type")
                         {
-                            var typeFullName = reader.GetString();
+                            var typeFullName = reader.GetString()
+                                ?? throw new JsonException("A property's $type has no value.");
 
                             // Assume a ValidateProperty<T> of some derivation
-                            var pType = this.localAssemblies.FindType(typeFullName);
-                            propertyType = pType.MakeGenericType(propertyType);
+                            var pType = this.localAssemblies.FindType(typeFullName)
+                                ?? throw new JsonException($"Could not load {typeFullName}");
+                            var valueType = propertyType
+                                ?? throw new JsonException("A property's $type appeared before its $name.");
+                            propertyType = pType.MakeGenericType(valueType);
 
                         }
                         else if (propertyName == "$value")
                         {
                             var propSw = Stopwatch.StartNew();
-                            var property = DeserializeValidateProperty(ref reader, propertyType, options);
+                            var property = DeserializeValidateProperty(
+                                ref reader,
+                                propertyType ?? throw new JsonException("A property's $value appeared before its $type."),
+                                options);
                             propSw.Stop();
                             trace.EntityReadPropertyDeserialized(pName ?? "?", propSw.ElapsedMilliseconds);
                             list.Add(property);
@@ -346,7 +359,10 @@ public class NeatooBaseJsonTypeConverter<T> : JsonConverter<T>
         "IEntityMetaProperties and IFactorySaveMeta are framework interfaces always preserved.")]
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
-        var writeTypeName = value?.GetType().Name ?? "null";
+        // System.Text.Json writes a null itself and never passes one here.
+        ArgumentNullException.ThrowIfNull(value);
+
+        var writeTypeName = value.GetType().Name;
         trace.EntityWriteStarted(writeTypeName);
         var writeSw = Stopwatch.StartNew();
 

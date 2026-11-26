@@ -99,7 +99,7 @@ internal sealed class WorkOrderViewModel
             return;
         }
 
-        WorkOrder = (IWorkOrder)await WorkOrder.Save();
+        WorkOrder = (IWorkOrder?)await WorkOrder.Save();
     }
 }
 #endregion

@@ -47,7 +47,7 @@ public class PayGradeTests
             employee.Grade = new PayGrade("C");   // a promotion: code assigns a value from the set
             await employee.WaitForTasks();
 
-            var saved = (IEmployee)await employee.Save();
+            var saved = (IEmployee)(await employee.Save())!;
             var fetched = await factory.Fetch(saved.Id);
 
             Assert.AreEqual(2, link.Calls, "save and fetch both crossed");

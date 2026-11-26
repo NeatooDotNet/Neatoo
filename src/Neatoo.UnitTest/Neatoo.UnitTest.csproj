@@ -10,6 +10,8 @@
 		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 		<!-- NEATOO011 (await the write in a rule or verb) is off here: these tests exercise the forking setter on purpose, and existing tests are not rewritten to the awaited form. -->
 		<NoWarn>$(NoWarn);NEATOO011</NoWarn>
+		<!-- Nullable warnings in this test code are suppressed here, not in Directory.Build.props. -->
+		<NoWarn>$(NoWarn);CS8600;CS8602;CS8603;CS8604;CS8618;CS8766</NoWarn>
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 	</PropertyGroup>

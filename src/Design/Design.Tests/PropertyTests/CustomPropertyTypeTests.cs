@@ -34,7 +34,7 @@ public class CustomPropertyTypeTests
     private IMeasurementDemo RoundTrip(IMeasurementDemo entity)
     {
         var serializer = _scope.GetRequiredService<NeatooJsonSerializer>();
-        return serializer.Deserialize<IMeasurementDemo>(serializer.Serialize(entity));
+        return serializer.Deserialize<IMeasurementDemo>(serializer.Serialize(entity))!;
     }
 
     [TestMethod]

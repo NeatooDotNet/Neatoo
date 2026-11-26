@@ -46,7 +46,7 @@ public class DualUseEntityTests
         Assert.IsFalse(entity.IsNew);
         entity.City = "Shelbyville";
 
-        entity = (IDualUseEntity)await entity.Save();
+        entity = (IDualUseEntity)(await entity.Save())!;
 
         Assert.AreEqual("Shelbyville", _repository.Store[id].City);
         Assert.IsFalse(entity.IsModified);

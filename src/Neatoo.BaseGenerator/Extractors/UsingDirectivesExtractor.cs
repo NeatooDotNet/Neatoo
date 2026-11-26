@@ -26,7 +26,7 @@ internal static class UsingDirectivesExtractor
 
         // Add parent class static using if nested
         var parentClassUsing = GetParentClassStaticUsing(classDeclaration, namespaceName);
-        if (!string.IsNullOrEmpty(parentClassUsing))
+        if (parentClassUsing is { Length: > 0 })
         {
             usingDirectives.Add(parentClassUsing);
         }

@@ -65,6 +65,12 @@ public class PropertyInfoList<[DynamicallyAccessedMembers(DynamicallyAccessedMem
 
             } while (type != null && (!type.IsGenericType || !neatooTypes.Contains(type.GetGenericTypeDefinition())));
 
+            // The walk ran off the top: T is outside the Neatoo hierarchy and has no ObjectInvalid to find.
+            if (type == null)
+            {
+                return;
+            }
+
             do
             {
                 var objProp = type.GetProperty(nameof(IValidateBaseInternal.ObjectInvalid), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public | BindingFlags.DeclaredOnly);

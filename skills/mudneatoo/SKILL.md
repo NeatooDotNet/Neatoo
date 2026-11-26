@@ -631,7 +631,7 @@ internal sealed class EmployeeEditViewModel
             return;
         }
 
-        Employee = (IEmployee)await Employee.Save();
+        Employee = (IEmployee?)await Employee.Save();
         IsEditing = false;
     }
 }

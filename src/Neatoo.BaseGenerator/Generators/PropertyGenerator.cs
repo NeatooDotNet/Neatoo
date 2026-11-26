@@ -32,11 +32,11 @@ internal static class PropertyGenerator
                 if (property.HasSetter)
                 {
                     var setterPrefix = property.SetterAccessibility != null ? $"{property.SetterAccessibility} " : "";
-                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; {setterPrefix}set {{ {property.Name}Property.LoadValue(value); }} }}");
+                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value!; {setterPrefix}set {{ {property.Name}Property.LoadValue(value); }} }}");
                 }
                 else
                 {
-                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; }}");
+                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value!; }}");
                 }
             }
             else
@@ -47,22 +47,22 @@ internal static class PropertyGenerator
                     if (property.SetterAccessibility == "private")
                     {
                         // Private setter: use SetPrivateValue to bypass IsReadOnly check
-                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; private set {{ {property.Name}Property.SetPrivateValue(value); }} }}");
+                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value!; private set {{ {property.Name}Property.SetPrivateValue(value); }} }}");
                     }
                     else if (property.SetterAccessibility != null)
                     {
                         // Protected/internal setter: use .Value = (same as public, with accessor)
-                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; {property.SetterAccessibility} set {{ {property.Name}Property.Value = value; }} }}");
+                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value!; {property.SetterAccessibility} set {{ {property.Name}Property.Value = value; }} }}");
                     }
                     else
                     {
                         // Public setter: unchanged
-                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; set {{ {property.Name}Property.Value = value; }} }}");
+                        sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value!; set {{ {property.Name}Property.Value = value; }} }}");
                     }
                 }
                 else
                 {
-                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value; }}");
+                    sb.AppendLine($"{property.Accessibility} partial {property.Type} {property.Name} {{ get => {property.Name}Property.Value!; }}");
                 }
 
                 GenerateAwaitableSetter(sb, property);
