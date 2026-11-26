@@ -121,7 +121,7 @@ internal partial class DemoInputModelList : ValidateListBase<IDemoInputModel>, I
 The collection automatically tracks:
 - **IsValid** - True if all items in the collection are valid
 - **IsSelfValid** - Always true (lists have no self validation)
-- **IsBusy** - True if any item is busy executing async operations
+- **IsBusy** - True if any item is busy executing async operations; read from the items each time, not cached
 - **PropertyMessages** - Aggregated validation messages from all items
 
 ## EntityListBase
@@ -294,10 +294,11 @@ During insertion, ValidateListBase:
 - Sets the item's Parent property to the list's Parent (establishing aggregate boundary)
 - Subscribes to property change events for validation state updates
 - Updates cached validation state incrementally (O(1) for becoming invalid)
+- Accepts an item that is busy. The list's parent takes up the item's in-flight work: the parent is busy, and its `WaitForTasks()` waits, until that work finishes
 
 EntityListBase additionally enforces aggregate boundary rules:
 - Validates the item isn't already in the collection (no duplicates)
-- Prevents adding busy items (with async validation rules running)
+- Refuses an item that is busy (`IsBusy == true`, async work in flight) with an `InvalidOperationException`
 - Prevents cross-aggregate moves (item.Root must match list.Root or be null)
 - Marks the added item modified, new or existing, so the parent becomes modified
 - Sets the item's ContainingList property (tracks which collection owns the entity, and routes the child's `Delete()` through the list)
@@ -431,10 +432,11 @@ public async Task Add_InvalidItem_ListBecomesInvalid()
 <sup><a href='/src/Design/Design.Tests/BaseClassTests/ValidateListBaseTests.cs#L60-L79' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-list-validity-aggregates' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The collection uses cached meta properties with incremental updates:
+The collection caches `IsValid` and updates it incrementally:
 - When a child becomes invalid, IsValid immediately becomes false (O(1))
 - When a child becomes valid and collection is invalid, checks if any other child is still invalid (O(k) where k = first invalid)
-- Same algorithm applies to IsBusy state
+
+`IsBusy` is not cached. It is read from the items each time, and each item reads its own running tasks, so the value cannot go stale. A list holds no running tasks of its own: an item's work is registered with the object that owns the list, so that object's `WaitForTasks()` is the wait that covers the list. `WaitForTasks()` on the list itself awaits the items that are busy.
 
 `RunRules()` on a list runs every item's rules. Inside an operation it computes the derived values the operation needs; from outside, it is the developer's choice to validate — an object a `[Create]` handed back unvalidated, which the caller decides to validate before showing it (the test below is that case). It is never the routine step before reading `IsValid`:
 
@@ -702,7 +704,7 @@ Collections respect the IsPaused flag during deserialization and factory operati
 - Factory operation complete (FactoryComplete, after entity state finalized)
 
 **After resuming:**
-- Cached validation state (IsValid, IsBusy) is recalculated from all items
+- Cached validation state (IsValid) is recalculated from all items; IsBusy needs no recalculation because it is always read from the items
 - Cached modification state (IsModified) is recalculated from all items and DeletedList
 - No rules run; change tracking resumes for future modifications
 

@@ -55,11 +55,6 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     private bool _cachedIsValid = true;
 
     /// <summary>
-    /// Cached value for IsBusy property. Updated incrementally when child state changes.
-    /// </summary>
-    private bool _cachedIsBusy = false;
-
-    /// <summary>
     /// Initializes a new instance of the <see cref="ValidateListBase{I}"/> class.
     /// </summary>
     public ValidateListBase()
@@ -75,7 +70,11 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// <summary>
     /// Gets a value indicating whether any item in the list is currently busy executing asynchronous operations.
     /// </summary>
-    public bool IsBusy => _cachedIsBusy;
+    /// <remarks>
+    /// Read from the items, each of which reads its own running tasks. Nothing is cached, so
+    /// nothing can go stale.
+    /// </remarks>
+    public bool IsBusy => this.Any(item => item.IsBusy);
 
     /// <summary>
     /// Gets a value indicating whether all items in the list are valid.
@@ -142,16 +141,17 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
         item.PropertyChanged += this._PropertyChanged;
         item.NeatooPropertyChanged += this._NeatooPropertyChanged;
 
+        if (item.IsBusy)
+        {
+            this._busyMayHaveChanged = true;
+        }
+
         // Update cached meta properties based on new item's state
         if (!this.IsPaused)
         {
             if (!item.IsValid)
             {
                 _cachedIsValid = false;
-            }
-            if (item.IsBusy)
-            {
-                _cachedIsBusy = true;
             }
         }
 
@@ -168,9 +168,9 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// <param name="index">The zero-based index of the item to remove.</param>
     protected override void RemoveItem(int index)
     {
+        this._busyMayHaveChanged = true;
         var item = this[index];
         bool wasItemInvalid = !item.IsValid;
-        bool wasItemBusy = item.IsBusy;
 
         item.PropertyChanged -= this._PropertyChanged;
         item.NeatooPropertyChanged -= this._NeatooPropertyChanged;
@@ -184,11 +184,6 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
             if (wasItemInvalid && !_cachedIsValid)
             {
                 _cachedIsValid = !this.Any(c => !c.IsValid);
-            }
-            // If removed item was busy and we were busy, check if still busy
-            if (wasItemBusy && _cachedIsBusy)
-            {
-                _cachedIsBusy = this.Any(c => c.IsBusy);
             }
         }
 
@@ -206,9 +201,9 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// <param name="item">The new item to set at the specified index.</param>
     protected override void SetItem(int index, I item)
     {
+        this._busyMayHaveChanged = true;
         var oldItem = this[index];
         bool oldWasInvalid = !oldItem.IsValid;
-        bool oldWasBusy = oldItem.IsBusy;
 
         // Unsubscribe from old item
         oldItem.PropertyChanged -= this._PropertyChanged;
@@ -222,6 +217,11 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
         // Subscribe to new item
         item.PropertyChanged += this._PropertyChanged;
         item.NeatooPropertyChanged += this._NeatooPropertyChanged;
+
+        if (item.IsBusy)
+        {
+            this._busyMayHaveChanged = true;
+        }
 
         // Update cached meta properties based on state transition
         if (!this.IsPaused)
@@ -237,18 +237,6 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
                 // Old was invalid, new is valid → may need to recalculate
                 _cachedIsValid = !this.Any(c => !c.IsValid);
             }
-
-            // Handle IsBusy transition
-            if (item.IsBusy)
-            {
-                // New item is busy → we're definitely busy
-                _cachedIsBusy = true;
-            }
-            else if (oldWasBusy && _cachedIsBusy)
-            {
-                // Old was busy, new is not busy → may need to recalculate
-                _cachedIsBusy = this.Any(c => c.IsBusy);
-            }
         }
 
         this.CheckIfMetaPropertiesChanged();
@@ -260,6 +248,7 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// </summary>
     protected override void ClearItems()
     {
+        this._busyMayHaveChanged = true;
         // Unsubscribe from all items
         foreach (var item in this)
         {
@@ -271,7 +260,6 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
 
         // Reset cache to empty list state
         _cachedIsValid = true;
-        _cachedIsBusy = false;
 
         this.RaiseNeatooPropertyChanged(new NeatooPropertyChangedEventArgs(nameof(this.Count), this));
 
@@ -340,7 +328,7 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// <returns>A task representing the asynchronous event invocation.</returns>
     protected virtual Task RaiseNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
     {
-        return this.NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
+        return this.NeatooPropertyChanged.InvokeAll(eventArgs);
     }
 
     /// <summary>
@@ -369,6 +357,11 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// <param name="e">The event arguments containing the property name.</param>
     protected virtual void HandlePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(IValidateMetaProperties.IsBusy))
+        {
+            this._busyMayHaveChanged = true;
+        }
+
         if (sender is IValidateBase child)
         {
             // Handle IsValid changes
@@ -386,23 +379,6 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
                     _cachedIsValid = !this.Any(c => !c.IsValid);
                 }
                 // else: child became valid, we were already valid → no-op
-            }
-
-            // Handle IsBusy changes
-            if (e.PropertyName == nameof(IValidateMetaProperties.IsBusy))
-            {
-                if (child.IsBusy)
-                {
-                    // Child BECAME busy → we're definitely busy now (O(1))
-                    _cachedIsBusy = true;
-                }
-                else if (_cachedIsBusy)
-                {
-                    // Child BECAME not busy, and we were busy
-                    // Check if any other child is still busy (O(k) where k = first busy)
-                    _cachedIsBusy = this.Any(c => c.IsBusy);
-                }
-                // else: child became not busy, we were already not busy → no-op
             }
         }
 
@@ -438,9 +414,29 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     {
         RaiseIfChanged(this.MetaState.IsValid, this.IsValid, nameof(this.IsValid));
         RaiseIfChanged(this.MetaState.IsSelfValid, this.IsSelfValid, nameof(this.IsSelfValid));
-        RaiseIfChanged(this.MetaState.IsBusy, this.IsBusy, nameof(this.IsBusy));
+        RaiseIfChanged(this.MetaState.IsBusy, this.BusyForChangeDetection(), nameof(this.IsBusy));
 
         this.ResetMetaState();
+    }
+
+    // True when something has happened that can change whether an item is busy: an item said
+    // so, or the items themselves changed. Starts true so the first check reads the items.
+    private bool _busyMayHaveChanged = true;
+
+    /// <summary>
+    /// Busy, for deciding whether to raise the list's IsBusy notification. It reads the items
+    /// only when one of them may have changed; otherwise it is the last reading.
+    /// </summary>
+    /// <remarks>
+    /// DESIGN DECISION: <see cref="IsBusy"/> itself always reads the items, so its value is never
+    /// stale. Only this check, which runs on every notification from every item, skips the read
+    /// when nothing that could change busy has happened. Reading the items there each time made
+    /// one edit in a list of 20,000 cost a hundred times more.
+    /// DID NOT DO THIS: answer IsBusy from a flag kept up to date by notifications.
+    /// </remarks>
+    private bool BusyForChangeDetection()
+    {
+        return this._busyMayHaveChanged ? this.IsBusy : this.MetaState.IsBusy;
     }
 
     /// <summary>
@@ -449,41 +445,51 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
     /// </summary>
     protected virtual void ResetMetaState()
     {
-        this.MetaState = (this.IsValid, this.IsSelfValid, this.IsBusy);
+        this.MetaState = (this.IsValid, this.IsSelfValid, this.BusyForChangeDetection());
+        this._busyMayHaveChanged = false;
     }
 
     /// <summary>
-    /// Waits for all pending asynchronous tasks in the collection to complete.
-    /// Continues waiting until no items report being busy.
+    /// Waits for the items' work in flight to finish.
     /// </summary>
-    /// <returns>A task that completes when all items have finished their pending operations.</returns>
-    public async Task WaitForTasks()
+    /// <returns>A task that completes when no item has work in flight.</returns>
+    /// <remarks>
+    /// DESIGN DECISION: await the items' own waits, and go round again only while one of them
+    /// had something left to await, because finishing work can start more. A list holds no
+    /// running tasks of its own: its items' work is registered with the object that owns the
+    /// list, and that object's wait is the one that counts.
+    /// DID NOT DO THIS: loop while an item reports busy. A busy flag gives nothing to await.
+    /// </remarks>
+    public Task WaitForTasks()
     {
-        var busyTask = this.FirstOrDefault(x => x.IsBusy)?.WaitForTasks();
-
-        while (busyTask != null)
-        {
-            await busyTask;
-            busyTask = this.FirstOrDefault(x => x.IsBusy)?.WaitForTasks();
-        }
+        return this.WaitForItems(static item => item.WaitForTasks());
     }
 
     /// <summary>
-    /// Waits for all pending asynchronous tasks in the collection to complete, with cancellation support.
-    /// Continues waiting until no items report being busy or cancellation is requested.
+    /// Waits for the items' work in flight to finish, with cancellation of the wait.
     /// </summary>
-    /// <param name="token">Cancellation token to cancel the wait operation.</param>
-    /// <returns>A task that completes when all items have finished their pending operations or cancellation is requested.</returns>
+    /// <param name="token">Cancels the wait. The work runs to completion.</param>
+    /// <returns>A task that completes when no item has work in flight or cancellation is requested.</returns>
     /// <exception cref="OperationCanceledException">Thrown when the cancellation token is triggered.</exception>
-    public async Task WaitForTasks(CancellationToken token)
+    public Task WaitForTasks(CancellationToken token)
     {
-        var busyTask = this.FirstOrDefault(x => x.IsBusy)?.WaitForTasks(token);
+        return this.WaitForItems(item => item.WaitForTasks(token));
+    }
 
-        while (busyTask != null)
+    private async Task WaitForItems(Func<I, Task> waitFor)
+    {
+        while (true)
         {
-            token.ThrowIfCancellationRequested();
-            await busyTask;
-            busyTask = this.FirstOrDefault(x => x.IsBusy)?.WaitForTasks(token);
+            // Only busy items are asked: asking an idle item for its wait would take the fault
+            // its tracker holds for its own first wait.
+            var waits = this.Where(item => item.IsBusy).Select(waitFor).ToList();
+
+            if (waits.All(wait => wait.IsCompletedSuccessfully))
+            {
+                return;
+            }
+
+            await Task.WhenAll(waits);
         }
     }
 
@@ -551,7 +557,7 @@ public abstract class ValidateListBase<I> : ObservableCollection<I>, INeatooObje
 
             // Recalculate cached values since items may have changed while paused
             _cachedIsValid = !this.Any(c => !c.IsValid);
-            _cachedIsBusy = this.Any(c => c.IsBusy);
+            this._busyMayHaveChanged = true;
 
             this.ResetMetaState();
         }

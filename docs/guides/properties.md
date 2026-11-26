@@ -62,13 +62,12 @@ For each partial property the generator emits a protected accessor over the prop
 //       set
 //       {
 //           NameProperty.Value = value;
-//           if (!NameProperty.Task.IsCompleted)
-//           {
-//               Parent?.AddChildTask(NameProperty.Task);
-//               RunningTasks.AddTask(NameProperty.Task);
-//           }
 //       }
 //   }
+//
+// The setter only writes. The property reports the write to the object that owns it, which
+// registers it in its running tasks and its parents', so a write made any other way (SetName,
+// or SetValue on the property, which is what a UI input calls) is tracked the same.
 //
 //   protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
 //   {
@@ -79,14 +78,14 @@ For each partial property the generator emits a protected accessor over the prop
 // tracking); the accessor is still typed IValidateProperty<T>. The real output
 // is on disk under Generated/Neatoo.BaseGenerator/.
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L24-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-generated-property-shape' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L24-L55' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-generated-property-shape' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The PropertyManager stores the actual property instances and handles validation, events, and state management behind the scenes.
 
 ## Property Objects and Meta-Properties
 
-Each partial property is backed by its own property object, reached through the indexer `entity["Name"]`. It is not just a backing field: it owns the value, `IsValid`, `IsSelfValid`, `PropertyMessages`, `IsBusy`, `IsReadOnly`, and (on an entity) `IsModified`. This is what makes per-field UI feedback possible — an error icon next to the field that is broken, a spinner on just the field running an async lookup. The entity's `IsValid` and `IsBusy` are aggregations of its properties and children, so per-property tracking is the source of truth.
+Each partial property is backed by its own property object, reached through the indexer `entity["Name"]`. It is not just a backing field: it owns the value, `IsValid`, `IsSelfValid`, `PropertyMessages`, `IsBusy`, `IsReadOnly`, and (on an entity) `IsModified`. This is what makes per-field UI feedback possible — an error icon next to the field that is broken, a spinner on just the field running an async lookup. The entity's `IsValid` aggregates its properties and children. The entity's `IsBusy` is read from its own running tasks, to which each property reports the work it starts (see [Task Tracking and IsBusy](#task-tracking-and-isbusy)).
 
 <!-- snippet: skill-property-metadata -->
 <a id='snippet-skill-property-metadata'></a>
@@ -124,8 +123,9 @@ Property objects provide:
 - **Value**: Get or set the property value (cast to `IValidateProperty<T>` for the typed value)
 - **IsValid / IsSelfValid**: Validation state of the property (and of a child object it holds)
 - **PropertyMessages**: Validation messages for this property
-- **IsBusy**: True while an async rule is running for this property
-- **Task**: The pending rule task (`Task.CompletedTask` when not busy)
+- **IsBusy**: True while this property has work in flight (a write to it, or an async rule that names it as a trigger), or while a child object it holds is busy
+- **Task**: The task of the most recent write to the property: its whole rule cascade (a completed task when that write started nothing async)
+- **WaitForTasks()**: Completes when the property has no work in flight and a child object it holds has finished its own
 - **IsReadOnly**: True for a `private set` property or after `MarkReadOnly()`
 - **RunRules**: Runs the rules of a child object held by the property (a no-op for a scalar)
 
@@ -232,6 +232,8 @@ NeatooPropertyChanged provides:
 
 The Reason distinguishes user edits (which trigger rules) from loads (which only establish structure).
 
+Every subscriber's task is awaited as part of the write that raised the event, so a write is not over while any handler of it is still running. A handler must therefore not await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on any object the write is registered with, which is the object that was written to and every parent of it up to the root: it would be waiting for itself. That includes the handler's own object, and a child whose change it is hearing. See [Awaiting inside a NeatooPropertyChanged handler](async.md#awaiting-inside-a-neatoopropertychanged-handler).
+
 ## ChangeReason: UserEdit vs Load
 
 Application code sets a value one way: the property setter. What it does depends on whether the object is paused.
@@ -304,7 +306,7 @@ internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDem
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L173-L203' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-private-set-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L167-L197' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-private-set-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The rule recomputes the value whenever an input changes, and `PropertyChanged` fires for the computed property, so a bound UI refreshes:
@@ -494,7 +496,11 @@ Never use it inside a factory operation: the operation is already paused, and di
 
 ## Task Tracking and IsBusy
 
-Async rule tasks are tracked per property, not per entity. When one field triggers an async lookup, only that field is busy — the rest of the form remains editable. The entity's `IsBusy` aggregates its properties, and `WaitForTasks()` awaits them:
+Async work is held as tasks at two levels, and nothing about it is kept as a flag.
+
+A property holds its own work in flight: each write to it, and each async rule run that names it as a trigger. That is per-field busy. When one field triggers an async lookup, that field's property object is busy and the others are not, so the rest of the form remains editable. It is what an input binds.
+
+An entity holds the tasks of everything in flight on it and below it. Each property reports a write it starts to the entity that owns it, whoever made the write: the property setter, the generated `Set{Name}`, or `SetValue` on the property object. The entity registers the task in its running tasks and passes it up through `Parent`. The entity's `IsBusy` is "its running tasks are running", and `WaitForTasks()` awaits them:
 
 <!-- snippet: skill-is-busy -->
 <a id='snippet-skill-is-busy'></a>
@@ -518,11 +524,12 @@ public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 <!-- endSnippet -->
 
 Task tracking behavior:
-- Property setters that trigger async rules return immediately but track the task
-- `IsBusy` is true while tasks are pending
-- `Task` on the property object holds the pending task (or `Task.CompletedTask` when not busy)
-- Tasks propagate to the parent for aggregate-level coordination
-- `WaitForTasks()` awaits all property tasks; await it before reading `IsValid` or saving
+- A property setter that triggers async rules returns immediately; the write's task is held by the property and registered with the entity
+- The property object's `IsBusy` is true while the property has work in flight, or while a child object it holds is busy. Two overlapping writes are two tasks, so the property stays busy until both finish
+- `Task` on the property object is the task of its most recent write (a completed task when that write started nothing async)
+- The entity passes each task up through `Parent`, so the aggregate root's `IsBusy` and `WaitForTasks()` cover the whole graph
+- `WaitForTasks()` on the entity awaits its running tasks and nothing else; await it before reading `IsValid` or saving. When it completes, nothing on the entity or below it is busy
+- A rule that throws is a finished task, so it leaves neither the property nor the entity busy (see the [Async guide](async.md#error-handling))
 
 ## Property Validation Integration
 

@@ -50,13 +50,12 @@ For each partial property the generator emits a protected accessor over the prop
 //       set
 //       {
 //           NameProperty.Value = value;
-//           if (!NameProperty.Task.IsCompleted)
-//           {
-//               Parent?.AddChildTask(NameProperty.Task);
-//               RunningTasks.AddTask(NameProperty.Task);
-//           }
 //       }
 //   }
+//
+// The setter only writes. The property reports the write to the object that owns it, which
+// registers it in its running tasks and its parents', so a write made any other way (SetName,
+// or SetValue on the property, which is what a UI input calls) is tracked the same.
 //
 //   protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
 //   {
@@ -67,7 +66,7 @@ For each partial property the generator emits a protected accessor over the prop
 // tracking); the accessor is still typed IValidateProperty<T>. The real output
 // is on disk under Generated/Neatoo.BaseGenerator/.
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L24-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-generated-property-shape' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L24-L55' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-generated-property-shape' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## Object-Per-Property Architecture
@@ -79,7 +78,7 @@ Each partial property declared on a Neatoo class is backed by its own `IValidate
 | `Value` | `IValidateProperty` | The current property value |
 | `IsValid` | `IValidateProperty` | Whether this property passes its validation rules |
 | `PropertyMessages` | `IValidateProperty` | Validation error messages for this property |
-| `IsBusy` | `IValidateProperty` | Whether an async rule is currently running for this property |
+| `IsBusy` | `IValidateProperty` | Whether this property has work in flight (a write to it, or an async rule that names it as a trigger), or the child object it holds is busy. Per field: what an input binds |
 | `IsReadOnly` | `IValidateProperty` | Whether this property is read-only (true for `private set` properties, or after `MarkReadOnly()` is called at runtime) |
 | `IsModified` | `IEntityProperty` only | Whether this property has been changed (EntityBase properties only, not ValidateBase) |
 
@@ -179,7 +178,7 @@ internal partial class PrivateSetPropertyDemo : EntityBase<PrivateSetPropertyDem
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L173-L203' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-private-set-property' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L167-L197' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-private-set-property' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ### Generated Behavior
@@ -333,6 +332,8 @@ public async Task NeatooPropertyChanged_CarriesFullNameAndReason()
 <sup><a href='/src/Design/Design.Tests/PropertyTests/PropertyBasicsTests.cs#L62-L81' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-neatoo-property-changed' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
+Every subscriber's task is awaited as part of the write that raised the event: a write is not over while any handler of it is still running. The write is registered with the object that was written to and with every parent up to the root. So a `NeatooPropertyChanged` handler never awaits `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on any of those objects: its own object, a parent, or a child whose change it is hearing. Each of those calls waits for the object's running tasks. (`RunRules(propertyName)` does not, which is why a list's `HandleNeatooPropertyChanged` may await it on siblings.) The handler is part of the work that wait covers, so it would wait for itself: the wait never completes and the object stays busy, with no exception. The handler above returns; the test waits outside it. A UI event handler (a button click) is not part of a write and waits freely.
+
 ## Assignment Inside and Outside a Factory Operation
 
 Application code sets a value one way: the property setter. What it does depends on whether the object is paused.
@@ -470,6 +471,7 @@ internal sealed class PlausibleEntityServices<[DynamicallyAccessedMembers(Dynami
     public IEntityPropertyManager EntityPropertyManager => _inner.EntityPropertyManager;
     public IFactorySave<T>? Factory => _inner.Factory;
     public IRuleManager<T> CreateRuleManager(T target) => _inner.CreateRuleManager(target);
+    public IAsyncTasks CreateAsyncTasks() => _inner.CreateAsyncTasks();
 }
 
 /// <summary>
@@ -491,7 +493,7 @@ internal partial class MeasurementDemo : EntityBase<MeasurementDemo>, IMeasureme
     public void Create() { }
 }
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/CustomPropertyType.cs#L135-L178' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-custom-property-services' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/CustomPropertyType.cs#L135-L179' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-custom-property-services' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The custom `IPropertyFactory<T>.Create<TProperty>` returns the subclass for the properties it cares about and defers the rest to the wrapped factory. (`ValidateBaseServices<T>` does resolve `IPropertyFactory<T>` from DI, so a closed registration works for `ValidateBase`.)

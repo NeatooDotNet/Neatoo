@@ -3045,250 +3045,6 @@ partial class UniquePhoneNumberRuleTests
 
 		}
 
-		/// <summary>Tracks and configures behavior for AddChildTask(System.Threading.Tasks.Task task).</summary>
-		public sealed class IPerson_AddChildTaskInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
-		{
-			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Neatoo.IValidateBase? _source;
-
-			/// <summary>Callback delegate for AddChildTask(System.Threading.Tasks.Task task).</summary>
-			public delegate void AddChildTaskDelegate(global::System.Threading.Tasks.Task task);
-
-			public IPerson_AddChildTaskInterceptor() : base("AddChildTask") { }
-
-			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
-			{
-				var typedArgs = (global::System.Threading.Tasks.Task)args!;
-				((AddChildTaskDelegate)del)(typedArgs);
-			}
-			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
-			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
-			{
-				if (tracking is AddChildTaskImpl impl) impl.RecordArg((global::System.Threading.Tasks.Task)args!);
-			}
-			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (global::System.Threading.Tasks.Task)args!;
-
-			private global::System.Threading.Tasks.Task? _unconfiguredLastArg;
-
-			/// <summary>Last argument from the most recently called registration.</summary>
-			public global::System.Threading.Tasks.Task? LastArg
-			{
-				get
-				{
-					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is AddChildTaskImpl cb) return cb.LastArg;
-					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is AddChildTaskImpl sb) return sb.LastArg;
-					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
-				}
-			}
-
-			/// <summary>Configures callback for AddChildTask(System.Threading.Tasks.Task task).</summary>
-			public AddChildTaskImpl Call(AddChildTaskDelegate callback)
-			{
-				var builder = new AddChildTaskImpl(this);
-				SetupVoidCallback(callback, builder);
-				return builder;
-			}
-
-			/// <summary>Configures parameter matching for AddChildTask(System.Threading.Tasks.Task task). Matches exact values using Object.Equals. Returns chain directly.</summary>
-			public VoidWhenChain When(global::System.Threading.Tasks.Task task)
-			{
-				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-				var matcher = new VoidWhenMatcherPredicateBase((_arg0) => global::System.Object.Equals(_arg0, task));
-				_whenChain.Add(matcher);
-				return new VoidWhenChain(this, matcher);
-			}
-
-			/// <summary>Configures parameter matching for AddChildTask(System.Threading.Tasks.Task task). Matches using predicate. Returns chain directly.</summary>
-			public VoidWhenChain When(global::System.Func<global::System.Threading.Tasks.Task, bool> predicate)
-			{
-				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-				var matcher = new VoidWhenMatcherPredicateBase(predicate);
-				_whenChain.Add(matcher);
-				return new VoidWhenChain(this, matcher);
-			}
-
-			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal void Invoke(bool strict, global::System.Threading.Tasks.Task task)
-			{
-				object? __args = task;
-				if (RunVoidPriorityChain(__args)) return;
-				_unconfiguredCallCount++;
-				RecordUnconfiguredArgs(__args);
-				if (HandleVoidSequenceExhaustedRepeat(strict, __args)) return;
-				#pragma warning disable CS8601, SYSLIB0050
-				if (_source is { } src) { src.AddChildTask(task); return; }
-				#pragma warning restore CS8601, SYSLIB0050
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "AddChildTask");
-				return;
-			}
-
-			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
-			public override void Reset()
-			{
-				base.Reset();
-				_unconfiguredLastArg = default;
-				_source = null;
-			}
-
-			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class AddChildTaskImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task>
-			{
-				private readonly IPerson_AddChildTaskInterceptor _typedInterceptor;
-				private global::System.Threading.Tasks.Task _lastArg = default!;
-
-				public AddChildTaskImpl(IPerson_AddChildTaskInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				public global::System.Threading.Tasks.Task LastArg => _lastArg;
-				public void RecordArg(global::System.Threading.Tasks.Task args) => _lastArg = args;
-
-				public override void Reset() { base.Reset(); _lastArg = default!; }
-
-				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
-				public AddChildTaskSequence ThenCall(AddChildTaskDelegate callback)
-				{
-					ThenCallBase(callback);
-					return new AddChildTaskSequence(_typedInterceptor);
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public AddChildTaskImpl Verifiable() { VerifiableBase(); return this; }
-				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
-				public AddChildTaskImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new AddChildTaskImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodTracking<global::System.Threading.Tasks.Task> global::KnockOff.IMethodTracking<global::System.Threading.Tasks.Task>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking<global::System.Threading.Tasks.Task> global::KnockOff.IMethodTracking<global::System.Threading.Tasks.Task>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task> global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task> global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallSequence<AddChildTaskDelegate> global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task>.ThenCall(AddChildTaskDelegate callback) => ThenCall(callback);
-			}
-
-			/// <summary>Sequence implementation for ThenCall chaining.</summary>
-			public sealed class AddChildTaskSequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<AddChildTaskDelegate>
-			{
-				private readonly IPerson_AddChildTaskInterceptor _typedInterceptor;
-
-				public AddChildTaskSequence(IPerson_AddChildTaskInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public AddChildTaskSequence ThenCall(AddChildTaskDelegate callback)
-				{
-					var tracking = new AddChildTaskImpl(_typedInterceptor);
-					AddToSequence(callback, tracking);
-					return this;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public AddChildTaskSequence Verifiable() { VerifiableBase(); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new AddChildTaskImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodCallSequence<AddChildTaskDelegate> global::KnockOff.IMethodCallSequence<AddChildTaskDelegate>.ThenCall(AddChildTaskDelegate callback) => ThenCall(callback);
-				global::KnockOff.IMethodCallSequence<AddChildTaskDelegate> global::KnockOff.IMethodCallSequence<AddChildTaskDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
-			}
-
-			/// <summary>Predicate-based When matcher for void methods.</summary>
-			private sealed class VoidWhenMatcherPredicateBase : WhenMatcherBase
-			{
-				private readonly global::System.Func<global::System.Threading.Tasks.Task, bool> _predicate;
-				private global::System.Action<global::System.Threading.Tasks.Task>? _callback;
-
-				public VoidWhenMatcherPredicateBase(global::System.Func<global::System.Threading.Tasks.Task, bool> predicate) { _predicate = predicate; }
-
-				public void SetCallback(global::System.Action<global::System.Threading.Tasks.Task> callback) { _callback = callback; }
-
-				public override bool Matches(object? args) => _predicate((global::System.Threading.Tasks.Task)args!);
-				public override void Execute(object? args) { _callback?.Invoke((global::System.Threading.Tasks.Task)args!); }
-				public override object? ExecuteReturn(object? args) { Execute(args); return null; }
-				public override bool IsTerminal => false;
-			}
-
-			/// <summary>Terminal always-matching callback matcher for void methods.</summary>
-			private sealed class VoidWhenMatcherCallBase : WhenMatcherBase
-			{
-				private readonly global::System.Action<global::System.Threading.Tasks.Task> _callback;
-
-				public VoidWhenMatcherCallBase(global::System.Action<global::System.Threading.Tasks.Task> callback) { _callback = callback; }
-
-				public override bool Matches(object? args) => true;
-				public override void Execute(object? args) { _callback((global::System.Threading.Tasks.Task)args!); }
-				public override object? ExecuteReturn(object? args) { Execute(args); return null; }
-				public override bool IsTerminal => true;
-			}
-
-			/// <summary>Terminal no-op matcher for ThenNone() on void When chains.</summary>
-			private sealed class VoidWhenMatcherNoneBase : WhenMatcherBase
-			{
-				public override bool Matches(object? args) => false;
-				public override void Execute(object? args) { }
-				public override object? ExecuteReturn(object? args) => null;
-				public override bool IsTerminal => true;
-			}
-
-			/// <summary>Void When chain implementation with Call, ThenWhen, ThenCall, ThenNone, verification support.</summary>
-			public sealed class VoidWhenChain : VoidWhenChainBase
-			{
-				private readonly IPerson_AddChildTaskInterceptor _typedInterceptor;
-				private readonly VoidWhenMatcherPredicateBase? _typedMatcher;
-
-				public VoidWhenChain(IPerson_AddChildTaskInterceptor interceptor, WhenMatcherBase matcher) : base(interceptor, matcher)
-				{
-					_typedInterceptor = interceptor;
-					_typedMatcher = matcher as VoidWhenMatcherPredicateBase;
-				}
-
-				/// <summary>Sets an optional callback to invoke when this matcher matches.</summary>
-				public VoidWhenChain Call(AddChildTaskDelegate callback)
-				{
-					_typedMatcher?.SetCallback((_arg) => callback(_arg));
-					return this;
-				}
-
-				/// <summary>Adds another matcher with exact value matching.</summary>
-				public VoidWhenChain ThenWhen(global::System.Threading.Tasks.Task task)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					var matcher = new VoidWhenMatcherPredicateBase((_arg0) => global::System.Object.Equals(_arg0, task));
-					_typedInterceptor._whenChain.Add(matcher);
-					return new VoidWhenChain(_typedInterceptor, matcher);
-				}
-
-				/// <summary>Adds another matcher with predicate matching.</summary>
-				public VoidWhenChain ThenWhen(global::System.Func<global::System.Threading.Tasks.Task, bool> predicate)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					var matcher = new VoidWhenMatcherPredicateBase(predicate);
-					_typedInterceptor._whenChain.Add(matcher);
-					return new VoidWhenChain(_typedInterceptor, matcher);
-				}
-
-				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
-				public VoidWhenChain ThenCall(AddChildTaskDelegate callback)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					_typedInterceptor._whenChain.Add(new VoidWhenMatcherCallBase((_arg) => callback(_arg)));
-					return this;
-				}
-
-				/// <summary>Closes chain with no matcher.</summary>
-				public VoidWhenChain ThenNone() { AddTerminalMatcher(new VoidWhenMatcherNoneBase()); return this; }
-
-				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
-				public VoidWhenChain Verifiable() { VerifiableBase(); return this; }
-			}
-
-		}
-
 		/// <summary>Tracks and configures behavior for WaitForTasks (overloaded).</summary>
 		public sealed class IPerson_WaitForTasksInterceptor
 		{
@@ -5756,9 +5512,6 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for TryGetProperty.</summary>
 			public IPerson_TryGetPropertyInterceptor TryGetProperty { get; } = new();
 
-			/// <summary>Interceptor for AddChildTask.</summary>
-			public IPerson_AddChildTaskInterceptor AddChildTask { get; } = new();
-
 			/// <summary>Interceptor for WaitForTasks.</summary>
 			public IPerson_WaitForTasksInterceptor WaitForTasks { get; } = new();
 
@@ -5885,11 +5638,6 @@ partial class UniquePhoneNumberRuleTests
 			bool global::Neatoo.IValidateBase.TryGetProperty(string propertyName, out global::Neatoo.IValidateProperty validateProperty)
 			{
 				return TryGetProperty.Invoke(Strict, propertyName, out validateProperty);
-			}
-
-			void global::Neatoo.IValidateBase.AddChildTask(global::System.Threading.Tasks.Task task)
-			{
-				AddChildTask.Invoke(Strict, task);
 			}
 
 			global::Neatoo.IValidateBase? global::Neatoo.IValidateBase.Parent
@@ -6041,7 +5789,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = source;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
-				AddChildTask._source = source;
 				WaitForTasks._source = source;
 				RunRules._source = source;
 				ClearAllMessages._source = source;
@@ -6082,7 +5829,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = source;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
-				AddChildTask._source = source;
 				WaitForTasks._source = source;
 				RunRules._source = source;
 				ClearAllMessages._source = source;
@@ -6123,7 +5869,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = source;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
-				AddChildTask._source = source;
 				WaitForTasks._source = source;
 				RunRules._source = source;
 				ClearAllMessages._source = source;
@@ -6164,7 +5909,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
-				AddChildTask._source = source;
 				WaitForTasks._source = source;
 				RunRules._source = source;
 				ClearAllMessages._source = source;
@@ -6205,7 +5949,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = null;
 				RunRules._source = null;
 				ClearAllMessages._source = null;
@@ -6246,7 +5989,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = null;
 				RunRules._source = null;
 				ClearAllMessages._source = null;
@@ -6287,7 +6029,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = null;
 				RunRules._source = null;
 				ClearAllMessages._source = null;
@@ -6328,7 +6069,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = source;
 				RunRules._source = source;
 				ClearAllMessages._source = source;
@@ -6369,7 +6109,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = null;
 				RunRules._source = null;
 				ClearAllMessages._source = null;
@@ -6410,7 +6149,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = null;
 				RunRules._source = null;
 				ClearAllMessages._source = null;
@@ -6453,7 +6191,6 @@ partial class UniquePhoneNumberRuleTests
 				if (UnDelete.CheckVerification() is { } undeleteFailure) failures.Add(undeleteFailure);
 				if (GetProperty.CheckVerification() is { } getpropertyFailure) failures.Add(getpropertyFailure);
 				if (TryGetProperty.CheckVerification() is { } trygetpropertyFailure) failures.Add(trygetpropertyFailure);
-				if (AddChildTask.CheckVerification() is { } addchildtaskFailure) failures.Add(addchildtaskFailure);
 				if (WaitForTasks.CheckVerification() is { } waitfortasksFailure) failures.Add(waitfortasksFailure);
 				if (RunRules.CheckVerification() is { } runrulesFailure) failures.Add(runrulesFailure);
 				if (ClearAllMessages.CheckVerification() is { } clearallmessagesFailure) failures.Add(clearallmessagesFailure);
@@ -6501,7 +6238,6 @@ partial class UniquePhoneNumberRuleTests
 				if (UnDelete.CheckVerificationAll() is { } undeleteFailure) failures.Add(undeleteFailure);
 				if (GetProperty.CheckVerificationAll() is { } getpropertyFailure) failures.Add(getpropertyFailure);
 				if (TryGetProperty.CheckVerificationAll() is { } trygetpropertyFailure) failures.Add(trygetpropertyFailure);
-				if (AddChildTask.CheckVerificationAll() is { } addchildtaskFailure) failures.Add(addchildtaskFailure);
 				if (WaitForTasks.CheckVerificationAll() is { } waitfortasksFailure) failures.Add(waitfortasksFailure);
 				if (RunRules.CheckVerificationAll() is { } runrulesFailure) failures.Add(runrulesFailure);
 				if (ClearAllMessages.CheckVerificationAll() is { } clearallmessagesFailure) failures.Add(clearallmessagesFailure);
@@ -13962,250 +13698,6 @@ partial class UniquePhoneNumberRuleTests
 
 		}
 
-		/// <summary>Tracks and configures behavior for AddChildTask(System.Threading.Tasks.Task task).</summary>
-		public sealed class IPersonPhone_AddChildTaskInterceptor : global::KnockOff.Interceptors.MethodInterceptorRuntime
-		{
-			/// <summary>Source object to delegate to when no callback is configured.</summary>
-			internal global::Neatoo.IValidateBase? _source;
-
-			/// <summary>Callback delegate for AddChildTask(System.Threading.Tasks.Task task).</summary>
-			public delegate void AddChildTaskDelegate(global::System.Threading.Tasks.Task task);
-
-			public IPersonPhone_AddChildTaskInterceptor() : base("AddChildTask") { }
-
-			protected override void InvokeVoidDelegate(global::System.Delegate del, object? args)
-			{
-				var typedArgs = (global::System.Threading.Tasks.Task)args!;
-				((AddChildTaskDelegate)del)(typedArgs);
-			}
-			protected override object? InvokeDelegate(global::System.Delegate del, object? args) { InvokeVoidDelegate(del, args); return null; }
-			protected override void RecordArgs(object? args, MethodCallBuilderBase tracking)
-			{
-				if (tracking is AddChildTaskImpl impl) impl.RecordArg((global::System.Threading.Tasks.Task)args!);
-			}
-			protected override void RecordUnconfiguredArgs(object? args) => _unconfiguredLastArg = (global::System.Threading.Tasks.Task)args!;
-
-			private global::System.Threading.Tasks.Task? _unconfiguredLastArg;
-
-			/// <summary>Last argument from the most recently called registration.</summary>
-			public global::System.Threading.Tasks.Task? LastArg
-			{
-				get
-				{
-					if ((_callTracking?._callCount ?? 0) > 0 && _callTracking is AddChildTaskImpl cb) return cb.LastArg;
-					if (_sequence != null) for (int i = _sequence.Count - 1; i >= 0; i--) if (_sequence[i].Tracking._callCount > 0 && _sequence[i].Tracking is AddChildTaskImpl sb) return sb.LastArg;
-					return _unconfiguredCallCount > 0 ? _unconfiguredLastArg : default;
-				}
-			}
-
-			/// <summary>Configures callback for AddChildTask(System.Threading.Tasks.Task task).</summary>
-			public AddChildTaskImpl Call(AddChildTaskDelegate callback)
-			{
-				var builder = new AddChildTaskImpl(this);
-				SetupVoidCallback(callback, builder);
-				return builder;
-			}
-
-			/// <summary>Configures parameter matching for AddChildTask(System.Threading.Tasks.Task task). Matches exact values using Object.Equals. Returns chain directly.</summary>
-			public VoidWhenChain When(global::System.Threading.Tasks.Task task)
-			{
-				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-				var matcher = new VoidWhenMatcherPredicateBase((_arg0) => global::System.Object.Equals(_arg0, task));
-				_whenChain.Add(matcher);
-				return new VoidWhenChain(this, matcher);
-			}
-
-			/// <summary>Configures parameter matching for AddChildTask(System.Threading.Tasks.Task task). Matches using predicate. Returns chain directly.</summary>
-			public VoidWhenChain When(global::System.Func<global::System.Threading.Tasks.Task, bool> predicate)
-			{
-				_whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-				var matcher = new VoidWhenMatcherPredicateBase(predicate);
-				_whenChain.Add(matcher);
-				return new VoidWhenChain(this, matcher);
-			}
-
-			/// <summary>Invokes the configured callback. Called by explicit interface implementation.</summary>
-			internal void Invoke(bool strict, global::System.Threading.Tasks.Task task)
-			{
-				object? __args = task;
-				if (RunVoidPriorityChain(__args)) return;
-				_unconfiguredCallCount++;
-				RecordUnconfiguredArgs(__args);
-				if (HandleVoidSequenceExhaustedRepeat(strict, __args)) return;
-				#pragma warning disable CS8601, SYSLIB0050
-				if (_source is { } src) { src.AddChildTask(task); return; }
-				#pragma warning restore CS8601, SYSLIB0050
-				if (strict) throw global::KnockOff.StubException.NotConfigured("", "AddChildTask");
-				return;
-			}
-
-			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
-			public override void Reset()
-			{
-				base.Reset();
-				_unconfiguredLastArg = default;
-				_source = null;
-			}
-
-			/// <summary>Builder for callback registration. Supports tracking and lazy elevation to sequence.</summary>
-			public sealed class AddChildTaskImpl : MethodCallBuilderBase, global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task>
-			{
-				private readonly IPersonPhone_AddChildTaskInterceptor _typedInterceptor;
-				private global::System.Threading.Tasks.Task _lastArg = default!;
-
-				public AddChildTaskImpl(IPersonPhone_AddChildTaskInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				public global::System.Threading.Tasks.Task LastArg => _lastArg;
-				public void RecordArg(global::System.Threading.Tasks.Task args) => _lastArg = args;
-
-				public override void Reset() { base.Reset(); _lastArg = default!; }
-
-				/// <summary>Elevates to sequence mode and adds another callback. Returns sequence for further chaining.</summary>
-				public AddChildTaskSequence ThenCall(AddChildTaskDelegate callback)
-				{
-					ThenCallBase(callback);
-					return new AddChildTaskSequence(_typedInterceptor);
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public AddChildTaskImpl Verifiable() { VerifiableBase(); return this; }
-				/// <summary>Marks for verification by Stub.Verify() with Called constraint.</summary>
-				public AddChildTaskImpl Verifiable(global::KnockOff.Called times) { VerifiableBase(times); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new AddChildTaskImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking global::KnockOff.IMethodTracking.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodTracking<global::System.Threading.Tasks.Task> global::KnockOff.IMethodTracking<global::System.Threading.Tasks.Task>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodTracking<global::System.Threading.Tasks.Task> global::KnockOff.IMethodTracking<global::System.Threading.Tasks.Task>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task> global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task> global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task>.Verifiable(global::KnockOff.Called times) => Verifiable(times);
-				global::KnockOff.IMethodCallSequence<AddChildTaskDelegate> global::KnockOff.IMethodCallBuilder<AddChildTaskDelegate, global::System.Threading.Tasks.Task>.ThenCall(AddChildTaskDelegate callback) => ThenCall(callback);
-			}
-
-			/// <summary>Sequence implementation for ThenCall chaining.</summary>
-			public sealed class AddChildTaskSequence : MethodSequenceBase, global::KnockOff.IMethodCallSequence<AddChildTaskDelegate>
-			{
-				private readonly IPersonPhone_AddChildTaskInterceptor _typedInterceptor;
-
-				public AddChildTaskSequence(IPersonPhone_AddChildTaskInterceptor interceptor) : base(interceptor)
-				{
-					_typedInterceptor = interceptor;
-				}
-
-				/// <summary>Adds another callback to the sequence. Each callback runs exactly once.</summary>
-				public AddChildTaskSequence ThenCall(AddChildTaskDelegate callback)
-				{
-					var tracking = new AddChildTaskImpl(_typedInterceptor);
-					AddToSequence(callback, tracking);
-					return this;
-				}
-
-				/// <summary>Marks for verification by Stub.Verify().</summary>
-				public AddChildTaskSequence Verifiable() { VerifiableBase(); return this; }
-
-				protected override MethodCallBuilderBase CreateNextBuilder() => new AddChildTaskImpl(_typedInterceptor);
-
-				global::KnockOff.IMethodCallSequence<AddChildTaskDelegate> global::KnockOff.IMethodCallSequence<AddChildTaskDelegate>.ThenCall(AddChildTaskDelegate callback) => ThenCall(callback);
-				global::KnockOff.IMethodCallSequence<AddChildTaskDelegate> global::KnockOff.IMethodCallSequence<AddChildTaskDelegate>.Verifiable() => Verifiable();
-				global::KnockOff.IMethodSequence global::KnockOff.IMethodSequence.Verifiable() => Verifiable();
-			}
-
-			/// <summary>Predicate-based When matcher for void methods.</summary>
-			private sealed class VoidWhenMatcherPredicateBase : WhenMatcherBase
-			{
-				private readonly global::System.Func<global::System.Threading.Tasks.Task, bool> _predicate;
-				private global::System.Action<global::System.Threading.Tasks.Task>? _callback;
-
-				public VoidWhenMatcherPredicateBase(global::System.Func<global::System.Threading.Tasks.Task, bool> predicate) { _predicate = predicate; }
-
-				public void SetCallback(global::System.Action<global::System.Threading.Tasks.Task> callback) { _callback = callback; }
-
-				public override bool Matches(object? args) => _predicate((global::System.Threading.Tasks.Task)args!);
-				public override void Execute(object? args) { _callback?.Invoke((global::System.Threading.Tasks.Task)args!); }
-				public override object? ExecuteReturn(object? args) { Execute(args); return null; }
-				public override bool IsTerminal => false;
-			}
-
-			/// <summary>Terminal always-matching callback matcher for void methods.</summary>
-			private sealed class VoidWhenMatcherCallBase : WhenMatcherBase
-			{
-				private readonly global::System.Action<global::System.Threading.Tasks.Task> _callback;
-
-				public VoidWhenMatcherCallBase(global::System.Action<global::System.Threading.Tasks.Task> callback) { _callback = callback; }
-
-				public override bool Matches(object? args) => true;
-				public override void Execute(object? args) { _callback((global::System.Threading.Tasks.Task)args!); }
-				public override object? ExecuteReturn(object? args) { Execute(args); return null; }
-				public override bool IsTerminal => true;
-			}
-
-			/// <summary>Terminal no-op matcher for ThenNone() on void When chains.</summary>
-			private sealed class VoidWhenMatcherNoneBase : WhenMatcherBase
-			{
-				public override bool Matches(object? args) => false;
-				public override void Execute(object? args) { }
-				public override object? ExecuteReturn(object? args) => null;
-				public override bool IsTerminal => true;
-			}
-
-			/// <summary>Void When chain implementation with Call, ThenWhen, ThenCall, ThenNone, verification support.</summary>
-			public sealed class VoidWhenChain : VoidWhenChainBase
-			{
-				private readonly IPersonPhone_AddChildTaskInterceptor _typedInterceptor;
-				private readonly VoidWhenMatcherPredicateBase? _typedMatcher;
-
-				public VoidWhenChain(IPersonPhone_AddChildTaskInterceptor interceptor, WhenMatcherBase matcher) : base(interceptor, matcher)
-				{
-					_typedInterceptor = interceptor;
-					_typedMatcher = matcher as VoidWhenMatcherPredicateBase;
-				}
-
-				/// <summary>Sets an optional callback to invoke when this matcher matches.</summary>
-				public VoidWhenChain Call(AddChildTaskDelegate callback)
-				{
-					_typedMatcher?.SetCallback((_arg) => callback(_arg));
-					return this;
-				}
-
-				/// <summary>Adds another matcher with exact value matching.</summary>
-				public VoidWhenChain ThenWhen(global::System.Threading.Tasks.Task task)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					var matcher = new VoidWhenMatcherPredicateBase((_arg0) => global::System.Object.Equals(_arg0, task));
-					_typedInterceptor._whenChain.Add(matcher);
-					return new VoidWhenChain(_typedInterceptor, matcher);
-				}
-
-				/// <summary>Adds another matcher with predicate matching.</summary>
-				public VoidWhenChain ThenWhen(global::System.Func<global::System.Threading.Tasks.Task, bool> predicate)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					var matcher = new VoidWhenMatcherPredicateBase(predicate);
-					_typedInterceptor._whenChain.Add(matcher);
-					return new VoidWhenChain(_typedInterceptor, matcher);
-				}
-
-				/// <summary>Adds an unconditional callback as terminal matcher.</summary>
-				public VoidWhenChain ThenCall(AddChildTaskDelegate callback)
-				{
-					_typedInterceptor._whenChain ??= new global::System.Collections.Generic.List<WhenMatcherBase>();
-					_typedInterceptor._whenChain.Add(new VoidWhenMatcherCallBase((_arg) => callback(_arg)));
-					return this;
-				}
-
-				/// <summary>Closes chain with no matcher.</summary>
-				public VoidWhenChain ThenNone() { AddTerminalMatcher(new VoidWhenMatcherNoneBase()); return this; }
-
-				/// <summary>Marks this When chain for verification by Stub.Verify().</summary>
-				public VoidWhenChain Verifiable() { VerifiableBase(); return this; }
-			}
-
-		}
-
 		/// <summary>Tracks and configures behavior for WaitForTasks (overloaded).</summary>
 		public sealed class IPersonPhone_WaitForTasksInterceptor
 		{
@@ -16655,9 +16147,6 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Interceptor for TryGetProperty.</summary>
 			public IPersonPhone_TryGetPropertyInterceptor TryGetProperty { get; } = new();
 
-			/// <summary>Interceptor for AddChildTask.</summary>
-			public IPersonPhone_AddChildTaskInterceptor AddChildTask { get; } = new();
-
 			/// <summary>Interceptor for WaitForTasks.</summary>
 			public IPersonPhone_WaitForTasksInterceptor WaitForTasks { get; } = new();
 
@@ -16747,11 +16236,6 @@ partial class UniquePhoneNumberRuleTests
 			bool global::Neatoo.IValidateBase.TryGetProperty(string propertyName, out global::Neatoo.IValidateProperty validateProperty)
 			{
 				return TryGetProperty.Invoke(Strict, propertyName, out validateProperty);
-			}
-
-			void global::Neatoo.IValidateBase.AddChildTask(global::System.Threading.Tasks.Task task)
-			{
-				AddChildTask.Invoke(Strict, task);
 			}
 
 			global::Neatoo.IValidateBase? global::Neatoo.IValidateBase.Parent
@@ -16897,7 +16381,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = source;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
-				AddChildTask._source = source;
 				WaitForTasks._source = source;
 				RunRules._source = source;
 				ClearAllMessages._source = source;
@@ -16932,7 +16415,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = source;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
-				AddChildTask._source = source;
 				WaitForTasks._source = source;
 				RunRules._source = source;
 				ClearAllMessages._source = source;
@@ -16967,7 +16449,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = source;
 				TryGetProperty._source = source;
-				AddChildTask._source = source;
 				WaitForTasks._source = source;
 				RunRules._source = source;
 				ClearAllMessages._source = source;
@@ -17002,7 +16483,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = null;
 				RunRules._source = null;
 				ClearAllMessages._source = null;
@@ -17037,7 +16517,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = null;
 				RunRules._source = null;
 				ClearAllMessages._source = null;
@@ -17072,7 +16551,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = null;
 				RunRules._source = null;
 				ClearAllMessages._source = null;
@@ -17107,7 +16585,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = source;
 				RunRules._source = source;
 				ClearAllMessages._source = source;
@@ -17142,7 +16619,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = null;
 				RunRules._source = null;
 				ClearAllMessages._source = null;
@@ -17177,7 +16653,6 @@ partial class UniquePhoneNumberRuleTests
 				UnDelete._source = null;
 				GetProperty._source = null;
 				TryGetProperty._source = null;
-				AddChildTask._source = null;
 				WaitForTasks._source = null;
 				RunRules._source = null;
 				ClearAllMessages._source = null;
@@ -17214,7 +16689,6 @@ partial class UniquePhoneNumberRuleTests
 				if (UnDelete.CheckVerification() is { } undeleteFailure) failures.Add(undeleteFailure);
 				if (GetProperty.CheckVerification() is { } getpropertyFailure) failures.Add(getpropertyFailure);
 				if (TryGetProperty.CheckVerification() is { } trygetpropertyFailure) failures.Add(trygetpropertyFailure);
-				if (AddChildTask.CheckVerification() is { } addchildtaskFailure) failures.Add(addchildtaskFailure);
 				if (WaitForTasks.CheckVerification() is { } waitfortasksFailure) failures.Add(waitfortasksFailure);
 				if (RunRules.CheckVerification() is { } runrulesFailure) failures.Add(runrulesFailure);
 				if (ClearAllMessages.CheckVerification() is { } clearallmessagesFailure) failures.Add(clearallmessagesFailure);
@@ -17256,7 +16730,6 @@ partial class UniquePhoneNumberRuleTests
 				if (UnDelete.CheckVerificationAll() is { } undeleteFailure) failures.Add(undeleteFailure);
 				if (GetProperty.CheckVerificationAll() is { } getpropertyFailure) failures.Add(getpropertyFailure);
 				if (TryGetProperty.CheckVerificationAll() is { } trygetpropertyFailure) failures.Add(trygetpropertyFailure);
-				if (AddChildTask.CheckVerificationAll() is { } addchildtaskFailure) failures.Add(addchildtaskFailure);
 				if (WaitForTasks.CheckVerificationAll() is { } waitfortasksFailure) failures.Add(waitfortasksFailure);
 				if (RunRules.CheckVerificationAll() is { } runrulesFailure) failures.Add(runrulesFailure);
 				if (ClearAllMessages.CheckVerificationAll() is { } clearallmessagesFailure) failures.Add(clearallmessagesFailure);

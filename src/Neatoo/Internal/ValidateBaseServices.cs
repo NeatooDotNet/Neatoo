@@ -16,6 +16,12 @@ public class ValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAccesse
 
     public RuleManagerFactory<T> ruleManagerFactory { get; protected set; }
 
+    /// <summary>
+    /// Creates the task trackers. DI supplies the registered factory; the constructors that
+    /// build their own defaults use the framework's tracker.
+    /// </summary>
+    protected CreateAsyncTasks asyncTasksFactory { get; set; } = static () => new AsyncTasks();
+
     public ValidateBaseServices() : base()
     {
         PropertyInfoList = new PropertyInfoList<T>((System.Reflection.PropertyInfo pi) => new PropertyInfoWrapper(pi));
@@ -73,8 +79,29 @@ public class ValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAccesse
             ?? new NullLogger<T>();
     }
 
+    /// <summary>
+    /// The constructor DI uses: every other constructor's parameters are a subset of this one's,
+    /// and the logger factory is optional, so it is chosen whether or not logging is registered.
+    /// </summary>
+    public ValidateBaseServices(
+        CreateValidatePropertyManager validatePropertyManager,
+        IPropertyInfoList<T> propertyInfoList,
+        IPropertyFactory<T> propertyFactory,
+        RuleManagerFactory<T> createRuleManager,
+        CreateAsyncTasks createAsyncTasks,
+        ILoggerFactory? loggerFactory = null)
+        : this(validatePropertyManager, propertyInfoList, propertyFactory, createRuleManager, loggerFactory)
+    {
+        this.asyncTasksFactory = createAsyncTasks;
+    }
+
     public IRuleManager<T> CreateRuleManager(T target)
     {
         return ruleManagerFactory.CreateRuleManager(target, this.PropertyInfoList);
+    }
+
+    public IAsyncTasks CreateAsyncTasks()
+    {
+        return this.asyncTasksFactory();
     }
 }

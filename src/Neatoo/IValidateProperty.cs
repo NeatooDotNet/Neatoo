@@ -58,18 +58,6 @@ public interface IValidateProperty : INotifyPropertyChanged, INotifyNeatooProper
     void MarkReadOnly();
 
     /// <summary>
-    /// Marks the property as busy with the specified identifier.
-    /// </summary>
-    /// <param name="id">A unique identifier for the busy operation.</param>
-    void AddMarkedBusy(long id);
-
-    /// <summary>
-    /// Removes the busy mark with the specified identifier.
-    /// </summary>
-    /// <param name="id">The identifier of the busy operation to remove.</param>
-    void RemoveMarkedBusy(long id);
-
-    /// <summary>
     /// Sets the value without running any rules or raising the Neatoo event.
     /// </summary>
     /// <remarks>

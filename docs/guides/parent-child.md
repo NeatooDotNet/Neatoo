@@ -141,7 +141,7 @@ public async Task InvalidChild_MakesParentInvalid_ButNotSelfInvalid()
 Cascade behavior:
 - When a child becomes invalid, the parent's `IsValid` becomes false; `IsSelfValid` is unaffected
 - When a child becomes valid again, the parent recalculates `IsValid` from all children
-- `IsBusy` cascades the same way (any busy child makes the parent busy)
+- `IsBusy` reaches the parent through tasks, not through events: a child's work in flight is registered in the parent's running tasks too, so the parent is busy until that work finishes
 - `PropertyMessages` from children are included in the parent's `PropertyMessages`
 - The cascade continues up the `Parent` chain to the aggregate root
 
@@ -386,7 +386,7 @@ Allowed operations:
 
 Prohibited operations:
 - Adding an entity from a different aggregate — throws `InvalidOperationException`; the message names both aggregates and ends "Aggregate boundaries cannot be crossed"
-- Adding an entity while it is busy (`IsBusy == true`)
+- Adding an entity while it is busy (`IsBusy == true`) — an entity list throws `InvalidOperationException`; assigning a busy object to a parent's property throws `ChildObjectBusyException`. A parent therefore never holds a child whose work it was not told of. The one exception is a `ValidateListBase`, which accepts a busy item; its parent then takes up the item's in-flight work
 - Setting `Parent` directly
 
 To move data across aggregates, create a new child in the target aggregate and remove the original from the source — the framework's own exception message says exactly this. The original goes to the source list's `DeletedList`; each root is then saved on its own:

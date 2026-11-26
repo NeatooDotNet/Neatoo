@@ -133,6 +133,22 @@ internal interface IValidatePropertyInternal
     /// Called by ValidateBase.ClearSelfMessages().
     /// </summary>
     void ClearSelfMessages();
+
+    /// <summary>
+    /// Gives the property the tracker that holds its work in flight.
+    /// Called by the property manager when the property enters its bag.
+    /// </summary>
+    /// <param name="tasks">The tracker. A property keeps the first one it is given.</param>
+    /// <param name="reportToOwner">Called with each write the property starts, while it is in flight, so that the object that owns the property registers it.</param>
+    void UseTasks(IAsyncTasks tasks, Action<Task> reportToOwner);
+
+    /// <summary>
+    /// Tracks a task as work in flight on the property, so that it is busy until the task finishes.
+    /// Called by RuleManager with the task of an async rule run that names the property.
+    /// </summary>
+    /// <param name="task">The task to track.</param>
+    /// <returns>A task that completes when the property has accounted for <paramref name="task"/>. The caller awaits it before its own task completes.</returns>
+    Task TrackTask(Task task);
 }
 
 /// <summary>

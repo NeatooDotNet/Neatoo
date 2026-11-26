@@ -374,16 +374,20 @@ internal partial class BusyStateDemo : ValidateBase<BusyStateDemo>, IBusyStateDe
     // =========================================================================
     // IsBusy - Async Operations Tracking
     // =========================================================================
-    // IsBusy = true: Async operations are running.
-    //   - Async validation rules
-    //   - Async action rules
-    //   - Property-level async operations
+    // IsBusy = true: the object's running tasks are running. Every async
+    // operation on the object or below it is a task there, whoever started it:
+    //   - A property write whose rules are async (setter, Set{Name}, SetValue)
+    //   - RunRules, awaited or not
+    //   - A lazy load in progress
+    // Nothing is kept as a busy flag. A property object's IsBusy is per field:
+    // that property has work in flight, or the object it holds is busy.
     //
     // IsBusy affects:
     //   - IsSavable: Cannot save while busy
     //   - UI: Can disable save button, show spinner
     //
-    // WaitForTasks() awaits all pending async operations:
+    // WaitForTasks() awaits the running tasks and nothing else. When it
+    // completes, nothing on the object or below it is busy:
     //   entity.Name = "Test";  // Triggers async rule
     //   // entity.IsBusy might be true here
     //   await entity.WaitForTasks();

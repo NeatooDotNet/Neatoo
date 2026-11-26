@@ -171,19 +171,19 @@ internal partial class ValidationFailureDemo : EntityBase<ValidationFailureDemo>
 //
 // 1. Exception is caught by RuleManager.RunRule()
 // 2. Exception message is added to trigger property as a rule message
-// 3. Exception is RE-THROWN to caller
-// 4. IsValid becomes false (due to the error message)
-// 5. Property is marked with the exception message
+// 3. Exception is RE-THROWN: from the setter (before the rule's first await),
+//    else to the awaiter of the write or of RunRules
+// 4. The next WaitForTasks() throws it ONCE, in an AggregateException
+// 5. The object recovers: later waits complete, later work is tracked
 //
 // This means:
 // - Rule bugs show up as validation errors (visible to user)
 // - Exception also propagates (can be caught by error boundary)
-// - Object is in a known state (invalid with error message)
+// - Object stays invalid and unsavable until the rule runs clean
 //
-// DESIGN DECISION: Re-throw rule exceptions after adding message.
-// This allows both:
-// - User to see something went wrong (validation message)
-// - Developer to catch and log the exception (stack trace)
+// DESIGN DECISION: Re-throw rule exceptions after adding message, once.
+// - User sees something went wrong (validation message)
+// - Developer can catch and log the exception (stack trace)
 //
 // COMMON MISTAKE: Ignoring rule exceptions.
 //

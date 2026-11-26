@@ -1,6 +1,6 @@
 # WaitForTasks CancellationToken Missing PropertyManager.WaitForTasks
 
-**Status:** In Progress
+**Status:** Complete (closed by WAIT-005, 2026-11-24: both overloads of `WaitForTasks` are the object's running tasks, and every write, rule run and lazy load is registered there)
 **Priority:** Medium
 **Created:** 2026-03-13
 **Last Updated:** 2026-03-13

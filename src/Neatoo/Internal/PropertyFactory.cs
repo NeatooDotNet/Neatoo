@@ -7,7 +7,22 @@
 /// </summary>
 public class DefaultFactory : IFactory
 {
-    public DefaultFactory() { }
+    private readonly CreateAsyncTasks createAsyncTasks;
+
+    public DefaultFactory() : this(static () => new AsyncTasks()) { }
+
+    /// <summary>
+    /// The constructor DI uses: the trackers come from the factory registered there.
+    /// </summary>
+    public DefaultFactory(CreateAsyncTasks createAsyncTasks)
+    {
+        this.createAsyncTasks = createAsyncTasks;
+    }
+
+    public IAsyncTasks CreateAsyncTasks()
+    {
+        return this.createAsyncTasks();
+    }
 
     public ValidateProperty<P> CreateValidateProperty<P>(IPropertyInfo propertyInfo)
     {

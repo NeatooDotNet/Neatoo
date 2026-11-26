@@ -59,15 +59,6 @@ public interface IValidateBase : INeatooObject, INotifyPropertyChanged, INotifyN
 	/// <returns><c>true</c> if the property was found; otherwise, <c>false</c>.</returns>
 	bool TryGetProperty(string propertyName, out IValidateProperty validateProperty);
 
-	/// <summary>
-	/// Adds a child task to be tracked for completion.
-	/// </summary>
-	/// <param name="task">The task to track.</param>
-	/// <remarks>
-	/// Tasks added through this method are propagated up the object graph hierarchy
-	/// to ensure the root object can await all pending operations via <see cref="INeatooObject.WaitForTasks"/>.
-	/// </remarks>
-	void AddChildTask(Task task);
 }
 
 /// <summary>
@@ -120,9 +111,10 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </summary>
 	/// <remarks>
 	/// Used internally to track property setter tasks and ensure all async operations complete
-	/// before marking the object as not busy.
+	/// before marking the object as not busy. The services supply it, so a tracker registered
+	/// in DI replaces the framework's.
 	/// </remarks>
-	protected AsyncTasks RunningTasks { get; private set; } = new AsyncTasks();
+	protected IAsyncTasks RunningTasks { get; private set; }
 
 	/// <summary>
 	/// Gets or sets the property manager responsible for managing all properties on this object.
@@ -169,8 +161,15 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// <summary>
 	/// Gets a value indicating whether the object has asynchronous operations in progress.
 	/// </summary>
-	/// <value><c>true</c> if async tasks are running or any property is busy; otherwise, <c>false</c>.</value>
-	public bool IsBusy => this.RunningTasks.IsRunning || this.PropertyManager.IsBusy;
+	/// <value><c>true</c> while this object's running tasks are running; otherwise, <c>false</c>.</value>
+	/// <remarks>
+	/// DESIGN DECISION: busy is read from the tasks. Everything in flight on this object, its
+	/// properties and the objects below it is registered in <see cref="RunningTasks"/>, so when
+	/// <see cref="WaitForTasks()"/> completes this is false, by construction.
+	/// DID NOT DO THIS: also read a busy flag the property manager kept up to date from property
+	/// notifications. A flag kept by notifications goes stale when one is missed.
+	/// </remarks>
+	public bool IsBusy => this.RunningTasks.IsRunning;
 
 	/// <summary>
 	/// Gets the rule manager responsible for executing business rules on this object.
@@ -209,6 +208,14 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 		this.PropertyManager.NeatooPropertyChanged += this._PropertyManager_NeatooPropertyChanged;
 		this.PropertyManager.PropertyChanged += this._PropertyManager_PropertyChanged;
 
+		// The owner's end of the report path: each write one of this object's properties starts
+		// is registered here, whoever made it.
+		if (this.PropertyManager is IValidatePropertyManagerInternal<IValidateProperty> reportingManager)
+		{
+			reportingManager.TaskStarted = this.AddChildTask;
+		}
+
+		this.RunningTasks = services.CreateAsyncTasks() ?? throw new ArgumentNullException("CreateAsyncTasks");
 		this.RunningTasks.OnFullSequenceComplete = () =>
 		{
 			this.CheckIfMetaPropertiesChanged();
@@ -265,7 +272,18 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </remarks>
 	protected virtual void SetParent(IValidateBase? parent)
 	{
+		var previous = this.Parent;
 		this.Parent = parent;
+
+		// An object handed to a parent while it has work in flight started that work when it had
+		// no parent to pass it to. The new parent takes it up here, so its wait and its busy cover
+		// it. A property and an entity list refuse a busy child; a ValidateListBase does not.
+		if (!ReferenceEquals(previous, parent)
+			&& parent is IValidateBaseInternal parentInternal
+			&& this.RunningTasks.IsRunning)
+		{
+			parentInternal.AddChildTask(this.RunningTasks.AllDone);
+		}
 	}
 
 	/// <summary>
@@ -387,16 +405,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 			}
 
 			var task = this.RunRules(propertyName);
-			if (!task.IsCompleted)
-			{
-				if (this.Parent is IValidateBaseInternal parentInternal)
-				{
-					parentInternal.AddChildTask(task);
-				}
-
-				this.RunningTasks.AddTask(task);
-			}
-			else if (task.Exception != null)
+			if (task.Exception != null)
 			{
 				throw task.Exception;
 			}
@@ -433,7 +442,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// <returns>A task representing the asynchronous event handling operation.</returns>
 	protected virtual Task RaiseNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)
 	{
-		return this.NeatooPropertyChanged?.Invoke(eventArgs) ?? Task.CompletedTask;
+		return this.NeatooPropertyChanged.InvokeAll(eventArgs);
 	}
 
 	/// <summary>
@@ -528,17 +537,6 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 			task = property.SetValue(value);
 		}
 
-		if (!task.IsCompleted)
-		{
-			// Cast to internal interface to call AddChildTask
-			if (this.Parent is IValidateBaseInternal parentInternal)
-			{
-				parentInternal.AddChildTask(task);
-			}
-
-			this.RunningTasks.AddTask(task);
-		}
-
 		if (task.Exception != null)
 		{
 			throw task.Exception;
@@ -546,22 +544,33 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	}
 
 	/// <summary>
-	/// Adds a child task to be tracked for completion.
+	/// Registers a task as work in flight on this object and on its parents.
 	/// </summary>
 	/// <param name="task">The task to track.</param>
 	/// <remarks>
-	/// Tasks added through this method are propagated up the object graph hierarchy
-	/// to ensure the root object can await all pending operations.
+	/// DESIGN DECISION: this object registers the task first and then passes it up, so each
+	/// object accounts for a finished task before its parent does. When a parent's running
+	/// tasks are done, nothing below it is still accounting.
+	/// DID NOT DO THIS: pass the task up first. The root then completed its waits while the
+	/// child that did the work still read busy, and a save that followed the wait was refused.
 	/// </remarks>
-	public virtual void AddChildTask(Task task)
+	protected virtual void AddChildTask(Task task)
 	{
-		// Cast to internal interface to call AddChildTask on parent
+		var wasRunning = this.RunningTasks.IsRunning;
+
+		this.RunningTasks.AddTask(task);
+
 		if (this.Parent is IValidateBaseInternal parentInternal)
 		{
 			parentInternal.AddChildTask(task);
 		}
 
-		this.RunningTasks.AddTask(task);
+		// Busy is read from the running tasks, so this is where the object goes busy. The
+		// matching "idle" check is the tracker's completion callback.
+		if (!wasRunning && this.RunningTasks.IsRunning)
+		{
+			this.CheckIfMetaPropertiesChanged();
+		}
 	}
 
 	/// <summary>
@@ -642,12 +651,17 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// This method should be called after setting properties to ensure all asynchronous
 	/// operations (such as validation rules and lazy property loads) have completed before proceeding.
 	/// </para>
+	/// <para>
+	/// DESIGN DECISION: the wait is this object's running tasks and nothing else. Everything in
+	/// flight on the object, its properties and the objects below it is registered there by the
+	/// framework, so there is one thing to await, and on one thread the wait always suspends.
+	/// DID NOT DO THIS: also loop over the properties while one reported busy. A busy flag gives
+	/// nothing to await; where a write had not been registered, that loop never returned (#141).
+	/// </para>
 	/// </remarks>
 	public virtual async Task WaitForTasks()
 	{
 		await this.RunningTasks.AllDone;
-		// Also wait for property-level tasks (e.g., lazy loading via LazyLoad subclass properties)
-		await this.PropertyManager.WaitForTasks();
 	}
 
 	/// <summary>
@@ -661,9 +675,7 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// Cancellation only affects waiting - running tasks will complete to avoid leaving the entity in an inconsistent state.
 	/// </para>
 	/// <para>
-	/// Note: This method does NOT call PropertyManager.WaitForTasks(). This is a pre-existing gap
-	/// that predates the LazyLoad unification. LazyLoad children are now waited for by the
-	/// non-cancellable overload via PropertyManager.WaitForTasks().
+	/// It waits for exactly what <see cref="WaitForTasks()"/> waits for: this object's running tasks.
 	/// </para>
 	/// </remarks>
 	public virtual async Task WaitForTasks(CancellationToken token)
@@ -729,12 +741,6 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 				else
 				{
 					task = property.SetValue(value);
-				}
-
-				if (!task.IsCompleted)
-				{
-					this.AddChildTask(task);
-					this.RunningTasks.AddTask(task);
 				}
 
 				if (task.Exception != null)
@@ -905,7 +911,21 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 	/// </para>
 	/// </remarks>
 	/// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
-	public virtual async Task RunRules(string propertyName, CancellationToken? token = null)
+	public virtual Task RunRules(string propertyName, CancellationToken? token = null)
+	{
+		// The owner registers, not the caller: whoever asked for the rules to run, and whether or
+		// not they await it, the run is in this object's running tasks and its parents'.
+		var running = this.RunRulesFor(propertyName, token);
+
+		if (!running.IsCompleted)
+		{
+			this.AddChildTask(running);
+		}
+
+		return running;
+	}
+
+	private async Task RunRulesFor(string propertyName, CancellationToken? token)
 	{
 		try
 		{
@@ -955,13 +975,17 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 
 		try
 		{
-			// Run child property rules unless only Self flag is set
-			if (runRules != RunRulesFlag.Self)
+			// The rules are this object's work in flight whether or not the caller awaits this
+			// method, so they are registered like any other. The wait on the running tasks that
+			// follows is not part of what is registered: it would be waiting for itself.
+			var rules = this.RunRulesFor(runRules, token);
+
+			if (!rules.IsCompleted)
 			{
-				await this.PropertyManager.RunRules(runRules, token);
+				this.AddChildTask(rules);
 			}
 
-			await this.RuleManager.RunRules(runRules, token);
+			await rules;
 			await this.RunningTasks.AllDone;
 		}
 		catch (OperationCanceledException)
@@ -976,6 +1000,17 @@ public abstract class ValidateBase<[DynamicallyAccessedMembers(DynamicallyAccess
 			// skips recalculation, leaving the cache stale.
 			this.PropertyManager.RecalculateValidity();
 		}
+	}
+
+	private async Task RunRulesFor(RunRulesFlag runRules, CancellationToken? token)
+	{
+		// Run child property rules unless only Self flag is set
+		if (runRules != RunRulesFlag.Self)
+		{
+			await this.PropertyManager.RunRules(runRules, token);
+		}
+
+		await this.RuleManager.RunRules(runRules, token);
 	}
 
 	/// <summary>

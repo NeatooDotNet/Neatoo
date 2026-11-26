@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.36.1** (2026-11-24)
+**Neatoo 0.37.0** (2026-11-24)
 
 ---
 
@@ -17,6 +17,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
+| [0.37.0](v0.37.0.md) | 2026-11-24 | **Breaking** | One record of async work: `WaitForTasks()` awaits tasks and no longer freezes a single-threaded page; every write is tracked, whoever makes it; a rule that throws surfaces once and the object recovers |
 | [0.36.1](v0.36.1.md) | 2026-11-24 | Fix | A deserialized entity or list handled each property change twice per level: rules ran 2, 4, 8 times up a fetched aggregate |
 | [0.36.0](v0.36.0.md) | 2026-11-24 | Feature + Fix | Generated awaitable `Set{Name}`; NEATOO011 flags a rule or verb that assigns; rules trigger on meta state (NEATOO012 guards `IsBusy`); MudNeatoo `Setter` |
 | [0.35.0](v0.35.0.md) | 2026-09-29 | Feature + Fix | Custom `EntityProperty<T>` subclasses survive the client round trip: `IsSelfModified` preserved, `ApplyPropertyInfo` is `virtual` |
@@ -75,6 +76,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
+| [0.37.0](v0.37.0.md) | 2026-11-24 |
 | [0.36.1](v0.36.1.md) | 2026-11-24 |
 | [0.36.0](v0.36.0.md) | 2026-11-24 |
 | [0.35.0](v0.35.0.md) | 2026-09-29 |

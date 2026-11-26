@@ -24,7 +24,7 @@ Abstract base class providing property management, validation, business rules, a
 
 | Member | Signature | Notes |
 |---|---|---|
-| Constructor | `public ValidateBase(IValidateBaseServices<T> services)` | `T` is the concrete class (CRTP). The services carry the property factory, rule manager factory and property info list. Objects are created through the generated factory, never with `new`. |
+| Constructor | `public ValidateBase(IValidateBaseServices<T> services)` | `T` is the concrete class (CRTP). The services carry the property factory, rule manager factory, property info list and the factory for the object's task tracker. Objects are created through the generated factory, never with `new`. |
 
 ### Property System
 
@@ -145,8 +145,8 @@ public void Indexer_ExposesPropertyMetadata()
 | Member | Signature | Notes |
 |---|---|---|
 | RuleManager | `protected IRuleManager<T> RuleManager { get; }` | Register rules in the constructor: `AddValidation`, `AddValidationAsync`, `AddAction`, `AddActionAsync` (1–3 trigger expressions, or an `Expression<Func<T, object?>>[]`), `AddRule<T>(IRule<T>)` for class-based rules. |
-| RunRules | `public virtual Task RunRules(string propertyName, CancellationToken? token = null)` | Re-runs the rules triggered by one property. |
-| RunRules | `public virtual Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null)` | `All` clears messages and re-runs every rule. Works while paused (no `IsPaused` guard). A cancelled `RunRules` marks the object invalid with "Validation cancelled" until re-run. |
+| RunRules | `public virtual Task RunRules(string propertyName, CancellationToken? token = null)` | Re-runs the rules triggered by one property. The run is one of the object's running tasks whether or not the caller awaits it. |
+| RunRules | `public virtual Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null)` | `All` clears messages and re-runs every rule. Works while paused (no `IsPaused` guard). The rules are among the object's running tasks whether or not the caller awaits the call; awaited, it returns when they and the object's other running tasks are done. A cancelled `RunRules` marks the object invalid with "Validation cancelled" until re-run. |
 | ClearAllMessages | `public virtual void ClearAllMessages()` | Clears messages on this object and every descendant. |
 | ClearSelfMessages | `public virtual void ClearSelfMessages()` | Clears this object's own property messages only. |
 | MarkInvalid | `protected virtual void MarkInvalid(string message)` | Framework use: sets `ObjectInvalid` when a `RunRules` call is cancelled. Not an application validation channel; validation is a rule. |
@@ -217,7 +217,7 @@ public Address(IEntityBaseServices<Address> services) : base(services)
 |---|---|---|
 | IsValid | `public bool IsValid { get; }` | This object and every descendant pass their rules. |
 | IsSelfValid | `public bool IsSelfValid { get; }` | This object's own properties pass; children excluded. |
-| IsBusy | `public bool IsBusy { get; }` | An async rule or tracked task is running on this object or a descendant. |
+| IsBusy | `public bool IsBusy { get; }` | This object's running tasks are running: async work is in flight on this object or a descendant. Read from the tasks, not kept as a flag. |
 | PropertyMessages | `public IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }` | Every message in the graph; each carries its `Property` and `Message`. |
 
 Meta properties raise `PropertyChanged` when they flip, including flips caused by a descendant:
@@ -253,7 +253,7 @@ public async Task InvalidChild_MakesParentInvalid_ButNotSelfInvalid()
 |---|---|---|
 | Parent | `public IValidateBase? Parent { get; protected set; }` | Set by the property system when the object is assigned to a parent's partial property or added to a child list. Cast to the parent's **interface** when reading ambient state: `((IOrder)Parent!).Status`. |
 | SetParent | `protected virtual void SetParent(IValidateBase? parent)` | Framework hook; application code does not call it. |
-| AddChildTask | `public virtual void AddChildTask(Task task)` | Propagates a task up the graph so the root's `WaitForTasks()` awaits it. |
+| AddChildTask | `protected virtual void AddChildTask(Task task)` | Registers a task as work in flight on this object, then on each parent, so `IsBusy` and `WaitForTasks()` cover it up to the root. The framework calls it for every write, rule run and lazy load; callers and generated code register nothing. Not on `IValidateBase`. |
 
 A child's `Parent` is the entity it was added to; a root has no parent, and an entity's `Root` walks the chain:
 
@@ -285,8 +285,9 @@ public async Task AddItem_SetsParentAndRoot()
 
 | Member | Signature | Notes |
 |---|---|---|
-| WaitForTasks | `public virtual Task WaitForTasks()` | Awaits every running rule and child task in the graph. Call it before reading `IsValid` or saving when async rules may be in flight. |
-| WaitForTasks | `public virtual Task WaitForTasks(CancellationToken token)` | Cancelling the token stops the wait only; it does not cancel the rules. |
+| RunningTasks | `protected IAsyncTasks RunningTasks { get; }` | The record of async work in flight on this object and below it. `IsBusy` and both `WaitForTasks` overloads read it. The services supply it (`CreateAsyncTasks`), so an `IAsyncTasks` registered in DI after `AddNeatooServices` replaces the framework's tracker. |
+| WaitForTasks | `public virtual Task WaitForTasks()` | Awaits this object's running tasks and nothing else. When it completes, nothing on the object or below it is busy and the `IsBusy` change has been raised. Throws an `AggregateException`, once, for a rule that threw while in flight. Call it before reading `IsValid` or saving when async rules may be in flight; never from a rule or a `NeatooPropertyChanged` handler that is part of a write to this object or to anything below it, wherever that rule or handler lives: it would be waiting for itself. |
+| WaitForTasks | `public virtual Task WaitForTasks(CancellationToken token)` | The same wait with cancellation. Cancelling the token stops the wait, not the work. |
 
 While an async rule runs, `IsBusy` is true and `IsSavable` is false:
 
@@ -351,7 +352,7 @@ public void Gotcha4_PausedPropertyChanges_DoNotTriggerRules()
 | Member | Signature | Notes |
 |---|---|---|
 | PropertyChanged | `public event PropertyChangedEventHandler? PropertyChanged` | Standard `INotifyPropertyChanged`: own properties and meta flags. Blazor does not subscribe on its own; the page does. |
-| NeatooPropertyChanged | `public event NeatooPropertyChanged? NeatooPropertyChanged` | Async (`Task NeatooPropertyChanged(NeatooPropertyChangedEventArgs)`); carries `PropertyName`, `Source`, a dotted `FullPropertyName` for descendant changes, and `Reason` (`UserEdit` or `Load`). |
+| NeatooPropertyChanged | `public event NeatooPropertyChanged? NeatooPropertyChanged` | Async (`Task NeatooPropertyChanged(NeatooPropertyChangedEventArgs)`); carries `PropertyName`, `Source`, a dotted `FullPropertyName` for descendant changes, and `Reason` (`UserEdit` or `Load`). Every subscriber's task is awaited as part of the write that raised the event, so a handler must not await `WaitForTasks()`, `RunRules(RunRulesFlag)` or `Save(token)` on the object that was written to or on any parent of it up to the root. That includes this object, and a child whose change the handler is hearing. |
 
 ### Factory Lifecycle Hooks
 
@@ -712,13 +713,13 @@ Base class for collections of `ValidateBase` objects (value objects). Inherits `
 |---|---|---|
 | Constructor | `public ValidateListBase()` | Lists are created through their generated factory from the parent's `[Create]`/`[Fetch]`, not with `new`. |
 | Parent | `public IValidateBase? Parent { get; protected set; }` | Set when the list is assigned to a parent's property. Items added to the list get the **list's parent** as their `Parent`, not the list. |
-| IsValid / IsSelfValid / IsBusy | `public bool IsValid { get; }` / `public bool IsSelfValid { get; }` / `public bool IsBusy { get; }` | Aggregated from the items with incremental caching. `IsSelfValid` is always `true` (a list has no rules of its own). |
+| IsValid / IsSelfValid / IsBusy | `public bool IsValid { get; }` / `public bool IsSelfValid { get; }` / `public bool IsBusy { get; }` | `IsValid` is aggregated from the items with incremental caching. `IsBusy` is read from the items each time: `true` while any item is busy. `IsSelfValid` is always `true` (a list has no rules of its own). |
 | PropertyMessages | `public IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }` | Every item's messages. |
 | IsPaused | `public bool IsPaused { get; protected set; }` | Paused inside the list's own factory operation and during deserialization. |
 | RunRules | `public Task RunRules(string propertyName, CancellationToken? token = default)` / `public Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = default)` | Runs the rules of every item. |
 | ClearAllMessages / ClearSelfMessages | `public void ClearAllMessages()` / `public void ClearSelfMessages()` | On every item. |
-| WaitForTasks | `public Task WaitForTasks()` / `public Task WaitForTasks(CancellationToken token)` | Awaits every item. |
-| ResumeAllActions | `public virtual void ResumeAllActions()` | Recalculates cached meta state; runs no rules. |
+| WaitForTasks | `public Task WaitForTasks()` / `public Task WaitForTasks(CancellationToken token)` | Awaits the items that are busy; the token cancels the wait, not the work. A list holds no running tasks of its own: an item's work is registered with the object that owns the list. |
+| ResumeAllActions | `public virtual void ResumeAllActions()` | Recalculates the cached `IsValid`; runs no rules. |
 | FactoryStart / FactoryComplete | `public virtual void FactoryStart(FactoryOperation)` / `public virtual void FactoryComplete(FactoryOperation)` | The list's own lifecycle hooks, fired by the list factory. |
 | HandleNeatooPropertyChanged | `protected virtual Task HandleNeatooPropertyChanged(NeatooPropertyChangedEventArgs eventArgs)` | Override for cross-sibling consistency (re-run siblings' rules when one item changes). Only a list can override this. |
 | Events | `NeatooPropertyChanged`, plus `PropertyChanged` and `CollectionChanged` from `ObservableCollection<I>` | |
@@ -1060,7 +1061,6 @@ internal void Update(ICollection<OrderItemRow> rows,
 | GetProperty | `IValidateProperty GetProperty(string propertyName)` |
 | Indexer | `IValidateProperty this[string propertyName] { get; }` |
 | TryGetProperty | `bool TryGetProperty(string propertyName, out IValidateProperty validateProperty)` |
-| AddChildTask | `void AddChildTask(Task task)` |
 
 Plus everything on [IValidateMetaProperties](#ivalidatemetaproperties). A user-defined value-object interface extends `IValidateBase`.
 
@@ -1198,11 +1198,10 @@ User-defined list interfaces are parameterized on the **child interface**: `publ
 | MarkReadOnly | `void MarkReadOnly()` | Permanent, per instance. Called in `[Fetch]` from a server-side permission service for field-level authorization. |
 | IsValid / IsSelfValid | `bool IsValid { get; }` / `bool IsSelfValid { get; }` | `IsValid` looks through to a child object held by the property. |
 | PropertyMessages | `IReadOnlyCollection<IPropertyMessage> PropertyMessages { get; }` | |
-| IsBusy | `bool IsBusy { get; }` | An async rule is running for this property. |
-| Task | `Task Task { get; }` | The running rule task; `GetAwaiter()` makes the property awaitable. |
-| WaitForTasks | `Task WaitForTasks()` | |
+| IsBusy | `bool IsBusy { get; }` | This property has work in flight (a write to it, or an async rule that names it as a trigger), or the child object it holds is busy. What an input binds for one field. |
+| Task | `Task Task { get; }` | The task of the most recent write to the property: its whole rule cascade, or a completed task when that write started nothing async. `GetAwaiter()` awaits it, which makes the property awaitable. |
+| WaitForTasks | `Task WaitForTasks()` | Completes when the property has no work in flight and a child object it holds has finished its own. A rule's exception does not fault it; that surfaces from the object's `WaitForTasks()`. |
 | RunRules | `Task RunRules(RunRulesFlag runRules = RunRulesFlag.All, CancellationToken? token = null)` | Forwards to a child object held by the property; a no-op for a scalar. |
-| AddMarkedBusy / RemoveMarkedBusy | `void AddMarkedBusy(long id)` / `void RemoveMarkedBusy(long id)` | Framework use by the rule manager. |
 
 `SetValue` is the awaitable way to set a property; a component that must wait for the rules calls it:
 
@@ -1735,7 +1734,7 @@ public partial int Count { get; set; }
 
 public partial decimal Price { get; set; }
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L75-L81' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-partial-properties' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L74-L80' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-partial-properties' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 <!-- snippet: skill-generated-property-shape -->
@@ -1756,13 +1755,12 @@ public partial decimal Price { get; set; }
 //       set
 //       {
 //           NameProperty.Value = value;
-//           if (!NameProperty.Task.IsCompleted)
-//           {
-//               Parent?.AddChildTask(NameProperty.Task);
-//               RunningTasks.AddTask(NameProperty.Task);
-//           }
 //       }
 //   }
+//
+// The setter only writes. The property reports the write to the object that owns it, which
+// registers it in its running tasks and its parents', so a write made any other way (SetName,
+// or SetValue on the property, which is what a UI input calls) is tracked the same.
 //
 //   protected override void InitializePropertyBackingFields(IPropertyFactory<T> factory)
 //   {
@@ -1773,7 +1771,7 @@ public partial decimal Price { get; set; }
 // tracking); the accessor is still typed IValidateProperty<T>. The real output
 // is on disk under Generated/Neatoo.BaseGenerator/.
 ```
-<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L24-L56' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-generated-property-shape' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/PropertySystem/PropertyBasics.cs#L24-L55' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-generated-property-shape' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Setter accessibility is preserved: a `private set` setter calls `SetPrivateValue` and the property's `IsReadOnly` is `true`; the generated interface member for any non-public setter is get-only.

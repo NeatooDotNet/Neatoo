@@ -46,8 +46,23 @@ public class AwaitableSetterGenerationTests
 
         Assert.IsTrue(cls.Contains("public global::System.Threading.Tasks.Task SetName(string? value)"), "public SetName on the class");
         Assert.IsTrue(cls.Contains("NameProperty.SetValue(value)"), "writes through SetValue, which honours IsReadOnly");
-        Assert.IsTrue(cls.Contains("return task;"), "returns the cascade's Task");
+        Assert.IsTrue(cls.Contains("return NameProperty.SetValue(value);"), "returns the cascade's Task");
         Assert.IsTrue(iface.Contains("global::System.Threading.Tasks.Task SetName(string? value);"), "SetName on the partial interface");
+    }
+
+    [TestMethod]
+    public void GeneratedSetterAndSetName_RegisterNothing_TheOwnerRegisters()
+    {
+        var (_, cls) = Generate("public partial string? Name { get; set; } public partial decimal Total { get; private set; } public partial int Count { get; protected set; }");
+
+        Assert.IsTrue(cls.Contains("NameProperty.Value = value;"), "the setter writes");
+        Assert.IsTrue(cls.Contains("TotalProperty.SetPrivateValue(value);"), "the private setter writes");
+        Assert.IsTrue(cls.Contains("CountProperty.Value = value;"), "the protected setter writes");
+        Assert.IsTrue(cls.Contains("Task SetName(string? value)"), "Set{Name} is generated for the public setter");
+        Assert.IsTrue(cls.Contains("Task SetTotal(decimal value)"), "and for the private one");
+        Assert.IsTrue(cls.Contains("Task SetCount(int value)"), "and for the protected one");
+        Assert.IsFalse(cls.Contains("AddChildTask"), "nothing is passed to the parent by generated code");
+        Assert.IsFalse(cls.Contains("RunningTasks"), "nothing is registered by generated code");
     }
 
     [TestMethod]

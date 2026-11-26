@@ -155,6 +155,7 @@ internal sealed class PlausibleEntityServices<[DynamicallyAccessedMembers(Dynami
     public IEntityPropertyManager EntityPropertyManager => _inner.EntityPropertyManager;
     public IFactorySave<T>? Factory => _inner.Factory;
     public IRuleManager<T> CreateRuleManager(T target) => _inner.CreateRuleManager(target);
+    public IAsyncTasks CreateAsyncTasks() => _inner.CreateAsyncTasks();
 }
 
 /// <summary>

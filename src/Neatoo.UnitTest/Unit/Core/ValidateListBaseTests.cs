@@ -566,7 +566,8 @@ public class ValidateListBaseTests
         // recalculation at all.
         //
         // Note the mechanism precisely: EntityListBase does NOT override the
-        // _cachedIsValid/_cachedIsBusy recalculation - it only adds
+        // _cachedIsValid recalculation (IsBusy is no longer cached: since WAIT-005 it
+        // is read from the items) - it only adds
         // _cachedChildrenModified before calling base. So the value here is covering a
         // directly-used tier, not guarding against an override that could mask a
         // regression; no such override exists for Valid/Busy. (IsModified is different
@@ -594,11 +595,10 @@ public class ValidateListBaseTests
     {
         // Arrange - the Busy half, at the ValidateListBase tier.
         //
-        // Added on the LIST-001 gate's recommendation: _cachedIsBusy is recalculated by
-        // the identical, adjacent, unoverridden line (ValidateListBase.cs:552) as
-        // _cachedIsValid, and InsertItem skips maintaining it while paused by the same
-        // `if (!IsPaused)` (:146). The Invalid half was pinned at this tier and Busy was
-        // not, which left the pair asymmetric for no reason.
+        // Added on the LIST-001 gate's recommendation, when list busy was a cached flag
+        // recalculated beside _cachedIsValid on resume. Since WAIT-005 the list reads
+        // IsBusy from its items, so there is no cache to miss; the claim is unchanged
+        // and still worth holding: a busy item added while paused makes the list busy.
         var list = new TestValidateList();
         var item = new TestValidateItem();
         item.Resume();

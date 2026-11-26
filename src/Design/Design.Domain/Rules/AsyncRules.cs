@@ -287,6 +287,10 @@ internal class CancellableRule : AsyncRuleBase<AsyncRulesDemo>
 // - IsBusy is true while ANY rule is running
 // - WaitForTasks() awaits ALL pending operations
 // - IsValid reflects combined result of all completed rules
+// - Each run is a task: its trigger properties hold it, and so do the
+//   object's running tasks. Overlapping runs do not clear each other's busy.
+// - A rule that throws surfaces once and the object recovers
+//   (see ErrorHandling/ErrorPatterns.cs)
 //
 // DESIGN DECISION: Rules triggered by one property change run one after
 // another, each awaited, in RuleOrder. Rules triggered by different property
