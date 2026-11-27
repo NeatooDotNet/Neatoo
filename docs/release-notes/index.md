@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**Neatoo 0.37.1** (2026-11-26)
+**Neatoo 0.38.0** (2026-11-26)
 
 ---
 
@@ -17,7 +17,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date | Type | Summary |
 |---------|------|------|---------|
-| [0.38.0](v0.38.0.md) | — | **Breaking** | Generated getters and the library compile clean with nullable on: no CS8603 from a non-nullable reference partial; `Save()` returns `Task<IEntityBase?>` |
+| [0.38.0](v0.38.0.md) | 2026-11-26 | **Breaking** | Generated getters and the library compile clean with nullable on: no CS8603 from a non-nullable reference partial; `Save()` returns `Task<IEntityBase?>` |
 | [0.37.1](v0.37.1.md) | 2026-11-26 | Fix | A second `Save()` while the first is in flight is refused, and `IsSavable` is false for the length of a save: a double-click no longer sends two inserts |
 | [0.37.0](v0.37.0.md) | 2026-11-25 | **Breaking** | One record of async work: `WaitForTasks()` awaits tasks and no longer freezes a single-threaded page; every write is tracked, whoever makes it; a rule that throws surfaces once and the object recovers |
 | [0.36.1](v0.36.1.md) | 2026-11-24 | Fix | A deserialized entity or list handled each property change twice per level: rules ran 2, 4, 8 times up a fetched aggregate |
@@ -78,7 +78,7 @@ New features, breaking changes, and significant bug fixes.
 
 | Version | Date |
 |---------|------|
-| [0.38.0](v0.38.0.md) | — |
+| [0.38.0](v0.38.0.md) | 2026-11-26 |
 | [0.37.1](v0.37.1.md) | 2026-11-26 |
 | [0.37.0](v0.37.0.md) | 2026-11-25 |
 | [0.36.1](v0.36.1.md) | 2026-11-24 |
