@@ -65,6 +65,7 @@ public class NeatooBaseJsonConverterFactory : NeatooJsonConverterFactory
             return (JsonConverter)this.scope.GetRequiredService(typeof(NeatooInterfaceJsonTypeConverter<>).MakeGenericType(typeToConvert));
         }
 
-        return null;
+        // Unreachable while CanConvert holds: every type it accepts is created above.
+        throw new JsonException($"CreateConverter not implemented for {typeToConvert}");
     }
 }

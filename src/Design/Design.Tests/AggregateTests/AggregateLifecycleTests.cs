@@ -148,7 +148,7 @@ public class AggregateLifecycleTests
         Assert.IsTrue(order.IsSavable, "Modified aggregate should be savable");
 
         // Act
-        order = (IOrder)await order.Save();
+        order = (IOrder)(await order.Save())!;
 
         // Assert - routing: ONLY the modified existing item is written to its
         // row (the untouched existing item is skipped by the IsNew/IsModified
@@ -222,7 +222,7 @@ public class AggregateLifecycleTests
         Assert.IsTrue(order.IsSavable, "Valid new aggregate should be savable");
 
         // Act
-        order = (IOrder)await order.Save();
+        order = (IOrder)(await order.Save())!;
 
         // Assert - routing: order row added once, one flush
         Assert.AreEqual(1, _repository.AddedRows.Count, "The order row should be added exactly once");
@@ -278,7 +278,7 @@ public class AggregateLifecycleTests
         await order.WaitForTasks();
 
         // Act - first save processes the deletion
-        order = (IOrder)await order.Save();
+        order = (IOrder)(await order.Save())!;
 
         // Assert
         var stored = _repository.Store[seeded.Id];
@@ -296,7 +296,7 @@ public class AggregateLifecycleTests
 
         // Act - a re-issued deletion would look for the removed row again, and
         // OrderItemList.Update would throw on not finding it
-        order = (IOrder)await order.Save();
+        order = (IOrder)(await order.Save())!;
 
         // Assert - no re-delete on subsequent saves, and the child delegation
         // still runs (surviving item written to its row this time)

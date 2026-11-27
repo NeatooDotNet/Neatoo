@@ -9,7 +9,7 @@ public class PersonDbContext : DbContext, IPersonDbContext
 	public virtual DbSet<PersonEntity> Persons { get; set; } = null!;
 	public virtual DbSet<PersonPhoneEntity> PersonPhones { get; set; } = null!;
 
-    public string DbPath { get; }
+    public string? DbPath { get; }
 
 	public PersonDbContext()
 	{

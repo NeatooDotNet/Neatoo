@@ -90,7 +90,7 @@ public async Task Save_ThenFetch_RoundTrips()
     await product.WaitForTasks();
 
     // Save returns the saved instance; keep that one
-    product = (IProduct)await product.Save();
+    product = (IProduct)(await product.Save())!;
     Assert.IsFalse(product.IsNew);
     Assert.IsFalse(product.IsModified);
 
@@ -379,7 +379,7 @@ public async Task Save_WhenNotSavable_ThrowsWithTheReason()
     Assert.AreEqual(SaveFailureReason.NotModified, exception.Reason);
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L206-L219' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-save-not-savable-throws' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L228-L241' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-save-not-savable-throws' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Common `SaveFailureReason` values:
@@ -450,7 +450,7 @@ public async Task PausedEdit_IsNotTrackedAsModified()
     Assert.IsFalse(entity.IsSavable, "...so there is nothing to save");
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L221-L237' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-paused-edit-not-modified' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L243-L259' title='Snippet source file'>snippet source</a> | <a href='#snippet-docs-paused-edit-not-modified' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Use pausing when:
@@ -481,13 +481,13 @@ public async Task Save_WhenNewAndUntouched_StillInserts()
     Assert.IsTrue(entity.IsNew);
     Assert.IsTrue(entity.IsSavable);
 
-    entity = (ISaveDemo)await entity.Save();
+    entity = (ISaveDemo)(await entity.Save())!;
 
     Assert.AreEqual(1, _repository.InsertedIds.Count);
     Assert.IsFalse(entity.IsNew);
 }
 ```
-<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L167-L185' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-new-untouched-still-inserts' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Tests/FactoryTests/SaveTests.cs#L189-L207' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-new-untouched-still-inserts' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The `IsNew` flag is set by `FactoryComplete(Create)` — only a completed `[Create]` makes an entity new — and cleared after a successful Insert. It is pure routing state: it decides Insert vs Update and contributes to `IsSavable`, but it does **not** make an entity modified. See [Why IsNew is not part of IsModified](#why-isnew-is-not-part-of-ismodified).

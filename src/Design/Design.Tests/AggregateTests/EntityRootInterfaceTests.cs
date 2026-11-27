@@ -81,7 +81,7 @@ public class EntityRootInterfaceTests
 
         // Assert — Save method exists on IEntityRoot
         // We just verify it's accessible, not that it succeeds (no persistence configured)
-        Assert.IsNotNull((Func<Task<IEntityBase>>)root.Save,
+        Assert.IsNotNull((Func<Task<IEntityBase?>>)root.Save,
             "Save() should be accessible on IEntityRoot");
     }
 

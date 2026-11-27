@@ -80,7 +80,8 @@ public static partial class SubmitDraftOrders
             if (order.IsSavable)
             {
                 // Save returns a new instance; use the result, not the old reference.
-                order = (IOrder)await order.Save();
+                order = (IOrder?)await order.Save()
+                    ?? throw new InvalidOperationException($"Order {id}: Save returned no instance");
                 submitted.Add(order.Id);
             }
             else if (!order.IsValid)

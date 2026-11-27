@@ -500,8 +500,8 @@ public async Task FetchedEntity_IsSavableWhenModified()
 
 | Member | Signature | Notes |
 |---|---|---|
-| Save | `public virtual Task<IEntityBase> Save()` | Throws `SaveOperationException` when `!IsSavable` (reasons: `IsBusy`, `IsInvalid`, `NotModified`, no factory). Routes through the generated save factory: `IsDeleted` first (a deleted **new** entity is discarded without a call), then `IsNew` → `[Insert]`, else `[Update]`. Returns the saved instance — keep that one. |
-| Save | `public virtual Task<IEntityBase> Save(CancellationToken token)` | Awaits `WaitForTasks(token)` first, then saves. |
+| Save | `public virtual Task<IEntityBase?> Save()` | Throws `SaveOperationException` when `!IsSavable` (reasons: `IsBusy`, `IsInvalid`, `NotModified`, no factory). Routes through the generated save factory: `IsDeleted` first (a deleted **new** entity is discarded without a call, and `Save()` returns `null`), then `IsNew` → `[Insert]`, else `[Update]`. Returns the saved instance — keep that one. |
+| Save | `public virtual Task<IEntityBase?> Save(CancellationToken token)` | Awaits `WaitForTasks(token)` first, then saves. |
 
 The generated factory does not check `IsSavable` or wait for rules; the entity's `Save()` does. The UI binds the Save button to `IsSavable`, so reaching the exception is a programming error, not a validation channel. A root with `[Insert]`, `[Update]` and `[Delete]` that take no non-service parameters gets `IFactorySave<T>` and therefore `Save()`:
 
@@ -614,7 +614,7 @@ public async Task Save_WhenNew_RoutesToInsert_AndMarksOld()
     entity.Amount = 42m;
 
     // Act
-    entity = (ISaveDemo)await entity.Save();
+    entity = (ISaveDemo)(await entity.Save())!;
 
     // Assert - routed to Insert, and the generated Id landed on the entity
     Assert.AreEqual(1, _repository.InsertedIds.Count, "Should route to Insert");
@@ -1087,8 +1087,8 @@ The interface for **child** entities. It carries persistence state, modification
 | Member | Signature |
 |---|---|
 | IsSavable | `bool IsSavable { get; }` |
-| Save | `Task<IEntityBase> Save()` |
-| Save | `Task<IEntityBase> Save(CancellationToken token)` |
+| Save | `Task<IEntityBase?> Save()` |
+| Save | `Task<IEntityBase?> Save(CancellationToken token)` |
 
 `IsSavable` on `EntityBase` is `(IsModified || IsNew) && IsValid && !IsBusy`, with no save in flight — it knows nothing about aggregate position, so a modified child concrete reports `true` even though children are persisted by their root. Developers used it in save-cascade logic and reached for `Save()` on a child, which the framework does not support. The fix is to keep both off the child interface so the mistake is a compile error. `EntityBase<T>` implements both `IEntityBase` and `IEntityRoot`; this does not matter because the concrete is `internal` and consumers see only the interface. The user signals root vs child by choosing which framework interface to extend:
 
@@ -1803,7 +1803,7 @@ public async Task Save_ThenFetch_RoundTrips()
     await product.WaitForTasks();
 
     // Save returns the saved instance; keep that one
-    product = (IProduct)await product.Save();
+    product = (IProduct)(await product.Save())!;
     Assert.IsFalse(product.IsNew);
     Assert.IsFalse(product.IsModified);
 

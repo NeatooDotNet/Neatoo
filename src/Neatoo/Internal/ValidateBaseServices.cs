@@ -36,6 +36,7 @@ public class ValidateBaseServices<[DynamicallyAccessedMembers(DynamicallyAccesse
     {
         PropertyInfoList = propertyInfoList;
         var factory = new DefaultFactory();
+        this.ValidatePropertyManager = new ValidatePropertyManager<IValidateProperty>(PropertyInfoList, factory);
         this.PropertyFactory = new DefaultPropertyFactory<T>(PropertyInfoList, factory);
         this.ruleManagerFactory = createRuleManager;
         this.Logger = new NullLogger<T>();

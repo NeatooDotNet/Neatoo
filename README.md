@@ -270,7 +270,7 @@ public async Task Save_ThenFetch_RoundTrips()
     await product.WaitForTasks();
 
     // Save returns the saved instance; keep that one
-    product = (IProduct)await product.Save();
+    product = (IProduct)(await product.Save())!;
     Assert.IsFalse(product.IsNew);
     Assert.IsFalse(product.IsModified);
 

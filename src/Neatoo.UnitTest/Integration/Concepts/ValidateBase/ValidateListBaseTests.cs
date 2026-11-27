@@ -33,13 +33,13 @@ public class ValidateListBaseTests
     }
 
     private List<string> propertyChangedCalls = new List<string>();
-    private void Validate_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void Validate_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         propertyChangedCalls.Add(e.PropertyName);
     }
 
     private List<string> childPropertyChangedCalls = new List<string>();
-    private void ChildValidate_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void ChildValidate_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         childPropertyChangedCalls.Add(e.PropertyName);
     }

@@ -36,7 +36,7 @@ namespace DomainModel
 
         public partial Guid? Id
         {
-            get => IdProperty.Value;
+            get => IdProperty.Value!;
             set
             {
                 IdProperty.Value = value;
@@ -51,7 +51,7 @@ namespace DomainModel
 
         public partial PhoneType? PhoneType
         {
-            get => PhoneTypeProperty.Value;
+            get => PhoneTypeProperty.Value!;
             set
             {
                 PhoneTypeProperty.Value = value;
@@ -66,7 +66,7 @@ namespace DomainModel
 
         public partial string? PhoneNumber
         {
-            get => PhoneNumberProperty.Value;
+            get => PhoneNumberProperty.Value!;
             set
             {
                 PhoneNumberProperty.Value = value;

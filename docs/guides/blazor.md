@@ -165,7 +165,7 @@ The Save handler awaits `WaitForTasks()`, re-checks `IsSavable` (a guard only â€
     {
         await employee!.WaitForTasks();
         if (!employee.IsSavable) return;
-        employee = (IEmployee)await employee.Save();
+        employee = (IEmployee?)await employee.Save();
     }
 }
 ```

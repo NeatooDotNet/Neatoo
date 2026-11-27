@@ -576,7 +576,8 @@ public static partial class SubmitDraftOrders
             if (order.IsSavable)
             {
                 // Save returns a new instance; use the result, not the old reference.
-                order = (IOrder)await order.Save();
+                order = (IOrder?)await order.Save()
+                    ?? throw new InvalidOperationException($"Order {id}: Save returned no instance");
                 submitted.Add(order.Id);
             }
             else if (!order.IsValid)
@@ -610,7 +611,7 @@ public sealed record SubmitReport(
 /// </summary>
 public sealed record RejectedOrder(Guid OrderId, IReadOnlyList<string> Messages);
 ```
-<sup><a href='/src/Design/Design.Domain/Jobs/SubmitDraftOrders.cs#L51-L116' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-job-over-entities' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.Domain/Jobs/SubmitDraftOrders.cs#L51-L117' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-job-over-entities' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## A Value Object Is a Record

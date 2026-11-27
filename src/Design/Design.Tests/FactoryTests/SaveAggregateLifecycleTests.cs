@@ -55,7 +55,7 @@ public class SaveAggregateLifecycleTests
         await demo.WaitForTasks();
 
         // Act
-        demo = (ISaveAggregateDemo)await demo.Save();
+        demo = (ISaveAggregateDemo)(await demo.Save())!;
 
         // Assert - routing: root row added once, one flush, one child row
         Assert.AreEqual(1, _repository.AddedRows.Count, "The root row is added exactly once");
@@ -111,7 +111,7 @@ public class SaveAggregateLifecycleTests
         await demo.WaitForTasks();
 
         // Act
-        demo = (ISaveAggregateDemo)await demo.Save();
+        demo = (ISaveAggregateDemo)(await demo.Save())!;
 
         // Assert - every path routed exactly once
         var stored = _repository.Store[seeded.Id];

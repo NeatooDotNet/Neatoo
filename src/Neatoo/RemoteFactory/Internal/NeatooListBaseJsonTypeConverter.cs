@@ -43,7 +43,8 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
         {
             if (reader.TokenType == JsonTokenType.EndObject)
             {
-                if (!string.IsNullOrEmpty(id))
+                // A list with no $type was never created; there is nothing to register.
+                if (!string.IsNullOrEmpty(id) && list != null)
                 {
                     NeatooReferenceResolver.Current?.AddReference(id, list);
                 }
@@ -66,7 +67,8 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
 
             if (propertyName == "$ref")
             {
-                var refId = reader.GetString();
+                var refId = reader.GetString()
+                    ?? throw new JsonException("$ref has no value.");
                 var resolver = NeatooReferenceResolver.Current
                     ?? throw new JsonException("Cannot resolve $ref: no NeatooReferenceResolver is active. Use NeatooJsonSerializer for deserialization.");
                 list = (IList)resolver.ResolveReference(refId);
@@ -79,10 +81,12 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
             }
             else if (propertyName == "$type")
             {
-                var typeString = reader.GetString();
+                var typeString = reader.GetString()
+                    ?? throw new JsonException("$type has no value.");
                 listTypeName = typeString;
-                trace.ListReadResolvingType(typeString ?? "null");
-                var type = this.localAssemblies.FindType(typeString);
+                trace.ListReadResolvingType(typeString);
+                var type = this.localAssemblies.FindType(typeString)
+                    ?? throw new JsonException($"Could not load {typeString}");
                 list = (IList)this.scope.GetRequiredService(type);
 
                 if (list is IJsonOnDeserializing jsonOnDeserializing)
@@ -94,7 +98,7 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
             {
                 if (reader.TokenType != JsonTokenType.StartArray) { throw new JsonException(); }
 
-                Type type = default;
+                Type? type = null;
                 var itemIndex = 0;
 
                 while (reader.Read())
@@ -111,17 +115,23 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
 
                         if (propertyName == "$type")
                         {
-                            var typeString = reader.GetString();
-                            type = this.localAssemblies.FindType(typeString);
+                            var typeString = reader.GetString()
+                                ?? throw new JsonException("A list item's $type has no value.");
+                            type = this.localAssemblies.FindType(typeString)
+                                ?? throw new JsonException($"Could not load {typeString}");
                         }
                         else if (propertyName == "$value")
                         {
+                            var itemType = type
+                                ?? throw new JsonException("A list item's $value appeared before its $type.");
                             var itemSw = Stopwatch.StartNew();
-                            var item = JsonSerializer.Deserialize(ref reader, type, options);
+                            var item = JsonSerializer.Deserialize(ref reader, itemType, options);
                             itemSw.Stop();
-                            trace.ListReadItemDeserialized(itemIndex, type?.Name ?? "?", itemSw.ElapsedMilliseconds);
+                            trace.ListReadItemDeserialized(itemIndex, itemType.Name, itemSw.ElapsedMilliseconds);
 
-                            list.Add(item);
+                            var target = list
+                                ?? throw new JsonException("$items appeared before the list's $type.");
+                            target.Add(item);
                             itemIndex++;
                         }
                     }
@@ -139,7 +149,7 @@ public class NeatooListBaseJsonTypeConverter<T> : JsonConverter<T>
     {
         if(!(value is IList list))
         {
-            throw new JsonException($"{value.GetType()} is not an IList");
+            throw new JsonException($"{value?.GetType()} is not an IList");
         }
 
         var writeSw = Stopwatch.StartNew();

@@ -134,7 +134,7 @@ public class AggregateCoverageGapTests
         newAddress.State = "IL";
         newAddress.ZipCode = "62709";
         newAddress.AddressType = "Home";
-        employee.Addresses.Add(newAddress);
+        employee.Addresses!.Add(newAddress);
         await employee.WaitForTasks();
 
         employee.Delete();
@@ -242,7 +242,7 @@ public class AggregateCoverageGapTests
         order.Items!.Add(added);
         await order.WaitForTasks();
 
-        order = (IOrder)await order.Save();
+        order = (IOrder)(await order.Save())!;
         var stored = _orderRepo.Store[seeded.Id];
         Assert.AreEqual(3, stored.Items.Count, "The added child gets one new row");
 

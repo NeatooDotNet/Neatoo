@@ -1502,16 +1502,16 @@ partial class UniquePhoneNumberRuleTests
 			/// <summary>Count of calls that were not handled by any configured behavior (used for class stub base fallback).</summary>
 			internal int UnconfiguredCallCount => _unconfiguredCallCount;
 
-			/// <summary>Callback delegate for Save() -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>.</summary>
-			public delegate global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> SaveDelegate();
+			/// <summary>Callback delegate for Save() -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>.</summary>
+			public delegate global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> SaveDelegate();
 
 			private SaveDelegate? _call_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
 			private SaveImpl? _callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
 
-			private global::System.Func<global::Neatoo.IEntityBase>? _callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
+			private global::System.Func<global::Neatoo.IEntityBase?>? _callSimplified_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
 			private SaveImpl? _callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
 
-			private global::Neatoo.IEntityBase _returnValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = default!;
+			private global::Neatoo.IEntityBase? _returnValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = default!;
 			private bool _hasReturnValue_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
 			private SaveImpl? _returnValueTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
 
@@ -1522,16 +1522,16 @@ partial class UniquePhoneNumberRuleTests
 			private bool _isVerifiable_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
 			private global::KnockOff.Called? _verifiableTimes_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
 
-			/// <summary>Callback delegate for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>.</summary>
-			public delegate global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> SaveDelegate2(global::System.Threading.CancellationToken token);
+			/// <summary>Callback delegate for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>.</summary>
+			public delegate global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> SaveDelegate2(global::System.Threading.CancellationToken token);
 
 			private SaveDelegate2? _call_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
 			private SaveImpl2? _callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
 
-			private global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase>? _callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
+			private global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase?>? _callSimplified_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
 			private SaveImpl2? _callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
 
-			private global::Neatoo.IEntityBase _returnValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = default!;
+			private global::Neatoo.IEntityBase? _returnValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = default!;
 			private bool _hasReturnValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
 			private SaveImpl2? _returnValueTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
 
@@ -1558,7 +1558,7 @@ partial class UniquePhoneNumberRuleTests
 					throw new global::KnockOff.VerificationException(new global::KnockOff.VerificationFailure("Save", times, TotalCallCount));
 			}
 
-			/// <summary>Configures callback for Save() -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>. Returns builder for sequence chaining.</summary>
+			/// <summary>Configures callback for Save() -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>. Returns builder for sequence chaining.</summary>
 			public SaveImpl Call(SaveDelegate callback)
 			{
 				_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
@@ -1575,8 +1575,8 @@ partial class UniquePhoneNumberRuleTests
 				return _callTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
 			}
 
-			/// <summary>Configures callback for Save() -> Neatoo.IEntityBase. Result auto-wrapped in Task.FromResult.</summary>
-			public SaveImpl Call(global::System.Func<global::Neatoo.IEntityBase> callback)
+			/// <summary>Configures callback for Save() -> Neatoo.IEntityBase?. Result auto-wrapped in Task.FromResult.</summary>
+			public SaveImpl Call(global::System.Func<global::Neatoo.IEntityBase?> callback)
 			{
 				_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = null;
 				_sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
@@ -1589,7 +1589,7 @@ partial class UniquePhoneNumberRuleTests
 				return _callSimplifiedTracking_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase;
 			}
 
-			/// <summary>Configures callback for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>. Returns builder for sequence chaining.</summary>
+			/// <summary>Configures callback for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>. Returns builder for sequence chaining.</summary>
 			public SaveImpl2 Call(SaveDelegate2 callback)
 			{
 				_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
@@ -1606,8 +1606,8 @@ partial class UniquePhoneNumberRuleTests
 				return _callTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
 			}
 
-			/// <summary>Configures callback for Save(System.Threading.CancellationToken token) -> Neatoo.IEntityBase. Result auto-wrapped in Task.FromResult.</summary>
-			public SaveImpl2 Call(global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase> callback)
+			/// <summary>Configures callback for Save(System.Threading.CancellationToken token) -> Neatoo.IEntityBase?. Result auto-wrapped in Task.FromResult.</summary>
+			public SaveImpl2 Call(global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase?> callback)
 			{
 				_sequence_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = null;
 				_sequenceIndex_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase = 0;
@@ -1620,14 +1620,14 @@ partial class UniquePhoneNumberRuleTests
 				return _callSimplifiedTracking_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase;
 			}
 
-			/// <summary>Configures parameter matching for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>. Matches exact values using Object.Equals. Returns builder for Return().</summary>
+			/// <summary>Configures parameter matching for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>. Matches exact values using Object.Equals. Returns builder for Return().</summary>
 			public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase When(global::System.Threading.CancellationToken token)
 			{
 				_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase>();
 				return new WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(this, (_arg0) => global::System.Object.Equals(_arg0, token));
 			}
 
-			/// <summary>Configures parameter matching for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase>. Matches using predicate. Returns builder for Return().</summary>
+			/// <summary>Configures parameter matching for Save(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>. Matches using predicate. Returns builder for Return().</summary>
 			public WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase When(global::System.Func<global::System.Threading.CancellationToken, bool> predicate)
 			{
 				_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase>();
@@ -1635,7 +1635,7 @@ partial class UniquePhoneNumberRuleTests
 			}
 
 			/// <summary>Invokes configured callback for Save().</summary>
-			internal global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Invoke_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase(bool strict)
+			internal global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> Invoke_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase(bool strict)
 			{
 				if (_sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase != null && _sequenceIndex_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase < _sequence_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase.Count)
 				{
@@ -1673,18 +1673,18 @@ partial class UniquePhoneNumberRuleTests
 						tracking.RecordCall();
 						return callback();
 					}
-					return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase>(default!);
+					return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase?>(default!);
 				}
 
 				#pragma warning disable CS8601, SYSLIB0050
 				if (_source is { } src) return src.Save();
 				#pragma warning restore CS8601, SYSLIB0050
 				if (strict) throw global::KnockOff.StubException.NotConfigured("", "Save");
-				return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase>(default!);
+				return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase?>(default!);
 			}
 
 			/// <summary>Invokes configured callback for Save(global::System.Threading.CancellationToken).</summary>
-			internal global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Invoke_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(bool strict, global::System.Threading.CancellationToken token)
+			internal global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> Invoke_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(bool strict, global::System.Threading.CancellationToken token)
 			{
 				// When chain - check HEAD matcher first (highest priority)
 				if (_whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase != null && _whenChainHead_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase < _whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Count)
@@ -1747,14 +1747,14 @@ partial class UniquePhoneNumberRuleTests
 						tracking.RecordCall(token);
 						return callback(token);
 					}
-					return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase>(default!);
+					return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase?>(default!);
 				}
 
 				#pragma warning disable CS8601, SYSLIB0050
 				if (_source is { } src) return src.Save(token);
 				#pragma warning restore CS8601, SYSLIB0050
 				if (strict) throw global::KnockOff.StubException.NotConfigured("", "Save");
-				return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase>(default!);
+				return global::System.Threading.Tasks.Task.FromResult<global::Neatoo.IEntityBase?>(default!);
 			}
 
 			/// <summary>Resets tracking state but preserves configuration and verifiable marking.</summary>
@@ -1898,10 +1898,10 @@ partial class UniquePhoneNumberRuleTests
 				}
 
 				/// <summary>Elevates to sequence mode and adds a value. Return sequence for further chaining.</summary>
-				public SaveSequence ThenReturn(global::Neatoo.IEntityBase value) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(value));
+				public SaveSequence ThenReturn(global::Neatoo.IEntityBase? value) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(value));
 
 				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public SaveSequence ThenReturn(params global::Neatoo.IEntityBase[] values)
+				public SaveSequence ThenReturn(params global::Neatoo.IEntityBase?[] values)
 				{
 					if (values.Length == 0)
 					{
@@ -1935,7 +1935,7 @@ partial class UniquePhoneNumberRuleTests
 				}
 
 				/// <summary>Elevates to sequence mode with simplified callback. Result auto-wrapped in Task.FromResult.</summary>
-				public SaveSequence ThenReturn(global::System.Func<global::Neatoo.IEntityBase> callback) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(callback()));
+				public SaveSequence ThenReturn(global::System.Func<global::Neatoo.IEntityBase?> callback) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(callback()));
 
 				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
 				public global::KnockOff.IMethodReturnBuilder<SaveDelegate> Verifiable()
@@ -2016,10 +2016,10 @@ partial class UniquePhoneNumberRuleTests
 				}
 
 				/// <summary>Elevates to sequence mode and adds a value. Return sequence for further chaining.</summary>
-				public SaveSequence2 ThenReturn(global::Neatoo.IEntityBase value) => ThenReturn((_) => global::System.Threading.Tasks.Task.FromResult(value));
+				public SaveSequence2 ThenReturn(global::Neatoo.IEntityBase? value) => ThenReturn((_) => global::System.Threading.Tasks.Task.FromResult(value));
 
 				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public SaveSequence2 ThenReturn(params global::Neatoo.IEntityBase[] values)
+				public SaveSequence2 ThenReturn(params global::Neatoo.IEntityBase?[] values)
 				{
 					if (values.Length == 0)
 					{
@@ -2053,7 +2053,7 @@ partial class UniquePhoneNumberRuleTests
 				}
 
 				/// <summary>Elevates to sequence mode with simplified callback. Result auto-wrapped in Task.FromResult.</summary>
-				public SaveSequence2 ThenReturn(global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase> callback) => ThenReturn((global::System.Threading.CancellationToken token) => global::System.Threading.Tasks.Task.FromResult(callback(token)));
+				public SaveSequence2 ThenReturn(global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase?> callback) => ThenReturn((global::System.Threading.CancellationToken token) => global::System.Threading.Tasks.Task.FromResult(callback(token)));
 
 				/// <summary>Marks for verification by Stub.Verify(). Returns this for fluent chaining.</summary>
 				public global::KnockOff.IMethodReturnBuilder<SaveDelegate2, global::System.Threading.CancellationToken> Verifiable()
@@ -2106,10 +2106,10 @@ partial class UniquePhoneNumberRuleTests
 				}
 
 				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
-				public SaveSequence ThenReturn(global::Neatoo.IEntityBase value) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(value));
+				public SaveSequence ThenReturn(global::Neatoo.IEntityBase? value) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(value));
 
 				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public SaveSequence ThenReturn(params global::Neatoo.IEntityBase[] values)
+				public SaveSequence ThenReturn(params global::Neatoo.IEntityBase?[] values)
 				{
 					foreach (var value in values)
 					{
@@ -2119,7 +2119,7 @@ partial class UniquePhoneNumberRuleTests
 				}
 
 				/// <summary>Adds simplified callback to the sequence. Result auto-wrapped in Task.FromResult.</summary>
-				public SaveSequence ThenReturn(global::System.Func<global::Neatoo.IEntityBase> callback) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(callback()));
+				public SaveSequence ThenReturn(global::System.Func<global::Neatoo.IEntityBase?> callback) => ThenReturn(() => global::System.Threading.Tasks.Task.FromResult(callback()));
 
 				/// <summary>Verifies the entire sequence was executed (all callbacks invoked). Throws VerificationException if incomplete.</summary>
 				public void Verify()
@@ -2181,10 +2181,10 @@ partial class UniquePhoneNumberRuleTests
 				}
 
 				/// <summary>Adds a value to the sequence. The value is returned exactly once.</summary>
-				public SaveSequence2 ThenReturn(global::Neatoo.IEntityBase value) => ThenReturn((_) => global::System.Threading.Tasks.Task.FromResult(value));
+				public SaveSequence2 ThenReturn(global::Neatoo.IEntityBase? value) => ThenReturn((_) => global::System.Threading.Tasks.Task.FromResult(value));
 
 				/// <summary>Adds multiple values to the sequence. Each value returned once.</summary>
-				public SaveSequence2 ThenReturn(params global::Neatoo.IEntityBase[] values)
+				public SaveSequence2 ThenReturn(params global::Neatoo.IEntityBase?[] values)
 				{
 					foreach (var value in values)
 					{
@@ -2194,7 +2194,7 @@ partial class UniquePhoneNumberRuleTests
 				}
 
 				/// <summary>Adds simplified callback to the sequence. Result auto-wrapped in Task.FromResult.</summary>
-				public SaveSequence2 ThenReturn(global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase> callback) => ThenReturn((global::System.Threading.CancellationToken token) => global::System.Threading.Tasks.Task.FromResult(callback(token)));
+				public SaveSequence2 ThenReturn(global::System.Func<global::System.Threading.CancellationToken, global::Neatoo.IEntityBase?> callback) => ThenReturn((global::System.Threading.CancellationToken token) => global::System.Threading.Tasks.Task.FromResult(callback(token)));
 
 				/// <summary>Verifies the entire sequence was executed (all callbacks invoked). Throws VerificationException if incomplete.</summary>
 				public void Verify()
@@ -2232,7 +2232,7 @@ partial class UniquePhoneNumberRuleTests
 			private abstract class WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase
 			{
 				public abstract bool Matches(global::System.Threading.CancellationToken token);
-				public abstract global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Call(global::System.Threading.CancellationToken token);
+				public abstract global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> Call(global::System.Threading.CancellationToken token);
 				public abstract bool IsTerminal { get; }
 				public int CallCount { get; set; }
 			}
@@ -2241,16 +2241,16 @@ partial class UniquePhoneNumberRuleTests
 			private sealed class WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase : WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase
 			{
 				private readonly global::System.Func<global::System.Threading.CancellationToken, bool> _predicate;
-				private readonly global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> _value;
+				private readonly global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> _value;
 
-				public WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(global::System.Func<global::System.Threading.CancellationToken, bool> predicate, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> value)
+				public WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(global::System.Func<global::System.Threading.CancellationToken, bool> predicate, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> value)
 				{
 					_predicate = predicate;
 					_value = value;
 				}
 
 				public override bool Matches(global::System.Threading.CancellationToken token) => _predicate(token);
-				public override global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Call(global::System.Threading.CancellationToken token) => _value;
+				public override global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> Call(global::System.Threading.CancellationToken token) => _value;
 				public override bool IsTerminal => false;
 			}
 
@@ -2262,7 +2262,7 @@ partial class UniquePhoneNumberRuleTests
 				public WhenMatcherCall_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(SaveDelegate2 callback) => _callback = callback;
 
 				public override bool Matches(global::System.Threading.CancellationToken token) => true;
-				public override global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Call(global::System.Threading.CancellationToken token) => _callback(token);
+				public override global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> Call(global::System.Threading.CancellationToken token) => _callback(token);
 				public override bool IsTerminal => true;
 			}
 
@@ -2270,12 +2270,12 @@ partial class UniquePhoneNumberRuleTests
 			private sealed class WhenMatcherNone_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase : WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase
 			{
 				public override bool Matches(global::System.Threading.CancellationToken token) => false;
-				public override global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> Call(global::System.Threading.CancellationToken token) => default!;
+				public override global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> Call(global::System.Threading.CancellationToken token) => default!;
 				public override bool IsTerminal => true;
 			}
 
 			/// <summary>Builder for When matchers. Captures predicate, awaits Return(value).</summary>
-			public sealed class WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase : global::KnockOff.IWhenBuilder<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>
+			public sealed class WhenBuilder_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase : global::KnockOff.IWhenBuilder<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>>
 			{
 				private readonly IPerson_SaveInterceptor _interceptor;
 				private readonly global::System.Func<global::System.Threading.CancellationToken, bool> _predicate;
@@ -2287,18 +2287,18 @@ partial class UniquePhoneNumberRuleTests
 				}
 
 				/// <summary>Configures the return value. Auto-wrapped in Task.FromResult.</summary>
-				public WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase Return(global::Neatoo.IEntityBase value)
+				public WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase Return(global::Neatoo.IEntityBase? value)
 				{
 					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase ??= new global::System.Collections.Generic.List<WhenMatcher_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase>();
 					_interceptor._whenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase.Add(new WhenMatcherValue_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(_predicate, global::System.Threading.Tasks.Task.FromResult(value)));
 					return new WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(_interceptor);
 				}
 
-				global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>> global::KnockOff.IWhenBuilder<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>.Return(global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> value) => Return(value.Result);
+				global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>> global::KnockOff.IWhenBuilder<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>>.Return(global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> value) => Return(value.Result);
 			}
 
 			/// <summary>When chain implementation with ThenCall, ThenNone, verification support.</summary>
-			public sealed class WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase : global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>
+			public sealed class WhenChain_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase : global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>>
 			{
 				private readonly IPerson_SaveInterceptor _interceptor;
 
@@ -2363,7 +2363,7 @@ partial class UniquePhoneNumberRuleTests
 					return this;
 				}
 
-				global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>> global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase>>.Verifiable() => Verifiable();
+				global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>> global::KnockOff.IWhenChain<SaveDelegate2, global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?>>.Verifiable() => Verifiable();
 				global::KnockOff.IWhenTracking global::KnockOff.IWhenTracking.Verifiable() => Verifiable();
 			}
 
@@ -5590,12 +5590,12 @@ partial class UniquePhoneNumberRuleTests
 				set => Notes.InvokeSet(Strict, value);
 			}
 
-			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityRoot.Save()
+			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> global::Neatoo.IEntityRoot.Save()
 			{
 				return Save.Invoke_NoParams_Threading_Tasks_Task_Neatoo_IEntityBase(Strict);
 			}
 
-			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase> global::Neatoo.IEntityRoot.Save(global::System.Threading.CancellationToken token)
+			global::System.Threading.Tasks.Task<global::Neatoo.IEntityBase?> global::Neatoo.IEntityRoot.Save(global::System.Threading.CancellationToken token)
 			{
 				return Save.Invoke_Threading_CancellationToken_Threading_Tasks_Task_Neatoo_IEntityBase(Strict, token);
 			}

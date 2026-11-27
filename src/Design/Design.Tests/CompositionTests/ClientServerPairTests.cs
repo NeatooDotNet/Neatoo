@@ -48,7 +48,7 @@ public class ClientServerPairTests
         order.Items!.Add(itemFactory.Create("Widget", 2, 10.00m));
         await order.WaitForTasks();
 
-        var saved = (IOrder)await order.Save();
+        var saved = (IOrder)(await order.Save())!;
 
         Assert.IsFalse(saved.IsNew);
         Assert.IsFalse(saved.IsModified);
@@ -71,7 +71,7 @@ public class ClientServerPairTests
         fetched.Items[0].Quantity = 3;
         await fetched.WaitForTasks();
 
-        var updated = (IOrder)await fetched.Save();
+        var updated = (IOrder)(await fetched.Save())!;
 
         Assert.IsFalse(updated.IsModified);
         Assert.AreEqual(30.00m, updated.TotalAmount);

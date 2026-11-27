@@ -524,7 +524,7 @@ public class PartialPropertyGenerationTests
         var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
 
         Assert.IsNotNull(generated);
-        Assert.IsTrue(generated.Contains("LazyChildProperty.Value;"),
+        Assert.IsTrue(generated.Contains("LazyChildProperty.Value!;"),
             "Getter-only LazyLoad should have getter");
         Assert.IsFalse(generated.Contains("LoadValue"),
             "Getter-only LazyLoad should NOT have setter");
@@ -815,7 +815,7 @@ public class PartialPropertyGenerationTests
         var generated = GeneratorTestHelper.GetGeneratedSourceForClass(result, "TestEntity");
 
         Assert.IsNotNull(generated, "Should generate code for TestEntity");
-        Assert.IsTrue(generated.Contains("ReadOnlyProperty.Value;"),
+        Assert.IsTrue(generated.Contains("ReadOnlyProperty.Value!;"),
             "Getter-only property should have getter accessing .Value");
         Assert.IsFalse(generated.Contains("set {") || generated.Contains("set{"),
             "Getter-only property should NOT have a setter");
