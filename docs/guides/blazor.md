@@ -157,7 +157,7 @@ Use `MudForm` with MudNeatoo components, not `EditForm` with `DataAnnotationsVal
 </MudForm>
 ```
 
-The Save handler awaits `WaitForTasks()`, re-checks `IsSavable` (a guard only — the button is already disabled), and keeps the instance `Save()` returns:
+The Save handler awaits `WaitForTasks()`, checks `IsSavable`, and keeps the instance `Save()` returns. The wait and the check are for a caller that is not behind the bound button; see [A click while a rule is running](#a-click-while-a-rule-is-running).
 
 ```razor
 @code {
@@ -231,6 +231,14 @@ public async Task AsyncRule_SetsIsBusyUntilItCompletes()
 ```
 <sup><a href='/src/Design/Design.Tests/PropertyTests/ValidationStateTests.cs#L52-L67' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-is-busy' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+### A click while a rule is running
+
+A Save button bound to `IsSavable` is disabled while an async rule anywhere in the aggregate is running, so a save cannot start with rules in flight. The page needs nothing for this: no debounce, no overlay, no busy flag of its own.
+
+One sequence looks like a race and is not. Text and numeric fields commit on blur. When a user types in a field that has an async rule and clicks Save without leaving the field, the click blurs the field, the rule starts, and the button disables. With a `MudButton` that click is not delivered to the handler, on WebAssembly or on Blazor Server. The user clicks Save again when the rule finishes. That is the expected behaviour, not something to design around.
+
+The handler still awaits `WaitForTasks()` and checks `IsSavable` because it has callers that are not behind the bound button. A test calls it directly. A plain `<button disabled>` on Blazor Server can deliver a click that was sent before the disabled state reached the browser. In both cases the wait lets the rule finish, and the handler saves if the entity is then savable.
 
 ## Read-Only Properties
 

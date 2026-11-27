@@ -22,6 +22,15 @@
 // DID NOT DO THIS: try { Save } catch { show a banner }. WHY NOT: an invalid
 // aggregate never reaches Save (IsSavable is false); what Save can throw is an
 // application failure, and the page's error boundary owns those.
+//
+// DID NOT DO THIS: guard against a Save click made while a rule is running (a
+// debounce, an overlay, a busy flag of the page's own). WHY NOT: the button
+// binds IsSavable, which is false while the order is busy, so that click is
+// not delivered. A user who types in a field with an async rule and clicks
+// Save without leaving the field clicks again when the rule finishes. The
+// WaitForTasks() in the handler is for a caller that is not behind the bound
+// button: a test, or a plain <button> on Blazor Server, where a click can be
+// sent before the disabled state reaches the browser.
 // -----------------------------------------------------------------------------
 
 using Design.Domain.Aggregates.OrderAggregate;
@@ -73,8 +82,10 @@ internal sealed class OrderEditViewModel
     public bool CanSave => Order?.IsSavable ?? false;
 
     /// <summary>
-    /// The save handler. Waits for any async rule still running, then lets the
-    /// entity decide; the messages for a refused save are already on the entity.
+    /// The save handler. Lets the entity decide; the messages for a refused save
+    /// are already on the entity. The bound button is disabled while a rule runs,
+    /// so a click does not arrive then; the wait is for a caller that is not
+    /// behind the button, such as a test.
     /// </summary>
     public async Task Save()
     {

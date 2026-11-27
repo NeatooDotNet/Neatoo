@@ -30,6 +30,7 @@ A mainstream .NET developer reaches for these under load. Each row is the questi
 |---|---|---|
 | This gesture needs a method on the entity? | First ask whether it is a fact. If a later reader needs the value, it is a property the control writes, and what follows from it is a rule. A verb only for intent the state cannot hold. | The TrainingPlan below |
 | Where do I validate before Save? | Nowhere. The rules ran when the property was set. `await WaitForTasks()` for async rules, read `IsSavable`, save, hold the returned instance. There is no validate step - and `RunRules(All)` before Save is not one. | The save handler below; [blazor.md](references/blazor.md#the-save-handler) |
+| What if the user clicks Save while an async rule is still running? | Not a concern; build nothing for it. The button binds `IsSavable`, which is false while the aggregate is busy, so that click is not delivered. Typing in a field with an async rule and clicking Save without leaving it takes a second click when the rule finishes; that is expected. No debounce, overlay or page-level busy flag. The handler's `WaitForTasks()` is for a caller that is not behind the button: a test, or a plain `<button>` on Blazor Server. | [blazor.md](references/blazor.md#busy-state) |
 | Where do I throw when input is bad? | In a rule, as a message. An exception is an application failure. A verb sets state and never checks-and-throws; the admission rule (`CanApprove`) says whether the verb applies and the UI binds the button to it. | [domain-logic-placement.md](references/domain-logic-placement.md) - `Approve` and `CanApprove`; [validation.md](references/validation.md) - attributes and rules |
 | Nobody edits this, so plain EF? | An entity is right with no person involved. A job reuses the aggregate, its verb and its rules: verb, `WaitForTasks()`, then `IsSavable` decides - saved, reported with its messages, or skipped. | [base-classes.md](references/base-classes.md#a-job-over-entities) |
 | Where do the screen's derived values and visibility go? | On the entity, as business facts (`IsHeld`, `CanApprove`, `IsOverBudget`), computed by rules. The page binds; the ViewModel may give a fact a screen name, one-to-one, deciding nothing. Never a property named for a screen element. | The page below; [domain-logic-placement.md](references/domain-logic-placement.md) - derived facts |
@@ -252,8 +253,10 @@ internal sealed class OrderEditViewModel
     public bool CanSave => Order?.IsSavable ?? false;
 
     /// <summary>
-    /// The save handler. Waits for any async rule still running, then lets the
-    /// entity decide; the messages for a refused save are already on the entity.
+    /// The save handler. Lets the entity decide; the messages for a refused save
+    /// are already on the entity. The bound button is disabled while a rule runs,
+    /// so a click does not arrive then; the wait is for a caller that is not
+    /// behind the button, such as a test.
     /// </summary>
     public async Task Save()
     {
@@ -273,7 +276,7 @@ internal sealed class OrderEditViewModel
     }
 }
 ```
-<sup><a href='/src/Design/Design.App/ViewModels/OrderEditViewModel.cs#L31-L96' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-handler' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ViewModels/OrderEditViewModel.cs#L40-L107' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-handler' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 While `Save()` runs, `IsSavable` is false, so the bound button disables for the length of the save; a second `Save()` on the same object throws `SaveOperationException` (`SaveFailureReason.SaveInProgress`). The handler needs no saving flag of its own. A save in flight is not busy: `IsBusy` and `WaitForTasks()` do not change.

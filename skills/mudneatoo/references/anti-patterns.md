@@ -345,7 +345,7 @@ With the save button always enabled:
 
 ### Correct
 
-The summary (Anti-Pattern 4) shows every message, each field shows its own, and the Save button binds `IsSavable`, so an invalid entity never reaches `Save`. The save handler's `IsSavable` check is a guard, not a validation step (SKILL.md → Page Structure Pattern).
+The summary (Anti-Pattern 4) shows every message, each field shows its own, and the Save button binds `IsSavable`, so an invalid entity never reaches `Save`. The save handler's `IsSavable` check is a guard, not a validation step (SKILL.md → Page Structure Pattern). A click made while an async rule runs needs nothing either: the button is disabled then and the click is not delivered.
 
 ---
 

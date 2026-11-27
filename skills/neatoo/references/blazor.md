@@ -179,7 +179,11 @@ public async Task Address_InvalidAddressType_IsInvalid()
 
 ## Busy State
 
-While an async rule runs, the property's and the entity's `IsBusy` are true and `IsSavable` is false. MudNeatoo components disable their input while `IsBusy`; a Save button bound to `IsSavable` disables itself:
+While an async rule runs, the property's and the entity's `IsBusy` are true and `IsSavable` is false. MudNeatoo components disable their input while `IsBusy`; a Save button bound to `IsSavable` disables itself.
+
+A Save click made while a rule runs is not a concern, and nothing is built for it: no debounce, no overlay, no page-level busy flag. Text and numeric fields commit on blur, so a user who types in a field with an async rule and clicks Save without leaving it starts the rule with that click; the button disables, and with a `MudButton` the click is not delivered to the handler, on WebAssembly or on Blazor Server. They click Save again when the rule finishes. That is expected behaviour.
+
+The per-field and per-entity busy state:
 
 <!-- snippet: skill-is-busy -->
 <a id='snippet-skill-is-busy'></a>
@@ -288,6 +292,8 @@ The server registers the Ef implementations against the Dal interfaces; the clie
 
 There is no validate step. The handler waits for any async rule, asks the entity whether it is savable, saves, and holds the returned instance.
 
+The wait is not there to catch a click made while a rule runs: the bound button is disabled then, and the click is not delivered (see [Busy State](#busy-state)). It is for a caller that is not behind the button: a test that calls the handler, or a plain `<button disabled>` on Blazor Server, which can deliver a click sent before the disabled state reached the browser.
+
 <!-- snippet: skill-save-handler -->
 <a id='snippet-skill-save-handler'></a>
 ```cs
@@ -335,8 +341,10 @@ internal sealed class OrderEditViewModel
     public bool CanSave => Order?.IsSavable ?? false;
 
     /// <summary>
-    /// The save handler. Waits for any async rule still running, then lets the
-    /// entity decide; the messages for a refused save are already on the entity.
+    /// The save handler. Lets the entity decide; the messages for a refused save
+    /// are already on the entity. The bound button is disabled while a rule runs,
+    /// so a click does not arrive then; the wait is for a caller that is not
+    /// behind the button, such as a test.
     /// </summary>
     public async Task Save()
     {
@@ -356,7 +364,7 @@ internal sealed class OrderEditViewModel
     }
 }
 ```
-<sup><a href='/src/Design/Design.App/ViewModels/OrderEditViewModel.cs#L31-L96' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-handler' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/Design/Design.App/ViewModels/OrderEditViewModel.cs#L40-L107' title='Snippet source file'>snippet source</a> | <a href='#snippet-skill-save-handler' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## A ViewModel Over a Live Aggregate
