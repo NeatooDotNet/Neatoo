@@ -736,7 +736,7 @@ public async Task AddChildToFetchedOrder_SaveTwice_InsertsOnce()
 1. **Only the aggregate root is saved externally** — external code calls `root.Save()` (or `factory.Save(root)`), never a child factory.
 2. **Each level delegates to the next factory** — root to list factory, list to child factory. The root never inspects or writes child rows.
 3. **One flush per root save** — the root calls `SaveChanges()` once, after the list is done.
-4. **Keep the returned instance** — on the client, `Save()` returns the saved instance; assign it back: `order = (IOrder)(await order.Save())!;`. The result is nullable: an entity that is both new and deleted is discarded without a call, and `Save()` returns `null`.
+4. **Keep the returned instance** — on the client, `Save()` returns the saved instance; assign it back: `order = (IOrder)(await order.Save())!;`. The result is nullable: an entity that is both new and deleted is discarded without a call, and `Save()` returns `null`. A factory with authorization throws `NotAuthorizedException` in that case today (a RemoteFactory bug, NeatooDotNet/DTZero#11).
 
 ### Anti-Pattern: Parent Writes Child Rows Inline
 

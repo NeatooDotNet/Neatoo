@@ -423,7 +423,7 @@ After successful Insert or Update:
 - `IsNew == false`
 - `ModifiedProperties` is cleared
 
-`Save()` returns the saved instance, or `null` when the factory returns none: an entity that is both new and deleted is discarded without a call. On the client the saved instance is a new object, so keep the returned one: `order = (IOrder)(await order.Save())!;`, or assign to a nullable holder without the `!`. A created-but-untouched entity still inserts, because savability and routing both run off `IsNew`:
+`Save()` returns the saved instance, or `null` when the factory returns none: an entity that is both new and deleted is discarded without a call. (A factory with authorization throws `NotAuthorizedException` in that case today; that is a RemoteFactory bug, NeatooDotNet/DTZero#11.) On the client the saved instance is a new object, so keep the returned one: `order = (IOrder)(await order.Save())!;`, or assign to a nullable holder without the `!`. A created-but-untouched entity still inserts, because savability and routing both run off `IsNew`:
 
 <!-- snippet: skill-new-untouched-still-inserts -->
 <a id='snippet-skill-new-untouched-still-inserts'></a>

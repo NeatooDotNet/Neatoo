@@ -505,7 +505,8 @@ public abstract class EntityBase<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// does not come through here.
     /// DESIGN DECISION: Save() returns what the factory returns, and says in its type that this
     /// can be nothing (D42). An entity that is both new and deleted has nothing to persist, so
-    /// the factory runs no operation and returns no instance.
+    /// the factory runs no operation and returns no instance. A factory with authorization
+    /// throws NotAuthorizedException there today, a RemoteFactory bug (NeatooDotNet/DTZero#11).
     /// DID NOT DO THIS: declare the result non-null and throw when the factory returns nothing.
     /// Deleting an entity that was never saved, then saving, is not an error.
     /// </para>
